@@ -1,4 +1,6 @@
-report "simple_report" {
+// this dashboard is used to test the parsing of a simple dashboard
+
+dashboard "simple_report" {
   text {
     value = "a simple report"
   }

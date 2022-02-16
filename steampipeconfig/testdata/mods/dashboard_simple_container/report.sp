@@ -1,4 +1,6 @@
-report "simple_container_report" {
+// this dashboard is used to test the parsing of a simple container
+
+dashboard "simple_container_report" {
   container {
     text {
       value = "container 1"

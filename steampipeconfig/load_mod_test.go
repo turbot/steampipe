@@ -76,10 +76,10 @@ func init() {
 				},
 			},
 		},
-		"single_mod_duplicate_query": {
-			source:   "testdata/mods/single_mod_duplicate_query",
-			expected: "ERROR",
-		},
+		// "single_mod_duplicate_query": {
+		// 	source:   "testdata/mods/single_mod_duplicate_query",
+		// 	expected: "ERROR",
+		// },
 		"single_mod_no_query": {
 			source: "testdata/mods/single_mod_no_query",
 			expected: &modconfig.Mod{
@@ -443,8 +443,8 @@ func init() {
 				},
 			},
 		},
-		"simple_report": {
-			source: "testdata/mods/simple_report",
+		"dashboard_simple_report": {
+			source: "testdata/mods/dashboard_simple_report",
 			expected: &modconfig.Mod{
 				ShortName:   "simple_report",
 				FullName:    "mod.simple_report",
@@ -452,10 +452,10 @@ func init() {
 				Title:       toStringPointer("simple report"),
 				Description: toStringPointer("this mod contains a simple report"),
 				Dashboards: map[string]*modconfig.Dashboard{
-					"simple_report.report.simple_report": {
+					"simple_report.dashboard.simple_report": {
 						ShortName:       "simple_report",
-						FullName:        "simple_report.report.simple_report",
-						UnqualifiedName: "report.simple_report",
+						FullName:        "simple_report.dashboard.simple_report",
+						UnqualifiedName: "dashboard.simple_report",
 						ChildNames:      []string{"simple_report.text.anonymous_text", "simple_report.chart.anonymous_chart"},
 					},
 				},
@@ -478,8 +478,8 @@ func init() {
 				},
 			},
 		},
-		"simple_container_report": {
-			source: "testdata/mods/simple_container_report",
+		"dashboard_simple_container": {
+			source: "testdata/mods/dashboard_simple_container",
 			expected: &modconfig.Mod{
 				ShortName:   "simple_container_report",
 				FullName:    "mod.simple_container_report",
@@ -487,10 +487,10 @@ func init() {
 				Title:       toStringPointer("simple report with container"),
 				Description: toStringPointer("this mod contains a simple report with containers"),
 				Dashboards: map[string]*modconfig.Dashboard{
-					"simple_container_report.report.simple_container_report": {
+					"simple_container_report.dashboard.simple_container_report": {
 						ShortName:       "simple_container_report",
-						FullName:        "simple_container_report.report.simple_container_report",
-						UnqualifiedName: "report.simple_container_report",
+						FullName:        "simple_container_report.dashboard.simple_container_report",
+						UnqualifiedName: "dashboard.simple_container_report",
 						ChildNames:      []string{"simple_container_report.container.anonymous_container"},
 						HclType:         "report",
 					},
@@ -522,8 +522,8 @@ func init() {
 				},
 			},
 		},
-		"sibling_containers_report": {
-			source: "testdata/mods/sibling_containers_report",
+		"dashboard_sibling_containers": {
+			source: "testdata/mods/dashboard_sibling_containers",
 			expected: &modconfig.Mod{
 				ShortName:   "sibling_containers_report",
 				FullName:    "mod.sibling_containers_report",
@@ -531,10 +531,10 @@ func init() {
 				Title:       toStringPointer("report with multiple sibling containers"),
 				Description: toStringPointer("this mod contains a report with multiple sibling containers"),
 				Dashboards: map[string]*modconfig.Dashboard{
-					"sibling_containers_report.report.sibling_containers_report": {
+					"sibling_containers_report.dashboard.sibling_containers_report": {
 						ShortName:       "sibling_containers_report",
-						FullName:        "sibling_containers_report.report.sibling_containers_report",
-						UnqualifiedName: "report.sibling_containers_report",
+						FullName:        "sibling_containers_report.dashboard.sibling_containers_report",
+						UnqualifiedName: "dashboard.sibling_containers_report",
 						ChildNames:      []string{"sibling_containers_report.container.anonymous_container", "sibling_containers_report.container.anonymous_container_1", "sibling_containers_report.container.anonymous_container_2"},
 						HclType:         "report",
 					},
@@ -604,8 +604,8 @@ func init() {
 				},
 			},
 		},
-		"nested_containers_report": {
-			source: "testdata/mods/nested_containers_report",
+		"dashboard_nested_containers": {
+			source: "testdata/mods/dashboard_nested_containers",
 			expected: &modconfig.Mod{
 				ShortName:   "nested_containers_report",
 				FullName:    "mod.nested_containers_report",
@@ -613,12 +613,12 @@ func init() {
 				Title:       toStringPointer("report with nested containers"),
 				Description: toStringPointer("this mod contains a report with nested containers"),
 				Dashboards: map[string]*modconfig.Dashboard{
-					"nested_containers_report.report.nested_containers_report": {
+					"nested_containers_report.dashboard.nested_containers_report": {
 						ShortName:       "nested_containers_report",
-						FullName:        "nested_containers_report.report.nested_containers_report",
-						UnqualifiedName: "mod.nested_containers_report",
+						FullName:        "nested_containers_report.dashboard.nested_containers_report",
+						UnqualifiedName: "dashboard.nested_containers_report",
 						ChildNames:      []string{"nested_containers_report.container.anonymous_container"},
-						HclType:         "report",
+						HclType:         "dashboard",
 					},
 				},
 				DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -653,21 +653,21 @@ func init() {
 						ShortName:       "anonymous_chart",
 						UnqualifiedName: "chart.anonymous_chart",
 						Title:           toStringPointer("CHART 1"),
-						SQL:             toStringPointer("select 1 as child_container, 1 as container"),
+						SQL:             toStringPointer("select 1.1 as container"),
 					},
 					"nested_containers_report.chart.anonymous_chart_1": {
 						FullName:        "nested_containers_report.chart.anonymous_chart_1",
 						ShortName:       "anonymous_chart_1",
 						UnqualifiedName: "chart.anonymous_chart_1",
 						Title:           toStringPointer("CHART 2"),
-						SQL:             toStringPointer("select 2 as child_container, 1 as container"),
+						SQL:             toStringPointer("select 1.2 as container"),
 					},
 					"nested_containers_report.chart.anonymous_chart_2": {
 						FullName:        "nested_containers_report.chart.anonymous_chart_2",
 						ShortName:       "anonymous_chart_2",
 						UnqualifiedName: "chart.anonymous_chart_2",
 						Title:           toStringPointer("CHART 3"),
-						SQL:             toStringPointer("select 1 as child_container, 2 as container"),
+						SQL:             toStringPointer("select 1.2.1 as container"),
 					},
 				},
 				DashboardTexts: map[string]*modconfig.DashboardText{
@@ -681,25 +681,25 @@ func init() {
 						FullName:        "nested_containers_report.text.anonymous_text_1",
 						ShortName:       "anonymous_text_1",
 						UnqualifiedName: "text.anonymous_text_1",
-						Value:           toStringPointer("CHILD CONTAINER 1(1)"),
+						Value:           toStringPointer("CHILD CONTAINER 1.1"),
 					},
 					"nested_containers_report.text.anonymous_text_2": {
 						FullName:        "nested_containers_report.text.anonymous_text_2",
 						ShortName:       "anonymous_text_2",
 						UnqualifiedName: "text.anonymous_text_2",
-						Value:           toStringPointer("CHILD CONTAINER 2(1)"),
+						Value:           toStringPointer("CHILD CONTAINER 1.2"),
 					},
 					"nested_containers_report.text.anonymous_text_3": {
 						FullName:        "nested_containers_report.text.anonymous_text_3",
 						ShortName:       "anonymous_text_3",
 						UnqualifiedName: "text.anonymous_text_3",
-						Value:           toStringPointer("NESTED CHILD CONTAINER 1(21)"),
+						Value:           toStringPointer("NESTED CHILD CONTAINER 1.2.1"),
 					},
 				},
 			},
 		},
-		"report_axes": { // this test checks the base values overriding while parsing
-			source: "testdata/mods/report_axes",
+		"dashboard_base_override": { // this test checks the base values overriding while parsing
+			source: "testdata/mods/dashboard_base_override",
 			expected: &modconfig.Mod{
 				ShortName:   "report_axes",
 				FullName:    "mod.report_axes",
@@ -707,13 +707,13 @@ func init() {
 				Title:       toStringPointer("report with axes"),
 				Description: toStringPointer("This mod tests base values overriding functionality"),
 				Dashboards: map[string]*modconfig.Dashboard{
-					"report_axes.report.override_base_values": {
+					"report_axes.dashboard.override_base_values": {
 						ShortName:       "override_base_values",
-						FullName:        "report_axes.report.override_base_values",
-						UnqualifiedName: "report.override_base_values",
+						FullName:        "report_axes.dashboard.override_base_values",
+						UnqualifiedName: "dashboard.override_base_values",
 						Title:           toStringPointer("override_base_values"),
 						ChildNames:      []string{"report_axes.chart.anonymous_chart"},
-						HclType:         "report",
+						HclType:         "dashboard",
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
@@ -768,8 +768,8 @@ func init() {
 				},
 			},
 		},
-		"report_base1": { // this test checks inheriting and overriding base values while parsing
-			source: "testdata/mods/report_base1",
+		"dashboard_base_inheritance": { // this test checks inheriting and overriding base values while parsing
+			source: "testdata/mods/dashboard_base_inheritance",
 			expected: &modconfig.Mod{
 				ShortName:   "report_base1",
 				FullName:    "mod.report_base1",
@@ -777,28 +777,28 @@ func init() {
 				Description: toStringPointer("This mod tests inheriting from base functionality"),
 				Title:       toStringPointer("report base 1"),
 				Queries: map[string]*modconfig.Query{
-					"report_base1.query.aws_a3_unencrypted_and_nonversioned_buckets_by_region": {
-						ShortName:       "aws_a3_unencrypted_and_nonversioned_buckets_by_region",
-						FullName:        "report_base1.query.aws_a3_unencrypted_and_nonversioned_buckets_by_region",
-						UnqualifiedName: "query.aws_a3_unencrypted_and_nonversioned_buckets_by_region",
-						SQL:             toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
+					"report_base1.query.basic_query": {
+						ShortName:       "basic_query",
+						FullName:        "report_base1.query.basic_query",
+						UnqualifiedName: "query.basic_query",
+						SQL:             toStringPointer("select 1"),
 					},
 				},
 				Dashboards: map[string]*modconfig.Dashboard{
-					"report_base1.report.inheriting_from_base": {
+					"report_base1.dashboard.inheriting_from_base": {
 						ShortName:       "inheriting_from_base",
-						FullName:        "report_base1.report.inheriting_from_base",
-						UnqualifiedName: "report.inheriting_from_base",
+						FullName:        "report_base1.dashboard.inheriting_from_base",
+						UnqualifiedName: "dashboard.inheriting_from_base",
 						Title:           toStringPointer("inheriting_from_base"),
 						ChildNames:      []string{"report_base1.chart.anonymous_chart"},
-						HclType:         "report",
+						HclType:         "dashboard",
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
-					"report_base1.chart.aws_bucket_info": {
-						FullName:        "report_base1.chart.aws_bucket_info",
-						ShortName:       "aws_bucket_info",
-						UnqualifiedName: "chart.aws_bucket_info",
+					"report_base1.chart.basic_chart": {
+						FullName:        "report_base1.chart.basic_chart",
+						ShortName:       "basic_chart",
+						UnqualifiedName: "chart.basic_chart",
 						Type:            toStringPointer("column"),
 						Legend: &modconfig.DashboardChartLegend{
 							Position: toStringPointer("bottom"),
@@ -818,7 +818,7 @@ func init() {
 							},
 						},
 						Grouping: toStringPointer("compare"),
-						SQL:      toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
+						SQL:      toStringPointer("select 1"),
 					},
 					"report_base1.chart.anonymous_chart": {
 						FullName:        "report_base1.chart.anonymous_chart",
@@ -844,7 +844,7 @@ func init() {
 							},
 						},
 						Grouping: toStringPointer("compare"),
-						SQL:      toStringPointer("with unencrypted_buckets_by_region as (\n  select\n    region,\n    count(*) as unencrypted\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is null\n  group by\n    region\n),\nnonversioned_buckets_by_region as (\n  select\n    region,\n    count(*) as nonversioned\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    not versioning_enabled\n  group by\n    region\n),\ncompliant_buckets_by_region as (\n  select\n    region,\n    count(*) as \"other\"\n  from\n    aws_morales_aaa.aws_s3_bucket\n  where\n    server_side_encryption_configuration is not null\n    and versioning_enabled\n  group by\n    region\n)\nselect\n  c.region as \"Region\",\n  coalesce(c.other, 0) as \"Compliant\",\n  coalesce(u.unencrypted, 0) as \"Unencrypted\",\n  coalesce(v.nonversioned, 0) as \"Non-Versioned\"\nfrom\n  compliant_buckets_by_region c\n  full join unencrypted_buckets_by_region u on c.region = u.region\n  full join nonversioned_buckets_by_region v on c.region = v.region;\n"),
+						SQL:      toStringPointer("select 1"),
 					},
 				},
 			},
