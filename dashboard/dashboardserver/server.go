@@ -47,13 +47,12 @@ func (lp ListenPort) IsValid() error {
 }
 
 type Server struct {
-	context            context.Context
-	dbClient           db_common.Client
-	mutex              *sync.Mutex
-	dashboardClients   map[*melody.Session]*DashboardClientInfo
-	webSocket          *melody.Melody
-	workspace          *workspace.Workspace
-	workspaceResources *modconfig.WorkspaceResourceMaps
+	context          context.Context
+	dbClient         db_common.Client
+	mutex            *sync.Mutex
+	dashboardClients map[*melody.Session]*DashboardClientInfo
+	webSocket        *melody.Melody
+	workspace        *workspace.Workspace
 }
 
 type ErrorPayload struct {
@@ -84,13 +83,12 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 	var mutex = &sync.Mutex{}
 
 	server := &Server{
-		context:            ctx,
-		dbClient:           dbClient,
-		mutex:              mutex,
-		dashboardClients:   dashboardClients,
-		webSocket:          webSocket,
-		workspace:          loadedWorkspace,
-		workspaceResources: loadedWorkspace.GetResourceMaps(),
+		context:          ctx,
+		dbClient:         dbClient,
+		mutex:            mutex,
+		dashboardClients: dashboardClients,
+		webSocket:        webSocket,
+		workspace:        loadedWorkspace,
 	}
 
 	loadedWorkspace.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
@@ -267,9 +265,6 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 	}()
 
-	// reload workspace
-	s.workspaceResources = s.workspace.GetResourceMaps()
-
 	switch e := event.(type) {
 
 	case *dashboardevents.WorkspaceError:
@@ -374,7 +369,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		// If) any deleted/new/changed dashboards, emit an available dashboards message to clients
 		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 {
 			outputMessage(s.context, "Available Dashboards updated")
-			payload, payloadError = buildAvailableDashboardsPayload(s.workspaceResources)
+			payload, payloadError = buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if payloadError != nil {
 				return
 			}
@@ -483,13 +478,13 @@ func (s *Server) Init(ctx context.Context) {
 
 			switch request.Action {
 			case "get_dashboard_metadata":
-				payload, err := buildDashboardMetadataPayload(s.workspaceResources)
+				payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())
 				if err != nil {
 					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
 				}
 				session.Write(payload)
 			case "get_available_dashboards":
-				payload, err := buildAvailableDashboardsPayload(s.workspaceResources)
+				payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 				if err != nil {
 					panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
 				}
