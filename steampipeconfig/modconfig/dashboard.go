@@ -30,6 +30,8 @@ type Dashboard struct {
 	Args            *QueryArgs        `cty:"args" column:"args,jsonb"`
 	Base            *Dashboard        `hcl:"base"`
 	Inputs          []*DashboardInput `cty:"inputs"`
+	Display         *string           `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
@@ -39,7 +41,8 @@ type Dashboard struct {
 
 	selfInputsMap map[string]*DashboardInput
 	// the actual children
-	children               []ModTreeItem
+	children []ModTreeItem
+	// TODO [reports] can a dashboard ever have multiple parents
 	parents                []ModTreeItem
 	runtimeDependencyGraph *topsort.Graph
 

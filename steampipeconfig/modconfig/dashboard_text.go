@@ -20,11 +20,13 @@ type DashboardText struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type  *string     `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Value *string        `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
-	Base  *DashboardText `hcl:"base" json:"-"`
+	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type    *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Value   *string        `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
+	Base    *DashboardText `hcl:"base" json:"-"`
+	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`

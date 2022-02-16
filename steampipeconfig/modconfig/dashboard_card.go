@@ -20,10 +20,12 @@ type DashboardCard struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type  *string `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
-	Icon  *string `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
+	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type    *string        `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
+	Icon    *string        `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
+	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`

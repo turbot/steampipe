@@ -25,13 +25,15 @@ type DashboardChart struct {
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 
-	Type       *string               `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Legend     *DashboardChartLegend    `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
-	SeriesList DashboardChartSeriesList `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
-	Axes       *DashboardChartAxes      `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
-	Grouping   *string                  `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
+	Type       *string                          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Legend     *DashboardChartLegend            `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
+	SeriesList DashboardChartSeriesList         `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
+	Axes       *DashboardChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+	Grouping   *string                          `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
+	Display    *string                          `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
@@ -42,8 +44,8 @@ type DashboardChart struct {
 
 	Base      *DashboardChart `hcl:"base" json:"-"`
 	DeclRange hcl.Range       `json:"-"`
-	Mod       *Mod         `cty:"mod" json:"-"`
-	Paths     []NodePath   `column:"path,jsonb" json:"-"`
+	Mod       *Mod            `cty:"mod" json:"-"`
+	Paths     []NodePath      `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -120,7 +122,6 @@ func (c *DashboardChart) setBaseProperties() {
 	if c.SeriesList == nil {
 		c.SeriesList = c.Base.SeriesList
 	} else {
-
 		c.SeriesList.Merge(c.Base.SeriesList)
 	}
 
