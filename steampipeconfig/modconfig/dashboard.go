@@ -41,7 +41,8 @@ type Dashboard struct {
 
 	selfInputsMap map[string]*DashboardInput
 	// the actual children
-	children               []ModTreeItem
+	children []ModTreeItem
+	// TODO [reports] can a dashboard ever have multiple parents
 	parents                []ModTreeItem
 	runtimeDependencyGraph *topsort.Graph
 

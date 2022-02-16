@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -201,10 +200,9 @@ func (c *DashboardInput) GetUnqualifiedName() string {
 
 // SetDashboard sets the parent dashboard container
 func (c *DashboardInput) SetDashboard(dashboard *Dashboard) {
-	// TODO [reports] also update unqualified name?
 	c.dashboard = dashboard
-	// update the full name with a sanitsed version of the parent dashboard name
-	dashboardName := strings.Replace(c.dashboard.UnqualifiedName, ".", "_", -1)
-	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, dashboardName, c.UnqualifiedName)
-	c.UnqualifiedName = fmt.Sprintf("%s.%s", dashboardName, c.UnqualifiedName)
+	// update the full name the parent dashboard name
+	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.dashboard.UnqualifiedName, c.UnqualifiedName)
+	// note: DO NOT update the unqualified name - this will be used in the parent dashboard selfInputsMap
+
 }
