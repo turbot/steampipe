@@ -31,7 +31,7 @@ type Dashboard struct {
 	Base            *Dashboard        `hcl:"base"`
 	Inputs          []*DashboardInput `cty:"inputs"`
 	Display         *string           `cty:"display" hcl:"display" json:"display,omitempty"`
-	On              *DashboardOn      `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range

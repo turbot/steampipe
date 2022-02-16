@@ -33,7 +33,7 @@ type DashboardChart struct {
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
 	Display    *string                          `cty:"display" hcl:"display" json:"display,omitempty"`
-	On         *DashboardOn                     `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
@@ -122,7 +122,6 @@ func (c *DashboardChart) setBaseProperties() {
 	if c.SeriesList == nil {
 		c.SeriesList = c.Base.SeriesList
 	} else {
-
 		c.SeriesList.Merge(c.Base.SeriesList)
 	}
 

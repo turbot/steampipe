@@ -19,14 +19,14 @@ type DashboardInput struct {
 	UnqualifiedName string `cty:"unqualified_name" json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title   *string      `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int         `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL     *string      `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Type    *string      `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Style   *string      `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
-	Value   *string      `json:"value"`
-	Display *string      `cty:"display" hcl:"display" json:"display,omitempty"`
-	On      *DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	SQL     *string        `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Type    *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Style   *string        `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
+	Value   *string        `json:"value"`
+	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	Base *DashboardInput `hcl:"base" json:"-"`
 
