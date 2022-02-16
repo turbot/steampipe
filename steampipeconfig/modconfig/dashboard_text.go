@@ -182,9 +182,9 @@ func (t *DashboardText) Diff(other *DashboardText) *DashboardTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements DashboardLeafNode
-func (t *DashboardText) GetSQL() string {
-	return ""
+// ResolveSQL implements DashboardLeafNode
+func (t *DashboardText) ResolveSQL() *string {
+	return nil
 }
 
 // GetWidth implements DashboardLeafNode

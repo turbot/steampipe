@@ -307,16 +307,18 @@ func decodeQueryProvider(block *hcl.Block, parent modconfig.ModTreeItem, runCtx 
 		panic(fmt.Sprintf("block type %s not convertible to a query provider", block.Type))
 	}
 
-	if queryProvider.GetQuery() != nil && queryProvider.GetSQL() != "" {
-		if attr, exists := content.Attributes["query"]; exists {
-			// either Query or SQL property may be set -  if Query property already set, error
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", resource.Name()),
-				Subject:  &attr.Range,
-			})
-		}
-		res.handleDecodeDiags(content, resource, diags)
+	sqlAttr, sqlPropertySet := content.Attributes["sql"]
+	_, queryPropertySet := content.Attributes["query"]
+
+	if sqlPropertySet && queryPropertySet {
+		// either Query or SQL property may be set -  if Query property already set, error
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", resource.Name()),
+			Subject:  &sqlAttr.Range,
+		})
+
+		res.addDiags(diags)
 	}
 
 	if attr, exists := content.Attributes["args"]; exists {
@@ -337,7 +339,7 @@ func decodeQueryProvider(block *hcl.Block, parent modconfig.ModTreeItem, runCtx 
 		}
 
 		// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
-		if queryProvider.GetQuery() != nil {
+		if queryPropertySet {
 			diags = append(diags, invalidParamDiags(resource, block))
 		}
 		paramDef, moreDiags := decodeParam(block, runCtx, resource.Name())

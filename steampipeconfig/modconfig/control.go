@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -15,6 +17,7 @@ import (
 type Control struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -30,11 +33,14 @@ type Control struct {
 	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"title,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query *Query  `hcl:"query" json:"-"`
+
+	// TODO [reports] populate this for introspection tables
+	//PreparedStatementName string `column:"prepared_statement_name,text" json:"-"`
+
+	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
 	References      []*ResourceReference ` json:"-"`
 	Mod             *Mod                 `cty:"mod"  json:"-"`
@@ -52,14 +58,16 @@ type Control struct {
 func NewControl(block *hcl.Block, mod *Mod) *Control {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	control := &Control{
-		ShortName:       block.Labels[0],
+		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
 		UnqualifiedName: fmt.Sprintf("control.%s", shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 		Args:            NewQueryArgs(),
 	}
+
 	control.SetAnonymous(block)
+	control.QueryProviderBase.initPreparedStatementName(control, control.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
 
 	return control
 }
@@ -279,11 +287,6 @@ func (c *Control) SetMetadata(metadata *ResourceMetadata) {
 	c.metadata = metadata
 }
 
-// GetModName implements QueryProvider
-func (c *Control) GetModName() string {
-	return c.Mod.NameWithVersion()
-}
-
 // GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params
@@ -294,23 +297,14 @@ func (c *Control) GetQuery() *Query {
 	return c.Query
 }
 
-// GetPreparedStatementName implements QueryProvider
-func (c *Control) GetPreparedStatementName() string {
-	// lazy load
-	if c.PreparedStatementName == "" {
-		c.PreparedStatementName = preparedStatementName(c)
-	}
-	return c.PreparedStatementName
-}
-
 // GetArgs implements QueryProvider
 func (c *Control) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (c *Control) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
+// GetSQL implements QueryProvider
+func (c *Control) GetSQL() *string {
+	return c.SQL
 }
 
 // SetArgs implements QueryProvider
@@ -321,6 +315,12 @@ func (c *Control) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (c *Control) SetParams(params []*ParamDef) {
 	c.Params = params
+}
+
+// ResolveSQL implements DashboardLeafNode
+func (c *Control) ResolveSQL() *string {
+	TODO
+	return nil
 }
 
 // GetWidth implements DashboardLeafNode

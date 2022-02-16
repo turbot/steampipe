@@ -21,7 +21,6 @@ type DashboardImage struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string         `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width   *int            `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL     *string         `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Src     *string         `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
 	Alt     *string         `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
 	Display *string         `cty:"display" hcl:"display" json:"display,omitempty"`
@@ -48,160 +47,153 @@ func NewDashboardImage(block *hcl.Block, mod *Mod) *DashboardImage {
 	return i
 }
 
-func (c *DashboardImage) Equals(other *DashboardImage) bool {
-	diff := c.Diff(other)
+func (i *DashboardImage) Equals(other *DashboardImage) bool {
+	diff := i.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *DashboardImage) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
+func (i *DashboardImage) CtyValue() (cty.Value, error) {
+	return getCtyValue(i)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'image.<shortName>'
-func (c *DashboardImage) Name() string {
-	return c.FullName
+func (i *DashboardImage) Name() string {
+	return i.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardImage) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	c.setBaseProperties()
+func (i *DashboardImage) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	i.setBaseProperties()
 	return nil
 }
 
-func (c *DashboardImage) setBaseProperties() {
-	if c.Base == nil {
+func (i *DashboardImage) setBaseProperties() {
+	if i.Base == nil {
 		return
 	}
-	if c.Title == nil {
-		c.Title = c.Base.Title
+	if i.Title == nil {
+		i.Title = i.Base.Title
 	}
-	if c.Src == nil {
-		c.Src = c.Base.Src
+	if i.Src == nil {
+		i.Src = i.Base.Src
 	}
-	if c.Alt == nil {
-		c.Alt = c.Base.Alt
+	if i.Alt == nil {
+		i.Alt = i.Base.Alt
 	}
-	if c.Width == nil {
-		c.Width = c.Base.Width
-	}
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
+	if i.Width == nil {
+		i.Width = i.Base.Width
 	}
 }
 
 // AddReference implements HclResource
-func (c *DashboardImage) AddReference(*ResourceReference) {}
+func (i *DashboardImage) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (c *DashboardImage) GetMod() *Mod {
-	return c.Mod
+func (i *DashboardImage) GetMod() *Mod {
+	return i.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *DashboardImage) GetDeclRange() *hcl.Range {
-	return &c.DeclRange
+func (i *DashboardImage) GetDeclRange() *hcl.Range {
+	return &i.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *DashboardImage) AddParent(parent ModTreeItem) error {
-	c.parents = append(c.parents, parent)
+func (i *DashboardImage) AddParent(parent ModTreeItem) error {
+	i.parents = append(i.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *DashboardImage) GetParents() []ModTreeItem {
-	return c.parents
+func (i *DashboardImage) GetParents() []ModTreeItem {
+	return i.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *DashboardImage) GetChildren() []ModTreeItem {
+func (i *DashboardImage) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *DashboardImage) GetTitle() string {
-	return typehelpers.SafeString(c.Title)
+func (i *DashboardImage) GetTitle() string {
+	return typehelpers.SafeString(i.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *DashboardImage) GetDescription() string {
+func (i *DashboardImage) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *DashboardImage) GetTags() map[string]string {
+func (i *DashboardImage) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *DashboardImage) GetPaths() []NodePath {
+func (i *DashboardImage) GetPaths() []NodePath {
 	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
+	if len(i.Paths) == 0 {
+		i.SetPaths()
 	}
 
-	return c.Paths
+	return i.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (c *DashboardImage) SetPaths() {
-	for _, parent := range c.parents {
+func (i *DashboardImage) SetPaths() {
+	for _, parent := range i.parents {
 		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
+			i.Paths = append(i.Paths, append(parentPath, i.Name()))
 		}
 	}
 }
 
-func (c *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {
+func (i *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
-		Item: c,
-		Name: c.Name(),
+		Item: i,
+		Name: i.Name(),
 	}
-	if !utils.SafeStringsEqual(c.FullName, other.FullName) {
+	if !utils.SafeStringsEqual(i.FullName, other.FullName) {
 		res.AddPropertyDiff("Name")
 	}
 
-	if !utils.SafeStringsEqual(c.Title, other.Title) {
+	if !utils.SafeStringsEqual(i.Title, other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if !utils.SafeStringsEqual(c.SQL, other.SQL) {
-		res.AddPropertyDiff("SQL")
-	}
-
-	if !utils.SafeIntEqual(c.Width, other.Width) {
+	if !utils.SafeIntEqual(i.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 
-	if !utils.SafeStringsEqual(c.Src, other.Src) {
+	if !utils.SafeStringsEqual(i.Src, other.Src) {
 		res.AddPropertyDiff("Src")
 	}
 
-	if !utils.SafeStringsEqual(c.Alt, other.Alt) {
+	if !utils.SafeStringsEqual(i.Alt, other.Alt) {
 		res.AddPropertyDiff("Alt")
 	}
 
-	res.populateChildDiffs(c, other)
+	res.populateChildDiffs(i, other)
 
 	return res
 }
 
-// GetSQL implements DashboardLeafNode
-func (c *DashboardImage) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
+// ResolveSQL implements DashboardLeafNode
+func (i *DashboardImage) ResolveSQL() *string {
+	return nil
 }
 
 // GetWidth implements DashboardLeafNode
-func (c *DashboardImage) GetWidth() int {
-	if c.Width == nil {
+func (i *DashboardImage) GetWidth() int {
+	if i.Width == nil {
 		return 0
 	}
-	return *c.Width
+	return *i.Width
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (c *DashboardImage) GetUnqualifiedName() string {
-	return c.UnqualifiedName
+func (i *DashboardImage) GetUnqualifiedName() string {
+	return i.UnqualifiedName
 }

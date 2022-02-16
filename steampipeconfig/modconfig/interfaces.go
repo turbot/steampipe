@@ -54,13 +54,14 @@ type ResourceWithMetadata interface {
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type QueryProvider interface {
 	Name() string
-	GetModName() string
+	GetArgs() *QueryArgs
 	GetParams() []*ParamDef
-	GetSQL() string
+	GetSQL() *string
 	GetQuery() *Query
 	GetPreparedStatementName() string
 	SetArgs(args *QueryArgs)
 	SetParams(params []*ParamDef)
+	GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error)
 }
 
 // ParameterisedDashboardNode must be implemented by resources has params and args
@@ -76,7 +77,9 @@ type DashboardLeafNode interface {
 	GetTitle() string
 	GetWidth() int
 	GetPaths() []NodePath
-	GetSQL() string
+
+	ResolveSQL() string
+
 	// implemented by DashboardLeafNodeBase
 	AddRuntimeDependencies(*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency

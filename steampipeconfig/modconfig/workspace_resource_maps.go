@@ -25,9 +25,11 @@ type WorkspaceResourceMaps struct {
 	LocalQueries    map[string]*Query
 	LocalControls   map[string]*Control
 	LocalBenchmarks map[string]*Benchmark
+
+	QueryProviders []QueryProvider
 }
 
-func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
+func GetWorkspaceResourceMapForMod(mod *Mod) *WorkspaceResourceMaps {
 	resourceMaps := &WorkspaceResourceMaps{
 		Mod:                  mod,
 		Mods:                 make(map[string]*Mod),
@@ -45,10 +47,51 @@ func WorkspaceResourceMapFromMod(mod *Mod) *WorkspaceResourceMaps {
 		DashboardTables:      mod.DashboardTables,
 		DashboardTexts:       mod.DashboardTexts,
 	}
-	if !mod.IsDefaultMod() {
-		resourceMaps.Mods[mod.Name()] = mod
-	}
+	resourceMaps.Mods[mod.Name()] = mod
+	resourceMaps.QueryProviders = resourceMaps.populateQueryProviders()
 	return resourceMaps
+}
+
+func (m *WorkspaceResourceMaps) populateQueryProviders() []QueryProvider {
+	res := make([]QueryProvider,
+		len(m.Queries)+
+			len(m.Controls)+
+			len(m.DashboardCards)+
+			len(m.DashboardCharts)+
+			len(m.DashboardHierarchies)+
+			len(m.DashboardInputs)+
+			len(m.DashboardTables))
+
+	idx := 0
+	for _, p := range m.Queries {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.Controls {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardCards {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardCharts {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardHierarchies {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardInputs {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardTables {
+		res[idx] = p
+		idx++
+	}
+	return res
 }
 
 func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
@@ -252,7 +295,25 @@ func (m *WorkspaceResourceMaps) AddQueryProvider(provider QueryProvider) {
 		if p != nil {
 			m.Controls[p.FullName] = p
 		}
+
+	case *DashboardCard:
+		if p != nil {
+			m.DashboardCards[p.FullName] = p
+		}
+	case *DashboardChart:
+		if p != nil {
+			m.DashboardCharts[p.FullName] = p
+		}
+	case *DashboardHierarchy:
+		if p != nil {
+			m.DashboardHierarchies[p.FullName] = p
+		}
+	case *DashboardInput:
+		if p != nil {
+			m.DashboardInputs[p.FullName] = p
+		}
 	}
+	m.QueryProviders = append(m.QueryProviders, provider)
 }
 
 func (m *WorkspaceResourceMaps) PopulateReferences() {

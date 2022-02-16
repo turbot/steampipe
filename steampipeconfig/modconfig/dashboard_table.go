@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/hashicorp/hcl/v2"
@@ -14,6 +16,7 @@ import (
 type DashboardTable struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -31,11 +34,12 @@ type DashboardTable struct {
 	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query *Query  `hcl:"query" json:"-"`
+	// TODO [reports] populate this for introspection tables
+	//PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
 	Base      *DashboardTable `hcl:"base" json:"-"`
 	DeclRange hcl.Range       `json:"-"`
@@ -55,6 +59,8 @@ func NewDashboardTable(block *hcl.Block, mod *Mod) *DashboardTable {
 		DeclRange:       block.DefRange,
 	}
 	t.SetAnonymous(block)
+	t.QueryProviderBase.initPreparedStatementName(t, t.Mod.NameWithVersion(), constants.PreparedStatementTableSuffix)
+
 	return t
 }
 
@@ -214,6 +220,12 @@ func (t *DashboardTable) Diff(other *DashboardTable) *DashboardTreeItemDiffs {
 	return res
 }
 
+// ResolveSQL implements DashboardLeafNode
+func (t *DashboardTable) ResolveSQL() *string {
+	TODO
+	return nil
+}
+
 // GetWidth implements DashboardLeafNode
 func (t *DashboardTable) GetWidth() int {
 	if t.Width == nil {
@@ -237,28 +249,14 @@ func (t *DashboardTable) GetArgs() *QueryArgs {
 	return t.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (t *DashboardTable) GetSQL() string {
-	return typehelpers.SafeString(t.SQL)
+// GetSQL implements QueryProvider
+func (t *DashboardTable) GetSQL() *string {
+	return t.SQL
 }
 
 // GetQuery implements QueryProvider
 func (t *DashboardTable) GetQuery() *Query {
 	return t.Query
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (t *DashboardTable) GetPreparedStatementName() string {
-	// lazy load
-	if t.PreparedStatementName == "" {
-		t.PreparedStatementName = preparedStatementName(t)
-	}
-	return t.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (t *DashboardTable) GetModName() string {
-	return t.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider

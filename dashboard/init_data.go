@@ -1,4 +1,4 @@
-package control
+package dashboard
 
 import (
 	"context"
@@ -28,11 +28,6 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		Result:    &db_common.InitResult{},
 	}
 
-	if err := controldisplay.EnsureTemplates(); err != nil {
-		initData.Result.Error = err
-		return initData
-	}
-
 	if viper.GetBool(constants.ArgModInstall) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
@@ -41,20 +36,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 			return initData
 		}
 	}
-
-	if viper.GetString(constants.ArgOutput) == constants.CheckOutputFormatNone {
-		// set progress to false
-		viper.Set(constants.ArgProgress, false)
-	}
-
 	err := cmdconfig.ValidateConnectionStringArgs()
-	if err != nil {
-		initData.Result.Error = err
-		return initData
-	}
-
-	// set color schema
-	err = initialiseColorScheme()
 	if err != nil {
 		initData.Result.Error = err
 		return initData
@@ -67,10 +49,6 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		return initData
 	}
 
-	if len(initData.Workspace.Controls) == 0 {
-		initData.Result.AddWarnings("no controls found in current workspace")
-	}
-
 	statushooks.SetStatus(ctx, "Connecting to service...")
 	// get a client
 	var client db_common.Client
@@ -78,7 +56,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		client, err = db_client.NewDbClient(ctx, connectionString)
 	} else {
 		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerCheck)
+		client, err = db_local.GetLocalClient(ctx, constants.InvokerDashboard)
 	}
 
 	if err != nil {

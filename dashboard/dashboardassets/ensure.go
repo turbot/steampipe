@@ -15,8 +15,8 @@ import (
 )
 
 func Ensure(ctx context.Context) error {
-	logging.LogTime("reportassets.Ensure start")
-	defer logging.LogTime("reportassets.Ensure end")
+	logging.LogTime("dashboardassets.Ensure start")
+	defer logging.LogTime("dashboardassets.Ensure end")
 
 	// load report assets versions.json
 	versionFile, err := loadReportAssetVersionFile()
@@ -28,7 +28,7 @@ func Ensure(ctx context.Context) error {
 		return nil
 	}
 
-	statushooks.SetStatus(ctx, "Installing reporting server...")
+	statushooks.SetStatus(ctx, "Installing dashboard server...")
 	defer statushooks.Done(ctx)
 	reportAssetsPath := filepaths.EnsureDashboardAssetsDir()
 	return ociinstaller.InstallAssets(ctx, reportAssetsPath)
@@ -47,7 +47,7 @@ func loadReportAssetVersionFile() (*ReportAssetsVersionFile, error) {
 	file, _ := os.ReadFile(versionFilePath)
 	var versionFile ReportAssetsVersionFile
 	if err := json.Unmarshal(file, &versionFile); err != nil {
-		log.Println("[ERROR]", "Error while reading report assets version file", err)
+		log.Println("[ERROR]", "Error while reading dashboard assets version file", err)
 		return nil, err
 	}
 

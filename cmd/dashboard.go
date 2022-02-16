@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/dashboard/dashboardserver"
-	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -31,7 +30,8 @@ The current mod is the working directory, or the directory specified by the --wo
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for dashboard").
 		AddStringFlag(constants.ArgDashboardServerListen, "", string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
-		AddIntFlag(constants.ArgDashboardServerPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.")
+		AddIntFlag(constants.ArgDashboardServerPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.").
+		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the dashboard")
 	return cmd
 }
 
@@ -56,12 +56,6 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	// ensure dashboard assets are present and extract if not
 	err := dashboardassets.Ensure(ctx)
 	utils.FailOnError(err)
-
-	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerDashboard)
-	utils.FailOnError(err)
-
-	refreshResult := dbClient.RefreshConnectionAndSearchPaths(ctx)
-	refreshResult.ShowWarnings()
 
 	server, err := dashboardserver.NewServer(ctx, dbClient)
 	if err != nil {

@@ -18,6 +18,7 @@ import (
 // Query is a struct representing the Query resource
 type Query struct {
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
@@ -37,15 +38,19 @@ type Query struct {
 	// list of all blocks referenced by the resource
 	References []*ResourceReference
 
-	Mod                   *Mod `cty:"mod"`
-	DeclRange             hcl.Range
-	PreparedStatementName string `column:"prepared_statement_name,text"`
-	UnqualifiedName       string
-	Paths                 []NodePath `column:"path,jsonb"`
-	parents               []ModTreeItem
+	Mod       *Mod `cty:"mod"`
+	DeclRange hcl.Range
+
+	// TODO [reports] populate this for introspection tables
+	//PreparedStatementName string `column:"prepared_statement_name,text"`
+
+	UnqualifiedName string
+	Paths           []NodePath `column:"path,jsonb"`
+	parents         []ModTreeItem
 }
 
 func NewQuery(block *hcl.Block, mod *Mod) *Query {
+	// queries cannot be anonymous
 	shortName := block.Labels[0]
 	q := &Query{
 		ShortName:       shortName,
@@ -54,6 +59,8 @@ func NewQuery(block *hcl.Block, mod *Mod) *Query {
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
+	q.QueryProviderBase.initPreparedStatementName(q, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
+
 	return q
 }
 
@@ -197,28 +204,14 @@ func (q *Query) GetArgs() *QueryArgs {
 	return nil
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (q *Query) GetSQL() string {
-	return typehelpers.SafeString(q.SQL)
-}
-
 // GetQuery implements QueryProvider
 func (q *Query) GetQuery() *Query {
 	return nil
 }
 
-// GetPreparedStatementName implements QueryProvider
-func (q *Query) GetPreparedStatementName() string {
-	// lazy load
-	if q.PreparedStatementName == "" {
-		q.PreparedStatementName = preparedStatementName(q)
-	}
-	return q.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (q *Query) GetModName() string {
-	return q.Mod.NameWithVersion()
+// GetSQL implements QueryProvider
+func (q *Query) GetSQL() *string {
+	return q.SQL
 }
 
 // SetArgs implements QueryProvider

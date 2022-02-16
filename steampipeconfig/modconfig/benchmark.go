@@ -213,9 +213,9 @@ func (b *Benchmark) Name() string {
 	return b.FullName
 }
 
-// GetSQL implements DashboardLeafNode
-func (b *Benchmark) GetSQL() string {
-	return ""
+// ResolveSQL implements DashboardLeafNode
+func (b *Benchmark) ResolveSQL() *string {
+	return nil
 }
 
 // GetWidth implements DashboardLeafNode

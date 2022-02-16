@@ -9,6 +9,9 @@ type SessionDataSource struct {
 	IntrospectionTableSource func() *modconfig.WorkspaceResourceMaps
 }
 
+// NewSessionDataSource uses the workspace and (optionally) a separate the prepared statemeot source
+// and returns a SessionDataSource
+// NOTE: preparedStatementSource is only set
 func NewSessionDataSource(w *Workspace, preparedStatementSource *modconfig.WorkspaceResourceMaps) *SessionDataSource {
 	res := &SessionDataSource{
 		IntrospectionTableSource: func() *modconfig.WorkspaceResourceMaps {

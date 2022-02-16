@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/utils"
@@ -13,6 +15,7 @@ import (
 type DashboardHierarchy struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -31,11 +34,12 @@ type DashboardHierarchy struct {
 	OnHooks      []*DashboardOn                         `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query *Query  `hcl:"query" json:"-"`
+	// TODO [reports] populate this for introspection tables
+	//PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
 	Base *DashboardHierarchy `hcl:"base" json:"-"`
 
@@ -56,6 +60,7 @@ func NewDashboardHierarchy(block *hcl.Block, mod *Mod) *DashboardHierarchy {
 		DeclRange:       block.DefRange,
 	}
 	h.SetAnonymous(block)
+	h.QueryProviderBase.initPreparedStatementName(h, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
 
 	return h
 }
@@ -218,6 +223,12 @@ func (h *DashboardHierarchy) Diff(other *DashboardHierarchy) *DashboardTreeItemD
 	return res
 }
 
+// ResolveSQL implements DashboardLeafNode
+func (h *DashboardHierarchy) ResolveSQL() *string {
+	TODO
+	return nil
+}
+
 // GetWidth implements DashboardLeafNode
 func (h *DashboardHierarchy) GetWidth() int {
 	if h.Width == nil {
@@ -241,28 +252,14 @@ func (h *DashboardHierarchy) GetArgs() *QueryArgs {
 	return h.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (h *DashboardHierarchy) GetSQL() string {
-	return typehelpers.SafeString(h.SQL)
+// GetSQL implements QueryProvider
+func (h *DashboardHierarchy) GetSQL() *string {
+	return h.SQL
 }
 
 // GetQuery implements QueryProvider
 func (h *DashboardHierarchy) GetQuery() *Query {
 	return h.Query
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (h *DashboardHierarchy) GetPreparedStatementName() string {
-	// lazy load
-	if h.PreparedStatementName == "" {
-		h.PreparedStatementName = preparedStatementName(h)
-	}
-	return h.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (h *DashboardHierarchy) GetModName() string {
-	return h.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider

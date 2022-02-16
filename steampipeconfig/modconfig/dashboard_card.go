@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/hashicorp/hcl/v2"
@@ -14,6 +16,7 @@ import (
 type DashboardCard struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
@@ -28,11 +31,12 @@ type DashboardCard struct {
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query *Query  `hcl:"query" json:"-"`
+	// TODO [reports] populate this for introspection tables
+	//PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
 	Base *DashboardCard `hcl:"base" json:"-"`
 
@@ -53,10 +57,11 @@ func NewDashboardCard(block *hcl.Block, mod *Mod) *DashboardCard {
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
+
 	c.SetAnonymous(block)
+	c.QueryProviderBase.initPreparedStatementName(c, c.Mod.NameWithVersion(), constants.PreparedStatementCardSuffix)
 
 	return c
-
 }
 
 func (c *DashboardCard) Equals(other *DashboardCard) bool {
@@ -209,6 +214,12 @@ func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
 	return res
 }
 
+// ResolveSQL implements DashboardLeafNode
+func (c *DashboardCard) ResolveSQL() *string {
+	TODO
+	return nil
+}
+
 // GetWidth implements DashboardLeafNode
 func (c *DashboardCard) GetWidth() int {
 	if c.Width == nil {
@@ -232,28 +243,14 @@ func (c *DashboardCard) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (c *DashboardCard) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
+// GetSQL implements QueryProvider
+func (c *DashboardCard) GetSQL() *string {
+	return c.SQL
 }
 
 // GetQuery implements QueryProvider
 func (c *DashboardCard) GetQuery() *Query {
 	return c.Query
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (c *DashboardCard) GetPreparedStatementName() string {
-	// lazy load
-	if c.PreparedStatementName == "" {
-		c.PreparedStatementName = preparedStatementName(c)
-	}
-	return c.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (c *DashboardCard) GetModName() string {
-	return c.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider

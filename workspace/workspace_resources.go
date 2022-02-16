@@ -58,10 +58,7 @@ func (w *Workspace) populateResourceMaps() {
 		DashboardTexts:       w.DashboardTexts,
 	}
 	w.resourceMaps.PopulateReferences()
-
-	if !w.Mod.IsDefaultMod() {
-		w.resourceMaps.Mods[w.Mod.Name()] = w.Mod
-	}
+	w.resourceMaps.Mods[w.Mod.Name()] = w.Mod
 }
 
 // resource map building

@@ -13,6 +13,7 @@ import (
 type DashboardInput struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
@@ -21,12 +22,18 @@ type DashboardInput struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	SQL     *string        `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 	Type    *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Style   *string        `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
 	Value   *string        `json:"value"`
 	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query *Query  `hcl:"query" json:"-"`
+	// TODO [reports] populate this for introspection tables
+	//PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
 	Base *DashboardInput `hcl:"base" json:"-"`
 
@@ -39,6 +46,7 @@ type DashboardInput struct {
 }
 
 func NewDashboardInput(block *hcl.Block, mod *Mod) *DashboardInput {
+	// input cannot be anonymous
 	shortName := block.Labels[0]
 	i := &DashboardInput{
 		ShortName:       shortName,
@@ -50,159 +58,197 @@ func NewDashboardInput(block *hcl.Block, mod *Mod) *DashboardInput {
 	return i
 }
 
-func (c *DashboardInput) Equals(other *DashboardInput) bool {
-	diff := c.Diff(other)
+func (i *DashboardInput) Equals(other *DashboardInput) bool {
+	diff := i.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (c *DashboardInput) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
+func (i *DashboardInput) CtyValue() (cty.Value, error) {
+	return getCtyValue(i)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'
-func (c *DashboardInput) Name() string {
-	return c.FullName
+func (i *DashboardInput) Name() string {
+	return i.FullName
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardInput) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	c.setBaseProperties()
+func (i *DashboardInput) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	i.setBaseProperties()
 	return nil
 }
 
-func (c *DashboardInput) setBaseProperties() {
-	if c.Base == nil {
+func (i *DashboardInput) setBaseProperties() {
+	if i.Base == nil {
 		return
 	}
-	if c.Title == nil {
-		c.Title = c.Base.Title
+	if i.Title == nil {
+		i.Title = i.Base.Title
 	}
-	if c.Type == nil {
-		c.Type = c.Base.Type
+	if i.Type == nil {
+		i.Type = i.Base.Type
 	}
 
-	if c.Width == nil {
-		c.Width = c.Base.Width
+	if i.Width == nil {
+		i.Width = i.Base.Width
 	}
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
+	if i.SQL == nil {
+		i.SQL = i.Base.SQL
 	}
 }
 
 // AddReference implements HclResource
-func (c *DashboardInput) AddReference(*ResourceReference) {}
+func (i *DashboardInput) AddReference(*ResourceReference) {}
 
 // GetMod implements HclResource
-func (c *DashboardInput) GetMod() *Mod {
-	return c.Mod
+func (i *DashboardInput) GetMod() *Mod {
+	return i.Mod
 }
 
 // GetDeclRange implements HclResource
-func (c *DashboardInput) GetDeclRange() *hcl.Range {
-	return &c.DeclRange
+func (i *DashboardInput) GetDeclRange() *hcl.Range {
+	return &i.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (c *DashboardInput) AddParent(parent ModTreeItem) error {
-	c.parents = append(c.parents, parent)
+func (i *DashboardInput) AddParent(parent ModTreeItem) error {
+	i.parents = append(i.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (c *DashboardInput) GetParents() []ModTreeItem {
-	return c.parents
+func (i *DashboardInput) GetParents() []ModTreeItem {
+	return i.parents
 }
 
 // GetChildren implements ModTreeItem
-func (c *DashboardInput) GetChildren() []ModTreeItem {
+func (i *DashboardInput) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (c *DashboardInput) GetTitle() string {
-	return typehelpers.SafeString(c.Title)
+func (i *DashboardInput) GetTitle() string {
+	return typehelpers.SafeString(i.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (c *DashboardInput) GetDescription() string {
+func (i *DashboardInput) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (c *DashboardInput) GetTags() map[string]string {
+func (i *DashboardInput) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (c *DashboardInput) GetPaths() []NodePath {
+func (i *DashboardInput) GetPaths() []NodePath {
 	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
+	if len(i.Paths) == 0 {
+		i.SetPaths()
 	}
 
-	return c.Paths
+	return i.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (c *DashboardInput) SetPaths() {
-	for _, parent := range c.parents {
+func (i *DashboardInput) SetPaths() {
+	for _, parent := range i.parents {
 		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
+			i.Paths = append(i.Paths, append(parentPath, i.Name()))
 		}
 	}
 }
 
-func (c *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
+func (i *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
-		Item: c,
-		Name: c.Name(),
+		Item: i,
+		Name: i.Name(),
 	}
 
-	if !utils.SafeStringsEqual(c.FullName, other.FullName) {
+	if !utils.SafeStringsEqual(i.FullName, other.FullName) {
 		res.AddPropertyDiff("Name")
 	}
 
-	if !utils.SafeStringsEqual(c.Title, other.Title) {
+	if !utils.SafeStringsEqual(i.Title, other.Title) {
 		res.AddPropertyDiff("Title")
 	}
 
-	if !utils.SafeStringsEqual(c.SQL, other.SQL) {
+	if !utils.SafeStringsEqual(i.SQL, other.SQL) {
 		res.AddPropertyDiff("SQL")
 	}
 
-	if !utils.SafeIntEqual(c.Width, other.Width) {
+	if !utils.SafeIntEqual(i.Width, other.Width) {
 		res.AddPropertyDiff("Width")
 	}
 
-	if !utils.SafeStringsEqual(c.Type, other.Type) {
+	if !utils.SafeStringsEqual(i.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	res.populateChildDiffs(c, other)
+	res.populateChildDiffs(i, other)
 
 	return res
 }
 
+// ResolveSQL implements DashboardLeafNode
+func (i *DashboardInput) ResolveSQL() *string {
+	return nil
+}
+
 // GetWidth implements DashboardLeafNode
-func (c *DashboardInput) GetWidth() int {
-	if c.Width == nil {
+func (i *DashboardInput) GetWidth() int {
+	if i.Width == nil {
 		return 0
 	}
-	return *c.Width
+	return *i.Width
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (c *DashboardInput) GetUnqualifiedName() string {
-	return c.UnqualifiedName
+func (i *DashboardInput) GetUnqualifiedName() string {
+	return i.UnqualifiedName
 }
 
 // SetDashboard sets the parent dashboard container
-func (c *DashboardInput) SetDashboard(dashboard *Dashboard) {
-	c.dashboard = dashboard
+func (i *DashboardInput) SetDashboard(dashboard *Dashboard) {
+	i.dashboard = dashboard
 	// update the full name the parent dashboard name
-	c.FullName = fmt.Sprintf("%s.%s.%s", c.Mod.ShortName, c.dashboard.UnqualifiedName, c.UnqualifiedName)
+	i.FullName = fmt.Sprintf("%s.%s.%s", i.Mod.ShortName, i.dashboard.UnqualifiedName, i.UnqualifiedName)
 	// note: DO NOT update the unqualified name - this will be used in the parent dashboard selfInputsMap
 
+}
+
+// GetParams implements QueryProvider
+func (i *DashboardInput) GetParams() []*ParamDef {
+	// TODO [report] what?
+	return i.Params
+}
+
+// GetArgs implements QueryProvider
+func (i *DashboardInput) GetArgs() *QueryArgs {
+	// TODO [report] what?
+	return i.Args
+
+}
+
+// GetSQL implements QueryProvider
+func (i *DashboardInput) GetSQL() *string {
+	return i.SQL
+}
+
+// GetQuery implements QueryProvider
+func (i *DashboardInput) GetQuery() *Query {
+	return i.Query
+}
+
+// SetArgs implements QueryProvider
+func (i *DashboardInput) SetArgs(args *QueryArgs) {
+	i.Args = args
+}
+
+// SetParams implements QueryProvider
+func (i *DashboardInput) SetParams(params []*ParamDef) {
+	i.Params = params
 }

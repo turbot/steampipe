@@ -29,20 +29,21 @@ type Dashboard struct {
 	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
 	Args            *QueryArgs        `cty:"args" column:"args,jsonb"`
 	Base            *Dashboard        `hcl:"base"`
-	Inputs          []*DashboardInput `cty:"inputs"`
-	Display         *string           `cty:"display" hcl:"display" json:"display,omitempty"`
+	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,json"`
+	Display         *string           `cty:"display" hcl:"display" column:"display,text" json:"display,omitempty"`
 	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
-	Mod       *Mod `cty:"mod"`
-	DeclRange hcl.Range
-	Paths     []NodePath `column:"path,jsonb"`
+	IsTopLevel bool `column:"is_top_level,bool"`
+	Mod        *Mod `cty:"mod"`
+	DeclRange  hcl.Range
+	Paths      []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 
 	selfInputsMap map[string]*DashboardInput
 	// the actual children
 	children []ModTreeItem
-	// TODO [reports] can a dashboard ever have multiple parents
+	// TODO [reports] can a dashboard ever have multiple parents??
 	parents                []ModTreeItem
 	runtimeDependencyGraph *topsort.Graph
 
@@ -124,6 +125,11 @@ func (d *Dashboard) GetDeclRange() *hcl.Range {
 // AddParent implements ModTreeItem
 func (d *Dashboard) AddParent(parent ModTreeItem) error {
 	d.parents = append(d.parents, parent)
+
+	// if our parent is a mod, we are a top level dashboard
+	if _, ok := parent.(*Mod); ok {
+		d.IsTopLevel = true
+	}
 
 	return nil
 }
