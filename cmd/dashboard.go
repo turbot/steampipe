@@ -16,32 +16,32 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func reportCmd() *cobra.Command {
+func dashboardCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "report",
+		Use:              "dashboard",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
-		Run:              runReportCmd,
-		Short:            "Start the local report UI",
-		Long: `Starts a local web server that enables real-time development of reports within the current mod.
+		Run:              runDashboardCmd,
+		Short:            "Start the local dashboard UI",
+		Long: `Starts a local web server that enables real-time development of dashboards within the current mod.
 
 The current mod is the working directory, or the directory specified by the --workspace-chdir flag.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for report").
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for dashboard").
 		AddStringFlag(constants.ArgDashboardServerListen, "", string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
-		AddIntFlag(constants.ArgDashboardServerPort, "", constants.ReportServerDefaultPort, "Report server port.")
+		AddIntFlag(constants.ArgDashboardServerPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.")
 	return cmd
 }
 
-func runReportCmd(cmd *cobra.Command, args []string) {
+func runDashboardCmd(cmd *cobra.Command, args []string) {
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
 
-	logging.LogTime("runReportCmd start")
+	logging.LogTime("runDashboardCmd start")
 	defer func() {
-		logging.LogTime("runReportCmd end")
+		logging.LogTime("runDashboardCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
@@ -53,12 +53,11 @@ func runReportCmd(cmd *cobra.Command, args []string) {
 	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardServerListen))
 	utils.FailOnError(serverListen.IsValid())
 
-	// ensure report assets are present and extract if not
+	// ensure dashboard assets are present and extract if not
 	err := dashboardassets.Ensure(ctx)
 	utils.FailOnError(err)
 
-
-	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerReport)
+	dbClient, err := db_local.GetLocalClient(ctx, constants.InvokerDashboard)
 	utils.FailOnError(err)
 
 	refreshResult := dbClient.RefreshConnectionAndSearchPaths(ctx)
