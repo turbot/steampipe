@@ -36,7 +36,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
-	for _, queryProvider := range resourceMaps.QueryProviders {
+	for _, queryProvider := range resourceMaps.QueryProviders() {
 		if createSQL := getPreparedStatementCreateSql(queryProvider); createSQL != nil {
 			sqlMap[queryProvider.Name()] = *createSQL
 		}

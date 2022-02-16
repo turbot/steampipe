@@ -29,7 +29,7 @@ type Dashboard struct {
 	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
 	Args            *QueryArgs        `cty:"args" column:"args,jsonb"`
 	Base            *Dashboard        `hcl:"base"`
-	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,json"`
+	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 	Display         *string           `cty:"display" hcl:"display" column:"display,text" json:"display,omitempty"`
 	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
 

@@ -8,10 +8,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
@@ -69,12 +67,8 @@ type DashboardClientInfo struct {
 	Dashboard *string
 }
 
-func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) {
+func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
 	outputWait(ctx, "Starting Dashboard Server")
-	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
-	if err != nil {
-		return nil, err
-	}
 
 	webSocket := melody.New()
 
@@ -88,11 +82,11 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 		mutex:            mutex,
 		dashboardClients: dashboardClients,
 		webSocket:        webSocket,
-		workspace:        loadedWorkspace,
+		workspace:        w,
 	}
 
-	loadedWorkspace.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
-	err = loadedWorkspace.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
+	w.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
+	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	outputMessage(ctx, "Workspace loaded")
 
 	return server, err

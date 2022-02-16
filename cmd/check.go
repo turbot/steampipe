@@ -218,7 +218,6 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	// load the workspace
 	w, err := loadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-
 	initData := control.NewInitData(ctx, w)
 
 	return initData
@@ -238,9 +237,6 @@ func handleCheckInitResult(ctx context.Context, initData *control.InitData) bool
 
 	// if there is are any warnings, exit politely
 	shouldExit := len(initData.Result.Warnings) > 0
-
-	// alternative approach - only stop the control run if there are no controls
-	//shouldExit := initData.workspace == nil || len(initData.workspace.Controls) == 0
 
 	return shouldExit
 }

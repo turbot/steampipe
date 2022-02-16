@@ -317,12 +317,6 @@ func (c *Control) SetParams(params []*ParamDef) {
 	c.Params = params
 }
 
-// ResolveSQL implements DashboardLeafNode
-func (c *Control) ResolveSQL() *string {
-	TODO
-	return nil
-}
-
 // GetWidth implements DashboardLeafNode
 func (c *Control) GetWidth() int {
 	if c.Width == nil {

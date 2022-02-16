@@ -2,12 +2,10 @@ package dashboard
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/db/db_local"
@@ -84,22 +82,4 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 
 	return initData
 
-}
-
-func initialiseColorScheme() error {
-	theme := viper.GetString(constants.ArgTheme)
-	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
-		// enforce plain output for non-terminals
-		theme = "plain"
-	}
-	themeDef, ok := controldisplay.ColorSchemes[theme]
-	if !ok {
-		return fmt.Errorf("invalid theme '%s'", theme)
-	}
-	scheme, err := controldisplay.NewControlColorScheme(themeDef)
-	if err != nil {
-		return err
-	}
-	controldisplay.ControlColors = scheme
-	return nil
 }

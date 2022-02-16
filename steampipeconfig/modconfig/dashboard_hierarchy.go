@@ -223,12 +223,6 @@ func (h *DashboardHierarchy) Diff(other *DashboardHierarchy) *DashboardTreeItemD
 	return res
 }
 
-// ResolveSQL implements DashboardLeafNode
-func (h *DashboardHierarchy) ResolveSQL() *string {
-	TODO
-	return nil
-}
-
 // GetWidth implements DashboardLeafNode
 func (h *DashboardHierarchy) GetWidth() int {
 	if h.Width == nil {

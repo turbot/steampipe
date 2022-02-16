@@ -13,19 +13,29 @@ import (
 type DashboardImage struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title   *string         `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int            `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Src     *string         `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
-	Alt     *string         `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
-	Display *string         `cty:"display" hcl:"display" json:"display,omitempty"`
-	OnHooks []*DashboardOn  `cty:"on" hcl:"on,block" json:"on,omitempty"`
-	Base    *DashboardImage `hcl:"base" json:"-"`
+	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Src     *string        `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
+	Alt     *string        `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
+	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+
+	// QueryProvider
+	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query *Query  `hcl:"query" json:"-"`
+	// TODO [reports] populate this for introspection tables
+	//PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+
+	Base *DashboardImage `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`
@@ -180,11 +190,6 @@ func (i *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {
 	return res
 }
 
-// ResolveSQL implements DashboardLeafNode
-func (i *DashboardImage) ResolveSQL() *string {
-	return nil
-}
-
 // GetWidth implements DashboardLeafNode
 func (i *DashboardImage) GetWidth() int {
 	if i.Width == nil {
@@ -196,4 +201,37 @@ func (i *DashboardImage) GetWidth() int {
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (i *DashboardImage) GetUnqualifiedName() string {
 	return i.UnqualifiedName
+}
+
+// GetParams implements QueryProvider
+func (i *DashboardImage) GetParams() []*ParamDef {
+	// TODO [report] what?
+	return i.Params
+}
+
+// GetArgs implements QueryProvider
+func (i *DashboardImage) GetArgs() *QueryArgs {
+	// TODO [report] what?
+	return i.Args
+
+}
+
+// GetSQL implements QueryProvider
+func (i *DashboardImage) GetSQL() *string {
+	return i.SQL
+}
+
+// GetQuery implements QueryProvider
+func (i *DashboardImage) GetQuery() *Query {
+	return i.Query
+}
+
+// SetArgs implements QueryProvider
+func (i *DashboardImage) SetArgs(args *QueryArgs) {
+	i.Args = args
+}
+
+// SetParams implements QueryProvider
+func (i *DashboardImage) SetParams(params []*ParamDef) {
+	i.Params = params
 }

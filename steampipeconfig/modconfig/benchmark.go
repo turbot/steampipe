@@ -213,11 +213,6 @@ func (b *Benchmark) Name() string {
 	return b.FullName
 }
 
-// ResolveSQL implements DashboardLeafNode
-func (b *Benchmark) ResolveSQL() *string {
-	return nil
-}
-
 // GetWidth implements DashboardLeafNode
 func (b *Benchmark) GetWidth() int {
 	if b.Width == nil {

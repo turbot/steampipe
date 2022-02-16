@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/contexthelpers"
+	"github.com/turbot/steampipe/dashboard"
 	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/utils"
@@ -57,7 +58,15 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	err := dashboardassets.Ensure(ctx)
 	utils.FailOnError(err)
 
-	server, err := dashboardserver.NewServer(ctx, dbClient)
+	// load the workspace
+	w, err := loadWorkspacePromptingForVariables(ctx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	initData := dashboard.NewInitData(ctx, w)
+	if shouldExit := handleDashboardInitResult(ctx, initData); shouldExit {
+		return
+	}
+	server, err := dashboardserver.NewServer(ctx, initData.Client, initData.Workspace)
 	if err != nil {
 		utils.FailOnError(err)
 	}
@@ -68,4 +77,22 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	<-ctx.Done()
 
 	server.Shutdown(ctx)
+}
+
+func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) bool {
+	// if there is an error or cancellation we bomb out
+	// check for the various kinds of failures
+	utils.FailOnError(initData.Result.Error)
+	// cancelled?
+	if ctx != nil {
+		utils.FailOnError(ctx.Err())
+	}
+
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
+
+	// if there is are any warnings, exit politely
+	shouldExit := len(initData.Result.Warnings) > 0
+
+	return shouldExit
 }

@@ -58,9 +58,12 @@ type QueryProvider interface {
 	GetParams() []*ParamDef
 	GetSQL() *string
 	GetQuery() *Query
-	GetPreparedStatementName() string
 	SetArgs(args *QueryArgs)
 	SetParams(params []*ParamDef)
+
+	// implemented by DashboardLeafNodeBase
+
+	GetPreparedStatementName() string
 	GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error)
 }
 
@@ -70,7 +73,7 @@ type ParameterisedDashboardNode interface {
 	GetArgs() *QueryArgs
 }
 
-// DashboardLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+// DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
 type DashboardLeafNode interface {
 	Name() string
 	GetUnqualifiedName() string
@@ -78,9 +81,8 @@ type DashboardLeafNode interface {
 	GetWidth() int
 	GetPaths() []NodePath
 
-	ResolveSQL() string
-
 	// implemented by DashboardLeafNodeBase
+
 	AddRuntimeDependencies(*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 }

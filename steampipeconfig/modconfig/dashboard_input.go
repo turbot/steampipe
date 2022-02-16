@@ -28,6 +28,7 @@ type DashboardInput struct {
 	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
+	// QueryProvider
 	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 	Query *Query  `hcl:"query" json:"-"`
 	// TODO [reports] populate this for introspection tables
@@ -191,11 +192,6 @@ func (i *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
 	res.populateChildDiffs(i, other)
 
 	return res
-}
-
-// ResolveSQL implements DashboardLeafNode
-func (i *DashboardInput) ResolveSQL() *string {
-	return nil
 }
 
 // GetWidth implements DashboardLeafNode

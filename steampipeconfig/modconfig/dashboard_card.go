@@ -214,12 +214,6 @@ func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
 	return res
 }
 
-// ResolveSQL implements DashboardLeafNode
-func (c *DashboardCard) ResolveSQL() *string {
-	TODO
-	return nil
-}
-
 // GetWidth implements DashboardLeafNode
 func (c *DashboardCard) GetWidth() int {
 	if c.Width == nil {

@@ -12,15 +12,15 @@ import (
 type LeafRun struct {
 	Name string `json:"name"`
 
-	Title         string                   `json:"title,omitempty"`
-	Width         int                      `json:"width,omitempty"`
-	SQL           string                   `json:"sql,omitempty"`
-	Data          *LeafData                `json:"data,omitempty"`
+	Title         string                      `json:"title,omitempty"`
+	Width         int                         `json:"width,omitempty"`
+	SQL           string                      `json:"sql,omitempty"`
+	Data          *LeafData                   `json:"data,omitempty"`
 	Error         error                       `json:"error,omitempty"`
 	DashboardNode modconfig.DashboardLeafNode `json:"properties"`
-	NodeType      string   `json:"node_type"`
-	DashboardName string   `json:"dashboard"`
-	Path          []string `json:"-"`
+	NodeType      string                      `json:"node_type"`
+	DashboardName string                      `json:"dashboard"`
+	Path          []string                    `json:"-"`
 	parent        dashboardinterfaces.DashboardNodeParent
 	runStatus     dashboardinterfaces.DashboardRunStatus
 	executionTree *DashboardExecutionTree
@@ -34,7 +34,6 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		Name:          name,
 		Title:         resource.GetTitle(),
 		Width:         resource.GetWidth(),
-		SQL:           resource.GetSQL(),
 		Path:          resource.GetPaths()[0],
 		DashboardNode: resource,
 		DashboardName: executionTree.dashboardName,
@@ -52,7 +51,12 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 	}
 	r.NodeType = parsedName.ItemType
 	// if we have sql, set status to ready
-	if r.SQL != "" {
+	if queryProvider, ok := resource.(modconfig.QueryProvider); ok {
+		sql, err := executionTree.workspace.ResolveQuery(queryProvider, nil)
+		if err != nil {
+			return nil, err
+		}
+		r.SQL = sql
 		r.runStatus = dashboardinterfaces.DashboardRunReady
 	}
 
@@ -68,7 +72,8 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 		return err
 	}
 
-	if r.SQL == "" {
+	// if there is nothing to do, return
+	if r.runStatus == dashboardinterfaces.DashboardRunComplete {
 		return nil
 	}
 
