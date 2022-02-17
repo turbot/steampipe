@@ -306,12 +306,17 @@ func (c *DashboardChart) SetParams(params []*ParamDef) {
 	c.Params = params
 }
 
-// GetPreparedStatementPrefix implements QueryProvider
-func (c *DashboardChart) GetPreparedStatementPrefix() string {
-	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+// GetPreparedStatementName implements QueryProvider
+func (c *DashboardChart) GetPreparedStatementName() string {
+	if c.preparedStatementName != "" {
+		return c.preparedStatementName
+	}
+	c.preparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
+	return c.preparedStatementName
 }
 
-// GetPreparedStatementSuffix implements QueryProvider
-func (c *DashboardChart) GetPreparedStatementSuffix() string {
-	return constants.PreparedStatementChartSuffix
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (c *DashboardChart) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return c.getPreparedStatementExecuteSQL(c, args)
 }

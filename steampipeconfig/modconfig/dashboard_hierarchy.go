@@ -262,12 +262,17 @@ func (h *DashboardHierarchy) SetParams(params []*ParamDef) {
 	h.Params = params
 }
 
-// GetPreparedStatementPrefix implements QueryProvider
-func (h *DashboardHierarchy) GetPreparedStatementPrefix() string {
-	return h.buildPreparedStatementPrefix(h.Mod.NameWithVersion())
+// GetPreparedStatementName implements QueryProvider
+func (h *DashboardHierarchy) GetPreparedStatementName() string {
+	if h.preparedStatementName != "" {
+		return h.preparedStatementName
+	}
+	h.preparedStatementName = h.buildPreparedStatementName(h.ShortName, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
+	return h.preparedStatementName
 }
 
-// GetPreparedStatementSuffix implements QueryProvider
-func (h *DashboardHierarchy) GetPreparedStatementSuffix() string {
-	return constants.PreparedStatementHierarchySuffix
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return h.getPreparedStatementExecuteSQL(h, args)
 }

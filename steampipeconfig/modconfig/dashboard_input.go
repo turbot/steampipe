@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/utils"
@@ -243,4 +245,19 @@ func (i *DashboardInput) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (i *DashboardInput) SetParams(params []*ParamDef) {
 	i.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (i *DashboardInput) GetPreparedStatementName() string {
+	if i.preparedStatementName != "" {
+		return i.preparedStatementName
+	}
+	i.preparedStatementName = i.buildPreparedStatementName(i.ShortName, i.Mod.NameWithVersion(), constants.PreparedStatementInputSuffix)
+	return i.preparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (i *DashboardInput) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return i.getPreparedStatementExecuteSQL(i, args)
 }

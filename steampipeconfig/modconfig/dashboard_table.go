@@ -259,12 +259,17 @@ func (t *DashboardTable) SetParams(params []*ParamDef) {
 	t.Params = params
 }
 
-// GetPreparedStatementPrefix implements QueryProvider
-func (c *DashboardTable) GetPreparedStatementPrefix() string {
-	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+// GetPreparedStatementName implements QueryProvider
+func (t *DashboardTable) GetPreparedStatementName() string {
+	if t.preparedStatementName != "" {
+		return t.preparedStatementName
+	}
+	t.preparedStatementName = t.buildPreparedStatementName(t.ShortName, t.Mod.NameWithVersion(), constants.PreparedStatementTableSuffix)
+	return t.preparedStatementName
 }
 
-// GetPreparedStatementSuffix implements QueryProvider
-func (c *DashboardTable) GetPreparedStatementSuffix() string {
-	return constants.PreparedStatementTableSuffix
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (t *DashboardTable) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return t.getPreparedStatementExecuteSQL(t, args)
 }

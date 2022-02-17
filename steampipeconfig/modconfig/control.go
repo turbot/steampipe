@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/turbot/steampipe/constants"
+
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
@@ -303,14 +303,19 @@ func (c *Control) SetParams(params []*ParamDef) {
 	c.Params = params
 }
 
-// GetPreparedStatementPrefix implements QueryProvider
-func (c *Control) GetPreparedStatementPrefix() string {
-	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+// GetPreparedStatementName implements QueryProvider
+func (c *Control) GetPreparedStatementName() string {
+	if c.preparedStatementName != "" {
+		return c.preparedStatementName
+	}
+	c.preparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
+	return c.preparedStatementName
 }
 
-// GetPreparedStatementSuffix implements QueryProvider
-func (c *Control) GetPreparedStatementSuffix() string {
-	return constants.PreparedStatementControlSuffix
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (c *Control) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return c.getPreparedStatementExecuteSQL(c, args)
 }
 
 // GetWidth implements DashboardLeafNode

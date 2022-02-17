@@ -221,12 +221,19 @@ func (q *Query) SetParams(params []*ParamDef) {
 	q.Params = params
 }
 
+// GetPreparedStatementName implements QueryProvider
 func (q *Query) GetPreparedStatementName() string {
 	if q.preparedStatementName != "" {
 		return q.preparedStatementName
 	}
-	q.preparedStatementName = q.buildPreparedStatementName(q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
+	q.preparedStatementName = q.buildPreparedStatementName(q.ShortName, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
 	return q.preparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (q *Query) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return q.getPreparedStatementExecuteSQL(q, args)
 }
 
 // AddParent implements ModTreeItem

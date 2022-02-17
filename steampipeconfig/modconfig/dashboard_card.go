@@ -243,12 +243,17 @@ func (c *DashboardCard) SetParams(params []*ParamDef) {
 	c.Params = params
 }
 
-// GetPreparedStatementPrefix implements QueryProvider
-func (c *DashboardCard) GetPreparedStatementPrefix() string {
-	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+// GetPreparedStatementName implements QueryProvider
+func (c *DashboardCard) GetPreparedStatementName() string {
+	if c.preparedStatementName != "" {
+		return c.preparedStatementName
+	}
+	c.preparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementCardSuffix)
+	return c.preparedStatementName
 }
 
-// GetPreparedStatementSuffix implements QueryProvider
-func (c *DashboardCard) GetPreparedStatementSuffix() string {
-	return constants.PreparedStatementCardSuffix
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (c *DashboardCard) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return c.getPreparedStatementExecuteSQL(c, args)
 }

@@ -60,11 +60,6 @@ type QueryProvider interface {
 	GetQuery() *Query
 	SetArgs(args *QueryArgs)
 	SetParams(params []*ParamDef)
-	GetPreparedStatementPrefix() string
-	GetPreparedStatementSuffix() string
-
-	// implemented by DashboardLeafNodeBase
-
 	GetPreparedStatementName() string
 	GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error)
 }

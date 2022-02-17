@@ -13,36 +13,25 @@ type QueryProviderBase struct {
 	preparedStatementName string
 }
 
-// GetPreparedStatementExecuteSQL return the SQLs to run the query as a prepared statement
-func (p *QueryProviderBase) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
-	paramsString, err := args.ResolveAsString(p.queryProvider)
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve args for %s: %s", p.queryProvider.Name(), err.Error())
-	}
-	executeString := fmt.Sprintf("execute %s%s", p.buildPreparedStatementName(), paramsString)
-	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", p.queryProvider.Name(), executeString, args)
-	return executeString, nil
-}
-
-func (p *QueryProviderBase) buildPreparedStatementName(modName, suffix, name string) string {
+func (p *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
 	// build prefix from mod name
 	prefix := p.buildPreparedStatementPrefix(modName)
 
 	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
-	str := fmt.Sprintf("%s%s%s", prefix, name, suffix)
+	str := fmt.Sprintf("%s%s%s", prefix, queryName, suffix)
 	hash := utils.GetMD5Hash(str)[:4]
 	// add hash to suffix
 	suffix += hash
 
 	// truncate the name if necessary
-	nameLength := len(name)
+	nameLength := len(queryName)
 	maxNameLength := constants.MaxPreparedStatementNameLength - (len(prefix) + len(suffix))
 	if nameLength > maxNameLength {
 		nameLength = maxNameLength
 	}
 
 	// construct the name
-	p.preparedStatementName = fmt.Sprintf("%s%s%s", prefix, name[:nameLength], suffix)
+	p.preparedStatementName = fmt.Sprintf("%s%s%s", prefix, queryName[:nameLength], suffix)
 	return p.preparedStatementName
 }
 
@@ -54,4 +43,15 @@ func (p *QueryProviderBase) buildPreparedStatementPrefix(modName string) string 
 	prefix = strings.Replace(prefix, "@", "_", -1)
 
 	return prefix
+}
+
+// return the SQLs to run the query as a prepared statement
+func (p *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, args *QueryArgs) (string, error) {
+	paramsString, err := args.ResolveAsString(queryProvider)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
+	}
+	executeString := fmt.Sprintf("execute %s%s", queryProvider.GetPreparedStatementName(), paramsString)
+	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", queryProvider.Name(), executeString, args)
+	return executeString, nil
 }
