@@ -56,9 +56,44 @@ func NewQuery(block *hcl.Block, mod *Mod) *Query {
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
-	q.initQueryProviderBase(q, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
-
 	return q
+}
+
+func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
+	q := &Query{
+		Mod: mod,
+	}
+	return q.InitialiseFromFile(modPath, filePath)
+}
+
+// InitialiseFromFile implements MappableResource
+func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
+	// only valid for sql files
+	if filepath.Ext(filePath) != constants.SqlExtension {
+		return nil, nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql files only - filepath: '%s'", filePath)
+	}
+
+	sqlBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sql := string(sqlBytes)
+	if sql == "" {
+		log.Printf("[TRACE] SQL file %s contains no query", filePath)
+		return nil, nil, nil
+	}
+	// get a sluggified version of the filename
+	name, err := PseudoResourceNameFromPath(modPath, filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+	q.ShortName = name
+	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
+	q.FullName = fmt.Sprintf("%s.query.%s", q.Mod.ShortName, name)
+	q.SQL = &sql
+
+	return q, sqlBytes, nil
 }
 
 func (q *Query) Equals(other *Query) bool {
@@ -128,41 +163,6 @@ func (q *Query) String() string {
 	return res
 }
 
-func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
-	q := &Query{}
-	return q.InitialiseFromFile(modPath, filePath, mod)
-}
-
-// InitialiseFromFile implements MappableResource
-func (q *Query) InitialiseFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
-	// only valid for sql files
-	if filepath.Ext(filePath) != constants.SqlExtension {
-		return nil, nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql files only - filepath: '%s'", filePath)
-	}
-
-	sqlBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	sql := string(sqlBytes)
-	if sql == "" {
-		log.Printf("[TRACE] SQL file %s contains no query", filePath)
-		return nil, nil, nil
-	}
-	// get a sluggified version of the filename
-	name, err := PseudoResourceNameFromPath(modPath, filePath)
-	if err != nil {
-		return nil, nil, err
-	}
-	q.ShortName = name
-	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
-	q.FullName = fmt.Sprintf("%s.query.%s", mod.ShortName, name)
-	q.SQL = &sql
-	q.Mod = mod
-	return q, sqlBytes, nil
-}
-
 // Name implements MappableResource, HclResource
 func (q *Query) Name() string {
 	return q.FullName
@@ -219,6 +219,14 @@ func (q *Query) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (q *Query) SetParams(params []*ParamDef) {
 	q.Params = params
+}
+
+func (q *Query) GetPreparedStatementName() string {
+	if q.preparedStatementName != "" {
+		return q.preparedStatementName
+	}
+	q.preparedStatementName = q.buildPreparedStatementName(q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
+	return q.preparedStatementName
 }
 
 // AddParent implements ModTreeItem

@@ -63,8 +63,6 @@ func NewDashboardChart(block *hcl.Block, mod *Mod) *DashboardChart {
 	}
 
 	c.SetAnonymous(block)
-	c.initQueryProviderBase(c, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
-
 	return c
 }
 
@@ -306,4 +304,14 @@ func (c *DashboardChart) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (c *DashboardChart) SetParams(params []*ParamDef) {
 	c.Params = params
+}
+
+// GetPreparedStatementPrefix implements QueryProvider
+func (c *DashboardChart) GetPreparedStatementPrefix() string {
+	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+}
+
+// GetPreparedStatementSuffix implements QueryProvider
+func (c *DashboardChart) GetPreparedStatementSuffix() string {
+	return constants.PreparedStatementChartSuffix
 }

@@ -57,8 +57,6 @@ func NewDashboardCard(block *hcl.Block, mod *Mod) *DashboardCard {
 	}
 
 	c.SetAnonymous(block)
-	c.initQueryProviderBase(c, c.Mod.NameWithVersion(), constants.PreparedStatementCardSuffix)
-
 	return c
 }
 
@@ -168,16 +166,6 @@ func (c *DashboardCard) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *DashboardCard) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *DashboardCard) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
 func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
 		Item: c,
@@ -247,10 +235,20 @@ func (c *DashboardCard) GetQuery() *Query {
 
 // SetArgs implements QueryProvider
 func (c *DashboardCard) SetArgs(args *QueryArgs) {
-	// nothing
+	c.Args = args
 }
 
 // SetParams implements QueryProvider
 func (c *DashboardCard) SetParams(params []*ParamDef) {
 	c.Params = params
+}
+
+// GetPreparedStatementPrefix implements QueryProvider
+func (c *DashboardCard) GetPreparedStatementPrefix() string {
+	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+}
+
+// GetPreparedStatementSuffix implements QueryProvider
+func (c *DashboardCard) GetPreparedStatementSuffix() string {
+	return constants.PreparedStatementCardSuffix
 }

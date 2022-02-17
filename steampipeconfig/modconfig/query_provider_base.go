@@ -10,11 +10,7 @@ import (
 )
 
 type QueryProviderBase struct {
-	// the query provider which we are the base of
-	queryProvider           QueryProvider
-	preparedStatementSuffix string
-	preparedStatementPrefix string
-	preparedStatementName   string
+	preparedStatementName string
 }
 
 // GetPreparedStatementExecuteSQL return the SQLs to run the query as a prepared statement
@@ -23,30 +19,14 @@ func (p *QueryProviderBase) GetPreparedStatementExecuteSQL(args *QueryArgs) (str
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve args for %s: %s", p.queryProvider.Name(), err.Error())
 	}
-	executeString := fmt.Sprintf("execute %s%s", p.GetPreparedStatementName(), paramsString)
+	executeString := fmt.Sprintf("execute %s%s", p.buildPreparedStatementName(), paramsString)
 	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", p.queryProvider.Name(), executeString, args)
 	return executeString, nil
 }
 
-// set the prepared statement suffix and prefix
-// and also store the parent resource object as a QueryProvider interface (base struct cannot cast itself to this)
-func (p *QueryProviderBase) initQueryProviderBase(queryProvider QueryProvider, modName, suffix string) {
-	prefix := fmt.Sprintf("%s_", modName)
-	prefix = strings.Replace(prefix, ".", "_", -1)
-	prefix = strings.Replace(prefix, "@", "_", -1)
-
-	p.preparedStatementPrefix = prefix
-	p.preparedStatementSuffix = suffix
-	p.queryProvider = queryProvider
-}
-
-func (p *QueryProviderBase) GetPreparedStatementName() string {
-	if p.preparedStatementName != "" {
-		return p.preparedStatementName
-	}
-	var name string
-	prefix := p.preparedStatementPrefix
-	suffix := p.preparedStatementSuffix
+func (p *QueryProviderBase) buildPreparedStatementName(modName, suffix, name string) string {
+	// build prefix from mod name
+	prefix := p.buildPreparedStatementPrefix(modName)
 
 	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
 	str := fmt.Sprintf("%s%s%s", prefix, name, suffix)
@@ -64,4 +44,14 @@ func (p *QueryProviderBase) GetPreparedStatementName() string {
 	// construct the name
 	p.preparedStatementName = fmt.Sprintf("%s%s%s", prefix, name[:nameLength], suffix)
 	return p.preparedStatementName
+}
+
+// set the prepared statement suffix and prefix
+// and also store the parent resource object as a QueryProvider interface (base struct cannot cast itself to this)
+func (p *QueryProviderBase) buildPreparedStatementPrefix(modName string) string {
+	prefix := fmt.Sprintf("%s_", modName)
+	prefix = strings.Replace(prefix, ".", "_", -1)
+	prefix = strings.Replace(prefix, "@", "_", -1)
+
+	return prefix
 }

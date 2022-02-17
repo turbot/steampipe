@@ -58,8 +58,6 @@ func NewDashboardHierarchy(block *hcl.Block, mod *Mod) *DashboardHierarchy {
 		DeclRange:       block.DefRange,
 	}
 	h.SetAnonymous(block)
-	h.initQueryProviderBase(h, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
-
 	return h
 }
 
@@ -262,4 +260,14 @@ func (h *DashboardHierarchy) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (h *DashboardHierarchy) SetParams(params []*ParamDef) {
 	h.Params = params
+}
+
+// GetPreparedStatementPrefix implements QueryProvider
+func (h *DashboardHierarchy) GetPreparedStatementPrefix() string {
+	return h.buildPreparedStatementPrefix(h.Mod.NameWithVersion())
+}
+
+// GetPreparedStatementSuffix implements QueryProvider
+func (h *DashboardHierarchy) GetPreparedStatementSuffix() string {
+	return constants.PreparedStatementHierarchySuffix
 }

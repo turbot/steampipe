@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/turbot/steampipe/constants"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
@@ -64,8 +65,6 @@ func NewControl(block *hcl.Block, mod *Mod) *Control {
 	}
 
 	control.SetAnonymous(block)
-	control.initQueryProviderBase(control, control.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
-
 	return control
 }
 
@@ -274,16 +273,6 @@ func (c *Control) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *Control) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *Control) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
 // GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params
@@ -312,6 +301,16 @@ func (c *Control) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (c *Control) SetParams(params []*ParamDef) {
 	c.Params = params
+}
+
+// GetPreparedStatementPrefix implements QueryProvider
+func (c *Control) GetPreparedStatementPrefix() string {
+	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+}
+
+// GetPreparedStatementSuffix implements QueryProvider
+func (c *Control) GetPreparedStatementSuffix() string {
+	return constants.PreparedStatementControlSuffix
 }
 
 // GetWidth implements DashboardLeafNode

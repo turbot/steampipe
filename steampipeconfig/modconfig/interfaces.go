@@ -10,7 +10,7 @@ import (
 type MappableResource interface {
 	// InitialiseFromFile creates a mappable resource from a file path
 	// It returns the resource, and the raw file data
-	InitialiseFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error)
+	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
 	Name() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
@@ -60,6 +60,8 @@ type QueryProvider interface {
 	GetQuery() *Query
 	SetArgs(args *QueryArgs)
 	SetParams(params []*ParamDef)
+	GetPreparedStatementPrefix() string
+	GetPreparedStatementSuffix() string
 
 	// implemented by DashboardLeafNodeBase
 

@@ -57,8 +57,6 @@ func NewDashboardTable(block *hcl.Block, mod *Mod) *DashboardTable {
 		DeclRange:       block.DefRange,
 	}
 	t.SetAnonymous(block)
-	t.initQueryProviderBase(t, t.Mod.NameWithVersion(), constants.PreparedStatementTableSuffix)
-
 	return t
 }
 
@@ -259,4 +257,14 @@ func (t *DashboardTable) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (t *DashboardTable) SetParams(params []*ParamDef) {
 	t.Params = params
+}
+
+// GetPreparedStatementPrefix implements QueryProvider
+func (c *DashboardTable) GetPreparedStatementPrefix() string {
+	return c.buildPreparedStatementPrefix(c.Mod.NameWithVersion())
+}
+
+// GetPreparedStatementSuffix implements QueryProvider
+func (c *DashboardTable) GetPreparedStatementSuffix() string {
+	return constants.PreparedStatementTableSuffix
 }

@@ -295,7 +295,7 @@ func decodeQueryProvider(block *hcl.Block, parent modconfig.ModTreeItem, runCtx 
 		return nil, res
 	}
 
-	// decodee the body into 'resource' to populate all properties that can be automatically decoded
+	// decode the body into 'resource' to populate all properties that can be automatically decoded
 	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(content, resource, diags)
