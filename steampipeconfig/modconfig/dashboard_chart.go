@@ -63,7 +63,7 @@ func NewDashboardChart(block *hcl.Block, mod *Mod) *DashboardChart {
 	}
 
 	c.SetAnonymous(block)
-	c.QueryProviderBase.initPreparedStatementName(c, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
+	c.initQueryProviderBase(c, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
 
 	return c
 }

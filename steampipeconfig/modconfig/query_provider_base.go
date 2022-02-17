@@ -28,13 +28,16 @@ func (p *QueryProviderBase) GetPreparedStatementExecuteSQL(args *QueryArgs) (str
 	return executeString, nil
 }
 
-func (p *QueryProviderBase) initPreparedStatementName(queryProvider QueryProvider, modName, suffix string) {
+// set the prepared statement suffix and prefix
+// and also store the parent resource object as a QueryProvider interface (base struct cannot cast itself to this)
+func (p *QueryProviderBase) initQueryProviderBase(queryProvider QueryProvider, modName, suffix string) {
 	prefix := fmt.Sprintf("%s_", modName)
 	prefix = strings.Replace(prefix, ".", "_", -1)
 	prefix = strings.Replace(prefix, "@", "_", -1)
 
 	p.preparedStatementPrefix = prefix
 	p.preparedStatementSuffix = suffix
+	p.queryProvider = queryProvider
 }
 
 func (p *QueryProviderBase) GetPreparedStatementName() string {

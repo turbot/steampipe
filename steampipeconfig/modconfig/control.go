@@ -64,7 +64,7 @@ func NewControl(block *hcl.Block, mod *Mod) *Control {
 	}
 
 	control.SetAnonymous(block)
-	control.QueryProviderBase.initPreparedStatementName(control, control.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
+	control.initQueryProviderBase(control, control.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
 
 	return control
 }

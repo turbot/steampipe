@@ -57,7 +57,7 @@ func NewDashboardCard(block *hcl.Block, mod *Mod) *DashboardCard {
 	}
 
 	c.SetAnonymous(block)
-	c.QueryProviderBase.initPreparedStatementName(c, c.Mod.NameWithVersion(), constants.PreparedStatementCardSuffix)
+	c.initQueryProviderBase(c, c.Mod.NameWithVersion(), constants.PreparedStatementCardSuffix)
 
 	return c
 }

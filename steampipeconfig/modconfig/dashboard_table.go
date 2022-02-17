@@ -57,7 +57,7 @@ func NewDashboardTable(block *hcl.Block, mod *Mod) *DashboardTable {
 		DeclRange:       block.DefRange,
 	}
 	t.SetAnonymous(block)
-	t.QueryProviderBase.initPreparedStatementName(t, t.Mod.NameWithVersion(), constants.PreparedStatementTableSuffix)
+	t.initQueryProviderBase(t, t.Mod.NameWithVersion(), constants.PreparedStatementTableSuffix)
 
 	return t
 }

@@ -58,7 +58,7 @@ func NewDashboardHierarchy(block *hcl.Block, mod *Mod) *DashboardHierarchy {
 		DeclRange:       block.DefRange,
 	}
 	h.SetAnonymous(block)
-	h.QueryProviderBase.initPreparedStatementName(h, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
+	h.initQueryProviderBase(h, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
 
 	return h
 }

@@ -56,7 +56,7 @@ func NewQuery(block *hcl.Block, mod *Mod) *Query {
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
-	q.QueryProviderBase.initPreparedStatementName(q, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
+	q.initQueryProviderBase(q, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
 
 	return q
 }
