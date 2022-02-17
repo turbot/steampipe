@@ -590,6 +590,14 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		if !anonymousResource {
 			moreDiags = runCtx.AddResource(resource)
 			res.addDiags(moreDiags)
+
+			// if resource is NOT a mod, add resource to current mod
+			if _, ok := resource.(*modconfig.Mod); !ok {
+				// - this will fail if the mod already has a resource with the same name
+				// we cannot add anonymous resources at this point - they will be added after their names are set
+				moreDiags = runCtx.CurrentMod.AddResource(resource)
+				res.addDiags(moreDiags)
+			}
 		}
 
 		// if resource supports metadata, save it
