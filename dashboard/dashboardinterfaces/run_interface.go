@@ -10,8 +10,8 @@ type DashboardRunStatus string
 
 const (
 	DashboardRunReady    DashboardRunStatus = "ready"
-	DashboardRunComplete = "complete"
-	DashboardRunError    = "error"
+	DashboardRunComplete                    = "complete"
+	DashboardRunError                       = "error"
 )
 
 type DashboardNodeRun interface {

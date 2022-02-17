@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -15,6 +16,7 @@ import (
 type Control struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -52,15 +54,15 @@ type Control struct {
 func NewControl(block *hcl.Block, mod *Mod) *Control {
 	shortName := GetAnonymousResourceShortName(block, mod)
 	control := &Control{
-		ShortName:       block.Labels[0],
+		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
 		UnqualifiedName: fmt.Sprintf("control.%s", shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 		Args:            NewQueryArgs(),
 	}
-	control.SetAnonymous(block)
 
+	control.SetAnonymous(block)
 	return control
 }
 
@@ -269,21 +271,6 @@ func (c *Control) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *Control) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *Control) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
-// GetModName implements QueryProvider
-func (c *Control) GetModName() string {
-	return c.Mod.NameWithVersion()
-}
-
 // GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params
@@ -294,23 +281,14 @@ func (c *Control) GetQuery() *Query {
 	return c.Query
 }
 
-// GetPreparedStatementName implements QueryProvider
-func (c *Control) GetPreparedStatementName() string {
-	// lazy load
-	if c.PreparedStatementName == "" {
-		c.PreparedStatementName = preparedStatementName(c)
-	}
-	return c.PreparedStatementName
-}
-
 // GetArgs implements QueryProvider
 func (c *Control) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (c *Control) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
+// GetSQL implements QueryProvider
+func (c *Control) GetSQL() *string {
+	return c.SQL
 }
 
 // SetArgs implements QueryProvider
@@ -321,6 +299,21 @@ func (c *Control) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (c *Control) SetParams(params []*ParamDef) {
 	c.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (c *Control) GetPreparedStatementName() string {
+	if c.PreparedStatementName != "" {
+		return c.PreparedStatementName
+	}
+	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
+	return c.PreparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (c *Control) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return c.getPreparedStatementExecuteSQL(c, args)
 }
 
 // GetWidth implements DashboardLeafNode

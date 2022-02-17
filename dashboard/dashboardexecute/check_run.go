@@ -20,9 +20,9 @@ type CheckRun struct {
 	Error                error                         `json:"error,omitempty"`
 	NodeType             string                        `json:"node_type"`
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
-	DashboardName string                      `json:"dashboard"`
-	DashboardNode modconfig.DashboardLeafNode `json:"-"`
-	Path          []string                    `json:"-"`
+	DashboardName        string                        `json:"dashboard"`
+	DashboardNode        modconfig.DashboardLeafNode   `json:"-"`
+	Path                 []string                      `json:"-"`
 	parent               dashboardinterfaces.DashboardNodeParent
 	runStatus            dashboardinterfaces.DashboardRunStatus
 	executionTree        *DashboardExecutionTree

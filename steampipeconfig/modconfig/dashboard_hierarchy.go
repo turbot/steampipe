@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/utils"
@@ -13,6 +15,7 @@ import (
 type DashboardHierarchy struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -56,7 +59,6 @@ func NewDashboardHierarchy(block *hcl.Block, mod *Mod) *DashboardHierarchy {
 		DeclRange:       block.DefRange,
 	}
 	h.SetAnonymous(block)
-
 	return h
 }
 
@@ -241,28 +243,14 @@ func (h *DashboardHierarchy) GetArgs() *QueryArgs {
 	return h.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (h *DashboardHierarchy) GetSQL() string {
-	return typehelpers.SafeString(h.SQL)
+// GetSQL implements QueryProvider
+func (h *DashboardHierarchy) GetSQL() *string {
+	return h.SQL
 }
 
 // GetQuery implements QueryProvider
 func (h *DashboardHierarchy) GetQuery() *Query {
 	return h.Query
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (h *DashboardHierarchy) GetPreparedStatementName() string {
-	// lazy load
-	if h.PreparedStatementName == "" {
-		h.PreparedStatementName = preparedStatementName(h)
-	}
-	return h.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (h *DashboardHierarchy) GetModName() string {
-	return h.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider
@@ -273,4 +261,19 @@ func (h *DashboardHierarchy) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (h *DashboardHierarchy) SetParams(params []*ParamDef) {
 	h.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (h *DashboardHierarchy) GetPreparedStatementName() string {
+	if h.PreparedStatementName != "" {
+		return h.PreparedStatementName
+	}
+	h.PreparedStatementName = h.buildPreparedStatementName(h.ShortName, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
+	return h.PreparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return h.getPreparedStatementExecuteSQL(h, args)
 }

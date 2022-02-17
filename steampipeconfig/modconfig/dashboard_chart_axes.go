@@ -102,7 +102,7 @@ type DashboardChartAxesY struct {
 	Title  *DashboardChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
 	Labels *DashboardChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
 	Min    *int                     `cty:"min" hcl:"min" json:"min,omitempty"`
-	Max    *int                  `cty:"max" hcl:"max" json:"max,omitempty"`
+	Max    *int                     `cty:"max" hcl:"max" json:"max,omitempty"`
 }
 
 func (y *DashboardChartAxesY) Equals(other *DashboardChartAxesY) bool {

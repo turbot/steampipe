@@ -8,10 +8,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
@@ -69,12 +67,8 @@ type DashboardClientInfo struct {
 	Dashboard *string
 }
 
-func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) {
+func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
 	outputWait(ctx, "Starting Dashboard Server")
-	loadedWorkspace, err := workspace.Load(ctx, viper.GetString(constants.ArgWorkspaceChDir))
-	if err != nil {
-		return nil, err
-	}
 
 	webSocket := melody.New()
 
@@ -88,11 +82,11 @@ func NewServer(ctx context.Context, dbClient db_common.Client) (*Server, error) 
 		mutex:            mutex,
 		dashboardClients: dashboardClients,
 		webSocket:        webSocket,
-		workspace:        loadedWorkspace,
+		workspace:        w,
 	}
 
-	loadedWorkspace.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
-	err = loadedWorkspace.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
+	w.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
+	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	outputMessage(ctx, "Workspace loaded")
 
 	return server, err
@@ -126,27 +120,19 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.WorkspaceResour
 	return json.Marshal(payload)
 }
 
-func buildAvailableDashboardsPayload(workspace *modconfig.WorkspaceResourceMaps) ([]byte, error) {
+func buildAvailableDashboardsPayload(workspaceResources *modconfig.WorkspaceResourceMaps) ([]byte, error) {
 	dashboardsByMod := make(map[string]map[string]ModAvailableDashboard)
-	for _, mod := range workspace.Mods {
+	for _, mod := range workspaceResources.Mods {
 		_, ok := dashboardsByMod[mod.FullName]
 		if !ok {
 			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
 		}
 		for _, dashboard := range mod.Dashboards {
-			// Only include dashboards that are top-level (its parent is a mod)
-			parents := dashboard.GetParents()
-			for _, parent := range parents {
-				switch parent.(type) {
-				case *modconfig.Mod:
-					dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
-						Title:     typeHelpers.SafeString(dashboard.Title),
-						FullName:  dashboard.FullName,
-						ShortName: dashboard.ShortName,
-					}
-					break
-				default:
-					continue
+			if dashboard.IsTopLevel {
+				dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
+					Title:     typeHelpers.SafeString(dashboard.Title),
+					FullName:  dashboard.FullName,
+					ShortName: dashboard.ShortName,
 				}
 			}
 		}
@@ -179,14 +165,7 @@ func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]by
 		Action:        "leaf_node_complete",
 		DashboardNode: event.Node,
 	}
-	//jsonString, _ := json.Marshal(payload)
-	//return jsonString
-	jsonString, err := json.MarshalIndent(payload, "", "  ")
-	fmt.Println(err)
-	a := string(jsonString)
-	fmt.Println(a)
-
-	return jsonString, err
+	return json.Marshal(payload)
 }
 
 func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]byte, error) {
@@ -475,7 +454,6 @@ func (s *Server) Init(ctx context.Context) {
 		var request ClientRequest
 		// if we could not decode message - ignore
 		if err := json.Unmarshal(msg, &request); err == nil {
-
 			switch request.Action {
 			case "get_dashboard_metadata":
 				payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())

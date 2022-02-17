@@ -118,7 +118,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 }
 
 func (m *Mod) PopulateResourceMaps() {
-	m.resourceMaps = WorkspaceResourceMapFromMod(m)
+	m.resourceMaps = CreateWorkspaceResourceMapForMod(m)
 }
 
 func (m *Mod) setVersion() {

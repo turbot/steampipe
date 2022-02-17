@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/hashicorp/hcl/v2"
@@ -14,6 +16,7 @@ import (
 type DashboardTable struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -237,28 +240,14 @@ func (t *DashboardTable) GetArgs() *QueryArgs {
 	return t.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (t *DashboardTable) GetSQL() string {
-	return typehelpers.SafeString(t.SQL)
+// GetSQL implements QueryProvider
+func (t *DashboardTable) GetSQL() *string {
+	return t.SQL
 }
 
 // GetQuery implements QueryProvider
 func (t *DashboardTable) GetQuery() *Query {
 	return t.Query
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (t *DashboardTable) GetPreparedStatementName() string {
-	// lazy load
-	if t.PreparedStatementName == "" {
-		t.PreparedStatementName = preparedStatementName(t)
-	}
-	return t.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (t *DashboardTable) GetModName() string {
-	return t.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider
@@ -269,4 +258,19 @@ func (t *DashboardTable) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (t *DashboardTable) SetParams(params []*ParamDef) {
 	t.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (t *DashboardTable) GetPreparedStatementName() string {
+	if t.PreparedStatementName != "" {
+		return t.PreparedStatementName
+	}
+	t.PreparedStatementName = t.buildPreparedStatementName(t.ShortName, t.Mod.NameWithVersion(), constants.PreparedStatementTableSuffix)
+	return t.PreparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (t *DashboardTable) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return t.getPreparedStatementExecuteSQL(t, args)
 }

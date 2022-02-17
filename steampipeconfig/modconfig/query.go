@@ -18,6 +18,7 @@ import (
 // Query is a struct representing the Query resource
 type Query struct {
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
@@ -25,27 +26,29 @@ type Query struct {
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
-	Description      *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation    *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path" hcl:"search_path" column:"search_path,text"`
-	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
-	SQL              *string           `cty:"sql" hcl:"sql" column:"sql,text"`
-	Tags             map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
-	Title            *string           `cty:"title" hcl:"title" column:"title,text"`
+	Description           *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation         *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	SearchPath            *string           `cty:"search_path" hcl:"search_path" column:"search_path,text"`
+	SearchPathPrefix      *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+	Tags                  map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
+	Title                 *string           `cty:"title" hcl:"title" column:"title,text"`
+	PreparedStatementName string            `column:"prepared_statement_name,text" json:"-"`
+	SQL                   *string           `cty:"sql" hcl:"sql" column:"sql,text"`
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all blocks referenced by the resource
 	References []*ResourceReference
 
-	Mod                   *Mod `cty:"mod"`
-	DeclRange             hcl.Range
-	PreparedStatementName string `column:"prepared_statement_name,text"`
-	UnqualifiedName       string
-	Paths                 []NodePath `column:"path,jsonb"`
-	parents               []ModTreeItem
+	Mod       *Mod `cty:"mod"`
+	DeclRange hcl.Range
+
+	UnqualifiedName string
+	Paths           []NodePath `column:"path,jsonb"`
+	parents         []ModTreeItem
 }
 
 func NewQuery(block *hcl.Block, mod *Mod) *Query {
+	// queries cannot be anonymous
 	shortName := block.Labels[0]
 	q := &Query{
 		ShortName:       shortName,
@@ -55,6 +58,43 @@ func NewQuery(block *hcl.Block, mod *Mod) *Query {
 		DeclRange:       block.DefRange,
 	}
 	return q
+}
+
+func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
+	q := &Query{
+		Mod: mod,
+	}
+	return q.InitialiseFromFile(modPath, filePath)
+}
+
+// InitialiseFromFile implements MappableResource
+func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error) {
+	// only valid for sql files
+	if filepath.Ext(filePath) != constants.SqlExtension {
+		return nil, nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql files only - filepath: '%s'", filePath)
+	}
+
+	sqlBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sql := string(sqlBytes)
+	if sql == "" {
+		log.Printf("[TRACE] SQL file %s contains no query", filePath)
+		return nil, nil, nil
+	}
+	// get a sluggified version of the filename
+	name, err := PseudoResourceNameFromPath(modPath, filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+	q.ShortName = name
+	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
+	q.FullName = fmt.Sprintf("%s.query.%s", q.Mod.ShortName, name)
+	q.SQL = &sql
+
+	return q, sqlBytes, nil
 }
 
 func (q *Query) Equals(other *Query) bool {
@@ -124,41 +164,6 @@ func (q *Query) String() string {
 	return res
 }
 
-func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
-	q := &Query{}
-	return q.InitialiseFromFile(modPath, filePath, mod)
-}
-
-// InitialiseFromFile implements MappableResource
-func (q *Query) InitialiseFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
-	// only valid for sql files
-	if filepath.Ext(filePath) != constants.SqlExtension {
-		return nil, nil, fmt.Errorf("Query.InitialiseFromFile must be called with .sql files only - filepath: '%s'", filePath)
-	}
-
-	sqlBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	sql := string(sqlBytes)
-	if sql == "" {
-		log.Printf("[TRACE] SQL file %s contains no query", filePath)
-		return nil, nil, nil
-	}
-	// get a sluggified version of the filename
-	name, err := PseudoResourceNameFromPath(modPath, filePath)
-	if err != nil {
-		return nil, nil, err
-	}
-	q.ShortName = name
-	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
-	q.FullName = fmt.Sprintf("%s.query.%s", mod.ShortName, name)
-	q.SQL = &sql
-	q.Mod = mod
-	return q, sqlBytes, nil
-}
-
 // Name implements MappableResource, HclResource
 func (q *Query) Name() string {
 	return q.FullName
@@ -197,28 +202,14 @@ func (q *Query) GetArgs() *QueryArgs {
 	return nil
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (q *Query) GetSQL() string {
-	return typehelpers.SafeString(q.SQL)
-}
-
 // GetQuery implements QueryProvider
 func (q *Query) GetQuery() *Query {
 	return nil
 }
 
-// GetPreparedStatementName implements QueryProvider
-func (q *Query) GetPreparedStatementName() string {
-	// lazy load
-	if q.PreparedStatementName == "" {
-		q.PreparedStatementName = preparedStatementName(q)
-	}
-	return q.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (q *Query) GetModName() string {
-	return q.Mod.NameWithVersion()
+// GetSQL implements QueryProvider
+func (q *Query) GetSQL() *string {
+	return q.SQL
 }
 
 // SetArgs implements QueryProvider
@@ -229,6 +220,21 @@ func (q *Query) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (q *Query) SetParams(params []*ParamDef) {
 	q.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (q *Query) GetPreparedStatementName() string {
+	if q.PreparedStatementName != "" {
+		return q.PreparedStatementName
+	}
+	q.PreparedStatementName = q.buildPreparedStatementName(q.ShortName, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
+	return q.PreparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (q *Query) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return q.getPreparedStatementExecuteSQL(q, args)
 }
 
 // AddParent implements ModTreeItem

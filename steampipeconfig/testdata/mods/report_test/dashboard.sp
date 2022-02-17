@@ -16,6 +16,10 @@ dashboard "r1"{
         }
     }
 
+    control {
+        query = query.q1
+    }
+
 }
 
 //dashboard "r2"{

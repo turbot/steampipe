@@ -7,7 +7,6 @@ import (
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/workspace"
 )
 
@@ -20,9 +19,6 @@ func ExecuteDashboardNode(ctx context.Context, dashboardName string, workspace *
 		return fmt.Errorf("dashboard %s is already running", dashboardName)
 	}
 
-	// create context for the dashboard execution
-	// (for now just disable all status messages - replace with event based?	)
-	dashboardCtx := statushooks.DisableStatusHooks(ctx)
 	executionTree, err := NewReportExecutionTree(dashboardName, client, workspace)
 	if err != nil {
 		return err
@@ -38,13 +34,12 @@ func ExecuteDashboardNode(ctx context.Context, dashboardName string, workspace *
 			workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{Dashboard: executionTree.Root})
 		}()
 
-		if err := executionTree.Execute(dashboardCtx); err != nil {
+		if err := executionTree.Execute(ctx); err != nil {
 			if executionTree.Root.GetRunStatus() != dashboardinterfaces.DashboardRunError {
 				// set error state on the root node
 				executionTree.Root.SetError(err)
 			}
 		}
-
 	}()
 
 	return nil

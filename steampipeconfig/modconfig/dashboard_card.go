@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/hashicorp/hcl/v2"
@@ -14,6 +16,7 @@ import (
 type DashboardCard struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
@@ -53,10 +56,9 @@ func NewDashboardCard(block *hcl.Block, mod *Mod) *DashboardCard {
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
+
 	c.SetAnonymous(block)
-
 	return c
-
 }
 
 func (c *DashboardCard) Equals(other *DashboardCard) bool {
@@ -165,16 +167,6 @@ func (c *DashboardCard) SetPaths() {
 	}
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *DashboardCard) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *DashboardCard) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
 func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
 		Item: c,
@@ -232,9 +224,9 @@ func (c *DashboardCard) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (c *DashboardCard) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
+// GetSQL implements QueryProvider
+func (c *DashboardCard) GetSQL() *string {
+	return c.SQL
 }
 
 // GetQuery implements QueryProvider
@@ -242,26 +234,27 @@ func (c *DashboardCard) GetQuery() *Query {
 	return c.Query
 }
 
-// GetPreparedStatementName implements QueryProvider
-func (c *DashboardCard) GetPreparedStatementName() string {
-	// lazy load
-	if c.PreparedStatementName == "" {
-		c.PreparedStatementName = preparedStatementName(c)
-	}
-	return c.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (c *DashboardCard) GetModName() string {
-	return c.Mod.NameWithVersion()
-}
-
 // SetArgs implements QueryProvider
 func (c *DashboardCard) SetArgs(args *QueryArgs) {
-	// nothing
+	c.Args = args
 }
 
 // SetParams implements QueryProvider
 func (c *DashboardCard) SetParams(params []*ParamDef) {
 	c.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (c *DashboardCard) GetPreparedStatementName() string {
+	if c.PreparedStatementName != "" {
+		return c.PreparedStatementName
+	}
+	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementCardSuffix)
+	return c.PreparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (c *DashboardCard) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return c.getPreparedStatementExecuteSQL(c, args)
 }

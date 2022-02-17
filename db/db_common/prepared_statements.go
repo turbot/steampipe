@@ -36,38 +36,30 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
-	for _, query := range resourceMaps.Queries {
-		// if the query does not have parameters, it is NOT a prepared statement
-		if len(query.Params) == 0 {
-			continue
+	for _, queryProvider := range resourceMaps.QueryProviders() {
+		if createSQL := getPreparedStatementCreateSql(queryProvider); createSQL != nil {
+			sqlMap[queryProvider.Name()] = *createSQL
 		}
-
-		// remove trailing semicolons from sql as this breaks the prepare statement
-		rawSql := cleanPreparedStatementSQL(typehelpers.SafeString(query.SQL))
-		preparedStatementName := query.GetPreparedStatementName()
-		sqlMap[query.FullName] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
-
-	for _, control := range resourceMaps.Controls {
-		// only create prepared statements for controls with inline SQL
-		if control.SQL == nil {
-			continue
-		}
-		// if the control does not have parameters, it is NOT a prepared statement
-		if len(control.Params) == 0 {
-			continue
-		}
-
-		// remove trailing semicolons from sql as this breaks the prepare statement
-		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(control.SQL)), ";")
-		preparedStatementName := control.GetPreparedStatementName()
-		sqlMap[control.FullName] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
-	}
-
 	return sqlMap
 }
 
-func cleanPreparedStatementSQL(query string) string {
+func getPreparedStatementCreateSql(queryProvider modconfig.QueryProvider) *string {
+	// if the query does not have parameters, it is NOT a prepared statement
+	if len(queryProvider.GetParams()) == 0 {
+		return nil
+	}
+
+	// if the query provider has params, is MUST define SQL
+
+	// remove trailing semicolons from sql as this breaks the prepare statement
+	rawSql := cleanPreparedStatementCreateSQL(typehelpers.SafeString(queryProvider.GetSQL()))
+	preparedStatementName := queryProvider.GetPreparedStatementName()
+	createSQL := fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
+	return &createSQL
+}
+
+func cleanPreparedStatementCreateSQL(query string) string {
 	rawSql := strings.TrimRight(strings.TrimSpace(query), ";")
 	return rawSql
 }

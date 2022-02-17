@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -53,7 +53,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Workspac
 	prevResourceMaps := w.resourceMaps
 	// if there is an outsanding watcher error, set prevResourceMaps to empty to force refresh
 	if w.watcherError != nil {
-		prevResourceMaps = modconfig.WorkspaceResourceMapFromMod(w.Mod)
+		prevResourceMaps = modconfig.CreateWorkspaceResourceMapForMod(w.Mod)
 	}
 
 	// now reload the workspace

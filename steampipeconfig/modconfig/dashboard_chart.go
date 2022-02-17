@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/constants"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/utils"
@@ -13,6 +15,7 @@ import (
 type DashboardChart struct {
 	DashboardLeafNodeBase
 	ResourceWithMetadataBase
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -59,8 +62,8 @@ func NewDashboardChart(block *hcl.Block, mod *Mod) *DashboardChart {
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
-	c.SetAnonymous(block)
 
+	c.SetAnonymous(block)
 	return c
 }
 
@@ -284,28 +287,14 @@ func (c *DashboardChart) GetArgs() *QueryArgs {
 	return c.Args
 }
 
-// GetSQL implements QueryProvider, DashboardLeafNode
-func (c *DashboardChart) GetSQL() string {
-	return typehelpers.SafeString(c.SQL)
+// GetSQL implements QueryProvider
+func (c *DashboardChart) GetSQL() *string {
+	return c.SQL
 }
 
 // GetQuery implements QueryProvider
 func (c *DashboardChart) GetQuery() *Query {
 	return c.Query
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (c *DashboardChart) GetPreparedStatementName() string {
-	// lazy load
-	if c.PreparedStatementName == "" {
-		c.PreparedStatementName = preparedStatementName(c)
-	}
-	return c.PreparedStatementName
-}
-
-// GetModName implements QueryProvider
-func (c *DashboardChart) GetModName() string {
-	return c.Mod.NameWithVersion()
 }
 
 // SetArgs implements QueryProvider
@@ -316,4 +305,19 @@ func (c *DashboardChart) SetArgs(args *QueryArgs) {
 // SetParams implements QueryProvider
 func (c *DashboardChart) SetParams(params []*ParamDef) {
 	c.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (c *DashboardChart) GetPreparedStatementName() string {
+	if c.PreparedStatementName != "" {
+		return c.PreparedStatementName
+	}
+	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
+	return c.PreparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (c *DashboardChart) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+	// defer to base
+	return c.getPreparedStatementExecuteSQL(c, args)
 }

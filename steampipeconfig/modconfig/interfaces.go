@@ -10,7 +10,7 @@ import (
 type MappableResource interface {
 	// InitialiseFromFile creates a mappable resource from a file path
 	// It returns the resource, and the raw file data
-	InitialiseFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error)
+	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
 	Name() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
@@ -54,13 +54,14 @@ type ResourceWithMetadata interface {
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type QueryProvider interface {
 	Name() string
-	GetModName() string
+	GetArgs() *QueryArgs
 	GetParams() []*ParamDef
-	GetSQL() string
+	GetSQL() *string
 	GetQuery() *Query
-	GetPreparedStatementName() string
 	SetArgs(args *QueryArgs)
 	SetParams(params []*ParamDef)
+	GetPreparedStatementName() string
+	GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error)
 }
 
 // ParameterisedDashboardNode must be implemented by resources has params and args
@@ -69,15 +70,16 @@ type ParameterisedDashboardNode interface {
 	GetArgs() *QueryArgs
 }
 
-// DashboardLeafNode must be implemented by resources may be a leaf node in the repoort execution tree
+// DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
 type DashboardLeafNode interface {
 	Name() string
 	GetUnqualifiedName() string
 	GetTitle() string
 	GetWidth() int
 	GetPaths() []NodePath
-	GetSQL() string
+
 	// implemented by DashboardLeafNodeBase
+
 	AddRuntimeDependencies(*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 }

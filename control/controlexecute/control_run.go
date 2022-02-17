@@ -303,7 +303,7 @@ func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context
 }
 
 func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, error) {
-	query, err := r.Tree.workspace.ResolveControlQuery(control, nil)
+	query, err := r.Tree.workspace.ResolveQuery(control, nil)
 	if err != nil {
 		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error())
 	}

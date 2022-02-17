@@ -182,11 +182,6 @@ func (t *DashboardText) Diff(other *DashboardText) *DashboardTreeItemDiffs {
 	return res
 }
 
-// GetSQL implements DashboardLeafNode
-func (t *DashboardText) GetSQL() string {
-	return ""
-}
-
 // GetWidth implements DashboardLeafNode
 func (t *DashboardText) GetWidth() int {
 	if t.Width == nil {

@@ -58,7 +58,7 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRu
 	if parsedName.ItemType != modconfig.BlockTypeDashboard {
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
 	}
-	dashboard, ok := e.workspace.Dashboards[reportName]
+	dashboard, ok := e.workspace.GetResourceMaps().Dashboards[reportName]
 	if !ok {
 		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
 	}
