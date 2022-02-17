@@ -39,10 +39,11 @@ type DashboardChart struct {
 	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL    *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query  *Query      `hcl:"query" json:"-"`
-	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
-	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
 	Base      *DashboardChart `hcl:"base" json:"-"`
 	DeclRange hcl.Range       `json:"-"`
@@ -308,11 +309,11 @@ func (c *DashboardChart) SetParams(params []*ParamDef) {
 
 // GetPreparedStatementName implements QueryProvider
 func (c *DashboardChart) GetPreparedStatementName() string {
-	if c.preparedStatementName != "" {
-		return c.preparedStatementName
+	if c.PreparedStatementName != "" {
+		return c.PreparedStatementName
 	}
-	c.preparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
-	return c.preparedStatementName
+	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
+	return c.PreparedStatementName
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider

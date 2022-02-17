@@ -26,13 +26,14 @@ type Query struct {
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`
 
-	Description      *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation    *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	SearchPath       *string           `cty:"search_path" hcl:"search_path" column:"search_path,text"`
-	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
-	SQL              *string           `cty:"sql" hcl:"sql" column:"sql,text"`
-	Tags             map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
-	Title            *string           `cty:"title" hcl:"title" column:"title,text"`
+	Description           *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation         *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	SearchPath            *string           `cty:"search_path" hcl:"search_path" column:"search_path,text"`
+	SearchPathPrefix      *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
+	Tags                  map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
+	Title                 *string           `cty:"title" hcl:"title" column:"title,text"`
+	PreparedStatementName string            `column:"prepared_statement_name,text" json:"-"`
+	SQL                   *string           `cty:"sql" hcl:"sql" column:"sql,text"`
 
 	Params []*ParamDef `cty:"params" column:"params,jsonb"`
 	// list of all blocks referenced by the resource
@@ -223,11 +224,11 @@ func (q *Query) SetParams(params []*ParamDef) {
 
 // GetPreparedStatementName implements QueryProvider
 func (q *Query) GetPreparedStatementName() string {
-	if q.preparedStatementName != "" {
-		return q.preparedStatementName
+	if q.PreparedStatementName != "" {
+		return q.PreparedStatementName
 	}
-	q.preparedStatementName = q.buildPreparedStatementName(q.ShortName, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
-	return q.preparedStatementName
+	q.PreparedStatementName = q.buildPreparedStatementName(q.ShortName, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
+	return q.PreparedStatementName
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider

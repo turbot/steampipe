@@ -34,10 +34,11 @@ type DashboardHierarchy struct {
 	OnHooks      []*DashboardOn                         `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL    *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query  *Query      `hcl:"query" json:"-"`
-	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
 	Base *DashboardHierarchy `hcl:"base" json:"-"`
 
@@ -264,11 +265,11 @@ func (h *DashboardHierarchy) SetParams(params []*ParamDef) {
 
 // GetPreparedStatementName implements QueryProvider
 func (h *DashboardHierarchy) GetPreparedStatementName() string {
-	if h.preparedStatementName != "" {
-		return h.preparedStatementName
+	if h.PreparedStatementName != "" {
+		return h.PreparedStatementName
 	}
-	h.preparedStatementName = h.buildPreparedStatementName(h.ShortName, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
-	return h.preparedStatementName
+	h.PreparedStatementName = h.buildPreparedStatementName(h.ShortName, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
+	return h.PreparedStatementName
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider

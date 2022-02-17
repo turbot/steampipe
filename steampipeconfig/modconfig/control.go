@@ -32,11 +32,11 @@ type Control struct {
 	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"title,omitempty"`
 
 	// QueryProvider
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query *Query  `hcl:"query" json:"-"`
-
-	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
-	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
 	References      []*ResourceReference ` json:"-"`
 	Mod             *Mod                 `cty:"mod"  json:"-"`
@@ -303,11 +303,11 @@ func (c *Control) SetParams(params []*ParamDef) {
 
 // GetPreparedStatementName implements QueryProvider
 func (c *Control) GetPreparedStatementName() string {
-	if c.preparedStatementName != "" {
-		return c.preparedStatementName
+	if c.PreparedStatementName != "" {
+		return c.PreparedStatementName
 	}
-	c.preparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
-	return c.preparedStatementName
+	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
+	return c.PreparedStatementName
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider

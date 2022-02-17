@@ -31,10 +31,11 @@ type DashboardInput struct {
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL    *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query  *Query      `hcl:"query" json:"-"`
-	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
 	Base *DashboardInput `hcl:"base" json:"-"`
 
@@ -249,11 +250,11 @@ func (i *DashboardInput) SetParams(params []*ParamDef) {
 
 // GetPreparedStatementName implements QueryProvider
 func (i *DashboardInput) GetPreparedStatementName() string {
-	if i.preparedStatementName != "" {
-		return i.preparedStatementName
+	if i.PreparedStatementName != "" {
+		return i.PreparedStatementName
 	}
-	i.preparedStatementName = i.buildPreparedStatementName(i.ShortName, i.Mod.NameWithVersion(), constants.PreparedStatementInputSuffix)
-	return i.preparedStatementName
+	i.PreparedStatementName = i.buildPreparedStatementName(i.ShortName, i.Mod.NameWithVersion(), constants.PreparedStatementInputSuffix)
+	return i.PreparedStatementName
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider

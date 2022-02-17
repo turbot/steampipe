@@ -10,7 +10,6 @@ import (
 )
 
 type QueryProviderBase struct {
-	preparedStatementName string
 }
 
 func (p *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
@@ -31,8 +30,7 @@ func (p *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffi
 	}
 
 	// construct the name
-	p.preparedStatementName = fmt.Sprintf("%s%s%s", prefix, queryName[:nameLength], suffix)
-	return p.preparedStatementName
+	return fmt.Sprintf("%s%s%s", prefix, queryName[:nameLength], suffix)
 }
 
 // set the prepared statement suffix and prefix
