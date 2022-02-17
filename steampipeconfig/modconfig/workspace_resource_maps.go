@@ -45,7 +45,10 @@ func CreateWorkspaceResourceMapForMod(mod *Mod) *WorkspaceResourceMaps {
 		DashboardTables:      mod.DashboardTables,
 		DashboardTexts:       mod.DashboardTexts,
 	}
-	resourceMaps.Mods[mod.Name()] = mod
+	// if mod is not a default mod (i.e. if there is a mod.sp), add it into the resource maps
+	if !mod.IsDefaultMod() {
+		resourceMaps.Mods[mod.Name()] = mod
+	}
 
 	return resourceMaps
 }
