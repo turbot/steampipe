@@ -849,7 +849,7 @@ func init() {
 				},
 			},
 		},
-		"dashboard_container_with_all_children": {
+		"dashboard_container_with_all_children": { // this test parsing of a container with all possible children
 			source: "testdata/mods/dashboard_container_with_all_children",
 			expected: &modconfig.Mod{
 				ShortName:   "container_with_children",
@@ -926,6 +926,89 @@ func init() {
 				DashboardTexts: map[string]*modconfig.DashboardText{
 					"container_with_children.text.anonymous_text": {
 						FullName:        "container_with_children.text.anonymous_text",
+						ShortName:       "anonymous_text",
+						UnqualifiedName: "text.anonymous_text",
+						Value:           toStringPointer("example text"),
+					},
+				},
+			},
+		},
+		"dashboard_with_all_children": { // this test parsing of a dashboard with all possible children
+			source: "testdata/mods/dashboard_with_all_children",
+			expected: &modconfig.Mod{
+				ShortName:   "dashboard_with_children",
+				FullName:    "mod.dashboard_with_children",
+				Require:     require,
+				Description: toStringPointer("This mod contains a dashboard with all possible child resources"),
+				Title:       toStringPointer("dashboard with all possible child resources"),
+				Dashboards: map[string]*modconfig.Dashboard{
+					"dashboard_with_children.dashboard.dashboard_with_child_res": {
+						ShortName:       "dashboard_with_child_res",
+						FullName:        "dashboard_with_children.dashboard.dashboard_with_child_res",
+						UnqualifiedName: "dashboard.dashboard_with_child_res",
+						Title:           toStringPointer("dashboard with child resources"),
+						ChildNames:      []string{"dashboard_with_children.container.anonymous_container", "dashboard_with_children.chart.anonymous_chart", "dashboard_with_children.card.anonymous_card", "dashboard_with_children.hierarchy.anonymous_hierarchy", "dashboard_with_children.image.anonymous_image", "dashboard_with_children.table.anonymous_table", "dashboard_with_children.text.anonymous_text"},
+						HclType:         "dashboard",
+					},
+				},
+				DashboardContainers: map[string]*modconfig.DashboardContainer{
+					"dashboard_with_children.container.anonymous_container": {
+						ShortName:       "anonymous_container",
+						FullName:        "dashboard_with_children.container.anonymous_container",
+						UnqualifiedName: "container.anonymous_container",
+						Title:           toStringPointer("example container"),
+					},
+				},
+				DashboardCards: map[string]*modconfig.DashboardCard{
+					"dashboard_with_children.card.anonymous_card": {
+						FullName:        "dashboard_with_children.card.anonymous_card",
+						ShortName:       "anonymous_card",
+						UnqualifiedName: "card.anonymous_card",
+						Title:           toStringPointer("example card"),
+						Type:            toStringPointer("ok"),
+						SQL:             toStringPointer("select 1"),
+					},
+				},
+				DashboardCharts: map[string]*modconfig.DashboardChart{
+					"dashboard_with_children.chart.anonymous_chart": {
+						FullName:        "dashboard_with_children.chart.anonymous_chart",
+						ShortName:       "anonymous_chart",
+						UnqualifiedName: "chart.anonymous_chart",
+						Title:           toStringPointer("example chart"),
+						SQL:             toStringPointer("select 1"),
+					},
+				},
+				DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
+					"dashboard_with_children.hierarchy.anonymous_hierarchy": {
+						FullName:        "dashboard_with_children.hierarchy.anonymous_hierarchy",
+						ShortName:       "anonymous_hierarchy",
+						UnqualifiedName: "hierarchy.anonymous_hierarchy",
+						Title:           toStringPointer("example hierarchy"),
+						Type:            toStringPointer("graph"),
+					},
+				},
+				DashboardImages: map[string]*modconfig.DashboardImage{
+					"dashboard_with_children.image.anonymous_image": {
+						FullName:        "dashboard_with_children.image.anonymous_image",
+						ShortName:       "anonymous_image",
+						UnqualifiedName: "image.anonymous_image",
+						Title:           toStringPointer("example image"),
+						Src:             toStringPointer("https://steampipe.io/images/logo.png"),
+						Alt:             toStringPointer("steampipe"),
+					},
+				},
+				DashboardTables: map[string]*modconfig.DashboardTable{
+					"dashboard_with_children.table.anonymous_table": {
+						FullName:        "dashboard_with_children.table.anonymous_table",
+						ShortName:       "anonymous_table",
+						UnqualifiedName: "table.anonymous_table",
+						Title:           toStringPointer("example table"),
+						SQL:             toStringPointer("select 1"),
+					},
+				},
+				DashboardTexts: map[string]*modconfig.DashboardText{
+					"dashboard_with_children.text.anonymous_text": {
+						FullName:        "dashboard_with_children.text.anonymous_text",
 						ShortName:       "anonymous_text",
 						UnqualifiedName: "text.anonymous_text",
 						Value:           toStringPointer("example text"),
