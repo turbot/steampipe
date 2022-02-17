@@ -41,9 +41,6 @@ type Query struct {
 	Mod       *Mod `cty:"mod"`
 	DeclRange hcl.Range
 
-	// TODO [reports] populate this for introspection tables
-	//PreparedStatementName string `column:"prepared_statement_name,text"`
-
 	UnqualifiedName string
 	Paths           []NodePath `column:"path,jsonb"`
 	parents         []ModTreeItem

@@ -11,10 +11,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// TODO [reports] split into report and container
-// update events
 // DashboardContainerRun is a struct representing a container run
-
 type DashboardContainerRun struct {
 	Name          string                                 `json:"name"`
 	Title         string                                 `json:"title,omitempty"`

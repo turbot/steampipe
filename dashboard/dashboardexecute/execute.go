@@ -40,7 +40,6 @@ func ExecuteDashboardNode(ctx context.Context, dashboardName string, workspace *
 				executionTree.Root.SetError(err)
 			}
 		}
-
 	}()
 
 	return nil

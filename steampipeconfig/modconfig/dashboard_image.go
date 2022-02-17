@@ -28,10 +28,8 @@ type DashboardImage struct {
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-	Query *Query  `hcl:"query" json:"-"`
-	// TODO [reports] populate this for introspection tables
-	//PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	SQL    *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	Query  *Query      `hcl:"query" json:"-"`
 	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
 	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
@@ -205,13 +203,11 @@ func (i *DashboardImage) GetUnqualifiedName() string {
 
 // GetParams implements QueryProvider
 func (i *DashboardImage) GetParams() []*ParamDef {
-	// TODO [report] what?
 	return i.Params
 }
 
 // GetArgs implements QueryProvider
 func (i *DashboardImage) GetArgs() *QueryArgs {
-	// TODO [report] what?
 	return i.Args
 
 }

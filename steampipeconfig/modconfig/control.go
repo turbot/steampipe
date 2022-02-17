@@ -36,9 +36,6 @@ type Control struct {
 	SQL   *string `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 	Query *Query  `hcl:"query" json:"-"`
 
-	// TODO [reports] populate this for introspection tables
-	//PreparedStatementName string `column:"prepared_statement_name,text" json:"-"`
-
 	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
 	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
