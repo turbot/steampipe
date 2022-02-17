@@ -67,7 +67,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		return initData
 	}
 
-	if len(initData.Workspace.Controls) == 0 {
+	if len(initData.Workspace.GetResourceMaps().Controls) == 0 {
 		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 

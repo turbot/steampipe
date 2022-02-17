@@ -28,27 +28,8 @@ type Workspace struct {
 	ModInstallationPath string
 	Mod                 *modconfig.Mod
 
-	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-
-	Queries              map[string]*modconfig.Query
-	Controls             map[string]*modconfig.Control
-	Benchmarks           map[string]*modconfig.Benchmark
-	Mods                 map[string]*modconfig.Mod
-	Dashboards           map[string]*modconfig.Dashboard
-	DashboardContainers  map[string]*modconfig.DashboardContainer
-	DashboardCards       map[string]*modconfig.DashboardCard
-	DashboardCharts      map[string]*modconfig.DashboardChart
-	DashboardHierarchies map[string]*modconfig.DashboardHierarchy
-	DashboardImages      map[string]*modconfig.DashboardImage
-	DashboardInputs      map[string]*modconfig.DashboardInput
-	DashboardTables      map[string]*modconfig.DashboardTable
-	DashboardTexts       map[string]*modconfig.DashboardText
-	Variables            map[string]*modconfig.Variable
-
-	//local  resources keyed by unqualified name
-	LocalQueries    map[string]*modconfig.Query
-	LocalControls   map[string]*modconfig.Control
-	LocalBenchmarks map[string]*modconfig.Benchmark
+	Mods      map[string]*modconfig.Mod
+	Variables map[string]*modconfig.Variable
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -63,7 +44,8 @@ type Workspace struct {
 	onFileWatcherEventMessages func()
 	modFileExists              bool
 	loadPseudoResources        bool
-	// convenient aggregation of all resources
+
+	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
 	resourceMaps *modconfig.WorkspaceResourceMaps
 }
 
@@ -164,26 +146,6 @@ func (w *Workspace) Close() {
 	}
 }
 
-// clear all resource maps
-func (w *Workspace) reset() {
-	w.Queries = make(map[string]*modconfig.Query)
-	w.Controls = make(map[string]*modconfig.Control)
-	w.Benchmarks = make(map[string]*modconfig.Benchmark)
-	w.Mods = make(map[string]*modconfig.Mod)
-	w.Dashboards = make(map[string]*modconfig.Dashboard)
-	w.DashboardContainers = make(map[string]*modconfig.DashboardContainer)
-	w.DashboardCards = make(map[string]*modconfig.DashboardCard)
-	w.DashboardCharts = make(map[string]*modconfig.DashboardChart)
-	w.DashboardHierarchies = make(map[string]*modconfig.DashboardHierarchy)
-	w.DashboardImages = make(map[string]*modconfig.DashboardImage)
-	w.DashboardInputs = make(map[string]*modconfig.DashboardInput)
-	w.DashboardTables = make(map[string]*modconfig.DashboardTable)
-	w.DashboardTexts = make(map[string]*modconfig.DashboardText)
-	w.LocalQueries = make(map[string]*modconfig.Query)
-	w.LocalControls = make(map[string]*modconfig.Control)
-	w.LocalBenchmarks = make(map[string]*modconfig.Benchmark)
-}
-
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
@@ -204,8 +166,6 @@ func (w *Workspace) setModfileExists() {
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
-	// clear all resource maps
-	w.reset()
 	// load and evaluate all variables
 	inputVariables, err := w.getAllVariables(ctx)
 	if err != nil {
@@ -228,19 +188,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 
 	// now set workspace properties
 	w.Mod = m
-
-	w.Queries, w.LocalQueries = w.buildQueryMap(runCtx.LoadedDependencyMods)
-	w.Controls, w.LocalControls = w.buildControlMap(runCtx.LoadedDependencyMods)
-	w.Benchmarks, w.LocalBenchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
-	w.Dashboards = w.buildDashboardMap(runCtx.LoadedDependencyMods)
-	w.DashboardContainers = w.buildDashboardContainerMap(runCtx.LoadedDependencyMods)
-	w.DashboardCards = w.buildDashboardCardMap(runCtx.LoadedDependencyMods)
-	w.DashboardCharts = w.buildDashboardChartMap(runCtx.LoadedDependencyMods)
-	w.DashboardHierarchies = w.buildDashboardHierarchyMap(runCtx.LoadedDependencyMods)
-	w.DashboardImages = w.buildDashboardImageMap(runCtx.LoadedDependencyMods)
-	w.DashboardInputs = w.buildDashboardInputMap(runCtx.LoadedDependencyMods)
-	w.DashboardTables = w.buildDashboardTableMap(runCtx.LoadedDependencyMods)
-	w.DashboardTexts = w.buildDashboardTextMap(runCtx.LoadedDependencyMods)
 
 	// set variables on workspace
 	w.Variables = m.Variables
@@ -341,7 +288,7 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 }
 
 func (w *Workspace) verifyResourceRuntimeDependencies() error {
-	for _, d := range w.Dashboards {
+	for _, d := range w.resourceMaps.Dashboards {
 		if err := d.BuildRuntimeDependencyTree(w); err != nil {
 			return err
 		}
