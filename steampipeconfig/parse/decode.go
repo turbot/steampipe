@@ -324,7 +324,8 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	}
 
 	if attr, exists := content.Attributes["args"]; exists {
-		if args, runtimeDependencies, diags := decodeArgs(attr, runCtx.EvalCtx, queryProvider); diags.HasErrors() {
+		args, runtimeDependencies, diags := decodeArgs(attr, runCtx.EvalCtx, queryProvider)
+		if diags.HasErrors() {
 			// handle dependencies
 			res.handleDecodeDiags(content, queryProvider.(modconfig.HclResource), diags)
 		} else {
