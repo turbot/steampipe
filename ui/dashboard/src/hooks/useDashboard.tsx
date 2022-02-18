@@ -15,7 +15,7 @@ import { get, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 interface IDashboardContext {
   metadata: DashboardMetadata;
@@ -28,7 +28,12 @@ interface IDashboardContext {
   dashboard: DashboardDefinition | null;
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
+  selectedDashboardInputs: DashboardInputs;
   sqlDataMap: SQLDataMap;
+}
+
+interface DashboardInputs {
+  [name: string]: string;
 }
 
 export interface ModDashboardMetadata {
@@ -300,6 +305,28 @@ function reducer(state, action) {
         selectedDashboard: action.dashboard,
         selectedPanel: null,
       };
+    case "clear_dashboard_inputs":
+      return {
+        ...state,
+        selectedDashboardInputs: {},
+      };
+    case "delete_dashboard_input":
+      const { [action.name]: toDelete, ...rest } =
+        state.selectedDashboardInputs;
+      return {
+        ...state,
+        selectedDashboardInputs: {
+          ...rest,
+        },
+      };
+    case "set_dashboard_input":
+      return {
+        ...state,
+        selectedDashboardInputs: {
+          ...state.selectedDashboardInputs,
+          [action.name]: action.value,
+        },
+      };
     case "workspace_error":
       return { ...state, error: action.error };
     // Not emitting these from the dashboard server yet
@@ -316,13 +343,22 @@ function reducer(state, action) {
 }
 
 const DashboardProvider = ({ children }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  console.log(searchParams);
   const [state, dispatch] = useReducer(reducer, {
     dashboards: [],
     dashboard: null,
     selectedPanel: null,
     selectedDashboard: null,
+    selectedDashboardInputs: Object.fromEntries(
+      Object.entries(searchParams).filter((entry) =>
+        entry[0].startsWith("input")
+      )
+    ),
     sqlDataMap: {},
   });
+
+  console.log(state.selectedDashboardInputs);
 
   const { dashboardName } = useParams();
   const navigate = useNavigate();
@@ -416,8 +452,35 @@ const DashboardProvider = ({ children }) => {
   }, [state.selectedDashboard]);
 
   useEffect(() => {
+    if (
+      !webSocket.current ||
+      webSocket.current?.readyState !== webSocket.current.OPEN
+    ) {
+      return;
+    }
+
+    if (!state.selectedDashboard) {
+      return;
+    }
+
+    webSocket.current.send(
+      JSON.stringify({
+        action: "set_dashboard_inputs",
+        payload: {
+          // workspace: state.selectedWorkspace,
+          dashboard: {
+            full_name: state.selectedDashboard.full_name,
+          },
+          input_values: state.selectedDashboardInputs,
+        },
+      })
+    );
+  }, [state.selectedDashboard, state.selectedDashboardInputs]);
+
+  useEffect(() => {
     if (!dashboardName && state.selectedDashboard) {
       dispatch({ type: "select_dashboard", dashboard: null });
+      dispatch({ type: "clear_dashboard_inputs" });
     }
     if (
       state.selectedDashboard &&
@@ -434,6 +497,11 @@ const DashboardProvider = ({ children }) => {
     );
     dispatch({ type: "select_dashboard", dashboard });
   }, [dashboardName, state.selectedDashboard, state.dashboards]);
+
+  useEffect(() => {
+    // Sync params into the URL
+    setSearchParams(state.selectedDashboardInputs);
+  }, [state.selectedDashboardInputs]);
 
   useEffect(() => {
     if (!state.availableDashboardsLoaded || !dashboardName) {
