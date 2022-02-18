@@ -14,7 +14,6 @@ import (
 
 // DashboardCard is a struct representing a leaf dashboard node
 type DashboardCard struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 

@@ -12,7 +12,6 @@ import (
 
 // DashboardContainer is a struct representing the Dashboard and Container resource
 type DashboardContainer struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding

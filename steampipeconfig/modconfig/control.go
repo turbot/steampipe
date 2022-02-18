@@ -14,7 +14,6 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 

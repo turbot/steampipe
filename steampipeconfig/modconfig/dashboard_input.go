@@ -13,7 +13,6 @@ import (
 
 // DashboardInput is a struct representing a leaf dashboard node
 type DashboardInput struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 
@@ -225,7 +224,6 @@ func (i *DashboardInput) GetParams() []*ParamDef {
 // GetArgs implements QueryProvider
 func (i *DashboardInput) GetArgs() *QueryArgs {
 	return i.Args
-
 }
 
 // GetSQL implements QueryProvider
@@ -261,4 +259,14 @@ func (i *DashboardInput) GetPreparedStatementName() string {
 func (i *DashboardInput) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return i.getPreparedStatementExecuteSQL(i, args)
+}
+
+// GetValue implements RuntimeDependency
+func (i *DashboardInput) GetValue() *string {
+	return i.Value
+}
+
+// SetValue implements RuntimeDependency
+func (i *DashboardInput) SetValue(value string) {
+	i.Value = &value
 }

@@ -1,100 +1,66 @@
 package modconfig
 
 import (
+	"fmt"
 	"strings"
-
-	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
+	"sync"
 )
 
-type ResourceDependency struct {
-	Range      hcl.Range
-	Traversals []hcl.Traversal
+type RuntimeDependency struct {
+	PropertyPath       *ParsedPropertyPath
+	SourceResource     RuntimeDependencySource
+	TargetPropertyPath []string
+	// function to set the target
+	SetTargetFunc func(string)
+
+	// the resolved value
+	value     *string
+	valueLock sync.Mutex
 }
 
-func (d *ResourceDependency) String() string {
-	traversalStrings := make([]string, len(d.Traversals))
-	for i, t := range d.Traversals {
-		traversalStrings[i] = hclhelpers.TraversalAsString(t)
-	}
-	return strings.Join(traversalStrings, ",")
+func (d *RuntimeDependency) String() string {
+	return fmt.Sprintf("%s->%s", strings.Join(d.TargetPropertyPath, "."), d.PropertyPath.String())
 }
 
-// ToRuntimeDependency determines whether this is a runtime dependency
-// and if so, create a RuntimeDependency and return it
-// a dependency is run time if:
-// - there is a single traversal
-// - the property referenced is one of the defined runtime dependency properties
-func (d *ResourceDependency) ToRuntimeDependency(bodyContent *hcl.BodyContent) *RuntimeDependency {
-	// runtime dependency wil onyl have a single traversal
-	if len(d.Traversals) > 1 {
-		return nil
+func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
+	// TODO THINK ABOUT REPORT PREFIX
+
+	resourceName := d.PropertyPath.ToResourceName()
+	var found bool
+	var sourceResource HclResource
+	// if this dependency has a 'self' prefix, resolve from the current dashboard container
+	if d.PropertyPath.Scope == runtimeDependencyDashboardScope {
+		sourceResource, found = dashboard.GetInput(resourceName)
+	} else {
+		// otherwise, resolve from the workspace
+		sourceResource, found = workspace.GetResourceMaps().DashboardInputs[resourceName]
+	}
+	if !found {
+		return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)
 	}
 
-	if bodyContent == nil {
-		return nil
-	}
-	// parse the traversal as a property path
-	propertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
-	if err != nil {
-		return nil
-	}
-
-	if !isRunTimeDependencyProperty(propertyPath) {
-		return nil
-	}
-
-	// TACTICAL: because the hcl decoding library does not give easy acces to the property which is being populated with this
-	// dependency, we examine the body content and extract all properties which have the same dependency
-	// (this is not ideal)
-	targetProperties := d.getPropertiesFromContent(bodyContent)
-
-	res := &RuntimeDependency{
-		TargetProperties: targetProperties,
-		PropertyPath:     propertyPath,
-	}
-	if len(res.TargetProperties) == 0 {
-		return nil
-	}
-	return res
+	// cast source to RuntimeDependencySource
+	d.SourceResource = sourceResource.(RuntimeDependencySource)
+	return nil
 }
 
-func isRunTimeDependencyProperty(propertyPath *ParsedPropertyPath) bool {
-	// supported runtime dependencies
-	// map is keyed by resource type and contains a list of properties
-	runTimeDependencyPropertyPaths := map[string][]string{
-		"input": {"value"},
-		"param": {"value"},
+func (d *RuntimeDependency) IsResolved() bool {
+	d.valueLock.Lock()
+	defer d.valueLock.Unlock()
+	return d.value != nil
+}
+
+func (d *RuntimeDependency) Resolve() bool {
+	d.valueLock.Lock()
+	defer d.valueLock.Unlock()
+
+	// did we succeed?
+	d.value = d.SourceResource.GetValue()
+
+	if d.value != nil {
+		d.SetTargetFunc(*d.value)
+		return true
 	}
-	// is this property a supported runtime dependency property
-	if supportedProperties, ok := runTimeDependencyPropertyPaths[propertyPath.ItemType]; ok {
-		return helpers.StringSliceContains(supportedProperties, propertyPath.PropertyPathString())
-	}
+
 	return false
-}
-
-// getPropertiesFromContent finds any attributes in the given content which depend on this dependency
-func (d *ResourceDependency) getPropertiesFromContent(content *hcl.BodyContent) []string {
-	var res []string
-	for _, a := range content.Attributes {
-		vars := a.Expr.Variables()
-		if len(d.Traversals) != len(vars) {
-			break
-		}
-		// build map of paths
-		var traversalMap = make(map[string]bool, len(vars))
-		for _, t := range vars {
-			traversalMap[hclhelpers.TraversalAsString(t)] = true
-		}
-		for _, t := range d.Traversals {
-			if !traversalMap[hclhelpers.TraversalAsString(t)] {
-				return res
-			}
-		}
-
-		// ok so traversals match!
-		res = append(res, a.Name)
-	}
-	return res
 }

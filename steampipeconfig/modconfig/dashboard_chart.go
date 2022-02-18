@@ -13,7 +13,6 @@ import (
 
 // DashboardChart is a struct representing a leaf dashboard node
 type DashboardChart struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 
@@ -299,7 +298,7 @@ func (c *DashboardChart) GetQuery() *Query {
 
 // SetArgs implements QueryProvider
 func (c *DashboardChart) SetArgs(args *QueryArgs) {
-	// nothing
+	c.Args = args
 }
 
 // SetParams implements QueryProvider

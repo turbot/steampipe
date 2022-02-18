@@ -1,8 +1,6 @@
 package parse
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -31,27 +29,28 @@ func (p *decodeResult) Success() bool {
 func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource modconfig.HclResource, diags hcl.Diagnostics) {
 	var allDependencies []*modconfig.ResourceDependency
 	for _, diag := range diags {
-		if dependency := isDependencyError(diag); dependency != nil {
+		if dependency := diagsToDependency(diag); dependency != nil {
 			allDependencies = append(allDependencies, dependency)
 
-			// so it was a dependency error - determine whether this is a RUN TIME dependency
-			// - if so, do not raise a dependency error but instead store in the resources run time dependencies
-			if runtimeDependency := dependency.ToRuntimeDependency(bodyContent); runtimeDependency != nil {
-				// resource must be convertible to a DashboardLeafNode
-				// - these are the only resources to support runtime dependencies
-				leafNode, ok := resource.(modconfig.DashboardLeafNode)
-				if !ok {
-					p.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
-						Severity: hcl.DiagError,
-						Summary:  fmt.Sprintf("invalid resource type %s declares a runtime depdnency - only ReportLeafNodes may use them", resource.Name()),
-						Subject:  resource.GetDeclRange(),
-					}})
-				}
-				leafNode.AddRuntimeDependencies(runtimeDependency)
-			} else {
-				// this is not a runtime dependency - register a normal dependency
-				p.Depends = append(p.Depends, dependency)
-			}
+			//// so it was a dependency error - determine whether this is a RUN TIME dependency
+
+			//// - if so, do not raise a dependency error but instead store in the resources run time dependencies
+			//if runtimeDependency := dependency.ToRuntimeDependency(bodyContent); runtimeDependency != nil {
+			//	// resource must be convertible to a DashboardLeafNode
+			//	// - these are the only resources to support runtime dependencies
+			//	leafNode, ok := resource.(modconfig.DashboardLeafNode)
+			//	if !ok {
+			//		p.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
+			//			Severity: hcl.DiagError,
+			//			Summary:  fmt.Sprintf("invalid resource type %s declares a runtime depdnency - only ReportLeafNodes may use them", resource.Name()),
+			//			Subject:  resource.GetDeclRange(),
+			//		}})
+			//	}
+			//	leafNode.AddRuntimeDependencies(runtimeDependency)
+			//} else {
+			// this is not a runtime dependency - register a normal dependency
+			p.Depends = append(p.Depends, dependency)
+			//}
 		}
 	}
 	// only register errors if there are NOT any missing variables
@@ -61,7 +60,7 @@ func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource 
 }
 
 // determine whether the diag is a dependency error, and if so, return a dependency object
-func isDependencyError(diag *hcl.Diagnostic) *modconfig.ResourceDependency {
+func diagsToDependency(diag *hcl.Diagnostic) *modconfig.ResourceDependency {
 	if helpers.StringSliceContains(missingVariableErrors, diag.Summary) {
 		return &modconfig.ResourceDependency{Range: diag.Expression.Range(), Traversals: diag.Expression.Variables()}
 	}

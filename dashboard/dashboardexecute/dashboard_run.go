@@ -205,18 +205,18 @@ func (r *DashboardRun) ChildCompleteChan() chan dashboardinterfaces.DashboardNod
 	return r.childComplete
 }
 
-func (r *DashboardRun) GetRuntimeDependency(dependency *modconfig.RuntimeDependency) (*string, error) {
-	// TOTO [reports] LOCK???
-
-	// only inputs supported at present
-	if dependency.PropertyPath.ItemType != modconfig.BlockTypeInput {
-		return nil, fmt.Errorf("invalid runtime dependency type %s", dependency.PropertyPath.ItemType)
-	}
-
-	// find the input corresponding to this dependency
-	input, ok := r.dashboardNode.GetInput(dependency.PropertyPath.Name)
-	if !ok {
-		return nil, fmt.Errorf("dashboard %s does not contain input %s", r.dashboardNode.Name(), dependency.PropertyPath.ItemType)
-	}
-	return input.Value, nil
-}
+//func (r *DashboardRun) GetRuntimeDependency(dependency *modconfig.RuntimeDependency) (*string, error) {
+//	// TODO [reports] LOCK???
+//
+//	// only inputs supported at present
+//	if dependency.PropertyPath.ItemType != modconfig.BlockTypeInput {
+//		return nil, fmt.Errorf("invalid runtime dependency type %s", dependency.PropertyPath.ItemType)
+//	}
+//
+//	// find the input corresponding to this dependency
+//	input, ok := r.dashboardNode.GetInput(dependency.PropertyPath.ToResourceName())
+//	if !ok {
+//		return nil, fmt.Errorf("dashboard %s does not contain input %s", r.dashboardNode.Name(), dependency.PropertyPath.ItemType)
+//	}
+//	return input.Value, nil
+//}

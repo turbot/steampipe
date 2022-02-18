@@ -13,7 +13,6 @@ import (
 
 // DashboardImage is a struct representing a leaf dashboard node
 type DashboardImage struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 

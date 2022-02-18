@@ -64,12 +64,9 @@ type QueryProvider interface {
 	SetParams(params []*ParamDef)
 	GetPreparedStatementName() string
 	GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error)
-}
-
-// ParameterisedDashboardNode must be implemented by resources has params and args
-type ParameterisedDashboardNode interface {
-	GetParams() []*ParamDef
-	GetArgs() *QueryArgs
+	// implemented by QueryProviderase
+	AddRuntimeDependencies([]*RuntimeDependency)
+	GetRuntimeDependencies() map[string]*RuntimeDependency
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
@@ -79,11 +76,6 @@ type DashboardLeafNode interface {
 	GetTitle() string
 	GetWidth() int
 	GetPaths() []NodePath
-
-	// implemented by DashboardLeafNodeBase
-
-	AddRuntimeDependencies(*RuntimeDependency)
-	GetRuntimeDependencies() map[string]*RuntimeDependency
 }
 
 type ResourceMapsProvider interface {
@@ -92,4 +84,9 @@ type ResourceMapsProvider interface {
 
 type UniqueNameProvider interface {
 	GetUniqueName(string) string
+}
+
+type RuntimeDependencySource interface {
+	GetValue() *string
+	SetValue(value string)
 }
