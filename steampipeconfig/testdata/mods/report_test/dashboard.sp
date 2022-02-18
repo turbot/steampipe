@@ -8,7 +8,7 @@ query "q1"{
 
 dashboard "r1"{
     input "i1"{
-        query = query.ql
+        query = query.q1
         args = {
             "p1" = "FOO"
         }
