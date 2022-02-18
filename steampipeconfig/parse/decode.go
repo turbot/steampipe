@@ -429,14 +429,14 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 				inputs = append(inputs, input)
 				// now we have namespaced the input, add to mod
 				res.addDiags(runCtx.CurrentMod.AddResource(resource))
-			} else {
-				// child resource
+			}
 
-				// add the resource to the mod
-				addResourcesToMod(runCtx, resource)
-				if child, ok := resource.(modconfig.ModTreeItem); ok {
-					children = append(children, child)
-				}
+			// add the resource to the mod
+			addResourcesToMod(runCtx, resource)
+			// add to children
+			// (we expect this cast to always succeed
+			if child, ok := resource.(modconfig.ModTreeItem); ok {
+				children = append(children, child)
 			}
 
 		}

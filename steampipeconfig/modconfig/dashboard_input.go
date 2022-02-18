@@ -2,11 +2,11 @@ package modconfig
 
 import (
 	"fmt"
-
-	"github.com/turbot/steampipe/constants"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -210,10 +210,10 @@ func (i *DashboardInput) GetUnqualifiedName() string {
 // SetDashboard sets the parent dashboard container
 func (i *DashboardInput) SetDashboard(dashboard *Dashboard) {
 	i.dashboard = dashboard
-	// update the full name the parent dashboard name
-	i.FullName = fmt.Sprintf("%s.%s.%s", i.Mod.ShortName, i.dashboard.UnqualifiedName, i.UnqualifiedName)
+	// update the full name the with the sanitised parent dashboard name
+	dashboardNameSuffix := i.dashboardNameSuffix()
+	i.FullName = fmt.Sprintf("%s%s", i.FullName, dashboardNameSuffix)
 	// note: DO NOT update the unqualified name - this will be used in the parent dashboard selfInputsMap
-
 }
 
 // GetParams implements QueryProvider
@@ -269,4 +269,10 @@ func (i *DashboardInput) GetValue() *string {
 // SetValue implements RuntimeDependency
 func (i *DashboardInput) SetValue(value string) {
 	i.Value = &value
+}
+
+// DashboardNameSuffix creates a sanitised name suffix from our parent dashboard
+func (i *DashboardInput) dashboardNameSuffix() string {
+	sanitisedDashboardName := strings.Replace(i.dashboard.UnqualifiedName, ".", "_", -1)
+	return fmt.Sprintf("_%s", sanitisedDashboardName)
 }

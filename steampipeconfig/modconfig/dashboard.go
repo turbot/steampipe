@@ -297,12 +297,11 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
 	d.Inputs = inputs
 	d.setInputMap()
 
-	// also add child containers inputs
-
+	//  add child containers and dashboard inputs
 	var duplicates []string
 	resourceFunc := func(resource HclResource) (bool, error) {
-		if container, ok := resource.(*Dashboard); ok {
-			for _, i := range container.Inputs {
+		if dashboard, ok := resource.(*Dashboard); ok {
+			for _, i := range dashboard.Inputs {
 				// check we do not already have this input
 				if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
 					duplicates = append(duplicates, i.Name())
