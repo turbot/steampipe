@@ -78,7 +78,7 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value, resource modconfig.Q
 			// decode the value into a postgres compatible
 			valStr, err := ctyToPostgresString(v)
 			if err != nil {
-				err := fmt.Errorf("invalid value provided for param '%s': %v", idx, err)
+				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
 				return nil, nil, err
 			}
 
@@ -162,7 +162,7 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modcon
 	// find the expression for this key
 	argsExpr, ok := attr.Expr.(*hclsyntax.TupleConsExpr)
 	if !ok {
-		return nil, fmt.Errorf("could not extract runtime dependency for arg index %s", idx)
+		return nil, fmt.Errorf("could not extract runtime dependency for arg #%d", idx)
 	}
 	for i, item := range argsExpr.Exprs {
 		if i == idx {

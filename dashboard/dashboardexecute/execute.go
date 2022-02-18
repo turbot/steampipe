@@ -19,6 +19,8 @@ func ExecuteDashboardNode(ctx context.Context, dashboardName string, workspace *
 		return fmt.Errorf("dashboard %s is already running", dashboardName)
 	}
 
+	// TODO SET INPUTS
+
 	executionTree, err := NewReportExecutionTree(dashboardName, client, workspace)
 	if err != nil {
 		return err
