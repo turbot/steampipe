@@ -107,15 +107,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 		}
 		r.Children = append(r.Children, childRun)
 	}
-	// ensure all inputs have resolved SQL
-	for _, input := range r.Inputs {
-		resolvedSQL, err := executionTree.workspace.ResolveQuery(input, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve input query: %s", err.Error())
-		}
-		input.ResolvedSQL = resolvedSQL
 
-	}
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 	return r, nil
