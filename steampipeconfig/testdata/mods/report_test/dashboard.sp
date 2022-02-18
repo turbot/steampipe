@@ -3,6 +3,7 @@ input "i1"{ }
 query "q1"{
     sql = "select 1"
     param "p1"{
+        default = "1"
     }
 }
 
@@ -13,12 +14,15 @@ dashboard "r1"{
         query = query.q1
         args = {
             "p1" = self.input.i1.value
+            "p2" = "foo"
+            "p3" = self.input.i1.value
         }
     }
 
-    control {
-        query = query.q1
-    }
+//    control {
+//        query = query.q1
+//        args = [ self.input.i1.value, "foo", self.input.i1.value]
+//    }
 
 }
 

@@ -14,7 +14,6 @@ import (
 
 // DashboardTable is a struct representing a leaf dashboard node
 type DashboardTable struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 

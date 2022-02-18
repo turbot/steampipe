@@ -16,7 +16,6 @@ const runtimeDependencyDashboardScope = "self"
 
 // Dashboard is a struct representing the Dashboard and Container resource
 type Dashboard struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
@@ -27,11 +26,11 @@ type Dashboard struct {
 	UnqualifiedName string            `cty:"unqualified_name"`
 	Title           *string           `cty:"title" hcl:"title" column:"title,text"`
 	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
-	Args            *QueryArgs        `cty:"args" column:"args,jsonb"`
-	Base            *Dashboard        `hcl:"base"`
-	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 	Display         *string           `cty:"display" hcl:"display" column:"display,text" json:"display,omitempty"`
+	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
+
+	Base *Dashboard `hcl:"base"`
 
 	IsTopLevel bool `column:"is_top_level,bool"`
 	Mod        *Mod `cty:"mod"`
@@ -236,13 +235,17 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 	// add root node - this will depend on all other nodes
 	d.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
 
+	// define a walk function which determins whether the resource has runtime dependencies and if so,
+	// add to the graph
 	resourceFunc := func(resource HclResource) (bool, error) {
-		leafNode, ok := resource.(DashboardLeafNode)
+		// currently only QueryProvider resources support runtime dependencies
+		queryProvider, ok := resource.(QueryProvider)
 		if !ok {
 			// continue walking
 			return true, nil
 		}
-		runtimeDependencies := leafNode.GetRuntimeDependencies()
+
+		runtimeDependencies := queryProvider.GetRuntimeDependencies()
 		if len(runtimeDependencies) == 0 {
 			// continue walking
 			return true, nil
@@ -253,8 +256,8 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 		}
 
 		for _, dependency := range runtimeDependencies {
-			// try to resolve the target resource
-			if err := dependency.ResolveSource(resource, d, workspace); err != nil {
+			// try to resolve the dependency source resource
+			if err := dependency.ResolveSource(d, workspace); err != nil {
 				return false, err
 			}
 			if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
@@ -326,8 +329,4 @@ func (d *Dashboard) setInputMap() {
 	for _, i := range d.Inputs {
 		d.selfInputsMap[i.UnqualifiedName] = i
 	}
-}
-
-func (d *Dashboard) SetArgs(args *QueryArgs) {
-	d.Args = args
 }

@@ -306,7 +306,7 @@ func decodeQueryProvider(block *hcl.Block, parent modconfig.ModTreeItem, runCtx 
 	queryProvider, ok := resource.(modconfig.QueryProvider)
 	if !ok {
 		// coding error
-		panic(fmt.Sprintf("block type %s not convertible to a query provider", block.Type))
+		panic(fmt.Sprintf("block type %s not convertible to a QueryProvider", block.Type))
 	}
 
 	sqlAttr, sqlPropertySet := content.Attributes["sql"]
@@ -324,11 +324,12 @@ func decodeQueryProvider(block *hcl.Block, parent modconfig.ModTreeItem, runCtx 
 	}
 
 	if attr, exists := content.Attributes["args"]; exists {
-		if args, diags := decodeArgs(attr, runCtx.EvalCtx, resource.Name()); diags.HasErrors() {
+		if args, runtimeDependencies, diags := decodeArgs(attr, runCtx.EvalCtx, queryProvider); diags.HasErrors() {
 			// handle dependencies
 			res.handleDecodeDiags(content, queryProvider.(modconfig.HclResource), diags)
 		} else {
 			queryProvider.SetArgs(args)
+			queryProvider.AddRuntimeDependencies(runtimeDependencies)
 		}
 
 	}
@@ -369,36 +370,6 @@ func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Di
 	}
 }
 
-func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, controlName string) (*modconfig.QueryArgs, hcl.Diagnostics) {
-	var args = modconfig.NewQueryArgs()
-	v, diags := attr.Expr.Value(evalCtx)
-	if diags.HasErrors() {
-		return nil, diags
-	}
-
-	var err error
-	ty := v.Type()
-
-	switch {
-	case ty.IsObjectType():
-		args.Args, err = ctyObjectToMapOfPgStrings(v)
-	case ty.IsTupleType():
-		args.ArgsList, err = ctyTupleToArrayOfPgStrings(v)
-	default:
-		err = fmt.Errorf("'params' property must be either a map or an array")
-	}
-
-	if err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s has invalid parameter config", controlName),
-			Detail:   err.Error(),
-			Subject:  &attr.Range,
-		})
-	}
-	return args, diags
-}
-
 func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard, *decodeResult) {
 	res := &decodeResult{}
 	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod)
@@ -425,13 +396,6 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 	}
 	if !res.Success() {
 		return dashboard, res
-	}
-
-	// decode args if any
-	if attr, exists := content.Attributes["args"]; exists {
-		if args, diags := decodeArgs(attr, runCtx.EvalCtx, dashboard.Name()); !diags.HasErrors() {
-			dashboard.SetArgs(args)
-		}
 	}
 
 	// now decode child blocks

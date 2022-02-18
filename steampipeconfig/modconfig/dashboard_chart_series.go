@@ -2,6 +2,8 @@ package modconfig
 
 import "github.com/turbot/steampipe/utils"
 
+// TODO [reports] PointList and PointMap
+
 type DashboardChartSeries struct {
 	Name   string                       `hcl:"name,label" json:"name"`
 	Title  *string                      `cty:"title" hcl:"title" json:"title,omitempty"`

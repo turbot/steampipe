@@ -13,7 +13,6 @@ import (
 
 // DashboardHierarchy is a struct representing a leaf dashboard node
 type DashboardHierarchy struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 
@@ -255,7 +254,7 @@ func (h *DashboardHierarchy) GetQuery() *Query {
 
 // SetArgs implements QueryProvider
 func (h *DashboardHierarchy) SetArgs(args *QueryArgs) {
-	// nothing
+	h.Args = args
 }
 
 // SetParams implements QueryProvider

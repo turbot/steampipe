@@ -77,7 +77,7 @@ func (w *Workspace) ResolveQuery(queryProvider modconfig.QueryProvider, args *mo
 
 	// determine the source for the query
 	// - this will either be the control itself or any named query the control refers to
-	// either via its SQL property (passing a query name) or Query property (using a reference to a query object)
+	// either via its SQL proper ty (passing a query name) or Query property (using a reference to a query object)
 
 	// if a query is provided, us that to resolve the sql
 	if query != nil {

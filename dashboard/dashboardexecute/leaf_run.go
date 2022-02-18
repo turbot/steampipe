@@ -2,6 +2,7 @@ package dashboardexecute
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
@@ -50,13 +51,8 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		return nil, err
 	}
 	r.NodeType = parsedName.ItemType
-	// if we have sql, set status to ready
-	if queryProvider, ok := resource.(modconfig.QueryProvider); ok {
-		sql, err := executionTree.workspace.ResolveQuery(queryProvider, nil)
-		if err != nil {
-			return nil, err
-		}
-		r.SQL = sql
+	// if we have are a query provider, set status to ready
+	if _, ok := resource.(modconfig.QueryProvider); ok {
 		r.runStatus = dashboardinterfaces.DashboardRunReady
 	}
 
@@ -67,17 +63,23 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 
 // Execute implements DashboardRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
-	// if there are any unresolved runtime dependencies, wait for them
-	if err := r.waitForRuntimeDependencies(ctx); err != nil {
-		return err
-	}
-
 	// if there is nothing to do, return
 	if r.runStatus == dashboardinterfaces.DashboardRunComplete {
 		return nil
 	}
 
-	var err error
+	// if there are any unresolved runtime dependencies, wait for them
+	if err := r.waitForRuntimeDependencies(ctx); err != nil {
+		return err
+	}
+
+	// ok now we have runtime depdencies, we can resolve the query
+	sql, err := r.executionTree.workspace.ResolveQuery(r.DashboardNode.(modconfig.QueryProvider), nil)
+	if err != nil {
+		return err
+	}
+	r.SQL = sql
+
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.SQL)
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
@@ -137,28 +139,27 @@ func (r *LeafRun) ChildrenComplete() bool {
 }
 
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
-	runtimeDependencies := r.DashboardNode.GetRuntimeDependencies()
-
-	// runtime dependencies are always (for now) dashboard inputs
+	// only QueryProvider resources support runtime dependencies
+	queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider)
+	if !ok {
+		return nil
+	}
+	runtimeDependencies := queryProvider.GetRuntimeDependencies()
 
 	for _, dependency := range runtimeDependencies {
 		// check with the top level dashboard whether the dependency is available
-		inputValue, err := r.executionTree.Root.GetRuntimeDependency(dependency)
-		if err != nil {
-			return err
-		}
-		if inputValue != nil {
-			// ok we have this one - set it on the dependency
-			dependency.Value = inputValue
-			continue
-		}
+		if !dependency.IsResolved() {
+			if err := r.executionTree.waitForRuntimeDependency(ctx, dependency); err != nil {
+				return err
+			}
 
-		if err := r.executionTree.waitForRuntimeDependency(ctx, dependency); err != nil {
-			return err
+			//dependency.SourceResource.SetValue("FOO")
+			// now get the value again
+			if !dependency.Resolve() {
+				// should now be resolved`
+				return fmt.Errorf("dependency not resolved after waitForRuntimeDependency returned")
+			}
 		}
-
-		// now populate the runtime dependency target property
-		//r.setRuntimeDependency()
 	}
 
 	return nil
