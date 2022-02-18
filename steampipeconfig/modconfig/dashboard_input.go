@@ -36,7 +36,7 @@ type DashboardInput struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	ResolvedSQL string          ` json:"sql"`
+	ResolvedSQL string          `json:"sql"`
 	Base        *DashboardInput `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`

@@ -291,14 +291,14 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
-	content, _, diags := block.Body.PartialContent(QueryProviderBlockSchema)
+	content, remain, diags := block.Body.PartialContent(QueryProviderBlockSchema)
 	res.handleDecodeDiags(nil, nil, diags)
 	if !res.Success() {
 		return nil, res
 	}
 
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
+	diags = gohcl.DecodeBody(remain, runCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(content, resource, diags)
 
