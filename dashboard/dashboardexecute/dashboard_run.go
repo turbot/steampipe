@@ -26,7 +26,8 @@ type DashboardRun struct {
 	Children      []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
 	NodeType      string                                 `json:"node_type"`
 	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
-	DashboardName string                                 `json:"report"`
+	DashboardName string                                 `json:"dashboard"`
+	Inputs        []*modconfig.DashboardInput            `json:"inputs"`
 	Path          []string                               `json:"-"`
 	dashboardNode *modconfig.Dashboard
 	parent        dashboardinterfaces.DashboardNodeParent
@@ -44,6 +45,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 		Name:          name,
 		NodeType:      modconfig.BlockTypeDashboard,
 		Path:          dashboard.Paths[0],
+		Inputs:        dashboard.Inputs,
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
 		parent:        parent,
@@ -104,6 +106,15 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 			r.Status = dashboardinterfaces.DashboardRunReady
 		}
 		r.Children = append(r.Children, childRun)
+	}
+	// ensure all inputs have resolved SQL
+	for _, input := range r.Inputs {
+		resolvedSQL, err := executionTree.workspace.ResolveQuery(input, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve input query: %s", err.Error())
+		}
+		input.ResolvedSQL = resolvedSQL
+
 	}
 	// add r into execution tree
 	executionTree.runs[r.Name] = r

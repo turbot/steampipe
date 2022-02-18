@@ -173,6 +173,9 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 		Action:        "execution_started",
 		DashboardNode: event.DashboardNode,
 	}
+	a, _ := json.MarshalIndent(payload, "", " ")
+	b := string(a)
+	fmt.Println(b)
 	return json.Marshal(payload)
 }
 
