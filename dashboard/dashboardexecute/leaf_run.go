@@ -75,7 +75,8 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	}
 
 	// ok now we have runtime depdencies, we can resolve the query
-	sql, err := r.executionTree.workspace.ResolveQuery(r.DashboardNode.(modconfig.QueryProvider), nil)
+	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
+	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, nil)
 	if err != nil {
 		return err
 	}
