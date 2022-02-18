@@ -20,7 +20,7 @@ import (
 )
 
 // https://stackoverflow.com/questions/39320371/how-start-web-server-to-open-page-in-browser-in-golang
-func openBrowser(url string) error {
+func OpenBrowser(url string) error {
 	var cmd string
 	var args []string
 
@@ -55,9 +55,9 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 		c.File(path.Join(assetsDirectory, "index.html"))
 	})
 
-	dashboardServerPort := viper.GetInt(constants.ArgDashboardServerPort)
+	dashboardServerPort := viper.GetInt(constants.ArgDashboardPort)
 	dashboardServerListen := "localhost"
-	if viper.GetString(constants.ArgDashboardServerListen) == string(ListenTypeNetwork) {
+	if viper.GetString(constants.ArgDashboardListen) == string(ListenTypeNetwork) {
 		dashboardServerListen = ""
 	}
 
@@ -73,8 +73,7 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 		}
 	}()
 
-	_ = openBrowser(fmt.Sprintf("http://localhost:%d", dashboardServerPort))
-	outputReady(ctx, fmt.Sprintf("Dashboard server started on %d and listening on %s", dashboardServerPort, viper.GetString(constants.ArgDashboardServerListen)))
+	outputReady(ctx, fmt.Sprintf("Dashboard server started on %d and listening on %s", dashboardServerPort, viper.GetString(constants.ArgDashboardListen)))
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 
