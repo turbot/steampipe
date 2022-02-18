@@ -15,7 +15,6 @@ import { get, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
-import { SOCKET_SERVER_URL } from "../config";
 import { useNavigate, useParams } from "react-router-dom";
 
 interface IDashboardContext {
@@ -106,6 +105,17 @@ interface SocketMessage {
 }
 
 const DashboardContext = createContext<IDashboardContext | null>(null);
+
+const getSocketServerUrl = () => {
+  // In this scenario the browser will be at http://localhost:3000,
+  // so I have no idea what host + port the dashboard server is on
+  if (process.env.NODE_ENV === "development") {
+    return "ws://localhost:9194/ws";
+  }
+  // Otherwise, it's a production build, so use the URL details
+  const url = new URL(window.location.toString());
+  return `ws://${url.host}/ws`;
+};
 
 const buildDashboardsList = (
   dashboards_by_mod: DashboardsByModDictionary
@@ -330,7 +340,7 @@ const DashboardProvider = ({ children }) => {
 
   useEffect(() => {
     let keepAliveTimerId: NodeJS.Timeout;
-    webSocket.current = new WebSocket(SOCKET_SERVER_URL);
+    webSocket.current = new WebSocket(getSocketServerUrl());
     webSocket.current.onerror = onSocketError;
     webSocket.current.onmessage = onSocketMessage;
     webSocket.current.onopen = () => {
@@ -343,7 +353,7 @@ const DashboardProvider = ({ children }) => {
         // console.log("Trying to send keep alive", webSocket.current.readyState);
         if (webSocket.current.readyState === webSocket.current.CLOSED) {
           // console.log("Socket closed. Re-opening");
-          webSocket.current = new WebSocket(SOCKET_SERVER_URL);
+          webSocket.current = new WebSocket(getSocketServerUrl());
           webSocket.current.onerror = onSocketError;
           webSocket.current.onmessage = onSocketMessage;
         }
