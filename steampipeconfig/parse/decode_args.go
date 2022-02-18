@@ -36,7 +36,7 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 
 	switch {
 	case ty.IsObjectType():
-		args.Args, runtimeDependencies, err = ctyObjectToArgMap(attr, v, resource, evalCtx)
+		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, resource, evalCtx)
 	case ty.IsTupleType():
 		args.ArgsList, runtimeDependencies, err = ctyTupleToArgArray(attr, v, resource, evalCtx)
 	default:
@@ -109,7 +109,7 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, resource modconfig.Qu
 			}
 			// set the function on the dependency which populates the target property
 			runtimeDependency.SetTargetFunc = func(val string) {
-				resource.GetArgs().Args[key] = pgEscapeParamString(val)
+				resource.GetArgs().ArgMap[key] = pgEscapeParamString(val)
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
