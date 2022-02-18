@@ -1,14 +1,18 @@
-input "i1"{ }
 
 query "q1"{
-    sql = "select 1"
+    sql = "select {1}"
     param "p1"{
         default = "1"
     }
 }
 
 dashboard "r1"{
-    input "i1"{ }
+    input "i1"{
+        query = query.ql
+        args = {
+            "p1" = "FOO"
+        }
+    }
 
     chart {
         query = query.q1

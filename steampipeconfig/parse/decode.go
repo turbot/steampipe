@@ -41,7 +41,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Detail:   err.Error()})
 	}
 	for _, block := range blocks {
-		resources, res := decodeBlock(block, runCtx.CurrentMod, runCtx)
+		resources, res := decodeBlock(block, runCtx)
 		if !res.Success() {
 			diags = append(diags, res.Diags...)
 			continue
@@ -65,7 +65,7 @@ func addResourcesToMod(runCtx *RunContext, resources ...modconfig.HclResource) h
 	return diags
 }
 
-func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
+func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
 	var resource modconfig.HclResource
 	var resources []modconfig.HclResource
 	var res = &decodeResult{}
@@ -84,7 +84,7 @@ func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunCont
 
 	// now do the actual decode
 	if helpers.StringSliceContains(modconfig.QueryProviderBlocks, block.Type) {
-		resource, res = decodeQueryProvider(block, parent, runCtx)
+		resource, res = decodeQueryProvider(block, runCtx)
 		resources = append(resources, resource)
 	} else {
 		switch block.Type {
@@ -109,7 +109,7 @@ func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunCont
 			resources = append(resources, resource)
 		default:
 			// all other blocks are treated the same:
-			resource, res = decodeResource(block, parent, runCtx)
+			resource, res = decodeResource(block, runCtx)
 			resources = append(resources, resource)
 		}
 	}
@@ -126,7 +126,7 @@ func decodeBlock(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunCont
 }
 
 // generic decode function for any resource we do not have custom decode logic for
-func decodeResource(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
 	res := &decodeResult{}
 	// get shell resource
 	resource, diags := resourceForBlock(block, runCtx)
@@ -279,7 +279,7 @@ func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modc
 	return def, diags
 }
 
-func decodeQueryProvider(block *hcl.Block, parent modconfig.ModTreeItem, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
 	res := &decodeResult{}
 
 	// get shell resource
@@ -414,7 +414,7 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 	var inputs []*modconfig.DashboardInput
 	for _, b := range content.Blocks {
 		// use generic block decoding
-		resources, blockRes := decodeBlock(b, dashboard, runCtx)
+		resources, blockRes := decodeBlock(b, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
@@ -488,7 +488,7 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 	var children []modconfig.ModTreeItem
 	for _, b := range content.Blocks {
 		// use generic block decoding
-		resources, blockRes := decodeBlock(b, dashboardContainer, runCtx)
+		resources, blockRes := decodeBlock(b, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue

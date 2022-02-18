@@ -18,7 +18,7 @@ type DashboardInput struct {
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
-	UnqualifiedName string `cty:"unqualified_name" json:"-"`
+	UnqualifiedName string `cty:"unqualified_name" json:"name"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -30,13 +30,14 @@ type DashboardInput struct {
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base *DashboardInput `hcl:"base" json:"-"`
+	ResolvedSQL string          ` json:"sql"`
+	Base        *DashboardInput `hcl:"base" json:"-"`
 
 	DeclRange hcl.Range  `json:"-"`
 	Mod       *Mod       `cty:"mod" json:"-"`

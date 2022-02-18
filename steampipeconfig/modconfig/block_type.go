@@ -22,6 +22,7 @@ const (
 // QueryProviderBlocks is a list of block types which implement QueryProvider
 var QueryProviderBlocks = []string{
 	BlockTypeControl,
+	BlockTypeInput,
 	BlockTypeQuery,
 	BlockTypeChart,
 	BlockTypeCard,
