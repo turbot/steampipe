@@ -1,8 +1,8 @@
 import Select from "react-select";
-import useQueryParam from "../../../../hooks/useQueryParam";
 import { getColumnIndex } from "../../../../utils/data";
 import { InputProps } from "../index";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface SelectOption {
@@ -12,11 +12,12 @@ export interface SelectOption {
 
 type SelectInputProps = InputProps & {
   multi?: boolean;
+  name: string;
 };
 
 const SelectInput = (props: SelectInputProps) => {
-  const [initialisedFromUrl, setInitialisedFromUrl] = useState(false);
-  const [urlValue, setUrlValue] = useQueryParam(props.name);
+  const { dispatch, selectedDashboardInputs } = useDashboard();
+  const [initialisedFromState, setInitialisedFromState] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
@@ -41,12 +42,14 @@ const SelectInput = (props: SelectInputProps) => {
 
   useEffect(() => {
     // If we've already set a value...
-    if (initialisedFromUrl) {
+    if (initialisedFromState) {
       return;
     }
 
-    if (!urlValue) {
-      setInitialisedFromUrl(true);
+    const stateValue = selectedDashboardInputs[props.name];
+
+    if (!stateValue) {
+      setInitialisedFromState(true);
       return;
     }
 
@@ -55,30 +58,38 @@ const SelectInput = (props: SelectInputProps) => {
       return;
     }
 
-    const parsedUrlValue = props.multi ? urlValue.split(",") : urlValue;
+    const parsedUrlValue = props.multi ? stateValue.split(",") : stateValue;
 
     const foundOption = props.multi
       ? options.filter((option) => parsedUrlValue.indexOf(option.value) >= 0)
       : options.find((option) => option.value === parsedUrlValue);
 
     if (!foundOption) {
-      setInitialisedFromUrl(true);
+      setInitialisedFromState(true);
       return;
     }
 
     setValue(foundOption);
-    setInitialisedFromUrl(true);
-  }, [props.multi, initialisedFromUrl, urlValue, options]);
+    setInitialisedFromState(true);
+  }, [
+    props.name,
+    props.multi,
+    initialisedFromState,
+    selectedDashboardInputs,
+    options,
+  ]);
 
   useEffect(() => {
-    if (!initialisedFromUrl) {
+    if (!initialisedFromState) {
       return;
     }
 
+    const stateValue = selectedDashboardInputs[props.name];
+
     // @ts-ignore
-    if ((!value || value.length === 0) && urlValue) {
+    if ((!value || value.length === 0) && stateValue) {
       console.log("Setting null");
-      setUrlValue(null);
+      dispatch({ type: "delete_dashboard_input", name: props.name });
       return;
     }
 
@@ -86,22 +97,35 @@ const SelectInput = (props: SelectInputProps) => {
       if (value) {
         // @ts-ignore
         const desiredValue = value.map((v) => v.value).join(",");
-        if (urlValue !== desiredValue) {
+        if (stateValue !== desiredValue) {
           console.log("Setting", desiredValue);
-          setUrlValue(desiredValue);
+          dispatch({
+            type: "set_dashboard_input",
+            name: props.name,
+            value: desiredValue,
+          });
         }
       }
     } else {
       // @ts-ignore
-      if (value && urlValue !== value.value) {
+      if (value && stateValue !== value.value) {
         // @ts-ignore
         console.log("Setting", value.value);
-        // @ts-ignore
-        setUrlValue(value.value);
+        dispatch({
+          type: "set_dashboard_input",
+          name: props.name,
+          // @ts-ignore
+          value: value.value,
+        });
       }
     }
-    // setUrlValue(props.multi ? value.join);
-  }, [props.multi, initialisedFromUrl, urlValue, setUrlValue, value]);
+  }, [
+    props.name,
+    props.multi,
+    initialisedFromState,
+    selectedDashboardInputs,
+    value,
+  ]);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);

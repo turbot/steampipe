@@ -89,3 +89,18 @@ MultiSeries.args = {
     ],
   },
 };
+
+export const PointColorOverrides = Template.bind({});
+PointColorOverrides.args = {
+  data: {
+    columns: [
+      { name: "Type", data_type_name: "TEXT" },
+      { name: "Count", data_type_name: "INT8" },
+    ],
+    rows: [
+      ["User", 12],
+      ["Policy", 93],
+      ["Role", 48],
+    ],
+  },
+};

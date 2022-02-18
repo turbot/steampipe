@@ -480,7 +480,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
 				dashboardexecute.ExecuteDashboardNode(ctx, request.Payload.Dashboard.FullName, s.workspace, s.dbClient)
-			case "set_inputs":
+			case "set_dashboard_inputs":
 				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
