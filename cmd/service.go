@@ -563,9 +563,9 @@ func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, p
 
 	var statusMessage string
 
-	baseMsg := `Steampipe service is running:
+	prefix := `Steampipe service is running:
 `
-	statusSuffix := `
+	suffix := `
 Managing the Steampipe service:
 
   # Get status of the service
@@ -616,10 +616,10 @@ Dashboard:
 	if dbState.Invoker == constants.InvokerService {
 		statusMessage = fmt.Sprintf(
 			"%s%s%s%s",
-			baseMsg,
+			prefix,
 			postgresMsg,
 			dashboardMsg,
-			statusSuffix,
+			suffix,
 		)
 	} else {
 		msg := `
