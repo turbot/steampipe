@@ -10,11 +10,12 @@ import (
 
 // Constants for Config
 const (
-	DefaultInstallDir           = "~/.steampipe"
-	connectionsStateFileName    = "connection.json"
-	versionFileName             = "versions.json"
-	databaseRunningInfoFileName = "steampipe.json"
-	pluginManagerStateFileName  = "plugin_manager.json"
+	DefaultInstallDir            = "~/.steampipe"
+	connectionsStateFileName     = "connection.json"
+	versionFileName              = "versions.json"
+	databaseRunningInfoFileName  = "steampipe.json"
+	pluginManagerStateFileName   = "plugin_manager.json"
+	dashboardServerStateFileName = "dashboard_service.json"
 )
 
 var SteampipeDir string
@@ -112,4 +113,8 @@ func RunningInfoFilePath() string {
 
 func PluginManagerStateFilePath() string {
 	return filepath.Join(EnsureInternalDir(), pluginManagerStateFileName)
+}
+
+func DashboardServiceStateFilePath() string {
+	return filepath.Join(EnsureInternalDir(), dashboardServerStateFileName)
 }
