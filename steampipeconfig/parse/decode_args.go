@@ -158,7 +158,6 @@ func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, eval
 }
 
 func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modconfig.RuntimeDependency, error) {
-
 	// find the expression for this key
 	argsExpr, ok := attr.Expr.(*hclsyntax.TupleConsExpr)
 	if !ok {

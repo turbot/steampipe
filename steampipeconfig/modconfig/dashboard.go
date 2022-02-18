@@ -221,7 +221,12 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 			break
 		}
 
-		if childContainer, ok := child.(*Dashboard); ok {
+		if childDashboard, ok := child.(*Dashboard); ok {
+			if err := childDashboard.WalkResources(resourceFunc); err != nil {
+				return err
+			}
+		}
+		if childContainer, ok := child.(*DashboardContainer); ok {
 			if err := childContainer.WalkResources(resourceFunc); err != nil {
 				return err
 			}
