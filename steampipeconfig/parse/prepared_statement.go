@@ -57,7 +57,7 @@ func parseArgs(argssString string) (*modconfig.QueryArgs, error) {
 	}
 
 	// first check for named args
-	res.Args, err = parseNamedArgs(argsList)
+	res.ArgMap, err = parseNamedArgs(argsList)
 	if err != nil {
 		return nil, err
 	}

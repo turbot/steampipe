@@ -88,28 +88,28 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 		input: `query.q1(p1 => 'foo')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{Args: map[string]string{"p1": "foo"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo"}},
 		},
 	},
 	"single named param extra spaces": {
 		input: `query.q1( p1  =>  'foo' ) `,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{Args: map[string]string{"p1": "foo"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo"}},
 		},
 	},
 	"multiple named params": {
 		input: `query.q1(p1 => 'foo', p2 => 'bar')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{Args: map[string]string{"p1": "foo", "p2": "bar"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo", "p2": "bar"}},
 		},
 	},
 	"multiple named params extra spaces": {
 		input: ` query.q1 ( p1 => 'foo' ,  p2  => 'bar'     ) `,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{Args: map[string]string{"p1": "foo", "p2": "bar"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo", "p2": "bar"}},
 		},
 	},
 }

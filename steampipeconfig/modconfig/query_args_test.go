@@ -22,7 +22,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 	"named params no defs": {
 		args: &QueryArgs{
-			Args: map[string]string{
+			ArgMap: map[string]string{
 				"p1": "'val1'",
 				"p2": "'val2'",
 			},
@@ -32,7 +32,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 	"named params with defs": {
 		args: &QueryArgs{
-			Args: map[string]string{
+			ArgMap: map[string]string{
 				"p1": "'val1'",
 				"p2": "'val2'",
 			},
@@ -45,7 +45,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 	"partial named params with defs and defaults": {
 		args: &QueryArgs{
-			Args: map[string]string{
+			ArgMap: map[string]string{
 				"p1": "'val1'",
 			},
 		},
@@ -79,7 +79,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"partial named params with defs and unmatched defaults": {
 		// only a default for first param, which is populated from the provided positional param
 		args: &QueryArgs{
-			Args: map[string]string{
+			ArgMap: map[string]string{
 				"p1": "val1",
 			},
 		},
@@ -92,7 +92,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"positional and named params": {
 		args: &QueryArgs{
 			ArgsList: []string{"val1", "val2"},
-			Args: map[string]string{
+			ArgMap: map[string]string{
 				"p1": "val1",
 				"p2": "val2",
 			},
