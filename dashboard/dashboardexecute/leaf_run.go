@@ -52,7 +52,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		return nil, err
 	}
 	r.NodeType = parsedName.ItemType
-	// if we have are a query provider, set status to ready
+	// if we have a query provider, set status to ready
 	if _, ok := resource.(modconfig.QueryProvider); ok {
 		r.runStatus = dashboardinterfaces.DashboardRunReady
 	}

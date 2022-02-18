@@ -27,7 +27,6 @@ type DashboardRun struct {
 	NodeType      string                                 `json:"node_type"`
 	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName string                                 `json:"dashboard"`
-	Inputs        []*modconfig.DashboardInput            `json:"inputs"`
 	Path          []string                               `json:"-"`
 	dashboardNode *modconfig.Dashboard
 	parent        dashboardinterfaces.DashboardNodeParent
@@ -45,7 +44,6 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 		Name:          name,
 		NodeType:      modconfig.BlockTypeDashboard,
 		Path:          dashboard.Paths[0],
-		Inputs:        dashboard.Inputs,
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
 		parent:        parent,
