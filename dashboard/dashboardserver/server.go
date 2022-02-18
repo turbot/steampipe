@@ -449,7 +449,12 @@ func (s *Server) Init(ctx context.Context) {
 		s.clearSession(session)
 	})
 
-	s.webSocket.HandleMessage(func(session *melody.Session, msg []byte) {
+	s.webSocket.HandleMessage(s.handleMessageFunc(ctx))
+	outputMessage(ctx, "Initialization complete")
+}
+
+func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Session, msg []byte) {
+	return func(session *melody.Session, msg []byte) {
 		log.Println("[TRACE] Got message", string(msg))
 		var request ClientRequest
 		// if we could not decode message - ignore
@@ -472,10 +477,14 @@ func (s *Server) Init(ctx context.Context) {
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
 				dashboardexecute.ExecuteDashboardNode(ctx, request.Payload.Dashboard.FullName, s.workspace, s.dbClient)
+			case "set_inputs":
+				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
+				dashboardClientInfo := s.getSession(session)
+				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
+				dashboardexecute.SetDashboardInputs(ctx, request.Payload.Dashboard.FullName, request.Payload.InputValues)
 			}
 		}
-	})
-	outputMessage(ctx, "Initialization complete")
+	}
 }
 
 func (s *Server) getSession(session *melody.Session) *DashboardClientInfo {
