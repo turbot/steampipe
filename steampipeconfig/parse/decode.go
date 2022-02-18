@@ -30,7 +30,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	blocks, err := runCtx.BlocksToDecode()
 
 	// now clear dependencies from run context - they will be rebuilt
-	// TOTO [reports] ALSO CLEAR MOD CHILDREN WHICH MAY HAVE BEEN PARTIALLY ADDED
+	// TODO [reports] ALSO CLEAR MOD CHILDREN WHICH MAY HAVE BEEN PARTIALLY ADDED
 	// THEN WE CAN UPDATE THE DUPE CHECKING CODE
 	runCtx.ClearDependencies()
 

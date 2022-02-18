@@ -44,3 +44,14 @@ func ExecuteDashboardNode(ctx context.Context, dashboardName string, workspace *
 
 	return nil
 }
+
+func SetDashboardInputs(_ context.Context, dashboardName string, inputs map[string]string) error {
+	// find the execution
+	executionTree, found := executions[dashboardName]
+	if !found {
+		return fmt.Errorf("dashboard %s is not running", dashboardName)
+	}
+
+	// TODO CHECK STATUS - if complete re-execute
+	return executionTree.SetInputs(inputs)
+}

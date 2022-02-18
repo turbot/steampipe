@@ -89,6 +89,21 @@ func (e *DashboardExecutionTree) GetName() string {
 	return e.workspace.Mod.ShortName
 }
 
+func (e *DashboardExecutionTree) SetInputs(inputValues map[string]string) error {
+	for name, value := range inputValues {
+		// first find a matching input
+		input, found := e.Root.GetInput(name)
+		if !found {
+			return fmt.Errorf("no input found matchint '%s'", name)
+		}
+		// set the input value
+		input.SetValue(value)
+		// now see if anyone needs to be notified about this input
+		e.notifyInputAvailable(name)
+	}
+	return nil
+}
+
 // ChildCompleteChan implements DashboardNodeParent
 func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardinterfaces.DashboardNodeRun {
 	return e.runComplete
@@ -96,9 +111,8 @@ func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardinterfaces.Da
 
 func (e *DashboardExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
 	depChan := make(chan (bool), 1)
-	// TOTO [reports] for now verify we only bind inputs to args (somewhere)
 
-	e.subscribeToInput(dependency.PropertyPath.Name, depChan)
+	e.subscribeToInput(dependency.SourceResource.GetUnqualifiedName(), depChan)
 
 	select {
 	case <-ctx.Done():
@@ -113,4 +127,13 @@ func (e *DashboardExecutionTree) subscribeToInput(inputName string, depChan chan
 	defer e.inputLock.Unlock()
 
 	e.inputDataSubscriptions[inputName] = append(e.inputDataSubscriptions[inputName], depChan)
+}
+
+func (e *DashboardExecutionTree) notifyInputAvailable(inputName string) {
+	e.inputLock.Lock()
+	defer e.inputLock.Unlock()
+
+	for _, c := range e.inputDataSubscriptions[inputName] {
+		c <- true
+	}
 }
