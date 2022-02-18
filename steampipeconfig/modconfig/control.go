@@ -31,7 +31,7 @@ type Control struct {
 	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"title,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
