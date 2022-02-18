@@ -421,7 +421,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 	queryString := strings.Join(c.interactiveBuffer, "\n")
 
 	// in case of a named query call with params, parse the where clause
-	query, _, err := c.workspace().ResolveQueryAndArgs(queryString)
+	query, _, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
 	if err != nil {
 		// if we fail to resolve, show error but do not return it - we want to stay in the prompt
 		utils.ShowError(ctx, err)
