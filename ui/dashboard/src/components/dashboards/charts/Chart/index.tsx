@@ -50,9 +50,9 @@ echarts.use([
 const getCommonBaseOptions = () => ({
   animation: false,
   color: themeColors,
-  grid: {
-    top: "10%",
-  },
+  // grid: {
+  //   top: "10%",
+  // },
   legend: {
     orient: "horizontal",
     left: "center",

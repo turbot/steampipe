@@ -2,10 +2,10 @@
 steampipe:
 	go build -o  /usr/local/bin/steampipe
 
-report_assets:
-	$(MAKE) -C ui/report
+dashboard_assets:
+	$(MAKE) -C ui/dashboard
 
 all:
 	$(MAKE) -C pluginmanager
-	$(MAKE) -C ui/report
+	$(MAKE) -C ui/dashboard
 	go build -o  /usr/local/bin/steampipe

@@ -134,33 +134,33 @@ jobs:
         node-version: '16'
 
     - name: Setup Yarn
-      working-directory: ./ui/report
+      working-directory: ./ui/dashboard
       run: |-
         rm -rf ./build
 
     - name: YARN Install
-      working-directory: ./ui/report
+      working-directory: ./ui/dashboard
       run: |-
         unset CI
         yarn install
 
     - name: Run Unit Tests
-      working-directory: ./ui/report
+      working-directory: ./ui/dashboard
       run: |
         yarn install
         CI=true yarn test
 
     - name: YARN Build
-      working-directory: ./ui/report
+      working-directory: ./ui/dashboard
       run: |-
         unset CI
         yarn build
 
     - name: Move Build Assets
       run: |-
-        mkdir -p report_ui_build
-        mv ./ui/report/build/* report_ui_build/
-        ls -la report_ui_build
+        mkdir -p dashboard_ui_build
+        mv ./ui/dashboard/build/* dashboard_ui_build/
+        ls -la dashboard_ui_build
 
     - name: Create a version file
       run: |-
@@ -170,7 +170,7 @@ jobs:
               "version":$version,
           }' )
 
-          echo $JSON_STRING > ./report_ui_build/versions.json
+          echo $JSON_STRING > ./dashboard_ui_build/versions.json
 
     - name: Create Image Config File
       run: |-
@@ -208,7 +208,7 @@ jobs:
       run: |
         cat config.json
         cat annotations.json
-        cat report_ui_build/versions.json
+        cat dashboard_ui_build/versions.json
         REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:$GITHUB_RUN_ID"
         echo "::set-output name=REF::$REF"
 
@@ -217,7 +217,7 @@ jobs:
         oras push ${{ steps.image_ref.outputs.REF }} \
           --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
           --manifest-annotations annotations.json \
-          report_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
+          dashboard_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
 
     - name: Set version tags on Pushed Image
       uses: ./.github/actions/semver-tags

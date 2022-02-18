@@ -47,25 +47,25 @@ jobs:
       run: |-
         unset CI
         rm -rf ./build
-      working-directory: ./ui/report
+      working-directory: ./ui/dashboard
 
     - name: YARN Install
       run: |-
         unset CI
         yarn install
-      working-directory: ./ui/report
+      working-directory: ./ui/dashboard
 
     - name: YARN Build
       run: |-
         unset CI
         yarn build
-      working-directory: ./ui/report
+      working-directory: ./ui/dashboard
 
     - name: Move Build Assets
       run: |-
-        mkdir -p report_ui_build
-        mv ./ui/report/build/* report_ui_build/
-        ls -la report_ui_build
+        mkdir -p dashboard_ui_build
+        mv ./ui/dashboard/build/* dashboard_ui_build/
+        ls -la dashboard_ui_build
 
     - name: Create a version file
       run: |-
@@ -75,7 +75,7 @@ jobs:
               "version":$version,
           }' )
 
-          echo $JSON_STRING > ./report_ui_build/versions.json
+          echo $JSON_STRING > ./dashboard_ui_build/versions.json
 
     - name: Create Image Config File
       run: |-
@@ -113,7 +113,7 @@ jobs:
       run: |
         cat config.json
         cat annotations.json
-        cat report_ui_build/versions.json
+        cat dashboard_ui_build/versions.json
         REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
         echo "::set-output name=REF::$REF"
 
@@ -140,7 +140,7 @@ jobs:
         oras push ${{ steps.image_ref.outputs.REF }} \
           --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
           --manifest-annotations annotations.json \
-          report_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
+          dashboard_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
 
     - name: Set version tags
       uses: ./.github/actions/semver-tags
