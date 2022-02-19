@@ -395,7 +395,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 
 		for _, changedDashboardName := range changedDashboardNames {
 			if helpers.StringSliceContains(dashboardssBeingWatched, changedDashboardName) {
-				dashboardexecute.ExecuteDashboardNode(s.context, changedDashboardName, s.workspace, s.dbClient)
+				dashboardexecute.ExecuteDashboard(s.context, changedDashboardName, s.workspace, s.dbClient)
 			}
 		}
 
@@ -411,7 +411,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 
 		for _, newDashboardName := range newDashboardNames {
 			if helpers.StringSliceContains(dashboardssBeingWatched, newDashboardName) {
-				dashboardexecute.ExecuteDashboardNode(s.context, newDashboardName, s.workspace, s.dbClient)
+				dashboardexecute.ExecuteDashboard(s.context, newDashboardName, s.workspace, s.dbClient)
 			}
 		}
 
@@ -476,15 +476,21 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 				}
 				session.Write(payload)
 			case "select_dashboard":
-				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-				dashboardexecute.ExecuteDashboardNode(ctx, request.Payload.Dashboard.FullName, s.workspace, s.dbClient)
+				dashboardexecute.ExecuteDashboard(ctx, request.Payload.Dashboard.FullName, s.workspace, s.dbClient)
 			case "set_dashboard_inputs":
-				log.Printf("[TRACE] Got event: %v\n", request.Payload.Dashboard)
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
 				dashboardexecute.SetDashboardInputs(ctx, request.Payload.Dashboard.FullName, request.Payload.InputValues)
+			case "cancel_dashboard":
+				dashboardClientInfo := s.getSession(session)
+				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
+				dashboardexecute.CancelDashboard(ctx, request.Payload.Dashboard.FullName)
+			case "reset_dashboard":
+				dashboardClientInfo := s.getSession(session)
+				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
+				dashboardexecute.ResetDashboard(ctx, request.Payload.Dashboard.FullName)
 			}
 		}
 	}

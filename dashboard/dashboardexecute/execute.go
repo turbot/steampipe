@@ -4,56 +4,81 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/workspace"
 )
 
+// TODO [repprts] we probably need locking
 // map of execution trees, keyed by dashboard name
 var executions = make(map[string]*DashboardExecutionTree)
 
-func ExecuteDashboardNode(ctx context.Context, dashboardName string, workspace *workspace.Workspace, client db_common.Client) error {
-	// TODO [reports] if this report is already running - cancel ??? fail???
-	if _, running := executions[dashboardName]; running {
-		return fmt.Errorf("dashboard %s is already running", dashboardName)
-	}
-
+func ExecuteDashboard(ctx context.Context, dashboardName string, workspace *workspace.Workspace, client db_common.Client) error {
 	// TODO SET INPUTS
-
-	executionTree, err := NewReportExecutionTree(dashboardName, client, workspace)
-	if err != nil {
-		return err
+	// TODO [reports] if this report is already running - cancel ??? fail???
+	var executionTree *DashboardExecutionTree
+	executionTree, found := executions[dashboardName]
+	if found {
+		// there is alread an execution tree - rerun
+		if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunReady {
+			return fmt.Errorf("dashboard %s is already running", dashboardName)
+		}
+	} else {
+		// there is no execution tree - reset
+		var err error
+		executionTree, err = NewReportExecutionTree(dashboardName, client, workspace)
+		if err != nil {
+			return err
+		}
+		executions[dashboardName] = executionTree
 	}
 
-	executions[dashboardName] = executionTree
-	go func() {
-		workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{DashboardNode: executionTree.Root})
-		defer func() {
-			// remove tree from map of executions
-			delete(executions, dashboardName)
-			// send completed event
-			workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{Dashboard: executionTree.Root})
-		}()
+	// TODO [reports] for now leave execution in tree?
+	// for now we leave the tree in the map
 
-		if err := executionTree.Execute(ctx); err != nil {
-			if executionTree.Root.GetRunStatus() != dashboardinterfaces.DashboardRunError {
-				// set error state on the root node
-				executionTree.Root.SetError(err)
-			}
-		}
-	}()
+	go executionTree.Execute(ctx)
 
 	return nil
 }
 
-func SetDashboardInputs(_ context.Context, dashboardName string, inputs map[string]string) error {
+func SetDashboardInputs(ctx context.Context, dashboardName string, inputs map[string]*string) error {
 	// find the execution
 	executionTree, found := executions[dashboardName]
 	if !found {
 		return fmt.Errorf("dashboard %s is not running", dashboardName)
 	}
 
-	// TODO CHECK STATUS - if complete re-execute
+	// check the dashboard run status - if it is complete,  re-execute
+	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
+		go executionTree.Execute(ctx)
+	}
+
 	return executionTree.SetInputs(inputs)
+}
+
+func ResetDashboard(_ context.Context, dashboardName string) {
+	// find the execution
+	executionTree, found := executions[dashboardName]
+	if !found {
+		// nothing to do
+		return
+	}
+
+	// cancel if in progress
+	executionTree.Cancel()
+
+	// remove from execution tree
+	delete(executions, dashboardName)
+}
+
+func CancelDashboard(_ context.Context, dashboardName string) {
+	// find the execution
+	executionTree, found := executions[dashboardName]
+	if !found {
+		// nothing to do
+		return
+	}
+
+	// cancel if in progress
+	executionTree.Cancel()
 }

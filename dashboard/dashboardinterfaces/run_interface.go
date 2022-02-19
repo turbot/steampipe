@@ -8,8 +8,10 @@ import (
 
 type DashboardRunStatus string
 
+// TODO [report] think about status - do we need in progress
 const (
 	DashboardRunReady    DashboardRunStatus = "ready"
+	DashboardRunBlocked                     = "blocked"
 	DashboardRunComplete                    = "complete"
 	DashboardRunError                       = "error"
 )
