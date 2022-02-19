@@ -90,5 +90,5 @@ type UniqueNameProvider interface {
 type RuntimeDependencySource interface {
 	GetUnqualifiedName() string
 	GetValue() *string
-	SetValue(value string)
+	SetValue(value *string)
 }
