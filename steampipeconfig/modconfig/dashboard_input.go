@@ -267,8 +267,8 @@ func (i *DashboardInput) GetValue() *string {
 }
 
 // SetValue implements RuntimeDependency
-func (i *DashboardInput) SetValue(value string) {
-	i.Value = &value
+func (i *DashboardInput) SetValue(value *string) {
+	i.Value = value
 }
 
 // DashboardNameSuffix creates a sanitised name suffix from our parent dashboard

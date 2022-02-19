@@ -3,7 +3,6 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
@@ -151,15 +150,10 @@ func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	for _, dependency := range runtimeDependencies {
 		// check with the top level dashboard whether the dependency is available
 		if !dependency.IsResolved() {
-			go func() {
-				time.Sleep(1 * time.Second)
-				r.executionTree.SetInputs(map[string]string{"input.i1": "FOO"})
-			}()
 			if err := r.executionTree.waitForRuntimeDependency(ctx, dependency); err != nil {
 				return err
 			}
 
-			//dependency.SourceResource.SetValue("FOO")
 			// now get the value again
 			if !dependency.Resolve() {
 				// should now be resolved`
