@@ -326,6 +326,7 @@ function reducer(state, action) {
         },
       };
     case "set_dashboard_input":
+      console.log("set_dashboard_input", action);
       return {
         ...state,
         selectedDashboardInputs: {
@@ -334,6 +335,7 @@ function reducer(state, action) {
         },
       };
     case "set_dashboard_inputs":
+      console.log("set_dashboard_inputs", action);
       return {
         ...state,
         selectedDashboardInputs: action.value,
@@ -460,13 +462,19 @@ const DashboardProvider = ({ children }) => {
       dispatch({ type: "select_dashboard", dashboard: null });
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
-    // or we've changed to a different report in the URL then clear the inputs and select the
+    // select that dashboard
+    else if (dashboardName && !state.selectedDashboard) {
+      const dashboard = state.dashboards.find(
+        (dashboard) => dashboard.full_name === dashboardName
+      );
+      dispatch({ type: "select_dashboard", dashboard });
+    }
+    // Else if we've changed to a different report in the URL then clear the inputs and select the
     // dashboard in state
     else if (
-      (dashboardName && !state.selectedDashboard) ||
-      (dashboardName &&
-        state.selectedDashboard &&
-        dashboardName !== state.selectedDashboard.full_name)
+      dashboardName &&
+      state.selectedDashboard &&
+      dashboardName !== state.selectedDashboard.full_name
     ) {
       dispatch({ type: "clear_dashboard_inputs" });
       const dashboard = state.dashboards.find(
@@ -585,9 +593,22 @@ const DashboardProvider = ({ children }) => {
 
   /*eslint-disable */
   useEffect(() => {
+    if (!previousSelectedDashboardStates) {
+      return;
+    }
+
+    if (
+      isEqual(
+        state.selectedDashboardInputs,
+        // @ts-ignore
+        previousSelectedDashboardStates.selectedDashboardInputs
+      )
+    ) {
+      return;
+    }
     // Sync params into the URL
     setSearchParams(state.selectedDashboardInputs);
-  }, [state.selectedDashboardInputs]);
+  }, [previousSelectedDashboardStates, state.selectedDashboardInputs]);
   /*eslint-enable */
 
   useEffect(() => {
