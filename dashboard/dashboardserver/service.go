@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -115,12 +116,18 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		return err
 	}
 
+	err = waitForDashboardServerStartup(ctx, int(serverPort))
+	if err != nil {
+		return err
+	}
+
 	state := &DashboardServiceState{
 		Pid:        cmd.Process.Pid,
 		Port:       int(serverPort),
 		ListenType: string(serverListen),
 		Listen:     constants.DatabaseListenAddresses,
 	}
+
 	if serverListen == ListenTypeNetwork {
 		addrs, _ := utils.LocalAddresses()
 		state.Listen = append(state.Listen, addrs...)
@@ -138,6 +145,29 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 	}
 
 	return nil
+}
+
+func waitForDashboardServerStartup(ctx context.Context, serverPort int) error {
+	utils.LogTime("db.waitForConnection start")
+	defer utils.LogTime("db.waitForConnection end")
+
+	pingTimer := time.NewTicker(10 * time.Millisecond)
+	timeoutAt := time.After(5 * time.Second)
+	defer pingTimer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-pingTimer.C:
+			_, err := http.Get(fmt.Sprintf("http://localhost:%d", serverPort))
+			if err == nil {
+				return err
+			}
+		case <-timeoutAt:
+			return fmt.Errorf("dashboard server startup failed")
+		}
+	}
 }
 
 func setupDashboardServerlogSink() hclog.Logger {
