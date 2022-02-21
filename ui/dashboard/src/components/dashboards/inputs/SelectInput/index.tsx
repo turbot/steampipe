@@ -88,7 +88,6 @@ const SelectInput = (props: SelectInputProps) => {
 
     // @ts-ignore
     if ((!value || value.length === 0) && stateValue) {
-      console.log("Setting null");
       dispatch({ type: "delete_dashboard_input", name: props.name });
       return;
     }
@@ -98,7 +97,6 @@ const SelectInput = (props: SelectInputProps) => {
         // @ts-ignore
         const desiredValue = value.map((v) => v.value).join(",");
         if (stateValue !== desiredValue) {
-          console.log("Setting", desiredValue);
           dispatch({
             type: "set_dashboard_input",
             name: props.name,
@@ -109,8 +107,6 @@ const SelectInput = (props: SelectInputProps) => {
     } else {
       // @ts-ignore
       if (value && stateValue !== value.value) {
-        // @ts-ignore
-        console.log("Setting", value.value);
         dispatch({
           type: "set_dashboard_input",
           name: props.name,
