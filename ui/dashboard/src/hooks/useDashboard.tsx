@@ -511,9 +511,9 @@ const DashboardProvider = ({ children }) => {
         previousSelectedDashboardStates.selectedDashboard.full_name
     ) {
       webSocket.current.send(
-          JSON.stringify({
-            action: "clear_dashboard",
-          })
+        JSON.stringify({
+          action: "clear_dashboard",
+        })
       );
       webSocket.current.send(
         JSON.stringify({
@@ -583,10 +583,12 @@ const DashboardProvider = ({ children }) => {
       }
   }, [previousSelectedDashboardStates, state.selectedDashboard]);
 
+  /*eslint-disable */
   useEffect(() => {
     // Sync params into the URL
     setSearchParams(state.selectedDashboardInputs);
   }, [state.selectedDashboardInputs]);
+  /*eslint-enable */
 
   useEffect(() => {
     if (!state.availableDashboardsLoaded || !dashboardName) {
