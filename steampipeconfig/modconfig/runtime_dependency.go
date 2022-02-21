@@ -3,7 +3,6 @@ package modconfig
 import (
 	"fmt"
 	"strings"
-	"sync"
 )
 
 type RuntimeDependency struct {
@@ -12,10 +11,6 @@ type RuntimeDependency struct {
 	TargetPropertyPath []string
 	// function to set the target
 	SetTargetFunc func(string)
-
-	// the resolved value
-	value     *string
-	valueLock sync.Mutex
 }
 
 func (d *RuntimeDependency) String() string {
@@ -42,25 +37,4 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 	// cast source to RuntimeDependencySource
 	d.SourceResource = sourceResource.(RuntimeDependencySource)
 	return nil
-}
-
-func (d *RuntimeDependency) IsResolved() bool {
-	d.valueLock.Lock()
-	defer d.valueLock.Unlock()
-	return d.value != nil
-}
-
-func (d *RuntimeDependency) Resolve() bool {
-	d.valueLock.Lock()
-	defer d.valueLock.Unlock()
-
-	// did we succeed?
-	d.value = d.SourceResource.GetValue()
-
-	if d.value != nil {
-		d.SetTargetFunc(*d.value)
-		return true
-	}
-
-	return false
 }
