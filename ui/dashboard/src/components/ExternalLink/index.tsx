@@ -4,6 +4,7 @@ const ExternalLink = ({
   url,
   withReferrer = false,
 }) => (
+  /*eslint-disable */
   <a
     className={className}
     href={url}
@@ -12,6 +13,7 @@ const ExternalLink = ({
   >
     {children}
   </a>
+  /*eslint-enable */
 );
 
 export default ExternalLink;
