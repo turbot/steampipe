@@ -26,6 +26,9 @@ dashboard dashboard_with_child_res {
     src = "https://steampipe.io/images/logo.png"
     alt = "steampipe"
   }
+  input "i1" {
+    title = "example input"
+  }
   table {
     title = "example table"
     sql = "select 1"
