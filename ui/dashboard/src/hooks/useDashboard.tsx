@@ -327,6 +327,11 @@ function reducer(state, action) {
           [action.name]: action.value,
         },
       };
+    case "set_dashboard_inputs":
+      return {
+        ...state,
+        selectedDashboardInputs: action.value,
+      };
     case "workspace_error":
       return { ...state, error: action.error };
     // Not emitting these from the dashboard server yet
@@ -342,23 +347,38 @@ function reducer(state, action) {
   }
 }
 
+const initialiseInputs = (
+  initialState: IDashboardContext,
+  searchParams: URLSearchParams
+) => {
+  const selectedDashboardInputs = {};
+  // @ts-ignore
+  for (const entry of searchParams.entries()) {
+    if (!entry[0].startsWith("input")) {
+      continue;
+    }
+    selectedDashboardInputs[entry[0]] = entry[1];
+  }
+  return {
+    ...initialState,
+    selectedDashboardInputs,
+  };
+};
+
 const DashboardProvider = ({ children }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  console.log(searchParams);
-  const [state, dispatch] = useReducer(reducer, {
-    dashboards: [],
-    dashboard: null,
-    selectedPanel: null,
-    selectedDashboard: null,
-    selectedDashboardInputs: Object.fromEntries(
-      Object.entries(searchParams).filter((entry) =>
-        entry[0].startsWith("input")
-      )
-    ),
-    sqlDataMap: {},
-  });
-
-  console.log(state.selectedDashboardInputs);
+  const [state, dispatch] = useReducer(
+    reducer,
+    {
+      dashboards: [],
+      dashboard: null,
+      selectedPanel: null,
+      selectedDashboard: null,
+      selectedDashboardInputs: {},
+      sqlDataMap: {},
+    },
+    (initialState) => initialiseInputs(initialState, searchParams)
+  );
 
   const { dashboardName } = useParams();
   const navigate = useNavigate();
@@ -509,6 +529,7 @@ const DashboardProvider = ({ children }) => {
     }
     // If the dashboard we're viewing no longer exists, go back to the main page
     if (!state.dashboards.find((r) => r.full_name === dashboardName)) {
+      console.log("Navigating to /");
       navigate("/", { replace: true });
     }
   }, [
