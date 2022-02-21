@@ -20,6 +20,7 @@ type DashboardExecutionTree struct {
 	Root *DashboardRun
 
 	dashboardName string
+	sessionId     string
 	client        db_common.Client
 	runs          map[string]dashboardinterfaces.DashboardNodeRun
 	workspace     *workspace.Workspace
@@ -31,15 +32,16 @@ type DashboardExecutionTree struct {
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
-func NewReportExecutionTree(reportName string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
+func NewReportExecutionTree(reportName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
 	// now populate the DashboardExecutionTree
 	reportExecutionTree := &DashboardExecutionTree{
+		dashboardName:          reportName,
+		sessionId:              sessionId,
 		client:                 client,
 		runs:                   make(map[string]dashboardinterfaces.DashboardNodeRun),
 		workspace:              workspace,
 		runComplete:            make(chan dashboardinterfaces.DashboardNodeRun, 1),
 		inputDataSubscriptions: make(map[string][]chan bool),
-		dashboardName:          reportName,
 	}
 
 	// create the root run node (either a report run or a counter run)
@@ -74,8 +76,14 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) error {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
 	workspace := e.workspace
-	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{DashboardNode: e.Root})
-	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{Dashboard: e.Root})
+	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
+		DashboardNode: e.Root,
+		Session:       e.sessionId,
+	})
+	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{
+		Dashboard: e.Root,
+		Session:   e.sessionId,
+	})
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end DashboardExecutionTree.Execute")
