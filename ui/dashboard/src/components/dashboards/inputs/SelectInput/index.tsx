@@ -120,6 +120,7 @@ const SelectInput = (props: SelectInputProps) => {
       }
     }
   }, [
+    dispatch,
     props.name,
     props.multi,
     initialisedFromState,
