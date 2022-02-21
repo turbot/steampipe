@@ -76,10 +76,10 @@ func init() {
 				},
 			},
 		},
-		"single_mod_duplicate_query": {
-			source:   "testdata/mods/single_mod_duplicate_query",
-			expected: "ERROR",
-		},
+		// "single_mod_duplicate_query": {
+		// 	source:   "testdata/mods/single_mod_duplicate_query",
+		// 	expected: "ERROR",
+		// },
 		"single_mod_no_query": {
 			source: "testdata/mods/single_mod_no_query",
 			expected: &modconfig.Mod{
@@ -947,7 +947,7 @@ func init() {
 						FullName:        "dashboard_with_children.dashboard.dashboard_with_child_res",
 						UnqualifiedName: "dashboard.dashboard_with_child_res",
 						Title:           toStringPointer("dashboard with child resources"),
-						ChildNames:      []string{"dashboard_with_children.container.anonymous_container", "dashboard_with_children.chart.anonymous_chart", "dashboard_with_children.card.anonymous_card", "dashboard_with_children.hierarchy.anonymous_hierarchy", "dashboard_with_children.image.anonymous_image", "dashboard_with_children.table.anonymous_table", "dashboard_with_children.text.anonymous_text"},
+						ChildNames:      []string{"dashboard_with_children.container.anonymous_container", "dashboard_with_children.chart.anonymous_chart", "dashboard_with_children.card.anonymous_card", "dashboard_with_children.hierarchy.anonymous_hierarchy", "dashboard_with_children.image.anonymous_image", "dashboard_with_children.input.i1_dashboard_dashboard_with_child_res", "dashboard_with_children.table.anonymous_table", "dashboard_with_children.text.anonymous_text"},
 						HclType:         "dashboard",
 					},
 				},
@@ -985,6 +985,14 @@ func init() {
 						UnqualifiedName: "hierarchy.anonymous_hierarchy",
 						Title:           toStringPointer("example hierarchy"),
 						Type:            toStringPointer("graph"),
+					},
+				},
+				DashboardInputs: map[string]*modconfig.DashboardInput{
+					"dashboard_with_children.input.i1_dashboard_dashboard_with_child_res": {
+						FullName:        "dashboard_with_children.input.i1_dashboard_dashboard_with_child_res",
+						ShortName:       "i1",
+						UnqualifiedName: "input.i1",
+						Title:           toStringPointer("example input"),
 					},
 				},
 				DashboardImages: map[string]*modconfig.DashboardImage{
