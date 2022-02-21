@@ -109,8 +109,41 @@ const getCommonBaseOptionsForChartType = (
           nameTextStyle: { color: themeColors.foreground },
         },
       };
-    case "column":
+    case "area":
     case "line":
+      return {
+        legend: {
+          show: series ? series.length > 1 : false,
+          textStyle: {
+            color: themeColors.foreground,
+          },
+        },
+        // Declare an x-axis (category axis).
+        // The category map the first row in the dataset by default.
+        xAxis: {
+          type: "category",
+          boundaryGap: type !== "area",
+          axisLabel: { color: themeColors.foreground },
+          axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
+          axisTick: { show: false },
+          nameTextStyle: { color: themeColors.foreground },
+        },
+        // Declare a y-axis (value axis).
+        yAxis: {
+          axisLabel: { color: themeColors.foreground },
+          axisLine: {
+            show: true,
+            lineStyle: { color: themeColors.foregroundLightest },
+          },
+          axisTick: { show: true },
+          splitLine: { show: false },
+          nameTextStyle: { color: themeColors.foreground },
+        },
+        tooltip: {
+          trigger: "axis",
+        },
+      };
+    case "column":
       return {
         legend: {
           show: series ? series.length > 1 : false,
@@ -362,6 +395,20 @@ const getSeriesForChartType = (
           center: ["50%", "40%"],
           radius: ["30%", "50%"],
           label: { color: themeColors.foreground },
+        });
+        break;
+      case "area":
+        series.push({
+          name: seriesName,
+          type: "line",
+          ...(properties && properties.grouping === "compare"
+            ? {}
+            : { stack: "total" }),
+          areaStyle: {},
+          emphasis: {
+            focus: "series",
+          },
+          itemStyle: { color: seriesColor },
         });
         break;
       case "line":

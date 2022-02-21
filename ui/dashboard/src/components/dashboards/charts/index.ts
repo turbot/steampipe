@@ -1,3 +1,4 @@
+import AreaChart from "./AreaChart";
 import BarChart from "./BarChart";
 import ColumnChart from "./ColumnChart";
 import DonutChart from "./DonutChart";
@@ -70,7 +71,14 @@ export type ChartProps = BaseChartProps & {
   properties?: ChartProperties;
 };
 
-export type ChartType = "bar" | "column" | "donut" | "line" | "pie" | "table";
+export type ChartType =
+  | "area"
+  | "bar"
+  | "column"
+  | "donut"
+  | "line"
+  | "pie"
+  | "table";
 
 export interface IChart {
   type: ChartType;
@@ -83,6 +91,7 @@ const TableWrapper: IChart = {
 };
 
 const charts = {
+  [AreaChart.type]: AreaChart,
   [BarChart.type]: BarChart,
   [ColumnChart.type]: ColumnChart,
   [DonutChart.type]: DonutChart,
