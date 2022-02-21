@@ -48,7 +48,7 @@ type Server struct {
 	context          context.Context
 	dbClient         db_common.Client
 	mutex            *sync.Mutex
-	dashboardClients map[*melody.Session]*DashboardClientInfo
+	dashboardClients map[string]*DashboardClientInfo
 	webSocket        *melody.Melody
 	workspace        *workspace.Workspace
 }
@@ -64,6 +64,7 @@ type ExecutionPayload struct {
 }
 
 type DashboardClientInfo struct {
+	Session   *melody.Session
 	Dashboard *string
 }
 
@@ -72,7 +73,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 
 	webSocket := melody.New()
 
-	var dashboardClients = make(map[*melody.Session]*DashboardClientInfo)
+	var dashboardClients = make(map[string]*DashboardClientInfo)
 
 	var mutex = &sync.Mutex{}
 
@@ -264,16 +265,10 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		if payloadError != nil {
 			return
 		}
-		dashboardName := e.DashboardNode.GetName()
 		s.mutex.Lock()
-		for session, dashboardClientInfo := range s.dashboardClients {
-			// If this session is interested in this dashboard, broadcast to it
-			if (dashboardClientInfo.Dashboard != nil) && *dashboardClientInfo.Dashboard == dashboardName {
-				session.Write(payload)
-			}
-		}
+		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
-		outputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", dashboardName))
+		outputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.DashboardNode.GetName()))
 
 	case *dashboardevents.LeafNodeError:
 		log.Println("[TRACE] Got leaf node error event", *e)
@@ -284,14 +279,8 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		if payloadError != nil {
 			return
 		}
-		paths := e.Node.GetPath()
 		s.mutex.Lock()
-		for session, dashboardClientInfo := range s.dashboardClients {
-			// If this session is interested in this dashboard, broadcast to it
-			if (dashboardClientInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *dashboardClientInfo.Dashboard) {
-				session.Write(payload)
-			}
-		}
+		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
 
 	case *dashboardevents.LeafNodeComplete:
@@ -300,14 +289,8 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		if payloadError != nil {
 			return
 		}
-		paths := e.Node.GetPath()
 		s.mutex.Lock()
-		for session, dashboardClientInfo := range s.dashboardClients {
-			// If this session is interested in this dashboard, broadcast to it
-			if (dashboardClientInfo.Dashboard != nil) && helpers.StringSliceContains(paths, *dashboardClientInfo.Dashboard) {
-				session.Write(payload)
-			}
-		}
+		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
 
 	case *dashboardevents.DashboardChanged:
@@ -393,11 +376,15 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			changedDashboardNames = append(changedDashboardNames, changedDashboard.Name)
 		}
 
-		//for _, changedDashboardName := range changedDashboardNames {
-		//	if helpers.StringSliceContains(dashboardssBeingWatched, changedDashboardName) {
-		//		dashboardexecute.ExecuteDashboard(s.context, changedDashboardName, s.workspace, s.dbClient)
-		//	}
-		//}
+		for _, changedDashboardName := range changedDashboardNames {
+			s.mutex.Lock()
+			for sessionId, dashboardClientInfo := range s.dashboardClients {
+				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == changedDashboardName {
+					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, nil, s.workspace, s.dbClient)
+				}
+			}
+			s.mutex.Unlock()
+		}
 
 		// Special case - if we previously had a workspace error, any previously existing dashboards
 		// will come in here as new, so we need to check if any of those new dashboards are being watched.
@@ -409,11 +396,15 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			newDashboardNames = append(newDashboardNames, newDashboard.Name())
 		}
 
-		//for _, newDashboardName := range newDashboardNames {
-		//	if helpers.StringSliceContains(dashboardssBeingWatched, newDashboardName) {
-		//		dashboardexecute.ExecuteDashboard(s.context, newDashboardName, s.workspace, s.dbClient)
-		//	}
-		//}
+		for _, newDashboardName := range newDashboardNames {
+			s.mutex.Lock()
+			for sessionId, dashboardClientInfo := range s.dashboardClients {
+				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == newDashboardName {
+					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, nil, s.workspace, s.dbClient)
+				}
+			}
+			s.mutex.Unlock()
+		}
 
 	case *dashboardevents.DashboardError:
 		log.Println("[TRACE] Got dashboard error event", *e)
@@ -429,12 +420,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 		dashboardName := e.Dashboard.GetName()
 		s.mutex.Lock()
-		for session, dashboardClientInfo := range s.dashboardClients {
-			// If this session is interested in this dashboard, broadcast to it
-			if (dashboardClientInfo.Dashboard != nil) && *dashboardClientInfo.Dashboard == dashboardName {
-				session.Write(payload)
-			}
-		}
+		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
 		outputReady(s.context, fmt.Sprintf("Execution complete: %s", dashboardName))
 	}
@@ -449,7 +435,7 @@ func (s *Server) Init(ctx context.Context) {
 
 	s.webSocket.HandleDisconnect(func(session *melody.Session) {
 		log.Println("[TRACE] Client disconnected")
-		s.clearSession(session)
+		s.clearSession(ctx, session)
 	})
 
 	s.webSocket.HandleMessage(s.handleMessageFunc(ctx))
@@ -461,7 +447,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 		log.Println("[TRACE] Got message", string(msg))
 
 		// TODO TEMP GET SESSION ID
-		sessionId := s.GetSessionId(session)
+		sessionId := s.getSessionId(session)
 
 		var request ClientRequest
 		// if we could not decode message - ignore
@@ -480,40 +466,47 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 				}
 				session.Write(payload)
 			case "select_dashboard":
-				dashboardClientInfo := s.getSession(session)
-				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
+				s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName)
 				dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
 			case "set_dashboard_inputs":
-				dashboardClientInfo := s.getSession(session)
-				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
 				dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues)
 			case "clear_dashboard":
-				dashboardClientInfo := s.getSession(session)
-				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
 				dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
 			}
 		}
 	}
 }
 
-func (s *Server) getSession(session *melody.Session) *DashboardClientInfo {
+func (s *Server) setDashboardForSession(sessionID string, dashboardName string) *DashboardClientInfo {
 	s.mutex.Lock()
-	dashboardClientInfo := s.dashboardClients[session]
+	dashboardClientInfo := s.dashboardClients[sessionID]
+	dashboardClientInfo.Dashboard = &dashboardName
 	s.mutex.Unlock()
 	return dashboardClientInfo
 }
-func (s *Server) clearSession(session *melody.Session) {
+func (s *Server) clearSession(ctx context.Context, session *melody.Session) {
 	s.mutex.Lock()
-	delete(s.dashboardClients, session)
+	sessionId := s.getSessionId(session)
+	dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
+	delete(s.dashboardClients, sessionId)
 	s.mutex.Unlock()
 }
 
 func (s *Server) addSession(session *melody.Session) {
 	s.mutex.Lock()
-	s.dashboardClients[session] = &DashboardClientInfo{}
+	sessionId := s.getSessionId(session)
+	s.dashboardClients[sessionId] = &DashboardClientInfo{
+		Session: session,
+	}
 	s.mutex.Unlock()
 }
 
-func (s *Server) GetSessionId(session *melody.Session) string {
+func (s *Server) getSessionId(session *melody.Session) string {
 	return fmt.Sprintf("%p", session)
+}
+
+func (s *Server) writePayloadToSession(sessionID string, payload []byte) {
+	if sessionInfo, ok := s.dashboardClients[sessionID]; ok {
+		sessionInfo.Session.Write(payload)
+	}
 }
