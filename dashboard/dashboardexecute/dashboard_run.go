@@ -81,6 +81,12 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 			if err != nil {
 				return nil, err
 			}
+		case *modconfig.DashboardInput:
+			// NOTE:L clone the input to avoid mutating the original
+			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
+			if err != nil {
+				return nil, err
+			}
 		default:
 			// ensure this item is a DashboardLeafNode
 			leafNode, ok := i.(modconfig.DashboardLeafNode)
