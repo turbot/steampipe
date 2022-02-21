@@ -25,7 +25,6 @@ type DashboardInput struct {
 	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type    *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Style   *string        `cty:"style" hcl:"style" column:"style,text" json:"style,omitempty"`
-	Value   *string        `json:"value"`
 	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
@@ -286,16 +285,6 @@ func (i *DashboardInput) GetPreparedStatementName() string {
 func (i *DashboardInput) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return i.getPreparedStatementExecuteSQL(i, args)
-}
-
-// GetValue implements RuntimeDependency
-func (i *DashboardInput) GetValue() *string {
-	return i.Value
-}
-
-// SetValue implements RuntimeDependency
-func (i *DashboardInput) SetValue(value *string) {
-	i.Value = value
 }
 
 // DashboardNameSuffix creates a sanitised name suffix from our parent dashboard
