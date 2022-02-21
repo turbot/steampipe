@@ -13,7 +13,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const minimumMinutesBetweenChecks = 1440 // 1 day
+const minimumDurationBetweenChecks = 24 * time.Hour
 
 type Runner struct {
 	currentState statefile.State
@@ -91,8 +91,7 @@ func (r *Runner) shouldRun() bool {
 
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-	if isPluginManagerCmd(cmd) || isServiceStopCmd(cmd) || isBatchQueryCmd(cmd, cmdArgs) || isCompletionCmd(cmd) {
-		// no scheduled tasks for `service stop` and `query <sql>`
+	if isIgnoredCmd(cmd, cmdArgs) {
 		return false
 	}
 
@@ -104,22 +103,31 @@ func (r *Runner) shouldRun() bool {
 	if err != nil {
 		return true
 	}
-	minutesElapsed := now.Sub(lastCheckedAt).Minutes()
+	durationElapsedSinceLastCheck := now.Sub(lastCheckedAt)
 
-	return minutesElapsed > minimumMinutesBetweenChecks
+	return durationElapsedSinceLastCheck > minimumDurationBetweenChecks
+}
+
+func isIgnoredCmd(cmd *cobra.Command, cmdArgs []string) bool {
+	return (isPluginUpdateCmd(cmd) ||
+		isPluginManagerCmd(cmd) ||
+		isServiceStopCmd(cmd) ||
+		isBatchQueryCmd(cmd, cmdArgs) ||
+		isCompletionCmd(cmd))
 }
 
 func isServiceStopCmd(cmd *cobra.Command) bool {
 	return cmd.Parent() != nil && cmd.Parent().Name() == "service" && cmd.Name() == "stop"
 }
-
 func isCompletionCmd(cmd *cobra.Command) bool {
 	return cmd.Name() == "completion"
 }
 func isPluginManagerCmd(cmd *cobra.Command) bool {
 	return cmd.Name() == "plugin-manager"
 }
-
+func isPluginUpdateCmd(cmd *cobra.Command) bool {
+	return cmd.Name() == "update" && cmd.Parent() != nil && cmd.Parent().Name() == "plugin"
+}
 func isBatchQueryCmd(cmd *cobra.Command, cmdArgs []string) bool {
 	return cmd.Name() == "query" && len(cmdArgs) > 0
 }
