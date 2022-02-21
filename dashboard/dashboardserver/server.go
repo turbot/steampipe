@@ -482,16 +482,15 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 			case "select_dashboard":
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-
 				dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
 			case "set_dashboard_inputs":
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
 				dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues)
-			case "reset_dashboard":
+			case "clear_dashboard":
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-				dashboardexecute.Executor.ResetDashboard(ctx, sessionId)
+				dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
 			}
 		}
 	}
