@@ -37,8 +37,6 @@ RUN rm -f /home/steampipe/.steampipe/internal/.passwd
 
 # expose postgres service default port
 EXPOSE 9193
-# expose dashboard server default port 
-EXPOSE 9194
 
 COPY docker-entrypoint.sh /usr/local/bin
 ENTRYPOINT [ "docker-entrypoint.sh" ]
