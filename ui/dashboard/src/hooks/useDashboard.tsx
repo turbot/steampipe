@@ -1,5 +1,6 @@
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
+import usePrevious from "./usePrevious";
 import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
 import {
   createContext,
@@ -11,7 +12,7 @@ import {
   useState,
 } from "react";
 import { FullHeightThemeWrapper } from "./useTheme";
-import { get, set, sortBy } from "lodash";
+import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
@@ -30,6 +31,11 @@ interface IDashboardContext {
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
   sqlDataMap: SQLDataMap;
+}
+
+interface SelectedDashboardStates {
+  selectedDashboard: AvailableDashboard | null;
+  selectedDashboardInputs: DashboardInputs;
 }
 
 interface DashboardInputs {
@@ -447,87 +453,130 @@ const DashboardProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (
-      !webSocket.current ||
-      webSocket.current?.readyState !== webSocket.current.OPEN
-    ) {
-      return;
-    }
-
-    if (!state.selectedDashboard || !state.selectedDashboard.full_name) {
-      return;
-    }
-
-    webSocket.current.send(
-      JSON.stringify({
-        action: "select_dashboard",
-        payload: {
-          dashboard: {
-            full_name: state.selectedDashboard.full_name,
-          },
-          input_values: state.selectedDashboardInputs,
-        },
-      })
-    );
-  }, [state.selectedDashboard]);
-
-  useEffect(() => {
-    if (
-      !webSocket.current ||
-      webSocket.current?.readyState !== webSocket.current.OPEN
-    ) {
-      return;
-    }
-
-    if (!state.selectedDashboard) {
-      return;
-    }
-
-    webSocket.current.send(
-      JSON.stringify({
-        action: "set_dashboard_inputs",
-        payload: {
-          // workspace: state.selectedWorkspace,
-          dashboard: {
-            full_name: state.selectedDashboard.full_name,
-          },
-          input_values: state.selectedDashboardInputs,
-        },
-      })
-    );
-  }, [state.selectedDashboard, state.selectedDashboardInputs]);
-
-  useEffect(() => {
+    // If we've got no dashboard selected in the URL, but we've got one selected in state,
+    // then clear both the inputs and the selected dashboard in state
     if (!dashboardName && state.selectedDashboard) {
-      dispatch({ type: "select_dashboard", dashboard: null });
       dispatch({ type: "clear_dashboard_inputs" });
-      if (
-        !webSocket.current ||
-        webSocket.current?.readyState !== webSocket.current.OPEN
-      ) {
-        return;
-      }
+      dispatch({ type: "select_dashboard", dashboard: null });
+    }
+    // Else if we've got a dashboard selected in the URL and don't have one selected in state,
+    // or we've changed to a different report in the URL then clear the inputs and select the
+    // dashboard in state
+    else if (
+      (dashboardName && !state.selectedDashboard) ||
+      (dashboardName &&
+        state.selectedDashboard &&
+        dashboardName !== state.selectedDashboard.full_name)
+    ) {
+      dispatch({ type: "clear_dashboard_inputs" });
+      const dashboard = state.dashboards.find(
+        (dashboard) => dashboard.full_name === dashboardName
+      );
+      dispatch({ type: "select_dashboard", dashboard });
+    }
+  }, [
+    dashboardName,
+    state.dashboards,
+    state.selectedDashboard,
+    state.selectedDashboardInputs,
+  ]);
+
+  // Keep track of the previous selected dashboard and inputs
+  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
+    usePrevious({
+      selectedDashboard: state.selectedDashboard,
+      selectedDashboardInputs: state.selectedDashboardInputs,
+    });
+
+  useEffect(() => {
+    // This effect will send events over websockets and depends on there being a dashboard selected,
+    // so assert that
+    if (
+      !webSocket.current ||
+      webSocket.current?.readyState !== webSocket.current.OPEN ||
+      !state.selectedDashboard
+    ) {
+      return;
+    }
+
+    // If we didn't previously have a dashboard selected in state (e.g. you've gone from home page
+    // to a report, or it's first load), or the selected dashboard has been changed, select that
+    // report over the socket
+    if (
+      !previousSelectedDashboardStates ||
+      // @ts-ignore
+      !previousSelectedDashboardStates.selectedDashboard ||
+      state.selectedDashboard.full_name !==
+        // @ts-ignore
+        previousSelectedDashboardStates.selectedDashboard.full_name
+    ) {
       webSocket.current.send(
         JSON.stringify({
-          action: "clear_dashboard",
+          action: "select_dashboard",
+          payload: {
+            dashboard: {
+              full_name: state.selectedDashboard.full_name,
+            },
+            input_values: state.selectedDashboardInputs,
+          },
         })
       );
     }
+    // Else if we did previously have a dashboard selected in state and the
+    // inputs have changed, then update the inputs over the socket
+    else if (
+      previousSelectedDashboardStates &&
+      // @ts-ignore
+      previousSelectedDashboardStates.selectedDashboard &&
+      !isEqual(
+        // @ts-ignore
+        previousSelectedDashboardStates.selectedDashboardInputs,
+        state.selectedDashboardInputs
+      )
+    ) {
+      webSocket.current.send(
+        JSON.stringify({
+          action: "set_dashboard_inputs",
+          payload: {
+            dashboard: {
+              full_name: state.selectedDashboard.full_name,
+            },
+            input_values: state.selectedDashboardInputs,
+          },
+        })
+      );
+    }
+  }, [
+    previousSelectedDashboardStates,
+    state.selectedDashboard,
+    state.selectedDashboardInputs,
+  ]);
+
+  useEffect(() => {
+    // This effect will send events over websockets and depends on there being no dashboard selected,
+    // so assert that
     if (
-      state.selectedDashboard &&
-      dashboardName === state.selectedDashboard.full_name
+      !webSocket.current ||
+      webSocket.current?.readyState !== webSocket.current.OPEN ||
+      state.selectedDashboard
     ) {
       return;
     }
 
-    if (state.dashboards.length === 0) {
-      return;
-    }
-    const dashboard = state.dashboards.find(
-      (dashboard) => dashboard.full_name === dashboardName
-    );
-    dispatch({ type: "select_dashboard", dashboard });
-  }, [dashboardName, state.selectedDashboard, state.dashboards]);
+    // If we've gone from having a report selected, to having nothing selected, clear the dashboard state
+    if (previousSelectedDashboardStates)
+      if (
+        previousSelectedDashboardStates &&
+        // @ts-ignore
+        previousSelectedDashboardStates.selectedDashboard
+      ) {
+        webSocket.current.send(
+          JSON.stringify({
+            action: "clear_dashboard",
+          })
+        );
+      }
+  }, [previousSelectedDashboardStates, state.selectedDashboard]);
 
   useEffect(() => {
     // Sync params into the URL
