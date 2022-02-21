@@ -462,10 +462,10 @@ const DashboardProvider = ({ children }) => {
       JSON.stringify({
         action: "select_dashboard",
         payload: {
-          // workspace: state.selectedWorkspace,
           dashboard: {
             full_name: state.selectedDashboard.full_name,
           },
+          input_values: state.selectedDashboardInputs,
         },
       })
     );
@@ -501,6 +501,17 @@ const DashboardProvider = ({ children }) => {
     if (!dashboardName && state.selectedDashboard) {
       dispatch({ type: "select_dashboard", dashboard: null });
       dispatch({ type: "clear_dashboard_inputs" });
+      if (
+        !webSocket.current ||
+        webSocket.current?.readyState !== webSocket.current.OPEN
+      ) {
+        return;
+      }
+      webSocket.current.send(
+        JSON.stringify({
+          action: "clear_dashboard",
+        })
+      );
     }
     if (
       state.selectedDashboard &&
@@ -529,7 +540,6 @@ const DashboardProvider = ({ children }) => {
     }
     // If the dashboard we're viewing no longer exists, go back to the main page
     if (!state.dashboards.find((r) => r.full_name === dashboardName)) {
-      console.log("Navigating to /");
       navigate("/", { replace: true });
     }
   }, [
