@@ -111,7 +111,6 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
 func (r *DashboardContainerRun) Execute(ctx context.Context) error {
-
 	errChan := make(chan error, len(r.Children))
 	// execute all children asynchronously
 	for _, child := range r.Children {

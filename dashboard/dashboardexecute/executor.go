@@ -69,11 +69,6 @@ func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId st
 		return err
 	}
 
-	// if the dashboard run is complete, re-execute
-	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
-		go executionTree.Execute(ctx)
-	}
-
 	return nil
 }
 
