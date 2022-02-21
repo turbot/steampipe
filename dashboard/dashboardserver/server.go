@@ -393,11 +393,11 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			changedDashboardNames = append(changedDashboardNames, changedDashboard.Name)
 		}
 
-		for _, changedDashboardName := range changedDashboardNames {
-			if helpers.StringSliceContains(dashboardssBeingWatched, changedDashboardName) {
-				dashboardexecute.ExecuteDashboard(s.context, changedDashboardName, s.workspace, s.dbClient)
-			}
-		}
+		//for _, changedDashboardName := range changedDashboardNames {
+		//	if helpers.StringSliceContains(dashboardssBeingWatched, changedDashboardName) {
+		//		dashboardexecute.ExecuteDashboard(s.context, changedDashboardName, s.workspace, s.dbClient)
+		//	}
+		//}
 
 		// Special case - if we previously had a workspace error, any previously existing dashboards
 		// will come in here as new, so we need to check if any of those new dashboards are being watched.
@@ -409,11 +409,11 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			newDashboardNames = append(newDashboardNames, newDashboard.Name())
 		}
 
-		for _, newDashboardName := range newDashboardNames {
-			if helpers.StringSliceContains(dashboardssBeingWatched, newDashboardName) {
-				dashboardexecute.ExecuteDashboard(s.context, newDashboardName, s.workspace, s.dbClient)
-			}
-		}
+		//for _, newDashboardName := range newDashboardNames {
+		//	if helpers.StringSliceContains(dashboardssBeingWatched, newDashboardName) {
+		//		dashboardexecute.ExecuteDashboard(s.context, newDashboardName, s.workspace, s.dbClient)
+		//	}
+		//}
 
 	case *dashboardevents.DashboardError:
 		log.Println("[TRACE] Got dashboard error event", *e)
@@ -459,6 +459,10 @@ func (s *Server) Init(ctx context.Context) {
 func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Session, msg []byte) {
 	return func(session *melody.Session, msg []byte) {
 		log.Println("[TRACE] Got message", string(msg))
+
+		// TODO TEMP GET SESSION ID
+		sessionId := s.GetSessionId(session)
+
 		var request ClientRequest
 		// if we could not decode message - ignore
 		if err := json.Unmarshal(msg, &request); err == nil {
@@ -478,19 +482,16 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 			case "select_dashboard":
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-				dashboardexecute.ExecuteDashboard(ctx, request.Payload.Dashboard.FullName, s.workspace, s.dbClient)
+
+				dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
 			case "set_dashboard_inputs":
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-				dashboardexecute.SetDashboardInputs(ctx, request.Payload.Dashboard.FullName, request.Payload.InputValues)
-			case "cancel_dashboard":
-				dashboardClientInfo := s.getSession(session)
-				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-				dashboardexecute.CancelDashboard(ctx, request.Payload.Dashboard.FullName)
+				dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues)
 			case "reset_dashboard":
 				dashboardClientInfo := s.getSession(session)
 				dashboardClientInfo.Dashboard = &request.Payload.Dashboard.FullName
-				dashboardexecute.ResetDashboard(ctx, request.Payload.Dashboard.FullName)
+				dashboardexecute.Executor.ResetDashboard(ctx, sessionId)
 			}
 		}
 	}
@@ -502,7 +503,6 @@ func (s *Server) getSession(session *melody.Session) *DashboardClientInfo {
 	s.mutex.Unlock()
 	return dashboardClientInfo
 }
-
 func (s *Server) clearSession(session *melody.Session) {
 	s.mutex.Lock()
 	delete(s.dashboardClients, session)
@@ -513,4 +513,8 @@ func (s *Server) addSession(session *melody.Session) {
 	s.mutex.Lock()
 	s.dashboardClients[session] = &DashboardClientInfo{}
 	s.mutex.Unlock()
+}
+
+func (s *Server) GetSessionId(session *melody.Session) string {
+	return fmt.Sprintf("%p", session)
 }
