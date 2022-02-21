@@ -251,7 +251,7 @@ func (t *DashboardTable) GetQuery() *Query {
 
 // SetArgs implements QueryProvider
 func (t *DashboardTable) SetArgs(args *QueryArgs) {
-	// nothing
+	t.Args = args
 }
 
 // SetParams implements QueryProvider
