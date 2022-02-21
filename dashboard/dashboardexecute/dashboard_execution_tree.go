@@ -26,8 +26,9 @@ type DashboardExecutionTree struct {
 	workspace     *workspace.Workspace
 	runComplete   chan dashboardinterfaces.DashboardNodeRun
 
-	inputLock              sync.Mutex
-	inputDataSubscriptions map[string][]chan bool
+	inputLock sync.Mutex
+	// store subscribers as a map of maps for simple unsubscription
+	inputDataSubscriptions map[string]map[*chan bool]struct{}
 	cancel                 context.CancelFunc
 }
 
@@ -41,7 +42,7 @@ func NewReportExecutionTree(reportName string, sessionId string, client db_commo
 		runs:                   make(map[string]dashboardinterfaces.DashboardNodeRun),
 		workspace:              workspace,
 		runComplete:            make(chan dashboardinterfaces.DashboardNodeRun, 1),
-		inputDataSubscriptions: make(map[string][]chan bool),
+		inputDataSubscriptions: make(map[string]map[*chan bool]struct{}),
 	}
 
 	// create the root run node (either a report run or a counter run)
@@ -145,7 +146,8 @@ func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardinterfaces.Da
 func (e *DashboardExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
 	depChan := make(chan bool, 1)
 
-	e.subscribeToInput(dependency.SourceResource.GetUnqualifiedName(), depChan)
+	e.subscribeToInput(dependency.SourceResource.GetUnqualifiedName(), &depChan)
+	defer e.unsubscribeToInput(dependency.SourceResource.GetUnqualifiedName(), &depChan)
 
 	select {
 	case <-ctx.Done():
@@ -155,20 +157,36 @@ func (e *DashboardExecutionTree) waitForRuntimeDependency(ctx context.Context, d
 	}
 }
 
-func (e *DashboardExecutionTree) subscribeToInput(inputName string, depChan chan bool) {
+func (e *DashboardExecutionTree) subscribeToInput(inputName string, depChan *chan bool) {
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
-
-	e.inputDataSubscriptions[inputName] = append(e.inputDataSubscriptions[inputName], depChan)
+	subscriptions := e.inputDataSubscriptions[inputName]
+	if subscriptions == nil {
+		subscriptions = make(map[*chan bool]struct{})
+	}
+	subscriptions[depChan] = struct{}{}
+	e.inputDataSubscriptions[inputName] = subscriptions
 }
 
 func (e *DashboardExecutionTree) notifyInputAvailable(inputName string) {
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
 
-	for _, c := range e.inputDataSubscriptions[inputName] {
-		c <- true
+	for c := range e.inputDataSubscriptions[inputName] {
+		*c <- true
 	}
+}
+
+// remove a subsctiber from the lkist of substrreibers for this input
+func (e *DashboardExecutionTree) unsubscribeToInput(inputName string, depChan *chan bool) {
+	e.inputLock.Lock()
+	defer e.inputLock.Unlock()
+
+	subscribers := e.inputDataSubscriptions[inputName]
+	if len(subscribers) == 0 {
+		return
+	}
+	delete(subscribers, depChan)
 }
 
 func (e *DashboardExecutionTree) Cancel() {
