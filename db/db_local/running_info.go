@@ -37,7 +37,7 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, pass
 	dbState.Listen = constants.DatabaseListenAddresses
 
 	if listen == ListenTypeNetwork {
-		addrs, _ := localAddresses()
+		addrs, _ := utils.LocalAddresses()
 		dbState.Listen = append(dbState.Listen, addrs...)
 	}
 	return dbState

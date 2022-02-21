@@ -107,7 +107,7 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 		return s, nil
 	}
 
-	// check is the manager is running - this deletes that state file if it si not running,
+	// check is the manager is running - this deletes that state file if it is not running,
 	// and set the 'Running' property on the state if it is
 	pluginManagerRunning, err := s.verifyRunning()
 	if err != nil {

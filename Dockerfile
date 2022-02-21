@@ -35,7 +35,9 @@ RUN steampipe query "select * from steampipe_mod"
 
 RUN rm -f /home/steampipe/.steampipe/internal/.passwd
 
+# expose postgres service default port
 EXPOSE 9193
+
 COPY docker-entrypoint.sh /usr/local/bin
 ENTRYPOINT [ "docker-entrypoint.sh" ]
 CMD [ "steampipe"]

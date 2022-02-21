@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"github.com/turbot/steampipe/statushooks"
 
@@ -32,9 +34,10 @@ The current mod is the working directory, or the directory specified by the --wo
 
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for dashboard").
-		AddStringFlag(constants.ArgDashboardServerListen, "", string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
-		AddIntFlag(constants.ArgDashboardServerPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.").
-		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the dashboard")
+		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the dashboard").
+		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
+		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.").
+		AddBoolFlag(constants.ArgDashboardClient, "", true, "Start a browser based dashboard client automatically.", cmdconfig.FlagOptions.Hidden())
 	return cmd
 }
 
@@ -54,10 +57,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardServerPort))
+	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
 	utils.FailOnError(serverPort.IsValid())
 
-	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardServerListen))
+	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
 	utils.FailOnError(serverListen.IsValid())
 
 	// ensure dashboard assets are present and extract if not
@@ -78,6 +81,13 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	}
 
 	server.Start()
+
+	if viper.GetBool(constants.ArgDashboardClient) {
+		err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort))
+		if err != nil {
+			log.Println("[TRACE] dashboard server started but failed to start client", err)
+		}
+	}
 
 	// wait for the given context to cancel
 	<-dashboardCtx.Done()
