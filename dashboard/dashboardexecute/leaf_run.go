@@ -159,13 +159,13 @@ func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 			if err := r.executionTree.waitForRuntimeDependency(ctx, dependency); err != nil {
 				return err
 			}
-
-			// now get the value again
-			if !dependency.Resolve() {
-				// should now be resolved`
-				return fmt.Errorf("dependency not resolved after waitForRuntimeDependency returned")
-			}
 		}
+		// now resolve the dependency value - this sets the arg to have the runtime dependency value
+		if !dependency.Resolve() {
+			// should now be resolved`
+			return fmt.Errorf("dependency not resolved after waitForRuntimeDependency returned")
+		}
+
 	}
 
 	return nil
