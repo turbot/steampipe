@@ -49,7 +49,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Both should be equal
   assert_equal "$db_name" "\"custom_db_name\""
   # Check if database name in the output is the same
-  assert_output --partial 'Database: custom_db_name'
+  assert_output --partial 'Database:           custom_db_name'
   
   run steampipe service stop --install-dir $target_install_directory
   
