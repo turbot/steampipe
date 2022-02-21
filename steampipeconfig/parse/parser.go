@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 	"sigs.k8s.io/yaml"
 )
 
@@ -239,16 +240,19 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 	var duplicates []string
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedence
-		// TODO check for pseudo resource dupes and warn
-		if _, ok := hclResources[r.Name()]; ok {
-			duplicates = append(duplicates, r.Name())
+		name := r.GetUnqualifiedName()
+		if _, ok := hclResources[name]; ok {
+			duplicates = append(duplicates, r.GetDeclRange().Filename)
 			continue
 		}
 		// add pseudo resource to mod
 		mod.AddPseudoResource(r)
+		// add to map of existing resources
+		hclResources[name] = true
 	}
-	if len(duplicates) > 0 {
-		log.Printf("[TRACE] %d files were not converted into resources as hcl resources of same name are defined: %v", len(duplicates), duplicates)
+	numDupes := len(duplicates)
+	if numDupes > 0 {
+		log.Printf("[TRACE] %d %s  not converted into resources as hcl resources of same name are defined: %v", numDupes, utils.Pluralize("file", numDupes), duplicates)
 	}
 }
 

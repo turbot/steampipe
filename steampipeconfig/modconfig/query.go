@@ -93,6 +93,17 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
 	q.FullName = fmt.Sprintf("%s.query.%s", q.Mod.ShortName, name)
 	q.SQL = &sql
+	q.DeclRange = hcl.Range{
+		Filename: filePath,
+		Start: hcl.Pos{
+			Line:   0,
+			Column: 0,
+			Byte:   0,
+		},
+		End: hcl.Pos{
+			Line: len(sql),
+		},
+	}
 
 	return q, sqlBytes, nil
 }

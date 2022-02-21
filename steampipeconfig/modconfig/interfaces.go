@@ -12,8 +12,10 @@ type MappableResource interface {
 	// It returns the resource, and the raw file data
 	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
 	Name() string
+	GetUnqualifiedName() string
 	GetMetadata() *ResourceMetadata
 	SetMetadata(*ResourceMetadata)
+	GetDeclRange() *hcl.Range
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
