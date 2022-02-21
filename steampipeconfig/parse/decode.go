@@ -46,7 +46,9 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			diags = append(diags, res.Diags...)
 			continue
 		}
-		addResourcesToMod(runCtx, resources...)
+		resourceDiags := addResourcesToMod(runCtx, resources...)
+		diags = append(diags, resourceDiags...)
+
 	}
 
 	return diags
