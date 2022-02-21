@@ -28,7 +28,7 @@ const DashboardSelector = () => {
     if (!dashboardName && value) {
       setValue(null);
     }
-  }, [dashboardName]);
+  }, [dashboardName, value]);
 
   useEffect(() => {
     if (!dashboardName) {

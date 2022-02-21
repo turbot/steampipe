@@ -165,7 +165,7 @@ const DashboardList = () => {
 
     setFilteredDashboardsForCurrentMod(filteredCurrent);
     setFilteredDashboardsForOtherMods(filteredOther);
-  }, [dashboardsForCurrentMod, dashboardsForOtherMods, search]);
+  }, [dashboardsForCurrentMod, dashboardsForOtherMods, metadata, search]);
 
   // Clear search after we choose a report
   useEffect(() => {

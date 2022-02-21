@@ -1,6 +1,5 @@
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
-import { sortBy } from "lodash";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -529,7 +528,6 @@ const buildTreeDataInputs = (
   rawData: LeafNodeData,
   properties: HierarchyProperties | undefined
 ) => {
-  const builtData: any = {};
   const tree = arrayToTree(rawData);
   return {
     data: tree,
