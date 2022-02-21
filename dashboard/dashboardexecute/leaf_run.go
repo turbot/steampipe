@@ -63,7 +63,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 	if ok {
 		runtimeDependencies := queryProvider.GetRuntimeDependencies()
 		for name, dep := range runtimeDependencies {
-			r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep)
+			r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, executionTree)
 		}
 
 	}
