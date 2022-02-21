@@ -206,31 +206,10 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var dashboardState *dashboardserver.DashboardServiceState
-	if viper.GetBool(constants.ArgDashboard) {
-		serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
-		serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
-
-		dashboardState, err = dashboardserver.GetDashboardServiceState()
-		if err != nil {
-			db_local.StopServices(ctx, false, constants.InvokerService)
-			utils.FailOnError(err)
-		}
-
-		if dashboardState == nil {
-			err = dashboardserver.RunForService(ctx, serverListen, serverPort)
-
-			if err != nil {
-				db_local.StopServices(ctx, false, constants.InvokerService)
-				utils.FailOnError(err)
-			}
-			dashboardState, err = dashboardserver.GetDashboardServiceState()
-			if err != nil {
-				utils.ShowWarning(fmt.Sprintf("Started Dashboard server, but could not retrieve state: %v", err))
-			}
-		} else {
-			fmt.Println("Dashboard service is already running.")
-		}
+	dashboardState, err := startDashboardServer(ctx)
+	if err != nil {
+		db_local.StopServices(ctx, false, constants.InvokerService)
+		return
 	}
 
 	// service was already running - and we didn't have to start the dashboard
@@ -244,6 +223,35 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	if viper.GetBool(constants.ArgForeground) {
 		runServiceInForeground(ctx, invoker)
 	}
+}
+
+func startDashboardServer(ctx context.Context) (*dashboardserver.DashboardServiceState, error) {
+	var dashboardState *dashboardserver.DashboardServiceState
+	if viper.GetBool(constants.ArgDashboard) {
+		serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
+		serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
+
+		dashboardState, err := dashboardserver.GetDashboardServiceState()
+		if err != nil {
+			db_local.StopServices(ctx, false, constants.InvokerService)
+			return nil, err
+		}
+
+		if dashboardState == nil {
+			err = dashboardserver.RunForService(ctx, serverListen, serverPort)
+			if err != nil {
+				return nil, err
+			}
+			dashboardState, err = dashboardserver.GetDashboardServiceState()
+			if err != nil {
+				utils.ShowWarning(fmt.Sprintf("Started Dashboard server, but could not retrieve state: %v", err))
+			}
+			return dashboardState, err
+		} else {
+			fmt.Println("Dashboard service is already running.")
+		}
+	}
+	return dashboardState, nil
 }
 
 func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
@@ -320,6 +328,8 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		fmt.Println("Steampipe service is not running.")
 		return
 	}
+
+	// along with the current dashboard state - maybe nil
 	currentDashboardState, err := dashboardserver.GetDashboardServiceState()
 	utils.FailOnError(err)
 
@@ -337,6 +347,8 @@ to force a restart.
 		`)
 		return
 	}
+
+	// stop the running dashboard server
 	err = dashboardserver.StopDashboardService(ctx)
 	utils.FailOnErrorWithMessage(err, "could not stop dashboard service")
 
@@ -356,6 +368,7 @@ to force a restart.
 	utils.FailOnError(err)
 	fmt.Println("Steampipe service restarted.")
 
+	// if the dashboard was running, start it
 	if currentDashboardState != nil {
 		err = dashboardserver.RunForService(ctx, dashboardserver.ListenType(currentDashboardState.ListenType), dashboardserver.ListenPort(currentDashboardState.Port))
 		utils.FailOnError(err)
@@ -366,7 +379,6 @@ to force a restart.
 	}
 
 	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, currentDashboardState)
-
 }
 
 func runServiceStatusCmd(cmd *cobra.Command, args []string) {
@@ -435,44 +447,42 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
-	{ // Code fold
-		if force {
-			dashboardStopError := dashboardserver.StopDashboardService(ctx)
-			status, dbStopError = db_local.StopServices(ctx, force, constants.InvokerService)
-			dbStopError = utils.CombineErrors(dbStopError, dashboardStopError)
-		} else {
-			dbState, dbStopError = db_local.GetState()
-			utils.FailOnErrorWithMessage(dbStopError, "could not stop Steampipe service")
+	if force {
+		dashboardStopError := dashboardserver.StopDashboardService(ctx)
+		status, dbStopError = db_local.StopServices(ctx, force, constants.InvokerService)
+		dbStopError = utils.CombineErrors(dbStopError, dashboardStopError)
+	} else {
+		dbState, dbStopError = db_local.GetState()
+		utils.FailOnErrorWithMessage(dbStopError, "could not stop Steampipe service")
 
-			dashboardState, err := dashboardserver.GetDashboardServiceState()
-			utils.FailOnErrorWithMessage(err, "could not stop Steampipe service")
+		dashboardState, err := dashboardserver.GetDashboardServiceState()
+		utils.FailOnErrorWithMessage(err, "could not stop Steampipe service")
 
-			if dbState == nil {
-				fmt.Println("Steampipe service is not running.")
-				return
-			}
-			if dbState.Invoker != constants.InvokerService {
-				printRunningImplicit(dbState.Invoker)
-				return
-			}
-
-			if dashboardState != nil {
-				err = dashboardserver.StopDashboardService(ctx)
-				utils.FailOnErrorWithMessage(err, "could not stop dashboard server")
-			}
-
-			var connectedClientCount int
-			// check if there are any connected clients to the service
-			connectedClientCount, err = db_local.GetCountOfThirdPartyClients(cmd.Context())
-			utils.FailOnErrorWithMessage(err, "error during service stop")
-
-			if connectedClientCount > 0 {
-				printClientsConnected()
-				return
-			}
-
-			status, err = db_local.StopServices(ctx, false, constants.InvokerService)
+		if dbState == nil {
+			fmt.Println("Steampipe service is not running.")
+			return
 		}
+		if dbState.Invoker != constants.InvokerService {
+			printRunningImplicit(dbState.Invoker)
+			return
+		}
+
+		if dashboardState != nil {
+			err = dashboardserver.StopDashboardService(ctx)
+			utils.FailOnErrorWithMessage(err, "could not stop dashboard server")
+		}
+
+		var connectedClientCount int
+		// check if there are any connected clients to the service
+		connectedClientCount, err = db_local.GetCountOfThirdPartyClients(cmd.Context())
+		utils.FailOnErrorWithMessage(err, "error during service stop")
+
+		if connectedClientCount > 0 {
+			printClientsConnected()
+			return
+		}
+
+		status, err = db_local.StopServices(ctx, false, constants.InvokerService)
 	}
 
 	if dbStopError != nil {

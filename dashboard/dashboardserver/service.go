@@ -106,7 +106,7 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		Foreground: false,
 	}
 
-	logger := setupDashboardServerlogSink()
+	logger := setupDashboardServerLogSink()
 	writer := logger.StandardWriter(&hclog.StandardLoggerOptions{ForceLevel: hclog.Trace})
 	cmd.Stdout = writer
 	cmd.Stderr = writer
@@ -170,7 +170,7 @@ func waitForDashboardServerStartup(ctx context.Context, serverPort int) error {
 	}
 }
 
-func setupDashboardServerlogSink() hclog.Logger {
+func setupDashboardServerLogSink() hclog.Logger {
 	logName := fmt.Sprintf("dashboard-%s.log", time.Now().Format("2006-01-02"))
 	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
