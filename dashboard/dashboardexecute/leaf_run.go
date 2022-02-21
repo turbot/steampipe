@@ -160,12 +160,12 @@ func (r *LeafRun) ChildrenComplete() bool {
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	for _, resolvedDependency := range r.runtimeDependencies {
 		// check with the top level dashboard whether the dependency is available
-		if !resolvedDependency.IsResolved() {
+		if !resolvedDependency.Resolve() {
 			if err := r.executionTree.waitForRuntimeDependency(ctx, resolvedDependency.dependency); err != nil {
 				return err
 			}
 		}
-		// now resolve the dependency value - this sets the arg to have the runtime dependency value
+		// now again resolve the dependency value - this sets the arg to have the runtime dependency value
 		if !resolvedDependency.Resolve() {
 			// should now be resolved`
 			return fmt.Errorf("dependency not resolved after waitForRuntimeDependency returned")
