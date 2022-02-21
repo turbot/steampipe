@@ -46,6 +46,33 @@ type DashboardInput struct {
 	dashboard *Dashboard
 }
 
+func (i *DashboardInput) Clone() *DashboardInput {
+	return &DashboardInput{
+		ResourceWithMetadataBase: i.ResourceWithMetadataBase,
+		QueryProviderBase:        i.QueryProviderBase,
+		FullName:                 i.FullName,
+		ShortName:                i.ShortName,
+		UnqualifiedName:          i.UnqualifiedName,
+		Title:                    i.Title,
+		Width:                    i.Width,
+		Type:                     i.Type,
+		Style:                    i.Style,
+		Display:                  i.Display,
+		OnHooks:                  i.OnHooks,
+		SQL:                      i.SQL,
+		Query:                    i.Query,
+		PreparedStatementName:    i.PreparedStatementName,
+		Args:                     i.Args,
+		Params:                   i.Params,
+		DeclRange:                i.DeclRange,
+		Mod:                      i.Mod,
+		Paths:                    i.Paths,
+		parents:                  i.parents,
+		dashboard:                i.dashboard,
+	}
+
+}
+
 func NewDashboardInput(block *hcl.Block, mod *Mod) *DashboardInput {
 	// input cannot be anonymous
 	shortName := block.Labels[0]
