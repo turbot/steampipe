@@ -511,6 +511,11 @@ const DashboardProvider = ({ children }) => {
         previousSelectedDashboardStates.selectedDashboard.full_name
     ) {
       webSocket.current.send(
+          JSON.stringify({
+            action: "clear_dashboard",
+          })
+      );
+      webSocket.current.send(
         JSON.stringify({
           action: "select_dashboard",
           payload: {
