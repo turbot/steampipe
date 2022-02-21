@@ -177,7 +177,7 @@ func (e *DashboardExecutionTree) notifyInputAvailable(inputName string) {
 	}
 }
 
-// remove a subsctiber from the lkist of substrreibers for this input
+// remove a subscriber from the map of subscribers for this input
 func (e *DashboardExecutionTree) unsubscribeToInput(inputName string, depChan *chan bool) {
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
