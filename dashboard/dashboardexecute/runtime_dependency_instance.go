@@ -9,13 +9,17 @@ import (
 // ResolvedRuntimeDependency is a wrapper for RuntimeDependency which contains the resolved value
 // we must wrap it so that we do not mutate the underlying workspace data when resolving dependency values
 type ResolvedRuntimeDependency struct {
-	dependency *modconfig.RuntimeDependency
-	valueLock  sync.Mutex
-	value      *string
+	dependency    *modconfig.RuntimeDependency
+	valueLock     sync.Mutex
+	value         *string
+	executionTree *DashboardExecutionTree
 }
 
-func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency) *ResolvedRuntimeDependency {
-	return &ResolvedRuntimeDependency{dependency: dep}
+func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, executionTree *DashboardExecutionTree) *ResolvedRuntimeDependency {
+	return &ResolvedRuntimeDependency{
+		dependency:    dep,
+		executionTree: executionTree,
+	}
 }
 
 func (d *ResolvedRuntimeDependency) Resolve() bool {
@@ -28,7 +32,7 @@ func (d *ResolvedRuntimeDependency) Resolve() bool {
 	}
 
 	// otherwise try to read the value from the source
-	d.value = d.dependency.SourceResource.GetValue()
+	d.value = d.executionTree.GetInputValue(d.dependency.SourceResource.GetUnqualifiedName())
 
 	// did we succeed
 	if d.value != nil {

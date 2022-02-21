@@ -30,6 +30,7 @@ type DashboardExecutionTree struct {
 	// store subscribers as a map of maps for simple unsubscription
 	inputDataSubscriptions map[string]map[*chan bool]struct{}
 	cancel                 context.CancelFunc
+	inputValues            map[string]*string
 }
 
 // NewReportExecutionTree creates a result group from a ModTreeItem
@@ -43,6 +44,7 @@ func NewReportExecutionTree(reportName string, sessionId string, client db_commo
 		workspace:              workspace,
 		runComplete:            make(chan dashboardinterfaces.DashboardNodeRun, 1),
 		inputDataSubscriptions: make(map[string]map[*chan bool]struct{}),
+		inputValues:            make(map[string]*string),
 	}
 
 	// create the root run node (either a report run or a counter run)
@@ -125,13 +127,7 @@ func (e *DashboardExecutionTree) GetName() string {
 
 func (e *DashboardExecutionTree) SetInputs(inputValues map[string]*string) error {
 	for name, value := range inputValues {
-		// first find a matching input
-		input, found := e.Root.GetInput(name)
-		if !found {
-			return fmt.Errorf("no input found matchint '%s'", name)
-		}
-		// set the input value
-		input.SetValue(value)
+		e.inputValues[name] = value
 		// now see if anyone needs to be notified about this input
 		e.notifyInputAvailable(name)
 	}
@@ -195,4 +191,8 @@ func (e *DashboardExecutionTree) Cancel() {
 		return
 	}
 	e.cancel()
+}
+
+func (e *DashboardExecutionTree) GetInputValue(name string) *string {
+	return e.inputValues[name]
 }
