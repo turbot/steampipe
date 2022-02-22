@@ -47,6 +47,8 @@ type ChartXAxisOptions = {
   display: "auto" | "all" | "none";
   title: ChartAxisTitleOptions;
   labels: ChartLabelOptions;
+  min: number;
+  max: number;
 };
 
 type ChartYAxisOptions = {

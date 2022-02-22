@@ -61,10 +61,17 @@ func (a *DashboardChartAxes) Merge(other *DashboardChartAxes) {
 type DashboardChartAxesX struct {
 	Title  *DashboardChartAxisTitle `cty:"title" hcl:"title,block" json:"title,omitempty"`
 	Labels *DashboardChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
+	Min    *int                     `cty:"min" hcl:"min" json:"min,omitempty"`
+	Max    *int                     `cty:"max" hcl:"max" json:"max,omitempty"`
 }
 
 func (x *DashboardChartAxesX) Equals(other *DashboardChartAxesX) bool {
 	if other == nil {
+		return false
+	}
+
+	if !(utils.SafeIntEqual(x.Min, other.Min) &&
+		utils.SafeIntEqual(x.Max, other.Max)) {
 		return false
 	}
 
@@ -95,6 +102,12 @@ func (x *DashboardChartAxesX) Merge(other *DashboardChartAxesX) {
 		x.Labels = other.Labels
 	} else {
 		x.Labels.Merge(other.Labels)
+	}
+	if x.Min == nil {
+		x.Min = other.Min
+	}
+	if x.Max == nil {
+		x.Max = other.Max
 	}
 }
 

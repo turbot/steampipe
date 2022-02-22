@@ -29,7 +29,7 @@ import {
 import { EChartsOption } from "echarts-for-react/src/types";
 import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";
-import { merge, set } from "lodash";
+import { has, merge, set } from "lodash";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
 import { Theme, useTheme } from "../../../../hooks/useTheme";
 import * as echarts from "echarts/core";
@@ -330,6 +330,15 @@ const getOptionOverridesForChartType = (
         overrides = set(overrides, "xAxis.show", false);
       }
 
+      // X axis min setting
+      if (type === "bar" && has(properties, "axes.x.min")) {
+        overrides = set(overrides, "xAxis.min", properties.axes.x.min);
+      }
+      // Y axis max setting
+      if (type === "bar" && has(properties, "axes.x.max")) {
+        overrides = set(overrides, "xAxis.max", properties.axes.x.max);
+      }
+
       // X axis labels settings
       if (properties.axes.x.labels) {
         // X axis labels display setting
@@ -375,6 +384,15 @@ const getOptionOverridesForChartType = (
         overrides = set(overrides, "yAxis.show", true);
       } else if (yAxisDisplay === "none") {
         overrides = set(overrides, "yAxis.show", false);
+      }
+
+      // Y axis min setting
+      if (type !== "bar" && has(properties, "axes.y.min")) {
+        overrides = set(overrides, "yAxis.min", properties.axes.y.min);
+      }
+      // Y axis max setting
+      if (type !== "bar" && has(properties, "axes.y.max")) {
+        overrides = set(overrides, "yAxis.max", properties.axes.y.max);
       }
 
       // Y axis labels settings
