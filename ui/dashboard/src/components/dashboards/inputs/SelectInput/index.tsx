@@ -1,7 +1,7 @@
 import Select from "react-select";
+import useSelectInputStyles from "./useSelectInputStyles";
 import { getColumnIndex } from "../../../../utils/data";
 import { InputProps } from "../index";
-import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
@@ -21,8 +21,6 @@ const SelectInput = (props: SelectInputProps) => {
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
-  const [, setRandomVal] = useState(0);
-  const { theme, wrapperRef } = useTheme();
   const options: SelectOption[] = useMemo(() => {
     if (!props.data || !props.data.columns || !props.data.rows) {
       return [];
@@ -124,71 +122,11 @@ const SelectInput = (props: SelectInputProps) => {
     value,
   ]);
 
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
+  const styles = useSelectInputStyles();
 
-  if (!wrapperRef) {
+  if (!styles) {
     return null;
   }
-
-  // @ts-ignore
-  const style = window.getComputedStyle(wrapperRef);
-  const background = style.getPropertyValue("--color-background");
-  const foreground = style.getPropertyValue("--color-foreground");
-  const blackScale1 = style.getPropertyValue("--color-black-scale-1");
-  const blackScale2 = style.getPropertyValue("--color-black-scale-2");
-  const blackScale3 = style.getPropertyValue("--color-black-scale-3");
-
-  const customStyles = {
-    clearIndicator: (provided) => ({
-      ...provided,
-      cursor: "pointer",
-    }),
-    control: (provided, state) => {
-      return {
-        ...provided,
-        backgroundColor:
-          theme.name === ThemeNames.STEAMPIPE_DARK ? blackScale2 : background,
-        borderColor: state.isFocused ? "#2684FF" : blackScale3,
-        boxShadow: "none",
-      };
-    },
-    dropdownIndicator: (provided) => ({
-      ...provided,
-      cursor: "pointer",
-    }),
-    singleValue: (provided) => {
-      return {
-        ...provided,
-        color: foreground,
-      };
-    },
-    menu: (provided) => {
-      return {
-        ...provided,
-        backgroundColor:
-          theme.name === ThemeNames.STEAMPIPE_DARK ? blackScale2 : background,
-        border: `1px solid ${blackScale3}`,
-        boxShadow: "none",
-        marginTop: 0,
-        marginBottom: 0,
-      };
-    },
-    menuList: (provided) => {
-      return {
-        ...provided,
-        paddingTop: 0,
-        paddingBottom: 0,
-      };
-    },
-    option: (provided, state) => {
-      return {
-        ...provided,
-        backgroundColor: state.isFocused ? blackScale1 : "none",
-        color: foreground,
-      };
-    },
-  };
 
   return (
     <form>
@@ -222,7 +160,7 @@ const SelectInput = (props: SelectInputProps) => {
           (props.properties && props.properties.placeholder) ||
           "Please select..."
         }
-        styles={customStyles}
+        styles={styles}
         value={value}
       />
     </form>
