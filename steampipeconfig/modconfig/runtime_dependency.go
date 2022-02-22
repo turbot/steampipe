@@ -7,7 +7,7 @@ import (
 
 type RuntimeDependency struct {
 	PropertyPath       *ParsedPropertyPath
-	SourceResource     RuntimeDependencySource
+	SourceResource     HclResource
 	TargetPropertyPath []string
 	// function to set the target
 	SetTargetFunc func(string)
@@ -34,7 +34,6 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 		return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)
 	}
 
-	// cast source to RuntimeDependencySource
-	d.SourceResource = sourceResource.(RuntimeDependencySource)
+	d.SourceResource = sourceResource
 	return nil
 }
