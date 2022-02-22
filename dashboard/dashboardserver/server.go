@@ -64,8 +64,9 @@ type ExecutionPayload struct {
 }
 
 type DashboardClientInfo struct {
-	Session   *melody.Session
-	Dashboard *string
+	Session         *melody.Session
+	Dashboard       *string
+	DashboardInputs map[string]*string
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
@@ -380,7 +381,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			s.mutex.Lock()
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == changedDashboardName {
-					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, nil, s.workspace, s.dbClient)
+					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
 			s.mutex.Unlock()
@@ -400,7 +401,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			s.mutex.Lock()
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == newDashboardName {
-					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, nil, s.workspace, s.dbClient)
+					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
 			s.mutex.Unlock()
@@ -466,21 +467,24 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 				}
 				session.Write(payload)
 			case "select_dashboard":
-				s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName)
+				s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues)
 				dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
 			case "set_dashboard_inputs":
+				s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
 				dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues)
 			case "clear_dashboard":
+				s.setDashboardInputsForSession(sessionId, nil)
 				dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
 			}
 		}
 	}
 }
 
-func (s *Server) setDashboardForSession(sessionID string, dashboardName string) *DashboardClientInfo {
+func (s *Server) setDashboardForSession(sessionId string, dashboardName string, inputs map[string]*string) *DashboardClientInfo {
 	s.mutex.Lock()
-	dashboardClientInfo := s.dashboardClients[sessionID]
+	dashboardClientInfo := s.dashboardClients[sessionId]
 	dashboardClientInfo.Dashboard = &dashboardName
+	dashboardClientInfo.DashboardInputs = inputs
 	s.mutex.Unlock()
 	return dashboardClientInfo
 }
@@ -501,12 +505,20 @@ func (s *Server) addSession(session *melody.Session) {
 	s.mutex.Unlock()
 }
 
+func (s *Server) setDashboardInputsForSession(sessionId string, inputs map[string]*string) {
+	s.mutex.Lock()
+	if sessionInfo, ok := s.dashboardClients[sessionId]; ok {
+		sessionInfo.DashboardInputs = inputs
+	}
+	s.mutex.Unlock()
+}
+
 func (s *Server) getSessionId(session *melody.Session) string {
 	return fmt.Sprintf("%p", session)
 }
 
-func (s *Server) writePayloadToSession(sessionID string, payload []byte) {
-	if sessionInfo, ok := s.dashboardClients[sessionID]; ok {
+func (s *Server) writePayloadToSession(sessionId string, payload []byte) {
+	if sessionInfo, ok := s.dashboardClients[sessionId]; ok {
 		sessionInfo.Session.Write(payload)
 	}
 }
