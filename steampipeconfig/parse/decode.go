@@ -163,7 +163,7 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 	var resource modconfig.HclResource
 	// runCtx already contains the current mod
 	mod := runCtx.CurrentMod
-	parent := runCtx.CurrentParent
+	parent := runCtx.PeekParent()
 	switch block.Type {
 	case modconfig.BlockTypeMod:
 		resource = mod
@@ -375,7 +375,7 @@ func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Di
 
 func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard, *decodeResult) {
 	res := &decodeResult{}
-	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod, runCtx.CurrentParent)
+	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod, runCtx.PeekParent())
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
@@ -415,8 +415,10 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 	var inputs []*modconfig.DashboardInput
 
 	// set dashboard as parent on the run context - this is used when generating names for anonymous blocks
-	runCtx.CurrentParent = dashboard
-	defer func() { runCtx.CurrentParent = nil }()
+	runCtx.PushParent(dashboard)
+	defer func() {
+		runCtx.PopParent()
+	}()
 
 	for _, b := range content.Blocks {
 		// decode block
@@ -462,7 +464,7 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 
 func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.DashboardContainer, *decodeResult) {
 	res := &decodeResult{}
-	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod, runCtx.CurrentParent)
+	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod, runCtx.PeekParent())
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
@@ -489,11 +491,13 @@ func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.
 func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
 	var res = &decodeResult{}
 	// set container as parent on the run context - this is used when generating names for anonymous blocks
-	runCtx.CurrentParent = dashboardContainer
-	defer func() { runCtx.CurrentParent = nil }()
+	runCtx.PushParent(dashboardContainer)
+	defer func() {
+		runCtx.PopParent()
+	}()
 
 	for _, b := range content.Blocks {
-		// use generic block decoding, passing dashboardContainer as parent
+		// use generic block decoding
 		resources, blockRes := decodeBlock(b, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
@@ -517,7 +521,7 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
 	res := &decodeResult{}
 
-	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod, runCtx.CurrentParent)
+	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod, runCtx.PeekParent())
 	content, diags := block.Body.Content(BenchmarkBlockSchema)
 	res.handleDecodeDiags(content, benchmark, diags)
 
