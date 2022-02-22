@@ -42,7 +42,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	r := &DashboardContainerRun{
 		Name:          name,
 		NodeType:      modconfig.BlockTypeContainer,
-		Path:          container.Paths[0],
+		Path:          container.GetPaths()[0],
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
 		parent:        parent,
