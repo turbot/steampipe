@@ -13,7 +13,6 @@ import (
 
 // DashboardHierarchy is a struct representing a leaf dashboard node
 type DashboardHierarchy struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 
@@ -34,7 +33,7 @@ type DashboardHierarchy struct {
 	OnHooks      []*DashboardOn                         `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
@@ -255,7 +254,7 @@ func (h *DashboardHierarchy) GetQuery() *Query {
 
 // SetArgs implements QueryProvider
 func (h *DashboardHierarchy) SetArgs(args *QueryArgs) {
-	// nothing
+	h.Args = args
 }
 
 // SetParams implements QueryProvider

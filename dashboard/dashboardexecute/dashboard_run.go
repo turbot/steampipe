@@ -26,7 +26,7 @@ type DashboardRun struct {
 	Children      []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
 	NodeType      string                                 `json:"node_type"`
 	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
-	DashboardName string                                 `json:"report"`
+	DashboardName string                                 `json:"dashboard"`
 	Path          []string                               `json:"-"`
 	dashboardNode *modconfig.Dashboard
 	parent        dashboardinterfaces.DashboardNodeParent
@@ -81,6 +81,12 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 			if err != nil {
 				return nil, err
 			}
+		case *modconfig.DashboardInput:
+			// NOTE:L clone the input to avoid mutating the original
+			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
+			if err != nil {
+				return nil, err
+			}
 		default:
 			// ensure this item is a DashboardLeafNode
 			leafNode, ok := i.(modconfig.DashboardLeafNode)
@@ -105,6 +111,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 		}
 		r.Children = append(r.Children, childRun)
 	}
+
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 	return r, nil
@@ -171,7 +178,10 @@ func (r *DashboardRun) SetError(err error) {
 	r.Error = err
 	r.Status = dashboardinterfaces.DashboardRunError
 	// raise container error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{Container: r})
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{
+		Container: r,
+		Session:   r.executionTree.sessionId,
+	})
 	r.parent.ChildCompleteChan() <- r
 
 }
@@ -180,7 +190,10 @@ func (r *DashboardRun) SetError(err error) {
 func (r *DashboardRun) SetComplete() {
 	r.Status = dashboardinterfaces.DashboardRunComplete
 	// raise container complete event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{Container: r})
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{
+		Container: r,
+		Session:   r.executionTree.sessionId,
+	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }
@@ -205,18 +218,7 @@ func (r *DashboardRun) ChildCompleteChan() chan dashboardinterfaces.DashboardNod
 	return r.childComplete
 }
 
-func (r *DashboardRun) GetRuntimeDependency(dependency *modconfig.RuntimeDependency) (*string, error) {
-	// TOTO [reports] LOCK???
-
-	// only inputs supported at present
-	if dependency.PropertyPath.ItemType != modconfig.BlockTypeInput {
-		return nil, fmt.Errorf("invalid runtime dependency type %s", dependency.PropertyPath.ItemType)
-	}
-
-	// find the input corresponding to this dependency
-	input, ok := r.dashboardNode.GetInput(dependency.PropertyPath.Name)
-	if !ok {
-		return nil, fmt.Errorf("dashboard %s does not contain input %s", r.dashboardNode.Name(), dependency.PropertyPath.ItemType)
-	}
-	return input.Value, nil
+// GetInput searches for an input with the given name
+func (r *DashboardRun) GetInput(name string) (*modconfig.DashboardInput, bool) {
+	return r.dashboardNode.GetInput(name)
 }

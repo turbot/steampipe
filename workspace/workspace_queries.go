@@ -23,7 +23,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 	var queryProviders []modconfig.QueryProvider
 	// build map of just the required prepared statement providers
 	for _, arg := range args {
-		query, queryProvider, err := w.ResolveQueryAndArgs(arg)
+		query, queryProvider, err := w.ResolveQueryAndArgsFromSQLString(arg)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -40,8 +40,8 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 	return queries, preparedStatementSource, nil
 }
 
-// ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
-func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, modconfig.QueryProvider, error) {
+// ResolveQueryAndArgsFromSQLString attempts to resolve 'arg' to a query and query args
+func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, modconfig.QueryProvider, error) {
 	var args = &modconfig.QueryArgs{}
 
 	var err error
@@ -53,67 +53,6 @@ func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, modconfig.Que
 			return "", nil, err
 		}
 	}
-
-	return w.resolveQuery(sqlString, args)
-}
-
-// ResolveQuery resolves the query for the given QueryProvider
-func (w *Workspace) ResolveQuery(queryProvider modconfig.QueryProvider, args *modconfig.QueryArgs) (string, error) {
-	args, err := w.resolveQueryProviderArgs(queryProvider, args)
-	if err != nil {
-		return "", err
-	}
-
-	log.Printf("[TRACE] ResolveQuery for %s", queryProvider.Name())
-
-	query := queryProvider.GetQuery()
-	sql := queryProvider.GetSQL()
-	params := queryProvider.GetParams()
-	// verify we have either SQL or a Query defined
-	if sql == nil && query == nil {
-		// this should never happen as we should catch it in the parsing stage
-		return "", fmt.Errorf("%s must define either a 'sql' property or a 'query' property", queryProvider.Name())
-	}
-
-	// determine the source for the query
-	// - this will either be the control itself or any named query the control refers to
-	// either via its SQL property (passing a query name) or Query property (using a reference to a query object)
-
-	// if a query is provided, us that to resolve the sql
-	if query != nil {
-		return w.resolveNamedQuery(query, args)
-	}
-
-	// if the control has SQL set, use that
-	if sql != nil {
-		queryProviderSQL := typehelpers.SafeString(sql)
-		log.Printf("[TRACE] control defines inline SQL")
-
-		// if the control SQL refers to a named query, this is the same as if the control 'Query' property is set
-		if namedQuery, ok := w.GetQuery(queryProviderSQL); ok {
-			// in this case, it is NOT valid for the control to define its own Param definitions
-			if params != nil {
-				return "", fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQuery.FullName)
-			}
-			return w.resolveNamedQuery(namedQuery, args)
-		}
-		// so the control sql is NOT a named query
-		// if there are NO params, use the control SQL as is
-		if len(params) == 0 {
-			return queryProviderSQL, nil
-		}
-		// so the control sql is NOT a named query
-		// if there are NO params, use the control SQL as is
-		if len(params) == 0 {
-			return queryProviderSQL, nil
-		}
-	}
-
-	// so the control defines SQL and has params - it is a prepared statement
-	return queryProvider.GetPreparedStatementExecuteSQL(args)
-}
-
-func (w *Workspace) resolveQuery(sqlString string, args *modconfig.QueryArgs) (string, modconfig.QueryProvider, error) {
 	// query or control providing the named query
 
 	log.Printf("[TRACE] resolveQuery %s args %s", sqlString, args)
@@ -124,7 +63,7 @@ func (w *Workspace) resolveQuery(sqlString string, args *modconfig.QueryArgs) (s
 
 		// copy control SQL into query and continue resolution
 		var err error
-		sqlString, err = w.ResolveQuery(control, args)
+		sqlString, err = w.ResolveQueryFromQueryProvider(control, args)
 		if err != nil {
 			return "", nil, err
 		}
@@ -134,7 +73,7 @@ func (w *Workspace) resolveQuery(sqlString string, args *modconfig.QueryArgs) (s
 
 	// 2) is this a named query
 	if namedQuery, ok := w.GetQuery(sqlString); ok {
-		sql, err := w.resolveNamedQuery(namedQuery, args)
+		sql, err := w.ResolveQueryFromQueryProvider(namedQuery, args)
 		if err != nil {
 			return "", nil, err
 		}
@@ -145,7 +84,7 @@ func (w *Workspace) resolveQuery(sqlString string, args *modconfig.QueryArgs) (s
 	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
 	if fileExists {
 		if err != nil {
-			return "", nil, fmt.Errorf("ResolveQueryAndArgs failed: error opening file '%s': %v", sqlString, err)
+			return "", nil, fmt.Errorf("ResolveQueryAndArgsFromSQLString failed: error opening file '%s': %v", sqlString, err)
 		}
 		if len(fileQuery) == 0 {
 			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
@@ -163,23 +102,60 @@ func (w *Workspace) resolveQuery(sqlString string, args *modconfig.QueryArgs) (s
 	return sqlString, nil, nil
 }
 
-func (w *Workspace) resolveNamedQuery(namedQuery *modconfig.Query, args *modconfig.QueryArgs) (string, error) {
-	/// if there are no params, just return the sql
-	if len(namedQuery.Params) == 0 {
-		return typehelpers.SafeString(namedQuery.SQL), nil
-	}
-
-	// so there are params - this will be a prepared statement
-	sql, err := namedQuery.GetPreparedStatementExecuteSQL(args)
+// ResolveQueryFromQueryProvider resolves the query for the given QueryProvider
+func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryProvider, commandLineArgs *modconfig.QueryArgs) (string, error) {
+	args, err := w.resolveQueryProviderArgs(queryProvider, commandLineArgs)
 	if err != nil {
 		return "", err
 	}
-	return sql, nil
+
+	log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
+
+	query := queryProvider.GetQuery()
+	sql := queryProvider.GetSQL()
+	params := queryProvider.GetParams()
+	// verify we have either SQL or a Query defined
+	if sql == nil && query == nil {
+		// this should never happen as we should catch it in the parsing stage
+		return "", fmt.Errorf("%s must define either a 'sql' property or a 'query' property", queryProvider.Name())
+	}
+
+	// determine the source for the query
+	// - this will either be the control itself or any named query the control refers to
+	// either via its SQL proper ty (passing a query name) or Query property (using a reference to a query object)
+
+	// if a query is provided, use that to resolve the sql
+	if query != nil {
+		return w.ResolveQueryFromQueryProvider(query, args)
+	}
+
+	// if the control has SQL set, use that
+	if sql != nil {
+		queryProviderSQL := typehelpers.SafeString(sql)
+		log.Printf("[TRACE] control defines inline SQL")
+
+		// if the control SQL refers to a named query, this is the same as if the control 'Query' property is set
+		if namedQuery, ok := w.GetQuery(queryProviderSQL); ok {
+			// in this case, it is NOT valid for the control to define its own Param definitions
+			if params != nil {
+				return "", fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQuery.FullName)
+			}
+			return w.ResolveQueryFromQueryProvider(namedQuery, args)
+		}
+		// so the control sql is NOT a named query
+		// if there are NO params, use the control SQL as is
+		if len(params) == 0 {
+			return queryProviderSQL, nil
+		}
+	}
+
+	// so the control defines SQL and has params - it is a prepared statement
+	return queryProvider.GetPreparedStatementExecuteSQL(args)
 }
 
-func (w *Workspace) resolveQueryProviderArgs(queryProvider modconfig.QueryProvider, args *modconfig.QueryArgs) (*modconfig.QueryArgs, error) {
+func (w *Workspace) resolveQueryProviderArgs(queryProvider modconfig.QueryProvider, commandLineArgs *modconfig.QueryArgs) (*modconfig.QueryArgs, error) {
 	// if no args were provided,  set args to control args (which may also be nil!)
-	if args == nil || args.Empty() {
+	if commandLineArgs == nil || commandLineArgs.Empty() {
 		log.Printf("[TRACE] using control args: %s", queryProvider.GetArgs())
 		return queryProvider.GetArgs(), nil
 	}
@@ -188,10 +164,10 @@ func (w *Workspace) resolveQueryProviderArgs(queryProvider modconfig.QueryProvid
 	if queryProvider.GetQuery() != nil {
 		return nil, fmt.Errorf("%s defines a query property and so does not support command line arguments", queryProvider.Name())
 	}
-	log.Printf("[TRACE] using command line args: %s", args)
+	log.Printf("[TRACE] using command line args: %s", commandLineArgs)
 
 	// so the control defines SQL and has params - it is a prepared statement
-	return args, nil
+	return commandLineArgs, nil
 }
 
 func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {

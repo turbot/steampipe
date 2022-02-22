@@ -12,7 +12,7 @@ import (
 // these may either be passed by name, in a map, or as a list of positional args
 // NOTE: if both are present the named parameters are used
 type QueryArgs struct {
-	Args       map[string]string    `cty:"args" json:"args"`
+	ArgMap     map[string]string    `cty:"args" json:"args"`
 	ArgsList   []string             `cty:"args_list" json:"args_list"`
 	References []*ResourceReference `cty:"refs" json:"refs"`
 }
@@ -24,10 +24,10 @@ func (q *QueryArgs) String() string {
 	if len(q.ArgsList) > 0 {
 		return fmt.Sprintf("Args list: %s", strings.Join(q.ArgsList, ","))
 	}
-	if len(q.Args) > 0 {
-		var strs = make([]string, len(q.Args))
+	if len(q.ArgMap) > 0 {
+		var strs = make([]string, len(q.ArgMap))
 		idx := 0
-		for k, v := range q.Args {
+		for k, v := range q.ArgMap {
 			strs[idx] = fmt.Sprintf("%s = %s", k, v)
 			idx++
 		}
@@ -38,7 +38,7 @@ func (q *QueryArgs) String() string {
 
 func NewQueryArgs() *QueryArgs {
 	return &QueryArgs{
-		Args: make(map[string]string),
+		ArgMap: make(map[string]string),
 	}
 }
 
@@ -49,11 +49,11 @@ func (q *QueryArgs) Equals(other *QueryArgs) bool {
 	if q.Empty() {
 		return other.Empty()
 	}
-	if len(other.Args) != len(q.Args) || len(other.ArgsList) != len(q.ArgsList) {
+	if len(other.ArgMap) != len(q.ArgMap) || len(other.ArgsList) != len(q.ArgsList) {
 		return false
 	}
-	for k, v := range q.Args {
-		if other.Args[k] != v {
+	for k, v := range q.ArgMap {
+		if other.ArgMap[k] != v {
 			return false
 		}
 	}
@@ -66,7 +66,7 @@ func (q *QueryArgs) Equals(other *QueryArgs) bool {
 }
 
 func (q *QueryArgs) Empty() bool {
-	return len(q.Args)+len(q.ArgsList) == 0
+	return len(q.ArgMap)+len(q.ArgsList) == 0
 }
 
 // ResolveAsString resolves the argument values,
@@ -76,7 +76,7 @@ func (q *QueryArgs) Empty() bool {
 func (q *QueryArgs) ResolveAsString(source QueryProvider) (string, error) {
 	var paramStrs, missingParams []string
 	var err error
-	if len(q.Args) > 0 {
+	if len(q.ArgMap) > 0 {
 		// do params contain named params?
 		paramStrs, missingParams, err = q.resolveNamedParameters(source)
 	} else {
@@ -115,9 +115,9 @@ func (q *QueryArgs) resolveNamedParameters(source QueryProvider) (argStrs []stri
 	}
 	params := source.GetParams()
 	// so params contain named params - if this query has no param defs, error out
-	if len(params) < len(q.Args) {
+	if len(params) < len(q.ArgMap) {
 		err = fmt.Errorf("ResolveAsString failed for %s - params data contain %d named parameters but this query %d parameter definitions",
-			source.Name(), len(q.Args), len(source.GetParams()))
+			source.Name(), len(q.ArgMap), len(source.GetParams()))
 		return
 	}
 
@@ -131,7 +131,7 @@ func (q *QueryArgs) resolveNamedParameters(source QueryProvider) (argStrs []stri
 		defaultValue := typehelpers.SafeString(param.Default)
 
 		// can we resolve a value for this param?
-		if val, ok := q.Args[param.Name]; ok {
+		if val, ok := q.ArgMap[param.Name]; ok {
 			argStrs[i] = val
 			argsWithParamDef[param.Name] = true
 		} else if defaultValue != "" {
@@ -143,7 +143,7 @@ func (q *QueryArgs) resolveNamedParameters(source QueryProvider) (argStrs []stri
 	}
 
 	// verify we have param defs for all provided args
-	for arg := range q.Args {
+	for arg := range q.ArgMap {
 		if _, ok := argsWithParamDef[arg]; !ok {
 			return nil, nil, fmt.Errorf("no parameter definition found for argument '%s'", arg)
 		}
@@ -154,7 +154,7 @@ func (q *QueryArgs) resolveNamedParameters(source QueryProvider) (argStrs []stri
 
 func (q *QueryArgs) resolvePositionalParameters(source QueryProvider) (argStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
-	if len(q.Args) > 0 {
+	if len(q.ArgMap) > 0 {
 		err = fmt.Errorf("resolvePositionalParameters failed for %s - args data contain both positional and named parameters", source.Name())
 		return
 	}

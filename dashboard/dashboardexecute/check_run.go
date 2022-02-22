@@ -3,11 +3,11 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"reflect"
 
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
@@ -102,8 +102,11 @@ func (r *CheckRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
 func (r *CheckRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = dashboardinterfaces.DashboardRunError
-	// raise counter error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{Node: r})
+	// raise dashboard error event
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
+		Node:    r,
+		Session: r.executionTree.sessionId,
+	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 
@@ -113,7 +116,10 @@ func (r *CheckRun) SetError(err error) {
 func (r *CheckRun) SetComplete() {
 	r.runStatus = dashboardinterfaces.DashboardRunComplete
 	// raise counter complete event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{Node: r})
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
+		Node:    r,
+		Session: r.executionTree.sessionId,
+	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }

@@ -2,7 +2,7 @@ import CallToAction from "../index";
 import ExternalLink from "../../ExternalLink";
 import { FeedbackIcon, HeartIcon } from "../../../constants/icons";
 
-const SlackCommunityCallToAction = ({}) => (
+const SlackCommunityCallToAction = () => (
   <CallToAction
     icon={
       <div className="w-12 sm:w-16">

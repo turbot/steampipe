@@ -41,6 +41,7 @@ export const PanelStoryDecorator = ({
           short_name: "storybook_dashboard_wrapper",
           mod_full_name: "mod.storybook",
         },
+        selectedDashboardInputs: {},
         dashboard: {
           name: "storybook.dashboard.storybook_dashboard_wrapper",
           children: [

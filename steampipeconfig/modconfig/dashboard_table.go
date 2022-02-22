@@ -14,7 +14,6 @@ import (
 
 // DashboardTable is a struct representing a leaf dashboard node
 type DashboardTable struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 
@@ -34,7 +33,7 @@ type DashboardTable struct {
 	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
@@ -252,7 +251,7 @@ func (t *DashboardTable) GetQuery() *Query {
 
 // SetArgs implements QueryProvider
 func (t *DashboardTable) SetArgs(args *QueryArgs) {
-	// nothing
+	t.Args = args
 }
 
 // SetParams implements QueryProvider

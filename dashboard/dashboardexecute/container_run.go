@@ -111,7 +111,6 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
 func (r *DashboardContainerRun) Execute(ctx context.Context) error {
-
 	errChan := make(chan error, len(r.Children))
 	// execute all children asynchronously
 	for _, child := range r.Children {
@@ -170,7 +169,10 @@ func (r *DashboardContainerRun) SetError(err error) {
 	r.Error = err
 	r.Status = dashboardinterfaces.DashboardRunError
 	// raise container error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{Container: r})
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{
+		Container: r,
+		Session:   r.executionTree.sessionId,
+	})
 	r.parent.ChildCompleteChan() <- r
 
 }
@@ -179,7 +181,10 @@ func (r *DashboardContainerRun) SetError(err error) {
 func (r *DashboardContainerRun) SetComplete() {
 	r.Status = dashboardinterfaces.DashboardRunComplete
 	// raise container complete event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{Container: r})
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{
+		Container: r,
+		Session:   r.executionTree.sessionId,
+	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }

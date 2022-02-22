@@ -2,6 +2,7 @@ package dashboardexecute
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
@@ -12,18 +13,19 @@ import (
 type LeafRun struct {
 	Name string `json:"name"`
 
-	Title         string                      `json:"title,omitempty"`
-	Width         int                         `json:"width,omitempty"`
-	SQL           string                      `json:"sql,omitempty"`
-	Data          *LeafData                   `json:"data,omitempty"`
-	Error         error                       `json:"error,omitempty"`
-	DashboardNode modconfig.DashboardLeafNode `json:"properties"`
-	NodeType      string                      `json:"node_type"`
-	DashboardName string                      `json:"dashboard"`
-	Path          []string                    `json:"-"`
-	parent        dashboardinterfaces.DashboardNodeParent
-	runStatus     dashboardinterfaces.DashboardRunStatus
-	executionTree *DashboardExecutionTree
+	Title               string                      `json:"title,omitempty"`
+	Width               int                         `json:"width,omitempty"`
+	SQL                 string                      `json:"sql,omitempty"`
+	Data                *LeafData                   `json:"data,omitempty"`
+	Error               error                       `json:"error,omitempty"`
+	DashboardNode       modconfig.DashboardLeafNode `json:"properties"`
+	NodeType            string                      `json:"node_type"`
+	DashboardName       string                      `json:"dashboard"`
+	Path                []string                    `json:"-"`
+	parent              dashboardinterfaces.DashboardNodeParent
+	runStatus           dashboardinterfaces.DashboardRunStatus
+	executionTree       *DashboardExecutionTree
+	runtimeDependencies map[string]*ResolvedRuntimeDependency
 }
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
@@ -31,15 +33,15 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 	name := executionTree.GetUniqueName(resource.Name())
 
 	r := &LeafRun{
-		Name:          name,
-		Title:         resource.GetTitle(),
-		Width:         resource.GetWidth(),
-		Path:          resource.GetPaths()[0],
-		DashboardNode: resource,
-		DashboardName: executionTree.dashboardName,
-		executionTree: executionTree,
-		parent:        parent,
-
+		Name:                name,
+		Title:               resource.GetTitle(),
+		Width:               resource.GetWidth(),
+		Path:                resource.GetPaths()[0],
+		DashboardNode:       resource,
+		DashboardName:       executionTree.dashboardName,
+		executionTree:       executionTree,
+		parent:              parent,
+		runtimeDependencies: make(map[string]*ResolvedRuntimeDependency),
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
 		runStatus: dashboardinterfaces.DashboardRunComplete,
@@ -50,14 +52,20 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		return nil, err
 	}
 	r.NodeType = parsedName.ItemType
-	// if we have sql, set status to ready
-	if queryProvider, ok := resource.(modconfig.QueryProvider); ok {
-		sql, err := executionTree.workspace.ResolveQuery(queryProvider, nil)
-		if err != nil {
-			return nil, err
-		}
-		r.SQL = sql
+	// if we have a query provider, set status to ready
+	if _, ok := resource.(modconfig.QueryProvider); ok {
 		r.runStatus = dashboardinterfaces.DashboardRunReady
+	}
+
+	// if this node has runtime dependencies, create runtime depdency instances which we use to resolve the values
+	// only QueryProvider resources support runtime dependencies
+	queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider)
+	if ok {
+		runtimeDependencies := queryProvider.GetRuntimeDependencies()
+		for name, dep := range runtimeDependencies {
+			r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, executionTree)
+		}
+
 	}
 
 	// add r into execution tree
@@ -67,17 +75,24 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 
 // Execute implements DashboardRunNode
 func (r *LeafRun) Execute(ctx context.Context) error {
-	// if there are any unresolved runtime dependencies, wait for them
-	if err := r.waitForRuntimeDependencies(ctx); err != nil {
-		return err
-	}
-
 	// if there is nothing to do, return
 	if r.runStatus == dashboardinterfaces.DashboardRunComplete {
 		return nil
 	}
 
-	var err error
+	// if there are any unresolved runtime dependencies, wait for them
+	if err := r.waitForRuntimeDependencies(ctx); err != nil {
+		return err
+	}
+
+	// ok now we have runtime depdencies, we can resolve the query
+	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
+	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, nil)
+	if err != nil {
+		return err
+	}
+	r.SQL = sql
+
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.SQL)
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
@@ -111,7 +126,10 @@ func (r *LeafRun) SetError(err error) {
 	r.Error = err
 	r.runStatus = dashboardinterfaces.DashboardRunError
 	// raise counter error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{Node: r})
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
+		Node:    r,
+		Session: r.executionTree.sessionId,
+	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 
@@ -121,7 +139,10 @@ func (r *LeafRun) SetError(err error) {
 func (r *LeafRun) SetComplete() {
 	r.runStatus = dashboardinterfaces.DashboardRunComplete
 	// raise counter complete event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{Node: r})
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
+		Node:    r,
+		Session: r.executionTree.sessionId,
+	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }
@@ -137,28 +158,18 @@ func (r *LeafRun) ChildrenComplete() bool {
 }
 
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
-	runtimeDependencies := r.DashboardNode.GetRuntimeDependencies()
-
-	// runtime dependencies are always (for now) dashboard inputs
-
-	for _, dependency := range runtimeDependencies {
+	for _, resolvedDependency := range r.runtimeDependencies {
 		// check with the top level dashboard whether the dependency is available
-		inputValue, err := r.executionTree.Root.GetRuntimeDependency(dependency)
-		if err != nil {
-			return err
+		if !resolvedDependency.Resolve() {
+			if err := r.executionTree.waitForRuntimeDependency(ctx, resolvedDependency.dependency); err != nil {
+				return err
+			}
 		}
-		if inputValue != nil {
-			// ok we have this one - set it on the dependency
-			dependency.Value = inputValue
-			continue
+		// now again resolve the dependency value - this sets the arg to have the runtime dependency value
+		if !resolvedDependency.Resolve() {
+			// should now be resolved`
+			return fmt.Errorf("dependency not resolved after waitForRuntimeDependency returned")
 		}
-
-		if err := r.executionTree.waitForRuntimeDependency(ctx, dependency); err != nil {
-			return err
-		}
-
-		// now populate the runtime dependency target property
-		//r.setRuntimeDependency()
 	}
 
 	return nil

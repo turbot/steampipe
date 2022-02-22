@@ -8,7 +8,7 @@ export type InputDefinition = PanelDefinition & {
 
 const renderInput = (definition: InputDefinition) => {
   const {
-    properties: { type = "select" },
+    properties: { name, type = "select" },
   } = definition;
   const input = Inputs[type];
 
@@ -17,7 +17,7 @@ const renderInput = (definition: InputDefinition) => {
   }
 
   const Component = input.component;
-  return <Component {...definition} />;
+  return <Component {...definition} name={name} />;
 };
 
 const RenderInput = (props: InputDefinition) => {

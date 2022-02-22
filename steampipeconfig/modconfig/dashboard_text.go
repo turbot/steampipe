@@ -12,7 +12,6 @@ import (
 
 // DashboardText is a struct representing a leaf dashboard node
 type DashboardText struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 
 	FullName        string `cty:"name" json:"-"`

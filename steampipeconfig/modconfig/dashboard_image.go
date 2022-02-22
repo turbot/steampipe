@@ -13,7 +13,6 @@ import (
 
 // DashboardImage is a struct representing a leaf dashboard node
 type DashboardImage struct {
-	DashboardLeafNodeBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 
@@ -30,7 +29,7 @@ type DashboardImage struct {
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
