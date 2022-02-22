@@ -89,3 +89,27 @@ MultiSeries.args = {
     ],
   },
 };
+
+export const PointColorOverrides = Template.bind({});
+PointColorOverrides.args = {
+  data: {
+    columns: [
+      { name: "versioning_status", data_type_name: "TEXT" },
+      { name: "Total", data_type_name: "INT8" },
+    ],
+    rows: [
+      ["Disabled", 2],
+      ["Enabled", 14],
+    ],
+  },
+  properties: {
+    series: {
+      Total: {
+        points: [
+          { name: "Disabled", color: "red" },
+          { name: "Enabled", color: "green" },
+        ],
+      },
+    },
+  },
+};

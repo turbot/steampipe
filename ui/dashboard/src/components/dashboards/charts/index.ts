@@ -20,12 +20,18 @@ type ChartLegendOptions = {
   position: "top" | "right" | "bottom" | "left";
 };
 
-type ChartSeriesOptions = {
-  title: string;
+type ChartSeriesPointOptions = {
+  name: string;
   color: string;
 };
 
-type ChartSeries = {
+export type ChartSeriesOptions = {
+  title: string;
+  color: string;
+  points: [ChartSeriesPointOptions];
+};
+
+export type ChartSeries = {
   [series: string]: ChartSeriesOptions;
 };
 

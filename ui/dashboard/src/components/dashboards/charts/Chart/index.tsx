@@ -1,6 +1,8 @@
 import Charts, {
   ChartProperties,
   ChartProps,
+  ChartSeries,
+  ChartSeriesOptions,
   ChartTransform,
   ChartType,
 } from "../index";
@@ -47,41 +49,68 @@ echarts.use([
   TreeChart,
 ]);
 
-const getCommonBaseOptions = () => ({
-  animation: false,
-  color: themeColors,
-  // grid: {
-  //   top: "10%",
-  // },
-  legend: {
-    orient: "horizontal",
-    left: "center",
-    top: "top",
-    textStyle: {
-      fontSize: 11,
-    },
-  },
-  textStyle: {
-    fontFamily:
-      'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-  },
-  tooltip: {
-    appendToBody: true,
-    textStyle: {
-      fontSize: 11,
-    },
-    trigger: "item",
-  },
-});
+const getThemeColorsWithPointOverrides = (
+  type: ChartType = "column",
+  series: any,
+  seriesOverrides: ChartSeries | undefined,
+  dataset: any[][]
+) => {
+  switch (type) {
+    case "donut":
+    case "pie": {
+      const newThemeColors: string[] = [];
+      for (let rowIndex = 1; rowIndex < dataset.length; rowIndex++) {
+        if (rowIndex - 1 < themeColors.length) {
+          newThemeColors.push(themeColors[rowIndex - 1]);
+        } else {
+          newThemeColors.push(themeColors[(rowIndex - 1) % themeColors.length]);
+        }
+      }
+      series.forEach((seriesInfo) => {
+        const seriesName = seriesInfo.name;
+        const overrides = seriesOverrides
+          ? seriesOverrides[seriesName]
+          : ({} as ChartSeriesOptions);
+        const pointOverrides = overrides.points || [];
+        for (const pointOverride of pointOverrides) {
+          dataset.slice(1).forEach((dataRow, dataRowIndex) => {
+            if (pointOverride.name === dataRow[0] && pointOverride.color) {
+              newThemeColors[dataRowIndex] = pointOverride.color;
+            }
+          });
+        }
+      });
+      return newThemeColors;
+    }
+    default:
+      const newThemeColors: string[] = [];
+      for (let seriesIndex = 0; seriesIndex < series.length; seriesIndex++) {
+        if (seriesIndex < themeColors.length - 1) {
+          newThemeColors.push(themeColors[seriesIndex]);
+        } else {
+          newThemeColors.push(themeColors[seriesIndex % themeColors.length]);
+        }
+      }
+      return newThemeColors;
+  }
+};
 
 const getCommonBaseOptionsForChartType = (
-  type: ChartType = "column",
-  series: any[] | undefined,
+  type: ChartType | undefined,
+  dataset: any[][],
+  series: any | undefined,
+  seriesOverrides: ChartSeries | undefined,
   themeColors
 ) => {
   switch (type) {
     case "bar":
       return {
+        color: getThemeColorsWithPointOverrides(
+          type,
+          series,
+          seriesOverrides,
+          dataset
+        ),
         legend: {
           show: series ? series.length > 1 : false,
           textStyle: {
@@ -112,6 +141,12 @@ const getCommonBaseOptionsForChartType = (
     case "area":
     case "line":
       return {
+        color: getThemeColorsWithPointOverrides(
+          type,
+          series,
+          seriesOverrides,
+          dataset
+        ),
         legend: {
           show: series ? series.length > 1 : false,
           textStyle: {
@@ -145,6 +180,12 @@ const getCommonBaseOptionsForChartType = (
       };
     case "column":
       return {
+        color: getThemeColorsWithPointOverrides(
+          type,
+          series,
+          seriesOverrides,
+          dataset
+        ),
         legend: {
           show: series ? series.length > 1 : false,
           textStyle: {
@@ -174,6 +215,12 @@ const getCommonBaseOptionsForChartType = (
       };
     case "pie":
       return {
+        color: getThemeColorsWithPointOverrides(
+          type,
+          series,
+          seriesOverrides,
+          dataset
+        ),
         legend: {
           show: false,
           textStyle: {
@@ -183,6 +230,12 @@ const getCommonBaseOptionsForChartType = (
       };
     case "donut":
       return {
+        color: getThemeColorsWithPointOverrides(
+          type,
+          series,
+          seriesOverrides,
+          dataset
+        ),
         legend: {
           show: false,
           textStyle: {
@@ -194,6 +247,32 @@ const getCommonBaseOptionsForChartType = (
       return {};
   }
 };
+
+const getCommonBaseOptions = () => ({
+  animation: false,
+  // grid: {
+  //   top: "10%",
+  // },
+  legend: {
+    orient: "horizontal",
+    left: "center",
+    top: "top",
+    textStyle: {
+      fontSize: 11,
+    },
+  },
+  textStyle: {
+    fontFamily:
+      'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+  },
+  tooltip: {
+    appendToBody: true,
+    textStyle: {
+      fontSize: 11,
+    },
+    trigger: "item",
+  },
+});
 
 const getOptionOverridesForChartType = (
   type: ChartType = "column",
@@ -420,6 +499,7 @@ const getSeriesForChartType = (
         break;
       case "pie":
         series.push({
+          name: seriesName,
           type: "pie",
           center: ["50%", "40%"],
           radius: "50%",
@@ -469,7 +549,9 @@ const buildChartOptions = (
     getCommonBaseOptions(),
     getCommonBaseOptionsForChartType(
       props.properties?.type,
+      dataset,
       seriesData.series,
+      props.properties?.series,
       themeColors
     ),
     getOptionOverridesForChartType(props.properties?.type, props.properties),
