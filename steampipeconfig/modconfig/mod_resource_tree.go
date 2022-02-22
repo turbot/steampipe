@@ -70,11 +70,21 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 }
 
 func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
-	log.Printf("[WARN] addItemIntoResourceTree %s %d parents", item.Name(), len(m.getParents(item)))
+	if item.Name() == "dashboard_poc.container.dashboard_inputs_anonymous_container_0" {
+		log.Printf("[WARN] addItemIntoResourceTree %s %d parents", item.Name(), len(m.getParents(item)))
+	}
+
 	for _, p := range m.getParents(item) {
+		if item.Name() == "dashboard_poc.container.dashboard_inputs_anonymous_container_0" {
+			log.Printf("[WARN] GOT PARENT %s", p.Name())
+		}
 		// if we are the parent, add as a child
 		if err := item.AddParent(p); err != nil {
+			if item.Name() == "dashboard_poc.container.dashboard_inputs_anonymous_container_0" {
+				log.Printf("[WARN]FAILED TO ADD PARENT %s %s", p.Name(), err.Error())
+			}
 			return err
+
 		}
 		if p == m {
 			m.children = append(m.children, item)
