@@ -5,10 +5,11 @@ ARG TARGETVERSION
 ARG TARGETOS
 ARG TARGETARCH
 
-#  'wget' for downloading steampipe, 'less' for paging in the UI
-RUN apt-get update -y \
- && apt-get install -y wget less \
- && adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
+# add a non-root 'steampipe' user
+RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
+
+# updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' interactive mode
+RUN apt-get update -y && apt-get install -y wget less
 
 # downlaod the published image
 RUN echo \
@@ -30,13 +31,19 @@ ENV STEAMPIPE_UPDATE_CHECK=false
 # Run --version
 RUN steampipe --version
 
-# Run steampipe query to install db and fdw (they are installed on the first run)
-RUN steampipe query "select * from steampipe_mod"
+# Run steampipe service once
+RUN steampipe service start --dashboard
+# and stop it
+RUN steampipe service stop
 
+# remove the generated service .passwd file from this image, so that it gets regenerated in the container
 RUN rm -f /home/steampipe/.steampipe/internal/.passwd
 
 # expose postgres service default port
 EXPOSE 9193
+
+# expose dashboard service default port
+EXPOSE 9194
 
 COPY docker-entrypoint.sh /usr/local/bin
 ENTRYPOINT [ "docker-entrypoint.sh" ]
