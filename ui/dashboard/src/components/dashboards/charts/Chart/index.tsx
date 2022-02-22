@@ -250,9 +250,9 @@ const getCommonBaseOptionsForChartType = (
 
 const getCommonBaseOptions = () => ({
   animation: false,
-  // grid: {
-  //   top: "10%",
-  // },
+  grid: {
+    containLabel: true,
+  },
   legend: {
     orient: "horizontal",
     left: "center",
