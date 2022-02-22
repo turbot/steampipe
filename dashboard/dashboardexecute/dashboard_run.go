@@ -45,7 +45,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 	r := &DashboardRun{
 		Name:          name,
 		NodeType:      modconfig.BlockTypeDashboard,
-		Path:          dashboard.Paths[0],
+		Path:          dashboard.GetPaths()[0],
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
 		parent:        parent,
