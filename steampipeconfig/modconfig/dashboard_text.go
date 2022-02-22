@@ -27,9 +27,10 @@ type DashboardText struct {
 	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	DeclRange  hcl.Range `json:"-"`
+	References []*ResourceReference
+	Mod        *Mod       `cty:"mod" json:"-"`
+	Paths      []NodePath `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -87,7 +88,9 @@ func (t *DashboardText) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (t *DashboardText) AddReference(*ResourceReference) {}
+func (t *DashboardText) AddReference(ref *ResourceReference) {
+	t.References = append(t.References, ref)
+}
 
 // GetMod implements HclResource
 func (t *DashboardText) GetMod() *Mod {

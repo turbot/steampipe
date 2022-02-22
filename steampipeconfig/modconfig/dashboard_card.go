@@ -38,9 +38,10 @@ type DashboardCard struct {
 
 	Base *DashboardCard `hcl:"base" json:"-"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	DeclRange  hcl.Range `json:"-"`
+	References []*ResourceReference
+	Mod        *Mod       `cty:"mod" json:"-"`
+	Paths      []NodePath `column:"path,jsonb" json:"-"`
 
 	parents  []ModTreeItem
 	metadata *ResourceMetadata
@@ -103,7 +104,9 @@ func (c *DashboardCard) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *DashboardCard) AddReference(*ResourceReference) {}
+func (c *DashboardCard) AddReference(ref *ResourceReference) {
+	c.References = append(c.References, ref)
+}
 
 // GetMod implements HclResource
 func (c *DashboardCard) GetMod() *Mod {

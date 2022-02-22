@@ -37,9 +37,10 @@ type DashboardImage struct {
 
 	Base *DashboardImage `hcl:"base" json:"-"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	DeclRange  hcl.Range `json:"-"`
+	References []*ResourceReference
+	Mod        *Mod       `cty:"mod" json:"-"`
+	Paths      []NodePath `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -97,7 +98,9 @@ func (i *DashboardImage) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (i *DashboardImage) AddReference(*ResourceReference) {}
+func (i *DashboardImage) AddReference(ref *ResourceReference) {
+	i.References = append(i.References, ref)
+}
 
 // GetMod implements HclResource
 func (i *DashboardImage) GetMod() *Mod {
