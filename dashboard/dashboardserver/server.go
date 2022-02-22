@@ -157,7 +157,7 @@ func buildWorkspaceErrorPayload(e *dashboardevents.WorkspaceError) ([]byte, erro
 func buildLeafNodeProgressPayload(event *dashboardevents.LeafNodeProgress) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:        "leaf_node_progress",
-		DashboardNode: event.Node,
+		DashboardNode: event.LeafNode,
 	}
 	return json.Marshal(payload)
 }
@@ -165,7 +165,7 @@ func buildLeafNodeProgressPayload(event *dashboardevents.LeafNodeProgress) ([]by
 func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:        "leaf_node_complete",
-		DashboardNode: event.Node,
+		DashboardNode: event.LeafNode,
 	}
 	return json.Marshal(payload)
 }
@@ -173,11 +173,8 @@ func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]by
 func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:        "execution_started",
-		DashboardNode: event.DashboardNode,
+		DashboardNode: event.Dashboard,
 	}
-	a, _ := json.MarshalIndent(payload, "", " ")
-	b := string(a)
-	fmt.Println(b)
 	return json.Marshal(payload)
 }
 
@@ -252,7 +249,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 	switch e := event.(type) {
 
 	case *dashboardevents.WorkspaceError:
-		log.Println("[TRACE] Got workspace error event", *e)
+		log.Printf("[TRACE] WorkspaceError event: %s", e.Error)
 		payload, payloadError = buildWorkspaceErrorPayload(e)
 		if payloadError != nil {
 			return
@@ -261,7 +258,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		outputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
-		log.Println("[TRACE] Got execution started event", *e)
+		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Dashboard.GetName())
 		payload, payloadError = buildExecutionStartedPayload(e)
 		if payloadError != nil {
 			return
@@ -269,13 +266,13 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.mutex.Lock()
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
-		outputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.DashboardNode.GetName()))
+		outputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Dashboard.GetName()))
 
 	case *dashboardevents.LeafNodeError:
-		log.Println("[TRACE] Got leaf node error event", *e)
+		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %s", e.Session, e.LeafNode.GetName(), e.Error)
 
 	case *dashboardevents.LeafNodeProgress:
-		log.Println("[TRACE] Got leaf node complete event", *e)
+		log.Printf("[TRACE] LeafNodeProgress event session %s, node %s", e.Session, e.LeafNode.GetName())
 		payload, payloadError = buildLeafNodeProgressPayload(e)
 		if payloadError != nil {
 			return
@@ -285,7 +282,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.mutex.Unlock()
 
 	case *dashboardevents.LeafNodeComplete:
-		log.Println("[TRACE] Got leaf node complete event", *e)
+		log.Printf("[TRACE] LeafNodeComplete event session %s, node %s", e.Session, e.LeafNode.GetName())
 		payload, payloadError = buildLeafNodeCompletePayload(e)
 		if payloadError != nil {
 			return
@@ -295,7 +292,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.mutex.Unlock()
 
 	case *dashboardevents.DashboardChanged:
-		log.Println("[TRACE] Got dashboard changed event", *e)
+		log.Println("[TRACE] DashboardChanged event", *e)
 		deletedDashboards := e.DeletedDashboards
 		newDashboards := e.NewDashboards
 
@@ -408,13 +405,13 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 
 	case *dashboardevents.DashboardError:
-		log.Println("[TRACE] Got dashboard error event", *e)
+		log.Println("[TRACE] dashboard error event", *e)
 
 	case *dashboardevents.DashboardComplete:
-		log.Println("[TRACE] Got dashboard complete event", *e)
+		log.Println("[TRACE] dashboard complete event", *e)
 
 	case *dashboardevents.ExecutionComplete:
-		log.Println("[TRACE] Got execution complete event", *e)
+		log.Println("[TRACE] execution complete event", *e)
 		payload, payloadError = buildExecutionCompletePayload(e)
 		if payloadError != nil {
 			return
@@ -430,12 +427,12 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 func (s *Server) Init(ctx context.Context) {
 	// Return list of dashboards on connect
 	s.webSocket.HandleConnect(func(session *melody.Session) {
-		log.Println("[TRACE] Client connected")
+		log.Println("[TRACE] client connected")
 		s.addSession(session)
 	})
 
 	s.webSocket.HandleDisconnect(func(session *melody.Session) {
-		log.Println("[TRACE] Client disconnected")
+		log.Println("[TRACE] client disconnected")
 		s.clearSession(ctx, session)
 	})
 
@@ -445,7 +442,6 @@ func (s *Server) Init(ctx context.Context) {
 
 func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Session, msg []byte) {
 	return func(session *melody.Session, msg []byte) {
-		log.Println("[TRACE] Got message", string(msg))
 
 		// TODO TEMP GET SESSION ID
 		sessionId := s.getSessionId(session)
@@ -453,6 +449,11 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 		var request ClientRequest
 		// if we could not decode message - ignore
 		if err := json.Unmarshal(msg, &request); err == nil {
+
+			if request.Action != "keep_alive" {
+				log.Println("[TRACE] message", string(msg))
+			}
+
 			switch request.Action {
 			case "get_dashboard_metadata":
 				payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())

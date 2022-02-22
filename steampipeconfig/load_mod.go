@@ -76,6 +76,8 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 	}
 	// now we have loaded dependencies, set the current mod on the run context
 	runCtx.CurrentMod = mod
+	runCtx.PushParent(mod)
+	defer runCtx.PopParent()
 
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource

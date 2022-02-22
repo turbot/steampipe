@@ -24,7 +24,6 @@ type DashboardContainerRun struct {
 	NodeType      string                                 `json:"node_type"`
 	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName string                                 `json:"report"`
-	Path          []string                               `json:"-"`
 	dashboardNode *modconfig.DashboardContainer
 	parent        dashboardinterfaces.DashboardNodeParent
 	executionTree *DashboardExecutionTree
@@ -34,13 +33,14 @@ type DashboardContainerRun struct {
 func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {
 	children := container.GetChildren()
 
-	// ensure the tree node name is unique
-	name := executionTree.GetUniqueName(container.Name())
+	// NOTE: for now we MUST declare children inline - therefore we cannot share children between runs in the tree
+	// (if we supported the children property then we could reuse resources)
+	// so FOR NOW it is safe to use the container name directly as the run name
+	name := container.Name()
 
 	r := &DashboardContainerRun{
 		Name:          name,
 		NodeType:      modconfig.BlockTypeContainer,
-		Path:          container.Paths[0],
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
 		parent:        parent,
@@ -151,11 +151,6 @@ func (r *DashboardContainerRun) executeChild(ctx context.Context, child dashboar
 // GetName implements DashboardNodeRun
 func (r *DashboardContainerRun) GetName() string {
 	return r.Name
-}
-
-// GetPath implements DashboardNodeRun
-func (r *DashboardContainerRun) GetPath() modconfig.NodePath {
-	return r.Path
 }
 
 // GetRunStatus implements DashboardNodeRun

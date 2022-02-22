@@ -53,6 +53,8 @@ type RunContext struct {
 	BlockTypeExclusions []string
 	Variables           map[string]*modconfig.Variable
 
+	// stack of parent resources for the currently parsed block
+	parents         []modconfig.ModTreeItem
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
@@ -87,6 +89,21 @@ func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 	}
 
 	return nil
+}
+
+func (r *RunContext) PushParent(parent modconfig.ModTreeItem) {
+	r.parents = append(r.parents, parent)
+}
+
+func (r *RunContext) PopParent() modconfig.ModTreeItem {
+	n := len(r.parents) - 1
+	res := r.parents[n]
+	r.parents = r.parents[:n]
+	return res
+}
+
+func (r *RunContext) PeekParent() modconfig.ModTreeItem {
+	return r.parents[len(r.parents)-1]
 }
 
 // VariableValueMap converts a map of variables to a map of the underlying cty value
