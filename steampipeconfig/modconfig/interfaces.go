@@ -86,9 +86,3 @@ type ResourceMapsProvider interface {
 type UniqueNameProvider interface {
 	GetUniqueName(string) string
 }
-
-type RuntimeDependencySource interface {
-	GetUnqualifiedName() string
-	GetValue() *string
-	SetValue(value *string)
-}
