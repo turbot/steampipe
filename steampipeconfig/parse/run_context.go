@@ -36,6 +36,8 @@ type ReferenceTypeValueMap map[string]map[string]cty.Value
 type RunContext struct {
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
+	// the parent resource for the currently parsed block
+	CurrentParent modconfig.ModTreeItem
 	// the workspace lock data
 	WorkspaceLock    *versionmap.WorkspaceLock
 	UnresolvedBlocks map[string]*unresolvedBlock

@@ -40,6 +40,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			Summary:  "failed to determine required dependency order",
 			Detail:   err.Error()})
 	}
+
 	for _, block := range blocks {
 		resources, res := decodeBlock(block, runCtx)
 		if !res.Success() {
@@ -162,33 +163,34 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 	var resource modconfig.HclResource
 	// runCtx already contains the current mod
 	mod := runCtx.CurrentMod
+	parent := runCtx.CurrentParent
 	switch block.Type {
 	case modconfig.BlockTypeMod:
 		resource = mod
 	case modconfig.BlockTypeQuery:
 		resource = modconfig.NewQuery(block, mod)
 	case modconfig.BlockTypeControl:
-		resource = modconfig.NewControl(block, mod)
+		resource = modconfig.NewControl(block, mod, parent)
 	case modconfig.BlockTypeBenchmark:
-		resource = modconfig.NewBenchmark(block, mod)
+		resource = modconfig.NewBenchmark(block, mod, parent)
 	case modconfig.BlockTypeDashboard:
-		resource = modconfig.NewDashboard(block, mod)
+		resource = modconfig.NewDashboard(block, mod, parent)
 	case modconfig.BlockTypeContainer:
-		resource = modconfig.NewDashboardContainer(block, mod)
+		resource = modconfig.NewDashboardContainer(block, mod, parent)
 	case modconfig.BlockTypeChart:
-		resource = modconfig.NewDashboardChart(block, mod)
+		resource = modconfig.NewDashboardChart(block, mod, parent)
 	case modconfig.BlockTypeCard:
-		resource = modconfig.NewDashboardCard(block, mod)
+		resource = modconfig.NewDashboardCard(block, mod, parent)
 	case modconfig.BlockTypeHierarchy:
-		resource = modconfig.NewDashboardHierarchy(block, mod)
+		resource = modconfig.NewDashboardHierarchy(block, mod, parent)
 	case modconfig.BlockTypeImage:
-		resource = modconfig.NewDashboardImage(block, mod)
+		resource = modconfig.NewDashboardImage(block, mod, parent)
 	case modconfig.BlockTypeInput:
-		resource = modconfig.NewDashboardInput(block, mod)
+		resource = modconfig.NewDashboardInput(block, mod, parent)
 	case modconfig.BlockTypeTable:
-		resource = modconfig.NewDashboardTable(block, mod)
+		resource = modconfig.NewDashboardTable(block, mod, parent)
 	case modconfig.BlockTypeText:
-		resource = modconfig.NewDashboardText(block, mod)
+		resource = modconfig.NewDashboardText(block, mod, parent)
 	default:
 		return nil, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -373,7 +375,7 @@ func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Di
 
 func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard, *decodeResult) {
 	res := &decodeResult{}
-	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod)
+	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod, runCtx.CurrentParent)
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
@@ -410,11 +412,14 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 
 func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashboard, runCtx *RunContext) *decodeResult {
 	var res = &decodeResult{}
-	// if children are declared inline as blocks, add them
-	var children []modconfig.ModTreeItem
 	var inputs []*modconfig.DashboardInput
+
+	// set dashboard as parent on the run context - this is used when generating names for anonymous blocks
+	runCtx.CurrentParent = dashboard
+	defer func() { runCtx.CurrentParent = nil }()
+
 	for _, b := range content.Blocks {
-		// use generic block decoding
+		// decode block
 		resources, blockRes := decodeBlock(b, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
@@ -434,16 +439,14 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 
 			// add the resource to the mod
 			addResourcesToMod(runCtx, resource)
-			// add to children
-			// (we expect this cast to always succeed
+			// add to the dashboard children
+			// (we expect this cast to always succeed)
 			if child, ok := resource.(modconfig.ModTreeItem); ok {
-				children = append(children, child)
+				dashboard.AddChild(child)
 			}
-
 		}
 	}
 
-	dashboard.SetChildren(children)
 	err := dashboard.SetInputs(inputs)
 	if err != nil {
 		res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
@@ -459,7 +462,7 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 
 func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.DashboardContainer, *decodeResult) {
 	res := &decodeResult{}
-	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod)
+	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod, runCtx.CurrentParent)
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
@@ -485,10 +488,12 @@ func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.
 
 func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
 	var res = &decodeResult{}
-	// if children are declared inline as blocks, add them
-	var children []modconfig.ModTreeItem
+	// set container as parent on the run context - this is used when generating names for anonymous blocks
+	runCtx.CurrentParent = dashboardContainer
+	defer func() { runCtx.CurrentParent = nil }()
+
 	for _, b := range content.Blocks {
-		// use generic block decoding
+		// use generic block decoding, passing dashboardContainer as parent
 		resources, blockRes := decodeBlock(b, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
@@ -501,13 +506,10 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 			addResourcesToMod(runCtx, resource)
 
 			if child, ok := resource.(modconfig.ModTreeItem); ok {
-				children = append(children, child)
+				dashboardContainer.AddChild(child)
 			}
-
 		}
 	}
-
-	dashboardContainer.SetChildren(children)
 
 	return res
 }
@@ -515,7 +517,7 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
 	res := &decodeResult{}
 
-	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod)
+	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod, runCtx.CurrentParent)
 	content, diags := block.Body.Content(BenchmarkBlockSchema)
 	res.handleDecodeDiags(content, benchmark, diags)
 

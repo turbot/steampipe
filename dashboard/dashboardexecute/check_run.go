@@ -29,8 +29,11 @@ type CheckRun struct {
 }
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
-	// ensure the tree node name is unique
-	name := executionTree.GetUniqueName(resource.Name())
+
+	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
+	// (if we supported the children property then we could reuse resources)
+	// so FOR NOW it is safe to use the node name directly as the run name
+	name := resource.Name()
 
 	r := &CheckRun{
 		Name:          name,
@@ -104,8 +107,9 @@ func (r *CheckRun) SetError(err error) {
 	r.runStatus = dashboardinterfaces.DashboardRunError
 	// raise dashboard error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
-		Node:    r,
-		Session: r.executionTree.sessionId,
+		LeafNode: r,
+		Session:  r.executionTree.sessionId,
+		Error:    err,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
@@ -117,8 +121,8 @@ func (r *CheckRun) SetComplete() {
 	r.runStatus = dashboardinterfaces.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
-		Node:    r,
-		Session: r.executionTree.sessionId,
+		LeafNode: r,
+		Session:  r.executionTree.sessionId,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r

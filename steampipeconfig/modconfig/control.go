@@ -50,8 +50,8 @@ type Control struct {
 	parents []ModTreeItem
 }
 
-func NewControl(block *hcl.Block, mod *Mod) *Control {
-	shortName := GetAnonymousResourceShortName(block, mod)
+func NewControl(block *hcl.Block, mod *Mod, parent ModTreeItem) *Control {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	control := &Control{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),

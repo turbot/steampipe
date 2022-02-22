@@ -82,7 +82,3 @@ type DashboardLeafNode interface {
 type ResourceMapsProvider interface {
 	GetResourceMaps() *WorkspaceResourceMaps
 }
-
-type UniqueNameProvider interface {
-	GetUniqueName(string) string
-}

@@ -34,8 +34,10 @@ type DashboardContainerRun struct {
 func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {
 	children := container.GetChildren()
 
-	// ensure the tree node name is unique
-	name := executionTree.GetUniqueName(container.Name())
+	// NOTE: for now we MUST declare children inline - therefore we cannot share children between runs in the tree
+	// (if we supported the children property then we could reuse resources)
+	// so FOR NOW it is safe to use the container name directly as the run name
+	name := container.Name()
 
 	r := &DashboardContainerRun{
 		Name:          name,

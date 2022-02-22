@@ -72,7 +72,7 @@ func (i *DashboardInput) Clone() *DashboardInput {
 
 }
 
-func NewDashboardInput(block *hcl.Block, mod *Mod) *DashboardInput {
+func NewDashboardInput(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardInput {
 	// input cannot be anonymous
 	shortName := block.Labels[0]
 	i := &DashboardInput{

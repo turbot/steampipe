@@ -37,8 +37,8 @@ type DashboardContainer struct {
 	runtimeDependencyGraph *topsort.Graph
 }
 
-func NewDashboardContainer(block *hcl.Block, mod *Mod) *DashboardContainer {
-	shortName := GetAnonymousResourceShortName(block, mod)
+func NewDashboardContainer(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardContainer {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	c := &DashboardContainer{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
@@ -67,7 +67,11 @@ func (c *DashboardContainer) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardContainer) OnDecoded(block *hcl.Block) hcl.Diagnostics {
+func (c *DashboardContainer) OnDecoded(*hcl.Block) hcl.Diagnostics {
+	c.ChildNames = make([]string, len(c.children))
+	for i, child := range c.children {
+		c.ChildNames[i] = child.Name()
+	}
 	return nil
 }
 
@@ -160,10 +164,10 @@ func (c *DashboardContainer) Diff(other *DashboardContainer) *DashboardTreeItemD
 
 func (c *DashboardContainer) SetChildren(children []ModTreeItem) {
 	c.children = children
-	c.ChildNames = make([]string, len(children))
-	for i, child := range children {
-		c.ChildNames[i] = child.Name()
-	}
+}
+
+func (c *DashboardContainer) AddChild(child ModTreeItem) {
+	c.children = append(c.children, child)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

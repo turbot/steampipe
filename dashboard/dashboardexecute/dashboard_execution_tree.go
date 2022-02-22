@@ -15,8 +15,6 @@ import (
 
 // DashboardExecutionTree is a structure representing the control result hierarchy
 type DashboardExecutionTree struct {
-	modconfig.UniqueNameProviderBase
-
 	Root *DashboardRun
 
 	dashboardName string
@@ -80,8 +78,8 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) error {
 	e.cancel = cancel
 	workspace := e.workspace
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
-		DashboardNode: e.Root,
-		Session:       e.sessionId,
+		Dashboard: e.Root,
+		Session:   e.sessionId,
 	})
 	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{
 		Dashboard: e.Root,

@@ -49,9 +49,9 @@ type Dashboard struct {
 	HclType string
 }
 
-func NewDashboard(block *hcl.Block, mod *Mod) *Dashboard {
+func NewDashboard(block *hcl.Block, mod *Mod, parent ModTreeItem) *Dashboard {
 	// TODO [reports] think about nested report???
-	shortName := GetAnonymousResourceShortName(block, mod)
+	shortName := GetAnonymousResourceShortName(block, parent)
 	c := &Dashboard{
 		HclType:         block.Type,
 		ShortName:       shortName,
@@ -83,6 +83,11 @@ func (d *Dashboard) Name() string {
 // OnDecoded implements HclResource
 func (d *Dashboard) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 	d.setBaseProperties()
+
+	d.ChildNames = make([]string, len(d.children))
+	for i, child := range d.children {
+		d.ChildNames[i] = child.Name()
+	}
 	return nil
 }
 
@@ -200,10 +205,10 @@ func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {
 
 func (d *Dashboard) SetChildren(children []ModTreeItem) {
 	d.children = children
-	d.ChildNames = make([]string, len(children))
-	for i, child := range children {
-		d.ChildNames[i] = child.Name()
-	}
+}
+
+func (d *Dashboard) AddChild(child ModTreeItem) {
+	d.children = append(d.children, child)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

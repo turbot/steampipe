@@ -24,7 +24,6 @@ const defaultModName = "local"
 // Mod is a struct representing a Mod resource
 type Mod struct {
 	ResourceWithMetadataBase
-	UniqueNameProviderBase
 
 	// ShortName is the mod name, e.g. azure_thrifty
 	ShortName string `cty:"short_name" hcl:"name,label"`

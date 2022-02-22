@@ -43,8 +43,8 @@ type Benchmark struct {
 	parents []ModTreeItem
 }
 
-func NewBenchmark(block *hcl.Block, mod *Mod) *Benchmark {
-	shortName := GetAnonymousResourceShortName(block, mod)
+func NewBenchmark(block *hcl.Block, mod *Mod, parent ModTreeItem) *Benchmark {
+	shortName := GetAnonymousResourceShortName(block, parent)
 	benchmark := &Benchmark{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
