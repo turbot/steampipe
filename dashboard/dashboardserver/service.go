@@ -7,13 +7,10 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"syscall"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/shirou/gopsutil/process"
-	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/filepaths"
@@ -95,7 +92,7 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		"dashboard",
 		fmt.Sprintf("--%s=%s", constants.ArgDashboardListen, string(serverListen)),
 		fmt.Sprintf("--%s=%d", constants.ArgDashboardPort, serverPort),
-		fmt.Sprintf("--%s=%t", constants.ArgDashboardClient, false),
+		fmt.Sprintf("--%s", constants.ArgServiceMode),
 	)
 
 	cmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
@@ -105,11 +102,6 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		Setpgid:    true,
 		Foreground: false,
 	}
-
-	logger := setupDashboardServerLogSink()
-	writer := logger.StandardWriter(&hclog.StandardLoggerOptions{ForceLevel: hclog.Trace})
-	cmd.Stdout = writer
-	cmd.Stderr = writer
 
 	err = cmd.Start()
 	if err != nil {
@@ -168,20 +160,4 @@ func waitForDashboardServerStartup(ctx context.Context, serverPort int) error {
 			return fmt.Errorf("dashboard server startup failed")
 		}
 	}
-}
-
-func setupDashboardServerLogSink() hclog.Logger {
-	logName := fmt.Sprintf("dashboard-%s.log", time.Now().Format("2006-01-02"))
-	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
-	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
-		os.Exit(3)
-	}
-	logger := logging.NewLogger(&hclog.LoggerOptions{
-		Output:     f,
-		TimeFn:     func() time.Time { return time.Now().UTC() },
-		TimeFormat: "2006-01-02 15:04:05.000 UTC",
-	})
-	return logger
 }
