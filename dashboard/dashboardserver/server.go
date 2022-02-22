@@ -70,6 +70,8 @@ type DashboardClientInfo struct {
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
+	initLogSink()
+
 	outputWait(ctx, "Starting Dashboard Server")
 
 	webSocket := melody.New()

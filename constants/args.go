@@ -16,7 +16,6 @@ const (
 	ArgDashboard         = "dashboard"
 	ArgDashboardListen   = "dashboard-listen"
 	ArgDashboardPort     = "dashboard-port"
-	ArgDashboardClient   = "dashboard-client"
 	ArgForeground        = "foreground"
 	ArgInvoker           = "invoker"
 	ArgUpdateCheck       = "update-check"
@@ -43,6 +42,7 @@ const (
 	ArgCheckDisplayWidth = "check-display-width"
 	ArgPrune             = "prune"
 	ArgModInstall        = "mod-install"
+	ArgServiceMode       = "service-mode"
 )
 
 /// metaquery mode arguments

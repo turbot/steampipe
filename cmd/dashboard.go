@@ -37,7 +37,8 @@ The current mod is the working directory, or the directory specified by the --wo
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the dashboard").
 		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
 		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.").
-		AddBoolFlag(constants.ArgDashboardClient, "", true, "Start a browser based dashboard client automatically.", cmdconfig.FlagOptions.Hidden())
+		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
+
 	return cmd
 }
 
@@ -82,7 +83,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	server.Start()
 
-	if viper.GetBool(constants.ArgDashboardClient) {
+	if !viper.GetBool(constants.ArgServiceMode) {
 		err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort))
 		if err != nil {
 			log.Println("[TRACE] dashboard server started but failed to start client", err)
