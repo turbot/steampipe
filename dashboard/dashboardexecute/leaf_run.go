@@ -67,6 +67,14 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		for name, dep := range runtimeDependencies {
 			r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, executionTree)
 		}
+
+		// if the node has no runtime dependencies, resolve the sql
+		if len(r.runtimeDependencies) == 0 {
+			if err := r.resolveSQL(); err != nil {
+				return nil, err
+			}
+		}
+
 	}
 
 	// add r into execution tree
@@ -83,18 +91,19 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 
 	log.Printf("[TRACE] LeafRun '%s' Execute()", r.DashboardNode.Name())
 
-	// if there are any unresolved runtime dependencies, wait for them
-	if err := r.waitForRuntimeDependencies(ctx); err != nil {
-		return err
-	}
+	// to get here, we must be a query provider
 
-	// ok now we have runtime dependencies, we can resolve the query
-	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
-	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, nil)
-	if err != nil {
-		return err
+	// if there are any unresolved runtime dependencies, wait for them
+	if len(r.runtimeDependencies) > 0 {
+		if err := r.waitForRuntimeDependencies(ctx); err != nil {
+			return err
+		}
+
+		// ok now we have runtime dependencies, we can resolve the query
+		if err := r.resolveSQL(); err != nil {
+			return err
+		}
 	}
-	r.SQL = sql
 
 	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
 
@@ -111,6 +120,16 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	r.Data = NewLeafData(queryResult)
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
+	return nil
+}
+
+func (r *LeafRun) resolveSQL() error {
+	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
+	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, nil)
+	if err != nil {
+		return err
+	}
+	r.SQL = sql
 	return nil
 }
 
