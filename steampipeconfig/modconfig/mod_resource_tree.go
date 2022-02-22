@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/hcl/v2"
 )
@@ -70,7 +69,6 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 }
 
 func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
-	log.Printf("[WARN] addItemIntoResourceTree %s %d parents", item.Name(), len(m.getParents(item)))
 	for _, p := range m.getParents(item) {
 		// if we are the parent, add as a child
 		if err := item.AddParent(p); err != nil {
