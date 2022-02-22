@@ -22,7 +22,6 @@ type CheckRun struct {
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
 	DashboardName        string                        `json:"dashboard"`
 	DashboardNode        modconfig.DashboardLeafNode   `json:"-"`
-	Path                 []string                      `json:"-"`
 	parent               dashboardinterfaces.DashboardNodeParent
 	runStatus            dashboardinterfaces.DashboardRunStatus
 	executionTree        *DashboardExecutionTree
@@ -39,7 +38,6 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		Name:          name,
 		Title:         resource.GetTitle(),
 		Width:         resource.GetWidth(),
-		Path:          resource.GetPaths()[0],
 		DashboardNode: resource,
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
@@ -89,11 +87,6 @@ func (r *CheckRun) Execute(ctx context.Context) error {
 // GetName implements DashboardNodeRun
 func (r *CheckRun) GetName() string {
 	return r.Name
-}
-
-// GetPath implements DashboardNodeRun
-func (r *CheckRun) GetPath() modconfig.NodePath {
-	return r.Path
 }
 
 // GetRunStatus implements DashboardNodeRun

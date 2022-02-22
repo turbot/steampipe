@@ -2,8 +2,6 @@ package dashboardinterfaces
 
 import (
 	"context"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 type DashboardRunStatus string
@@ -19,7 +17,6 @@ const (
 type DashboardNodeRun interface {
 	Execute(ctx context.Context) error
 	GetName() string
-	GetPath() modconfig.NodePath
 	GetRunStatus() DashboardRunStatus
 	SetError(err error)
 	SetComplete()

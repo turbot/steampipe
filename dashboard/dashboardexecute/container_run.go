@@ -24,7 +24,6 @@ type DashboardContainerRun struct {
 	NodeType      string                                 `json:"node_type"`
 	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName string                                 `json:"report"`
-	Path          []string                               `json:"-"`
 	dashboardNode *modconfig.DashboardContainer
 	parent        dashboardinterfaces.DashboardNodeParent
 	executionTree *DashboardExecutionTree
@@ -42,7 +41,6 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	r := &DashboardContainerRun{
 		Name:          name,
 		NodeType:      modconfig.BlockTypeContainer,
-		Path:          container.GetPaths()[0],
 		DashboardName: executionTree.dashboardName,
 		executionTree: executionTree,
 		parent:        parent,
@@ -153,11 +151,6 @@ func (r *DashboardContainerRun) executeChild(ctx context.Context, child dashboar
 // GetName implements DashboardNodeRun
 func (r *DashboardContainerRun) GetName() string {
 	return r.Name
-}
-
-// GetPath implements DashboardNodeRun
-func (r *DashboardContainerRun) GetPath() modconfig.NodePath {
-	return r.Path
 }
 
 // GetRunStatus implements DashboardNodeRun
