@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
@@ -93,9 +92,6 @@ func (c *DashboardContainer) GetDeclRange() *hcl.Range {
 
 // AddParent implements ModTreeItem
 func (c *DashboardContainer) AddParent(parent ModTreeItem) error {
-	if c.Name() == "dashboard_poc.container.dashboard_inputs_anonymous_container_0" {
-		log.Printf("[WARN] DashboardContainer %s AddParent %s", c.Name(), parent.Name())
-	}
 	c.parents = append(c.parents, parent)
 
 	return nil
@@ -137,20 +133,9 @@ func (c *DashboardContainer) GetPaths() []NodePath {
 
 // SetPaths implements ModTreeItem
 func (c *DashboardContainer) SetPaths() {
-	if c.Name() == "dashboard_poc.container.dashboard_inputs_anonymous_container_0" {
-		log.Printf("[WARN] SetPaths DashboardContainer %s SetPaths %d parent", c.Name(), len(c.parents))
-	}
 	for _, parent := range c.parents {
-		if c.Name() == "dashboard_poc.container.dashboard_inputs_anonymous_container_0" {
-			log.Printf("[WARN] add parent %s", parent.Name())
-		}
 		for _, parentPath := range parent.GetPaths() {
-
 			c.Paths = append(c.Paths, append(parentPath, c.Name()))
-
-			if c.Name() == "dashboard_poc.container.dashboard_inputs_anonymous_container_0" {
-				log.Printf("[WARN] add parent path %s", parentPath)
-			}
 		}
 	}
 }
