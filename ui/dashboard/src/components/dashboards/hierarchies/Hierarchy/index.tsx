@@ -58,7 +58,7 @@ const getSeriesForHierarchyType = (
           type: toEChartsType(type),
           layout: "none",
           draggable: true,
-          label: { formatter: "{b}" },
+          label: { color: themeColors.foreground, formatter: "{b}" },
           emphasis: {
             focus: "adjacency",
             blurScope: "coordinateSystem",
@@ -83,10 +83,10 @@ const getSeriesForHierarchyType = (
           right: "20%",
           symbolSize: 7,
           label: {
+            color: themeColors.foreground,
             position: "left",
             verticalAlign: "middle",
             align: "right",
-            fontSize: 9,
           },
           leaves: {
             label: {
