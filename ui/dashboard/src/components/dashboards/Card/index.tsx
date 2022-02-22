@@ -91,7 +91,7 @@ const getIconForType = (type, icon) => {
     case "alert":
       return "heroicons-solid:x-circle";
     case "ok":
-      return "heroicons-solid:check";
+      return "heroicons-solid:check-circle";
     case "info":
       return "heroicons-solid:information-circle";
     default:
