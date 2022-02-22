@@ -22,6 +22,9 @@ type DashboardRun struct {
 	Height        int                                    `json:"height,omitempty"`
 	Source        string                                 `json:"source,omitempty"`
 	SQL           string                                 `json:"sql,omitempty"`
+	Description   string                                 `json:"description,omitempty"`
+	Documentation string                                 `json:"documentation,omitempty"`
+	Tags          map[string]string                      `json:"tags,omitempty"`
 	Error         error                                  `json:"error,omitempty"`
 	Children      []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
 	NodeType      string                                 `json:"node_type"`
@@ -45,6 +48,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 		Name:          name,
 		NodeType:      modconfig.BlockTypeDashboard,
 		DashboardName: executionTree.dashboardName,
+		Tags:          dashboard.Tags,
 		executionTree: executionTree,
 		parent:        parent,
 		dashboardNode: dashboard,
@@ -57,9 +61,14 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 	if dashboard.Title != nil {
 		r.Title = *dashboard.Title
 	}
-
 	if dashboard.Width != nil {
 		r.Width = *dashboard.Width
+	}
+	if dashboard.Description != nil {
+		r.Description = *dashboard.Description
+	}
+	if dashboard.Documentation != nil {
+		r.Documentation = *dashboard.Documentation
 	}
 
 	for _, child := range children {

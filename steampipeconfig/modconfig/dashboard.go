@@ -29,6 +29,9 @@ type Dashboard struct {
 	Display         *string           `cty:"display" hcl:"display" column:"display,text" json:"display,omitempty"`
 	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Description     *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Tags            map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
 
 	Base *Dashboard `hcl:"base"`
 
@@ -95,19 +98,33 @@ func (d *Dashboard) setBaseProperties() {
 	if d.Base == nil {
 		return
 	}
+
 	if d.Title == nil {
 		d.Title = d.Base.Title
 	}
+
 	if d.Width == nil {
 		d.Width = d.Base.Width
 	}
+
 	if len(d.children) == 0 {
 		d.children = d.Base.children
 		d.ChildNames = d.Base.ChildNames
 	}
+
 	if len(d.Inputs) == 0 {
 		d.Inputs = d.Base.Inputs
 		d.setInputMap()
+	}
+
+	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
+
+	if d.Description == nil {
+		d.Description = d.Base.Description
+	}
+
+	if d.Documentation == nil {
+		d.Documentation = d.Base.Documentation
 	}
 }
 
@@ -197,6 +214,23 @@ func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {
 
 	if !utils.SafeIntEqual(d.Width, other.Width) {
 		res.AddPropertyDiff("Width")
+	}
+
+	if len(d.Tags) != len(other.Tags) {
+		res.AddPropertyDiff("Tags")
+	} else {
+		for k, v := range d.Tags {
+			if otherVal := other.Tags[k]; v != otherVal {
+				res.AddPropertyDiff("Tags")
+			}
+		}
+	}
+
+	if !utils.SafeStringsEqual(d.Description, other.Description) {
+		res.AddPropertyDiff("Description")
+	}
+	if !utils.SafeStringsEqual(d.Documentation, other.Documentation) {
+		res.AddPropertyDiff("Documentation")
 	}
 
 	res.populateChildDiffs(d, other)
