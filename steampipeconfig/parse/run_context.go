@@ -64,7 +64,8 @@ type RunContext struct {
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
-	blockNameMap    map[string]string
+	// map of block names, keyed by a hash of the blopck
+	blockNameMap map[string]string
 }
 
 func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
@@ -317,6 +318,20 @@ func (r *RunContext) FormatDependencies() string {
 	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }
 
+func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
+	if modShortName == r.CurrentMod.ShortName {
+		return r.CurrentMod
+	}
+	// we need to iterate through dependency mods - we cannot use modShortNameas key as it is short name
+	for _, dep := range r.LoadedDependencyMods {
+		if dep.ShortName == modShortName {
+			return dep
+
+		}
+	}
+	return nil
+}
+
 func (r *RunContext) newDependencyGraph() *topsort.Graph {
 	dependencyGraph := topsort.NewGraph()
 	// add root node - this will depend on all other nodes
@@ -454,85 +469,4 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
-}
-
-func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
-	if modShortName == r.CurrentMod.ShortName {
-		return r.CurrentMod
-	}
-	// we need to iterate through dependency mods - we cannot use modShortNameas key as it is short name
-	for _, dep := range r.LoadedDependencyMods {
-		if dep.ShortName == modShortName {
-			return dep
-
-		}
-	}
-	return nil
-}
-
-func (r *RunContext) GetCachedBlockName(block *hcl.Block) (string, bool) {
-	name, ok := r.blockNameMap[block]
-	return name, ok
-}
-func (r *RunContext) GetCachedBlockShortName(block *hcl.Block) (string, bool) {
-	unqualifiedName, ok := r.blockNameMap[block]
-	if ok {
-		parsedName, err := modconfig.ParseResourceName(unqualifiedName)
-		if err != nil {
-			return "", false
-		}
-		return parsedName.Name, true
-	}
-	return "", false
-}
-
-func (r *RunContext) cacheBlockName(block *hcl.Block, shortName string) {
-	r.blockNameMap[block] = shortName
-}
-
-func (r *RunContext) DetermineBlockName(block *hcl.Block) string {
-	var shortName string
-
-	// have we cached a name for this block (i.e. is this the second decode pass)
-	if name, ok := r.GetCachedBlockShortName(block); ok {
-		return name
-	}
-	// if there is a parent set in the parent stack, this block is a child of that parent
-	parentName := r.PeekParent()
-
-	anonymous := len(block.Labels) == 0
-	if anonymous {
-		shortName = r.GetUniqueName(block.Type, parentName)
-	} else {
-		shortName = block.Labels[0]
-	}
-	// build unqualified name
-	unqualifiedName := fmt.Sprintf("%s.%s", block.Type, shortName)
-	r.addChildForParent(parentName, unqualifiedName)
-	// cache this name for the second decode pass
-	r.cacheBlockName(block, unqualifiedName)
-	return shortName
-}
-
-// GetUniqueName returns a name unique within the scope of this execution tree
-func (r *RunContext) GetUniqueName(blockType string, parent string) string {
-	// count how many children of this block type the parent has
-	childCount := 0
-
-	for _, childName := range r.blockChildMap[parent] {
-		parsedName, err := modconfig.ParseResourceName(childName)
-		if err != nil {
-			// we do not expect this
-			continue
-		}
-		if parsedName.ItemType == blockType {
-			childCount++
-		}
-	}
-	sanitisedParentName := strings.Replace(parent, ".", "_", -1)
-	return fmt.Sprintf("%s_anonymous_%s_%d", sanitisedParentName, blockType, childCount)
-}
-
-func (r *RunContext) addChildForParent(parent, child string) {
-	r.blockChildMap[parent] = append(r.blockChildMap[parent], child)
 }

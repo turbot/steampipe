@@ -86,7 +86,6 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 				return []modconfig.HclResource{resource}, res
 			}
 		}
-
 	}
 
 	// check name is valid
