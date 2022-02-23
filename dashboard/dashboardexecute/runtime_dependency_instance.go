@@ -1,8 +1,10 @@
 package dashboardexecute
 
 import (
+	"fmt"
 	"sync"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -11,7 +13,7 @@ import (
 type ResolvedRuntimeDependency struct {
 	dependency    *modconfig.RuntimeDependency
 	valueLock     sync.Mutex
-	value         *string
+	value         interface{}
 	executionTree *DashboardExecutionTree
 }
 
@@ -27,7 +29,7 @@ func (d *ResolvedRuntimeDependency) Resolve() bool {
 	defer d.valueLock.Unlock()
 
 	// if we are already resolved, do nothing
-	if d.value != nil {
+	if d.hasValue() {
 		return true
 	}
 
@@ -35,11 +37,15 @@ func (d *ResolvedRuntimeDependency) Resolve() bool {
 	d.value = d.executionTree.GetInputValue(d.dependency.SourceResource.GetUnqualifiedName())
 
 	// did we succeed
-	if d.value != nil {
+	if d.hasValue() {
 		// if so, set the target property
-		d.dependency.SetTargetFunc(*d.value)
+		d.dependency.SetTargetFunc(fmt.Sprintf("%v", d.value))
 		return true
 	}
 
 	return false
+}
+
+func (d *ResolvedRuntimeDependency) hasValue() bool {
+	return !helpers.IsNil(d.value)
 }
