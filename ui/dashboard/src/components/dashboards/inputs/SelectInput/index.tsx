@@ -59,8 +59,14 @@ const SelectInput = (props: SelectInputProps) => {
     const parsedUrlValue = props.multi ? stateValue.split(",") : stateValue;
 
     const foundOption = props.multi
-      ? options.filter((option) => parsedUrlValue.indexOf(option.value) >= 0)
-      : options.find((option) => option.value === parsedUrlValue);
+      ? options.filter((option) =>
+          option.value
+            ? parsedUrlValue.indexOf(option.value.toString()) >= 0
+            : false
+        )
+      : options.find((option) =>
+          option.value ? option.value.toString() === parsedUrlValue : false
+        );
 
     if (!foundOption) {
       setInitialisedFromState(true);

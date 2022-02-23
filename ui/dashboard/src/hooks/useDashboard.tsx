@@ -170,23 +170,18 @@ const updateSelectedDashboard = (
 };
 
 function buildSqlDataMap(dashboard: DashboardDefinition): SQLDataMap {
-  // const justSQL = pickDeep(dashboard, ["sql"]);
-  // console.log(justSQL);
   const sqlPaths = paths(dashboard, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
-  // console.log(sqlPaths);
   const sqlDataMap = {};
   for (const sqlPath of sqlPaths) {
     const sql = get(dashboard, sqlPath);
-    // console.log(dashboard, sql);
     const dataPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}.data`;
     const data = get(dashboard, dataPath);
     if (!sqlDataMap[sql]) {
       sqlDataMap[sql] = data;
     }
   }
-  // console.log(sqlDataMap);
   return sqlDataMap;
 }
 
@@ -239,18 +234,6 @@ function reducer(state, action) {
             : null,
       };
     case "execution_started":
-      // console.log("execution_started", { action, state });
-      // if (
-      //   state.state === "complete" &&
-      //   get(state, "dashboard.name") === action.dashboard_node.name
-      // ) {
-      //   // console.log("Ignoring dashboard execution started event", {
-      //   //   action,
-      //   //   state,
-      //   // });
-      //   return state;
-      // }
-      // console.log("Started", action.dashboard_node);
       const dashboardWithData = addDataToDashboard(
         action.dashboard_node,
         state.sqlDataMap
@@ -262,10 +245,8 @@ function reducer(state, action) {
         state: "running",
       };
     case "execution_complete":
-      // console.log("Complete", action.dashboard_node);
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(action.dashboard_node);
-      // console.log(sqlDataMap);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
@@ -326,7 +307,6 @@ function reducer(state, action) {
         },
       };
     case "set_dashboard_input":
-      console.log("set_dashboard_input", action);
       return {
         ...state,
         selectedDashboardInputs: {
@@ -335,7 +315,6 @@ function reducer(state, action) {
         },
       };
     case "set_dashboard_inputs":
-      console.log("set_dashboard_inputs", action);
       return {
         ...state,
         selectedDashboardInputs: action.value,
@@ -398,7 +377,6 @@ const DashboardProvider = ({ children }) => {
 
   const onSocketMessage = (message: SocketMessage) => {
     const payload: SocketMessagePayload = JSON.parse(message.data);
-    // console.log({ message, payload });
     dispatch({ type: payload.action, ...payload });
   };
 
@@ -414,15 +392,12 @@ const DashboardProvider = ({ children }) => {
         }
 
         const timeout = 20000;
-        // console.log("Trying to send keep alive", webSocket.current.readyState);
         if (webSocket.current.readyState === webSocket.current.CLOSED) {
-          // console.log("Socket closed. Re-opening");
           webSocket.current = new WebSocket(getSocketServerUrl());
           webSocket.current.onerror = onSocketError;
           webSocket.current.onmessage = onSocketMessage;
         }
         if (webSocket.current.readyState === webSocket.current.OPEN) {
-          // console.log("Sending keep alive", webSocket.current);
           webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
         }
         keepAliveTimerId = setTimeout(keepAlive, timeout);
@@ -448,7 +423,6 @@ const DashboardProvider = ({ children }) => {
       keepAlive();
     };
     return () => {
-      // console.log("Clearing keep alive and closing socket");
       clearTimeout(keepAliveTimerId);
       webSocket.current && webSocket.current.close();
     };
