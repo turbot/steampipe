@@ -375,9 +375,8 @@ func (m *WorkspaceResourceMaps) addQueryProvider(provider QueryProvider) {
 	}
 }
 
-// TODO [reports] also support error return
 // WalkResources calls resourceFunc for every resource in the mod
-// if any resourceFunc returns false, return immediately
+// if any resourceFunc returns false or an error, return immediately
 func (m *WorkspaceResourceMaps) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
 	for _, r := range m.Queries {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
