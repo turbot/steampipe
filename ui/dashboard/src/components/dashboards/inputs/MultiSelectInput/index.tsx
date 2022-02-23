@@ -6,7 +6,7 @@ const MultiSelectInput = (props: InputProps) => {
 };
 
 const definition: IInput = {
-  type: "multi",
+  type: "multiselect",
   component: MultiSelectInput,
 };
 
