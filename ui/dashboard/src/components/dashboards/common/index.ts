@@ -123,7 +123,10 @@ const defaultDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   };
 };
 
-const isNumericCol = (data_type_name: string) => {
+const isNumericCol = (data_type_name: string | null | undefined) => {
+  if (!data_type_name) {
+    return false;
+  }
   return (
     data_type_name.toLowerCase().indexOf("int") >= 0 ||
     data_type_name.toLowerCase().indexOf("float") >= 0 ||
@@ -582,6 +585,7 @@ export {
   buildChartDataset,
   buildSankeyDataInputs,
   buildTreeDataInputs,
+  isNumericCol,
   themeColors,
   toEChartsType,
 };

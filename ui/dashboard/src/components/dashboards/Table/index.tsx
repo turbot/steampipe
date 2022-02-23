@@ -1,6 +1,7 @@
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
+  isNumericCol,
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../common";
@@ -138,6 +139,12 @@ const CellValue = ({ column, value, showTitle = false }: CellValueProps) => {
       );
     }
   }
+  if (dataType === "timestamp" || dataType === "timestamptz") {
+    return <span className="tabular-nums">{value}</span>;
+  }
+  if (isNumericCol(dataType)) {
+    return <span className="tabular-nums">{value}</span>;
+  }
   // Fallback is just show it as a string
   return (
     <span title={showTitle ? `${column.name}=${value}` : undefined}>
@@ -192,27 +199,28 @@ const TableView = (props: TableProps) => {
         <thead className="bg-table-head text-table-head">
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
-              {headerGroup.headers.map((column) => {
-                return (
-                  <th
-                    {...column.getHeaderProps(column.getSortByToggleProps())}
-                    scope="col"
-                    className="px-4 py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap"
-                  >
-                    {column.render("Header")}
-                    {column.isSortedDesc ? (
-                      <SortDescendingIcon className="inline-block h-4 w-4" />
-                    ) : (
-                      <SortAscendingIcon
-                        className={classNames(
-                          "inline-block h-4 w-4",
-                          !column.isSorted ? "invisible" : null
-                        )}
-                      />
-                    )}
-                  </th>
-                );
-              })}
+              {headerGroup.headers.map((column) => (
+                <th
+                  {...column.getHeaderProps(column.getSortByToggleProps())}
+                  scope="col"
+                  className={classNames(
+                    "py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap",
+                    isNumericCol(column.data_type_name) ? " text-right" : "pl-4"
+                  )}
+                >
+                  {column.render("Header")}
+                  {column.isSortedDesc ? (
+                    <SortDescendingIcon className="inline-block h-4 w-4" />
+                  ) : (
+                    <SortAscendingIcon
+                      className={classNames(
+                        "inline-block h-4 w-4",
+                        !column.isSorted ? "invisible" : null
+                      )}
+                    />
+                  )}
+                </th>
+              ))}
             </tr>
           ))}
         </thead>
@@ -235,20 +243,21 @@ const TableView = (props: TableProps) => {
             return (
               <tr {...row.getRowProps()}>
                 {row.cells.map((cell, index) => {
+                  const colInfo = props.data?.columns[index];
                   return (
                     <td
                       {...cell.getCellProps()}
                       className={classNames(
                         "px-4 py-4 align-top content-center text-sm",
+                        isNumericCol(colInfo?.data_type_name)
+                          ? "text-right"
+                          : "",
                         cell.column.wrap === "all"
                           ? "break-all"
                           : "whitespace-nowrap"
                       )}
                     >
-                      <CellValue
-                        column={props.data?.columns[index]}
-                        value={cell.value}
-                      />
+                      <CellValue column={colInfo} value={cell.value} />
                     </td>
                   );
                 })}
