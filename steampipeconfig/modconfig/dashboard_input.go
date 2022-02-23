@@ -21,12 +21,13 @@ type DashboardInput struct {
 	UnqualifiedName string `cty:"unqualified_name" json:"name"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title       *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width       *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type        *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Placeholder *string        `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
-	Display     *string        `cty:"display" hcl:"display" json:"display,omitempty"`
-	OnHooks     []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Title       *string                 `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width       *int                    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type        *string                 `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
+	Display     *string                 `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks     []*DashboardOn          `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Options     []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`

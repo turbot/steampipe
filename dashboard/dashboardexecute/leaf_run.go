@@ -54,12 +54,11 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		return nil, err
 	}
 	r.NodeType = parsedName.ItemType
-	// if we have a query provider, set status to ready
-	if provider, ok := resource.(modconfig.QueryProvider); ok {
+	// if we have a query provider which requireds execution, set status to ready
+	if provider, ok := resource.(modconfig.QueryProvider); ok && provider.RequiresExecution(provider) {
 		// if the provider has sql or a query, set status to ready
-		if provider.GetSQL() != nil || provider.GetQuery() != nil {
-			r.runStatus = dashboardinterfaces.DashboardRunReady
-		}
+		r.runStatus = dashboardinterfaces.DashboardRunReady
+
 	}
 
 	// if this node has runtime dependencies, create runtime depdency instances which we use to resolve the values
@@ -128,6 +127,9 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 
 func (r *LeafRun) resolveSQL() error {
 	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
+	if !queryProvider.RequiresExecution(queryProvider) {
+		return nil
+	}
 	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, nil)
 	if err != nil {
 		return err

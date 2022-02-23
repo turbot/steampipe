@@ -69,6 +69,7 @@ type QueryProvider interface {
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 	ResolveArgsAsString(QueryProvider, *QueryArgs) (string, error)
+	RequiresExecution(queryProvider QueryProvider) bool
 	VerifyQuery(queryProvider QueryProvider) error
 }
 

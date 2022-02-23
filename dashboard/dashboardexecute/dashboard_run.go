@@ -11,17 +11,11 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// TODO [reports] split into report and container
-// update events
 // DashboardRun is a struct representing a container run
-
 type DashboardRun struct {
 	Name          string                                 `json:"name"`
 	Title         string                                 `json:"title,omitempty"`
 	Width         int                                    `json:"width,omitempty"`
-	Height        int                                    `json:"height,omitempty"`
-	Source        string                                 `json:"source,omitempty"`
-	SQL           string                                 `json:"sql,omitempty"`
 	Description   string                                 `json:"description,omitempty"`
 	Documentation string                                 `json:"documentation,omitempty"`
 	Tags          map[string]string                      `json:"tags,omitempty"`
@@ -91,7 +85,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 				return nil, err
 			}
 		case *modconfig.DashboardInput:
-			// NOTE:L clone the input to avoid mutating the original
+			// NOTE: clone the input to avoid mutating the original
 			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
 			if err != nil {
 				return nil, err

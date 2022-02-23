@@ -26,6 +26,10 @@ func (b *QueryProviderBase) VerifyQuery(queryProvider QueryProvider) error {
 	return nil
 }
 
+func (b *QueryProviderBase) RequiresExecution(queryProvider QueryProvider) bool {
+	return queryProvider.GetQuery() != nil || queryProvider.GetSQL() != nil
+}
+
 func (b *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
 	// build prefix from mod name
 	prefix := b.buildPreparedStatementPrefix(modName)
