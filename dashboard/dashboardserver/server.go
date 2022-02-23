@@ -137,6 +137,7 @@ func buildAvailableDashboardsPayload(workspaceResources *modconfig.WorkspaceReso
 					Title:     typeHelpers.SafeString(dashboard.Title),
 					FullName:  dashboard.FullName,
 					ShortName: dashboard.ShortName,
+					Tags:      dashboard.Tags,
 				}
 			}
 		}
