@@ -6,7 +6,7 @@ import LineChart from "./LineChart";
 import PieChart from "./PieChart";
 import React from "react";
 import Table from "../Table";
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
+import { BasePrimitiveProps, ExecutablePrimitiveProps, Width } from "../common";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
@@ -73,6 +73,7 @@ export type ChartProperties = {
   series?: ChartSeries;
   transform?: ChartTransform;
   grouping?: ChartGrouping;
+  parentWidth?: Width;
 };
 
 export type ChartProps = BaseChartProps & {

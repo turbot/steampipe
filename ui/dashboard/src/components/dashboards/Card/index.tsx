@@ -6,6 +6,7 @@ import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
   LeafNodeData,
+  Width,
 } from "../common";
 import { classNames } from "../../../utils/styles";
 import { get, isNumber, isObject } from "lodash";
@@ -58,6 +59,7 @@ export type CardProps = BasePrimitiveProps &
       type?: CardType;
       value?: string;
       icon?: string;
+      parentWidth?: Width;
     };
   };
 

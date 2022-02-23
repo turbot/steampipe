@@ -17,7 +17,12 @@ import {
   SankeyChart,
   TreeChart,
 } from "echarts/charts";
-import { buildChartDataset, LeafNodeData, themeColors } from "../../common";
+import {
+  buildChartDataset,
+  LeafNodeData,
+  themeColors,
+  Width,
+} from "../../common";
 import { CanvasRenderer } from "echarts/renderers";
 import {
   DatasetComponent,
@@ -95,8 +100,35 @@ const getThemeColorsWithPointOverrides = (
   }
 };
 
+const getCommonBaseOptions = () => ({
+  animation: false,
+  grid: {
+    containLabel: true,
+  },
+  legend: {
+    orient: "horizontal",
+    left: "center",
+    top: "top",
+    textStyle: {
+      fontSize: 11,
+    },
+  },
+  textStyle: {
+    fontFamily:
+      'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+  },
+  tooltip: {
+    appendToBody: true,
+    textStyle: {
+      fontSize: 11,
+    },
+    trigger: "item",
+  },
+});
+
 const getCommonBaseOptionsForChartType = (
   type: ChartType | undefined,
+  width: Width | undefined,
   dataset: any[][],
   series: any | undefined,
   seriesOverrides: ChartSeries | undefined,
@@ -126,6 +158,8 @@ const getCommonBaseOptionsForChartType = (
             lineStyle: { color: themeColors.foregroundLightest },
           },
           axisTick: { show: true },
+          nameGap: 30,
+          nameLocation: "center",
           nameTextStyle: { color: themeColors.foreground },
           splitLine: { show: false },
         },
@@ -135,6 +169,8 @@ const getCommonBaseOptionsForChartType = (
           axisLabel: { color: themeColors.foreground },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
+          nameGap: width ? width + 42 : 50,
+          nameLocation: "center",
           nameTextStyle: { color: themeColors.foreground },
         },
       };
@@ -161,6 +197,8 @@ const getCommonBaseOptionsForChartType = (
           axisLabel: { color: themeColors.foreground },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
+          nameGap: 30,
+          nameLocation: "center",
           nameTextStyle: { color: themeColors.foreground },
         },
         // Declare a y-axis (value axis).
@@ -172,6 +210,8 @@ const getCommonBaseOptionsForChartType = (
           },
           axisTick: { show: true },
           splitLine: { show: false },
+          nameGap: width ? width + 42 : 50,
+          nameLocation: "center",
           nameTextStyle: { color: themeColors.foreground },
         },
         tooltip: {
@@ -199,6 +239,8 @@ const getCommonBaseOptionsForChartType = (
           axisLabel: { color: themeColors.foreground },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
+          nameGap: 30,
+          nameLocation: "center",
           nameTextStyle: { color: themeColors.foreground },
         },
         // Declare a y-axis (value axis).
@@ -210,6 +252,8 @@ const getCommonBaseOptionsForChartType = (
           },
           axisTick: { show: true },
           splitLine: { show: false },
+          nameGap: width ? width + 42 : 50,
+          nameLocation: "center",
           nameTextStyle: { color: themeColors.foreground },
         },
       };
@@ -247,32 +291,6 @@ const getCommonBaseOptionsForChartType = (
       return {};
   }
 };
-
-const getCommonBaseOptions = () => ({
-  animation: false,
-  grid: {
-    containLabel: true,
-  },
-  legend: {
-    orient: "horizontal",
-    left: "center",
-    top: "top",
-    textStyle: {
-      fontSize: 11,
-    },
-  },
-  textStyle: {
-    fontFamily:
-      'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-  },
-  tooltip: {
-    appendToBody: true,
-    textStyle: {
-      fontSize: 11,
-    },
-    trigger: "item",
-  },
-});
 
 const getOptionOverridesForChartType = (
   type: ChartType = "column",
@@ -567,6 +585,7 @@ const buildChartOptions = (
     getCommonBaseOptions(),
     getCommonBaseOptionsForChartType(
       props.properties?.type,
+      props.properties?.parentWidth || props.width,
       dataset,
       seriesData.series,
       props.properties?.series,

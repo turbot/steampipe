@@ -2,12 +2,14 @@ import Container from "../layout/Container";
 import {
   ContainerDefinition,
   DashboardDefinition,
+  PanelDefinition,
+  PanelProperties,
 } from "../../../hooks/useDashboard";
 import { TextProps } from "../Text";
 
 type TitleWrapperProps = {
   children: null | JSX.Element | JSX.Element[];
-  definition: DashboardDefinition | ContainerDefinition | TextProps;
+  definition: PanelDefinition;
   level: "container" | "panel";
   title: string;
 };
@@ -39,6 +41,7 @@ const TitleWrapper = ({
     width: definitionWidth,
     ...definitionOther
   } = definition;
+  const innerProperties = definitionOther.properties || {};
   const wrappedDefinition = {
     name: `${definition.name}.container.wrapper`,
     width: definitionWidth,
@@ -53,6 +56,10 @@ const TitleWrapper = ({
       },
       {
         ...definitionOther,
+        properties: {
+          ...innerProperties,
+          parentWidth: definitionWidth,
+        },
       },
     ],
   };
