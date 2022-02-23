@@ -56,7 +56,7 @@ type RunContext struct {
 	// stack of parent resources for the currently parsed block
 	// (unqualified name)
 	parents []string
-	// map of children for blocks with nested blocks
+	// map of resource children, keyed by parent unqualified name
 	blockChildMap map[string][]string
 
 	dependencyGraph *topsort.Graph
@@ -326,7 +326,6 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 	for _, dep := range r.LoadedDependencyMods {
 		if dep.ShortName == modShortName {
 			return dep
-
 		}
 	}
 	return nil
