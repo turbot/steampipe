@@ -2,7 +2,7 @@ import React from "react";
 import Sankey from "./Sankey";
 import Table from "../Table";
 import Tree from "./Tree";
-import { BasePrimitiveProps, ExecutablePrimitiveProps, Width } from "../common";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
