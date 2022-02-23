@@ -456,23 +456,24 @@ func init() {
 						ShortName:       "simple_report",
 						FullName:        "simple_report.dashboard.simple_report",
 						UnqualifiedName: "dashboard.simple_report",
-						ChildNames:      []string{"simple_report.text.anonymous_text", "simple_report.chart.anonymous_chart"},
+						ChildNames:      []string{"simple_report.text.dashboard_simple_report_anonymous_text_0", "simple_report.chart.dashboard_simple_report_anonymous_chart_0"},
+						HclType:         "dashboard",
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
-					"simple_report.chart.anonymous_chart": {
-						FullName:        "simple_report.chart.anonymous_chart",
-						ShortName:       "anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"simple_report.chart.dashboard_simple_report_anonymous_chart_0": {
+						FullName:        "simple_report.chart.dashboard_simple_report_anonymous_chart_0",
+						ShortName:       "dashboard_simple_report_anonymous_chart_0",
+						UnqualifiedName: "chart.dashboard_simple_report_anonymous_chart_0",
 						Title:           toStringPointer("a simple query"),
 						SQL:             toStringPointer("select 1"),
 					},
 				},
 				DashboardTexts: map[string]*modconfig.DashboardText{
-					"simple_report.text.anonymous_text": {
-						FullName:        "simple_report.text.anonymous_text",
-						ShortName:       "anonymous_text",
-						UnqualifiedName: "text.anonymous_text",
+					"simple_report.text.dashboard_simple_report_anonymous_text_0": {
+						FullName:        "simple_report.text.dashboard_simple_report_anonymous_text_0",
+						ShortName:       "dashboard_simple_report_anonymous_text_0",
+						UnqualifiedName: "text.dashboard_simple_report_anonymous_text_0",
 						Value:           toStringPointer("a simple report"),
 					},
 				},
@@ -491,32 +492,32 @@ func init() {
 						ShortName:       "simple_container_report",
 						FullName:        "simple_container_report.dashboard.simple_container_report",
 						UnqualifiedName: "dashboard.simple_container_report",
-						ChildNames:      []string{"simple_container_report.container.anonymous_container"},
-						HclType:         "report",
+						ChildNames:      []string{"simple_container_report.container.dashboard_simple_container_report_anonymous_container_0"},
+						HclType:         "dashboard",
 					},
 				},
 				DashboardContainers: map[string]*modconfig.DashboardContainer{
-					"simple_container_report.container.anonymous_container": {
-						ShortName:       "anonymous_container",
-						FullName:        "simple_container_report.container.anonymous_container",
-						UnqualifiedName: "container.anonymous_container",
-						ChildNames:      []string{"simple_container_report.text.anonymous_text", "simple_container_report.chart.anonymous_chart"},
+					"simple_container_report.container.dashboard_simple_container_report_anonymous_container_0": {
+						ShortName:       "dashboard_simple_container_report_anonymous_container_0",
+						FullName:        "simple_container_report.container.dashboard_simple_container_report_anonymous_container_0",
+						UnqualifiedName: "container.dashboard_simple_container_report_anonymous_container_0",
+						ChildNames:      []string{"simple_container_report.text.container_dashboard_simple_container_report_anonymous_container_0_anonymous_text_0", "simple_container_report.chart.container_dashboard_simple_container_report_anonymous_container_0_anonymous_chart_0"},
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
-					"simple_container_report.chart.anonymous_chart": {
-						ShortName:       "anonymous_chart",
-						FullName:        "simple_container_report.chart.anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"simple_container_report.chart.container_dashboard_simple_container_report_anonymous_container_0_anonymous_chart_0": {
+						ShortName:       "container_dashboard_simple_container_report_anonymous_container_0_anonymous_chart_0",
+						FullName:        "simple_container_report.chart.container_dashboard_simple_container_report_anonymous_container_0_anonymous_chart_0",
+						UnqualifiedName: "chart.container_dashboard_simple_container_report_anonymous_container_0_anonymous_chart_0",
 						Title:           toStringPointer("container 1 chart 1"),
 						SQL:             toStringPointer("select 1 as container"),
 					},
 				},
 				DashboardTexts: map[string]*modconfig.DashboardText{
-					"simple_container_report.text.anonymous_text": {
-						ShortName:       "anonymous_text",
-						FullName:        "simple_container_report.text.anonymous_text",
-						UnqualifiedName: "text.anonymous_text",
+					"simple_container_report.text.container_dashboard_simple_container_report_anonymous_container_0_anonymous_text_0": {
+						ShortName:       "container_dashboard_simple_container_report_anonymous_container_0_anonymous_text_0",
+						FullName:        "simple_container_report.text.container_dashboard_simple_container_report_anonymous_container_0_anonymous_text_0",
+						UnqualifiedName: "text.container_dashboard_simple_container_report_anonymous_container_0_anonymous_text_0",
 						Value:           toStringPointer("container 1"),
 					},
 				},
@@ -535,70 +536,70 @@ func init() {
 						ShortName:       "sibling_containers_report",
 						FullName:        "sibling_containers_report.dashboard.sibling_containers_report",
 						UnqualifiedName: "dashboard.sibling_containers_report",
-						ChildNames:      []string{"sibling_containers_report.container.anonymous_container", "sibling_containers_report.container.anonymous_container_1", "sibling_containers_report.container.anonymous_container_2"},
-						HclType:         "report",
+						ChildNames:      []string{"sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_0", "sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_1", "sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_2"},
+						HclType:         "dashboard",
 					},
 				},
 				DashboardContainers: map[string]*modconfig.DashboardContainer{
-					"sibling_containers_report.container.anonymous_container": {
-						ShortName:       "anonymous_container",
-						FullName:        "sibling_containers_report.container.anonymous_container",
-						UnqualifiedName: "container.anonymous_container",
-						ChildNames:      []string{"sibling_containers_report.text.anonymous_text", "sibling_containers_report.chart.anonymous_chart"},
+					"sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_0": {
+						ShortName:       "dashboard_sibling_containers_report_anonymous_container_0",
+						FullName:        "sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_0",
+						UnqualifiedName: "container.dashboard_sibling_containers_report_anonymous_container_0",
+						ChildNames:      []string{"sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_text_0", "sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_chart_0"},
 					},
-					"sibling_containers_report.container.anonymous_container_1": {
-						ShortName:       "anonymous_container_1",
-						FullName:        "sibling_containers_report.container.anonymous_container_1",
-						UnqualifiedName: "container.anonymous_container_1",
-						ChildNames:      []string{"sibling_containers_report.text.anonymous_text_1", "sibling_containers_report.chart.anonymous_chart_1"},
+					"sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_1": {
+						ShortName:       "dashboard_sibling_containers_report_anonymous_container_1",
+						FullName:        "sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_1",
+						UnqualifiedName: "container.dashboard_sibling_containers_report_anonymous_container_1",
+						ChildNames:      []string{"sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_text_0", "sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_chart_0"},
 					},
-					"sibling_containers_report.container.anonymous_container_2": {
-						ShortName:       "anonymous_container_2",
-						FullName:        "sibling_containers_report.container.anonymous_container_2",
-						UnqualifiedName: "container.anonymous_container_2",
-						ChildNames:      []string{"sibling_containers_report.text.anonymous_text_2", "sibling_containers_report.chart.anonymous_chart_2"},
+					"sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_2": {
+						ShortName:       "dashboard_sibling_containers_report_anonymous_container_2",
+						FullName:        "sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_2",
+						UnqualifiedName: "container.dashboard_sibling_containers_report_anonymous_container_2",
+						ChildNames:      []string{"sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_text_0", "sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_chart_0"},
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
-					"sibling_containers_report.chart.anonymous_chart": {
-						FullName:        "sibling_containers_report.chart.anonymous_chart",
-						ShortName:       "anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_chart_0": {
+						FullName:        "sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_chart_0",
+						ShortName:       "container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_chart_0",
+						UnqualifiedName: "chart.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_chart_0",
 						Title:           toStringPointer("container 1 chart 1"),
 						SQL:             toStringPointer("select 1 as container"),
 					},
-					"sibling_containers_report.chart.anonymous_chart_1": {
-						FullName:        "sibling_containers_report.chart.anonymous_chart_1",
-						ShortName:       "anonymous_chart_1",
-						UnqualifiedName: "chart.anonymous_chart_1",
+					"sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_chart_0": {
+						FullName:        "sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_chart_0",
+						ShortName:       "container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_chart_0",
+						UnqualifiedName: "chart.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_chart_0",
 						Title:           toStringPointer("container 2 chart 1"),
 						SQL:             toStringPointer("select 2 as container"),
 					},
-					"sibling_containers_report.chart.anonymous_chart_2": {
-						FullName:        "sibling_containers_report.chart.anonymous_chart_2",
-						ShortName:       "anonymous_chart_2",
-						UnqualifiedName: "chart.anonymous_chart_2",
+					"sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_chart_0": {
+						FullName:        "sibling_containers_report.chart.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_chart_0",
+						ShortName:       "container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_chart_0",
+						UnqualifiedName: "chart.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_chart_0",
 						Title:           toStringPointer("container 3 chart 1"),
 						SQL:             toStringPointer("select 3 as container"),
 					},
 				},
 				DashboardTexts: map[string]*modconfig.DashboardText{
-					"sibling_containers_report.text.anonymous_text": {
-						FullName:        "sibling_containers_report.text.anonymous_text",
-						ShortName:       "anonymous_text",
-						UnqualifiedName: "text.anonymous_text",
+					"sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_text_0": {
+						FullName:        "sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_text_0",
+						ShortName:       "container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_text_0",
+						UnqualifiedName: "text.container_dashboard_sibling_containers_report_anonymous_container_0_anonymous_text_0",
 						Value:           toStringPointer("container 1"),
 					},
-					"sibling_containers_report.text.anonymous_text_1": {
-						FullName:        "sibling_containers_report.text.anonymous_text_1",
-						ShortName:       "anonymous_text_1",
-						UnqualifiedName: "text.anonymous_text_1",
+					"sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_text_0": {
+						FullName:        "sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_text_0",
+						ShortName:       "container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_text_0",
+						UnqualifiedName: "text.container_dashboard_sibling_containers_report_anonymous_container_1_anonymous_text_0",
 						Value:           toStringPointer("container 2"),
 					},
-					"sibling_containers_report.text.anonymous_text_2": {
-						FullName:        "sibling_containers_report.text.anonymous_text_2",
-						ShortName:       "anonymous_text_2",
-						UnqualifiedName: "text.anonymous_text_2",
+					"sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_text_0": {
+						FullName:        "sibling_containers_report.text.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_text_0",
+						ShortName:       "container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_text_0",
+						UnqualifiedName: "text.container_dashboard_sibling_containers_report_anonymous_container_2_anonymous_text_0",
 						Value:           toStringPointer("container 3"),
 					},
 				},
@@ -617,82 +618,82 @@ func init() {
 						ShortName:       "nested_containers_report",
 						FullName:        "nested_containers_report.dashboard.nested_containers_report",
 						UnqualifiedName: "dashboard.nested_containers_report",
-						ChildNames:      []string{"nested_containers_report.container.anonymous_container"},
+						ChildNames:      []string{"nested_containers_report.container.dashboard_nested_containers_report_anonymous_container_0"},
 						HclType:         "dashboard",
 					},
 				},
 				DashboardContainers: map[string]*modconfig.DashboardContainer{
-					"nested_containers_report.container.anonymous_container_1": {
-						ShortName:       "anonymous_container_1",
-						FullName:        "nested_containers_report.container.anonymous_container_1",
-						UnqualifiedName: "container.anonymous_container_1",
-						ChildNames:      []string{"nested_containers_report.text.anonymous_text_1", "nested_containers_report.chart.anonymous_chart"},
+					"nested_containers_report.container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0": {
+						ShortName:       "container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0",
+						FullName:        "nested_containers_report.container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0",
+						UnqualifiedName: "container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0",
+						ChildNames:      []string{"nested_containers_report.text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_text_0", "nested_containers_report.chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_chart_0"},
 					},
-					"nested_containers_report.container.anonymous_container_3": {
-						ShortName:       "anonymous_container_3",
-						FullName:        "nested_containers_report.container.anonymous_container_3",
-						UnqualifiedName: "container.anonymous_container_3",
-						ChildNames:      []string{"nested_containers_report.text.anonymous_text_3", "nested_containers_report.chart.anonymous_chart_2"},
+					"nested_containers_report.container.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0": {
+						ShortName:       "container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0",
+						FullName:        "nested_containers_report.container.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0",
+						UnqualifiedName: "container.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0",
+						ChildNames:      []string{"nested_containers_report.text.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_text_0", "nested_containers_report.chart.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_chart_0"},
 					},
-					"nested_containers_report.container.anonymous_container_2": {
-						ShortName:       "anonymous_container_2",
-						FullName:        "nested_containers_report.container.anonymous_container_2",
-						UnqualifiedName: "container.anonymous_container_2",
-						ChildNames:      []string{"nested_containers_report.text.anonymous_text_2", "nested_containers_report.chart.anonymous_chart_1", "nested_containers_report.container.anonymous_container_3"},
+					"nested_containers_report.container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1": {
+						ShortName:       "container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1",
+						FullName:        "nested_containers_report.container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1",
+						UnqualifiedName: "container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1",
+						ChildNames:      []string{"nested_containers_report.text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_text_0", "nested_containers_report.chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_chart_0", "nested_containers_report.container.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0"},
 					},
-					"nested_containers_report.container.anonymous_container": {
-						ShortName:       "anonymous_container",
-						FullName:        "nested_containers_report.container.anonymous_container",
-						UnqualifiedName: "container.anonymous_container",
-						ChildNames:      []string{"nested_containers_report.text.anonymous_text", "nested_containers_report.container.anonymous_container_1", "nested_containers_report.container.anonymous_container_2"},
+					"nested_containers_report.container.dashboard_nested_containers_report_anonymous_container_0": {
+						ShortName:       "dashboard_nested_containers_report_anonymous_container_0",
+						FullName:        "nested_containers_report.container.dashboard_nested_containers_report_anonymous_container_0",
+						UnqualifiedName: "container.dashboard_nested_containers_report_anonymous_container_0",
+						ChildNames:      []string{"nested_containers_report.text.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_text_0", "nested_containers_report.container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0", "nested_containers_report.container.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1"},
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
-					"nested_containers_report.chart.anonymous_chart": {
-						FullName:        "nested_containers_report.chart.anonymous_chart",
-						ShortName:       "anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"nested_containers_report.chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_chart_0": {
+						FullName:        "nested_containers_report.chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_chart_0",
+						ShortName:       "container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_chart_0",
+						UnqualifiedName: "chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_chart_0",
 						Title:           toStringPointer("CHART 1"),
 						SQL:             toStringPointer("select 1.1 as container"),
 					},
-					"nested_containers_report.chart.anonymous_chart_1": {
-						FullName:        "nested_containers_report.chart.anonymous_chart_1",
-						ShortName:       "anonymous_chart_1",
-						UnqualifiedName: "chart.anonymous_chart_1",
+					"nested_containers_report.chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_chart_0": {
+						FullName:        "nested_containers_report.chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_chart_0",
+						ShortName:       "container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_chart_0",
+						UnqualifiedName: "chart.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_chart_0",
 						Title:           toStringPointer("CHART 2"),
 						SQL:             toStringPointer("select 1.2 as container"),
 					},
-					"nested_containers_report.chart.anonymous_chart_2": {
-						FullName:        "nested_containers_report.chart.anonymous_chart_2",
-						ShortName:       "anonymous_chart_2",
-						UnqualifiedName: "chart.anonymous_chart_2",
+					"nested_containers_report.chart.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_chart_0": {
+						FullName:        "nested_containers_report.chart.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_chart_0",
+						ShortName:       "container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_chart_0",
+						UnqualifiedName: "chart.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_chart_0",
 						Title:           toStringPointer("CHART 3"),
 						SQL:             toStringPointer("select 1.2.1 as container"),
 					},
 				},
 				DashboardTexts: map[string]*modconfig.DashboardText{
-					"nested_containers_report.text.anonymous_text": {
-						FullName:        "nested_containers_report.text.anonymous_text",
-						ShortName:       "anonymous_text",
-						UnqualifiedName: "text.anonymous_text",
+					"nested_containers_report.text.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_text_0": {
+						FullName:        "nested_containers_report.text.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_text_0",
+						ShortName:       "container_dashboard_nested_containers_report_anonymous_container_0_anonymous_text_0",
+						UnqualifiedName: "text.container_dashboard_nested_containers_report_anonymous_container_0_anonymous_text_0",
 						Value:           toStringPointer("CONTAINER 1"),
 					},
-					"nested_containers_report.text.anonymous_text_1": {
-						FullName:        "nested_containers_report.text.anonymous_text_1",
-						ShortName:       "anonymous_text_1",
-						UnqualifiedName: "text.anonymous_text_1",
+					"nested_containers_report.text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_text_0": {
+						FullName:        "nested_containers_report.text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_text_0",
+						ShortName:       "container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_text_0",
+						UnqualifiedName: "text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_0_anonymous_text_0",
 						Value:           toStringPointer("CHILD CONTAINER 1.1"),
 					},
-					"nested_containers_report.text.anonymous_text_2": {
-						FullName:        "nested_containers_report.text.anonymous_text_2",
-						ShortName:       "anonymous_text_2",
-						UnqualifiedName: "text.anonymous_text_2",
+					"nested_containers_report.text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_text_0": {
+						FullName:        "nested_containers_report.text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_text_0",
+						ShortName:       "container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_text_0",
+						UnqualifiedName: "text.container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_text_0",
 						Value:           toStringPointer("CHILD CONTAINER 1.2"),
 					},
-					"nested_containers_report.text.anonymous_text_3": {
-						FullName:        "nested_containers_report.text.anonymous_text_3",
-						ShortName:       "anonymous_text_3",
-						UnqualifiedName: "text.anonymous_text_3",
+					"nested_containers_report.text.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_text_0": {
+						FullName:        "nested_containers_report.text.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_text_0",
+						ShortName:       "container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_text_0",
+						UnqualifiedName: "text.container_container_container_dashboard_nested_containers_report_anonymous_container_0_anonymous_container_1_anonymous_container_0_anonymous_text_0",
 						Value:           toStringPointer("NESTED CHILD CONTAINER 1.2.1"),
 					},
 				},
@@ -712,7 +713,7 @@ func init() {
 						FullName:        "report_axes.dashboard.override_base_values",
 						UnqualifiedName: "dashboard.override_base_values",
 						Title:           toStringPointer("override_base_values"),
-						ChildNames:      []string{"report_axes.chart.anonymous_chart"},
+						ChildNames:      []string{"report_axes.chart.dashboard_override_base_values_anonymous_chart_0"},
 						HclType:         "dashboard",
 					},
 				},
@@ -741,10 +742,10 @@ func init() {
 							Position: toStringPointer("bottom"),
 						},
 					},
-					"report_axes.chart.anonymous_chart": {
-						FullName:        "report_axes.chart.anonymous_chart",
-						ShortName:       "anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"report_axes.chart.dashboard_override_base_values_anonymous_chart_0": {
+						FullName:        "report_axes.chart.dashboard_override_base_values_anonymous_chart_0",
+						ShortName:       "dashboard_override_base_values_anonymous_chart_0",
+						UnqualifiedName: "chart.dashboard_override_base_values_anonymous_chart_0",
 						Axes: &modconfig.DashboardChartAxes{
 							X: &modconfig.DashboardChartAxesX{
 								Title: &modconfig.DashboardChartAxisTitle{
@@ -790,7 +791,7 @@ func init() {
 						FullName:        "report_base1.dashboard.inheriting_from_base",
 						UnqualifiedName: "dashboard.inheriting_from_base",
 						Title:           toStringPointer("inheriting_from_base"),
-						ChildNames:      []string{"report_base1.chart.anonymous_chart"},
+						ChildNames:      []string{"report_base1.chart.dashboard_inheriting_from_base_anonymous_chart_0"},
 						HclType:         "dashboard",
 					},
 				},
@@ -820,10 +821,10 @@ func init() {
 						Grouping: toStringPointer("compare"),
 						SQL:      toStringPointer("select 1"),
 					},
-					"report_base1.chart.anonymous_chart": {
-						FullName:        "report_base1.chart.anonymous_chart",
-						ShortName:       "anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"report_base1.chart.dashboard_inheriting_from_base_anonymous_chart_0": {
+						FullName:        "report_base1.chart.dashboard_inheriting_from_base_anonymous_chart_0",
+						ShortName:       "dashboard_inheriting_from_base_anonymous_chart_0",
+						UnqualifiedName: "chart.dashboard_inheriting_from_base_anonymous_chart_0",
 						Width:           toIntegerPointer(8),
 						Type:            toStringPointer("column"),
 						Legend: &modconfig.DashboardChartLegend{
@@ -849,7 +850,7 @@ func init() {
 				},
 			},
 		},
-		"dashboard_container_with_all_children": { // this test parsing of a container with all possible children
+		"dashboard_container_with_all_children": { // to test parsing of a container with all possible children
 			source: "testdata/mods/dashboard_container_with_all_children",
 			expected: &modconfig.Mod{
 				ShortName:   "container_with_children",
@@ -863,71 +864,71 @@ func init() {
 						FullName:        "container_with_children.dashboard.container_with_child_res",
 						UnqualifiedName: "dashboard.container_with_child_res",
 						Title:           toStringPointer("container with child resources"),
-						ChildNames:      []string{"container_with_children.container.anonymous_container"},
+						ChildNames:      []string{"container_with_children.container.dashboard_container_with_child_res_anonymous_container_0"},
 						HclType:         "dashboard",
 					},
 				},
 				DashboardContainers: map[string]*modconfig.DashboardContainer{
-					"container_with_children.container.anonymous_container": {
-						ShortName:       "anonymous_container",
-						FullName:        "container_with_children.container.anonymous_container",
-						UnqualifiedName: "container.anonymous_container",
+					"container_with_children.container.dashboard_container_with_child_res_anonymous_container_0": {
+						ShortName:       "dashboard_container_with_child_res_anonymous_container_0",
+						FullName:        "container_with_children.container.dashboard_container_with_child_res_anonymous_container_0",
+						UnqualifiedName: "container.dashboard_container_with_child_res_anonymous_container_0",
 						Title:           toStringPointer("example container with all possible child resources"),
-						ChildNames:      []string{"container_with_children.chart.anonymous_chart", "container_with_children.card.anonymous_card", "container_with_children.hierarchy.anonymous_hierarchy", "container_with_children.image.anonymous_image", "container_with_children.table.anonymous_table", "container_with_children.text.anonymous_text"},
+						ChildNames:      []string{"container_with_children.chart.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_chart_0", "container_with_children.card.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_card_0", "container_with_children.hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0", "container_with_children.image.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_image_0", "container_with_children.table.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_table_0", "container_with_children.text.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_text_0"},
 					},
 				},
 				DashboardCards: map[string]*modconfig.DashboardCard{
-					"container_with_children.card.anonymous_card": {
-						FullName:        "container_with_children.card.anonymous_card",
-						ShortName:       "anonymous_card",
-						UnqualifiedName: "card.anonymous_card",
+					"container_with_children.card.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_card_0": {
+						FullName:        "container_with_children.card.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_card_0",
+						ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_card_0",
+						UnqualifiedName: "card.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_card_0",
 						Title:           toStringPointer("example card"),
 						Type:            toStringPointer("ok"),
 						SQL:             toStringPointer("select 1"),
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
-					"container_with_children.chart.anonymous_chart": {
-						FullName:        "container_with_children.chart.anonymous_chart",
-						ShortName:       "anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"container_with_children.chart.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_chart_0": {
+						FullName:        "container_with_children.chart.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_chart_0",
+						ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_chart_0",
+						UnqualifiedName: "chart.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_chart_0",
 						Title:           toStringPointer("example chart"),
 						SQL:             toStringPointer("select 1"),
 					},
 				},
 				DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
-					"container_with_children.hierarchy.anonymous_hierarchy": {
-						FullName:        "container_with_children.hierarchy.anonymous_hierarchy",
-						ShortName:       "anonymous_hierarchy",
-						UnqualifiedName: "hierarchy.anonymous_hierarchy",
+					"container_with_children.hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0": {
+						FullName:        "container_with_children.hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0",
+						ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0",
+						UnqualifiedName: "hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0",
 						Title:           toStringPointer("example hierarchy"),
 						Type:            toStringPointer("graph"),
 					},
 				},
 				DashboardImages: map[string]*modconfig.DashboardImage{
-					"container_with_children.image.anonymous_image": {
-						FullName:        "container_with_children.image.anonymous_image",
-						ShortName:       "anonymous_image",
-						UnqualifiedName: "image.anonymous_image",
+					"container_with_children.image.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_image_0": {
+						FullName:        "container_with_children.image.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_image_0",
+						ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_image_0",
+						UnqualifiedName: "image.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_image_0",
 						Title:           toStringPointer("example image"),
 						Src:             toStringPointer("https://steampipe.io/images/logo.png"),
 						Alt:             toStringPointer("steampipe"),
 					},
 				},
 				DashboardTables: map[string]*modconfig.DashboardTable{
-					"container_with_children.table.anonymous_table": {
-						FullName:        "container_with_children.table.anonymous_table",
-						ShortName:       "anonymous_table",
-						UnqualifiedName: "table.anonymous_table",
+					"container_with_children.table.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_table_0": {
+						FullName:        "container_with_children.table.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_table_0",
+						ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_table_0",
+						UnqualifiedName: "table.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_table_0",
 						Title:           toStringPointer("example table"),
 						SQL:             toStringPointer("select 1"),
 					},
 				},
 				DashboardTexts: map[string]*modconfig.DashboardText{
-					"container_with_children.text.anonymous_text": {
-						FullName:        "container_with_children.text.anonymous_text",
-						ShortName:       "anonymous_text",
-						UnqualifiedName: "text.anonymous_text",
+					"container_with_children.text.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_text_0": {
+						FullName:        "container_with_children.text.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_text_0",
+						ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_text_0",
+						UnqualifiedName: "text.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_text_0",
 						Value:           toStringPointer("example text"),
 					},
 				},
@@ -947,44 +948,54 @@ func init() {
 						FullName:        "dashboard_with_children.dashboard.dashboard_with_child_res",
 						UnqualifiedName: "dashboard.dashboard_with_child_res",
 						Title:           toStringPointer("dashboard with child resources"),
-						ChildNames:      []string{"dashboard_with_children.container.anonymous_container", "dashboard_with_children.chart.anonymous_chart", "dashboard_with_children.card.anonymous_card", "dashboard_with_children.hierarchy.anonymous_hierarchy", "dashboard_with_children.image.anonymous_image", "dashboard_with_children.input.i1_dashboard_dashboard_with_child_res", "dashboard_with_children.table.anonymous_table", "dashboard_with_children.text.anonymous_text"},
+						ChildNames:      []string{"dashboard_with_children.container.dashboard_dashboard_with_child_res_anonymous_container_0", "dashboard_with_children.chart.dashboard_dashboard_with_child_res_anonymous_chart_0", "dashboard_with_children.card.dashboard_dashboard_with_child_res_anonymous_card_0", "dashboard_with_children.hierarchy.dashboard_dashboard_with_child_res_anonymous_hierarchy_0", "dashboard_with_children.image.dashboard_dashboard_with_child_res_anonymous_image_0", "dashboard_with_children.input.i1_dashboard_dashboard_with_child_res", "dashboard_with_children.table.dashboard_dashboard_with_child_res_anonymous_table_0", "dashboard_with_children.text.dashboard_dashboard_with_child_res_anonymous_text_0"},
 						HclType:         "dashboard",
 					},
 				},
 				DashboardContainers: map[string]*modconfig.DashboardContainer{
-					"dashboard_with_children.container.anonymous_container": {
-						ShortName:       "anonymous_container",
-						FullName:        "dashboard_with_children.container.anonymous_container",
-						UnqualifiedName: "container.anonymous_container",
+					"dashboard_with_children.container.dashboard_dashboard_with_child_res_anonymous_container_0": {
+						ShortName:       "dashboard_dashboard_with_child_res_anonymous_container_0",
+						FullName:        "dashboard_with_children.container.dashboard_dashboard_with_child_res_anonymous_container_0",
+						UnqualifiedName: "container.dashboard_dashboard_with_child_res_anonymous_container_0",
 						Title:           toStringPointer("example container"),
 					},
 				},
 				DashboardCards: map[string]*modconfig.DashboardCard{
-					"dashboard_with_children.card.anonymous_card": {
-						FullName:        "dashboard_with_children.card.anonymous_card",
-						ShortName:       "anonymous_card",
-						UnqualifiedName: "card.anonymous_card",
+					"dashboard_with_children.card.dashboard_dashboard_with_child_res_anonymous_card_0": {
+						FullName:        "dashboard_with_children.card.dashboard_dashboard_with_child_res_anonymous_card_0",
+						ShortName:       "dashboard_dashboard_with_child_res_anonymous_card_0",
+						UnqualifiedName: "card.dashboard_dashboard_with_child_res_anonymous_card_0",
 						Title:           toStringPointer("example card"),
 						Type:            toStringPointer("ok"),
 						SQL:             toStringPointer("select 1"),
 					},
 				},
 				DashboardCharts: map[string]*modconfig.DashboardChart{
-					"dashboard_with_children.chart.anonymous_chart": {
-						FullName:        "dashboard_with_children.chart.anonymous_chart",
-						ShortName:       "anonymous_chart",
-						UnqualifiedName: "chart.anonymous_chart",
+					"dashboard_with_children.chart.dashboard_dashboard_with_child_res_anonymous_chart_0": {
+						FullName:        "dashboard_with_children.chart.dashboard_dashboard_with_child_res_anonymous_chart_0",
+						ShortName:       "dashboard_dashboard_with_child_res_anonymous_chart_0",
+						UnqualifiedName: "chart.dashboard_dashboard_with_child_res_anonymous_chart_0",
 						Title:           toStringPointer("example chart"),
 						SQL:             toStringPointer("select 1"),
 					},
 				},
 				DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
-					"dashboard_with_children.hierarchy.anonymous_hierarchy": {
-						FullName:        "dashboard_with_children.hierarchy.anonymous_hierarchy",
-						ShortName:       "anonymous_hierarchy",
-						UnqualifiedName: "hierarchy.anonymous_hierarchy",
+					"dashboard_with_children.hierarchy.dashboard_dashboard_with_child_res_anonymous_hierarchy_0": {
+						FullName:        "dashboard_with_children.hierarchy.dashboard_dashboard_with_child_res_anonymous_hierarchy_0",
+						ShortName:       "dashboard_dashboard_with_child_res_anonymous_hierarchy_0",
+						UnqualifiedName: "hierarchy.dashboard_dashboard_with_child_res_anonymous_hierarchy_0",
 						Title:           toStringPointer("example hierarchy"),
 						Type:            toStringPointer("graph"),
+					},
+				},
+				DashboardImages: map[string]*modconfig.DashboardImage{
+					"dashboard_with_children.image.dashboard_dashboard_with_child_res_anonymous_image_0": {
+						FullName:        "dashboard_with_children.image.dashboard_dashboard_with_child_res_anonymous_image_0",
+						ShortName:       "dashboard_dashboard_with_child_res_anonymous_image_0",
+						UnqualifiedName: "image.dashboard_dashboard_with_child_res_anonymous_image_0",
+						Title:           toStringPointer("example image"),
+						Src:             toStringPointer("https://steampipe.io/images/logo.png"),
+						Alt:             toStringPointer("steampipe"),
 					},
 				},
 				DashboardInputs: map[string]*modconfig.DashboardInput{
@@ -995,30 +1006,20 @@ func init() {
 						Title:           toStringPointer("example input"),
 					},
 				},
-				DashboardImages: map[string]*modconfig.DashboardImage{
-					"dashboard_with_children.image.anonymous_image": {
-						FullName:        "dashboard_with_children.image.anonymous_image",
-						ShortName:       "anonymous_image",
-						UnqualifiedName: "image.anonymous_image",
-						Title:           toStringPointer("example image"),
-						Src:             toStringPointer("https://steampipe.io/images/logo.png"),
-						Alt:             toStringPointer("steampipe"),
-					},
-				},
 				DashboardTables: map[string]*modconfig.DashboardTable{
-					"dashboard_with_children.table.anonymous_table": {
-						FullName:        "dashboard_with_children.table.anonymous_table",
-						ShortName:       "anonymous_table",
-						UnqualifiedName: "table.anonymous_table",
+					"dashboard_with_children.table.dashboard_dashboard_with_child_res_anonymous_table_0": {
+						FullName:        "dashboard_with_children.table.dashboard_dashboard_with_child_res_anonymous_table_0",
+						ShortName:       "dashboard_dashboard_with_child_res_anonymous_table_0",
+						UnqualifiedName: "table.dashboard_dashboard_with_child_res_anonymous_table_0",
 						Title:           toStringPointer("example table"),
 						SQL:             toStringPointer("select 1"),
 					},
 				},
 				DashboardTexts: map[string]*modconfig.DashboardText{
-					"dashboard_with_children.text.anonymous_text": {
-						FullName:        "dashboard_with_children.text.anonymous_text",
-						ShortName:       "anonymous_text",
-						UnqualifiedName: "text.anonymous_text",
+					"dashboard_with_children.text.dashboard_dashboard_with_child_res_anonymous_text_0": {
+						FullName:        "dashboard_with_children.text.dashboard_dashboard_with_child_res_anonymous_text_0",
+						ShortName:       "dashboard_dashboard_with_child_res_anonymous_text_0",
+						UnqualifiedName: "text.dashboard_dashboard_with_child_res_anonymous_text_0",
 						Value:           toStringPointer("example text"),
 					},
 				},
