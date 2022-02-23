@@ -47,8 +47,7 @@ type DashboardTable struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardTable(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardTable {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) *DashboardTable {
 	t := &DashboardTable{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

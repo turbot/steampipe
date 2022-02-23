@@ -1,21 +1,23 @@
-
-chart "top_level1"{}
-chart "top_level2"{}
-
-dashboard "anonymous_naming" {
-
-    chart{}
-
+dashboard "d" {
     container {
-        chart {}
-        chart {}
-        table{}
+        chart {
+            title = "dashboard_d_anonymous_container_0_anonymous_chart_0"
+        }
+        chart {
+            title = "dashboard_d_anonymous_container_0_anonymous_chart_1"
+            decription = chart.c.title
+
+        }
+    }
+    container {
+        chart {
+            title = "dashboard_d_anonymous_container_1_anonymous_chart_0"
+            decription = chart.c.title
+        }
     }
 
-    container {
-        chart {}
-        chart {}
-        table{}
-        table{}
-    }
+}
+
+chart "c"{
+    decription = "foo"
 }

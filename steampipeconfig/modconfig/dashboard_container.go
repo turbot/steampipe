@@ -37,8 +37,7 @@ type DashboardContainer struct {
 	runtimeDependencyGraph *topsort.Graph
 }
 
-func NewDashboardContainer(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardContainer {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboardContainer(block *hcl.Block, mod *Mod, shortName string) *DashboardContainer {
 	c := &DashboardContainer{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

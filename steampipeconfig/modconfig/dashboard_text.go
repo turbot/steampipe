@@ -34,8 +34,7 @@ type DashboardText struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardText(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardText {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboardText(block *hcl.Block, mod *Mod, shortName string) *DashboardText {
 	t := &DashboardText{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

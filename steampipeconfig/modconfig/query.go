@@ -47,9 +47,8 @@ type Query struct {
 	parents         []ModTreeItem
 }
 
-func NewQuery(block *hcl.Block, mod *Mod) *Query {
+func NewQuery(block *hcl.Block, mod *Mod, shortName string) *Query {
 	// queries cannot be anonymous
-	shortName := block.Labels[0]
 	q := &Query{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.query.%s", mod.ShortName, shortName),

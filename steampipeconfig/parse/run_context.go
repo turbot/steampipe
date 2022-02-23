@@ -54,12 +54,17 @@ type RunContext struct {
 	Variables           map[string]*modconfig.Variable
 
 	// stack of parent resources for the currently parsed block
-	parents         []modconfig.ModTreeItem
+	// (unqualified name)
+	parents []string
+	// map of children for blocks with nested blocks
+	blockChildMap map[string][]string
+
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
+	blockNameMap    map[string]string
 }
 
 func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
@@ -73,6 +78,8 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
+		blockChildMap: make(map[string][]string),
+		blockNameMap:  make(map[string]string),
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
@@ -92,17 +99,20 @@ func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 }
 
 func (r *RunContext) PushParent(parent modconfig.ModTreeItem) {
-	r.parents = append(r.parents, parent)
+	r.parents = append(r.parents, parent.GetUnqualifiedName())
 }
 
-func (r *RunContext) PopParent() modconfig.ModTreeItem {
+func (r *RunContext) PopParent() string {
 	n := len(r.parents) - 1
 	res := r.parents[n]
 	r.parents = r.parents[:n]
 	return res
 }
 
-func (r *RunContext) PeekParent() modconfig.ModTreeItem {
+func (r *RunContext) PeekParent() string {
+	if len(r.parents) == 0 {
+		return r.CurrentMod.Name()
+	}
 	return r.parents[len(r.parents)-1]
 }
 
@@ -458,4 +468,71 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 		}
 	}
 	return nil
+}
+
+func (r *RunContext) GetCachedBlockName(block *hcl.Block) (string, bool) {
+	name, ok := r.blockNameMap[block]
+	return name, ok
+}
+func (r *RunContext) GetCachedBlockShortName(block *hcl.Block) (string, bool) {
+	unqualifiedName, ok := r.blockNameMap[block]
+	if ok {
+		parsedName, err := modconfig.ParseResourceName(unqualifiedName)
+		if err != nil {
+			return "", false
+		}
+		return parsedName.Name, true
+	}
+	return "", false
+}
+
+func (r *RunContext) cacheBlockName(block *hcl.Block, shortName string) {
+	r.blockNameMap[block] = shortName
+}
+
+func (r *RunContext) DetermineBlockName(block *hcl.Block) string {
+	var shortName string
+
+	// have we cached a name for this block (i.e. is this the second decode pass)
+	if name, ok := r.GetCachedBlockShortName(block); ok {
+		return name
+	}
+	// if there is a parent set in the parent stack, this block is a child of that parent
+	parentName := r.PeekParent()
+
+	anonymous := len(block.Labels) == 0
+	if anonymous {
+		shortName = r.GetUniqueName(block.Type, parentName)
+	} else {
+		shortName = block.Labels[0]
+	}
+	// build unqualified name
+	unqualifiedName := fmt.Sprintf("%s.%s", block.Type, shortName)
+	r.addChildForParent(parentName, unqualifiedName)
+	// cache this name for the second decode pass
+	r.cacheBlockName(block, unqualifiedName)
+	return shortName
+}
+
+// GetUniqueName returns a name unique within the scope of this execution tree
+func (r *RunContext) GetUniqueName(blockType string, parent string) string {
+	// count how many children of this block type the parent has
+	childCount := 0
+
+	for _, childName := range r.blockChildMap[parent] {
+		parsedName, err := modconfig.ParseResourceName(childName)
+		if err != nil {
+			// we do not expect this
+			continue
+		}
+		if parsedName.ItemType == blockType {
+			childCount++
+		}
+	}
+	sanitisedParentName := strings.Replace(parent, ".", "_", -1)
+	return fmt.Sprintf("%s_anonymous_%s_%d", sanitisedParentName, blockType, childCount)
+}
+
+func (r *RunContext) addChildForParent(parent, child string) {
+	r.blockChildMap[parent] = append(r.blockChildMap[parent], child)
 }
