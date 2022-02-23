@@ -432,16 +432,16 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 				// add dashboard name to input
 				input.SetDashboard(dashboard)
 				inputs = append(inputs, input)
-				// now we have namespaced the input, add to mod
-				res.addDiags(runCtx.CurrentMod.AddResource(resource))
-			}
-
-			// add the resource to the mod
-			addResourcesToMod(runCtx, resource)
-			// add to the dashboard children
-			// (we expect this cast to always succeed)
-			if child, ok := resource.(modconfig.ModTreeItem); ok {
-				dashboard.AddChild(child)
+				dashboard.AddChild(input)
+				// inputs get added to the mod in SetInputs
+			} else {
+				// add the resource to the mod
+				res.addDiags(addResourcesToMod(runCtx, resource))
+				// add to the dashboard children
+				// (we expect this cast to always succeed)
+				if child, ok := resource.(modconfig.ModTreeItem); ok {
+					dashboard.AddChild(child)
+				}
 			}
 		}
 	}
@@ -490,6 +490,7 @@ func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.
 
 func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
 	var res = &decodeResult{}
+	var inputs []*modconfig.DashboardInput
 	// set container as parent on the run context - this is used when generating names for anonymous blocks
 	runCtx.PushParent(dashboardContainer)
 	defer func() {
@@ -506,6 +507,14 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 
 		// all blocks are child report nodes
 		for _, resource := range resources {
+			if b.Type == modconfig.BlockTypeInput {
+				input := resource.(*modconfig.DashboardInput)
+				// add dashboard name to input
+				inputs = append(inputs, input)
+				// now we have namespaced the input, add to mod
+				res.addDiags(runCtx.CurrentMod.AddResource(resource))
+			}
+
 			// add the resource to the mod
 			addResourcesToMod(runCtx, resource)
 

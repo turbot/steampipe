@@ -69,10 +69,6 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypeContainer,
-			LabelNames: []string{"name"},
-		},
-		{
 			Type:       modconfig.BlockTypeCard,
 			LabelNames: []string{"name"},
 		},

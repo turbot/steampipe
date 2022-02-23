@@ -309,11 +309,26 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
 	d.Inputs = inputs
 	d.setInputMap()
 
+	ADD INPUTS TO THE MOD
+	SET DASHBORAD ON ALL CHILD CONTAINER INPUTS
+
 	//  add child containers and dashboard inputs
 	var duplicates []string
 	resourceFunc := func(resource HclResource) (bool, error) {
+		// TODO HANDLE PREFIXES
 		if dashboard, ok := resource.(*Dashboard); ok {
 			for _, i := range dashboard.Inputs {
+				// check we do not already have this input
+				if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
+					duplicates = append(duplicates, i.Name())
+					continue
+				}
+				d.Inputs = append(d.Inputs, i)
+				d.selfInputsMap[i.UnqualifiedName] = i
+			}
+		}
+		if container, ok := resource.(*DashboardContainer); ok {
+			for _, i := range container.Inputs {
 				// check we do not already have this input
 				if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
 					duplicates = append(duplicates, i.Name())
