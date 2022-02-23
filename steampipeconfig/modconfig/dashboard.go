@@ -14,7 +14,7 @@ import (
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
 const runtimeDependencyDashboardScope = "self"
 
-// Dashboard is a struct representing the Dashboard and Container resource
+// Dashboard is a struct representing the Dashboard  resource
 type Dashboard struct {
 	ResourceWithMetadataBase
 
@@ -33,15 +33,15 @@ type Dashboard struct {
 	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	Tags            map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
 
-	Base *Dashboard `hcl:"base"`
+	Base *Dashboard `hcl:"base" json:"-"`
 
-	IsTopLevel bool `column:"is_top_level,bool"`
-	References []*ResourceReference
-	Mod        *Mod `cty:"mod"`
-	DeclRange  hcl.Range
-	Paths      []NodePath `column:"path,jsonb"`
+	IsTopLevel bool                 `column:"is_top_level,bool" json:"-"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 	// store children in a way which can be serialised via cty
-	ChildNames []string `cty:"children" column:"children,jsonb"`
+	ChildNames []string `cty:"children" column:"children,jsonb" json:"-"`
 
 	selfInputsMap map[string]*DashboardInput
 	// the actual children

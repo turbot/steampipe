@@ -39,12 +39,11 @@ type DashboardHierarchy struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
 
-	Base *DashboardHierarchy `hcl:"base" json:"-"`
-
-	DeclRange  hcl.Range `json:"-"`
-	References []*ResourceReference
-	Mod        *Mod       `cty:"mod" json:"-"`
-	Paths      []NodePath `column:"path,jsonb" json:"-"`
+	Base       *DashboardHierarchy  `hcl:"base" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
