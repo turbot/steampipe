@@ -6,7 +6,7 @@ type ClientRequestDashboardPayload struct {
 
 type ClientRequestPayload struct {
 	Dashboard   ClientRequestDashboardPayload `json:"dashboard"`
-	InputValues map[string]*string            `json:"input_values"`
+	InputValues map[string]interface{}        `json:"input_values"`
 }
 
 type ClientRequest struct {

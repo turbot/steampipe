@@ -66,7 +66,7 @@ type ExecutionPayload struct {
 type DashboardClientInfo struct {
 	Session         *melody.Session
 	Dashboard       *string
-	DashboardInputs map[string]*string
+	DashboardInputs map[string]interface{}
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
@@ -483,7 +483,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 	}
 }
 
-func (s *Server) setDashboardForSession(sessionId string, dashboardName string, inputs map[string]*string) *DashboardClientInfo {
+func (s *Server) setDashboardForSession(sessionId string, dashboardName string, inputs map[string]interface{}) *DashboardClientInfo {
 	s.mutex.Lock()
 	dashboardClientInfo := s.dashboardClients[sessionId]
 	dashboardClientInfo.Dashboard = &dashboardName
@@ -508,7 +508,7 @@ func (s *Server) addSession(session *melody.Session) {
 	s.mutex.Unlock()
 }
 
-func (s *Server) setDashboardInputsForSession(sessionId string, inputs map[string]*string) {
+func (s *Server) setDashboardInputsForSession(sessionId string, inputs map[string]interface{}) {
 	s.mutex.Lock()
 	if sessionInfo, ok := s.dashboardClients[sessionId]; ok {
 		sessionInfo.DashboardInputs = inputs

@@ -23,7 +23,7 @@ func newDashboardExecutor() *DashboardExecutor {
 
 var Executor = newDashboardExecutor()
 
-func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]*string, workspace *workspace.Workspace, client db_common.Client) error {
+func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]interface{}, workspace *workspace.Workspace, client db_common.Client) error {
 	// reset any existing executions for this session
 	e.ClearDashboard(ctx, sessionId)
 
@@ -47,7 +47,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	return nil
 }
 
-func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId string, inputs map[string]*string) error {
+func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId string, inputs map[string]interface{}) error {
 	// find the execution
 	executionTree, found := e.executions[sessionId]
 	if !found {
