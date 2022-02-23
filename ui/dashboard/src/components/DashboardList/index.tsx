@@ -81,10 +81,23 @@ const useGroupedDashboards = (dashboards, grouping, metadata) => {
       });
     }
     setSections(
-      Object.entries(groupedDashboards).map(([k, v]) => ({
-        title: k,
-        dashboards: v,
-      }))
+      Object.entries(groupedDashboards)
+        .map(([k, v]) => ({
+          title: k,
+          dashboards: v,
+        }))
+        .sort((x, y) => {
+          if (y.title === "Other") {
+            return -1;
+          }
+          if (x.title < y.title) {
+            return -1;
+          }
+          if (x.title > y.title) {
+            return 1;
+          }
+          return 0;
+        })
     );
   }, [dashboards, grouping, metadata]);
 
