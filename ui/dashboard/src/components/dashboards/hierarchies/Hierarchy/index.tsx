@@ -10,8 +10,8 @@ import {
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
+import { get, merge, set } from "lodash";
 import { HierarchyProps } from "../index";
-import { merge } from "lodash";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 import { useTheme } from "../../../../hooks/useTheme";
@@ -180,8 +180,12 @@ type HierarchyDefinition = PanelDefinition & {
 
 const renderHierarchy = (definition: HierarchyDefinition) => {
   // We default to sankey diagram if not specified
+  if (!get(definition, "properties.type")) {
+    // @ts-ignore
+    definition = set(definition, "properties.type", "sankey");
+  }
   const {
-    properties: { type = "sankey" },
+    properties: { type },
   } = definition;
 
   const hierarchy = Hierarchies[type];

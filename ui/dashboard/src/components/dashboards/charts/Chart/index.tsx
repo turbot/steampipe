@@ -27,9 +27,9 @@ import {
   TooltipComponent,
 } from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
+import { get, has, merge, set } from "lodash";
 import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";
-import { has, merge, set } from "lodash";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
 import { Theme, useTheme } from "../../../../hooks/useTheme";
 import * as echarts from "echarts/core";
@@ -664,8 +664,12 @@ type ChartDefinition = PanelDefinition & {
 
 const renderChart = (definition: ChartDefinition) => {
   // We default to column charts if not specified
+  if (!get(definition, "properties.type")) {
+    // @ts-ignore
+    definition = set(definition, "properties.type", "column");
+  }
   const {
-    properties: { type = "column" },
+    properties: { type },
   } = definition;
 
   const chart = Charts[type];
