@@ -276,6 +276,12 @@ func (i *DashboardInput) GetQuery() *Query {
 	return i.Query
 }
 
+// VerifyQuery implements QueryProvider
+func (i *DashboardInput) VerifyQuery(QueryProvider) error {
+	// query is optional - nothing to do
+	return nil
+}
+
 // SetArgs implements QueryProvider
 func (i *DashboardInput) SetArgs(args *QueryArgs) {
 	i.Args = args

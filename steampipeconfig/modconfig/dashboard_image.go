@@ -231,6 +231,12 @@ func (i *DashboardImage) GetQuery() *Query {
 	return i.Query
 }
 
+// VerifyQuery implements QueryProvider
+func (i *DashboardImage) VerifyQuery(QueryProvider) error {
+	// query is optional - nothing to do
+	return nil
+}
+
 // SetArgs implements QueryProvider
 func (i *DashboardImage) SetArgs(args *QueryArgs) {
 	i.Args = args

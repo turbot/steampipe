@@ -55,8 +55,11 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 	}
 	r.NodeType = parsedName.ItemType
 	// if we have a query provider, set status to ready
-	if _, ok := resource.(modconfig.QueryProvider); ok {
-		r.runStatus = dashboardinterfaces.DashboardRunReady
+	if provider, ok := resource.(modconfig.QueryProvider); ok {
+		// if the provider has sql or a query, set status to ready
+		if provider.GetSQL() != nil || provider.GetQuery() != nil {
+			r.runStatus = dashboardinterfaces.DashboardRunReady
+		}
 	}
 
 	// if this node has runtime dependencies, create runtime depdency instances which we use to resolve the values

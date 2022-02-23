@@ -111,14 +111,14 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 
 	log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
 
+	// verify the resource has qa query or sql, if required
+	if err := queryProvider.VerifyQuery(queryProvider); err != nil {
+		return "", err
+	}
+
 	query := queryProvider.GetQuery()
 	sql := queryProvider.GetSQL()
 	params := queryProvider.GetParams()
-	// verify we have either SQL or a Query defined
-	if sql == nil && query == nil {
-		// this should never happen as we should catch it in the parsing stage
-		return "", fmt.Errorf("%s must define either a 'sql' property or a 'query' property", queryProvider.Name())
-	}
 
 	// determine the source for the query
 	// - this will either be the control itself or any named query the control refers to

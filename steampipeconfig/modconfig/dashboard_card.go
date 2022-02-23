@@ -240,6 +240,12 @@ func (c *DashboardCard) GetQuery() *Query {
 	return c.Query
 }
 
+// VerifyQuery implements QueryProvider
+func (c *DashboardCard) VerifyQuery(QueryProvider) error {
+	// query is optional - nothing to do
+	return nil
+}
+
 // SetArgs implements QueryProvider
 func (c *DashboardCard) SetArgs(args *QueryArgs) {
 	c.Args = args
