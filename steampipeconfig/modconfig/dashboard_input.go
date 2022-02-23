@@ -47,6 +47,7 @@ type DashboardInput struct {
 	dashboard *Dashboard
 }
 
+// TODO [reports] remove the need for this when we refactor input values resolution
 func (i *DashboardInput) Clone() *DashboardInput {
 	return &DashboardInput{
 		ResourceWithMetadataBase: i.ResourceWithMetadataBase,
@@ -60,6 +61,7 @@ func (i *DashboardInput) Clone() *DashboardInput {
 		Placeholder:              i.Placeholder,
 		Display:                  i.Display,
 		OnHooks:                  i.OnHooks,
+		Options:                  i.Options,
 		SQL:                      i.SQL,
 		Query:                    i.Query,
 		PreparedStatementName:    i.PreparedStatementName,
