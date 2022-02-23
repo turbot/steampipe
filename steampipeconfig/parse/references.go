@@ -7,8 +7,6 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// R
-
 // AddReferences populates the 'References' resource field, used for the introspection tables
 func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
 	// NOTE: exclude locals
