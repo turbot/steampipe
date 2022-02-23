@@ -437,6 +437,11 @@ func (m *Mod) AddReference(ref *ResourceReference) {
 	m.References = append(m.References, ref)
 }
 
+// GetReferences implements HclResource
+func (m *Mod) GetReferences() []*ResourceReference {
+	return m.References
+}
+
 // GetMod implements HclResource
 func (m *Mod) GetMod() *Mod {
 	return nil
@@ -580,4 +585,8 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 		}
 	}
 	return []byte(strings.Join(resLines, "\n")), nil
+}
+
+func (m *Mod) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
+	return m.resourceMaps.WalkResources(resourceFunc)
 }

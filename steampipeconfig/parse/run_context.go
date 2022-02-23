@@ -149,14 +149,14 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	moreDiags := r.storeResourceInCtyMap(mod)
 	diags = append(diags, moreDiags...)
 
-	resourceFunc := func(item modconfig.HclResource) bool {
+	resourceFunc := func(item modconfig.HclResource) (bool, error) {
 		// add all mod resources except variables into cty map
 		if _, ok := item.(*modconfig.Variable); !ok {
 			moreDiags := r.storeResourceInCtyMap(item)
 			diags = append(diags, moreDiags...)
 		}
 		// continue walking
-		return true
+		return true, nil
 	}
 	mod.WalkResources(resourceFunc)
 

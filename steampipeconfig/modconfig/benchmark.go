@@ -25,20 +25,20 @@ type Benchmark struct {
 	// used for introspection tables
 	ChildNameStrings []string `cty:"child_name_strings" column:"children,jsonb"`
 	// the actual children
-	Children []ModTreeItem
-
+	Children      []ModTreeItem
 	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
 	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
 	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
-	References    []*ResourceReference
-	Mod           *Mod `cty:"mod"`
-	DeclRange     hcl.Range
-	Paths         []NodePath `column:"path,jsonb"`
 
 	// dashboard specific properties
 	Base  *Benchmark `hcl:"base" json:"-"`
 	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+
+	References []*ResourceReference
+	Mod        *Mod `cty:"mod"`
+	DeclRange  hcl.Range
+	Paths      []NodePath `column:"path,jsonb"`
 
 	parents []ModTreeItem
 }
@@ -104,6 +104,11 @@ func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
 // AddReference implements HclResource
 func (b *Benchmark) AddReference(ref *ResourceReference) {
 	b.References = append(b.References, ref)
+}
+
+// GetReferences implements HclResource
+func (b *Benchmark) GetReferences() []*ResourceReference {
+	return b.References
 }
 
 // GetMod implements HclResource

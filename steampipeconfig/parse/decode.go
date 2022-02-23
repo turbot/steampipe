@@ -125,7 +125,6 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		// handle the result
 		// - if there are dependencies, add to run context
 		handleDecodeResult(resource, res, block, runCtx)
-
 	}
 
 	return resources, res
@@ -584,7 +583,6 @@ func decodeProperty(content *hcl.BodyContent, property string, dest interface{},
 // - generate and set resource metadata
 // - add resource to RunContext (which adds it to the mod)handleDecodeResult
 func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block *hcl.Block, runCtx *RunContext) {
-
 	if res.Success() {
 		anonymousResource := resourceIsAnonymous(resource)
 

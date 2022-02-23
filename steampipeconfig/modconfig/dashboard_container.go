@@ -25,9 +25,10 @@ type DashboardContainer struct {
 	Display         *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks         []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
-	Mod       *Mod `cty:"mod"`
-	DeclRange hcl.Range
-	Paths     []NodePath `column:"path,jsonb"`
+	References []*ResourceReference
+	Mod        *Mod `cty:"mod"`
+	DeclRange  hcl.Range
+	Paths      []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 
@@ -75,8 +76,13 @@ func (c *DashboardContainer) OnDecoded(*hcl.Block) hcl.Diagnostics {
 }
 
 // AddReference implements HclResource
-func (c *DashboardContainer) AddReference(*ResourceReference) {
-	// TODO
+func (c *DashboardContainer) AddReference(ref *ResourceReference) {
+	c.References = append(c.References, ref)
+}
+
+// GetReferences implements HclResource
+func (c *DashboardContainer) GetReferences() []*ResourceReference {
+	return c.References
 }
 
 // GetMod implements HclResource

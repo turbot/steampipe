@@ -260,6 +260,11 @@ func (c *Control) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)
 }
 
+// GetReferences implements HclResource
+func (b *Control) GetReferences() []*ResourceReference {
+	return b.References
+}
+
 // GetMod implements HclResource
 func (c *Control) GetMod() *Mod {
 	return c.Mod

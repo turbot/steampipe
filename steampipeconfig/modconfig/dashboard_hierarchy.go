@@ -41,9 +41,10 @@ type DashboardHierarchy struct {
 
 	Base *DashboardHierarchy `hcl:"base" json:"-"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	DeclRange  hcl.Range `json:"-"`
+	References []*ResourceReference
+	Mod        *Mod       `cty:"mod" json:"-"`
+	Paths      []NodePath `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -115,7 +116,14 @@ func (h *DashboardHierarchy) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (h *DashboardHierarchy) AddReference(*ResourceReference) {}
+func (h *DashboardHierarchy) AddReference(ref *ResourceReference) {
+	h.References = append(h.References, ref)
+}
+
+// GetReferences implements HclResource
+func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
+	return h.References
+}
 
 // GetMod implements HclResource
 func (h *DashboardHierarchy) GetMod() *Mod {

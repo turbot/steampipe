@@ -36,6 +36,7 @@ type Dashboard struct {
 	Base *Dashboard `hcl:"base"`
 
 	IsTopLevel bool `column:"is_top_level,bool"`
+	References []*ResourceReference
 	Mod        *Mod `cty:"mod"`
 	DeclRange  hcl.Range
 	Paths      []NodePath `column:"path,jsonb"`
@@ -127,8 +128,13 @@ func (d *Dashboard) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (d *Dashboard) AddReference(*ResourceReference) {
-	// TODO
+func (d *Dashboard) AddReference(ref *ResourceReference) {
+	d.References = append(d.References, ref)
+}
+
+// GetReferences implements HclResource
+func (d *Dashboard) GetReferences() []*ResourceReference {
+	return d.References
 }
 
 // GetMod implements HclResource

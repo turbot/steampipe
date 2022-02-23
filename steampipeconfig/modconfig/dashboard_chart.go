@@ -44,10 +44,11 @@ type DashboardChart struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base      *DashboardChart `hcl:"base" json:"-"`
-	DeclRange hcl.Range       `json:"-"`
-	Mod       *Mod            `cty:"mod" json:"-"`
-	Paths     []NodePath      `column:"path,jsonb" json:"-"`
+	Base       *DashboardChart `hcl:"base" json:"-"`
+	DeclRange  hcl.Range       `json:"-"`
+	References []*ResourceReference
+	Mod        *Mod       `cty:"mod" json:"-"`
+	Paths      []NodePath `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -135,7 +136,14 @@ func (c *DashboardChart) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (c *DashboardChart) AddReference(*ResourceReference) {}
+func (c *DashboardChart) AddReference(ref *ResourceReference) {
+	c.References = append(c.References, ref)
+}
+
+// GetReferences implements HclResource
+func (c *DashboardChart) GetReferences() []*ResourceReference {
+	return c.References
+}
 
 // GetMod implements HclResource
 func (c *DashboardChart) GetMod() *Mod {

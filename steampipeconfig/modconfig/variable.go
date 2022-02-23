@@ -78,6 +78,11 @@ func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
 // AddReference implements HclResource
 func (v *Variable) AddReference(*ResourceReference) {}
 
+// GetReferences implements HclResource
+func (v *Variable) GetReferences() []*ResourceReference {
+	return nil
+}
+
 // GetMod implements HclResource
 func (v *Variable) GetMod() *Mod {
 	return v.Mod

@@ -37,9 +37,10 @@ type DashboardInput struct {
 
 	Base *DashboardInput `hcl:"base" json:"-"`
 
-	DeclRange hcl.Range  `json:"-"`
-	Mod       *Mod       `cty:"mod" json:"-"`
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
+	DeclRange  hcl.Range `json:"-"`
+	References []*ResourceReference
+	Mod        *Mod       `cty:"mod" json:"-"`
+	Paths      []NodePath `column:"path,jsonb" json:"-"`
 
 	parents   []ModTreeItem
 	dashboard *Dashboard
@@ -129,7 +130,14 @@ func (i *DashboardInput) setBaseProperties() {
 }
 
 // AddReference implements HclResource
-func (i *DashboardInput) AddReference(*ResourceReference) {}
+func (i *DashboardInput) AddReference(ref *ResourceReference) {
+	i.References = append(i.References, ref)
+}
+
+// GetReferences implements HclResource
+func (i *DashboardInput) GetReferences() []*ResourceReference {
+	return i.References
+}
 
 // GetMod implements HclResource
 func (i *DashboardInput) GetMod() *Mod {

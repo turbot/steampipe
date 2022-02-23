@@ -42,19 +42,19 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 	var leafNodes []ModTreeItem
 	var err error
 
-	resourceFunc := func(item HclResource) bool {
+	resourceFunc := func(item HclResource) (bool, error) {
 		if treeItem, ok := item.(ModTreeItem); ok {
 			// NOTE: add resource into _our_ resource tree, i.e. mod 'm'
 			if err = m.addItemIntoResourceTree(treeItem); err != nil {
 				// stop walking
-				return false
+				return false, nil
 			}
 			if len(treeItem.GetChildren()) == 0 {
 				leafNodes = append(leafNodes, treeItem)
 			}
 		}
 		// continue walking
-		return true
+		return true, nil
 	}
 
 	// iterate through all resources in source mod
