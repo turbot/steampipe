@@ -76,16 +76,10 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		return nil, res
 	}
 
-	// has this block already been decoded? (this could happen if it is a child block and has been decoded
-	// before its parent as part of second decode phase)
-	if name, ok := runCtx.GetCachedBlockName(block); ok {
-		// see whether the mod contains this resource already
-		parsedName, err := modconfig.ParseResourceName(name)
-		if err == nil {
-			if resource, ok := modconfig.GetResource(runCtx.CurrentMod, parsedName); ok {
-				return []modconfig.HclResource{resource}, res
-			}
-		}
+	// has this block already been decoded?
+	// (this could happen if it is a child block and has been decoded before its parent as part of second decode phase)
+	if resource, ok := runCtx.GetDecodedResourceForBlock(block); ok {
+		return []modconfig.HclResource{resource}, res
 	}
 
 	// check name is valid
@@ -129,8 +123,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 
 	for _, resource := range resources {
 		// handle the result
-		// - if successful, add resource to mod and variables maps
-		// - if there are dependencies, add them to run context
+		// - if there are dependencies, add to run context
 		handleDecodeResult(resource, res, block, runCtx)
 
 	}
@@ -175,7 +168,6 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 	var resource modconfig.HclResource
 	// runCtx already contains the current mod
 	mod := runCtx.CurrentMod
-	//parent := runCtx.PeekParent()
 	blockName := runCtx.DetermineBlockName(block)
 	switch block.Type {
 	case modconfig.BlockTypeMod:
