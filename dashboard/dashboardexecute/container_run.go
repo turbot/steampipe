@@ -16,9 +16,6 @@ type DashboardContainerRun struct {
 	Name          string                                 `json:"name"`
 	Title         string                                 `json:"title,omitempty"`
 	Width         int                                    `json:"width,omitempty"`
-	Height        int                                    `json:"height,omitempty"`
-	Source        string                                 `json:"source,omitempty"`
-	SQL           string                                 `json:"sql,omitempty"`
 	Error         error                                  `json:"error,omitempty"`
 	Children      []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
 	NodeType      string                                 `json:"node_type"`

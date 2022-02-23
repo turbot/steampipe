@@ -21,12 +21,13 @@ type DashboardInput struct {
 	UnqualifiedName string `cty:"unqualified_name" json:"name"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title       *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width       *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type        *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Placeholder *string        `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
-	Display     *string        `cty:"display" hcl:"display" json:"display,omitempty"`
-	OnHooks     []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Title       *string                 `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width       *int                    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type        *string                 `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
+	Display     *string                 `cty:"display" hcl:"display" json:"display,omitempty"`
+	OnHooks     []*DashboardOn          `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Options     []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
@@ -46,6 +47,7 @@ type DashboardInput struct {
 	dashboard *Dashboard
 }
 
+// TODO [reports] remove the need for this when we refactor input values resolution
 func (i *DashboardInput) Clone() *DashboardInput {
 	return &DashboardInput{
 		ResourceWithMetadataBase: i.ResourceWithMetadataBase,
@@ -59,6 +61,7 @@ func (i *DashboardInput) Clone() *DashboardInput {
 		Placeholder:              i.Placeholder,
 		Display:                  i.Display,
 		OnHooks:                  i.OnHooks,
+		Options:                  i.Options,
 		SQL:                      i.SQL,
 		Query:                    i.Query,
 		PreparedStatementName:    i.PreparedStatementName,
@@ -274,6 +277,12 @@ func (i *DashboardInput) GetSQL() *string {
 // GetQuery implements QueryProvider
 func (i *DashboardInput) GetQuery() *Query {
 	return i.Query
+}
+
+// VerifyQuery implements QueryProvider
+func (i *DashboardInput) VerifyQuery(QueryProvider) error {
+	// query is optional - nothing to do
+	return nil
 }
 
 // SetArgs implements QueryProvider

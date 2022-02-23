@@ -15,6 +15,21 @@ type QueryProviderBase struct {
 	runtimeDependencies map[string]*RuntimeDependency
 }
 
+// VerifyQuery returns an error if neither sql or query are set
+// it is overidden by resource types for which sql is optional
+func (b *QueryProviderBase) VerifyQuery(queryProvider QueryProvider) error {
+	// verify we have either SQL or a Query defined
+	if queryProvider.GetQuery() == nil && queryProvider.GetSQL() == nil {
+		// this should never happen as we should catch it in the parsing stage
+		return fmt.Errorf("%s must define either a 'sql' property or a 'query' property", queryProvider.Name())
+	}
+	return nil
+}
+
+func (b *QueryProviderBase) RequiresExecution(queryProvider QueryProvider) bool {
+	return queryProvider.GetQuery() != nil || queryProvider.GetSQL() != nil
+}
+
 func (b *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
 	// build prefix from mod name
 	prefix := b.buildPreparedStatementPrefix(modName)

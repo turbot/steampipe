@@ -89,6 +89,7 @@ func (c *DashboardChart) OnDecoded(*hcl.Block) hcl.Diagnostics {
 	if len(c.SeriesList) > 0 {
 		c.Series = make(map[string]*DashboardChartSeries, len(c.SeriesList))
 		for _, s := range c.SeriesList {
+			s.OnDecoded()
 			c.Series[s.Name] = s
 		}
 	}

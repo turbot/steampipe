@@ -69,6 +69,8 @@ type QueryProvider interface {
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 	ResolveArgsAsString(QueryProvider, *QueryArgs) (string, error)
+	RequiresExecution(queryProvider QueryProvider) bool
+	VerifyQuery(queryProvider QueryProvider) error
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
