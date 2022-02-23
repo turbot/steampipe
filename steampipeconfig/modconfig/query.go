@@ -192,6 +192,11 @@ func (q *Query) AddReference(ref *ResourceReference) {
 	q.References = append(q.References, ref)
 }
 
+// GetReferences implements HclResource
+func (q *Query) GetReferences() []*ResourceReference {
+	return q.References
+}
+
 // GetMod implements HclResource
 func (q *Query) GetMod() *Mod {
 	return q.Mod

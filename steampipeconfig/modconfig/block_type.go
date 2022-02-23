@@ -29,3 +29,20 @@ var QueryProviderBlocks = []string{
 	BlockTypeTable,
 	BlockTypeHierarchy,
 }
+
+// ReferenceBlockTypes is a list of block types we store references for
+var ReferenceBlocks = []string{
+	BlockTypeMod,
+	BlockTypeQuery,
+	BlockTypeControl,
+	BlockTypeBenchmark,
+	BlockTypeDashboard,
+	BlockTypeContainer,
+	BlockTypeCard,
+	BlockTypeChart,
+	BlockTypeHierarchy,
+	BlockTypeImage,
+	BlockTypeInput,
+	BlockTypeTable,
+	BlockTypeText,
+	BlockTypeParam}

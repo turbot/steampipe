@@ -80,6 +80,11 @@ func (c *DashboardContainer) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)
 }
 
+// GetReferences implements HclResource
+func (c *DashboardContainer) GetReferences() []*ResourceReference {
+	return c.References
+}
+
 // GetMod implements HclResource
 func (c *DashboardContainer) GetMod() *Mod {
 	return c.Mod

@@ -7,23 +7,7 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// list of block types we store references for
-var referenceBlockTypes = []string{
-	string(modconfig.BlockTypeMod),
-	modconfig.BlockTypeQuery,
-	modconfig.BlockTypeControl,
-	modconfig.BlockTypeBenchmark,
-	modconfig.BlockTypeDashboard,
-	modconfig.BlockTypeContainer,
-	modconfig.BlockTypeCard,
-	modconfig.BlockTypeChart,
-	modconfig.BlockTypeHierarchy,
-	modconfig.BlockTypeImage,
-	modconfig.BlockTypeInput,
-	modconfig.BlockTypeTable,
-	modconfig.BlockTypeText,
-	modconfig.BlockTypeParam,
-	"local"}
+// R
 
 // AddReferences populates the 'References' resource field, used for the introspection tables
 func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
@@ -35,7 +19,7 @@ func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *Run
 	var diags hcl.Diagnostics
 	for _, attr := range block.Body.(*hclsyntax.Body).Attributes {
 		for _, v := range attr.Expr.Variables() {
-			for _, referenceBlockType := range referenceBlockTypes {
+			for _, referenceBlockType := range modconfig.ReferenceBlocks {
 				if referenceString, ok := hclhelpers.ResourceNameFromTraversal(referenceBlockType, v); ok {
 					var blockName string
 					if len(block.Labels) > 0 {

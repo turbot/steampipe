@@ -102,6 +102,11 @@ func (i *DashboardImage) AddReference(ref *ResourceReference) {
 	i.References = append(i.References, ref)
 }
 
+// GetReferences implements HclResource
+func (i *DashboardImage) GetReferences() []*ResourceReference {
+	return i.References
+}
+
 // GetMod implements HclResource
 func (i *DashboardImage) GetMod() *Mod {
 	return i.Mod

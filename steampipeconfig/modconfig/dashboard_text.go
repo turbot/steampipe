@@ -92,6 +92,11 @@ func (t *DashboardText) AddReference(ref *ResourceReference) {
 	t.References = append(t.References, ref)
 }
 
+// GetReferences implements HclResource
+func (t *DashboardText) GetReferences() []*ResourceReference {
+	return t.References
+}
+
 // GetMod implements HclResource
 func (t *DashboardText) GetMod() *Mod {
 	return t.Mod

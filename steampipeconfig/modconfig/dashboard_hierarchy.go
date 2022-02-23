@@ -120,6 +120,11 @@ func (h *DashboardHierarchy) AddReference(ref *ResourceReference) {
 	h.References = append(h.References, ref)
 }
 
+// GetReferences implements HclResource
+func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
+	return h.References
+}
+
 // GetMod implements HclResource
 func (h *DashboardHierarchy) GetMod() *Mod {
 	return h.Mod

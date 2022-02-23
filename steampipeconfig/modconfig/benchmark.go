@@ -106,6 +106,11 @@ func (b *Benchmark) AddReference(ref *ResourceReference) {
 	b.References = append(b.References, ref)
 }
 
+// GetReferences implements HclResource
+func (b *Benchmark) GetReferences() []*ResourceReference {
+	return b.References
+}
+
 // GetMod implements HclResource
 func (b *Benchmark) GetMod() *Mod {
 	return b.Mod

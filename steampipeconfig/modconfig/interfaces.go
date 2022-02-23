@@ -41,6 +41,7 @@ type HclResource interface {
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block) hcl.Diagnostics
 	AddReference(ref *ResourceReference)
+	GetReferences() []*ResourceReference
 	GetDeclRange() *hcl.Range
 }
 

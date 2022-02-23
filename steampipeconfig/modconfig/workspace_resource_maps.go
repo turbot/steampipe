@@ -1,5 +1,7 @@
 package modconfig
 
+import "github.com/turbot/go-kit/helpers"
+
 // WorkspaceResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
 type WorkspaceResourceMaps struct {
@@ -21,6 +23,7 @@ type WorkspaceResourceMaps struct {
 	DashboardTables      map[string]*DashboardTable
 	DashboardTexts       map[string]*DashboardText
 	References           map[string]*ResourceReference
+	Locals               map[string]*Local
 
 	LocalQueries    map[string]*Query
 	LocalControls   map[string]*Control
@@ -44,6 +47,7 @@ func CreateWorkspaceResourceMapForMod(mod *Mod) *WorkspaceResourceMaps {
 		DashboardInputs:      mod.DashboardInputs,
 		DashboardTables:      mod.DashboardTables,
 		DashboardTexts:       mod.DashboardTexts,
+		Locals:               mod.Locals,
 	}
 	// if mod is not a default mod (i.e. if there is a mod.sp), add it into the resource maps
 	if !mod.IsDefaultMod() {
@@ -298,36 +302,30 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
+	for name := range other.Locals {
+		if _, ok := m.Locals[name]; !ok {
+			return false
+		}
+	}
 	return true
 }
 
 func (m *WorkspaceResourceMaps) PopulateReferences() {
 	m.References = make(map[string]*ResourceReference)
-	for _, mod := range m.Mods {
-		for _, ref := range mod.References {
-			m.References[ref.String()] = ref
-		}
-	}
 
-	for _, query := range m.Queries {
-		for _, ref := range query.References {
-			m.References[ref.String()] = ref
-		}
-	}
+	resourceFunc := func(resource HclResource) (bool, error) {
 
-	for _, control := range m.Controls {
-		for _, ref := range control.References {
-			m.References[ref.String()] = ref
+		parsedName, _ := ParseResourceName(resource.Name())
+		if helpers.StringSliceContains(ReferenceBlocks, parsedName.ItemType) {
+			for _, ref := range resource.GetReferences() {
+				m.References[ref.String()] = ref
+			}
 		}
-	}
 
-	for _, benchmark := range m.Benchmarks {
-		for _, ref := range benchmark.References {
-			m.References[ref.String()] = ref
-		}
+		// continue walking
+		return true, nil
 	}
-
-	// TODO add other reference types - https://github.com/turbot/steampipe/issues/1331
+	m.WalkResources(resourceFunc)
 }
 
 func (m *WorkspaceResourceMaps) Empty() bool {
@@ -375,4 +373,82 @@ func (m *WorkspaceResourceMaps) addQueryProvider(provider QueryProvider) {
 			m.DashboardInputs[p.FullName] = p
 		}
 	}
+}
+
+// TODO [reports] also support error return
+// WalkResources calls resourceFunc for every resource in the mod
+// if any resourceFunc returns false, return immediately
+func (m *WorkspaceResourceMaps) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
+	for _, r := range m.Queries {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+
+	}
+	for _, r := range m.Controls {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.Benchmarks {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.Dashboards {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardContainers {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardCards {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardCharts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardHierarchies {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardImages {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardInputs {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardTables {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardTexts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.Variables {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.Locals {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	return nil
 }
