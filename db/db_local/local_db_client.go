@@ -154,8 +154,8 @@ func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPa
 	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix, currentSearchPath)
 }
 
-func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas []string) (*schema.Metadata, error) {
-	return c.client.GetSchemaFromDB(ctx, schemas)
+func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
+	return c.client.GetSchemaFromDB(ctx)
 }
 
 func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {

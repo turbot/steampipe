@@ -25,7 +25,6 @@ import (
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/statushooks"
-	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/version"
@@ -155,23 +154,14 @@ func (c *InteractiveClient) LoadSchema() error {
 	utils.LogTime("db_client.LoadSchema start")
 	defer utils.LogTime("db_client.LoadSchema end")
 
-	// build a ConnectionSchemaMap object to identify the schemas to load
-	// (pass nil for connection state - this forces NewConnectionSchemaMap to load it)
-	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap()
-	if err != nil {
-		return err
-	}
-	// get the unique schema - we use this to limit the schemas we load from the database
-	schemas := connectionSchemaMap.UniqueSchemas()
 	// load these schemas
 	// in a background context, since we are not running in a context - but GetSchemaFromDB needs one
-	metadata, err := c.client().GetSchemaFromDB(context.Background(), schemas)
+	metadata, err := c.client().GetSchemaFromDB(context.Background())
 	if err != nil {
 		return err
 	}
 
-	c.populateSchemaMetadata(metadata, connectionSchemaMap)
-
+	c.schemaMetadata = metadata
 	return nil
 }
 
@@ -588,22 +578,4 @@ func (c *InteractiveClient) addControlSuggestion(control *modconfig.Control, con
 		description += fmt.Sprintf(": %s", *control.Description)
 	}
 	return prompt.Suggest{Text: controlName, Output: controlName, Description: description}
-}
-
-func (c *InteractiveClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) error {
-	// we now need to add in all other schemas which have the same schemas as those we have loaded
-	for loadedSchema, otherSchemas := range connectionSchemaMap {
-		// all 'otherSchema's have the same schema as loadedSchema
-		exemplarSchema, ok := schemaMetadata.Schemas[loadedSchema]
-		if !ok {
-			// should can happen in the case of a dynamic plugin with no tables - use empty schema
-			exemplarSchema = make(map[string]schema.TableSchema)
-		}
-
-		for _, s := range otherSchemas {
-			schemaMetadata.Schemas[s] = exemplarSchema
-		}
-	}
-	c.schemaMetadata = schemaMetadata
-	return nil
 }
