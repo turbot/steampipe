@@ -48,8 +48,7 @@ type DashboardHierarchy struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardHierarchy(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardHierarchy {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) *DashboardHierarchy {
 	h := &DashboardHierarchy{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

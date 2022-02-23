@@ -46,8 +46,7 @@ type DashboardCard struct {
 	metadata *ResourceMetadata
 }
 
-func NewDashboardCard(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardCard {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboardCard(block *hcl.Block, mod *Mod, shortName string) *DashboardCard {
 	c := &DashboardCard{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

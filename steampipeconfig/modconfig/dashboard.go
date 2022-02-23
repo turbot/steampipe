@@ -52,9 +52,7 @@ type Dashboard struct {
 	HclType string
 }
 
-func NewDashboard(block *hcl.Block, mod *Mod, parent ModTreeItem) *Dashboard {
-	// TODO [reports] think about nested report???
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 	c := &Dashboard{
 		HclType:         block.Type,
 		ShortName:       shortName,

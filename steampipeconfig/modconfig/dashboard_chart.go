@@ -52,8 +52,7 @@ type DashboardChart struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardChart(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardChart {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) *DashboardChart {
 	c := &DashboardChart{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

@@ -44,8 +44,7 @@ type DashboardImage struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardImage(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardImage {
-	shortName := GetAnonymousResourceShortName(block, parent)
+func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) *DashboardImage {
 	i := &DashboardImage{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

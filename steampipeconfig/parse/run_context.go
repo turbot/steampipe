@@ -54,12 +54,18 @@ type RunContext struct {
 	Variables           map[string]*modconfig.Variable
 
 	// stack of parent resources for the currently parsed block
-	parents         []modconfig.ModTreeItem
+	// (unqualified name)
+	parents []string
+	// map of resource children, keyed by parent unqualified name
+	blockChildMap map[string][]string
+
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
+	// map of block names, keyed by a hash of the blopck
+	blockNameMap map[string]string
 }
 
 func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
@@ -73,6 +79,8 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
+		blockChildMap: make(map[string][]string),
+		blockNameMap:  make(map[string]string),
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
@@ -92,17 +100,20 @@ func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 }
 
 func (r *RunContext) PushParent(parent modconfig.ModTreeItem) {
-	r.parents = append(r.parents, parent)
+	r.parents = append(r.parents, parent.GetUnqualifiedName())
 }
 
-func (r *RunContext) PopParent() modconfig.ModTreeItem {
+func (r *RunContext) PopParent() string {
 	n := len(r.parents) - 1
 	res := r.parents[n]
 	r.parents = r.parents[:n]
 	return res
 }
 
-func (r *RunContext) PeekParent() modconfig.ModTreeItem {
+func (r *RunContext) PeekParent() string {
+	if len(r.parents) == 0 {
+		return r.CurrentMod.Name()
+	}
 	return r.parents[len(r.parents)-1]
 }
 
@@ -307,6 +318,19 @@ func (r *RunContext) FormatDependencies() string {
 	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }
 
+func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
+	if modShortName == r.CurrentMod.ShortName {
+		return r.CurrentMod
+	}
+	// we need to iterate through dependency mods - we cannot use modShortNameas key as it is short name
+	for _, dep := range r.LoadedDependencyMods {
+		if dep.ShortName == modShortName {
+			return dep
+		}
+	}
+	return nil
+}
+
 func (r *RunContext) newDependencyGraph() *topsort.Graph {
 	dependencyGraph := topsort.NewGraph()
 	// add root node - this will depend on all other nodes
@@ -443,19 +467,5 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 		r.referenceValues[modName] = variablesForMod
 	}
 
-	return nil
-}
-
-func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
-	if modShortName == r.CurrentMod.ShortName {
-		return r.CurrentMod
-	}
-	// we need to iterate through dependency mods - we cannot use modShortNameas key as it is short name
-	for _, dep := range r.LoadedDependencyMods {
-		if dep.ShortName == modShortName {
-			return dep
-
-		}
-	}
 	return nil
 }

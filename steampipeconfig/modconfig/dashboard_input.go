@@ -72,9 +72,8 @@ func (i *DashboardInput) Clone() *DashboardInput {
 
 }
 
-func NewDashboardInput(block *hcl.Block, mod *Mod, parent ModTreeItem) *DashboardInput {
+func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) *DashboardInput {
 	// input cannot be anonymous
-	shortName := block.Labels[0]
 	i := &DashboardInput{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
