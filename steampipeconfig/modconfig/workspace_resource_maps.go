@@ -30,6 +30,30 @@ type WorkspaceResourceMaps struct {
 	LocalBenchmarks map[string]*Benchmark
 }
 
+func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
+	return &WorkspaceResourceMaps{
+		Mod:                  mod,
+		Mods:                 make(map[string]*Mod),
+		Queries:              make(map[string]*Query),
+		Controls:             make(map[string]*Control),
+		Benchmarks:           make(map[string]*Benchmark),
+		Variables:            make(map[string]*Variable),
+		Dashboards:           make(map[string]*Dashboard),
+		DashboardContainers:  make(map[string]*DashboardContainer),
+		DashboardCards:       make(map[string]*DashboardCard),
+		DashboardCharts:      make(map[string]*DashboardChart),
+		DashboardHierarchies: make(map[string]*DashboardHierarchy),
+		DashboardImages:      make(map[string]*DashboardImage),
+		DashboardInputs:      make(map[string]*DashboardInput),
+		DashboardTables:      make(map[string]*DashboardTable),
+		DashboardTexts:       make(map[string]*DashboardText),
+		References:           make(map[string]*ResourceReference),
+		LocalQueries:         make(map[string]*Query),
+		LocalControls:        make(map[string]*Control),
+		LocalBenchmarks:      make(map[string]*Benchmark),
+	}
+}
+
 func CreateWorkspaceResourceMapForMod(mod *Mod) *WorkspaceResourceMaps {
 	resourceMaps := &WorkspaceResourceMaps{
 		Mod:                  mod,
