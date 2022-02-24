@@ -7,9 +7,9 @@ import {
   useDashboard,
 } from "../../hooks/useDashboard";
 import { classNames } from "../../utils/styles";
-import { Fragment, useEffect, useMemo, useState } from "react";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 
 interface DashboardListSection {
   title: string;
@@ -32,41 +32,41 @@ interface SectionProps {
   searchParams: URLSearchParams;
 }
 
-/*!
- * Get the contrasting color for any hex color
- * (c) 2019 Chris Ferdinandi, MIT License, https://gomakethings.com
- * Derived from work by Brian Suda, https://24ways.org/2010/calculating-color-contrast/
- * @param  {String} A hexcolor value
- * @return {String} The contrasting color (black or white)
- */
-// https://gomakethings.com/dynamically-changing-the-text-color-based-on-background-color-contrast-with-vanilla-js/
-const getContrastColour = (hexcolor) => {
-  // If a leading # is provided, remove it
-  if (hexcolor.slice(0, 1) === "#") {
-    hexcolor = hexcolor.slice(1);
-  }
-
-  // If a three-character hexcode, make six-character
-  if (hexcolor.length === 3) {
-    hexcolor = hexcolor
-      .split("")
-      .map(function (hex) {
-        return hex + hex;
-      })
-      .join("");
-  }
-
-  // Convert to RGB value
-  const r = parseInt(hexcolor.substr(0, 2), 16);
-  const g = parseInt(hexcolor.substr(2, 2), 16);
-  const b = parseInt(hexcolor.substr(4, 2), 16);
-
-  // Get YIQ ratio
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-
-  // Check contrast
-  return yiq >= 128 ? "black" : "white";
-};
+// /*!
+//  * Get the contrasting color for any hex color
+//  * (c) 2019 Chris Ferdinandi, MIT License, https://gomakethings.com
+//  * Derived from work by Brian Suda, https://24ways.org/2010/calculating-color-contrast/
+//  * @param  {String} A hexcolor value
+//  * @return {String} The contrasting color (black or white)
+//  */
+// // https://gomakethings.com/dynamically-changing-the-text-color-based-on-background-color-contrast-with-vanilla-js/
+// const getContrastColour = (hexcolor) => {
+//   // If a leading # is provided, remove it
+//   if (hexcolor.slice(0, 1) === "#") {
+//     hexcolor = hexcolor.slice(1);
+//   }
+//
+//   // If a three-character hexcode, make six-character
+//   if (hexcolor.length === 3) {
+//     hexcolor = hexcolor
+//       .split("")
+//       .map(function (hex) {
+//         return hex + hex;
+//       })
+//       .join("");
+//   }
+//
+//   // Convert to RGB value
+//   const r = parseInt(hexcolor.substr(0, 2), 16);
+//   const g = parseInt(hexcolor.substr(2, 2), 16);
+//   const b = parseInt(hexcolor.substr(4, 2), 16);
+//
+//   // Get YIQ ratio
+//   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+//
+//   // Check contrast
+//   return yiq >= 128 ? "black" : "white";
+// };
 
 // https://stackoverflow.com/questions/3426404/create-a-hexadecimal-colour-based-on-a-string-with-javascript
 const stringToColour = (str) => {
@@ -87,8 +87,8 @@ const DashboardTag = ({
   tagValue,
   searchParams,
 }: DashboardTagProps) => {
-  const background = stringToColour(tagValue);
-  const foreground = getContrastColour(background);
+  // const background = stringToColour(tagValue);
+  // const foreground = getContrastColour(background);
   const group_by = searchParams.get("group_by");
   const tag = searchParams.get("tag");
   const searchUrl = useMemo(() => {
@@ -99,15 +99,15 @@ const DashboardTag = ({
     return newSearchParams.toString();
   }, [tagKey, tagValue, group_by]);
 
-  if (group_by === "tag" && tagKey === tag) {
-    return null;
-  }
+  // if (group_by === "tag" && tagKey === tag) {
+  //   return null;
+  // }
 
   return (
     <Link to={`/?${searchUrl}`}>
       <span
-        className="rounded-md px-2 py-1 text-xs"
-        style={{ backgroundColor: stringToColour(tagValue), color: foreground }}
+        className="rounded-md text-xxs"
+        style={{ color: stringToColour(tagValue) }}
         title={`${tagKey} = ${tagValue}`}
       >
         {tagValue}
@@ -118,11 +118,11 @@ const DashboardTag = ({
 
 const Section = ({ title, dashboards, searchParams }: SectionProps) => {
   return (
-    <div className="grid grid-cols-12 gap-y-2">
-      <h3 className="col-span-12 truncate">{title}</h3>
+    <div className="space-y-2">
+      <h3 className="truncate">{title}</h3>
       {dashboards.map((dashboard) => (
-        <Fragment key={dashboard.full_name}>
-          <div className="col-span-12 md:col-span-6 truncate">
+        <div key={dashboard.full_name} className="flex space-x-2 items-center">
+          <div className="md:col-span-6 truncate">
             <Link className="link-highlight" to={`/${dashboard.full_name}`}>
               {dashboard.title || dashboard.short_name}
             </Link>
@@ -137,7 +137,7 @@ const Section = ({ title, dashboards, searchParams }: SectionProps) => {
               />
             ))}
           </div>
-        </Fragment>
+        </div>
       ))}
     </div>
   );
@@ -357,7 +357,7 @@ const DashboardList = () => {
               setValue={setSearch}
             />
           </div>
-          <div className="mt-2 col-span-6 flex space-x-2">
+          <div className="mt-4 col-span-6 flex flex-wrap space-x-2">
             <div>Group by:</div>
             <Link
               className={classNames(
@@ -369,17 +369,6 @@ const DashboardList = () => {
               to={`/?${modGroupUrl}`}
             >
               Mod
-            </Link>
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "tag" && url_tag === "type"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
-              )}
-              to={`/?${typeGroupUrl}`}
-            >
-              Type
             </Link>
             <Link
               className={classNames(
@@ -402,6 +391,17 @@ const DashboardList = () => {
               to={`/?${serviceGroupUrl}`}
             >
               Service
+            </Link>
+            <Link
+              className={classNames(
+                "block",
+                url_group_by === "tag" && url_tag === "type"
+                  ? "text-foreground-lighter"
+                  : "link-highlight"
+              )}
+              to={`/?${typeGroupUrl}`}
+            >
+              Type
             </Link>
           </div>
           {(!availableDashboardsLoaded || !metadataLoaded) && (
