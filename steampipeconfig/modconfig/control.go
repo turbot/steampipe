@@ -202,7 +202,7 @@ func (c *Control) GetTags() map[string]string {
 
 // GetChildren implements ModTreeItem
 func (c *Control) GetChildren() []ModTreeItem {
-	return []ModTreeItem{}
+	return nil
 }
 
 // Name implements ModTreeItem, HclResource

@@ -85,7 +85,7 @@ func (l *Local) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (l *Local) GetChildren() []ModTreeItem {
-	return l.Mod.children
+	return nil
 }
 
 // GetDescription implements ModTreeItem
