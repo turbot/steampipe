@@ -309,8 +309,9 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
 	d.Inputs = inputs
 	d.setInputMap()
 
-	ADD INPUTS TO THE MOD
-	SET DASHBORAD ON ALL CHILD CONTAINER INPUTS
+	for _, input := range inputs {
+		d.Mod.AddResource(input)
+	}
 
 	//  add child containers and dashboard inputs
 	var duplicates []string
@@ -323,6 +324,8 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
 					duplicates = append(duplicates, i.Name())
 					continue
 				}
+				// set the dashboard on the mod
+				i.SetDashboard(d)
 				d.Inputs = append(d.Inputs, i)
 				d.selfInputsMap[i.UnqualifiedName] = i
 			}
@@ -380,9 +383,7 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 		d.ChildNames = d.Base.ChildNames
 	}
 
-	if len(d.Inputs) == 0 {
-		d.cloneInputs(d.Base.Inputs)
-	}
+	d.addBaseInputs(d.Base.Inputs)
 
 	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
 
@@ -395,21 +396,27 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	}
 }
 
-func (d *Dashboard) cloneInputs(baseInputs []*DashboardInput) {
-	d.Inputs = make([]*DashboardInput, len(baseInputs))
-	// rebuild children
-	var children = make([]ModTreeItem, len(baseInputs))
+func (d *Dashboard) addBaseInputs(baseInputs []*DashboardInput) {
+	if len(baseInputs) == 0 {
+		return
+	}
+	// rebuild Inputs and children
+	inheritedInputs := make([]*DashboardInput, len(baseInputs))
+	inheritedChildren := make([]ModTreeItem, len(baseInputs))
+
 	for i, baseInput := range baseInputs {
 		input := baseInput.Clone()
 		input.SetDashboard(d)
 		// add to mod
 		d.Mod.AddResource(input)
 		// add to our inputs
-		d.Inputs[i] = input
-		children[i] = input
+		inheritedInputs[i] = input
+		inheritedChildren[i] = input
 
 	}
+	// add inputs to beginning of our existing inputs (if any)
+	d.Inputs = append(inheritedInputs, d.Inputs...)
 	// add inputs to beginning of our children
-	d.children = append(children, d.children...)
+	d.children = append(inheritedChildren, d.children...)
 	d.setInputMap()
 }
