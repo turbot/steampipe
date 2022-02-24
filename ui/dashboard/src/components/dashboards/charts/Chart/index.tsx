@@ -74,16 +74,15 @@ const getThemeColorsWithPointOverrides = (
       series.forEach((seriesInfo) => {
         const seriesName = seriesInfo.name;
         const overrides = seriesOverrides
-          ? seriesOverrides[seriesName]
+          ? seriesOverrides[seriesName] || {}
           : ({} as ChartSeriesOptions);
-        const pointOverrides = overrides.points || [];
-        for (const pointOverride of pointOverrides) {
-          dataset.slice(1).forEach((dataRow, dataRowIndex) => {
-            if (pointOverride.name === dataRow[0] && pointOverride.color) {
-              newThemeColors[dataRowIndex] = pointOverride.color;
-            }
-          });
-        }
+        const pointOverrides = overrides.points || {};
+        dataset.slice(1).forEach((dataRow, dataRowIndex) => {
+          const pointOverride = pointOverrides[dataRow[0]];
+          if (pointOverride && pointOverride.color) {
+            newThemeColors[dataRowIndex] = pointOverride.color;
+          }
+        });
       });
       return newThemeColors;
     }

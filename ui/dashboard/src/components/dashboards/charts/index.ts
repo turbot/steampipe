@@ -25,10 +25,14 @@ type ChartSeriesPointOptions = {
   color: string;
 };
 
+interface ChartSeriesPoints {
+  [key: string]: ChartSeriesPointOptions;
+}
+
 export type ChartSeriesOptions = {
   title: string;
   color: string;
-  points: [ChartSeriesPointOptions];
+  points: ChartSeriesPoints;
 };
 
 export type ChartSeries = {
