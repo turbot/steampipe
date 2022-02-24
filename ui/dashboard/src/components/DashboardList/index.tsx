@@ -228,6 +228,7 @@ const DashboardList = () => {
   const [filteredDashboards, setFilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
+  const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
 
   useEffect(() => {
     if (search) {
@@ -251,7 +252,7 @@ const DashboardList = () => {
     }
 
     const dashboardsWithMod: AvailableDashboardWithMod[] = [];
-
+    const newDashboardTagKeys: string[] = [];
     for (const dashboard of dashboards) {
       const dashboardMod = dashboard.mod_full_name;
       let mod: ModDashboardMetadata;
@@ -268,8 +269,15 @@ const DashboardList = () => {
       dashboardWithMod = { ...dashboard };
       dashboardWithMod.mod = mod;
       dashboardsWithMod.push(dashboardWithMod);
+
+      Object.entries(dashboard.tags || {}).forEach(([tagKey]) => {
+        if (!newDashboardTagKeys.includes(tagKey)) {
+          newDashboardTagKeys.push(tagKey);
+        }
+      });
     }
     setUnfilteredDashboards(dashboardsWithMod);
+    setDashboardTagKeys(newDashboardTagKeys);
   }, [availableDashboardsLoaded, dashboards]);
 
   // Filter dashboards according to the search
@@ -355,53 +363,63 @@ const DashboardList = () => {
               setValue={setSearch}
             />
           </div>
-          <div className="mt-4 col-span-6 flex flex-wrap space-x-2">
-            <div>Group by:</div>
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "mod"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
+          {(dashboardTagKeys.includes("category") ||
+            dashboardTagKeys.includes("service") ||
+            dashboardTagKeys.includes("type")) && (
+            <div className="mt-4 col-span-6 flex flex-wrap space-x-2">
+              <div>Group by:</div>
+              <Link
+                className={classNames(
+                  "block",
+                  url_group_by === "mod"
+                    ? "text-foreground-lighter"
+                    : "link-highlight"
+                )}
+                to={`/?${modGroupUrl}`}
+              >
+                Mod
+              </Link>
+              {dashboardTagKeys.includes("category") && (
+                <Link
+                  className={classNames(
+                    "block",
+                    url_group_by === "tag" && url_tag === "category"
+                      ? "text-foreground-lighter"
+                      : "link-highlight"
+                  )}
+                  to={`/?${categoryGroupUrl}`}
+                >
+                  Category
+                </Link>
               )}
-              to={`/?${modGroupUrl}`}
-            >
-              Mod
-            </Link>
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "tag" && url_tag === "category"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
+              {dashboardTagKeys.includes("service") && (
+                <Link
+                  className={classNames(
+                    "block",
+                    url_group_by === "tag" && url_tag === "service"
+                      ? "text-foreground-lighter"
+                      : "link-highlight"
+                  )}
+                  to={`/?${serviceGroupUrl}`}
+                >
+                  Service
+                </Link>
               )}
-              to={`/?${categoryGroupUrl}`}
-            >
-              Category
-            </Link>
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "tag" && url_tag === "service"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
+              {dashboardTagKeys.includes("type") && (
+                <Link
+                  className={classNames(
+                    "block",
+                    url_group_by === "tag" && url_tag === "type"
+                      ? "text-foreground-lighter"
+                      : "link-highlight"
+                  )}
+                  to={`/?${typeGroupUrl}`}
+                >
+                  Type
+                </Link>
               )}
-              to={`/?${serviceGroupUrl}`}
-            >
-              Service
-            </Link>
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "tag" && url_tag === "type"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
-              )}
-              to={`/?${typeGroupUrl}`}
-            >
-              Type
-            </Link>
-          </div>
+            </div>
+          )}
           {(!availableDashboardsLoaded || !metadataLoaded) && (
             <div className="col-span-6 mt-4 ml-1 text-black-scale-4 flex">
               <LoadingIndicator className="w-4 h-4" />{" "}
