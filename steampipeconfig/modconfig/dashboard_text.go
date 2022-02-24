@@ -64,27 +64,9 @@ func (t *DashboardText) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (t *DashboardText) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (t *DashboardText) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
 	t.setBaseProperties()
 	return nil
-}
-
-func (t *DashboardText) setBaseProperties() {
-	if t.Base == nil {
-		return
-	}
-	if t.Title == nil {
-		t.Title = t.Base.Title
-	}
-	if t.Type == nil {
-		t.Type = t.Base.Type
-	}
-	if t.Value == nil {
-		t.Value = t.Base.Value
-	}
-	if t.Width == nil {
-		t.Width = t.Base.Width
-	}
 }
 
 // AddReference implements HclResource
@@ -199,4 +181,22 @@ func (t *DashboardText) GetWidth() int {
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (t *DashboardText) GetUnqualifiedName() string {
 	return t.UnqualifiedName
+}
+
+func (t *DashboardText) setBaseProperties() {
+	if t.Base == nil {
+		return
+	}
+	if t.Title == nil {
+		t.Title = t.Base.Title
+	}
+	if t.Type == nil {
+		t.Type = t.Base.Type
+	}
+	if t.Value == nil {
+		t.Value = t.Base.Value
+	}
+	if t.Width == nil {
+		t.Width = t.Base.Width
+	}
 }

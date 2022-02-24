@@ -104,31 +104,9 @@ func (i *DashboardInput) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (i *DashboardInput) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	i.setBaseProperties()
+func (i *DashboardInput) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	i.setBaseProperties(resourceMapProvider)
 	return nil
-}
-
-func (i *DashboardInput) setBaseProperties() {
-	if i.Base == nil {
-		return
-	}
-	if i.Title == nil {
-		i.Title = i.Base.Title
-	}
-	if i.Type == nil {
-		i.Type = i.Base.Type
-	}
-	if i.Placeholder == nil {
-		i.Placeholder = i.Base.Placeholder
-	}
-
-	if i.Width == nil {
-		i.Width = i.Base.Width
-	}
-	if i.SQL == nil {
-		i.SQL = i.Base.SQL
-	}
 }
 
 // AddReference implements HclResource
@@ -313,4 +291,49 @@ func (i *DashboardInput) GetPreparedStatementExecuteSQL(args *QueryArgs) (string
 func (i *DashboardInput) dashboardNameSuffix() string {
 	sanitisedDashboardName := strings.Replace(i.dashboard.UnqualifiedName, ".", "_", -1)
 	return fmt.Sprintf("_%s", sanitisedDashboardName)
+}
+
+func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(i.Base, resourceMapProvider); !resolved {
+		return
+	} else {
+		i.Base = base.(*DashboardInput)
+	}
+
+	if i.Title == nil {
+		i.Title = i.Base.Title
+	}
+
+	if i.Type == nil {
+		i.Type = i.Base.Type
+	}
+
+	if i.Placeholder == nil {
+		i.Placeholder = i.Base.Placeholder
+	}
+
+	if i.Width == nil {
+		i.Width = i.Base.Width
+	}
+
+	if i.SQL == nil {
+		i.SQL = i.Base.SQL
+	}
+
+	if i.Query == nil {
+		i.Query = i.Base.Query
+	}
+
+	if i.Args == nil {
+		i.Args = i.Base.Args
+	}
+
+	if i.Params == nil {
+		i.Params = i.Base.Params
+	}
+
+	i.MergeRuntimeDependencies(i.Base)
 }

@@ -68,7 +68,7 @@ func (c *DashboardContainer) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardContainer) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (c *DashboardContainer) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.ChildNames = make([]string, len(c.children))
 	for i, child := range c.children {
 		c.ChildNames[i] = child.Name()

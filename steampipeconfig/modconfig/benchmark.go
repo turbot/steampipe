@@ -96,8 +96,8 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 }
 
 // OnDecoded implements HclResource
-func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
-	b.setBaseProperties()
+func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	b.setBaseProperties(resourceMapProvider)
 	return nil
 }
 
@@ -274,20 +274,29 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 	return res
 }
 
-func (b *Benchmark) setBaseProperties() {
-	if b.Base == nil {
+func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(b.Base, resourceMapProvider); !resolved {
 		return
+	} else {
+		b.Base = base.(*Benchmark)
 	}
+
 	if b.Description == nil {
 		b.Description = b.Base.Description
 	}
+
 	if b.Documentation == nil {
 		b.Documentation = b.Base.Documentation
 	}
+
 	b.Tags = utils.MergeStringMaps(b.Tags, b.Base.Tags)
 	if b.Title == nil {
 		b.Title = b.Base.Title
 	}
+
 	if len(b.Children) == 0 {
 		b.Children = b.Base.Children
 		b.ChildNameStrings = b.Base.ChildNameStrings

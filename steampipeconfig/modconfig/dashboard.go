@@ -83,48 +83,14 @@ func (d *Dashboard) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (d *Dashboard) OnDecoded(block *hcl.Block) hcl.Diagnostics {
-	d.setBaseProperties()
+func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	d.setBaseProperties(resourceMapProvider)
 
 	d.ChildNames = make([]string, len(d.children))
 	for i, child := range d.children {
 		d.ChildNames[i] = child.Name()
 	}
 	return nil
-}
-
-func (d *Dashboard) setBaseProperties() {
-	if d.Base == nil {
-		return
-	}
-
-	if d.Title == nil {
-		d.Title = d.Base.Title
-	}
-
-	if d.Width == nil {
-		d.Width = d.Base.Width
-	}
-
-	if len(d.children) == 0 {
-		d.children = d.Base.children
-		d.ChildNames = d.Base.ChildNames
-	}
-
-	if len(d.Inputs) == 0 {
-		d.Inputs = d.Base.Inputs
-		d.setInputMap()
-	}
-
-	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
-
-	if d.Description == nil {
-		d.Description = d.Base.Description
-	}
-
-	if d.Documentation == nil {
-		d.Documentation = d.Base.Documentation
-	}
 }
 
 // AddReference implements HclResource
@@ -320,8 +286,6 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 			}
 		}
 
-		// ensure that all parameters have corresponding args populated with a value or runtime dependency
-
 		// continue walking
 		return true, nil
 	}
@@ -376,4 +340,61 @@ func (d *Dashboard) setInputMap() {
 	for _, i := range d.Inputs {
 		d.selfInputsMap[i.UnqualifiedName] = i
 	}
+}
+
+func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(d.Base, resourceMapProvider); !resolved {
+		return
+	} else {
+		d.Base = base.(*Dashboard)
+	}
+
+	if d.Title == nil {
+		d.Title = d.Base.Title
+	}
+
+	if d.Width == nil {
+		d.Width = d.Base.Width
+	}
+
+	if len(d.children) == 0 {
+		d.children = d.Base.children
+		d.ChildNames = d.Base.ChildNames
+	}
+
+	if len(d.Inputs) == 0 {
+		d.cloneInputs(d.Base.Inputs)
+	}
+
+	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
+
+	if d.Description == nil {
+		d.Description = d.Base.Description
+	}
+
+	if d.Documentation == nil {
+		d.Documentation = d.Base.Documentation
+	}
+}
+
+func (d *Dashboard) cloneInputs(baseInputs []*DashboardInput) {
+	d.Inputs = make([]*DashboardInput, len(baseInputs))
+	// rebuild children
+	var children = make([]ModTreeItem, len(baseInputs))
+	for i, baseInput := range baseInputs {
+		input := baseInput.Clone()
+		input.SetDashboard(d)
+		// add to mod
+		d.Mod.AddResource(input)
+		// add to our inputs
+		d.Inputs[i] = input
+		children[i] = input
+
+	}
+	// add inputs to beginning of our children
+	d.children = append(children, d.children...)
+	d.setInputMap()
 }

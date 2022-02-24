@@ -395,7 +395,7 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(block *hcl.Block) hcl.Diagnostics {
+func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	// if VersionString is set, set Version
 	if m.VersionString != "" && m.Version == nil {
 		m.Version, _ = semver.NewVersion(m.VersionString)

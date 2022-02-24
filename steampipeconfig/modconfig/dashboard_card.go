@@ -76,30 +76,9 @@ func (c *DashboardCard) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardCard) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	c.setBaseProperties()
+func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	c.setBaseProperties(resourceMapProvider)
 	return nil
-}
-
-func (c *DashboardCard) setBaseProperties() {
-	if c.Base == nil {
-		return
-	}
-	if c.Title == nil {
-		c.Title = c.Base.Title
-	}
-	if c.Type == nil {
-		c.Type = c.Base.Type
-	}
-	if c.Icon == nil {
-		c.Icon = c.Base.Icon
-	}
-	if c.Width == nil {
-		c.Width = c.Base.Width
-	}
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
-	}
 }
 
 // AddReference implements HclResource
@@ -268,4 +247,49 @@ func (c *DashboardCard) GetPreparedStatementName() string {
 func (c *DashboardCard) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return c.getPreparedStatementExecuteSQL(c, args)
+}
+
+func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+		return
+	} else {
+		c.Base = base.(*DashboardCard)
+	}
+
+	if c.Title == nil {
+		c.Title = c.Base.Title
+	}
+
+	if c.Type == nil {
+		c.Type = c.Base.Type
+	}
+
+	if c.Icon == nil {
+		c.Icon = c.Base.Icon
+	}
+
+	if c.Width == nil {
+		c.Width = c.Base.Width
+	}
+
+	if c.SQL == nil {
+		c.SQL = c.Base.SQL
+	}
+
+	if c.Query == nil {
+		c.Query = c.Base.Query
+	}
+
+	if c.Args == nil {
+		c.Args = c.Base.Args
+	}
+
+	if c.Params == nil {
+		c.Params = c.Base.Params
+	}
+
+	c.MergeRuntimeDependencies(c.Base)
 }

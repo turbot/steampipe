@@ -185,7 +185,9 @@ func (q *Query) GetUnqualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (q *Query) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (q *Query) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	return nil
+}
 
 // AddReference implements HclResource
 func (q *Query) AddReference(ref *ResourceReference) {

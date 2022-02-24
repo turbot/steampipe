@@ -331,6 +331,11 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 	return nil
 }
 
+func (r *RunContext) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
+	// TODO [reports] add dep mods
+	return r.CurrentMod.GetResourceMaps()
+}
+
 func (r *RunContext) newDependencyGraph() *topsort.Graph {
 	dependencyGraph := topsort.NewGraph()
 	// add root node - this will depend on all other nodes
