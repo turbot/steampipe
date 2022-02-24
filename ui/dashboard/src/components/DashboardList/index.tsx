@@ -87,21 +87,28 @@ const DashboardTag = ({
   tagValue,
   searchParams,
 }: DashboardTagProps) => {
-  // const background = stringToColour(tagValue);
-  // const foreground = getContrastColour(background);
   const group_by = searchParams.get("group_by");
   const tag = searchParams.get("tag");
+  const search = searchParams.get("search");
   const searchUrl = useMemo(() => {
     const newSearchParams = new URLSearchParams();
-    if (group_by) newSearchParams.set("group_by", group_by);
-    if (tag) newSearchParams.set("tag", tag);
-    newSearchParams.set("search", `tag:${tagKey}=${tagValue}`);
+    if (group_by) {
+      newSearchParams.set("group_by", group_by);
+    }
+    if (tag) {
+      newSearchParams.set("tag", tag);
+    }
+    const existingSearch = (search || "").trim();
+    newSearchParams.set(
+      "search",
+      existingSearch
+        ? existingSearch.indexOf(tagValue) < 0
+          ? `${existingSearch} ${tagValue}`
+          : existingSearch
+        : tagValue
+    );
     return newSearchParams.toString();
-  }, [tagKey, tagValue, group_by]);
-
-  // if (group_by === "tag" && tagKey === tag) {
-  //   return null;
-  // }
+  }, [tagKey, tagValue, group_by, tag, search]);
 
   return (
     <Link to={`/?${searchUrl}`}>
@@ -193,9 +200,13 @@ const searchAgainstDashboard = (
   dashboard: AvailableDashboardWithMod,
   searchParts: string[]
 ): boolean => {
-  const joined = `${dashboard.mod?.title || ""}.${
+  const joined = `${dashboard.mod?.title || ""} ${
     dashboard.mod?.short_name || ""
-  }.${dashboard.title || ""}.${dashboard.short_name || ""}`.toLowerCase();
+  } ${dashboard.title || ""} ${dashboard.short_name || ""} ${Object.entries(
+    dashboard.tags || {}
+  )
+    .map(([tagKey, tagValue]) => `${tagKey}=${tagValue}`)
+    .join(" ")}`.toLowerCase();
   return searchParts.every((searchPart) => joined.indexOf(searchPart) >= 0);
 };
 
@@ -335,7 +346,7 @@ const DashboardList = () => {
     <div className="w-full grid grid-cols-6 p-4 gap-x-4">
       <div className="col-span-6 lg:col-span-4 space-y-4">
         <div className="grid grid-cols-6">
-          <div className="col-span-6 lg:col-span-2 mt-2">
+          <div className="col-span-6 lg:col-span-3 mt-2">
             <SearchInput
               //@ts-ignore
               disabled={!metadataLoaded || !availableDashboardsLoaded}
