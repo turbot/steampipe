@@ -7,7 +7,7 @@ type DashboardChartSeries struct {
 	Title      *string                               `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color      *string                               `cty:"color" hcl:"color" json:"color,omitempty"`
 	Points     map[string]*DashboardChartSeriesPoint `cty:"points" json:"points,omitempty"`
-	PointsList []*DashboardChartSeriesPoint          `hcl:"point,block" `
+	PointsList []*DashboardChartSeriesPoint          `hcl:"point,block" json:"-"`
 }
 
 func (s DashboardChartSeries) Equals(other *DashboardChartSeries) bool {
@@ -29,11 +29,10 @@ func (s DashboardChartSeries) Equals(other *DashboardChartSeries) bool {
 		utils.SafeStringsEqual(s.Color, other.Color)
 }
 
-func (s DashboardChartSeries) OnDecoded() {
+func (s *DashboardChartSeries) OnDecoded() {
 	if len(s.PointsList) > 0 {
 		s.Points = make(map[string]*DashboardChartSeriesPoint, len(s.PointsList))
 		for _, p := range s.PointsList {
-
 			s.Points[p.Name] = p
 		}
 	}
