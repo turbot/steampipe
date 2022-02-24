@@ -218,8 +218,6 @@ const DashboardList = () => {
     AvailableDashboardWithMod[]
   >([]);
 
-  const { dashboardName } = useParams();
-
   useEffect(() => {
     if (search) {
       searchParams.set("search", search);
@@ -292,13 +290,6 @@ const DashboardList = () => {
     search,
   ]);
 
-  // Clear search after we choose a report
-  useEffect(() => {
-    if (dashboardName) {
-      setSearch("");
-    }
-  }, [dashboardName]);
-
   const { modGroupUrl, typeGroupUrl, categoryGroupUrl, serviceGroupUrl } =
     useMemo(() => {
       const url_search = searchParams.get("search");
@@ -339,10 +330,6 @@ const DashboardList = () => {
     url_tag,
     metadata
   );
-
-  if (dashboardName) {
-    return null;
-  }
 
   return (
     <div className="w-full grid grid-cols-6 p-4 gap-x-4">
@@ -453,4 +440,14 @@ const DashboardList = () => {
   );
 };
 
-export default DashboardList;
+const DashboardListWrapper = ({}) => {
+  const { dashboardName } = useParams();
+
+  if (dashboardName) {
+    return null;
+  }
+
+  return <DashboardList />;
+};
+
+export default DashboardListWrapper;
