@@ -290,10 +290,10 @@ func (c *DashboardChart) GetPreparedStatementExecuteSQL(args *QueryArgs) (string
 }
 
 func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// as this is a leaf dashboard node, Base may contain runtime dependencies
-	// we do not store runtime deps in teh evaluation contex,
-	// so we must resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := c.resolveBase(c.Base, resourceMapProvider); !resolved {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
 		return
 	} else {
 		c.Base = base.(*DashboardChart)

@@ -275,8 +275,13 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 }
 
 func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	if b.Base == nil {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(b.Base, resourceMapProvider); !resolved {
 		return
+	} else {
+		b.Base = base.(*Benchmark)
 	}
 
 	if b.Description == nil {
@@ -295,7 +300,6 @@ func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	if len(b.Children) == 0 {
 		b.Children = b.Base.Children
 		b.ChildNameStrings = b.Base.ChildNameStrings
-
 		b.ChildNames = b.Base.ChildNames
 	}
 }

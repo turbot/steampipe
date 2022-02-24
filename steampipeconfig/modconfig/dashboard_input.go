@@ -294,10 +294,10 @@ func (i *DashboardInput) dashboardNameSuffix() string {
 }
 
 func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// as this is a leaf dashboard node, Base may contain runtime dependencies
-	// we do not store runtime deps in teh evaluation contex,
-	// so we must resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := i.resolveBase(i.Base, resourceMapProvider); !resolved {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(i.Base, resourceMapProvider); !resolved {
 		return
 	} else {
 		i.Base = base.(*DashboardInput)

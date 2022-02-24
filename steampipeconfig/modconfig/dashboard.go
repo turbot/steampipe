@@ -343,8 +343,13 @@ func (d *Dashboard) setInputMap() {
 }
 
 func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	if d.Base == nil {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(d.Base, resourceMapProvider); !resolved {
 		return
+	} else {
+		d.Base = base.(*Dashboard)
 	}
 
 	if d.Title == nil {
@@ -361,8 +366,7 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	}
 
 	if len(d.Inputs) == 0 {
-		d.Inputs = d.Base.Inputs
-		d.setInputMap()
+		d.cloneInputs(d.Base.Inputs)
 	}
 
 	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
@@ -374,4 +378,23 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	if d.Documentation == nil {
 		d.Documentation = d.Base.Documentation
 	}
+}
+
+func (d *Dashboard) cloneInputs(baseInputs []*DashboardInput) {
+	d.Inputs = make([]*DashboardInput, len(baseInputs))
+	// rebuild children
+	var children = make([]ModTreeItem, len(baseInputs))
+	for i, baseInput := range baseInputs {
+		input := baseInput.Clone()
+		input.SetDashboard(d)
+		// add to mod
+		d.Mod.AddResource(input)
+		// add to our inputs
+		d.Inputs[i] = input
+		children[i] = input
+
+	}
+	// add inputs to beginning of our children
+	d.children = append(children, d.children...)
+	d.setInputMap()
 }
