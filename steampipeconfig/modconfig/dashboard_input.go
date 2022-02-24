@@ -18,7 +18,7 @@ type DashboardInput struct {
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
-	UnqualifiedName string `cty:"unqualified_name" json:"-"`
+	UnqualifiedName string `cty:"unqualified_name" json:"name"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title       *string                 `cty:"title" hcl:"title" column:"title,text" json:"-"`
