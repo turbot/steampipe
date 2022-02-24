@@ -41,7 +41,9 @@ func (l *Local) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (l *Local) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (l *Local) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	return nil
+}
 
 // AddReference implements HclResource
 func (l *Local) AddReference(*ResourceReference) {}

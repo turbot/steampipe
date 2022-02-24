@@ -584,7 +584,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
-		moreDiags := resource.OnDecoded(block)
+		moreDiags := resource.OnDecoded(block, runCtx)
 		res.addDiags(moreDiags)
 
 		// add references
@@ -612,8 +612,7 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 }
 
 func resourceIsAnonymous(resource modconfig.HclResource) bool {
-
-	// (if it is anonymous it must support ResourceWithMetadata)
+	// (if a resource anonymous it must support ResourceWithMetadata)
 	resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata)
 	anonymousResource := ok && resourceWithMetadata.IsAnonymous()
 	return anonymousResource

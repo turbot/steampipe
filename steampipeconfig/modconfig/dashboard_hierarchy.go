@@ -77,8 +77,8 @@ func (h *DashboardHierarchy) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (h *DashboardHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	h.setBaseProperties()
+func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	h.setBaseProperties(resourceMapProvider)
 	// populate categories map
 	if len(h.CategoryList) > 0 {
 		h.Categories = make(map[string]*DashboardHierarchyCategory, len(h.CategoryList))
@@ -87,31 +87,6 @@ func (h *DashboardHierarchy) OnDecoded(*hcl.Block) hcl.Diagnostics {
 		}
 	}
 	return nil
-}
-
-func (h *DashboardHierarchy) setBaseProperties() {
-	if h.Base == nil {
-		return
-	}
-	if h.Title == nil {
-		h.Title = h.Base.Title
-	}
-	if h.Type == nil {
-		h.Type = h.Base.Type
-	}
-
-	if h.Width == nil {
-		h.Width = h.Base.Width
-	}
-	if h.SQL == nil {
-		h.SQL = h.Base.SQL
-	}
-	if h.CategoryList == nil {
-		h.CategoryList = h.Base.CategoryList
-	} else {
-
-		h.CategoryList.Merge(h.Base.CategoryList)
-	}
 }
 
 // AddReference implements HclResource
@@ -281,4 +256,51 @@ func (h *DashboardHierarchy) GetPreparedStatementName() string {
 func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return h.getPreparedStatementExecuteSQL(h, args)
+}
+
+func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+	// as this is a leaf dashboard node, Base may contain runtime dependencies
+	// we do not store runtime deps in teh evaluation contex,
+	// so we must resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := h.resolveBase(h.Base, resourceMapProvider); !resolved {
+		return
+	} else {
+		h.Base = base.(*DashboardHierarchy)
+	}
+
+	if h.Title == nil {
+		h.Title = h.Base.Title
+	}
+
+	if h.Type == nil {
+		h.Type = h.Base.Type
+	}
+
+	if h.Width == nil {
+		h.Width = h.Base.Width
+	}
+
+	if h.SQL == nil {
+		h.SQL = h.Base.SQL
+	}
+
+	if h.Query == nil {
+		h.Query = h.Base.Query
+	}
+
+	if h.Args == nil {
+		h.Args = h.Base.Args
+	}
+
+	if h.Params == nil {
+		h.Params = h.Base.Params
+	}
+
+	if h.CategoryList == nil {
+		h.CategoryList = h.Base.CategoryList
+	} else {
+		h.CategoryList.Merge(h.Base.CategoryList)
+	}
+
+	h.MergeRuntimeDependencies(h.Base)
 }

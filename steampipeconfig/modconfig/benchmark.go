@@ -96,8 +96,8 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 }
 
 // OnDecoded implements HclResource
-func (b *Benchmark) OnDecoded(block *hcl.Block) hcl.Diagnostics {
-	b.setBaseProperties()
+func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	b.setBaseProperties(resourceMapProvider)
 	return nil
 }
 
@@ -274,23 +274,28 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 	return res
 }
 
-func (b *Benchmark) setBaseProperties() {
+func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if b.Base == nil {
 		return
 	}
+
 	if b.Description == nil {
 		b.Description = b.Base.Description
 	}
+
 	if b.Documentation == nil {
 		b.Documentation = b.Base.Documentation
 	}
+
 	b.Tags = utils.MergeStringMaps(b.Tags, b.Base.Tags)
 	if b.Title == nil {
 		b.Title = b.Base.Title
 	}
+
 	if len(b.Children) == 0 {
 		b.Children = b.Base.Children
 		b.ChildNameStrings = b.Base.ChildNameStrings
+
 		b.ChildNames = b.Base.ChildNames
 	}
 }

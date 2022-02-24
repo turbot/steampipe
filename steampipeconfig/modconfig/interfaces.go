@@ -39,7 +39,7 @@ type HclResource interface {
 	Name() string
 	GetUnqualifiedName() string
 	CtyValue() (cty.Value, error)
-	OnDecoded(*hcl.Block) hcl.Diagnostics
+	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
 	AddReference(ref *ResourceReference)
 	GetReferences() []*ResourceReference
 	GetDeclRange() *hcl.Range

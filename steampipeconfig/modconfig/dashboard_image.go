@@ -73,27 +73,9 @@ func (i *DashboardImage) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (i *DashboardImage) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	i.setBaseProperties()
+func (i *DashboardImage) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	i.setBaseProperties(resourceMapProvider)
 	return nil
-}
-
-func (i *DashboardImage) setBaseProperties() {
-	if i.Base == nil {
-		return
-	}
-	if i.Title == nil {
-		i.Title = i.Base.Title
-	}
-	if i.Src == nil {
-		i.Src = i.Base.Src
-	}
-	if i.Alt == nil {
-		i.Alt = i.Base.Alt
-	}
-	if i.Width == nil {
-		i.Width = i.Base.Width
-	}
 }
 
 // AddReference implements HclResource
@@ -259,4 +241,49 @@ func (i *DashboardImage) GetPreparedStatementName() string {
 func (i *DashboardImage) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return i.getPreparedStatementExecuteSQL(i, args)
+}
+
+func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+	// as this is a leaf dashboard node, Base may contain runtime dependencies
+	// we do not store runtime deps in teh evaluation contex,
+	// so we must resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := i.resolveBase(i.Base, resourceMapProvider); !resolved {
+		return
+	} else {
+		i.Base = base.(*DashboardImage)
+	}
+
+	if i.Title == nil {
+		i.Title = i.Base.Title
+	}
+
+	if i.Src == nil {
+		i.Src = i.Base.Src
+	}
+
+	if i.Alt == nil {
+		i.Alt = i.Base.Alt
+	}
+
+	if i.Width == nil {
+		i.Width = i.Base.Width
+	}
+
+	if i.SQL == nil {
+		i.SQL = i.Base.SQL
+	}
+
+	if i.Query == nil {
+		i.Query = i.Base.Query
+	}
+
+	if i.Args == nil {
+		i.Args = i.Base.Args
+	}
+
+	if i.Params == nil {
+		i.Params = i.Base.Params
+	}
+
+	i.MergeRuntimeDependencies(i.Base)
 }

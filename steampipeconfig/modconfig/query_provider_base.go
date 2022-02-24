@@ -5,6 +5,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
+
 	typehelpers "github.com/turbot/go-kit/types"
 
 	"github.com/turbot/steampipe/constants"
@@ -81,6 +83,18 @@ func (b *QueryProviderBase) AddRuntimeDependencies(dependencies []*RuntimeDepend
 	}
 }
 
+func (b *QueryProviderBase) MergeRuntimeDependencies(other QueryProvider) {
+	dependencies := other.GetRuntimeDependencies()
+	if b.runtimeDependencies == nil {
+		b.runtimeDependencies = make(map[string]*RuntimeDependency)
+	}
+	for _, dependency := range dependencies {
+		if _, ok := b.runtimeDependencies[dependency.String()]; !ok {
+			b.runtimeDependencies[dependency.String()] = dependency
+		}
+	}
+}
+
 func (b *QueryProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependency {
 	return b.runtimeDependencies
 }
@@ -89,7 +103,7 @@ func (b *QueryProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependen
 // falling back on defaults from param definitions in the source (if present)
 // it returns the arg values as a csv string which can be used in a prepared statement invocation
 // (the arg values and param defaults will already have been converted to postgres format)
-func (q *QueryProviderBase) ResolveArgsAsString(source QueryProvider, args *QueryArgs) (string, error) {
+func (b *QueryProviderBase) ResolveArgsAsString(source QueryProvider, args *QueryArgs) (string, error) {
 	var paramStrs, missingParams []string
 
 	// allow for nil args - use an empty args object - we will fall back to using defaults if present
@@ -99,11 +113,11 @@ func (q *QueryProviderBase) ResolveArgsAsString(source QueryProvider, args *Quer
 	var err error
 	if len(args.ArgMap) > 0 {
 		// do params contain named params?
-		paramStrs, missingParams, err = q.resolveNamedParameters(source, args)
+		paramStrs, missingParams, err = b.resolveNamedParameters(source, args)
 	} else {
 		// resolve as positional parameters
 		// (or fall back to defaults if no positional params are present)
-		paramStrs, missingParams, err = q.resolvePositionalParameters(source, args)
+		paramStrs, missingParams, err = b.resolvePositionalParameters(source, args)
 	}
 	if err != nil {
 		return "", err
@@ -127,7 +141,7 @@ func (q *QueryProviderBase) ResolveArgsAsString(source QueryProvider, args *Quer
 	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), nil
 }
 
-func (q *QueryProviderBase) resolveNamedParameters(source QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
+func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
 	if len(args.ArgsList) > 0 {
 		err = fmt.Errorf("ResolveAsString failed for %s - params data contain both positional and named parameters", source.Name())
@@ -172,7 +186,7 @@ func (q *QueryProviderBase) resolveNamedParameters(source QueryProvider, args *Q
 	return argStrs, missingParams, nil
 }
 
-func (q *QueryProviderBase) resolvePositionalParameters(source QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
+func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
 	if len(args.ArgMap) > 0 {
 		err = fmt.Errorf("resolvePositionalParameters failed for %s - args data contain both positional and named parameters", source.Name())
@@ -203,4 +217,18 @@ func (q *QueryProviderBase) resolvePositionalParameters(source QueryProvider, ar
 		}
 	}
 	return
+}
+
+// for QueryProviders, we cannot use the Base directly as decoded as the runtime dependencies
+// are not stored in the evaluation context
+// instead, resolve the base from the run context (passed as a ResourceMapsProvider)
+func (b *QueryProviderBase) resolveBase(base HclResource, resourceMapProvider ResourceMapsProvider) (HclResource, bool) {
+	if helpers.IsNil(base) {
+		return nil, false
+	}
+	parsedName, err := ParseResourceName(base.Name())
+	if err != nil {
+		return nil, false
+	}
+	return GetResource(resourceMapProvider, parsedName)
 }

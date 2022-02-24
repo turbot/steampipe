@@ -77,8 +77,8 @@ func (t *DashboardTable) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (t *DashboardTable) OnDecoded(*hcl.Block) hcl.Diagnostics {
-	t.setBaseProperties()
+func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	t.setBaseProperties(resourceMapProvider)
 	// populate columns map
 	if len(t.ColumnList) > 0 {
 		t.Columns = make(map[string]*DashboardTableColumn, len(t.ColumnList))
@@ -87,32 +87,6 @@ func (t *DashboardTable) OnDecoded(*hcl.Block) hcl.Diagnostics {
 		}
 	}
 	return nil
-}
-
-func (t *DashboardTable) setBaseProperties() {
-	if t.Base == nil {
-		return
-	}
-	if t.Title == nil {
-		t.Title = t.Base.Title
-	}
-
-	if t.Width == nil {
-		t.Width = t.Base.Width
-	}
-	if t.SQL == nil {
-		t.SQL = t.Base.SQL
-	}
-
-	if t.Type == nil {
-		t.Type = t.Base.Type
-	}
-
-	if t.ColumnList == nil {
-		t.ColumnList = t.Base.ColumnList
-	} else {
-		t.ColumnList.Merge(t.Base.ColumnList)
-	}
 }
 
 // AddReference implements HclResource
@@ -279,4 +253,37 @@ func (t *DashboardTable) GetPreparedStatementName() string {
 func (t *DashboardTable) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return t.getPreparedStatementExecuteSQL(t, args)
+}
+
+func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+	// as this is a leaf dashboard node, Base may contain runtime dependencies
+	// we do not store runtime deps in teh evaluation contex,
+	// so we must resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := t.resolveBase(t.Base, resourceMapProvider); !resolved {
+		return
+	} else {
+		t.Base = base.(*DashboardTable)
+	}
+
+	if t.Title == nil {
+		t.Title = t.Base.Title
+	}
+
+	if t.Width == nil {
+		t.Width = t.Base.Width
+	}
+
+	if t.SQL == nil {
+		t.SQL = t.Base.SQL
+	}
+
+	if t.Type == nil {
+		t.Type = t.Base.Type
+	}
+
+	if t.ColumnList == nil {
+		t.ColumnList = t.Base.ColumnList
+	} else {
+		t.ColumnList.Merge(t.Base.ColumnList)
+	}
 }

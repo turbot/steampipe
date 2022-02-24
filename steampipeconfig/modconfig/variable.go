@@ -73,7 +73,9 @@ func (v *Variable) GetUnqualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (v *Variable) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	return nil
+}
 
 // AddReference implements HclResource
 func (v *Variable) AddReference(*ResourceReference) {}
