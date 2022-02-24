@@ -2,6 +2,8 @@ package parse
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -135,31 +137,16 @@ func decodeResource(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource
 	res := &decodeResult{}
 	// get shell resource
 	resource, diags := resourceForBlock(block, runCtx)
-	res.handleDecodeDiags(nil, nil, diags)
+	res.handleDecodeDiags(diags)
 	if diags.HasErrors() {
 		return nil, res
 	}
 
 	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, resource)
 	if len(diags) > 0 {
-		// hack get the content
-		content, contentDiags := getBodyContent(block, resource)
-		res.addDiags(contentDiags)
-		res.handleDecodeDiags(content, resource, diags)
+		res.handleDecodeDiags(diags)
 	}
 	return resource, res
-}
-
-func getBodyContent(block *hcl.Block, resource modconfig.HclResource) (*hcl.BodyContent, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	schema, partial := gohcl.ImpliedBodySchema(resource)
-	var content *hcl.BodyContent
-	if partial {
-		content, _, diags = block.Body.PartialContent(schema)
-	} else {
-		content, diags = block.Body.Content(schema)
-	}
-	return content, diags
 }
 
 // return a shell resource for the given block
@@ -229,7 +216,7 @@ func decodeLocals(block *hcl.Block, runCtx *RunContext) ([]*modconfig.Local, *de
 		// try to evaluate expression
 		val, diags := attr.Expr.Value(runCtx.EvalCtx)
 		// handle any resulting diags, which may specify dependencies
-		res.handleDecodeDiags(nil, nil, diags)
+		res.handleDecodeDiags(diags)
 
 		// add to our list
 		locals = append(locals, modconfig.NewLocal(name, val, attr.Range, runCtx.CurrentMod))
@@ -242,10 +229,10 @@ func decodeVariable(block *hcl.Block, runCtx *RunContext) (*modconfig.Variable, 
 
 	var variable *modconfig.Variable
 	content, diags := block.Body.Content(VariableBlockSchema)
-	res.handleDecodeDiags(content, variable, diags)
+	res.handleDecodeDiags(diags)
 
 	v, diags := var_config.DecodeVariableBlock(block, content, false)
-	res.handleDecodeDiags(content, variable, diags)
+	res.handleDecodeDiags(diags)
 
 	if res.Success() {
 		variable = modconfig.NewVariable(v, runCtx.CurrentMod)
@@ -290,7 +277,7 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	// get shell resource
 	resource, diags := resourceForBlock(block, runCtx)
-	res.handleDecodeDiags(nil, nil, diags)
+	res.handleDecodeDiags(diags)
 	if diags.HasErrors() {
 		return nil, res
 	}
@@ -298,15 +285,18 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
 	content, remain, diags := block.Body.PartialContent(QueryProviderBlockSchema)
-	res.handleDecodeDiags(nil, nil, diags)
+	res.handleDecodeDiags(diags)
 	if !res.Success() {
 		return nil, res
 	}
 
+	// handle invalid block types
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), QueryProviderBlockSchema, resource))
+
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
 	diags = gohcl.DecodeBody(remain, runCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(content, resource, diags)
+	res.handleDecodeDiags(diags)
 
 	// cast resource to a QueryProvider
 	queryProvider, ok := resource.(modconfig.QueryProvider)
@@ -333,7 +323,7 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 		args, runtimeDependencies, diags := decodeArgs(attr, runCtx.EvalCtx, queryProvider)
 		if diags.HasErrors() {
 			// handle dependencies
-			res.handleDecodeDiags(content, queryProvider.(modconfig.HclResource), diags)
+			res.handleDecodeDiags(diags)
 		} else {
 			queryProvider.SetArgs(args)
 			queryProvider.AddRuntimeDependencies(runtimeDependencies)
@@ -364,7 +354,7 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	queryProvider.SetParams(params)
 
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(content, resource, diags)
+	res.handleDecodeDiags(diags)
 
 	return resource, res
 }
@@ -383,16 +373,19 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
-	content, _, diags := block.Body.PartialContent(DashboardBlockSchema)
-	res.handleDecodeDiags(content, dashboard, diags)
+	content, remain, diags := block.Body.PartialContent(DashboardBlockSchema)
+	res.handleDecodeDiags(diags)
+
+	// handle invalid block types
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), DashboardBlockSchema, dashboard))
 	if !res.Success() {
 		return nil, res
 	}
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, dashboard)
+	diags = gohcl.DecodeBody(remain, runCtx.EvalCtx, dashboard)
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(content, dashboard, diags)
+	res.handleDecodeDiags(diags)
 
 	if dashboard.Base != nil && len(dashboard.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCard, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
@@ -472,16 +465,19 @@ func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.
 
 	// do a partial decode using QueryProviderBlockSchema
 	// this will be used to pull out attributes which need manual decoding
-	content, _, diags := block.Body.PartialContent(DashboardContainerBlockSchema)
-	res.handleDecodeDiags(content, container, diags)
+	content, remain, diags := block.Body.PartialContent(DashboardContainerBlockSchema)
+	res.handleDecodeDiags(diags)
 	if !res.Success() {
 		return nil, res
 	}
 
+	// handle invalid block types
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), DashboardContainerBlockSchema, container))
+
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(block.Body, runCtx.EvalCtx, container)
+	diags = gohcl.DecodeBody(remain, runCtx.EvalCtx, container)
 	// handle any resulting diags, which may specify dependencies
-	res.handleDecodeDiags(content, container, diags)
+	res.handleDecodeDiags(diags)
 
 	// now decode child blocks
 	if len(content.Blocks) > 0 {
@@ -527,28 +523,28 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 
 	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
 	content, diags := block.Body.Content(BenchmarkBlockSchema)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 
 	diags = decodeProperty(content, "children", &benchmark.ChildNames, runCtx)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 
 	diags = decodeProperty(content, "description", &benchmark.Description, runCtx)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 
 	diags = decodeProperty(content, "documentation", &benchmark.Documentation, runCtx)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 
 	diags = decodeProperty(content, "tags", &benchmark.Tags, runCtx)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 
 	diags = decodeProperty(content, "title", &benchmark.Title, runCtx)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 
 	// now add children
 	if res.Success() {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
 		children, diags := resolveChildrenFromNames(benchmark.ChildNames.StringList(), block, supportedChildren, runCtx)
-		res.handleDecodeDiags(content, benchmark, diags)
+		res.handleDecodeDiags(diags)
 
 		// now set children and child name strings
 		benchmark.Children = children
@@ -557,7 +553,7 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 
 	// decode report specific properties
 	diags = decodeProperty(content, "base", &benchmark.Base, runCtx)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 	if benchmark.Base != nil && len(benchmark.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
@@ -566,7 +562,7 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 		benchmark.Base.Children = children
 	}
 	diags = decodeProperty(content, "width", &benchmark.Width, runCtx)
-	res.handleDecodeDiags(content, benchmark, diags)
+	res.handleDecodeDiags(diags)
 	return benchmark, res
 }
 
@@ -651,4 +647,39 @@ func validateName(block *hcl.Block) hcl.Diagnostics {
 		}}
 	}
 	return nil
+}
+
+// Validate all blocks are supported
+// We use partial decoding so that we can automatically decode as many properties as possible
+// and only manually decode properties requiring special logic.
+// The problem is the partial decode does not return errors for invalid blocks, so we must implement our own
+func validateBlocks(body *hclsyntax.Body, schema *hcl.BodySchema, resource modconfig.HclResource) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+
+	// identify any blocks specified by hcl tags
+	var supportedBlocks []string
+	v := reflect.TypeOf(helpers.DereferencePointer(resource))
+	for i := 0; i < v.NumField(); i++ {
+		tag := v.FieldByIndex([]int{i}).Tag.Get("hcl")
+		if idx := strings.LastIndex(tag, ",block"); idx != -1 {
+			supportedBlocks = append(supportedBlocks, tag[:idx])
+		}
+	}
+	// ad din blocks specified in the schema
+	for _, b := range schema.Blocks {
+		supportedBlocks = append(supportedBlocks, b.Type)
+	}
+
+	// now check for invalid blocks
+	for _, block := range body.Blocks {
+		if !helpers.StringSliceContains(supportedBlocks, block.Type) {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf(`Unsupported block type: Blocks of type "%s" are not expected here.`, block.Type),
+				Subject:  &block.TypeRange,
+			})
+		}
+	}
+
+	return diags
 }
