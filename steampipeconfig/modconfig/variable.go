@@ -126,7 +126,7 @@ func (v *Variable) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (v *Variable) GetChildren() []ModTreeItem {
-	return v.Mod.children
+	return nil
 }
 
 // GetDescription implements ModTreeItem
