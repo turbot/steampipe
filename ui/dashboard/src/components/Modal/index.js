@@ -43,7 +43,7 @@ const Modal = ({ icon, message, title }) => {
             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full sm:p-6">
               <div className="hidden sm:block absolute top-0 right-0 pt-4 pr-4">
                 <button
                   type="button"
@@ -55,18 +55,18 @@ const Modal = ({ icon, message, title }) => {
                 </button>
               </div>
               <div className="sm:flex sm:items-start">
-                <div className="mx-auto flex-shrink-0 flex items-start justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                <div className="mx-auto flex-shrink-0 flex items-center sm:items-start justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-12 sm:w-12">
                   {icon}
                 </div>
-                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                <div className="mt-1 text-center sm:ml-4 sm:text-left">
                   <Dialog.Title
-                    as="h3"
-                    className="text-lg leading-6 font-medium text-gray-900"
+                    as="h2"
+                    className="text-xl leading-6 font-medium text-gray-900"
                   >
                     {title}
                   </Dialog.Title>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                  <div className="mt-2 mb-2">
+                    <p className="w-full sm:w-11/12 text-sm text-foreground-light break-words whitespace-pre-wrap">
                       {message}
                     </p>
                   </div>

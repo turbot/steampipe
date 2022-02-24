@@ -6,7 +6,7 @@ interface DashboardErrorModalProps {
 }
 
 const DashboardErrorModal = ({ error }: DashboardErrorModalProps) => (
-  <ErrorModal error={error} title="Workspace Error" />
+  <ErrorModal error={error} title="Dashboard Error" />
 );
 
 const DashboardErrorModalWrapper = () => {
