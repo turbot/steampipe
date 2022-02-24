@@ -1,65 +1,212 @@
 import LoadingIndicator from "../dashboards/LoadingIndicator";
 import SearchInput from "../SearchInput";
 import SlackCommunityCallToAction from "../CallToAction/SlackCommunityCallToAction";
-import useDebouncedEffect from "../../hooks/useDebouncedEffect";
-import useQueryParam, {
-  urlQueryParamHistoryMode,
-} from "../../hooks/useQueryParam";
 import {
   AvailableDashboard,
   ModDashboardMetadata,
   useDashboard,
 } from "../../hooks/useDashboard";
-import { get, sortBy } from "lodash";
-import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { classNames } from "../../utils/styles";
+import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 
-interface OtherModDashboardsDictionary {
-  [key: string]: AvailableDashboard[];
+interface DashboardListSection {
+  title: string;
+  dashboards: AvailableDashboardWithMod[];
 }
 
-const ModSection = ({ mod, dashboards }) => {
+type AvailableDashboardWithMod = AvailableDashboard & {
+  mod?: ModDashboardMetadata;
+};
+
+interface DashboardTagProps {
+  tagKey: string;
+  tagValue: string;
+  searchParams: URLSearchParams;
+}
+
+interface SectionProps {
+  title: string;
+  dashboards: AvailableDashboardWithMod[];
+  searchParams: URLSearchParams;
+}
+
+// /*!
+//  * Get the contrasting color for any hex color
+//  * (c) 2019 Chris Ferdinandi, MIT License, https://gomakethings.com
+//  * Derived from work by Brian Suda, https://24ways.org/2010/calculating-color-contrast/
+//  * @param  {String} A hexcolor value
+//  * @return {String} The contrasting color (black or white)
+//  */
+// // https://gomakethings.com/dynamically-changing-the-text-color-based-on-background-color-contrast-with-vanilla-js/
+// const getContrastColour = (hexcolor) => {
+//   // If a leading # is provided, remove it
+//   if (hexcolor.slice(0, 1) === "#") {
+//     hexcolor = hexcolor.slice(1);
+//   }
+//
+//   // If a three-character hexcode, make six-character
+//   if (hexcolor.length === 3) {
+//     hexcolor = hexcolor
+//       .split("")
+//       .map(function (hex) {
+//         return hex + hex;
+//       })
+//       .join("");
+//   }
+//
+//   // Convert to RGB value
+//   const r = parseInt(hexcolor.substr(0, 2), 16);
+//   const g = parseInt(hexcolor.substr(2, 2), 16);
+//   const b = parseInt(hexcolor.substr(4, 2), 16);
+//
+//   // Get YIQ ratio
+//   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+//
+//   // Check contrast
+//   return yiq >= 128 ? "black" : "white";
+// };
+
+// https://stackoverflow.com/questions/3426404/create-a-hexadecimal-colour-based-on-a-string-with-javascript
+const stringToColour = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let colour = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    colour += ("00" + value.toString(16)).substr(-2);
+  }
+  return colour;
+};
+
+const DashboardTag = ({
+  tagKey,
+  tagValue,
+  searchParams,
+}: DashboardTagProps) => {
+  const group_by = searchParams.get("group_by");
+  const tag = searchParams.get("tag");
+  const search = searchParams.get("search");
+  const searchUrl = useMemo(() => {
+    const newSearchParams = new URLSearchParams();
+    if (group_by) {
+      newSearchParams.set("group_by", group_by);
+    }
+    if (tag) {
+      newSearchParams.set("tag", tag);
+    }
+    const existingSearch = (search || "").trim();
+    newSearchParams.set(
+      "search",
+      existingSearch
+        ? existingSearch.indexOf(tagValue) < 0
+          ? `${existingSearch} ${tagValue}`
+          : existingSearch
+        : tagValue
+    );
+    return newSearchParams.toString();
+  }, [tagKey, tagValue, group_by, tag, search]);
+
+  return (
+    <Link to={`/?${searchUrl}`}>
+      <span
+        className="rounded-md text-xxs"
+        style={{ color: stringToColour(tagValue) }}
+        title={`${tagKey} = ${tagValue}`}
+      >
+        {tagValue}
+      </span>
+    </Link>
+  );
+};
+
+const Section = ({ title, dashboards, searchParams }: SectionProps) => {
   return (
     <div className="space-y-2">
-      <h3 className="truncate">{mod.title || mod.short_name}</h3>
-      <ul className="list-none list-inside">
-        {dashboards.map((dashboard) => (
-          <li key={dashboard.full_name} className="mt-1 truncate">
+      <h3 className="truncate">{title}</h3>
+      {dashboards.map((dashboard) => (
+        <div key={dashboard.full_name} className="flex space-x-2 items-center">
+          <div className="md:col-span-6 truncate">
             <Link className="link-highlight" to={`/${dashboard.full_name}`}>
               {dashboard.title || dashboard.short_name}
             </Link>
-          </li>
-        ))}
-      </ul>
+          </div>
+          <div className="hidden md:block col-span-6 space-x-2">
+            {Object.entries(dashboard.tags || {}).map(([key, value]) => (
+              <DashboardTag
+                key={key}
+                tagKey={key}
+                tagValue={value}
+                searchParams={searchParams}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
-const CurrentModSection = ({ dashboards, metadata }) => {
-  if (dashboards.length === 0) {
-    return null;
-  }
-  const mod = get(metadata, "mod", {});
-  return <ModSection mod={mod} dashboards={dashboards} />;
-};
+interface GroupedDashboards {
+  [key: string]: AvailableDashboardWithMod[];
+}
 
-const OtherModSection = ({ mod_full_name, dashboards, metadata }) => {
-  if (dashboards.length === 0) {
-    return null;
-  }
+const useGroupedDashboards = (dashboards, group_by, tag, metadata) => {
+  const [sections, setSections] = useState<DashboardListSection[]>([]);
 
-  const mod = get(metadata, `installed_mods["${mod_full_name}"]`, {});
-  return <ModSection mod={mod} dashboards={dashboards} />;
+  useEffect(() => {
+    let groupedDashboards: GroupedDashboards;
+    if (group_by === "tag") {
+      groupedDashboards = lodashGroupBy(dashboards, (dashboard) => {
+        return get(dashboard, `tags["${tag}"]`, "Other");
+      });
+    } else {
+      groupedDashboards = lodashGroupBy(dashboards, (dashboard) => {
+        return get(
+          dashboard,
+          `mod.title`,
+          get(dashboard, "mod.short_name", "Other")
+        );
+      });
+    }
+    setSections(
+      Object.entries(groupedDashboards)
+        .map(([k, v]) => ({
+          title: k,
+          dashboards: v,
+        }))
+        .sort((x, y) => {
+          if (y.title === "Other") {
+            return -1;
+          }
+          if (x.title < y.title) {
+            return -1;
+          }
+          if (x.title > y.title) {
+            return 1;
+          }
+          return 0;
+        })
+    );
+  }, [dashboards, group_by, tag, metadata]);
+
+  return sections;
 };
 
 const searchAgainstDashboard = (
-  dashboard: AvailableDashboard,
-  mod: ModDashboardMetadata,
+  dashboard: AvailableDashboardWithMod,
   searchParts: string[]
 ): boolean => {
-  const joined = `${mod.title || ""}.${mod.short_name || ""}.${
-    dashboard.title || ""
-  }.${dashboard.short_name || ""}`.toLowerCase();
+  const joined = `${dashboard.mod?.title || ""} ${
+    dashboard.mod?.short_name || ""
+  } ${dashboard.title || ""} ${dashboard.short_name || ""} ${Object.entries(
+    dashboard.tags || {}
+  )
+    .map(([tagKey, tagValue]) => `${tagKey}=${tagValue}`)
+    .join(" ")}`.toLowerCase();
   return searchParts.every((searchPart) => joined.indexOf(searchPart) >= 0);
 };
 
@@ -68,180 +215,251 @@ const sortDashboards = (dashboards: AvailableDashboard[] = []) => {
 };
 
 const DashboardList = () => {
+  const [searchParams, setSearchParams] = useSearchParams({
+    group_by: "mod",
+    search: "",
+  });
+  const [search, setSearch] = useState(searchParams.get("search"));
   const { availableDashboardsLoaded, metadataLoaded, metadata, dashboards } =
     useDashboard();
-  const [dashboardsForCurrentMod, setDashboardsForCurrentMod] = useState<
-    AvailableDashboard[]
+  const [unfilteredDashboards, setUnfilteredDashboards] = useState<
+    AvailableDashboardWithMod[]
   >([]);
-  const [dashboardsForOtherMods, setDashboardsForOtherMods] =
-    useState<OtherModDashboardsDictionary>({});
-  const [filteredDashboardsForCurrentMod, setFilteredDashboardsForCurrentMod] =
-    useState(dashboardsForCurrentMod);
-  const [filteredDashboardsForOtherMods, setFilteredDashboardsForOtherMods] =
-    useState(dashboardsForOtherMods);
-  const [searchQuery, setSearchQuery] = useQueryParam(
-    "search",
-    "",
-    urlQueryParamHistoryMode.REPLACE
-  );
-  const [search, setSearch] = useState(searchQuery);
-  const { dashboardName } = useParams();
-
-  useDebouncedEffect(
-    () => {
-      setSearchQuery(search);
-    },
-    250,
-    [search]
-  );
+  const [filteredDashboards, setFilteredDashboards] = useState<
+    AvailableDashboardWithMod[]
+  >([]);
+  const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!metadataLoaded || !availableDashboardsLoaded) {
-      setDashboardsForCurrentMod([]);
-      setDashboardsForOtherMods({});
+    if (search) {
+      searchParams.set("search", search);
+    } else {
+      searchParams.delete("search");
+    }
+    setSearchParams(searchParams);
+  }, [search]);
+
+  useEffect(() => {
+    const newSearch = searchParams.get("search");
+    setSearch(newSearch);
+  }, [searchParams]);
+
+  // Initialise dashboards with their mod + update when the list of dashboards is updated
+  useEffect(() => {
+    if (!availableDashboardsLoaded) {
+      setUnfilteredDashboards([]);
       return;
     }
 
-    setDashboardsForCurrentMod(
-      sortDashboards(
-        dashboards.filter(
-          (dashboard) => dashboard.mod_full_name === metadata.mod.full_name
-        )
-      )
-    );
+    const dashboardsWithMod: AvailableDashboardWithMod[] = [];
+    const newDashboardTagKeys: string[] = [];
+    for (const dashboard of dashboards) {
+      const dashboardMod = dashboard.mod_full_name;
+      let mod: ModDashboardMetadata;
+      if (dashboardMod === metadata.mod.full_name) {
+        mod = get(metadata, "mod", {} as ModDashboardMetadata);
+      } else {
+        mod = get(
+          metadata,
+          `installed_mods["${dashboardMod}"]`,
+          {} as ModDashboardMetadata
+        );
+      }
+      let dashboardWithMod: AvailableDashboardWithMod;
+      dashboardWithMod = { ...dashboard };
+      dashboardWithMod.mod = mod;
+      dashboardsWithMod.push(dashboardWithMod);
 
-    const newOtherMods = {};
-    for (const [mod_full_name, mod] of Object.entries(
-      metadata.installed_mods || {}
-    )) {
-      newOtherMods[mod_full_name] = sortDashboards(
-        dashboards
-          .filter((dashboard) => dashboard.mod_full_name === mod_full_name)
-          .map((dashboard) => ({ ...dashboard, mod }))
-      );
+      Object.entries(dashboard.tags || {}).forEach(([tagKey]) => {
+        if (!newDashboardTagKeys.includes(tagKey)) {
+          newDashboardTagKeys.push(tagKey);
+        }
+      });
     }
-    setDashboardsForOtherMods(newOtherMods);
-  }, [metadataLoaded, availableDashboardsLoaded, metadata, dashboards]);
+    setUnfilteredDashboards(dashboardsWithMod);
+    setDashboardTagKeys(newDashboardTagKeys);
+  }, [availableDashboardsLoaded, dashboards]);
 
+  // Filter dashboards according to the search
   useEffect(() => {
+    if (!availableDashboardsLoaded || !metadataLoaded) {
+      return;
+    }
     if (!search) {
-      setFilteredDashboardsForCurrentMod(dashboardsForCurrentMod);
-      setFilteredDashboardsForOtherMods(dashboardsForOtherMods);
+      setFilteredDashboards(unfilteredDashboards);
       return;
     }
 
     const searchParts = search.trim().toLowerCase().split(" ");
-    const filteredCurrent: AvailableDashboard[] = [];
-    const filteredOther: OtherModDashboardsDictionary = {};
+    const filtered: AvailableDashboard[] = [];
 
-    dashboardsForCurrentMod.forEach((dashboard) => {
-      const mod: ModDashboardMetadata = get(
-        metadata,
-        "mod",
-        {} as ModDashboardMetadata
-      );
-      const include = searchAgainstDashboard(dashboard, mod, searchParts);
+    unfilteredDashboards.forEach((dashboard) => {
+      const include = searchAgainstDashboard(dashboard, searchParts);
       if (include) {
-        filteredCurrent.push(dashboard);
+        filtered.push(dashboard);
       }
     });
 
-    Object.entries(dashboardsForOtherMods).forEach(
-      ([mod_full_name, dashboards]) => {
-        const mod: ModDashboardMetadata = get(
-          metadata,
-          `installed_mods["${mod_full_name}"]`,
-          {} as ModDashboardMetadata
-        );
-        dashboards.forEach((dashboard) => {
-          const include = searchAgainstDashboard(dashboard, mod, searchParts);
-          if (include) {
-            filteredOther[mod_full_name] = filteredOther[mod_full_name] || [];
-            filteredOther[mod_full_name].push(dashboard);
-          }
-        });
-      }
-    );
+    setFilteredDashboards(sortDashboards(filtered));
+  }, [
+    availableDashboardsLoaded,
+    metadataLoaded,
+    unfilteredDashboards,
+    metadata,
+    search,
+  ]);
 
-    setFilteredDashboardsForCurrentMod(filteredCurrent);
-    setFilteredDashboardsForOtherMods(filteredOther);
-  }, [dashboardsForCurrentMod, dashboardsForOtherMods, metadata, search]);
+  const { modGroupUrl, typeGroupUrl, categoryGroupUrl, serviceGroupUrl } =
+    useMemo(() => {
+      const url_search = searchParams.get("search");
 
-  // Clear search after we choose a report
-  useEffect(() => {
-    if (dashboardName) {
-      setSearch("");
-    }
-  }, [dashboardName]);
+      const modGroupSearchParams = new URLSearchParams();
+      modGroupSearchParams.set("group_by", "mod");
+      if (url_search) modGroupSearchParams.set("search", url_search);
 
-  if (dashboardName) {
-    return null;
-  }
+      const typeGroupSearchParams = new URLSearchParams();
+      typeGroupSearchParams.set("group_by", "tag");
+      typeGroupSearchParams.set("tag", "type");
+      if (url_search) typeGroupSearchParams.set("search", url_search);
+
+      const categoryGroupSearchParams = new URLSearchParams();
+      categoryGroupSearchParams.set("group_by", "tag");
+      categoryGroupSearchParams.set("tag", "category");
+      if (url_search) categoryGroupSearchParams.set("search", url_search);
+
+      const serviceGroupSearchParams = new URLSearchParams();
+      serviceGroupSearchParams.set("group_by", "tag");
+      serviceGroupSearchParams.set("tag", "service");
+      if (url_search) serviceGroupSearchParams.set("search", url_search);
+
+      return {
+        modGroupUrl: modGroupSearchParams.toString(),
+        typeGroupUrl: typeGroupSearchParams.toString(),
+        categoryGroupUrl: categoryGroupSearchParams.toString(),
+        serviceGroupUrl: serviceGroupSearchParams.toString(),
+      };
+    }, [searchParams]);
+
+  const url_group_by = searchParams.get("group_by");
+  const url_tag = searchParams.get("tag");
+
+  const sections = useGroupedDashboards(
+    filteredDashboards,
+    url_group_by,
+    url_tag,
+    metadata
+  );
 
   return (
     <div className="w-full grid grid-cols-6 p-4 gap-x-4">
-      <div className="col-span-6 lg:col-span-2 space-y-4">
-        <div className="mt-2">
-          <SearchInput
-            //@ts-ignore
-            disabled={!metadataLoaded || !availableDashboardsLoaded}
-            placeholder="Search dashboards..."
-            value={search}
-            setValue={setSearch}
-          />
-        </div>
-        {(!availableDashboardsLoaded || !metadataLoaded) && (
-          <div className="mt-2 ml-1 text-black-scale-4 flex">
-            <LoadingIndicator className="w-4 h-4" />{" "}
-            <span className="italic -ml-1">Loading...</span>
+      <div className="col-span-6 lg:col-span-4 space-y-4">
+        <div className="grid grid-cols-6">
+          <div className="col-span-6 lg:col-span-3 mt-2">
+            <SearchInput
+              //@ts-ignore
+              disabled={!metadataLoaded || !availableDashboardsLoaded}
+              placeholder="Search dashboards..."
+              value={search}
+              setValue={setSearch}
+            />
           </div>
-        )}
-        {availableDashboardsLoaded &&
-          metadataLoaded &&
-          filteredDashboardsForCurrentMod.length === 0 &&
-          Object.keys(filteredDashboardsForOtherMods).length === 0 && (
-            <div className="mt-2">
-              {search ? (
-                <>
-                  <span>No search results.</span>{" "}
-                  <span
-                    className="link-highlight"
-                    onClick={() => setSearch("")}
-                  >
-                    Clear
-                  </span>
-                  .
-                </>
-              ) : (
-                <span>No dashboards defined.</span>
+          {(dashboardTagKeys.includes("category") ||
+            dashboardTagKeys.includes("service") ||
+            dashboardTagKeys.includes("type")) && (
+            <div className="mt-4 col-span-6 flex flex-wrap space-x-2">
+              <div>Group by:</div>
+              <Link
+                className={classNames(
+                  "block",
+                  url_group_by === "mod"
+                    ? "text-foreground-lighter"
+                    : "link-highlight"
+                )}
+                to={`/?${modGroupUrl}`}
+              >
+                Mod
+              </Link>
+              {dashboardTagKeys.includes("category") && (
+                <Link
+                  className={classNames(
+                    "block",
+                    url_group_by === "tag" && url_tag === "category"
+                      ? "text-foreground-lighter"
+                      : "link-highlight"
+                  )}
+                  to={`/?${categoryGroupUrl}`}
+                >
+                  Category
+                </Link>
+              )}
+              {dashboardTagKeys.includes("service") && (
+                <Link
+                  className={classNames(
+                    "block",
+                    url_group_by === "tag" && url_tag === "service"
+                      ? "text-foreground-lighter"
+                      : "link-highlight"
+                  )}
+                  to={`/?${serviceGroupUrl}`}
+                >
+                  Service
+                </Link>
+              )}
+              {dashboardTagKeys.includes("type") && (
+                <Link
+                  className={classNames(
+                    "block",
+                    url_group_by === "tag" && url_tag === "type"
+                      ? "text-foreground-lighter"
+                      : "link-highlight"
+                  )}
+                  to={`/?${typeGroupUrl}`}
+                >
+                  Type
+                </Link>
               )}
             </div>
           )}
-        <div className="mt-4 space-y-4">
-          <CurrentModSection
-            dashboards={filteredDashboardsForCurrentMod}
-            metadata={metadata}
-          />
-          {sortBy(Object.entries(filteredDashboardsForOtherMods), [
-            ([mod_full_name, dashboards]) => {
-              const mod = get(
-                metadata,
-                `installed_mods["${mod_full_name}"]`,
-                {}
-              );
-              return mod.title || mod.short_name;
-            },
-          ]).map(([mod_full_name, dashboards]) => (
-            <OtherModSection
-              key={mod_full_name}
-              mod_full_name={mod_full_name}
-              dashboards={dashboards}
-              metadata={metadata}
-            />
-          ))}
+          {(!availableDashboardsLoaded || !metadataLoaded) && (
+            <div className="col-span-6 mt-4 ml-1 text-black-scale-4 flex">
+              <LoadingIndicator className="w-4 h-4" />{" "}
+              <span className="italic -ml-1">Loading...</span>
+            </div>
+          )}
+          <div className="col-span-6">
+            {availableDashboardsLoaded &&
+              metadataLoaded &&
+              filteredDashboards.length === 0 && (
+                <div className="col-span-6 mt-4">
+                  {search ? (
+                    <>
+                      <span>No search results.</span>{" "}
+                      <span
+                        className="link-highlight"
+                        onClick={() => setSearch("")}
+                      >
+                        Clear
+                      </span>
+                      .
+                    </>
+                  ) : (
+                    <span>No dashboards defined.</span>
+                  )}
+                </div>
+              )}
+            <div className="mt-4 space-y-4">
+              {sections.map((section) => (
+                <Section
+                  key={section.title}
+                  title={section.title}
+                  dashboards={section.dashboards}
+                  searchParams={searchParams}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-      <div className="hidden lg:block col-span-2" />
       <div className="col-span-6 lg:col-span-2 mt-4 lg:mt-2">
         <div className="space-y-4">
           <SlackCommunityCallToAction />
@@ -251,4 +469,14 @@ const DashboardList = () => {
   );
 };
 
-export default DashboardList;
+const DashboardListWrapper = ({}) => {
+  const { dashboardName } = useParams();
+
+  if (dashboardName) {
+    return null;
+  }
+
+  return <DashboardList />;
+};
+
+export default DashboardListWrapper;

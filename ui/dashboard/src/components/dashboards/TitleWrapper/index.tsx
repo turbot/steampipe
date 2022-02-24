@@ -1,11 +1,5 @@
 import Container from "../layout/Container";
-import {
-  ContainerDefinition,
-  DashboardDefinition,
-  PanelDefinition,
-  PanelProperties,
-} from "../../../hooks/useDashboard";
-import { TextProps } from "../Text";
+import { PanelDefinition } from "../../../hooks/useDashboard";
 
 type TitleWrapperProps = {
   children: null | JSX.Element | JSX.Element[];

@@ -15,9 +15,10 @@ type ClientRequest struct {
 }
 
 type ModAvailableDashboard struct {
-	Title     string `json:"title,omitempty"`
-	FullName  string `json:"full_name"`
-	ShortName string `json:"short_name"`
+	Title     string            `json:"title,omitempty"`
+	FullName  string            `json:"full_name"`
+	ShortName string            `json:"short_name"`
+	Tags      map[string]string `json:"tags"`
 }
 
 type AvailableDashboardsPayload struct {
