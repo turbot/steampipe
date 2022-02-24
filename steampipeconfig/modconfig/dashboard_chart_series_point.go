@@ -3,7 +3,7 @@ package modconfig
 import "github.com/turbot/steampipe/utils"
 
 type DashboardChartSeriesPoint struct {
-	Name  string  `hcl:"name,label" json:"name"`
+	Name  string  `hcl:"name,label" json:"-"`
 	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
 }
 

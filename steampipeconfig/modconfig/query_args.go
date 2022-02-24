@@ -12,7 +12,7 @@ import (
 // these may either be passed by name, in a map, or as a list of positional args
 // NOTE: if both are present the named parameters are used
 type QueryArgs struct {
-	ArgMap     map[string]string    `cty:"args" json:"args"`
+	ArgMap     map[string]string    `cty:"args" json:"args,omitempty"`
 	ArgsList   []string             `cty:"args_list" json:"args_list"`
 	References []*ResourceReference `cty:"refs" json:"refs"`
 }

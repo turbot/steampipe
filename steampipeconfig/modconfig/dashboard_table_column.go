@@ -3,7 +3,7 @@ package modconfig
 import "github.com/turbot/steampipe/utils"
 
 type DashboardTableColumn struct {
-	Name    string  `hcl:"name,label" json:"-"`
+	Name    string  `hcl:"name,label" json:"name"`
 	Display *string `cty:"display" hcl:"display" json:"display,omitempty"`
 	Wrap    *string `cty:"wrap" hcl:"wrap" json:"wrap,omitempty"`
 }
