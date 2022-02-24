@@ -26,35 +26,14 @@ func (p *decodeResult) Success() bool {
 
 // if the diags containsdependency errors, add dependencies to the result
 // otherwise add diags to the result
-func (p *decodeResult) handleDecodeDiags(bodyContent *hcl.BodyContent, resource modconfig.HclResource, diags hcl.Diagnostics) {
-	var allDependencies []*modconfig.ResourceDependency
+func (p *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
 	for _, diag := range diags {
 		if dependency := diagsToDependency(diag); dependency != nil {
-			allDependencies = append(allDependencies, dependency)
-
-			//// so it was a dependency error - determine whether this is a RUN TIME dependency
-
-			//// - if so, do not raise a dependency error but instead store in the resources run time dependencies
-			//if runtimeDependency := dependency.ToRuntimeDependency(bodyContent); runtimeDependency != nil {
-			//	// resource must be convertible to a DashboardLeafNode
-			//	// - these are the only resources to support runtime dependencies
-			//	leafNode, ok := resource.(modconfig.DashboardLeafNode)
-			//	if !ok {
-			//		p.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
-			//			Severity: hcl.DiagError,
-			//			Summary:  fmt.Sprintf("invalid resource type %s declares a runtime depdnency - only ReportLeafNodes may use them", resource.Name()),
-			//			Subject:  resource.GetDeclRange(),
-			//		}})
-			//	}
-			//	leafNode.AddRuntimeDependencies(runtimeDependency)
-			//} else {
-			// this is not a runtime dependency - register a normal dependency
 			p.Depends = append(p.Depends, dependency)
-			//}
 		}
 	}
 	// only register errors if there are NOT any missing variables
-	if diags.HasErrors() && len(allDependencies) == 0 {
+	if diags.HasErrors() && len(p.Depends) == 0 {
 		p.addDiags(diags)
 	}
 }
