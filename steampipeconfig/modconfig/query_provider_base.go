@@ -5,8 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
-
 	typehelpers "github.com/turbot/go-kit/types"
 
 	"github.com/turbot/steampipe/constants"
@@ -217,18 +215,4 @@ func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, ar
 		}
 	}
 	return
-}
-
-// for QueryProviders, we cannot use the Base directly as decoded as the runtime dependencies
-// are not stored in the evaluation context
-// instead, resolve the base from the run context (passed as a ResourceMapsProvider)
-func (b *QueryProviderBase) resolveBase(base HclResource, resourceMapProvider ResourceMapsProvider) (HclResource, bool) {
-	if helpers.IsNil(base) {
-		return nil, false
-	}
-	parsedName, err := ParseResourceName(base.Name())
-	if err != nil {
-		return nil, false
-	}
-	return GetResource(resourceMapProvider, parsedName)
 }

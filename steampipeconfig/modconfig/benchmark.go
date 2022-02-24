@@ -300,7 +300,6 @@ func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	if len(b.Children) == 0 {
 		b.Children = b.Base.Children
 		b.ChildNameStrings = b.Base.ChildNameStrings
-
 		b.ChildNames = b.Base.ChildNames
 	}
 }
