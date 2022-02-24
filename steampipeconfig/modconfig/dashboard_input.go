@@ -18,7 +18,7 @@ type DashboardInput struct {
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
-	UnqualifiedName string `cty:"unqualified_name" json:"name"`
+	UnqualifiedName string `cty:"unqualified_name" json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title       *string                 `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -36,12 +36,11 @@ type DashboardInput struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base *DashboardInput `hcl:"base" json:"-"`
-
-	DeclRange  hcl.Range `json:"-"`
-	References []*ResourceReference
-	Mod        *Mod       `cty:"mod" json:"-"`
-	Paths      []NodePath `column:"path,jsonb" json:"-"`
+	Base       *DashboardInput      `hcl:"base" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents   []ModTreeItem
 	dashboard *Dashboard

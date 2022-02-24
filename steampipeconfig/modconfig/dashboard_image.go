@@ -32,15 +32,14 @@ type DashboardImage struct {
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base *DashboardImage `hcl:"base" json:"-"`
-
-	DeclRange  hcl.Range `json:"-"`
-	References []*ResourceReference
-	Mod        *Mod       `cty:"mod" json:"-"`
-	Paths      []NodePath `column:"path,jsonb" json:"-"`
+	Base       *DashboardImage      `hcl:"base" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }

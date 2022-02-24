@@ -1,23 +1,41 @@
-dashboard "d" {
-    container {
-        chart {
-            title = "dashboard_d_anonymous_container_0_anonymous_chart_0"
-        }
-        chart {
-            title = "dashboard_d_anonymous_container_0_anonymous_chart_1"
-            decription = chart.c.title
+card "aws_iam_user_mfa_for_user" {
+    sql = query.aws_iam_user_mfa_for_user.sql
+    //query = query.aws_iam_user_mfa_for_user
 
-        }
+    args = {
+        arn = self.input.user_arn.value
     }
-    container {
-        chart {
-            title = "dashboard_d_anonymous_container_1_anonymous_chart_0"
-            decription = chart.c.title
+    width = 2
+
+}
+
+
+dashboard "aws_iam_user_detail" {
+    title = "AWS IAM User Detail"
+
+    chart {
+        sql = query.aws_iam_user_input.sql
+        width = 2
+        series "count" {
+            point "Enabled" {
+                color = "green"
+            }
+
+            point "Disabled" {
+                color = "red"
+            }
         }
     }
 
 }
 
-chart "c"{
-    decription = "foo"
+
+query "aws_iam_user_mfa_for_user" {
+    sql = "select 1"
+
+
+}
+
+query "aws_iam_user_input" {
+    sql = "select 1"
 }

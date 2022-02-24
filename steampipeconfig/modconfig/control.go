@@ -21,14 +21,14 @@ type Control struct {
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	ShortName        string            `json:"-"`
-	FullName         string            `cty:"name"  json:"name"`
+	FullName         string            `cty:"name"  json:"-"`
 	Description      *string           `cty:"description" hcl:"description" column:"description,text"  json:"description,omitempty"`
 	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"  json:"documentation,omitempty"`
 	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"  json:"search_path,omitempty"`
 	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"  json:"search_path_prefix,omitempty"`
 	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"  json:"search_path_prefix,omitempty"`
 	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
-	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"title,omitempty"`
+	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"-"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`

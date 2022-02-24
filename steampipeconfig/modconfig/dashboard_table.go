@@ -28,7 +28,7 @@ type DashboardTable struct {
 	Width      *int                             `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type       *string                          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
-	Columns    map[string]*DashboardTableColumn `cty:"columns" json:"columns"`
+	Columns    map[string]*DashboardTableColumn `cty:"columns" json:"columns,omitempty"`
 	Display    *string                          `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
@@ -36,14 +36,14 @@ type DashboardTable struct {
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base       *DashboardTable `hcl:"base" json:"-"`
-	DeclRange  hcl.Range       `json:"-"`
-	References []*ResourceReference
-	Mod        *Mod       `cty:"mod" json:"-"`
-	Paths      []NodePath `column:"path,jsonb" json:"-"`
+	Base       *DashboardTable      `hcl:"base" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }

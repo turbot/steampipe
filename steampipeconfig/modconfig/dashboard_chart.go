@@ -28,9 +28,9 @@ type DashboardChart struct {
 	Width *int    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 
 	Type       *string                          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Legend     *DashboardChartLegend            `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend"`
+	Legend     *DashboardChartLegend            `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend,omitempty"`
 	SeriesList DashboardChartSeriesList         `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
-	Axes       *DashboardChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes"`
+	Axes       *DashboardChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes,omitempty"`
 	Grouping   *string                          `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
@@ -44,11 +44,11 @@ type DashboardChart struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
-	Base       *DashboardChart `hcl:"base" json:"-"`
-	DeclRange  hcl.Range       `json:"-"`
-	References []*ResourceReference
-	Mod        *Mod       `cty:"mod" json:"-"`
-	Paths      []NodePath `column:"path,jsonb" json:"-"`
+	Base       *DashboardChart      `hcl:"base" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }

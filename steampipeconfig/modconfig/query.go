@@ -21,7 +21,7 @@ type Query struct {
 	QueryProviderBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	ShortName string `cty:"short_name"`
 	FullName  string `cty:"name"`

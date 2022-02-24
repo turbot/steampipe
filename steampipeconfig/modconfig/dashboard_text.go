@@ -23,11 +23,11 @@ type DashboardText struct {
 	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type    *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Value   *string        `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
-	Base    *DashboardText `hcl:"base" json:"-"`
 	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
-	DeclRange  hcl.Range `json:"-"`
+	Base       *DashboardText `hcl:"base" json:"-"`
+	DeclRange  hcl.Range      `json:"-"`
 	References []*ResourceReference
 	Mod        *Mod       `cty:"mod" json:"-"`
 	Paths      []NodePath `column:"path,jsonb" json:"-"`
