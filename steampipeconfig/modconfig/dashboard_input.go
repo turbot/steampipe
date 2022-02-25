@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -231,10 +230,6 @@ func (i *DashboardInput) GetUnqualifiedName() string {
 func (i *DashboardInput) SetDashboard(dashboard *Dashboard) {
 	i.dashboard = dashboard
 	i.DashboardName = dashboard.Name()
-	//// update the full name the with the sanitised parent dashboard name
-	//dashboardNameSuffix := i.dashboardNameSuffix()
-	//i.FullName = fmt.Sprintf("%s%s", i.FullName, dashboardNameSuffix)
-	// note: DO NOT update the unqualified name - this will be used in the parent dashboard selfInputsMap
 }
 
 // GetParams implements QueryProvider
@@ -286,12 +281,6 @@ func (i *DashboardInput) GetPreparedStatementName() string {
 func (i *DashboardInput) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return i.getPreparedStatementExecuteSQL(i, args)
-}
-
-// DashboardNameSuffix creates a sanitised name suffix from our parent dashboard
-func (i *DashboardInput) dashboardNameSuffix() string {
-	sanitisedDashboardName := strings.Replace(i.dashboard.UnqualifiedName, ".", "_", -1)
-	return fmt.Sprintf("_%s", sanitisedDashboardName)
 }
 
 func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
