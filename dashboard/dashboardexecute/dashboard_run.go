@@ -13,21 +13,22 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
-	Name          string                                 `json:"name"`
-	Title         string                                 `json:"title,omitempty"`
-	Width         int                                    `json:"width,omitempty"`
-	Description   string                                 `json:"description,omitempty"`
-	Documentation string                                 `json:"documentation,omitempty"`
-	Tags          map[string]string                      `json:"tags,omitempty"`
-	Error         error                                  `json:"error,omitempty"`
-	Children      []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
-	NodeType      string                                 `json:"node_type"`
-	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
-	DashboardName string                                 `json:"dashboard"`
-	dashboardNode *modconfig.Dashboard
-	parent        dashboardinterfaces.DashboardNodeParent
-	executionTree *DashboardExecutionTree
-	childComplete chan dashboardinterfaces.DashboardNodeRun
+	Name             string                                 `json:"name"`
+	Title            string                                 `json:"title,omitempty"`
+	Width            int                                    `json:"width,omitempty"`
+	Description      string                                 `json:"description,omitempty"`
+	Documentation    string                                 `json:"documentation,omitempty"`
+	Tags             map[string]string                      `json:"tags,omitempty"`
+	Error            error                                  `json:"error,omitempty"`
+	Children         []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
+	NodeType         string                                 `json:"node_type"`
+	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
+	DashboardName    string                                 `json:"dashboard"`
+	SourceDefinition string                                 `json:"source_definition"`
+	dashboardNode    *modconfig.Dashboard
+	parent           dashboardinterfaces.DashboardNodeParent
+	executionTree    *DashboardExecutionTree
+	childComplete    chan dashboardinterfaces.DashboardNodeRun
 }
 
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
@@ -39,13 +40,14 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 	name := dashboard.Name()
 
 	r := &DashboardRun{
-		Name:          name,
-		NodeType:      modconfig.BlockTypeDashboard,
-		DashboardName: executionTree.dashboardName,
-		Tags:          dashboard.Tags,
-		executionTree: executionTree,
-		parent:        parent,
-		dashboardNode: dashboard,
+		Name:             name,
+		NodeType:         modconfig.BlockTypeDashboard,
+		DashboardName:    executionTree.dashboardName,
+		SourceDefinition: dashboard.GetMetadata().SourceDefinition,
+		Tags:             dashboard.Tags,
+		executionTree:    executionTree,
+		parent:           parent,
+		dashboardNode:    dashboard,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead

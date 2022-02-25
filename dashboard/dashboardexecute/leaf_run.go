@@ -22,6 +22,7 @@ type LeafRun struct {
 	DashboardNode       modconfig.DashboardLeafNode `json:"properties"`
 	NodeType            string                      `json:"node_type"`
 	DashboardName       string                      `json:"dashboard"`
+	SourceDefinition    string                      `json:"source_definition"`
 	parent              dashboardinterfaces.DashboardNodeParent
 	runStatus           dashboardinterfaces.DashboardRunStatus
 	executionTree       *DashboardExecutionTree
@@ -41,6 +42,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		Width:               resource.GetWidth(),
 		DashboardNode:       resource,
 		DashboardName:       executionTree.dashboardName,
+		SourceDefinition:    resource.GetMetadata().SourceDefinition,
 		executionTree:       executionTree,
 		parent:              parent,
 		runtimeDependencies: make(map[string]*ResolvedRuntimeDependency),
