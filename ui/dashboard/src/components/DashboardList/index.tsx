@@ -7,6 +7,7 @@ import {
   useDashboard,
 } from "../../hooks/useDashboard";
 import { classNames } from "../../utils/styles";
+import { ColorGenerator } from "../../utils/color";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
@@ -68,18 +69,17 @@ interface SectionProps {
 //   return yiq >= 128 ? "black" : "white";
 // };
 
+const stringColorMap = {};
+const colorGenerator = new ColorGenerator(24, 4);
+
 // https://stackoverflow.com/questions/3426404/create-a-hexadecimal-colour-based-on-a-string-with-javascript
 const stringToColour = (str) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  if (stringColorMap[str]) {
+    return stringColorMap[str];
   }
-  let colour = "#";
-  for (let i = 0; i < 3; i++) {
-    const value = (hash >> (i * 8)) & 0xff;
-    colour += ("00" + value.toString(16)).substr(-2);
-  }
-  return colour;
+  const color = colorGenerator.nextColor().hex;
+  stringColorMap[str] = color;
+  return color;
 };
 
 const DashboardTag = ({
@@ -113,7 +113,7 @@ const DashboardTag = ({
   return (
     <Link to={`/?${searchUrl}`}>
       <span
-        className="rounded-md text-xxs"
+        className="rounded-md text-xs"
         style={{ color: stringToColour(tagValue) }}
         title={`${tagKey} = ${tagValue}`}
       >
