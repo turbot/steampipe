@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/workspace"
@@ -47,12 +48,24 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	return nil
 }
 
-func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId string, inputs map[string]interface{}) error {
+func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId string, inputs map[string]interface{}, changedInput string) error {
 	// find the execution
 	executionTree, found := e.executions[sessionId]
 	if !found {
 		return fmt.Errorf("no dashboard running for session %s", sessionId)
 	}
+
+	// first see if any other inputs rely in the one which was just changed
+	dependentInputs := executionTree.Root.GetInputsDependingOn(changedInput)
+	if len(dependentInputs) > 0 {
+		for _, inputName := range dependentInputs {
+			// clear the input value
+			inputs[inputName] = nil
+		}
+		event := &dashboardevents.InputValuesCleared{dependentInputs}
+		executionTree.workspace.PublishDashboardEvent(event)
+	}
+	// oif there are any dependent inputs, set their value to nil and send an event to the UI
 	// if the dashboard run is complete, just re-execute
 	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
 		return e.ExecuteDashboard(

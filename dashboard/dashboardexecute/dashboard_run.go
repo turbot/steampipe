@@ -223,3 +223,14 @@ func (r *DashboardRun) ChildCompleteChan() chan dashboardinterfaces.DashboardNod
 func (r *DashboardRun) GetInput(name string) (*modconfig.DashboardInput, bool) {
 	return r.dashboardNode.GetInput(name)
 }
+
+// GetInputsDependingOn returns a list o DashboardInputs which have a runtime depdendency on the given input
+func (r *DashboardRun) GetInputsDependingOn(changedInputName string) []string {
+	var res []string
+	for _, input := range r.dashboardNode.Inputs {
+		if input.DependsOnInput(changedInputName) {
+			res = append(res, input.UnqualifiedName)
+		}
+	}
+	return res
+}

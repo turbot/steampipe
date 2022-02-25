@@ -446,41 +446,44 @@ func (s *Server) Init(ctx context.Context) {
 func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Session, msg []byte) {
 	return func(session *melody.Session, msg []byte) {
 
-		// TODO TEMP GET SESSION ID
 		sessionId := s.getSessionId(session)
 
 		var request ClientRequest
 		// if we could not decode message - ignore
-		if err := json.Unmarshal(msg, &request); err == nil {
-
-			if request.Action != "keep_alive" {
-				log.Println("[TRACE] message", string(msg))
-			}
-
-			switch request.Action {
-			case "get_dashboard_metadata":
-				payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())
-				if err != nil {
-					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
-				}
-				session.Write(payload)
-			case "get_available_dashboards":
-				payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
-				if err != nil {
-					panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
-				}
-				session.Write(payload)
-			case "select_dashboard":
-				s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues)
-				dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
-			case "set_dashboard_inputs":
-				s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
-				dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues)
-			case "clear_dashboard":
-				s.setDashboardInputsForSession(sessionId, nil)
-				dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
-			}
+		err := json.Unmarshal(msg, &request)
+		if err != nil {
+			log.Printf("[WARN] failed to marshal message: %s", err.Error())
+			return
 		}
+
+		if request.Action != "keep_alive" {
+			log.Println("[TRACE] message", string(msg))
+		}
+
+		switch request.Action {
+		case "get_dashboard_metadata":
+			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())
+			if err != nil {
+				panic(fmt.Errorf("error building payload for get_metadata: %v", err))
+			}
+			session.Write(payload)
+		case "get_available_dashboards":
+			payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
+			if err != nil {
+				panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
+			}
+			session.Write(payload)
+		case "select_dashboard":
+			s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues)
+			dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
+		case "set_dashboard_inputs":
+			s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
+			dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
+		case "clear_dashboard":
+			s.setDashboardInputsForSession(sessionId, nil)
+			dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
+		}
+
 	}
 }
 

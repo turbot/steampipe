@@ -1,0 +1,18 @@
+{
+  "fdwExtension": {
+    "name": "",
+    "version": "",
+    "imageDigest": "",
+    "installedFrom": "",
+    "lastCheckedDate": "",
+    "installDate": ""
+  },
+  "embeddedDB": {
+    "name": "embeddedDB",
+    "version": "0.0.1",
+    "imageDigest": "sha256:ae824571109ab1d17eb4c9f9e933f93e9d006cff9484418ec245378d36139e20",
+    "installedFrom": "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2",
+    "lastCheckedDate": "2022-03-02T15:59:14Z",
+    "installDate": "2022-03-02T15:59:14Z"
+  }
+}

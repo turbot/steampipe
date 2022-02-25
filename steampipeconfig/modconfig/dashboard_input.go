@@ -285,6 +285,16 @@ func (i *DashboardInput) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) 
 	return i.getPreparedStatementExecuteSQL(i, runtimeArgs)
 }
 
+// DependsOnInput returns whether this input has a runtime dependency on the given input
+func (i *DashboardInput) DependsOnInput(changedInputName string) bool {
+	for _, r := range i.runtimeDependencies {
+		if r.SourceResource.GetUnqualifiedName() == changedInputName {
+			return true
+		}
+	}
+	return false
+}
+
 func (i *DashboardInput) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
