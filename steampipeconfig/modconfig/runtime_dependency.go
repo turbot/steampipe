@@ -37,3 +37,34 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 	d.SourceResource = sourceResource
 	return nil
 }
+
+func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
+
+	// TargetPropertyPath
+	if d.TargetPropertyPath == nil {
+		if other.TargetPropertyPath != nil {
+			return false
+		}
+	} else {
+		// we have TargetPropertyPath
+		if other.TargetPropertyPath == nil {
+			return false
+		}
+
+		if len(d.TargetPropertyPath) != len(other.TargetPropertyPath) {
+			return false
+		}
+		for i, c := range d.TargetPropertyPath {
+			if other.TargetPropertyPath[i] != c {
+				return false
+			}
+		}
+	}
+
+	// SourceResource
+	// if d.SourceResource.Name() != other.SourceResource.Name() {
+	// 	return false
+	// }
+
+	return true
+}

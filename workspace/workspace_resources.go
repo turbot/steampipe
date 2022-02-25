@@ -33,7 +33,7 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	/// this will only occur for unit tests
+	// this will only occur for unit tests
 	if w.resourceMaps == nil {
 		w.populateResourceMaps()
 	}
