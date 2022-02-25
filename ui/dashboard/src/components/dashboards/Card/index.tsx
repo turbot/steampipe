@@ -13,6 +13,7 @@ import { get, isNumber, isObject } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
 import { ThemeNames, useTheme } from "../../../hooks/useTheme";
 import { useEffect, useState } from "react";
+import { usePanel } from "../../../hooks/usePanel";
 
 const getWrapperClasses = (type) => {
   switch (type) {
@@ -186,7 +187,13 @@ const Label = ({ value }) => {
 
 const Card = (props: CardProps) => {
   const state = useCardState(props);
+  const textClasses = getTextClasses(state.type);
+  const { setZoomIconClassName } = usePanel();
   const { theme } = useTheme();
+
+  useEffect(() => {
+    setZoomIconClassName(textClasses ? textClasses : "");
+  }, [textClasses]);
 
   return (
     <div
@@ -208,7 +215,7 @@ const Card = (props: CardProps) => {
           className={classNames(
             "text-sm font-medium truncate",
             state.icon ? "ml-11" : "ml-2",
-            getTextClasses(state.type)
+            textClasses
           )}
           title={state.label || undefined}
         >
@@ -229,7 +236,7 @@ const Card = (props: CardProps) => {
         <p
           className={classNames(
             "text-4xl mt-1 font-semibold text-left",
-            getTextClasses(state.type)
+            textClasses
           )}
         >
           {state.loading && (

@@ -28,10 +28,13 @@ const ChildWithTitle = ({ child, level, renderChild }) => {
 
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
-  showPanelExpand?: boolean;
+  allowPanelExpand?: boolean;
 }
 
-const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
+const Children = ({
+  children = [],
+  allowPanelExpand = true,
+}: ChildrenProps) => (
   <>
     {children.map((child) => {
       switch (child.node_type) {
@@ -42,7 +45,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="container"
               renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
+                <Panel definition={child} allowExpand={allowPanelExpand}>
                   <Benchmark {...child} />
                 </Panel>
               )}
@@ -55,7 +58,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
+                <Panel definition={child} allowExpand={allowPanelExpand}>
                   <Card {...child} />
                 </Panel>
               )}
@@ -71,7 +74,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                 <Panel
                   definition={child}
                   ready={!!child.data}
-                  showExpand={showPanelExpand}
+                  allowExpand={allowPanelExpand}
                 >
                   <Chart {...child} />
                 </Panel>
@@ -94,7 +97,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
+                <Panel definition={child} allowExpand={allowPanelExpand}>
                   <Control {...child} />
                 </Panel>
               )}
@@ -116,7 +119,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
+                <Panel definition={child} allowExpand={allowPanelExpand}>
                   <ErrorPanel error={child.error} />
                 </Panel>
               )}
@@ -132,7 +135,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                 <Panel
                   definition={child}
                   ready={!!child.data}
-                  showExpand={showPanelExpand}
+                  allowExpand={allowPanelExpand}
                 >
                   <Hierarchy {...child} />
                 </Panel>
@@ -149,7 +152,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                 <Panel
                   definition={child}
                   ready={child.sql ? !!child.data : !!child.properties.src}
-                  showExpand={showPanelExpand}
+                  allowExpand={allowPanelExpand}
                 >
                   <Image {...child} />
                 </Panel>
@@ -163,7 +166,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
+                <Panel definition={child} allowExpand={allowPanelExpand}>
                   <Input {...child} />
                 </Panel>
               )}
@@ -179,7 +182,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
                 <Panel
                   definition={child}
                   ready={!!child.data}
-                  showExpand={showPanelExpand}
+                  allowExpand={allowPanelExpand}
                 >
                   <Table {...child} />
                 </Panel>
@@ -193,7 +196,7 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel definition={child} showExpand={showPanelExpand}>
+                <Panel definition={child} allowExpand={false}>
                   <Text {...child} />
                 </Panel>
               )}

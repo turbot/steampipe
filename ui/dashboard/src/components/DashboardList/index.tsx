@@ -361,7 +361,7 @@ const DashboardList = () => {
               //@ts-ignore
               disabled={!metadataLoaded || !availableDashboardsLoaded}
               placeholder="Search dashboards..."
-              value={search}
+              value={search || ""}
               setValue={setSearch}
             />
           </div>

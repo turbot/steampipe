@@ -1,6 +1,5 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
-import useDimensions from "../../../../hooks/useDimensions";
 import { BaseChartProps } from "../../charts";
 import { CardProps } from "../../Card";
 import { CheckProps } from "../../check/common";
@@ -9,11 +8,12 @@ import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs";
-import { memo } from "react";
-import { PanelDefinition } from "../../../../hooks/useDashboard";
+import { memo, useState } from "react";
+import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
+import { ZoomIcon } from "../../../../constants/icons";
 
 interface PanelProps {
   children: null | JSX.Element | JSX.Element[];
@@ -28,19 +28,22 @@ interface PanelProps {
     | TableProps
     | TextProps;
   ready?: boolean;
-  showExpand?: boolean;
+  allowExpand?: boolean;
 }
 
 const Panel = ({
   children,
   definition,
-  showExpand = true,
+  allowExpand = true,
   ready = true,
 }: PanelProps) => {
-  const [panelRef, dimensions] = useDimensions();
+  const [showZoomIcon, setShowZoomIcon] = useState(false);
+  const [zoomIconClassName, setZoomIconClassName] =
+    useState("text-black-scale-4");
+  const { dispatch } = useDashboard();
 
   const baseStyles = classNames(
-    "col-span-12",
+    "relative col-span-12",
     getResponsivePanelWidthClass(definition.width),
     "overflow-auto"
   );
@@ -51,10 +54,40 @@ const Panel = ({
   return (
     <PanelProvider
       definition={definition}
-      dimensions={dimensions}
-      showExpand={showExpand}
+      allowExpand={allowExpand}
+      setZoomIconClassName={setZoomIconClassName}
     >
-      <div ref={panelRef} id={definition.name} className={baseStyles}>
+      <div
+        id={definition.name}
+        className={baseStyles}
+        onMouseEnter={
+          allowExpand
+            ? () => {
+                setShowZoomIcon(true);
+              }
+            : undefined
+        }
+        onMouseLeave={
+          allowExpand
+            ? () => {
+                setShowZoomIcon(false);
+              }
+            : undefined
+        }
+      >
+        {showZoomIcon && (
+          <div
+            className={classNames(
+              "absolute cursor-pointer z-50 right-1 top-1",
+              zoomIconClassName
+            )}
+            onClick={() =>
+              dispatch({ type: "select_panel", panel: definition })
+            }
+          >
+            <ZoomIcon className="h-5 w-5" />
+          </div>
+        )}
         <div className="col-span-12">
           <PlaceholderComponent
             animate={!!children}

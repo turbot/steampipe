@@ -23,7 +23,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
       </div>
       <Children
         children={[{ ...definition, width: 12 }]}
-        showPanelExpand={false}
+        allowPanelExpand={false}
       />
     </LayoutPanel>
   );

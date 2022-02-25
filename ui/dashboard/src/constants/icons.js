@@ -1,4 +1,11 @@
 import {
+  ArrowsExpandIcon as ArrowsExpandIconOutline,
+  ExclamationCircleIcon as ExclamationCircleIconOutline,
+  SearchIcon as SearchIconOutline,
+  UserGroupIcon as UserGroupIconOutline,
+  XIcon as XIconOutline,
+} from "@heroicons/react/outline";
+import {
   CheckIcon as CheckIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
@@ -6,18 +13,13 @@ import {
   InformationCircleIcon as InformationCircleIconSolid,
   XIcon as XIconSolid,
 } from "@heroicons/react/solid";
-import {
-  ExclamationCircleIcon as ExclamationCircleIconOutline,
-  SearchIcon as SearchIconOutline,
-  UserGroupIcon as UserGroupIconOutline,
-  XIcon as XIconOutline,
-} from "@heroicons/react/outline";
 
 // General
 export const ClearIcon = XIconOutline;
 export const CloseIcon = XIconOutline;
 export const ErrorIcon = ExclamationCircleIconOutline;
 export const SearchIcon = SearchIconOutline;
+export const ZoomIcon = ArrowsExpandIconOutline;
 
 // Call to Action
 export const FeedbackIcon = UserGroupIconOutline;
