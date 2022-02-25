@@ -67,42 +67,46 @@ dashboard "inputs" {
   }
 
   container {
-    text {
-      value = "container input"
-    }
-    input "region2" {
-      sql = query.aws_region_input.sql
-      width = 3
-    }
-
-    chart {
-      type  = "donut"
-      width = 5
-      query = query.aws_s3_buckets_by_versioning_enabled
-      args = {
-        "region" = self.input.region.value
-      }
-      title = "AWS IAM Users MFA Status"
-
-      series "Total" {
-        point "Disabled" {
-          color = "red"
+    container {
+      container {
+        text {
+          value = "container input"
+        }
+        input "region2" {
+          sql = query.aws_region_input.sql
+          width = 3
         }
 
-        point "Enabled" {
-          color = "green"
+        chart {
+          type = "donut"
+          width = 5
+          query = query.aws_s3_buckets_by_versioning_enabled
+          args = {
+            "region" = self.input.region.value
+          }
+          title = "AWS IAM Users MFA Status"
+
+          series "Total" {
+            point "Disabled" {
+              color = "red"
+            }
+
+            point "Enabled" {
+              color = "green"
+            }
+          }
+        }
+
+        chart {
+          type = "pie"
+          width = 3
+          query = query.aws_s3_buckets_by_versioning_enabled
+          args = {
+            "region" = self.input.region2.value
+          }
+          title = "AWS IAM Users MFA Status"
         }
       }
-    }
-
-    chart {
-      type  = "pie"
-      width = 3
-      query = query.aws_s3_buckets_by_versioning_enabled
-      args = {
-        "region" = self.input.region2.value
-      }
-      title = "AWS IAM Users MFA Status"
     }
   }
 }
