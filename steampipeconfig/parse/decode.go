@@ -489,26 +489,26 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 	}()
 
 	for _, b := range content.Blocks {
-		// use generic block decoding
 		resources, blockRes := decodeBlock(b, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
 		}
 
-		// all blocks are child report nodes
 		for _, resource := range resources {
+			// special handling for inputs
 			if b.Type == modconfig.BlockTypeInput {
 				input := resource.(*modconfig.DashboardInput)
 				dashboardContainer.Inputs = append(dashboardContainer.Inputs, input)
 				dashboardContainer.AddChild(input)
-			}
+				// the input will be added to the mod by the parent dashboard
 
-			// add the resource to the mod
-			addResourcesToMod(runCtx, resource)
-
-			if child, ok := resource.(modconfig.ModTreeItem); ok {
-				dashboardContainer.AddChild(child)
+			} else {
+				// for all other children, add to mod and children
+				addResourcesToMod(runCtx, resource)
+				if child, ok := resource.(modconfig.ModTreeItem); ok {
+					dashboardContainer.AddChild(child)
+				}
 			}
 		}
 	}

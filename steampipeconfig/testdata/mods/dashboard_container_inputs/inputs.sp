@@ -58,16 +58,23 @@ EOQ
 dashboard "inputs" {
   title = "Inputs Test"
 
+  text {
+    value = "dasboard input"
+  }
   input "region" {
     sql   = query.aws_region_input.sql
     width = 3
   }
 
   container {
+    text {
+      value = "container input"
+    }
     input "region2" {
       sql = query.aws_region_input.sql
       width = 3
     }
+
     chart {
       type  = "donut"
       width = 5
