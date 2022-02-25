@@ -16,7 +16,7 @@ type DashboardInput struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 
-	FullName        string `cty:"name" json:"-"`
+	FullName        string `cty:"name" json:"-" column:"full_name,text"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `cty:"unqualified_name" json:"name"`
 
@@ -46,7 +46,6 @@ type DashboardInput struct {
 	dashboard *Dashboard
 }
 
-// TODO [reports] remove the need for this when we refactor input values resolution
 func (i *DashboardInput) Clone() *DashboardInput {
 	return &DashboardInput{
 		ResourceWithMetadataBase: i.ResourceWithMetadataBase,
