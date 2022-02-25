@@ -768,7 +768,8 @@ func init() {
 				},
 			},
 		},
-		"report_base1": { // this test checks inheriting and overriding base values while parsing
+		"report_base1": {
+			// this test checks inheriting and overriding base values while parsing
 			source: "testdata/mods/report_base1",
 			expected: &modconfig.Mod{
 				ShortName:   "report_base1",

@@ -1,0 +1,1 @@
+select count(*) as "Total # of IAM Policies" from aws_iam_policy;

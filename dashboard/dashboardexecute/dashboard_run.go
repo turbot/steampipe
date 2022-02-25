@@ -86,6 +86,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 			}
 		case *modconfig.DashboardInput:
 			// NOTE: clone the input to avoid mutating the original
+			// TODO [reports] remove the need for this when we refactor input values resolution
 			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
 			if err != nil {
 				return nil, err
