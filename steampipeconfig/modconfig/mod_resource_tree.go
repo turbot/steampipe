@@ -82,7 +82,7 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
 	return nil
 }
 
-// check whether a resource with the same name has already been added
+// check whether a resource with the same name has already been added to the mod
 // (it is possible to add the same resource to a mod more than once as the parent resource
 // may have dependency errors and so be decoded again)
 func checkForDuplicate(existing, new HclResource) hcl.Diagnostics {
@@ -90,7 +90,11 @@ func checkForDuplicate(existing, new HclResource) hcl.Diagnostics {
 		// decl range is the same - this is the same resource - allowable
 		return nil
 	}
-	return duplicateResourceDiagnostics(new)
+	return hcl.Diagnostics{&hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("Mod defines more than one resource named '%s'", new.Name()),
+		Subject:  new.GetDeclRange(),
+	}}
 }
 
 func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
@@ -168,12 +172,25 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 		m.DashboardImages[name] = r
 
 	case *DashboardInput:
+		// if input has a dashboard asssigned, add to DashboardInputs
 		name := r.Name()
-		if existing, ok := m.DashboardInputs[name]; ok {
+		if dashboardName := r.DashboardName; dashboardName != "" {
+			inputsForDashboard := m.DashboardInputs[dashboardName]
+			if inputsForDashboard == nil {
+				inputsForDashboard = make(map[string]*DashboardInput)
+				m.DashboardInputs[dashboardName] = inputsForDashboard
+			}
+			// no need to check for dupes as we have already checked before adding the input to th m od
+			inputsForDashboard[name] = r
+			break
+		}
+
+		// so Dashboard Input must be global
+		if existing, ok := m.GlobalDashboardInputs[name]; ok {
 			diags = append(diags, checkForDuplicate(existing, item)...)
 			break
 		}
-		m.DashboardInputs[name] = r
+		m.GlobalDashboardInputs[name] = r
 
 	case *DashboardTable:
 		name := r.Name()
@@ -210,12 +227,4 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 
 	}
 	return diags
-}
-
-func duplicateResourceDiagnostics(item HclResource) hcl.Diagnostics {
-	return hcl.Diagnostics{&hcl.Diagnostic{
-		Severity: hcl.DiagError,
-		Summary:  fmt.Sprintf("mod defines more than one resource named %s", item.Name()),
-		Subject:  item.GetDeclRange(),
-	}}
 }

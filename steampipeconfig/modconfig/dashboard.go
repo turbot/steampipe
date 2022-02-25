@@ -230,11 +230,6 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 			break
 		}
 
-		if childDashboard, ok := child.(*Dashboard); ok {
-			if err := childDashboard.WalkResources(resourceFunc); err != nil {
-				return err
-			}
-		}
 		if childContainer, ok := child.(*DashboardContainer); ok {
 			if err := childContainer.WalkResources(resourceFunc); err != nil {
 				return err
@@ -305,19 +300,22 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 	return input, found
 }
 
-func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
+func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
+
 	d.Inputs = inputs
-	d.setInputMap()
+
+	// add all our direct child inputs to a mp
+	// (we must do this before adding child container inputs to detect dupes)
+	duplicates := d.setInputMap()
 
 	//  add child containers and dashboard inputs
-	var duplicates []string
 	resourceFunc := func(resource HclResource) (bool, error) {
-		if dashboard, ok := resource.(*Dashboard); ok {
-			for _, i := range dashboard.Inputs {
+		if container, ok := resource.(*DashboardContainer); ok {
+			for _, i := range container.Inputs {
 				// check we do not already have this input
 				if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
 					duplicates = append(duplicates, i.Name())
-					continue
+
 				}
 				d.Inputs = append(d.Inputs, i)
 				d.selfInputsMap[i.UnqualifiedName] = i
@@ -329,17 +327,36 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
 	d.WalkResources(resourceFunc)
 
 	if len(duplicates) > 0 {
-		return fmt.Errorf("duplicate input names found for %s: %s", d.Name(), strings.Join(duplicates, ","))
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("Dashboard '%s' contains duplicate input names for: %s", d.Name(), strings.Join(duplicates, ",")),
+			Subject:  &d.DeclRange,
+		}}
 	}
-	return nil
+
+	var diags hcl.Diagnostics
+	// now 'claim' all inputs and add to mod
+	for _, input := range inputs {
+		input.SetDashboard(d)
+		moreDiags := d.Mod.AddResource(input)
+		diags = append(diags, moreDiags...)
+	}
+
+	return diags
 }
 
 // populate our input map
-func (d *Dashboard) setInputMap() {
+func (d *Dashboard) setInputMap() []string {
+	var duplicates []string
 	d.selfInputsMap = make(map[string]*DashboardInput)
 	for _, i := range d.Inputs {
-		d.selfInputsMap[i.UnqualifiedName] = i
+		if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
+			duplicates = append(duplicates, i.UnqualifiedName)
+		} else {
+			d.selfInputsMap[i.UnqualifiedName] = i
+		}
 	}
+	return duplicates
 }
 
 func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
@@ -365,9 +382,7 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 		d.ChildNames = d.Base.ChildNames
 	}
 
-	if len(d.Inputs) == 0 {
-		d.cloneInputs(d.Base.Inputs)
-	}
+	d.addBaseInputs(d.Base.Inputs)
 
 	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
 
@@ -380,21 +395,27 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	}
 }
 
-func (d *Dashboard) cloneInputs(baseInputs []*DashboardInput) {
-	d.Inputs = make([]*DashboardInput, len(baseInputs))
-	// rebuild children
-	var children = make([]ModTreeItem, len(baseInputs))
+func (d *Dashboard) addBaseInputs(baseInputs []*DashboardInput) {
+	if len(baseInputs) == 0 {
+		return
+	}
+	// rebuild Inputs and children
+	inheritedInputs := make([]*DashboardInput, len(baseInputs))
+	inheritedChildren := make([]ModTreeItem, len(baseInputs))
+
 	for i, baseInput := range baseInputs {
 		input := baseInput.Clone()
 		input.SetDashboard(d)
 		// add to mod
 		d.Mod.AddResource(input)
 		// add to our inputs
-		d.Inputs[i] = input
-		children[i] = input
+		inheritedInputs[i] = input
+		inheritedChildren[i] = input
 
 	}
+	// add inputs to beginning of our existing inputs (if any)
+	d.Inputs = append(inheritedInputs, d.Inputs...)
 	// add inputs to beginning of our children
-	d.children = append(children, d.children...)
+	d.children = append(inheritedChildren, d.children...)
 	d.setInputMap()
 }

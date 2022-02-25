@@ -8,23 +8,24 @@ type WorkspaceResourceMaps struct {
 	// the parent mod
 	Mod *Mod
 	// all mods (including deps)
-	Mods                 map[string]*Mod
-	Queries              map[string]*Query
-	Controls             map[string]*Control
-	Benchmarks           map[string]*Benchmark
-	Variables            map[string]*Variable
-	Dashboards           map[string]*Dashboard
-	DashboardContainers  map[string]*DashboardContainer
-	DashboardCards       map[string]*DashboardCard
-	DashboardCharts      map[string]*DashboardChart
-	DashboardHierarchies map[string]*DashboardHierarchy
-	DashboardImages      map[string]*DashboardImage
-	DashboardInputs      map[string]*DashboardInput
-	DashboardTables      map[string]*DashboardTable
-	DashboardTexts       map[string]*DashboardText
-	References           map[string]*ResourceReference
-	Locals               map[string]*Local
+	Mods                  map[string]*Mod
+	Queries               map[string]*Query
+	Controls              map[string]*Control
+	Benchmarks            map[string]*Benchmark
+	Variables             map[string]*Variable
+	Dashboards            map[string]*Dashboard
+	DashboardContainers   map[string]*DashboardContainer
+	DashboardCards        map[string]*DashboardCard
+	DashboardCharts       map[string]*DashboardChart
+	DashboardHierarchies  map[string]*DashboardHierarchy
+	DashboardImages       map[string]*DashboardImage
+	DashboardInputs       map[string]map[string]*DashboardInput
+	GlobalDashboardInputs map[string]*DashboardInput
+	DashboardTables       map[string]*DashboardTable
+	DashboardTexts        map[string]*DashboardText
+	References            map[string]*ResourceReference
 
+	Locals          map[string]*Local
 	LocalQueries    map[string]*Query
 	LocalControls   map[string]*Control
 	LocalBenchmarks map[string]*Benchmark
@@ -32,46 +33,48 @@ type WorkspaceResourceMaps struct {
 
 func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 	return &WorkspaceResourceMaps{
-		Mod:                  mod,
-		Mods:                 make(map[string]*Mod),
-		Queries:              make(map[string]*Query),
-		Controls:             make(map[string]*Control),
-		Benchmarks:           make(map[string]*Benchmark),
-		Variables:            make(map[string]*Variable),
-		Dashboards:           make(map[string]*Dashboard),
-		DashboardContainers:  make(map[string]*DashboardContainer),
-		DashboardCards:       make(map[string]*DashboardCard),
-		DashboardCharts:      make(map[string]*DashboardChart),
-		DashboardHierarchies: make(map[string]*DashboardHierarchy),
-		DashboardImages:      make(map[string]*DashboardImage),
-		DashboardInputs:      make(map[string]*DashboardInput),
-		DashboardTables:      make(map[string]*DashboardTable),
-		DashboardTexts:       make(map[string]*DashboardText),
-		References:           make(map[string]*ResourceReference),
-		LocalQueries:         make(map[string]*Query),
-		LocalControls:        make(map[string]*Control),
-		LocalBenchmarks:      make(map[string]*Benchmark),
+		Mod:                   mod,
+		Mods:                  make(map[string]*Mod),
+		Queries:               make(map[string]*Query),
+		Controls:              make(map[string]*Control),
+		Benchmarks:            make(map[string]*Benchmark),
+		Variables:             make(map[string]*Variable),
+		Dashboards:            make(map[string]*Dashboard),
+		DashboardContainers:   make(map[string]*DashboardContainer),
+		DashboardCards:        make(map[string]*DashboardCard),
+		DashboardCharts:       make(map[string]*DashboardChart),
+		DashboardHierarchies:  make(map[string]*DashboardHierarchy),
+		DashboardImages:       make(map[string]*DashboardImage),
+		DashboardInputs:       make(map[string]map[string]*DashboardInput),
+		GlobalDashboardInputs: make(map[string]*DashboardInput),
+		DashboardTables:       make(map[string]*DashboardTable),
+		DashboardTexts:        make(map[string]*DashboardText),
+		References:            make(map[string]*ResourceReference),
+		LocalQueries:          make(map[string]*Query),
+		LocalControls:         make(map[string]*Control),
+		LocalBenchmarks:       make(map[string]*Benchmark),
 	}
 }
 
 func CreateWorkspaceResourceMapForMod(mod *Mod) *WorkspaceResourceMaps {
 	resourceMaps := &WorkspaceResourceMaps{
-		Mod:                  mod,
-		Mods:                 make(map[string]*Mod),
-		Queries:              mod.Queries,
-		Controls:             mod.Controls,
-		Benchmarks:           mod.Benchmarks,
-		Variables:            mod.Variables,
-		Dashboards:           mod.Dashboards,
-		DashboardContainers:  mod.DashboardContainers,
-		DashboardCharts:      mod.DashboardCharts,
-		DashboardCards:       mod.DashboardCards,
-		DashboardHierarchies: mod.DashboardHierarchies,
-		DashboardImages:      mod.DashboardImages,
-		DashboardInputs:      mod.DashboardInputs,
-		DashboardTables:      mod.DashboardTables,
-		DashboardTexts:       mod.DashboardTexts,
-		Locals:               mod.Locals,
+		Mod:                   mod,
+		Mods:                  make(map[string]*Mod),
+		Queries:               mod.Queries,
+		Controls:              mod.Controls,
+		Benchmarks:            mod.Benchmarks,
+		Variables:             mod.Variables,
+		Dashboards:            mod.Dashboards,
+		DashboardContainers:   mod.DashboardContainers,
+		DashboardCharts:       mod.DashboardCharts,
+		DashboardCards:        mod.DashboardCards,
+		DashboardHierarchies:  mod.DashboardHierarchies,
+		DashboardImages:       mod.DashboardImages,
+		DashboardInputs:       mod.DashboardInputs,
+		GlobalDashboardInputs: mod.GlobalDashboardInputs,
+		DashboardTables:       mod.DashboardTables,
+		DashboardTexts:        mod.DashboardTexts,
+		Locals:                mod.Locals,
 	}
 	// if mod is not a default mod (i.e. if there is a mod.sp), add it into the resource maps
 	if !mod.IsDefaultMod() {
@@ -81,29 +84,27 @@ func CreateWorkspaceResourceMapForMod(mod *Mod) *WorkspaceResourceMaps {
 	return resourceMaps
 }
 
-func CreateWorkspaceResourceMapForQueryProviders(queryProviders []QueryProvider) *WorkspaceResourceMaps {
-	res := &WorkspaceResourceMaps{
-		Mods:       make(map[string]*Mod),
-		Queries:    make(map[string]*Query),
-		Controls:   make(map[string]*Control),
-		Benchmarks: make(map[string]*Benchmark),
-		Variables:  make(map[string]*Variable),
-		References: make(map[string]*ResourceReference),
-	}
+func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *Mod) *WorkspaceResourceMaps {
+	res := NewWorkspaceResourceMaps(mod)
 	for _, p := range queryProviders {
-		res.addQueryProvider(p)
+		res.addControlOrQuery(p)
 	}
 	return res
 }
 
 func (m *WorkspaceResourceMaps) QueryProviders() []QueryProvider {
+	numDashboardInputs := 0
+	for _, inputs := range m.DashboardInputs {
+		numDashboardInputs += len(inputs)
+	}
 	res := make([]QueryProvider,
 		len(m.Queries)+
 			len(m.Controls)+
 			len(m.DashboardCards)+
 			len(m.DashboardCharts)+
 			len(m.DashboardHierarchies)+
-			len(m.DashboardInputs)+
+			numDashboardInputs+
+			len(m.GlobalDashboardInputs)+
 			len(m.DashboardTables))
 
 	idx := 0
@@ -127,7 +128,13 @@ func (m *WorkspaceResourceMaps) QueryProviders() []QueryProvider {
 		res[idx] = p
 		idx++
 	}
-	for _, p := range m.DashboardInputs {
+	for _, inputsForDashboard := range m.DashboardInputs {
+		for _, p := range inputsForDashboard {
+			res[idx] = p
+			idx++
+		}
+	}
+	for _, p := range m.GlobalDashboardInputs {
 		res[idx] = p
 		idx++
 	}
@@ -273,11 +280,37 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 		}
 	}
 
-	for name, images := range m.DashboardInputs {
-		if otherImage, ok := other.DashboardInputs[name]; !ok {
+	for name, input := range m.GlobalDashboardInputs {
+		if otherInput, ok := other.GlobalDashboardInputs[name]; !ok {
 			return false
-		} else if !images.Equals(otherImage) {
+		} else if !input.Equals(otherInput) {
 			return false
+		}
+	}
+	for name := range other.DashboardInputs {
+		if _, ok := m.DashboardInputs[name]; !ok {
+			return false
+		}
+	}
+
+	for dashboardName, inputsForDashboard := range m.DashboardInputs {
+		if otherInputsForDashboard, ok := other.DashboardInputs[dashboardName]; !ok {
+			return false
+		} else {
+
+			for name, input := range inputsForDashboard {
+				if otherInput, ok := otherInputsForDashboard[name]; !ok {
+					return false
+				} else if !input.Equals(otherInput) {
+					return false
+				}
+			}
+			for name := range otherInputsForDashboard {
+				if _, ok := inputsForDashboard[name]; !ok {
+					return false
+				}
+			}
+
 		}
 	}
 	for name := range other.DashboardInputs {
@@ -370,7 +403,8 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.References) == 0
 }
 
-func (m *WorkspaceResourceMaps) addQueryProvider(provider QueryProvider) {
+// this is used to create an optimized WorkspaceResourceMaps containing only the queries which will be run
+func (m *WorkspaceResourceMaps) addControlOrQuery(provider QueryProvider) {
 	switch p := provider.(type) {
 	case *Query:
 		if p != nil {
@@ -379,22 +413,6 @@ func (m *WorkspaceResourceMaps) addQueryProvider(provider QueryProvider) {
 	case *Control:
 		if p != nil {
 			m.Controls[p.FullName] = p
-		}
-	case *DashboardCard:
-		if p != nil {
-			m.DashboardCards[p.FullName] = p
-		}
-	case *DashboardChart:
-		if p != nil {
-			m.DashboardCharts[p.FullName] = p
-		}
-	case *DashboardHierarchy:
-		if p != nil {
-			m.DashboardHierarchies[p.FullName] = p
-		}
-	case *DashboardInput:
-		if p != nil {
-			m.DashboardInputs[p.FullName] = p
 		}
 	}
 }
@@ -448,9 +466,16 @@ func (m *WorkspaceResourceMaps) WalkResources(resourceFunc func(item HclResource
 			return err
 		}
 	}
-	for _, r := range m.DashboardInputs {
+	for _, r := range m.GlobalDashboardInputs {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
+		}
+	}
+	for _, inputsForDashboard := range m.DashboardInputs {
+		for _, r := range inputsForDashboard {
+			if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+				return err
+			}
 		}
 	}
 	for _, r := range m.DashboardTables {

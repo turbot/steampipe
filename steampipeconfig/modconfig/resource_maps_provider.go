@@ -2,6 +2,8 @@ package modconfig
 
 import "fmt"
 
+// GetResource tries to find a resource with the given name in the ResourceMapsProvider
+// NOTE: this does NOT support inputs, which are NOT uniquely named in a mod
 func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) (resource HclResource, found bool) {
 	resourceMaps := provider.GetResourceMaps()
 	modName := parsedName.Mod
@@ -27,8 +29,6 @@ func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) 
 		resource, found = resourceMaps.DashboardHierarchies[longName]
 	case BlockTypeImage:
 		resource, found = resourceMaps.DashboardImages[longName]
-	case BlockTypeInput:
-		resource, found = resourceMaps.DashboardInputs[longName]
 	case BlockTypeTable:
 		resource, found = resourceMaps.DashboardTables[longName]
 	case BlockTypeText:

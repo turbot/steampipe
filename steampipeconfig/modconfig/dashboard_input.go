@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -16,9 +15,10 @@ type DashboardInput struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 
-	FullName        string `cty:"name" json:"-" column:"full_name,text"`
+	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
 	UnqualifiedName string `cty:"unqualified_name" json:"name"`
+	DashboardName   string `column:"dashboard,text"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title       *string                 `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -40,8 +40,8 @@ type DashboardInput struct {
 	DeclRange  hcl.Range            `json:"-"`
 	References []*ResourceReference `json:"-"`
 	Mod        *Mod                 `cty:"mod" json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
+	Paths     []NodePath `column:"path,jsonb" json:"-"`
 	parents   []ModTreeItem
 	dashboard *Dashboard
 }
@@ -229,10 +229,7 @@ func (i *DashboardInput) GetUnqualifiedName() string {
 // SetDashboard sets the parent dashboard container
 func (i *DashboardInput) SetDashboard(dashboard *Dashboard) {
 	i.dashboard = dashboard
-	// update the full name the with the sanitised parent dashboard name
-	dashboardNameSuffix := i.dashboardNameSuffix()
-	i.FullName = fmt.Sprintf("%s%s", i.FullName, dashboardNameSuffix)
-	// note: DO NOT update the unqualified name - this will be used in the parent dashboard selfInputsMap
+	i.DashboardName = dashboard.Name()
 }
 
 // GetParams implements QueryProvider
@@ -284,12 +281,6 @@ func (i *DashboardInput) GetPreparedStatementName() string {
 func (i *DashboardInput) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
 	// defer to base
 	return i.getPreparedStatementExecuteSQL(i, args)
-}
-
-// DashboardNameSuffix creates a sanitised name suffix from our parent dashboard
-func (i *DashboardInput) dashboardNameSuffix() string {
-	sanitisedDashboardName := strings.Replace(i.dashboard.UnqualifiedName, ".", "_", -1)
-	return fmt.Sprintf("_%s", sanitisedDashboardName)
 }
 
 func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
