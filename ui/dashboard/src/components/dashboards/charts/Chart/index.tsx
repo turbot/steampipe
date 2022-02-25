@@ -56,7 +56,7 @@ echarts.use([
 
 const getThemeColorsWithPointOverrides = (
   type: ChartType = "column",
-  series: any,
+  series: any[],
   seriesOverrides: ChartSeries | undefined,
   dataset: any[][]
 ) => {
@@ -129,7 +129,7 @@ const getCommonBaseOptionsForChartType = (
   type: ChartType | undefined,
   width: Width | undefined,
   dataset: any[][],
-  series: any | undefined,
+  series: any[],
   seriesOverrides: ChartSeries | undefined,
   themeColors
 ) => {
@@ -462,7 +462,7 @@ const getSeriesForChartType = (
   themeColors
 ) => {
   if (!data) {
-    return {};
+    return [];
   }
   const series: any[] = [];
   const seriesNames =
@@ -549,7 +549,7 @@ const getSeriesForChartType = (
         });
     }
   }
-  return { series };
+  return series;
 };
 
 const buildChartOptions = (
@@ -572,7 +572,7 @@ const buildChartOptions = (
     props.data,
     props.properties
   );
-  const seriesData = getSeriesForChartType(
+  const series = getSeriesForChartType(
     props.properties?.type,
     props.data,
     props.properties,
@@ -586,12 +586,12 @@ const buildChartOptions = (
       props.properties?.type,
       props.properties?.parentWidth || props.width,
       dataset,
-      seriesData.series,
+      series,
       props.properties?.series,
       themeColors
     ),
     getOptionOverridesForChartType(props.properties?.type, props.properties),
-    seriesData,
+    { series },
     {
       dataset: {
         source: dataset,
