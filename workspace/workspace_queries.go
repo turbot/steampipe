@@ -35,7 +35,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 	}
 	var preparedStatementSource *modconfig.WorkspaceResourceMaps
 	if len(queries) > 0 {
-		preparedStatementSource = modconfig.CreateWorkspaceResourceMapForQueryProviders(queryProviders)
+		preparedStatementSource = modconfig.CreateWorkspaceResourceMapForQueries(queryProviders, w.Mod)
 	}
 	return queries, preparedStatementSource, nil
 }

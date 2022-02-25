@@ -119,10 +119,10 @@ var DashboardBlockSchema = &hcl.BodySchema{
 		{
 			Type: modconfig.BlockTypeContainer,
 		},
-		{
-			Type:       modconfig.BlockTypeDashboard,
-			LabelNames: []string{"name"},
-		},
+		//{
+		//	Type:       modconfig.BlockTypeDashboard,
+		//	LabelNames: []string{"name"},
+		//},
 		{
 			Type: modconfig.BlockTypeCard,
 		},
@@ -157,16 +157,20 @@ var DashboardContainerBlockSchema = &hcl.BodySchema{
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
+			Type:       modconfig.BlockTypeInput,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type:       modconfig.BlockTypeParam,
 			LabelNames: []string{"name"},
 		},
 		{
 			Type: modconfig.BlockTypeContainer,
 		},
-		{
-			Type:       modconfig.BlockTypeDashboard,
-			LabelNames: []string{"name"},
-		},
+		//{
+		//	Type:       modconfig.BlockTypeDashboard,
+		//	LabelNames: []string{"name"},
+		//},
 		{
 			Type: modconfig.BlockTypeCard,
 		},

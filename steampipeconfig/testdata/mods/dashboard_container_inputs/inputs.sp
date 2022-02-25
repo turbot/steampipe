@@ -93,7 +93,7 @@ dashboard "inputs" {
       width = 3
       query = query.aws_s3_buckets_by_versioning_enabled
       args = {
-        "region" = self.input2.region.value
+        "region" = self.input.region2.value
       }
       title = "AWS IAM Users MFA Status"
     }

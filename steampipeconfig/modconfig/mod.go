@@ -63,11 +63,14 @@ type Mod struct {
 	DashboardCharts      map[string]*DashboardChart
 	DashboardHierarchies map[string]*DashboardHierarchy
 	DashboardImages      map[string]*DashboardImage
-	DashboardInputs      map[string]*DashboardInput
 	DashboardTables      map[string]*DashboardTable
 	DashboardTexts       map[string]*DashboardText
 	Variables            map[string]*Variable
 	Locals               map[string]*Local
+	// inputs in a dashboard
+	DashboardInputs map[string]map[string]*DashboardInput
+	// top level inputs
+	GlobalDashboardInputs map[string]*DashboardInput
 
 	// ModPath is the installation location of the mod
 	ModPath   string
@@ -85,22 +88,23 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 		return nil, err
 	}
 	mod := &Mod{
-		ShortName:            shortName,
-		FullName:             fmt.Sprintf("mod.%s", shortName),
-		Queries:              make(map[string]*Query),
-		Controls:             make(map[string]*Control),
-		Benchmarks:           make(map[string]*Benchmark),
-		Dashboards:           make(map[string]*Dashboard),
-		DashboardContainers:  make(map[string]*DashboardContainer),
-		DashboardCards:       make(map[string]*DashboardCard),
-		DashboardCharts:      make(map[string]*DashboardChart),
-		DashboardHierarchies: make(map[string]*DashboardHierarchy),
-		DashboardImages:      make(map[string]*DashboardImage),
-		DashboardInputs:      make(map[string]*DashboardInput),
-		DashboardTables:      make(map[string]*DashboardTable),
-		DashboardTexts:       make(map[string]*DashboardText),
-		Variables:            make(map[string]*Variable),
-		Locals:               make(map[string]*Local),
+		ShortName:             shortName,
+		FullName:              fmt.Sprintf("mod.%s", shortName),
+		Queries:               make(map[string]*Query),
+		Controls:              make(map[string]*Control),
+		Benchmarks:            make(map[string]*Benchmark),
+		Dashboards:            make(map[string]*Dashboard),
+		DashboardContainers:   make(map[string]*DashboardContainer),
+		DashboardCards:        make(map[string]*DashboardCard),
+		DashboardCharts:       make(map[string]*DashboardChart),
+		DashboardHierarchies:  make(map[string]*DashboardHierarchy),
+		DashboardImages:       make(map[string]*DashboardImage),
+		DashboardInputs:       make(map[string]map[string]*DashboardInput),
+		GlobalDashboardInputs: make(map[string]*DashboardInput),
+		DashboardTables:       make(map[string]*DashboardTable),
+		DashboardTexts:        make(map[string]*DashboardText),
+		Variables:             make(map[string]*Variable),
+		Locals:                make(map[string]*Local),
 
 		ModPath:   modPath,
 		DeclRange: defRange,

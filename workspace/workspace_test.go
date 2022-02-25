@@ -159,7 +159,7 @@ func TestLoadWorkspace(t *testing.T) {
 
 func WorkspacesEqual(expected, actual *Workspace) (bool, string) {
 
-	errors := []string{}
+	var errors []string
 	if actual.Mod.String() != expected.Mod.String() {
 		errors = append(errors, fmt.Sprintf("workspace mods do not match - expected \n\n%s\n\nbut got\n\n%s\n", expected.Mod.String(), actual.Mod.String()))
 	}
@@ -181,5 +181,5 @@ func WorkspacesEqual(expected, actual *Workspace) (bool, string) {
 			errors = append(errors, fmt.Sprintf("unexpected query %s in query map", name))
 		}
 	}
-	return len(errors) > 0, strings.Join(errors, "\n")
+	return len(errors) == 0, strings.Join(errors, "\n")
 }

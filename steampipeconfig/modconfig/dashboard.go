@@ -305,12 +305,15 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 	return input, found
 }
 
-func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
+func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+
 	d.Inputs = inputs
 	d.setInputMap()
 
 	for _, input := range inputs {
-		d.Mod.AddResource(input)
+		moreDiags := d.Mod.AddResource(input)
+		diags = append(diags, moreDiags...)
 	}
 
 	//  add child containers and dashboard inputs
@@ -347,9 +350,14 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) error {
 	d.WalkResources(resourceFunc)
 
 	if len(duplicates) > 0 {
-		return fmt.Errorf("duplicate input names found for %s: %s", d.Name(), strings.Join(duplicates, ","))
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("Dashboard %s contains duplicate input names for: %s", d.Name(), strings.Join(duplicates, ",")),
+			Subject:  &d.DeclRange,
+		})
+
 	}
-	return nil
+	return diags
 }
 
 // populate our input map

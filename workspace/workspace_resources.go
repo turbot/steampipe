@@ -33,6 +33,11 @@ func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
+	/// this will only occur for unit tests
+	if w.resourceMaps == nil {
+		w.populateResourceMaps()
+	}
+
 	return w.resourceMaps
 }
 
@@ -42,24 +47,25 @@ func (w *Workspace) populateResourceMaps() {
 	benchmarks, localBenchmarks := w.buildBenchmarkMap()
 
 	w.resourceMaps = &modconfig.WorkspaceResourceMaps{
-		Mod:                  w.Mod,
-		Mods:                 make(map[string]*modconfig.Mod),
-		LocalQueries:         localQueries,
-		Queries:              queries,
-		Controls:             controls,
-		LocalControls:        localControls,
-		Benchmarks:           benchmarks,
-		LocalBenchmarks:      localBenchmarks,
-		Variables:            w.Variables,
-		Dashboards:           w.buildDashboardMap(),
-		DashboardContainers:  w.buildDashboardContainerMap(),
-		DashboardCards:       w.buildDashboardCardMap(),
-		DashboardCharts:      w.buildDashboardChartMap(),
-		DashboardHierarchies: w.buildDashboardHierarchyMap(),
-		DashboardImages:      w.buildDashboardImageMap(),
-		DashboardInputs:      w.buildDashboardInputMap(),
-		DashboardTables:      w.buildDashboardTableMap(),
-		DashboardTexts:       w.buildDashboardTextMap(),
+		Mod:                   w.Mod,
+		Mods:                  make(map[string]*modconfig.Mod),
+		LocalQueries:          localQueries,
+		Queries:               queries,
+		Controls:              controls,
+		LocalControls:         localControls,
+		Benchmarks:            benchmarks,
+		LocalBenchmarks:       localBenchmarks,
+		Variables:             w.Variables,
+		Dashboards:            w.buildDashboardMap(),
+		DashboardContainers:   w.buildDashboardContainerMap(),
+		DashboardCards:        w.buildDashboardCardMap(),
+		DashboardCharts:       w.buildDashboardChartMap(),
+		DashboardHierarchies:  w.buildDashboardHierarchyMap(),
+		DashboardImages:       w.buildDashboardImageMap(),
+		DashboardInputs:       w.buildDashboardInputMap(),
+		GlobalDashboardInputs: w.buildGlobalDashboardInputMap(),
+		DashboardTables:       w.buildDashboardTableMap(),
+		DashboardTexts:        w.buildDashboardTextMap(),
 	}
 	w.resourceMaps.PopulateReferences()
 	// if mod is not a default mod (i.e. if there is a mod.sp), add it into the resource maps
@@ -224,16 +230,38 @@ func (w *Workspace) buildDashboardImageMap() map[string]*modconfig.DashboardImag
 	return res
 }
 
-func (w *Workspace) buildDashboardInputMap() map[string]*modconfig.DashboardInput {
+func (w *Workspace) buildDashboardInputMap() map[string]map[string]*modconfig.DashboardInput {
+	var res = make(map[string]map[string]*modconfig.DashboardInput)
+
+	for dashboardName, dashboardInputs := range w.Mod.DashboardInputs {
+		res[dashboardName] = make(map[string]*modconfig.DashboardInput)
+
+		for _, i := range dashboardInputs {
+			res[dashboardName][i.Name()] = i
+		}
+	}
+	for _, mod := range w.Mods {
+		for dashboardName, dashboardInputs := range mod.DashboardInputs {
+			res[dashboardName] = make(map[string]*modconfig.DashboardInput)
+
+			for _, i := range dashboardInputs {
+				res[dashboardName][i.Name()] = i
+			}
+		}
+	}
+	return res
+}
+
+func (w *Workspace) buildGlobalDashboardInputMap() map[string]*modconfig.DashboardInput {
 	var res = make(map[string]*modconfig.DashboardInput)
 
-	for _, p := range w.Mod.DashboardInputs {
-		res[p.Name()] = p
+	for _, i := range w.Mod.GlobalDashboardInputs {
+		res[i.Name()] = i
 	}
 
 	for _, mod := range w.Mods {
-		for _, p := range mod.DashboardInputs {
-			res[p.Name()] = p
+		for _, i := range mod.GlobalDashboardInputs {
+			res[i.Name()] = i
 		}
 	}
 	return res

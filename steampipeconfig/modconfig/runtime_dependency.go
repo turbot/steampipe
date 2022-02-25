@@ -27,8 +27,8 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 	if d.PropertyPath.Scope == runtimeDependencyDashboardScope {
 		sourceResource, found = dashboard.GetInput(resourceName)
 	} else {
-		// otherwise, resolve from the workspace
-		sourceResource, found = workspace.GetResourceMaps().DashboardInputs[resourceName]
+		// otherwise, resolve from the global inputs
+		sourceResource, found = workspace.GetResourceMaps().GlobalDashboardInputs[resourceName]
 	}
 	if !found {
 		return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)

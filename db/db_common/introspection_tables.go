@@ -99,8 +99,13 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 	for _, image := range workspaceResources.DashboardImages {
 		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableDashboardImage))
 	}
-	for _, image := range workspaceResources.DashboardInputs {
-		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableDashboardInput))
+	for _, dashboardInputs := range workspaceResources.DashboardInputs {
+		for _, input := range dashboardInputs {
+			insertSql = append(insertSql, getTableInsertSqlForResource(input, constants.IntrospectionTableDashboardInput))
+		}
+	}
+	for _, input := range workspaceResources.GlobalDashboardInputs {
+		insertSql = append(insertSql, getTableInsertSqlForResource(input, constants.IntrospectionTableDashboardInput))
 	}
 	for _, table := range workspaceResources.DashboardTables {
 		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableDashboardTable))

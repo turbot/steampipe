@@ -446,15 +446,8 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 		}
 	}
 
-	err := dashboard.SetInputs(inputs)
-	if err != nil {
-		res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Duplicate input names",
-			Detail:   err.Error(),
-			Subject:  &dashboard.DeclRange,
-		}})
-	}
+	moreDiags := dashboard.SetInputs(inputs)
+	res.addDiags(moreDiags)
 
 	return res
 }

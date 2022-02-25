@@ -82,6 +82,8 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Workspac
 func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *modconfig.WorkspaceResourceMaps) {
 	event := &dashboardevents.DashboardChanged{}
 
+	// TODO reports can we use a ResourceMaps diff function to do all of this - we are duplicating logic
+
 	// first detect changes to existing resources and deletions
 	for name, prev := range prevResourceMaps.Dashboards {
 		if current, ok := resourceMaps.Dashboards[name]; ok {
@@ -163,14 +165,32 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 			event.DeletedImages = append(event.DeletedImages, prev)
 		}
 	}
-	for name, prev := range prevResourceMaps.DashboardInputs {
-		if current, ok := resourceMaps.DashboardInputs[name]; ok {
+	for name, prev := range prevResourceMaps.GlobalDashboardInputs {
+		if current, ok := resourceMaps.GlobalDashboardInputs[name]; ok {
 			diff := prev.Diff(current)
 			if diff.HasChanges() {
 				event.ChangedInputs = append(event.ChangedInputs, diff)
 			}
 		} else {
 			event.DeletedInputs = append(event.DeletedInputs, prev)
+		}
+	}
+	for name, prevInputsForDashboard := range prevResourceMaps.DashboardInputs {
+		if currentInputsForDashboard, ok := resourceMaps.DashboardInputs[name]; ok {
+			for name, prev := range prevInputsForDashboard {
+				if current, ok := currentInputsForDashboard[name]; ok {
+					diff := prev.Diff(current)
+					if diff.HasChanges() {
+						event.ChangedInputs = append(event.ChangedInputs, diff)
+					}
+				} else {
+					event.DeletedInputs = append(event.DeletedInputs, prev)
+				}
+			}
+		} else {
+			for _, prev := range prevInputsForDashboard {
+				event.DeletedInputs = append(event.DeletedInputs, prev)
+			}
 		}
 	}
 	for name, prev := range prevResourceMaps.DashboardTables {
@@ -235,11 +255,26 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 			event.NewImages = append(event.NewImages, p)
 		}
 	}
-	for name, p := range resourceMaps.DashboardInputs {
+	for name, p := range resourceMaps.GlobalDashboardInputs {
 		if _, ok := prevResourceMaps.DashboardInputs[name]; !ok {
 			event.NewInputs = append(event.NewInputs, p)
 		}
 	}
+	for name, currentInputsForDashboard := range resourceMaps.DashboardInputs {
+		if prevInputsForDashboard, ok := prevResourceMaps.DashboardInputs[name]; ok {
+			for name, current := range currentInputsForDashboard {
+				if _, ok := prevInputsForDashboard[name]; !ok {
+					event.NewInputs = append(event.NewInputs, current)
+				}
+			}
+		} else {
+			// all new
+			for _, current := range currentInputsForDashboard {
+				event.NewInputs = append(event.NewInputs, current)
+			}
+		}
+	}
+
 	for name, p := range resourceMaps.DashboardTables {
 		if _, ok := prevResourceMaps.DashboardTables[name]; !ok {
 			event.NewTables = append(event.NewTables, p)
