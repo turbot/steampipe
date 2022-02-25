@@ -69,6 +69,9 @@ const getSeriesForHierarchyType = (
           },
           data: sankeyData,
           links,
+          tooltip: {
+            formatter: "{b}",
+          },
         });
         break;
       }
