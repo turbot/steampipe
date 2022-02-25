@@ -80,6 +80,7 @@ type DashboardLeafNode interface {
 	GetTitle() string
 	GetWidth() int
 	GetPaths() []NodePath
+	GetMetadata() *ResourceMetadata
 }
 
 type ResourceMapsProvider interface {

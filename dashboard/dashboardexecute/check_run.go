@@ -21,7 +21,8 @@ type CheckRun struct {
 	NodeType             string                        `json:"node_type"`
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
 	DashboardName        string                        `json:"dashboard"`
-	DashboardNode        modconfig.DashboardLeafNode   `json:"-"`
+	SourceDefinition     string                        `json:"source_definition"`
+	dashboardNode        modconfig.DashboardLeafNode
 	parent               dashboardinterfaces.DashboardNodeParent
 	runStatus            dashboardinterfaces.DashboardRunStatus
 	executionTree        *DashboardExecutionTree
@@ -35,13 +36,14 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 	name := resource.Name()
 
 	r := &CheckRun{
-		Name:          name,
-		Title:         resource.GetTitle(),
-		Width:         resource.GetWidth(),
-		DashboardNode: resource,
-		DashboardName: executionTree.dashboardName,
-		executionTree: executionTree,
-		parent:        parent,
+		Name:             name,
+		Title:            resource.GetTitle(),
+		Width:            resource.GetWidth(),
+		dashboardNode:    resource,
+		DashboardName:    executionTree.dashboardName,
+		SourceDefinition: resource.GetMetadata().SourceDefinition,
+		executionTree:    executionTree,
+		parent:           parent,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
@@ -67,7 +69,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 
 // Execute implements DashboardRunNode
 func (r *CheckRun) Execute(ctx context.Context) error {
-	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.DashboardNode.Name())
+	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.dashboardNode.Name())
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)

@@ -13,18 +13,19 @@ import (
 
 // DashboardContainerRun is a struct representing a container run
 type DashboardContainerRun struct {
-	Name          string                                 `json:"name"`
-	Title         string                                 `json:"title,omitempty"`
-	Width         int                                    `json:"width,omitempty"`
-	Error         error                                  `json:"error,omitempty"`
-	Children      []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
-	NodeType      string                                 `json:"node_type"`
-	Status        dashboardinterfaces.DashboardRunStatus `json:"status"`
-	DashboardName string                                 `json:"report"`
-	dashboardNode *modconfig.DashboardContainer
-	parent        dashboardinterfaces.DashboardNodeParent
-	executionTree *DashboardExecutionTree
-	childComplete chan dashboardinterfaces.DashboardNodeRun
+	Name             string                                 `json:"name"`
+	Title            string                                 `json:"title,omitempty"`
+	Width            int                                    `json:"width,omitempty"`
+	Error            error                                  `json:"error,omitempty"`
+	Children         []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
+	NodeType         string                                 `json:"node_type"`
+	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
+	DashboardName    string                                 `json:"report"`
+	SourceDefinition string                                 `json:"source_definition"`
+	dashboardNode    *modconfig.DashboardContainer
+	parent           dashboardinterfaces.DashboardNodeParent
+	executionTree    *DashboardExecutionTree
+	childComplete    chan dashboardinterfaces.DashboardNodeRun
 }
 
 func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {
@@ -36,12 +37,13 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	name := container.Name()
 
 	r := &DashboardContainerRun{
-		Name:          name,
-		NodeType:      modconfig.BlockTypeContainer,
-		DashboardName: executionTree.dashboardName,
-		executionTree: executionTree,
-		parent:        parent,
-		dashboardNode: container,
+		Name:             name,
+		NodeType:         modconfig.BlockTypeContainer,
+		DashboardName:    executionTree.dashboardName,
+		SourceDefinition: container.GetMetadata().SourceDefinition,
+		executionTree:    executionTree,
+		parent:           parent,
+		dashboardNode:    container,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
