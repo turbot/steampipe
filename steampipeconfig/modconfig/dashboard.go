@@ -230,11 +230,6 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 			break
 		}
 
-		if childDashboard, ok := child.(*Dashboard); ok {
-			if err := childDashboard.WalkResources(resourceFunc); err != nil {
-				return err
-			}
-		}
 		if childContainer, ok := child.(*DashboardContainer); ok {
 			if err := childContainer.WalkResources(resourceFunc); err != nil {
 				return err
@@ -306,39 +301,21 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 }
 
 func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
-	var diags hcl.Diagnostics
 
 	d.Inputs = inputs
-	d.setInputMap()
 
-	for _, input := range inputs {
-		moreDiags := d.Mod.AddResource(input)
-		diags = append(diags, moreDiags...)
-	}
+	// add all our direct child inputs to a mp
+	// (we must do this before adding child container inputs to detect dupes)
+	duplicates := d.setInputMap()
 
 	//  add child containers and dashboard inputs
-	var duplicates []string
 	resourceFunc := func(resource HclResource) (bool, error) {
-		// TODO HANDLE PREFIXES
-		if dashboard, ok := resource.(*Dashboard); ok {
-			for _, i := range dashboard.Inputs {
-				// check we do not already have this input
-				if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
-					duplicates = append(duplicates, i.Name())
-					continue
-				}
-				// set the dashboard on the mod
-				i.SetDashboard(d)
-				d.Inputs = append(d.Inputs, i)
-				d.selfInputsMap[i.UnqualifiedName] = i
-			}
-		}
 		if container, ok := resource.(*DashboardContainer); ok {
 			for _, i := range container.Inputs {
 				// check we do not already have this input
 				if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
 					duplicates = append(duplicates, i.Name())
-					continue
+
 				}
 				d.Inputs = append(d.Inputs, i)
 				d.selfInputsMap[i.UnqualifiedName] = i
@@ -350,22 +327,36 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
 	d.WalkResources(resourceFunc)
 
 	if len(duplicates) > 0 {
-		diags = append(diags, &hcl.Diagnostic{
+		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("Dashboard %s contains duplicate input names for: %s", d.Name(), strings.Join(duplicates, ",")),
+			Summary:  fmt.Sprintf("Dashboard '%s' contains duplicate input names for: %s", d.Name(), strings.Join(duplicates, ",")),
 			Subject:  &d.DeclRange,
-		})
-
+		}}
 	}
+
+	var diags hcl.Diagnostics
+	// now 'claim' all inputs and add to mod
+	for _, input := range inputs {
+		input.SetDashboard(d)
+		moreDiags := d.Mod.AddResource(input)
+		diags = append(diags, moreDiags...)
+	}
+
 	return diags
 }
 
 // populate our input map
-func (d *Dashboard) setInputMap() {
+func (d *Dashboard) setInputMap() []string {
+	var duplicates []string
 	d.selfInputsMap = make(map[string]*DashboardInput)
 	for _, i := range d.Inputs {
-		d.selfInputsMap[i.UnqualifiedName] = i
+		if _, ok := d.selfInputsMap[i.UnqualifiedName]; ok {
+			duplicates = append(duplicates, i.UnqualifiedName)
+		} else {
+			d.selfInputsMap[i.UnqualifiedName] = i
+		}
 	}
+	return duplicates
 }
 
 func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

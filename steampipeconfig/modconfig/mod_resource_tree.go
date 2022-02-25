@@ -97,21 +97,6 @@ func checkForDuplicate(existing, new HclResource) hcl.Diagnostics {
 	}}
 }
 
-// check whether a DashboardInput resource with the same name has already been added to the dashboard
-// (it is possible to add the same resource to a mod more than once as the parent resource
-// may have dependency errors and so be decoded again)
-func checkForDuplicateDashboardInput(existing, new *DashboardInput, dashboardName string) hcl.Diagnostics {
-	if existing.GetDeclRange().String() == new.GetDeclRange().String() {
-		// decl range is the same - this is the same resource - allowable
-		return nil
-	}
-	return hcl.Diagnostics{&hcl.Diagnostic{
-		Severity: hcl.DiagError,
-		Summary:  fmt.Sprintf("Dashboard '%s' defines more than one resource named '%s'", dashboardName, new.Name()),
-		Subject:  new.GetDeclRange(),
-	}}
-}
-
 func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 	// TODO generics would make this must more compact
 	var diags hcl.Diagnostics
@@ -195,10 +180,7 @@ func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
 				inputsForDashboard = make(map[string]*DashboardInput)
 				m.DashboardInputs[dashboardName] = inputsForDashboard
 			}
-			if existing, ok := inputsForDashboard[name]; ok {
-				diags = append(diags, checkForDuplicateDashboardInput(existing, r, dashboardName)...)
-				break
-			}
+			// no need to check for dupes as we have already checked before adding the input to th m od
 			inputsForDashboard[name] = r
 			break
 		}
