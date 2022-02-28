@@ -2,13 +2,17 @@ import React from "react";
 import Sankey from "./Sankey";
 import Table from "../Table";
 import Tree from "./Tree";
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
+import {
+  BasePrimitiveProps,
+  ColorOverride,
+  ExecutablePrimitiveProps,
+} from "../common";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
 interface HierarchyCategoryOptions {
   title?: string;
-  color?: string;
+  color?: ColorOverride;
 }
 
 type HierarchyCategories = {

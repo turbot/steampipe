@@ -19,6 +19,7 @@ import {
 } from "echarts/charts";
 import {
   buildChartDataset,
+  getColorOverride,
   LeafNodeData,
   themeColors,
   Width,
@@ -58,7 +59,8 @@ const getThemeColorsWithPointOverrides = (
   type: ChartType = "column",
   series: any[],
   seriesOverrides: ChartSeries | undefined,
-  dataset: any[][]
+  dataset: any[][],
+  themeColorValues
 ) => {
   switch (type) {
     case "donut":
@@ -80,7 +82,10 @@ const getThemeColorsWithPointOverrides = (
         dataset.slice(1).forEach((dataRow, dataRowIndex) => {
           const pointOverride = pointOverrides[dataRow[0]];
           if (pointOverride && pointOverride.color) {
-            newThemeColors[dataRowIndex] = pointOverride.color;
+            newThemeColors[dataRowIndex] = getColorOverride(
+              pointOverride.color,
+              themeColorValues
+            );
           }
         });
       });
@@ -140,7 +145,8 @@ const getCommonBaseOptionsForChartType = (
           type,
           series,
           seriesOverrides,
-          dataset
+          dataset,
+          themeColors
         ),
         legend: {
           show: series ? series.length > 1 : false,
@@ -180,7 +186,8 @@ const getCommonBaseOptionsForChartType = (
           type,
           series,
           seriesOverrides,
-          dataset
+          dataset,
+          themeColors
         ),
         legend: {
           show: series ? series.length > 1 : false,
@@ -223,7 +230,8 @@ const getCommonBaseOptionsForChartType = (
           type,
           series,
           seriesOverrides,
-          dataset
+          dataset,
+          themeColors
         ),
         legend: {
           show: series ? series.length > 1 : false,
@@ -262,7 +270,8 @@ const getCommonBaseOptionsForChartType = (
           type,
           series,
           seriesOverrides,
-          dataset
+          dataset,
+          themeColors
         ),
         legend: {
           show: false,
@@ -277,7 +286,8 @@ const getCommonBaseOptionsForChartType = (
           type,
           series,
           seriesOverrides,
-          dataset
+          dataset,
+          themeColors
         ),
         legend: {
           show: false,
@@ -482,7 +492,7 @@ const getSeriesForChartType = (
         seriesName = seriesOverrides.title;
       }
       if (seriesOverrides && seriesOverrides.color) {
-        seriesColor = seriesOverrides.color;
+        seriesColor = getColorOverride(seriesOverrides.color, themeColors);
       }
     }
 
@@ -564,9 +574,15 @@ const buildChartOptions = (
   const foregroundLightest = style.getPropertyValue(
     "--color-foreground-lightest"
   );
+  const alert = style.getPropertyValue("--color-alert");
+  const info = style.getPropertyValue("--color-info");
+  const ok = style.getPropertyValue("--color-ok");
   const themeColors = {
     foreground,
     foregroundLightest,
+    alert,
+    info,
+    ok,
   };
   const { dataset, rowSeriesLabels, transform } = buildChartDataset(
     props.data,

@@ -52,7 +52,8 @@ const getSeriesForHierarchyType = (
       case "sankey": {
         const { data: sankeyData, links } = buildSankeyDataInputs(
           data,
-          properties
+          properties,
+          themeColors
         );
         series.push({
           type: toEChartsType(type),
@@ -76,7 +77,11 @@ const getSeriesForHierarchyType = (
         break;
       }
       case "tree": {
-        const { data: treeData } = buildTreeDataInputs(data, properties);
+        const { data: treeData } = buildTreeDataInputs(
+          data,
+          properties,
+          themeColors
+        );
         series.push({
           type: "tree",
           data: treeData,
@@ -137,9 +142,15 @@ const buildHierarchyOptions = (
   const foregroundLightest = style.getPropertyValue(
     "--color-foreground-lightest"
   );
+  const alert = style.getPropertyValue("--color-alert");
+  const info = style.getPropertyValue("--color-info");
+  const ok = style.getPropertyValue("--color-ok");
   const themeColors = {
     foreground,
     foregroundLightest,
+    alert,
+    info,
+    ok,
   };
   return merge(
     getCommonBaseOptions(),

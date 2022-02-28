@@ -42,6 +42,8 @@ export interface ExecutablePrimitiveProps {
   error?: Error;
 }
 
+export type ColorOverride = "alert" | "info" | "ok" | string;
+
 export type EChartsType = "bar" | "line" | "pie" | "sankey";
 
 const toEChartsType = (type: ChartType | HierarchyType): EChartsType => {
@@ -341,7 +343,8 @@ const adjustMaxValue = (initial) => {
 
 const buildSankeyDataInputs = (
   rawData: LeafNodeData,
-  properties: HierarchyProperties | undefined
+  properties: HierarchyProperties | undefined,
+  themeColors
 ) => {
   let colorIndex = 0;
   const builtData = [];
@@ -380,7 +383,7 @@ const buildSankeyDataInputs = (
         ...row,
         itemStyle: {
           // @ts-ignore
-          color: categories[row.category].color,
+          color: getColorOverride(categories[row.category].color, themeColors),
         },
       });
       usedIds[row.id] = true;
@@ -529,7 +532,8 @@ const arrayToTree = (rawData: LeafNodeData): TreeItem[] => {
 
 const buildTreeDataInputs = (
   rawData: LeafNodeData,
-  properties: HierarchyProperties | undefined
+  properties: HierarchyProperties | undefined,
+  themeColors
 ) => {
   const tree = arrayToTree(rawData);
   return {
@@ -579,12 +583,26 @@ const generateColors = () => {
 
 const themeColors = generateColors();
 
+const getColorOverride = (colorOverride, namedThemeColors) => {
+  if (colorOverride === "alert") {
+    return namedThemeColors.alert;
+  }
+  if (colorOverride === "info") {
+    return namedThemeColors.info;
+  }
+  if (colorOverride === "ok") {
+    return namedThemeColors.ok;
+  }
+  return colorOverride;
+};
+
 export {
   adjustMinValue,
   adjustMaxValue,
   buildChartDataset,
   buildSankeyDataInputs,
   buildTreeDataInputs,
+  getColorOverride,
   isNumericCol,
   themeColors,
   toEChartsType,

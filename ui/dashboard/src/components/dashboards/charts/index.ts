@@ -6,7 +6,12 @@ import LineChart from "./LineChart";
 import PieChart from "./PieChart";
 import React from "react";
 import Table from "../Table";
-import { BasePrimitiveProps, ExecutablePrimitiveProps, Width } from "../common";
+import {
+  BasePrimitiveProps,
+  ColorOverride,
+  ExecutablePrimitiveProps,
+  Width,
+} from "../common";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
@@ -22,7 +27,7 @@ type ChartLegendOptions = {
 
 type ChartSeriesPointOptions = {
   name: string;
-  color: string;
+  color?: ColorOverride;
 };
 
 interface ChartSeriesPoints {
@@ -31,7 +36,7 @@ interface ChartSeriesPoints {
 
 export type ChartSeriesOptions = {
   title: string;
-  color: string;
+  color?: ColorOverride;
   points: ChartSeriesPoints;
 };
 

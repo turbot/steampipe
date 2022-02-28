@@ -105,10 +105,10 @@ PointColorOverrides.args = {
   properties: {
     series: {
       Total: {
-        points: [
-          { name: "Disabled", color: "red" },
-          { name: "Enabled", color: "green" },
-        ],
+        points: {
+          Disabled: { name: "Disabled", color: "alert" },
+          Enabled: { name: "Enabled", color: "ok" },
+        },
       },
     },
   },
