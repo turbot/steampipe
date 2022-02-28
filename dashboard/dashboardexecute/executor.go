@@ -55,14 +55,10 @@ func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId st
 		return fmt.Errorf("no dashboard running for session %s", sessionId)
 	}
 
-	// first see if any other inputs rely in the one which was just changed
-	dependentInputs := executionTree.Root.GetInputsDependingOn(changedInput)
-	if len(dependentInputs) > 0 {
-		for _, inputName := range dependentInputs {
-			// clear the input value
-			inputs[inputName] = nil
-		}
-		event := &dashboardevents.InputValuesCleared{dependentInputs}
+	// first see if any other inputs rely on the one which was just changed
+	clearedInputs := e.clearDependentInputs(executionTree.Root, changedInput, inputs)
+	if len(clearedInputs) > 0 {
+		event := &dashboardevents.InputValuesCleared{ClearedInputs: clearedInputs}
 		executionTree.workspace.PublishDashboardEvent(event)
 	}
 	// oif there are any dependent inputs, set their value to nil and send an event to the UI
@@ -83,6 +79,21 @@ func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId st
 	}
 
 	return nil
+}
+
+func (e *DashboardExecutor) clearDependentInputs(dashboard *DashboardRun, changedInput string, inputs map[string]interface{}) []string {
+	dependentInputs := dashboard.GetInputsDependingOn(changedInput)
+	clearedInputs := dependentInputs
+	if len(dependentInputs) > 0 {
+		for _, inputName := range dependentInputs {
+			// clear the input value
+			inputs[inputName] = nil
+			childDependentInputs := e.clearDependentInputs(dashboard, inputName, inputs)
+			clearedInputs = append(clearedInputs, childDependentInputs...)
+		}
+	}
+
+	return clearedInputs
 }
 
 func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) {
