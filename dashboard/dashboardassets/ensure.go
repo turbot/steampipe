@@ -8,10 +8,10 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/statushooks"
+	"github.com/turbot/steampipe/version"
 )
 
 func Ensure(ctx context.Context) error {
@@ -24,7 +24,7 @@ func Ensure(ctx context.Context) error {
 		return err
 	}
 
-	if versionFile.Version == constants.DashboardAssetsVersion {
+	if versionFile.Version == version.VersionString {
 		return nil
 	}
 

@@ -31,10 +31,12 @@ var prerelease = "alpha.13"
 // proper semantic version, which should always be the case.
 var SteampipeVersion *semver.Version
 
+var VersionString string
+
 func init() {
-	versionString := steampipeVersion
+	VersionString = steampipeVersion
 	if prerelease != "" {
-		versionString = fmt.Sprintf("%s-%s", steampipeVersion, prerelease)
+		VersionString = fmt.Sprintf("%s-%s", steampipeVersion, prerelease)
 	}
-	SteampipeVersion = semver.MustParse(versionString)
+	SteampipeVersion = semver.MustParse(VersionString)
 }
