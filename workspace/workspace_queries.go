@@ -104,12 +104,6 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 
 // ResolveQueryFromQueryProvider resolves the query for the given QueryProvider
 func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryProvider, runtimeArgs *modconfig.QueryArgs) (string, error) {
-
-	//args, err := w.resolveQueryProviderArgs(queryProvider, runtimeArgs)
-	//if err != nil {
-	//	return "", err
-	//}
-	//
 	log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
 
 	// verify the resource has qa query or sql, if required
@@ -120,6 +114,7 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 	query := queryProvider.GetQuery()
 	sql := queryProvider.GetSQL()
 	params := queryProvider.GetParams()
+	args := queryProvider.GetArgs()
 
 	// determine the source for the query
 	// - this will either be the control itself or any named query the control refers to
@@ -143,9 +138,12 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 			}
 			return w.ResolveQueryFromQueryProvider(namedQuery, runtimeArgs)
 		}
+
 		// so the control sql is NOT a named query
-		// if there are NO params, use the control SQL as is
-		if len(params) == 0 {
+
+		// determine whether there are any params - there may either be param defs, OR positional args
+		// if there are NO params OR list args, use the control SQL as is
+		if !queryProvider.IsParameterised(args, params) {
 			return queryProviderSQL, nil
 		}
 	}
@@ -153,24 +151,6 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 	// so the control defines SQL and has params - it is a prepared statement
 	return queryProvider.GetPreparedStatementExecuteSQL(runtimeArgs)
 }
-
-//func (w *Workspace) resolveQueryProviderArgs(queryProvider modconfig.QueryProvider, overrideArgs *modconfig.QueryArgs) (*modconfig.QueryArgs, error) {
-//	// if no args were provided,  set args to control args (which may also be nil!)
-//	if overrideArgs == nil || overrideArgs.Empty() {
-//		log.Printf("[TRACE] using control args: %s", queryProvider.GetArgs())
-//		return queryProvider.GetArgs(), nil
-//	}
-//	// so overridden line args were provided
-//	// check if the control supports them (it will NOT is it specifies a 'query' property)
-//	if queryProvider.GetQuery() != nil {
-//		return nil, fmt.Errorf("%s defines a query property and so does not support command line arguments", queryProvider.Name())
-//	}
-//	log.Printf("[TRACE] using command line args: %s", overrideArgs)
-//
-//	mergedArgs := queryProvider.GetArgs().Merge(overrideArgs)
-//	// so the control defines SQL and has params - it is a prepared statement
-//	return mergedArgs, nil
-//}
 
 func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	// get absolute filename

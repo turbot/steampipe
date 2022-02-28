@@ -61,16 +61,17 @@ type QueryProvider interface {
 	GetParams() []*ParamDef
 	GetSQL() *string
 	GetQuery() *Query
-	SetArgs(args *QueryArgs)
-	SetParams(params []*ParamDef)
+	SetArgs(*QueryArgs)
+	SetParams([]*ParamDef)
 	GetPreparedStatementName() string
-	GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error)
+	GetPreparedStatementExecuteSQL(*QueryArgs) (string, error)
 	// implemented by QueryProviderBase
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 	ResolveArgsAsString(QueryProvider, *QueryArgs) (string, error)
-	RequiresExecution(queryProvider QueryProvider) bool
-	VerifyQuery(queryProvider QueryProvider) error
+	RequiresExecution(QueryProvider) bool
+	VerifyQuery(QueryProvider) error
+	IsParameterised(*QueryArgs, []*ParamDef) bool
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
