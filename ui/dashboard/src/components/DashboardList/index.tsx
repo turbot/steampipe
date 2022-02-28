@@ -108,7 +108,7 @@ const DashboardTag = ({
         : tagValue
     );
     return newSearchParams.toString();
-  }, [tagKey, tagValue, group_by, tag, search]);
+  }, [tagValue, group_by, tag, search]);
 
   return (
     <Link to={`/?${searchUrl}`}>
@@ -230,6 +230,7 @@ const DashboardList = () => {
   >([]);
   const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
 
+  /*eslint-disable */
   useEffect(() => {
     if (search) {
       searchParams.set("search", search);
@@ -238,6 +239,7 @@ const DashboardList = () => {
     }
     setSearchParams(searchParams);
   }, [search]);
+  /*eslint-enable */
 
   useEffect(() => {
     const newSearch = searchParams.get("search");
@@ -278,7 +280,7 @@ const DashboardList = () => {
     }
     setUnfilteredDashboards(dashboardsWithMod);
     setDashboardTagKeys(newDashboardTagKeys);
-  }, [availableDashboardsLoaded, dashboards]);
+  }, [availableDashboardsLoaded, dashboards, metadata]);
 
   // Filter dashboards according to the search
   useEffect(() => {
@@ -469,7 +471,7 @@ const DashboardList = () => {
   );
 };
 
-const DashboardListWrapper = ({}) => {
+const DashboardListWrapper = () => {
   const { dashboardName } = useParams();
 
   if (dashboardName) {
