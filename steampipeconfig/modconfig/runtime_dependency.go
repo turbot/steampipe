@@ -2,24 +2,28 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
 )
 
 type RuntimeDependency struct {
-	PropertyPath       *ParsedPropertyPath
-	SourceResource     HclResource
-	TargetPropertyPath []string
-	// function to set the target
-	SetTargetFunc func(string)
+	PropertyPath   *ParsedPropertyPath
+	SourceResource HclResource
+	ArgName        *string
+	ArgIndex       *int
+	IsDefault      bool
 }
 
 func (d *RuntimeDependency) String() string {
-	return fmt.Sprintf("%s->%s", strings.Join(d.TargetPropertyPath, "."), d.PropertyPath.String())
+	if d.ArgIndex != nil {
+		return fmt.Sprintf("arg.%d->%s", d.ArgIndex, d.PropertyPath.String())
+	}
+	if d.IsDefault {
+		return fmt.Sprintf("param.%s.default->%s", *d.ArgName, d.PropertyPath.String())
+	}
+
+	return fmt.Sprintf("arg.%s->%s", *d.ArgName, d.PropertyPath.String())
 }
 
 func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
-	// TODO THINK ABOUT REPORT PREFIX
-
 	resourceName := d.PropertyPath.ToResourceName()
 	var found bool
 	var sourceResource HclResource

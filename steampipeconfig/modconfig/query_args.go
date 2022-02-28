@@ -13,8 +13,12 @@ import (
 // NOTE: if both are present the named parameters are used
 type QueryArgs struct {
 	ArgMap     map[string]string    `cty:"args" json:"args,omitempty"`
-	ArgsList   []string             `cty:"args_list" json:"args_list"`
+	// args list may be sparsely populated (in case of runtime dependencies)
+	// so use *string
+	ArgsList   []*string             `cty:"args_list" json:"args_list"`
 	References []*ResourceReference `cty:"refs" json:"refs"`
+	// this is used when passing runtime dependencies into a query
+	DefaultsMap map[string]string `cty:"default" json:"defaults,omitempty"`
 }
 
 func (q *QueryArgs) String() string {
@@ -22,7 +26,8 @@ func (q *QueryArgs) String() string {
 		return "<nil>"
 	}
 	if len(q.ArgsList) > 0 {
-		return fmt.Sprintf("Args list: %s", strings.Join(q.ArgsList, ","))
+		argsStringList := q.argsStringList()
+		return fmt.Sprintf("Args list: %s", strings.Join(argsStringList, ","))
 	}
 	if len(q.ArgMap) > 0 {
 		var strs = make([]string, len(q.ArgMap))
@@ -36,9 +41,19 @@ func (q *QueryArgs) String() string {
 	return "<empty>"
 }
 
+// convert ArgsList into list of strings
+func (q *QueryArgs) argsStringList() []string {
+	var argsStringList = make([]string, len(q.ArgsList))
+	for i, a := range q.ArgsList {
+		argsStringList[i] = typehelpers.SafeString(a)
+	}
+	return argsStringList
+}
+
 func NewQueryArgs() *QueryArgs {
 	return &QueryArgs{
-		ArgMap: make(map[string]string),
+		DefaultsMap: make(map[string]string),
+		ArgMap:      make(map[string]string),
 	}
 }
 
@@ -158,16 +173,20 @@ func (q *QueryArgs) resolvePositionalParameters(source QueryProvider) (argStrs [
 		err = fmt.Errorf("resolvePositionalParameters failed for %s - args data contain both positional and named parameters", source.Name())
 		return
 	}
+
 	params := source.GetParams()
+	argStrs = make([]string, len(params))
+
+
 	// if no param defs are defined, just use the given values
 	if len(params) == 0 {
+		for i, a := range
 		argStrs = q.ArgsList
 		return
 	}
 
 	// so there are param defs - we must be able to resolve all params
 	// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
-	argStrs = make([]string, len(params))
 
 	for i, param := range params {
 		defaultValue := typehelpers.SafeString(param.Default)

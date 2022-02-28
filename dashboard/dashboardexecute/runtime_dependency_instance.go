@@ -1,7 +1,6 @@
 package dashboardexecute
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
@@ -37,15 +36,13 @@ func (d *ResolvedRuntimeDependency) Resolve() bool {
 	d.value = d.executionTree.GetInputValue(d.dependency.SourceResource.GetUnqualifiedName())
 
 	// did we succeed
-	if d.hasValue() {
-		// if so, set the target property
-		d.dependency.SetTargetFunc(fmt.Sprintf("%v", d.value))
-		return true
-	}
-
-	return false
+	return d.hasValue()
 }
 
 func (d *ResolvedRuntimeDependency) hasValue() bool {
 	return !helpers.IsNil(d.value)
+}
+
+func (d *ResolvedRuntimeDependency) GetArgName() {
+
 }

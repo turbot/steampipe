@@ -69,10 +69,7 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value, resource modconfig.Q
 			if err != nil {
 				return nil, nil, err
 			}
-			// set the function on the dependency which populates the target property
-			runtimeDependency.SetTargetFunc = func(val string) {
-				resource.GetArgs().ArgsList[idx] = pgEscapeParamString(val)
-			}
+
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a postgres compatible
@@ -106,10 +103,6 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, resource modconfig.Qu
 			runtimeDependency, err := identifyRuntimeDependenciesFromObject(attr, key, evalCtx)
 			if err != nil {
 				return nil, nil, err
-			}
-			// set the function on the dependency which populates the target property
-			runtimeDependency.SetTargetFunc = func(val string) {
-				resource.GetArgs().ArgMap[key] = pgEscapeParamString(val)
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
@@ -148,8 +141,8 @@ func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, eval
 			}
 
 			ret := &modconfig.RuntimeDependency{
-				PropertyPath:       propertyPath,
-				TargetPropertyPath: []string{"args", key},
+				PropertyPath: propertyPath,
+				ArgName:      &key,
 			}
 			return ret, nil
 		}
@@ -171,18 +164,12 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modcon
 			}
 
 			ret := &modconfig.RuntimeDependency{
-				PropertyPath:       propertyPath,
-				TargetPropertyPath: []string{"args", fmt.Sprintf("%d", idx)},
+				PropertyPath: propertyPath,
+				ArgIndex:     &idx,
 			}
+
 			return ret, nil
 		}
 	}
 	return nil, fmt.Errorf("could not extract runtime dependency for arg %d - not found in attribute list", idx)
-}
-
-// format a string for use as a postgre param
-// TODO [report] verify this is correct
-
-func pgEscapeParamString(val string) string {
-	return fmt.Sprintf("'%s'", val)
 }

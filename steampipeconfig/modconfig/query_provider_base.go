@@ -62,13 +62,13 @@ func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string 
 }
 
 // return the SQLs to run the query as a prepared statement
-func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, args *QueryArgs) (string, error) {
-	paramsString, err := queryProvider.ResolveArgsAsString(queryProvider, args)
+func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, runtimeArgs *QueryArgs) (string, error) {
+	paramsString, err := queryProvider.ResolveArgsAsString(queryProvider, runtimeArgs)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
 	}
 	executeString := fmt.Sprintf("execute %s%s", queryProvider.GetPreparedStatementName(), paramsString)
-	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", queryProvider.Name(), executeString, args)
+	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", queryProvider.Name(), executeString, runtimeArgs)
 	return executeString, nil
 }
 
@@ -101,21 +101,23 @@ func (b *QueryProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependen
 // falling back on defaults from param definitions in the source (if present)
 // it returns the arg values as a csv string which can be used in a prepared statement invocation
 // (the arg values and param defaults will already have been converted to postgres format)
-func (b *QueryProviderBase) ResolveArgsAsString(source QueryProvider, args *QueryArgs) (string, error) {
+func (b *QueryProviderBase) ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, error) {
 	var paramStrs, missingParams []string
 
-	// allow for nil args - use an empty args object - we will fall back to using defaults if present
-	if args == nil {
-		args = &QueryArgs{}
+	baseArgs := source.GetArgs()
+
+	// allow for nil runtime args - use an empty args object
+	if runtimeArgs == nil {
+		runtimeArgs = &QueryArgs{}
 	}
 	var err error
-	if len(args.ArgMap) > 0 {
+	if len(runtimeArgs.ArgMap) > 0 {
 		// do params contain named params?
-		paramStrs, missingParams, err = b.resolveNamedParameters(source, args)
+		paramStrs, missingParams, err = b.resolveNamedParameters(source, baseArgs, runtimeArgs)
 	} else {
 		// resolve as positional parameters
 		// (or fall back to defaults if no positional params are present)
-		paramStrs, missingParams, err = b.resolvePositionalParameters(source, args)
+		paramStrs, missingParams, err = b.resolvePositionalParameters(source, baseArgs, runtimeArgs)
 	}
 	if err != nil {
 		return "", err
@@ -139,17 +141,19 @@ func (b *QueryProviderBase) ResolveArgsAsString(source QueryProvider, args *Quer
 	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), nil
 }
 
-func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
+func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, baseArgs, runtimeArgs *QueryArgs) (argStrs []string, missingParams []string, err error) {
+
 	// if query params contains both positional and named params, error out
-	if len(args.ArgsList) > 0 {
+	if len(baseArgs.ArgsList) > 0 {
 		err = fmt.Errorf("ResolveAsString failed for %s - params data contain both positional and named parameters", source.Name())
 		return
 	}
 	params := source.GetParams()
+
 	// so params contain named params - if this query has no param defs, error out
-	if len(params) < len(args.ArgMap) {
+	if len(params) < len(baseArgs.ArgMap) {
 		err = fmt.Errorf("ResolveAsString failed for %s - params data contain %d named parameters but this query %d parameter definitions",
-			source.Name(), len(args.ArgMap), len(source.GetParams()))
+			source.Name(), len(baseArgs.ArgMap), len(source.GetParams()))
 		return
 	}
 
@@ -157,25 +161,44 @@ func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, args *Q
 	argStrs = make([]string, len(params))
 
 	// iterate through each param def and resolve the value
-	// build a map of which args have been matched (used to validate all args have poaram defs)
+	// build a map of which args have been matched (used to validate all args have param defs)
 	argsWithParamDef := make(map[string]bool)
 	for i, param := range params {
+		// first set default
 		defaultValue := typehelpers.SafeString(param.Default)
+		// if a runtime default was passed, used that
+		if runtimeDefault, ok := runtimeArgs.DefaultsMap[param.Name]; ok {
+			defaultValue = runtimeDefault
+		}
 
 		// can we resolve a value for this param?
-		if val, ok := args.ArgMap[param.Name]; ok {
+
+		// first try runtime args
+		if val, ok := runtimeArgs.ArgMap[param.Name]; ok {
 			argStrs[i] = val
 			argsWithParamDef[param.Name] = true
-		} else if defaultValue != "" {
-			argStrs[i] = defaultValue
-		} else {
-			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.Name)
+			continue
 		}
+
+		// now try base args
+		if val, ok := baseArgs.ArgMap[param.Name]; ok {
+			argStrs[i] = val
+			argsWithParamDef[param.Name] = true
+			continue
+		}
+
+		if defaultValue != "" {
+			argStrs[i] = defaultValue
+			continue
+		}
+
+		// no value provided and no default defined - add to missing list
+		missingParams = append(missingParams, param.Name)
+
 	}
 
 	// verify we have param defs for all provided args
-	for arg := range args.ArgMap {
+	for arg := range baseArgs.ArgMap {
 		if _, ok := argsWithParamDef[arg]; !ok {
 			return nil, nil, fmt.Errorf("no parameter definition found for argument '%s'", arg)
 		}
@@ -184,16 +207,16 @@ func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, args *Q
 	return argStrs, missingParams, nil
 }
 
-func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
+func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, baseArgs, runtimeArgs *QueryArgs) (argStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
-	if len(args.ArgMap) > 0 {
+	if len(baseArgs.ArgMap) > 0 {
 		err = fmt.Errorf("resolvePositionalParameters failed for %s - args data contain both positional and named parameters", source.Name())
 		return
 	}
 	params := source.GetParams()
 	// if no param defs are defined, just use the given values
 	if len(params) == 0 {
-		argStrs = args.ArgsList
+		argStrs = baseArgs.ArgsList
 		return
 	}
 

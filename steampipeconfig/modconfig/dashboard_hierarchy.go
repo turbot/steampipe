@@ -253,9 +253,9 @@ func (h *DashboardHierarchy) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
 	// defer to base
-	return h.getPreparedStatementExecuteSQL(h, args)
+	return h.getPreparedStatementExecuteSQL(h, runtimeArgs)
 }
 
 func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

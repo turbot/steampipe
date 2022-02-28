@@ -64,7 +64,7 @@ type QueryProvider interface {
 	SetArgs(args *QueryArgs)
 	SetParams(params []*ParamDef)
 	GetPreparedStatementName() string
-	GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error)
+	GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error)
 	// implemented by QueryProviderBase
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
