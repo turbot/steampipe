@@ -193,7 +193,7 @@ func init() {
 								Default:  utils.ToStringPointer("'val2'"),
 							},
 						},
-						Args: &modconfig.QueryArgs{ArgsList: []string{"'my val1'", "'my val2'"}},
+						Args: &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'my val1'"), utils.ToStringPointer("'my val2'")}},
 					},
 				},
 			},

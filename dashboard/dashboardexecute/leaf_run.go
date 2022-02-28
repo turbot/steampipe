@@ -127,19 +127,6 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	return nil
 }
 
-func (r *LeafRun) resolveSQL() error {
-	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
-	if !queryProvider.RequiresExecution(queryProvider) {
-		return nil
-	}
-	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, nil)
-	if err != nil {
-		return err
-	}
-	r.SQL = sql
-	return nil
-}
-
 // GetName implements DashboardNodeRun
 func (r *LeafRun) GetName() string {
 	return r.Name
@@ -210,4 +197,53 @@ func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 		log.Printf("[TRACE] LeafRun '%s' all runtime dependencies ready", r.DashboardNode.Name())
 	}
 	return nil
+}
+
+func (r *LeafRun) resolveSQL() error {
+	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
+	if !queryProvider.RequiresExecution(queryProvider) {
+		return nil
+	}
+
+	// convert runtime dependencies into arg map
+	runtimeArgs, err := r.buildRuntimeDependencyArgs()
+	if err != nil {
+		return err
+	}
+	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
+	if err != nil {
+		return err
+	}
+	r.SQL = sql
+	return nil
+}
+
+func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
+	res := modconfig.NewQueryArgs()
+
+	// build map of default params
+	for _, r := range r.runtimeDependencies {
+		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", r.value))
+		if r.dependency.ArgName != nil {
+			res.ArgMap[*r.dependency.ArgName] = formattedVal
+		} else {
+			if r.dependency.ArgIndex == nil {
+				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
+			}
+			// append nils to res.ArgsList until we get to desired index
+			for idx := len(res.ArgList); idx < *r.dependency.ArgIndex; {
+				res.ArgList = append(res.ArgList, nil)
+			}
+			// now add at correct index
+			res.ArgList = append(res.ArgList, &formattedVal)
+		}
+	}
+	return res, nil
+}
+
+// format a string for use as a postgre param
+// TODO [report] verify this is correct
+
+func pgEscapeParamString(val string) string {
+	return fmt.Sprintf("'%s'", val)
 }

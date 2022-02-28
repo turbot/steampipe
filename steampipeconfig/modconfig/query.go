@@ -185,7 +185,7 @@ func (q *Query) GetUnqualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (q *Query) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (q *Query) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 
@@ -249,9 +249,9 @@ func (q *Query) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (q *Query) GetPreparedStatementExecuteSQL(args *QueryArgs) (string, error) {
+func (q *Query) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
 	// defer to base
-	return q.getPreparedStatementExecuteSQL(q, args)
+	return q.getPreparedStatementExecuteSQL(q, runtimeArgs)
 }
 
 // AddParent implements ModTreeItem

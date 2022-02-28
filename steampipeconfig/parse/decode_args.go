@@ -36,9 +36,9 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 
 	switch {
 	case ty.IsObjectType():
-		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, resource, evalCtx)
+		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, evalCtx)
 	case ty.IsTupleType():
-		args.ArgsList, runtimeDependencies, err = ctyTupleToArgArray(attr, v, resource, evalCtx)
+		args.ArgList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
@@ -54,12 +54,12 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	return args, runtimeDependencies, diags
 }
 
-func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value, resource modconfig.QueryProvider, evalCtx *hcl.EvalContext) ([]string, []*modconfig.RuntimeDependency, error) {
+func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modconfig.RuntimeDependency, error) {
 	// convert the attribute to a slice
 	values := val.AsValueSlice()
 
 	// build output array
-	res := make([]string, len(values))
+	res := make([]*string, len(values))
 	var runtimeDependencies []*modconfig.RuntimeDependency
 
 	for idx, v := range values {
@@ -69,10 +69,7 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value, resource modconfig.Q
 			if err != nil {
 				return nil, nil, err
 			}
-			// set the function on the dependency which populates the target property
-			runtimeDependency.SetTargetFunc = func(val string) {
-				resource.GetArgs().ArgsList[idx] = pgEscapeParamString(val)
-			}
+
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a postgres compatible
@@ -82,13 +79,13 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value, resource modconfig.Q
 				return nil, nil, err
 			}
 
-			res[idx] = valStr
+			res[idx] = &valStr
 		}
 	}
 	return res, runtimeDependencies, nil
 }
 
-func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, resource modconfig.QueryProvider, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
+func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
 	res := make(map[string]string)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	it := val.ElementIterator()
@@ -106,10 +103,6 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, resource modconfig.Qu
 			runtimeDependency, err := identifyRuntimeDependenciesFromObject(attr, key, evalCtx)
 			if err != nil {
 				return nil, nil, err
-			}
-			// set the function on the dependency which populates the target property
-			runtimeDependency.SetTargetFunc = func(val string) {
-				resource.GetArgs().ArgMap[key] = pgEscapeParamString(val)
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
@@ -148,8 +141,8 @@ func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, eval
 			}
 
 			ret := &modconfig.RuntimeDependency{
-				PropertyPath:       propertyPath,
-				TargetPropertyPath: []string{"args", key},
+				PropertyPath: propertyPath,
+				ArgName:      &key,
 			}
 			return ret, nil
 		}
@@ -171,18 +164,12 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modcon
 			}
 
 			ret := &modconfig.RuntimeDependency{
-				PropertyPath:       propertyPath,
-				TargetPropertyPath: []string{"args", fmt.Sprintf("%d", idx)},
+				PropertyPath: propertyPath,
+				ArgIndex:     &idx,
 			}
+
 			return ret, nil
 		}
 	}
 	return nil, fmt.Errorf("could not extract runtime dependency for arg %d - not found in attribute list", idx)
-}
-
-// format a string for use as a postgre param
-// TODO [report] verify this is correct
-
-func pgEscapeParamString(val string) string {
-	return fmt.Sprintf("'%s'", val)
 }

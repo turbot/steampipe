@@ -63,7 +63,7 @@ func parseArgs(argssString string) (*modconfig.QueryArgs, error) {
 	}
 	if res.Empty() {
 		// no named args - fall back on positional
-		res.ArgsList, err = parsePositionalArgs(argsList)
+		res.ArgList, err = parsePositionalArgs(argsList)
 	}
 	// return empty result, even if we have an error
 	return res, err
@@ -157,7 +157,9 @@ func parseNamedArgs(argsList []string) (map[string]string, error) {
 	return res, nil
 }
 
-func parsePositionalArgs(argsList []string) ([]string, error) {
+func parsePositionalArgs(argsList []string) ([]*string, error) {
+	// convert to pointer array
+	res := make([]*string, len(argsList))
 	// just treat args as positional args
 	// strip spaces
 	for i, v := range argsList {
@@ -165,8 +167,8 @@ func parsePositionalArgs(argsList []string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		argsList[i] = valStr
+		res[i] = &valStr
 	}
 
-	return argsList, nil
+	return res, nil
 }
