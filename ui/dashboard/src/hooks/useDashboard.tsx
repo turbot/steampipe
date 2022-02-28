@@ -100,6 +100,7 @@ export interface PanelDefinition {
   width?: number;
   sql?: string;
   data?: LeafNodeData;
+  source_definition?: string;
   execution_tree?: CheckLeafNodeExecutionTree;
   error?: Error;
   properties?: PanelProperties;
