@@ -239,7 +239,6 @@ func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, ar
 			// no value provided and no default defined - add to missing list
 			missingParams = append(missingParams, param.Name)
 		}
-
 	}
 	return
 }

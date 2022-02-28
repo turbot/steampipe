@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/turbot/steampipe/utils"
+
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -31,28 +33,28 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 		input: `query.q1(foo)`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{"foo"}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("foo")}},
 		},
 	},
 	"invalid params 2": {
 		input: `query.q1("foo")`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{`"foo"`}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer(`"foo"`)}},
 		},
 	},
 	"invalid params 3": {
 		input: `query.q1('foo',  'bar')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{"'foo'", "'bar'"}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'"), utils.ToStringPointer("'bar'")}},
 		},
 	},
 	"invalid params 4": {
 		input: `query.q1(['foo',  'bar'])`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{"['foo'", "'bar']"}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("['foo'"), utils.ToStringPointer("'bar']")}},
 		},
 	},
 
@@ -60,28 +62,28 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 		input: `query.q1('foo')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{"'foo'"}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'")}},
 		},
 	},
 	"single positional param extra spaces": {
 		input: `query.q1('foo')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{"'foo'"}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'")}},
 		},
 	},
 	"multiple positional params": {
 		input: `query.q1('foo', 'bar', 'foo-bar')`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{"'foo'", "'bar'", "'foo-bar'"}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'"), utils.ToStringPointer("'bar'"), utils.ToStringPointer("'foo-bar'")}},
 		},
 	},
 	"multiple positional params extra spaces": {
 		input: ` query.q1('foo' ,  'bar', 'foo-bar'  )`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []string{"'foo'", "'bar'", "'foo-bar'"}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'"), utils.ToStringPointer("'bar'"), utils.ToStringPointer("'foo-bar'")}},
 		},
 	},
 	"single named param": {
