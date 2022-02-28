@@ -28,7 +28,7 @@ func MergeArgs(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*QueryArgs,
 // falling back on defaults from param definitions in the source (if present)
 // it returns the arg values as a csv string which can be used in a prepared statement invocation
 // (the arg values and param defaults will already have been converted to postgres format)
-func resolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, error) {
+func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, error) {
 	var paramStrs, missingParams []string
 	var err error
 	// validate args
