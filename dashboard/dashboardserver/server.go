@@ -478,7 +478,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 			dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
 		case "input_changed":
 			s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
-			dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
+			dashboardexecute.Executor.OnInputChanged(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
 		case "clear_dashboard":
 			s.setDashboardInputsForSession(sessionId, nil)
 			dashboardexecute.Executor.ClearDashboard(ctx, sessionId)

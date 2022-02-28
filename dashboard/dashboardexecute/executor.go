@@ -48,7 +48,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	return nil
 }
 
-func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId string, inputs map[string]interface{}, changedInput string) error {
+func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string, inputs map[string]interface{}, changedInput string) error {
 	// find the execution
 	executionTree, found := e.executions[sessionId]
 	if !found {
@@ -89,10 +89,12 @@ func (e *DashboardExecutor) clearDependentInputs(dashboard *DashboardRun, change
 	clearedInputs := dependentInputs
 	if len(dependentInputs) > 0 {
 		for _, inputName := range dependentInputs {
-			// clear the input value
-			inputs[inputName] = nil
-			childDependentInputs := e.clearDependentInputs(dashboard, inputName, inputs)
-			clearedInputs = append(clearedInputs, childDependentInputs...)
+			if inputs[inputName] != nil {
+				// clear the input value
+				inputs[inputName] = nil
+				childDependentInputs := e.clearDependentInputs(dashboard, inputName, inputs)
+				clearedInputs = append(clearedInputs, childDependentInputs...)
+			}
 		}
 	}
 
