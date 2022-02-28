@@ -32,7 +32,7 @@ func (d *ResolvedRuntimeDependency) Resolve() bool {
 		return true
 	}
 
-	// otherwise try to read the value from the source
+	// otherwise, try to read the value from the source
 	d.value = d.executionTree.GetInputValue(d.dependency.SourceResource.GetUnqualifiedName())
 
 	// did we succeed
@@ -41,8 +41,4 @@ func (d *ResolvedRuntimeDependency) Resolve() bool {
 
 func (d *ResolvedRuntimeDependency) hasValue() bool {
 	return !helpers.IsNil(d.value)
-}
-
-func (d *ResolvedRuntimeDependency) GetArgName() {
-
 }

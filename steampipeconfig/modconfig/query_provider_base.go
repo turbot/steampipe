@@ -149,7 +149,6 @@ func (b *QueryProviderBase) ResolveArgsAsString(source QueryProvider, runtimeArg
 	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), nil
 }
 
-// TODO [report] do not support runtime default and convert this to merge
 // validate base and runtime args and merge into single args
 func (b *QueryProviderBase) mergeArgs(baseArgs, runtimeArgs *QueryArgs, source QueryProvider) (*QueryArgs, error) {
 	// ensure non nil
