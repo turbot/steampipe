@@ -155,7 +155,89 @@ func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPa
 }
 
 func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
-	return c.client.GetSchemaFromDB(ctx)
+	// build a ConnectionSchemaMap object to identify the schemas to load
+	// (pass nil for connection state - this forces NewConnectionSchemaMap to load it)
+	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap()
+	if err != nil {
+		return nil, err
+	}
+	// get the unique schema - we use this to limit the schemas we load from the database
+	schemas := connectionSchemaMap.UniqueSchemas()
+	query := c.buildSchemasQuery(schemas)
+
+	acquireSessionResult := c.AcquireSession(ctx)
+	if acquireSessionResult.Error != nil {
+		acquireSessionResult.Session.Close(false)
+		return nil, err
+	}
+
+	tablesResult, err := acquireSessionResult.Session.Connection.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
+	if err != nil {
+		acquireSessionResult.Session.Close(false)
+		return nil, err
+	}
+	acquireSessionResult.Session.Close(false)
+
+	c.populateSchemaMetadata(metadata, connectionSchemaMap)
+
+	searchPath, err := c.GetCurrentSearchPath(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metadata.SearchPath = searchPath
+
+	return metadata, nil
+}
+
+func (c *LocalDbClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) {
+	// we now need to add in all other schemas which have the same schemas as those we have loaded
+	for loadedSchema, otherSchemas := range connectionSchemaMap {
+		// all 'otherSchema's have the same schema as loadedSchema
+		exemplarSchema, ok := schemaMetadata.Schemas[loadedSchema]
+		if !ok {
+			// should can happen in the case of a dynamic plugin with no tables - use empty schema
+			exemplarSchema = make(map[string]schema.TableSchema)
+		}
+
+		for _, s := range otherSchemas {
+			schemaMetadata.Schemas[s] = exemplarSchema
+		}
+	}
+}
+
+func (c *LocalDbClient) buildSchemasQuery(hintSchemas []string) string {
+	for idx, s := range hintSchemas {
+		hintSchemas[idx] = fmt.Sprintf("'%s'", s)
+	}
+	schemaClause := strings.Join(hintSchemas, ",")
+	query := fmt.Sprintf(`
+SELECT
+    table_name,
+    column_name,
+    column_default,
+    is_nullable,
+    data_type,
+    table_schema,
+    (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+    (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+FROM
+    information_schema.columns cols
+LEFT JOIN
+    pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
+LEFT JOIN
+    pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
+WHERE
+	cols.table_schema in (%s)
+	OR
+    LEFT(cols.table_schema,8) = 'pg_temp_'
+
+`, schemaClause)
+	return query
 }
 
 func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {

@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"sync"
 
@@ -212,7 +211,7 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error
 }
 
 func (c *DbClient) buildSchemasQuery() string {
-	query := fmt.Sprintf(`
+	query := `
 WITH distinct_schema AS (
 	SELECT DISTINCT(foreign_table_schema) 
 	FROM 
@@ -240,7 +239,7 @@ WHERE
 	OR
     LEFT(cols.table_schema,8) = 'pg_temp_'
 
-`)
+`
 	return query
 }
 
