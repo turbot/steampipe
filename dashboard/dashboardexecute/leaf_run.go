@@ -235,11 +235,11 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
 			// append nils to res.ArgsList until we get to desired index
-			for idx := len(res.ArgsList); idx < *r.dependency.ArgIndex; {
-				res.ArgsList = append(res.ArgsList, nil)
+			for idx := len(res.ArgList); idx < *r.dependency.ArgIndex; {
+				res.ArgList = append(res.ArgList, nil)
 			}
 			// now add at correct index
-			res.ArgsList = append(res.ArgsList, &formattedVal)
+			res.ArgList = append(res.ArgList, &formattedVal)
 		}
 	}
 	return res, nil

@@ -104,20 +104,19 @@ func (b *QueryProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependen
 func (b *QueryProviderBase) ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, error) {
 	var paramStrs, missingParams []string
 
-	baseArgs := source.GetArgs()
-
-	// allow for nil runtime args - use an empty args object
-	if runtimeArgs == nil {
-		runtimeArgs = &QueryArgs{}
+	// validate args
+	mergedArgs, err := b.mergeArgs(source.GetArgs(), runtimeArgs, source)
+	if err != nil {
+		return "", err
 	}
-	var err error
-	if len(runtimeArgs.ArgMap) > 0 {
+
+	if len(mergedArgs.ArgMap) > 0 {
 		// do params contain named params?
-		paramStrs, missingParams, err = b.resolveNamedParameters(source, baseArgs, runtimeArgs)
+		paramStrs, missingParams, err = b.resolveNamedParameters(source, mergedArgs)
 	} else {
 		// resolve as positional parameters
 		// (or fall back to defaults if no positional params are present)
-		paramStrs, missingParams, err = b.resolvePositionalParameters(source, baseArgs, runtimeArgs)
+		paramStrs, missingParams, err = b.resolvePositionalParameters(source, mergedArgs)
 	}
 	if err != nil {
 		return "", err
@@ -141,19 +140,28 @@ func (b *QueryProviderBase) ResolveArgsAsString(source QueryProvider, runtimeArg
 	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), nil
 }
 
-func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, baseArgs, runtimeArgs *QueryArgs) (argStrs []string, missingParams []string, err error) {
-
-	// if query params contains both positional and named params, error out
-	if len(baseArgs.ArgsList) > 0 {
-		err = fmt.Errorf("ResolveAsString failed for %s - params data contain both positional and named parameters", source.Name())
-		return
+// TODO [report] do not support runtime default and convert this to merge
+// validate base and runtime args and merge into single args
+func (b *QueryProviderBase) mergeArgs(baseArgs, runtimeArgs *QueryArgs, source QueryProvider) (*QueryArgs, error) {
+	// ensure non nil
+	if baseArgs == nil {
+		baseArgs = NewQueryArgs()
 	}
+	if runtimeArgs == nil {
+		runtimeArgs = NewQueryArgs()
+	}
+
+	return baseArgs.Merge(runtimeArgs, source)
+}
+
+func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
+	// if query params contains both positional and named params, error out
 	params := source.GetParams()
 
 	// so params contain named params - if this query has no param defs, error out
-	if len(params) < len(baseArgs.ArgMap) {
+	if len(params) < len(args.ArgMap) {
 		err = fmt.Errorf("ResolveAsString failed for %s - params data contain %d named parameters but this query %d parameter definitions",
-			source.Name(), len(baseArgs.ArgMap), len(source.GetParams()))
+			source.Name(), len(args.ArgMap), len(source.GetParams()))
 		return
 	}
 
@@ -166,39 +174,28 @@ func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, baseArg
 	for i, param := range params {
 		// first set default
 		defaultValue := typehelpers.SafeString(param.Default)
-		// if a runtime default was passed, used that
-		if runtimeDefault, ok := runtimeArgs.DefaultsMap[param.Name]; ok {
-			defaultValue = runtimeDefault
-		}
+		//// if a runtime default was passed, used that
+		//if runtimeDefault, ok := runtimeArgs.DefaultsMap[param.Name]; ok {
+		//	defaultValue = runtimeDefault
+		//}
 
 		// can we resolve a value for this param?
 
-		// first try runtime args
-		if val, ok := runtimeArgs.ArgMap[param.Name]; ok {
+		if val, ok := args.ArgMap[param.Name]; ok {
 			argStrs[i] = val
 			argsWithParamDef[param.Name] = true
-			continue
-		}
 
-		// now try base args
-		if val, ok := baseArgs.ArgMap[param.Name]; ok {
-			argStrs[i] = val
-			argsWithParamDef[param.Name] = true
-			continue
-		}
-
-		if defaultValue != "" {
+		} else if defaultValue != "" {
+			// is there a default
 			argStrs[i] = defaultValue
-			continue
+		} else {
+			// no value provided and no default defined - add to missing list
+			missingParams = append(missingParams, param.Name)
 		}
-
-		// no value provided and no default defined - add to missing list
-		missingParams = append(missingParams, param.Name)
-
 	}
 
 	// verify we have param defs for all provided args
-	for arg := range baseArgs.ArgMap {
+	for arg := range args.ArgMap {
 		if _, ok := argsWithParamDef[arg]; !ok {
 			return nil, nil, fmt.Errorf("no parameter definition found for argument '%s'", arg)
 		}
@@ -209,10 +206,6 @@ func (b *QueryProviderBase) resolveNamedParameters(source QueryProvider, baseArg
 
 func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, baseArgs, runtimeArgs *QueryArgs) (argStrs []string, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
-	if len(baseArgs.ArgMap) > 0 {
-		err = fmt.Errorf("resolvePositionalParameters failed for %s - args data contain both positional and named parameters", source.Name())
-		return
-	}
 
 	// output array
 
@@ -224,10 +217,10 @@ func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, ba
 	if len(params) == 0 {
 
 		// no params defined, so we will onyy return as many args as are provided
-		argStrs = make([]string, len(baseArgs.ArgsList))
+		argStrs = make([]string, len(baseArgs.ArgList))
 
-		for i, baseArg := range baseArgs.ArgsList {
-			if runtimeArg := runtimeArgs.ArgsList[i]; runtimeArg != nil {
+		for i, baseArg := range baseArgs.ArgList {
+			if runtimeArg := runtimeArgs.ArgList[i]; runtimeArg != nil {
 				argStrs[i] = typehelpers.SafeString(runtimeArg)
 			} else {
 				argStrs[i] = typehelpers.SafeString(baseArg)
@@ -247,13 +240,13 @@ func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, ba
 			defaultValue = runtimeDefault
 		}
 
-		if i < len(runtimeArgs.ArgsList) && runtimeArgs.ArgsList[i] != nil {
-			argStrs[i] = typehelpers.SafeString(runtimeArgs.ArgsList[i])
+		if i < len(runtimeArgs.ArgList) && runtimeArgs.ArgList[i] != nil {
+			argStrs[i] = typehelpers.SafeString(runtimeArgs.ArgList[i])
 			continue
 		}
 
-		if i < len(baseArgs.ArgsList) && baseArgs.ArgsList[i] != nil {
-			argStrs[i] = typehelpers.SafeString(baseArgs.ArgsList[i])
+		if i < len(baseArgs.ArgList) && baseArgs.ArgList[i] != nil {
+			argStrs[i] = typehelpers.SafeString(baseArgs.ArgList[i])
 			continue
 		}
 

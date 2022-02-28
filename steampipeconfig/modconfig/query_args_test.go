@@ -15,7 +15,7 @@ type resolveParamsTest struct {
 var testCasesResolveParams = map[string]resolveParamsTest{
 	"positional params no defs": {
 		args: &QueryArgs{
-			ArgsList: []*string{utils.ToStringPointer("'val1'"), utils.ToStringPointer("'val2'")},
+			ArgList: []*string{utils.ToStringPointer("'val1'"), utils.ToStringPointer("'val2'")},
 		},
 		paramDefs: nil,
 		expected:  "('val1','val2')",
@@ -57,7 +57,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 	"partial positional params with defs and defaults": {
 		args: &QueryArgs{
-			ArgsList: []*string{utils.ToStringPointer("'val1'")},
+			ArgList: []*string{utils.ToStringPointer("'val1'")},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("'def_val1'")},
@@ -68,7 +68,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"partial positional params with defs and unmatched defaults": {
 		// only a default for first param, which is populated from the provided positional param
 		args: &QueryArgs{
-			ArgsList: []*string{utils.ToStringPointer("val1")},
+			ArgList: []*string{utils.ToStringPointer("val1")},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
@@ -91,7 +91,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	},
 	"positional and named params": {
 		args: &QueryArgs{
-			ArgsList: []*string{utils.ToStringPointer("val1"), utils.ToStringPointer("val2")},
+			ArgList: []*string{utils.ToStringPointer("val1"), utils.ToStringPointer("val2")},
 			ArgMap: map[string]string{
 				"p1": "val1",
 				"p2": "val2",
@@ -105,7 +105,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 func TestResolveAsString(t *testing.T) {
 	for name, test := range testCasesResolveParams {
 		query := &Query{Params: test.paramDefs}
-		res, err := query.ResolveArgsAsString(query, nil)
+		res, err := query.ResolveArgsAsString(query, test.args)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED : \nunexpected error %v", name, err)

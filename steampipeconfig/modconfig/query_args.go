@@ -14,17 +14,17 @@ type QueryArgs struct {
 	ArgMap map[string]string `cty:"args" json:"args,omitempty"`
 	// args list may be sparsely populated (in case of runtime dependencies)
 	// so use *string
-	ArgsList   []*string            `cty:"args_list" json:"args_list"`
+	ArgList    []*string            `cty:"args_list" json:"args_list"`
 	References []*ResourceReference `cty:"refs" json:"refs"`
 	// this is used when passing runtime dependencies into a query
-	DefaultsMap map[string]string `cty:"default" json:"defaults,omitempty"`
+	//DefaultsMap map[string]string `cty:"default" json:"defaults,omitempty"`
 }
 
 func (q *QueryArgs) String() string {
 	if q == nil {
 		return "<nil>"
 	}
-	if len(q.ArgsList) > 0 {
+	if len(q.ArgList) > 0 {
 		argsStringList := q.argsStringList()
 		return fmt.Sprintf("Args list: %s", strings.Join(argsStringList, ","))
 	}
@@ -40,10 +40,10 @@ func (q *QueryArgs) String() string {
 	return "<empty>"
 }
 
-// convert ArgsList into list of strings
+// convert ArgList into list of strings
 func (q *QueryArgs) argsStringList() []string {
-	var argsStringList = make([]string, len(q.ArgsList))
-	for i, a := range q.ArgsList {
+	var argsStringList = make([]string, len(q.ArgList))
+	for i, a := range q.ArgList {
 		argsStringList[i] = typehelpers.SafeString(a)
 	}
 	return argsStringList
@@ -63,7 +63,7 @@ func (q *QueryArgs) Equals(other *QueryArgs) bool {
 	if q.Empty() {
 		return other.Empty()
 	}
-	if len(other.ArgMap) != len(q.ArgMap) || len(other.ArgsList) != len(q.ArgsList) {
+	if len(other.ArgMap) != len(q.ArgMap) || len(other.ArgList) != len(q.ArgList) {
 		return false
 	}
 	for k, v := range q.ArgMap {
@@ -71,8 +71,8 @@ func (q *QueryArgs) Equals(other *QueryArgs) bool {
 			return false
 		}
 	}
-	for i, v := range q.ArgsList {
-		if other.ArgsList[i] != v {
+	for i, v := range q.ArgList {
+		if other.ArgList[i] != v {
 			return false
 		}
 	}
@@ -80,7 +80,57 @@ func (q *QueryArgs) Equals(other *QueryArgs) bool {
 }
 
 func (q *QueryArgs) Empty() bool {
-	return len(q.ArgMap)+len(q.ArgsList) == 0
+	return len(q.ArgMap)+len(q.ArgList) == 0
+}
+
+func (q *QueryArgs) Validate() error {
+	if len(q.ArgMap) > 0 && len(q.ArgList) > 0 {
+		return fmt.Errorf("args contain both positional and named parameters")
+	}
+	return nil
+}
+
+// Merge merges the other args with ourselves
+// NOTE: other has precedence
+func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs,error) {
+	// ensure valid (i.e. cannot define both arg list and arg map)
+	if err := q.Validate(); err != nil {
+		return nil, fmt.Errorf("argument validation failed for '%s': %s", source.Name(), err.Error())
+	}
+
+	if err := other.Validate(); err != nil {
+		return nil,  fmt.Errorf("runtime argument validation failed for '%s': %s", source.Name(), err.Error())
+	}
+
+	// create a new query args to store the merged result
+	 result := NewQueryArgs()
+
+	// runtime args must specify args in same way as base args (i.e. both must define either map or list)
+	if len(q.ArgMap) > 0 {
+		if len(other.ArgList) > 0 {
+			return nil,  fmt.Errorf("runtime argument validation failed for '%s': runtime args must be provided in same format (map or list) as base args", source.Name())``
+		}
+		for k, v := range q.ArgMap {
+			if otherVal, ok := other.ArgMap[k]; ok {
+				result.ArgMap[k] = otherVal
+			} else {
+				result.ArgMap[k] = v
+			}
+		}
+	} else {
+		// so we must have an args list
+		result.ArgList = make([]*string, len(q.ArgList))
+		for i, a := range q.ArgList {
+			if len(other.ArgList) > i && other.ArgList[i] != nil {
+				result.ArgList[i] = other.ArgList[i]
+			} else {
+				result.ArgList[i] = a
+			}
+		}
+	}
+
+	return result, nil
+
 }
 
 //

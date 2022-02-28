@@ -63,7 +63,7 @@ func parseArgs(argssString string) (*modconfig.QueryArgs, error) {
 	}
 	if res.Empty() {
 		// no named args - fall back on positional
-		res.ArgsList, err = parsePositionalArgs(argsList)
+		res.ArgList, err = parsePositionalArgs(argsList)
 	}
 	// return empty result, even if we have an error
 	return res, err

@@ -38,7 +38,7 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	case ty.IsObjectType():
 		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, evalCtx)
 	case ty.IsTupleType():
-		args.ArgsList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
+		args.ArgList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
