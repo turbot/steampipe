@@ -24,6 +24,7 @@ type DashboardInput struct {
 	Title       *string                 `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width       *int                    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type        *string                 `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Label       *string                 `cty:"label" hcl:"label" column:"label,text"  json:"label,omitempty"`
 	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
 	Display     *string                 `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks     []*DashboardOn          `cty:"on" hcl:"on,block" json:"on,omitempty"`
@@ -56,6 +57,7 @@ func (i *DashboardInput) Clone() *DashboardInput {
 		Title:                    i.Title,
 		Width:                    i.Width,
 		Type:                     i.Type,
+		Label:                    i.Label,
 		Placeholder:              i.Placeholder,
 		Display:                  i.Display,
 		OnHooks:                  i.OnHooks,
@@ -204,6 +206,10 @@ func (i *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Type")
 	}
 
+	if !utils.SafeStringsEqual(i.Label, other.Label) {
+		res.AddPropertyDiff("Label")
+	}
+
 	if !utils.SafeStringsEqual(i.Placeholder, other.Placeholder) {
 		res.AddPropertyDiff("Placeholder")
 	}
@@ -299,6 +305,10 @@ func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvi
 
 	if i.Type == nil {
 		i.Type = i.Base.Type
+	}
+
+	if i.Label == nil {
+		i.Label = i.Base.Label
 	}
 
 	if i.Placeholder == nil {

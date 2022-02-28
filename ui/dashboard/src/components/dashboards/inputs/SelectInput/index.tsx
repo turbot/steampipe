@@ -201,13 +201,13 @@ const SelectInput = (props: SelectInputProps) => {
 
   return (
     <form>
-      {props.title && (
+      {props.properties && props.properties.label && (
         <label
           className="block mb-1 text-sm"
           id={`${props.name}.label`}
           htmlFor={`${props.name}.input`}
         >
-          {props.title}
+          {props.properties.label}
         </label>
       )}
       <Select

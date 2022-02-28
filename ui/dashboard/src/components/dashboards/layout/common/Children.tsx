@@ -158,13 +158,16 @@ const Children = ({ children = [], showPanelExpand = true }: ChildrenProps) => (
           );
         case "input":
           return (
-            <Panel
+            <ChildWithTitle
               key={child.name}
-              definition={child}
-              showExpand={showPanelExpand}
-            >
-              <Input {...child} />
-            </Panel>
+              child={child}
+              level="panel"
+              renderChild={() => (
+                <Panel definition={child} showExpand={showPanelExpand}>
+                  <Input {...child} />
+                </Panel>
+              )}
+            />
           );
         case "table":
           return (
