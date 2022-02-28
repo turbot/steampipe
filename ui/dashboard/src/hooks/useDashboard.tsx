@@ -30,6 +30,7 @@ interface IDashboardContext {
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
+  lastChangedInput: string | null;
   sqlDataMap: SQLDataMap;
 }
 
@@ -301,11 +302,13 @@ function reducer(state, action) {
         dashboard: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
+        lastChangedInput: null,
       };
     case "clear_dashboard_inputs":
       return {
         ...state,
         selectedDashboardInputs: {},
+        lastChangedInput: null,
       };
     case "delete_dashboard_input":
       const { [action.name]: toDelete, ...rest } =
@@ -315,6 +318,7 @@ function reducer(state, action) {
         selectedDashboardInputs: {
           ...rest,
         },
+        lastChangedInput: action.name,
       };
     case "set_dashboard_input":
       return {
@@ -323,11 +327,13 @@ function reducer(state, action) {
           ...state.selectedDashboardInputs,
           [action.name]: action.value,
         },
+        lastChangedInput: action.name,
       };
     case "set_dashboard_inputs":
       return {
         ...state,
         selectedDashboardInputs: action.value,
+        lastChangedInput: null,
       };
     case "workspace_error":
       return { ...state, error: action.error };
@@ -533,11 +539,12 @@ const DashboardProvider = ({ children }) => {
     ) {
       webSocket.current.send(
         JSON.stringify({
-          action: "set_dashboard_inputs",
+          action: "input_changed",
           payload: {
             dashboard: {
               full_name: state.selectedDashboard.full_name,
             },
+            changed_input: state.lastChangedInput,
             input_values: state.selectedDashboardInputs,
           },
         })
@@ -547,6 +554,7 @@ const DashboardProvider = ({ children }) => {
     previousSelectedDashboardStates,
     state.selectedDashboard,
     state.selectedDashboardInputs,
+    state.lastChangedInput,
   ]);
 
   useEffect(() => {
