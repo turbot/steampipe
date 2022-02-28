@@ -85,6 +85,15 @@ const SelectInput = (props: SelectInputProps) => {
     null
   );
   const options: SelectOption[] = useMemo(() => {
+    if (props.properties.options) {
+      return props.properties.options.map((option) => ({
+        label: option.label || option.name,
+        value: option.name,
+        tags: {},
+      }));
+    }
+
+    // If no options defined at all
     if (!props.data || !props.data.columns || !props.data.rows) {
       return [];
     }
@@ -101,7 +110,7 @@ const SelectInput = (props: SelectInputProps) => {
       value: row[valueColIndex],
       tags: tagsColIndex > -1 ? row[tagsColIndex] : {},
     }));
-  }, [props.data]);
+  }, [props.properties.options, props.data]);
 
   useEffect(() => {
     // If we've already set a value...
@@ -224,8 +233,8 @@ const SelectInput = (props: SelectInputProps) => {
         }}
         menuPortalTarget={document.body}
         inputId={`${props.name}.input`}
-        isDisabled={!props.data}
-        isLoading={!props.data}
+        isDisabled={!props.properties.options && !props.data}
+        isLoading={!props.properties.options && !props.data}
         isClearable
         isRtl={false}
         isSearchable

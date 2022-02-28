@@ -6,9 +6,15 @@ import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 
 export type BaseInputProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
+interface SelectInputOption {
+  name: string;
+  label?: string;
+}
+
 export type InputProperties = {
   type: InputType;
   label?: string;
+  options?: SelectInputOption[];
   placeholder?: string;
 };
 
