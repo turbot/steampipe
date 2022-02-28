@@ -70,7 +70,7 @@ interface SectionProps {
 // };
 
 const stringColorMap = {};
-const colorGenerator = new ColorGenerator(24, 4);
+const colorGenerator = new ColorGenerator(16, 0);
 
 // https://stackoverflow.com/questions/3426404/create-a-hexadecimal-colour-based-on-a-string-with-javascript
 const stringToColour = (str) => {

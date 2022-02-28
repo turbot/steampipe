@@ -51,6 +51,12 @@ export class ColorGenerator {
       47: true, // green
       48: true, // green
       49: true, // green
+      50: true, // yellow
+      51: true, // yellow
+      52: true, // black
+      53: true, // black
+      54: true, // black
+      55: true, // black
     };
 
     this.startingColumn = startingColumn;
@@ -73,6 +79,10 @@ export class ColorGenerator {
     }
     while (this.forbiddenColumns[this.currentColumn]) {
       this.currentColumn++;
+      if (this.currentColumn > maxColumn) {
+        // reset and maintain offset
+        this.currentColumn -= maxColumn - minColumn + 1;
+      }
     }
   }
 
