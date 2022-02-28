@@ -214,6 +214,16 @@ func (i *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Placeholder")
 	}
 
+	if len(i.Options) != len(other.Options) {
+		res.AddPropertyDiff("Options")
+	} else {
+		for i, o := range i.Options {
+			if other.Options[i].Equals(o) {
+				res.AddPropertyDiff("Options")
+			}
+		}
+	}
+
 	res.populateChildDiffs(i, other)
 
 	return res
