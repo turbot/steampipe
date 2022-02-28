@@ -225,11 +225,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 	for _, r := range r.runtimeDependencies {
 		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", r.value))
 		if r.dependency.ArgName != nil {
-			//if r.dependency.IsDefault {
-			//	res.DefaultsMap[*r.dependency.ArgName] = formattedVal
-			//} else {
 			res.ArgMap[*r.dependency.ArgName] = formattedVal
-			//}
 		} else {
 			if r.dependency.ArgIndex == nil {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
