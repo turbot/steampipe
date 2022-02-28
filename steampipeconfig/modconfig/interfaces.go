@@ -68,7 +68,6 @@ type QueryProvider interface {
 	// implemented by QueryProviderBase
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
-	ResolveArgsAsString(QueryProvider, *QueryArgs) (string, error)
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
 	IsParameterised(*QueryArgs, []*ParamDef) bool

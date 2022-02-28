@@ -16,8 +16,6 @@ type QueryArgs struct {
 	// so use *string
 	ArgList    []*string            `cty:"args_list" json:"args_list"`
 	References []*ResourceReference `cty:"refs" json:"refs"`
-	// this is used when passing runtime dependencies into a query
-	//DefaultsMap map[string]string `cty:"default" json:"defaults,omitempty"`
 }
 
 func (q *QueryArgs) String() string {
@@ -40,7 +38,7 @@ func (q *QueryArgs) String() string {
 	return "<empty>"
 }
 
-// convert ArgList into list of strings
+// ArgsStringList convert ArgLists into list of strings
 func (q *QueryArgs) ArgsStringList() []string {
 	var argsStringList = make([]string, len(q.ArgList))
 	for i, a := range q.ArgList {
@@ -51,7 +49,6 @@ func (q *QueryArgs) ArgsStringList() []string {
 
 func NewQueryArgs() *QueryArgs {
 	return &QueryArgs{
-		//DefaultsMap: make(map[string]string),
 		ArgMap: make(map[string]string),
 	}
 }
@@ -122,7 +119,6 @@ func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, e
 		}
 	} else {
 		// so we must have an args list - figure out how long
-
 		listLength := len(q.ArgList)
 		if otherLen := len(other.ArgList); otherLen > listLength {
 			listLength = otherLen

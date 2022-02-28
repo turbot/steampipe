@@ -107,14 +107,20 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 	log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
 
 	// verify the resource has qa query or sql, if required
-	if err := queryProvider.VerifyQuery(queryProvider); err != nil {
+	err := queryProvider.VerifyQuery(queryProvider)
+	if err != nil {
 		return "", err
 	}
 
 	query := queryProvider.GetQuery()
 	sql := queryProvider.GetSQL()
 	params := queryProvider.GetParams()
-	args := queryProvider.GetArgs()
+
+	// merge the base args with the runtime args
+	runtimeArgs, err = modconfig.MergeArgs(queryProvider, runtimeArgs)
+	if err != nil {
+		return "", err
+	}
 
 	// determine the source for the query
 	// - this will either be the control itself or any named query the control refers to
@@ -143,7 +149,7 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 
 		// determine whether there are any params - there may either be param defs, OR positional args
 		// if there are NO params OR list args, use the control SQL as is
-		if !queryProvider.IsParameterised(args, params) {
+		if !queryProvider.IsParameterised(runtimeArgs, params) {
 			return queryProviderSQL, nil
 		}
 	}
