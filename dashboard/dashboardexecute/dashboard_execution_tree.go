@@ -31,10 +31,10 @@ type DashboardExecutionTree struct {
 	inputValues            map[string]interface{}
 }
 
-// NewReportExecutionTree creates a result group from a ModTreeItem
-func NewReportExecutionTree(reportName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
+// NewDashboardExecutionTree creates a result group from a ModTreeItem
+func NewDashboardExecutionTree(reportName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
 	// now populate the DashboardExecutionTree
-	reportExecutionTree := &DashboardExecutionTree{
+	executionTree := &DashboardExecutionTree{
 		dashboardName:          reportName,
 		sessionId:              sessionId,
 		client:                 client,
@@ -46,13 +46,13 @@ func NewReportExecutionTree(reportName string, sessionId string, client db_commo
 	}
 
 	// create the root run node (either a report run or a counter run)
-	root, err := reportExecutionTree.createRootItem(reportName)
+	root, err := executionTree.createRootItem(reportName)
 	if err != nil {
 		return nil, err
 	}
 
-	reportExecutionTree.Root = root
-	return reportExecutionTree, nil
+	executionTree.Root = root
+	return executionTree, nil
 }
 
 func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRun, error) {
