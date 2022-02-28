@@ -62,9 +62,9 @@ func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
 	}
 
 	// SourceResource
-	// if d.SourceResource.Name() != other.SourceResource.Name() {
-	// 	return false
-	// }
+	if d.SourceResource.Name() != other.SourceResource.Name() {
+		return false
+	}
 
 	return true
 }
