@@ -220,6 +220,7 @@ func (r *LeafRun) resolveSQL() error {
 
 func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 	res := modconfig.NewQueryArgs()
+
 	// build map of default params
 	for _, r := range r.runtimeDependencies {
 		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", r.value))
@@ -233,7 +234,12 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 			if r.dependency.ArgIndex == nil {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
-			res.ArgsList[*r.dependency.ArgIndex] = formattedVal
+			// append nils to res.ArgsList until we get to desired index
+			for idx := len(res.ArgsList); idx < *r.dependency.ArgIndex; {
+				res.ArgsList = append(res.ArgsList, nil)
+			}
+			// now add at correct index
+			res.ArgsList = append(res.ArgsList, &formattedVal)
 		}
 	}
 	return res, nil

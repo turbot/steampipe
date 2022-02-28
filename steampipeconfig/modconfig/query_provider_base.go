@@ -213,29 +213,59 @@ func (b *QueryProviderBase) resolvePositionalParameters(source QueryProvider, ba
 		err = fmt.Errorf("resolvePositionalParameters failed for %s - args data contain both positional and named parameters", source.Name())
 		return
 	}
+
+	// output array
+
+	// if there are param defs - we must be able to resolve all params
+	// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
 	params := source.GetParams()
-	// if no param defs are defined, just use the given values
+
+	// if no param defs are defined, just use the given values, using runtime dependencies where available
 	if len(params) == 0 {
-		argStrs = baseArgs.ArgsList
+
+		// no params defined, so we will onyy return as many args as are provided
+		argStrs = make([]string, len(baseArgs.ArgsList))
+
+		for i, baseArg := range baseArgs.ArgsList {
+			if runtimeArg := runtimeArgs.ArgsList[i]; runtimeArg != nil {
+				argStrs[i] = typehelpers.SafeString(runtimeArg)
+			} else {
+				argStrs[i] = typehelpers.SafeString(baseArg)
+			}
+		}
 		return
 	}
 
-	// so there are param defs - we must be able to resolve all params
-	// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
+	// so there are param defintions - use these to populate argStrs
 	argStrs = make([]string, len(params))
 
 	for i, param := range params {
+		// first set default
 		defaultValue := typehelpers.SafeString(param.Default)
+		// if a runtime default was passed, used that
+		if runtimeDefault, ok := runtimeArgs.DefaultsMap[param.Name]; ok {
+			defaultValue = runtimeDefault
+		}
 
-		if i < len(args.ArgsList) {
-			argStrs[i] = args.ArgsList[i]
-		} else if defaultValue != "" {
+		if i < len(runtimeArgs.ArgsList) && runtimeArgs.ArgsList[i] != nil {
+			argStrs[i] = typehelpers.SafeString(runtimeArgs.ArgsList[i])
+			continue
+		}
+
+		if i < len(baseArgs.ArgsList) && baseArgs.ArgsList[i] != nil {
+			argStrs[i] = typehelpers.SafeString(baseArgs.ArgsList[i])
+			continue
+		}
+
+		if defaultValue != "" {
 			// so we have run out of provided params - is there a default?
 			argStrs[i] = defaultValue
-		} else {
-			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.Name)
+			continue
 		}
+
+		// no value provided and no default defined - add to missing list
+		missingParams = append(missingParams, param.Name)
+
 	}
 	return
 }

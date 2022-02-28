@@ -36,9 +36,9 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 
 	switch {
 	case ty.IsObjectType():
-		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, resource, evalCtx)
+		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, evalCtx)
 	case ty.IsTupleType():
-		args.ArgsList, runtimeDependencies, err = ctyTupleToArgArray(attr, v, resource, evalCtx)
+		args.ArgsList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
@@ -54,12 +54,12 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	return args, runtimeDependencies, diags
 }
 
-func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value, resource modconfig.QueryProvider, evalCtx *hcl.EvalContext) ([]string, []*modconfig.RuntimeDependency, error) {
+func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modconfig.RuntimeDependency, error) {
 	// convert the attribute to a slice
 	values := val.AsValueSlice()
 
 	// build output array
-	res := make([]string, len(values))
+	res := make([]*string, len(values))
 	var runtimeDependencies []*modconfig.RuntimeDependency
 
 	for idx, v := range values {
@@ -79,13 +79,13 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value, resource modconfig.Q
 				return nil, nil, err
 			}
 
-			res[idx] = valStr
+			res[idx] = &valStr
 		}
 	}
 	return res, runtimeDependencies, nil
 }
 
-func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, resource modconfig.QueryProvider, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
+func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
 	res := make(map[string]string)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	it := val.ElementIterator()

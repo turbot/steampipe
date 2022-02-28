@@ -110,7 +110,7 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 	//	return "", err
 	//}
 	//
-	/log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
+	log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
 
 	// verify the resource has qa query or sql, if required
 	if err := queryProvider.VerifyQuery(queryProvider); err != nil {
