@@ -19,7 +19,7 @@ func ValidateConnectionStringArgs() (*steampipeconfig.CloudMetadata, error) {
 	}
 	connectionString := workspaceDatabase
 
-	cloudMetadata := &steampipeconfig.CloudMetadata{}
+	var cloudMetadata *steampipeconfig.CloudMetadata
 
 	// so a backend was set - is it a connection string or a database name
 	if !(strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")) {
@@ -31,7 +31,7 @@ func ValidateConnectionStringArgs() (*steampipeconfig.CloudMetadata, error) {
 
 		// so we have a database and a token - build the connection string and set it in viper
 		var err error
-		if connectionString, err = cloud.GetConnectionString(workspaceDatabase, cloudToken); err != nil {
+		if connectionString, cloudMetadata, err = cloud.GetConnectionString(workspaceDatabase, cloudToken); err != nil {
 			return nil, err
 		}
 	}

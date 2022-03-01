@@ -42,8 +42,6 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, *steamp
 		return "", nil, fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
 	}
 
-	workspace.i
-
 	workspaceHost := workspace["host"].(string)
 	databaseName := workspace["database_name"].(string)
 
@@ -56,7 +54,16 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, *steamp
 		return "", nil, err
 	}
 
-	return fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName), nil
+	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
+
+	identity := workspace["identity"].(map[string]interface{})
+	cloudMetadata.Identity.Id = identity["id"].(string)
+	cloudMetadata.Identity.Type = identity["type"].(string)
+	cloudMetadata.Identity.Handle = identityHandle
+	cloudMetadata.Actor.Id = userId
+	cloudMetadata.Actor.Handle = userHandle
+
+	return connectionString, cloudMetadata, nil
 }
 
 func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {

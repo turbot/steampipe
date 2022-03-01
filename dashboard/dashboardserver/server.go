@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
+	"strings"
 	"sync"
+
+	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/steampipeconfig"
 
@@ -91,21 +95,19 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 				FullName:  workspaceResources.Mod.FullName,
 				ShortName: workspaceResources.Mod.ShortName,
 			},
-			InstalledMods: installedMods,
+			InstalledMods:    installedMods,
+			Cloud:            cloudMetadata,
+			TelemetryEnabled: getTelemetryEnabled(),
 		},
 	}
-	if cloudMetadata != nil {
-		payload.Metadata.Actor = &ActorMetadata{
-			Id:     cloudMetadata.ActorId,
-			Handle: cloudMetadata.ActorHandle,
-		}
-		payload.Metadata.Identity = &IdentityMetadata{
-			Id:     cloudMetadata.IdentityId,
-			Handle: cloudMetadata.IdentityHandle,
-			Type:   cloudMetadata.IdentityType,
-		}
-	}
+
 	return json.Marshal(payload)
+}
+func getTelemetryEnabled() bool {
+	telemtryEnv, set := os.LookupEnv(constants.EnvDashboardTelemetryEnabled)
+	// default to true if env var is not set
+	telemetryEnabled := !set || strings.ToUpper(telemtryEnv) == "TRUE"
+	return telemetryEnabled
 }
 
 func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
