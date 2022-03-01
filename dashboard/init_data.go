@@ -26,6 +26,11 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		Result:    &db_common.InitResult{},
 	}
 
+	if !w.ModfileExists() {
+		initData.Result.Error = workspace.ErrModSpNotFound
+		return initData
+	}
+
 	if viper.GetBool(constants.ArgModInstall) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
