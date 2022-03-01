@@ -13,7 +13,6 @@ const PanelDetailDataDownloadButton = ({ downloadQueryData, size }) => {
 
   return (
     <NeutralButton
-      className="text-foreground-light"
       disabled={downloading}
       onClick={downloading ? noop : () => downloadData()}
       size={size}
