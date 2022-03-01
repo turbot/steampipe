@@ -70,7 +70,6 @@ type QueryProvider interface {
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
-	IsParameterised(*QueryArgs, []*ParamDef) bool
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
