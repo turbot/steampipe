@@ -35,7 +35,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	// add to execution map
 	e.setExecution(sessionId, executionTree)
 
-	// if inputs have been passed, just call ExecuteDashboardWithInputs - this will also execute
+	// if inputs have been passed, set them first
 	if len(inputs) > 0 {
 		if err := executionTree.SetInputs(inputs); err != nil {
 			return err
@@ -53,7 +53,7 @@ func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId st
 	if !found {
 		return fmt.Errorf("no dashboard running for session %s", sessionId)
 	}
-	// if the dashboard run is complete, just reexecute
+	// if the dashboard run is complete, just re-execute
 	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
 		return e.ExecuteDashboard(
 			ctx,

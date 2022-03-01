@@ -436,7 +436,7 @@ func (s *Server) Init(ctx context.Context) {
 
 	s.webSocket.HandleDisconnect(func(session *melody.Session) {
 		log.Println("[TRACE] client disconnected")
-		s.clearSession(ctx, session)
+		//s.clearSession(ctx, session)
 	})
 
 	s.webSocket.HandleMessage(s.handleMessageFunc(ctx))
