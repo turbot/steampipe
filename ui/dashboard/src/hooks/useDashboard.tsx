@@ -97,6 +97,7 @@ export interface PanelDefinition {
   name: string;
   node_type?: string;
   title?: string;
+  original_title?: string;
   width?: number;
   sql?: string;
   data?: LeafNodeData;

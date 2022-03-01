@@ -50,6 +50,7 @@ const TitleWrapper = ({
       },
       {
         ...definitionOther,
+        original_title: definitionTitle,
         properties: {
           ...innerProperties,
           parentWidth: definitionWidth,

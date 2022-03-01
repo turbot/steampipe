@@ -82,7 +82,10 @@ const Panel = ({
               zoomIconClassName
             )}
             onClick={() =>
-              dispatch({ type: "select_panel", panel: definition })
+              dispatch({
+                type: "select_panel",
+                panel: { ...definition },
+              })
             }
           >
             <ZoomIcon className="h-5 w-5" />
