@@ -153,18 +153,6 @@ func (i *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {
 		Item: i,
 		Name: i.Name(),
 	}
-	if !utils.SafeStringsEqual(i.FullName, other.FullName) {
-		res.AddPropertyDiff("Name")
-	}
-
-	if !utils.SafeStringsEqual(i.Title, other.Title) {
-		res.AddPropertyDiff("Title")
-	}
-
-	if !utils.SafeIntEqual(i.Width, other.Width) {
-		res.AddPropertyDiff("Width")
-	}
-
 	if !utils.SafeStringsEqual(i.Src, other.Src) {
 		res.AddPropertyDiff("Src")
 	}
@@ -174,6 +162,8 @@ func (i *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {
 	}
 
 	res.populateChildDiffs(i, other)
+	res.queryProviderDiff(i, other)
+	res.dashboardLeafNodeDiff(i, other)
 
 	return res
 }
