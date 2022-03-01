@@ -59,7 +59,7 @@ const CodeBlock = ({
         },
       };
     }
-  }, [language, theme.name]);
+  }, [theme.name]);
 
   return (
     <div
