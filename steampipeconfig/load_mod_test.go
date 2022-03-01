@@ -1216,7 +1216,14 @@ func setChildren(mod *modconfig.Mod) error {
 		var children []modconfig.ModTreeItem
 		for _, childName := range container.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
-			child, found := modconfig.GetResource(mod, parsed)
+			var child modconfig.HclResource
+			var found bool
+			if parsed.ItemType == "input" {
+				child, found = modconfig.GetDashboardInput(mod, parsed.ToResourceName(), container.Name())
+			} else {
+				child, found = modconfig.GetResource(mod, parsed)
+			}
+
 			if !found {
 				return fmt.Errorf("failed to resolve child %s", childName)
 			}
@@ -1225,17 +1232,24 @@ func setChildren(mod *modconfig.Mod) error {
 		container.SetChildren(children)
 
 	}
-	for _, report := range mod.Dashboards {
+	for _, dashboard := range mod.Dashboards {
 		var children []modconfig.ModTreeItem
-		for _, childName := range report.ChildNames {
+		for _, childName := range dashboard.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
-			child, found := modconfig.GetResource(mod, parsed)
+
+			var child modconfig.HclResource
+			var found bool
+			if parsed.ItemType == "input" {
+				child, found = modconfig.GetDashboardInput(mod, parsed.ToResourceName(), dashboard.Name())
+			} else {
+				child, found = modconfig.GetResource(mod, parsed)
+			}
 			if !found {
 				return fmt.Errorf("failed to resolve child %s", childName)
 			}
 			children = append(children, child.(modconfig.ModTreeItem))
 		}
-		report.SetChildren(children)
+		dashboard.SetChildren(children)
 	}
 	return nil
 }
