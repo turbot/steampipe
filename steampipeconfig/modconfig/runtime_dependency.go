@@ -13,7 +13,7 @@ type RuntimeDependency struct {
 
 func (d *RuntimeDependency) String() string {
 	if d.ArgIndex != nil {
-		return fmt.Sprintf("arg.%d->%s", d.ArgIndex, d.PropertyPath.String())
+		return fmt.Sprintf("arg.%d->%s", *d.ArgIndex, d.PropertyPath.String())
 	}
 
 	return fmt.Sprintf("arg.%s->%s", *d.ArgName, d.PropertyPath.String())
