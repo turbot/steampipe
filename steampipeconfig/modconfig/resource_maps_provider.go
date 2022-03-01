@@ -47,7 +47,7 @@ func GetDashboardInput(provider ResourceMapsProvider, inputName, dashboardName s
 	resourceMaps := provider.GetResourceMaps()
 
 	dasboardInputs, ok := resourceMaps.DashboardInputs[dashboardName]
-	if ok {
+	if !ok {
 		return nil, false
 	}
 
