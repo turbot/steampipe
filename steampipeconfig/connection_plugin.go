@@ -150,6 +150,10 @@ func buildSchemaModeMap(connectionPluginMap map[string]*ConnectionPlugin, plugin
 }
 
 func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto.GetResponse, opts *CreateConnectionPluginOptions) (*ConnectionPlugin, error) {
+	// we should never instantiate an aggregator connection
+	if connection.Type == modconfig.ConnectionTypeAggregator {
+		return nil, fmt.Errorf("we should never instantiate an aggregator connection plugin")
+	}
 	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config

@@ -136,10 +136,10 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 }
 
 func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) *RefreshConnectionResult {
-	updateConnections := u.Update.Connections()
-	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
-	// - remove these from list of plugins to create
-	connectionsToCreate := removeConnectionsFromList(updateConnections, alreadyCreatedConnectionPlugins)
+	// get list of connections to update:
+	// - exclude connections already created
+	// - for any aggregator connections, instantiate the first child conneciotn instead
+	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
 	// now create them
 	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate, &CreateConnectionPluginOptions{SetConnectionConfig: true})
 	if res.Error != nil {
@@ -152,6 +152,22 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// and set our ConnectionPlugins property
 	u.ConnectionPlugins = connectionPlugins
 	return res
+}
+
+func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []*modconfig.Connection {
+	updateConnections := u.Update.Connections()
+	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
+	// - remove these from list of plugins to create
+	var connectionsToCreate = make([]*modconfig.Connection, len(updateConnections))
+	for i, connection := range updateConnections {
+		// if this connection is an aggregator, instantiate its first child connection instead
+		if connection.Type == modconfig.ConnectionTypeAggregator {
+			connection = connection.FirstChild()
+		}
+		connectionsToCreate[i] = connection
+	}
+	connectionsToCreate = removeConnectionsFromList(connectionsToCreate, alreadyCreatedConnectionPlugins)
+	return connectionsToCreate
 }
 
 func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connectionsToRemove map[string]*ConnectionPlugin) []*modconfig.Connection {
