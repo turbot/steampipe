@@ -1129,6 +1129,10 @@ func init() {
 				},
 			},
 		},
+		"dashboard_with_duplicate_inputs": {
+			source:   "testdata/mods/dashboard_with_duplicate_inputs",
+			expected: "ERROR",
+		},
 		//"two_mods": {
 		//	source:   "testdata/mods/two_mods",
 		//	expected: "ERROR",
