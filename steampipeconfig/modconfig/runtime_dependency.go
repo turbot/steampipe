@@ -41,21 +41,21 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
 
 	// TargetPropertyPath
-	if d.TargetPropertyPath == nil {
-		if other.TargetPropertyPath != nil {
+	if d.PropertyPath.PropertyPath == nil {
+		if other.PropertyPath.PropertyPath != nil {
 			return false
 		}
 	} else {
 		// we have TargetPropertyPath
-		if other.TargetPropertyPath == nil {
+		if other.PropertyPath.PropertyPath == nil {
 			return false
 		}
 
-		if len(d.TargetPropertyPath) != len(other.TargetPropertyPath) {
+		if len(d.PropertyPath.PropertyPath) != len(other.PropertyPath.PropertyPath) {
 			return false
 		}
-		for i, c := range d.TargetPropertyPath {
-			if other.TargetPropertyPath[i] != c {
+		for i, c := range d.PropertyPath.PropertyPath {
+			if other.PropertyPath.PropertyPath[i] != c {
 				return false
 			}
 		}
