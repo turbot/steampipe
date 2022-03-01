@@ -57,6 +57,7 @@ export const PanelStoryDecorator = ({
               sql: "storybook",
             },
           ],
+          dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
         sqlDataMap: {
           storybook: definition.data,

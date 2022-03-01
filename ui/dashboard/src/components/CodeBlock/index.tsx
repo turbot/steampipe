@@ -22,24 +22,23 @@ const CodeBlock = ({
 }: CodeBlockProps) => {
   const { theme } = useTheme();
   const styles = useMemo(() => {
+    const commonStyles = {
+      fontFamily:
+        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      fontSize: "13px",
+      lineHeight: 1.5,
+      margin: 0,
+    };
     if (theme.name === ThemeNames.STEAMPIPE_DARK) {
       return {
         ...vscDarkPlus,
         'code[class*="language-"]': {
           ...vscDarkPlus['code[class*="language-"]'],
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
-          fontSize: "13px",
-          lineHeight: 1.5,
-          margin: 0,
+          ...commonStyles,
         },
         'pre[class*="language-"]': {
           ...vscDarkPlus['pre[class*="language-"]'],
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
-          fontSize: "13px",
-          lineHeight: 1.5,
-          margin: 0,
+          ...commonStyles,
         },
       };
     } else {
@@ -47,26 +46,16 @@ const CodeBlock = ({
         ...vs,
         'code[class*="language-"]': {
           ...vs['code[class*="language-"]'],
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
-          fontSize: "13px",
-          lineHeight: 1.5,
-          margin: 0,
+          ...commonStyles,
         },
         'pre > code[class*="language-"]': {
           ...vs['pre > code[class*="language-"]'],
-          fontSize: "13px",
-          lineHeight: 1.5,
-          margin: 0,
+          ...commonStyles,
         },
         'pre[class*="language-"]': {
           ...vs['pre[class*="language-"]'],
           border: "none",
-          fontFamily:
-            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
-          fontSize: "13px",
-          lineHeight: 1.5,
-          margin: 0,
+          ...commonStyles,
         },
       };
     }

@@ -104,6 +104,7 @@ export interface PanelDefinition {
   execution_tree?: CheckLeafNodeExecutionTree;
   error?: Error;
   properties?: PanelProperties;
+  dashboard: string;
 }
 
 export interface DashboardDefinition {
@@ -111,6 +112,7 @@ export interface DashboardDefinition {
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
+  dashboard: string;
 }
 
 interface SocketMessagePayload {

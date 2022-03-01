@@ -1,12 +1,17 @@
 import LayoutPanel from "../common/LayoutPanel";
+import moment from "moment";
 import NeutralButton from "../../../forms/NeutralButton";
 import PanelDetailData from "./PanelDetailData";
+import PanelDetailDataDownloadButton from "./PanelDetailDataDownloadButton";
 import PanelDetailDefinition from "./PanelDetailDefinition";
 import PanelDetailPreview from "./PanelDetailPreview";
 import PanelDetailQuery from "./PanelDetailQuery";
 import { classNames } from "../../../../utils/styles";
 import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
-import { useMemo, useState } from "react";
+import { saveAs } from "file-saver";
+import { useCallback, useMemo, useState } from "react";
+import { usePapaParse } from "react-papaparse";
+import { useBreakpoint } from "../../../../hooks/useBreakpoint";
 
 export type PanelDetailProps = {
   definition: PanelDefinition;
@@ -37,6 +42,11 @@ const Tabs = {
 
 const PanelDetail = ({ definition }: PanelDetailProps) => {
   const [selectedTab, setSelectedTab] = useState(Tabs.PREVIEW);
+  const { closePanelDetail, selectedDashboard } = useDashboard();
+  const { jsonToCSV } = usePapaParse();
+  const { minBreakpoint } = useBreakpoint();
+  const isTablet = minBreakpoint("md");
+
   const availableTabs = useMemo(() => {
     const tabs = [
       {
@@ -64,14 +74,53 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     }
     return tabs;
   }, [definition, selectedTab]);
-  const { closePanelDetail } = useDashboard();
+
+  const downloadQueryData = useCallback(() => {
+    if (!definition.data) {
+      return;
+    }
+    const data = definition.data;
+    const colNames = data.columns.map((c) => c.name);
+    let csvRows: any[] = [];
+
+    const jsonbColIndices = data.columns
+      .filter((i) => i.data_type_name === "jsonb")
+      .map((i) => data.columns.indexOf(i)); // would return e.g. [3,6,9]
+
+    for (const row of data.rows) {
+      // Deep copy the row or else it will update
+      // the values in query output
+      const temp = JSON.parse(JSON.stringify(row));
+      for (const jsobColIndex of jsonbColIndices) {
+        temp[jsobColIndex] = JSON.stringify(temp[jsobColIndex]);
+      }
+      csvRows.push(temp);
+    }
+
+    const csv = jsonToCSV([colNames, ...csvRows]);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const datetime = moment().format("YYYYMMDDHHmmss");
+    saveAs(
+      blob,
+      `${(
+        selectedDashboard?.full_name ||
+        definition.dashboard ||
+        ""
+      ).replaceAll(".", "_")}_${definition.node_type}_${datetime}`
+    );
+  }, [definition, jsonToCSV, selectedDashboard]);
+
   return (
     <LayoutPanel definition={definition} withNarrowVertical withPadding>
       <div className="col-span-6">
         <h2 className="text-2xl font-medium break-all">Panel Detail</h2>
       </div>
-      <div className="col-span-6 text-right">
-        <NeutralButton onClick={closePanelDetail}>
+      <div className="col-span-6 space-x-2 text-right">
+        <PanelDetailDataDownloadButton
+          downloadQueryData={downloadQueryData}
+          size={isTablet ? "md" : "sm"}
+        />
+        <NeutralButton onClick={closePanelDetail} size={isTablet ? "md" : "sm"}>
           <>
             Close<span className="ml-2 font-light text-xxs">ESC</span>
           </>
@@ -87,9 +136,17 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
           name="tabs"
           className="mt-2 block w-full pl-3 pr-10 py-2 bg-background text-foreground border-black-scale-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
           defaultValue={selectedTab.name}
+          onChange={(e) =>
+            setSelectedTab(
+              availableTabs.find((tab) => tab.name === e.target.value) ||
+                availableTabs[0]
+            )
+          }
         >
           {availableTabs.map((tab) => (
-            <option key={tab.name}>{tab.label}</option>
+            <option key={tab.name} value={tab.name}>
+              {tab.label}
+            </option>
           ))}
         </select>
       </div>
@@ -115,21 +172,6 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
       </div>
 
       <>{<selectedTab.Component definition={definition} />}</>
-
-      {/*<div className="col-span-12 grid grid-cols-12">*/}
-      {/*  <div className="col-span-12 md:col-span-6 lg:col-span-4">*/}
-      {/*    {definition.sql && <PanelQuery query={definition.sql} />}*/}
-      {/*  </div>*/}
-      {/*  <div className="col-span-12 md:col-span-6 lg:col-span-8">*/}
-      {/*    {definition.data && (*/}
-      {/*      <Table*/}
-      {/*        name={`${definition}.table.detail`}*/}
-      {/*        node_type="table"*/}
-      {/*        data={definition.data}*/}
-      {/*      />*/}
-      {/*    )}*/}
-      {/*  </div>*/}
-      {/*</div>*/}
     </LayoutPanel>
   );
 };

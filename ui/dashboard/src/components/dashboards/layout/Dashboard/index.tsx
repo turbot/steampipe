@@ -26,6 +26,7 @@ const Dashboard = ({ definition, withPadding = false }: DashboardProps) => (
                   type: "markdown",
                   value: `# ${definition.title}`,
                 },
+                dashboard: definition.dashboard,
               },
             ]}
           />
