@@ -7,6 +7,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/v3/version"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -45,6 +46,21 @@ func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPl
 			if _, ok := updates[p.ConnectionName]; ok {
 				validatedUpdates[p.ConnectionName] = updates[p.ConnectionName]
 			}
+		}
+	}
+
+	// we need to separately validate aggregator connections as there will not be a connection plugin for them
+	for updateConnectionName, connectionData := range updates {
+		if connectionData.Connection.Type == modconfig.ConnectionTypeAggregator {
+			// get the first child connection
+			childConnection := connectionData.Connection.FirstChild()
+			// check whether the plugin for this connection is validated
+			for _, p := range validatedPlugins {
+				if p.ConnectionName == childConnection.Name {
+					validatedUpdates[updateConnectionName] = connectionData
+				}
+			}
+
 		}
 	}
 	return validationFailures, validatedUpdates, validatedPlugins
