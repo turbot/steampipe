@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,9 +32,10 @@ type Workspace struct {
 	Mods      map[string]*modconfig.Mod
 	Variables map[string]*modconfig.Variable
 
-	watcher    *utils.FileWatcher
-	loadLock   sync.Mutex
-	exclusions []string
+	watcher         *utils.FileWatcher
+	loadLock        sync.Mutex
+	exclusions      []string
+	modFileLocation string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)
@@ -44,7 +44,6 @@ type Workspace struct {
 	dashboardEventHandlers []dashboardevents.DashboardEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
-	modFileExists              bool
 	loadPseudoResources        bool
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
@@ -148,13 +147,17 @@ func (w *Workspace) Close() {
 	}
 }
 
+func (w *Workspace) ModfileExists() bool {
+	return len(w.modFileLocation) > 0
+}
+
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
 	modFile, err := w.findModFilePath(w.Path)
 	modFileExists := err != ErrModSpNotFound
 	if modFileExists {
-		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(*modFile))
+		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
 	}
 
 	if modFileExists {
@@ -162,6 +165,7 @@ func (w *Workspace) setModfileExists() {
 		// only load/watch recursively if a mod sp file exists in the workspace folder
 		w.listFlag = filehelpers.FilesRecursive
 		w.loadPseudoResources = true
+		w.modFileLocation = modFile
 	} else {
 		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and onnly loading resource files from top level folder")
 		w.listFlag = filehelpers.Files
@@ -169,19 +173,16 @@ func (w *Workspace) setModfileExists() {
 	}
 }
 
-func (w *Workspace) findModFilePath(folder string) (*string, error) {
-	if !fs.ValidPath(folder) {
-		return nil, fs.ErrInvalid
-	}
+func (w *Workspace) findModFilePath(folder string) (string, error) {
 	folder, err := filepath.Abs(folder)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	modFilePath := filepaths.ModFilePath(w.Path)
+	modFilePath := filepaths.ModFilePath(folder)
 	_, err = os.Stat(modFilePath)
-	if err != nil {
+	if err == nil {
 		// found the modfile
-		return &modFilePath, nil
+		return modFilePath, nil
 	}
 
 	if os.IsNotExist(err) {
@@ -189,11 +190,11 @@ func (w *Workspace) findModFilePath(folder string) (*string, error) {
 		parent := filepath.Dir(folder)
 		if folder == parent {
 			// this typically means that we are already in the root directory
-			return nil, ErrModSpNotFound
+			return "", ErrModSpNotFound
 		}
 		return w.findModFilePath(filepath.Dir(folder))
 	}
-	return &modFilePath, nil
+	return modFilePath, nil
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
