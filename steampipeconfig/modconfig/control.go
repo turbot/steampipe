@@ -339,9 +339,6 @@ func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
 		Name: c.Name(),
 	}
 
-	if !utils.SafeStringsEqual(c.FullName, other.FullName) {
-		res.AddPropertyDiff("Name")
-	}
 	if !utils.SafeStringsEqual(c.Description, other.Description) {
 		res.AddPropertyDiff("Description")
 	}
@@ -357,15 +354,6 @@ func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
 	if !utils.SafeStringsEqual(c.Severity, other.Severity) {
 		res.AddPropertyDiff("Severity")
 	}
-	if !utils.SafeStringsEqual(c.Title, other.Title) {
-		res.AddPropertyDiff("Title")
-	}
-	if !utils.SafeStringsEqual(c.SQL, other.SQL) {
-		res.AddPropertyDiff("SQL")
-	}
-	if !utils.SafeIntEqual(c.Width, other.Width) {
-		res.AddPropertyDiff("Width")
-	}
 	if len(c.Tags) != len(other.Tags) {
 		res.AddPropertyDiff("Tags")
 	} else {
@@ -376,48 +364,9 @@ func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
 		}
 	}
 
-	// args
-	if c.Args == nil {
-		if other.Args != nil {
-			res.AddPropertyDiff("Args")
-		}
-	} else {
-		// we have args
-		if other.Args == nil {
-			res.AddPropertyDiff("Args")
-		} else {
-			if !c.Args.Equals(other.Args) {
-				res.AddPropertyDiff("Args")
-			}
-		}
-	}
+	res.dashboardLeafNodeDiff(c, other)
+	res.queryProviderDiff(c, other)
 
-	// query
-	if c.Query == nil {
-		if other.Query != nil {
-			res.AddPropertyDiff("Query")
-		}
-	} else {
-		// we have query
-		if other.Query == nil {
-			res.AddPropertyDiff("Query")
-		} else {
-			if !c.Query.Equals(other.Query) {
-				res.AddPropertyDiff("Query")
-			}
-		}
-	}
-
-	// params
-	if len(c.Params) != len(other.Params) {
-		res.AddPropertyDiff("Params")
-	} else {
-		for i, p := range c.Params {
-			if !p.Equals(other.Params[i]) {
-				res.AddPropertyDiff("Params")
-			}
-		}
-	}
 	return res
 }
 

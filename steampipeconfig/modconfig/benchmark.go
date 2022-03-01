@@ -235,20 +235,11 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 		Name: b.Name(),
 	}
 
-	if !utils.SafeStringsEqual(b.FullName, other.FullName) {
-		res.AddPropertyDiff("Name")
-	}
 	if !utils.SafeStringsEqual(b.Description, other.Description) {
 		res.AddPropertyDiff("Description")
 	}
 	if !utils.SafeStringsEqual(b.Documentation, other.Documentation) {
 		res.AddPropertyDiff("Documentation")
-	}
-	if !utils.SafeStringsEqual(b.Title, other.Title) {
-		res.AddPropertyDiff("Title")
-	}
-	if !utils.SafeIntEqual(b.Width, other.Width) {
-		res.AddPropertyDiff("Width")
 	}
 	if len(b.Tags) != len(other.Tags) {
 		res.AddPropertyDiff("Tags")
@@ -271,6 +262,8 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 			res.AddPropertyDiff("Childen")
 		}
 	}
+
+	res.dashboardLeafNodeDiff(b, other)
 	return res
 }
 

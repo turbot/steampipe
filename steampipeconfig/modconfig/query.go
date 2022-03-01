@@ -314,14 +314,12 @@ func (q *Query) Diff(other *Query) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Name")
 	}
 
-	if !utils.SafeStringsEqual(q.SQL, other.SQL) {
-		res.AddPropertyDiff("SQL")
-	}
-
 	if !utils.SafeStringsEqual(q.SearchPath, other.SearchPath) {
 		res.AddPropertyDiff("SearchPath")
 	}
 
 	res.populateChildDiffs(q, other)
+	res.queryProviderDiff(q, other)
+
 	return res
 }
