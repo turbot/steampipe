@@ -4,7 +4,7 @@ import { PanelDefinition } from "./useDashboard";
 interface IPanelContext {
   definition: PanelDefinition;
   allowExpand: boolean;
-  setZoomIconClassName: (color: string) => void;
+  setZoomIconClassName: (className: string) => void;
 }
 
 const PanelContext = createContext<IPanelContext | null>(null);

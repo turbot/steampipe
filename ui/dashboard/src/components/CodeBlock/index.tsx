@@ -1,17 +1,18 @@
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { classNames } from "../../utils/styles";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { ThemeNames, useTheme } from "../../hooks/useTheme";
+import { useMemo } from "react";
 import {
   vs,
   vscDarkPlus,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { ThemeNames, useTheme } from "../../hooks/useTheme";
-import { useMemo } from "react";
 
 interface CodeBlockProps {
   children: string;
   language?: "hcl" | "json" | "sql";
   onClick?: () => void;
   style?: any;
+  copyToClipboard?: boolean;
 }
 
 const CodeBlock = ({
@@ -21,6 +22,7 @@ const CodeBlock = ({
   style = {},
 }: CodeBlockProps) => {
   const { theme } = useTheme();
+
   const styles = useMemo(() => {
     const commonStyles = {
       fontFamily:
@@ -63,7 +65,7 @@ const CodeBlock = ({
 
   return (
     <div
-      className={classNames(onClick ? "cursor-pointer" : "")}
+      className={classNames("relative", onClick ? "cursor-pointer" : "")}
       onClick={onClick}
     >
       <SyntaxHighlighter

@@ -17,6 +17,7 @@
     "@heroicons/react": "1.0.5",
     "@supabase/sql-formatter": "4.0.3",
     "color-convert": "2.0.1",
+    "copy-to-clipboard": "3.3.1",
     "deepdash": "5.3.9",
     "echarts": "5.3.0",
     "echarts-for-react": "3.0.2",
