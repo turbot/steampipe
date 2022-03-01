@@ -47,7 +47,7 @@ const LabelTagWrapper = ({ label, tags }) => (
     {/*@ts-ignore*/}
     <span>{label}</span>
     {/*@ts-ignore*/}
-    {Object.entries(tags).map(([tagKey, tagValue]) => (
+    {Object.entries(tags || {}).map(([tagKey, tagValue]) => (
       <OptionTag key={tagKey} tagKey={tagKey} tagValue={tagValue} />
     ))}
   </div>
