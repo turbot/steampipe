@@ -5,6 +5,13 @@ type CloudMetadata struct {
 	Identity *IdentityMetadata `json:"identity,omitempty"`
 }
 
+func NewCloudMetadata() *CloudMetadata {
+	return &CloudMetadata{
+		Actor:    &ActorMetadata{},
+		Identity: &IdentityMetadata{},
+	}
+}
+
 type ActorMetadata struct {
 	Id     string `json:"id,omitempty"`
 	Handle string `json:"handle,omitempty"`

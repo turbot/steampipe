@@ -18,7 +18,6 @@ const actorWorkspacesAPI = "/api/v1/actor/workspace"
 const passwordAPIFormat = "/api/v1/user/%s/password"
 
 func GetConnectionString(workspaceDatabaseString, token string) (string, *steampipeconfig.CloudMetadata, error) {
-	cloudMetadata := &steampipeconfig.CloudMetadata{}
 
 	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
 	parts := strings.Split(workspaceDatabaseString, "/")
@@ -57,6 +56,8 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, *steamp
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
 	identity := workspace["identity"].(map[string]interface{})
+	cloudMetadata := steampipeconfig.NewCloudMetadata()
+
 	cloudMetadata.Identity.Id = identity["id"].(string)
 	cloudMetadata.Identity.Type = identity["type"].(string)
 	cloudMetadata.Identity.Handle = identityHandle
