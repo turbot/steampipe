@@ -143,3 +143,19 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 	}
 	return
 }
+
+// QueryProviderIsParameterised returns whether the query provider has a parameterised query
+// the query is parameterised if either there are any param defintions, or any positional arguments passed,
+// or it has runtime dependencies (which must be args)
+func QueryProviderIsParameterised(queryProvider QueryProvider) bool {
+	// no sql, NOT parameterised
+	if queryProvider.GetSQL() == nil {
+		return false
+	}
+
+	args := queryProvider.GetArgs()
+	params := queryProvider.GetParams()
+	runtimeDependencies := queryProvider.GetRuntimeDependencies()
+
+	return args != nil || len(params) > 0 || len(runtimeDependencies) > 0
+}

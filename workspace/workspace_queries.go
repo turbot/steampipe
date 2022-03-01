@@ -149,7 +149,7 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 
 		// determine whether there are any params - there may either be param defs, OR positional args
 		// if there are NO params OR list args, use the control SQL as is
-		if !queryProvider.IsParameterised(runtimeArgs, params) {
+		if !modconfig.QueryProviderIsParameterised(queryProvider) {
 			return queryProviderSQL, nil
 		}
 	}

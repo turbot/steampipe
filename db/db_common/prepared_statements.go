@@ -45,8 +45,8 @@ func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map
 }
 
 func getPreparedStatementCreateSql(queryProvider modconfig.QueryProvider) *string {
-	// if the query does not have parameters, it is NOT a prepared statement
-	if !queryProvider.IsParameterised(queryProvider.GetArgs(), queryProvider.GetParams()) {
+	// the query is a prepared statement if it defines its own sql and has parameters or (positional) arguments
+	if !modconfig.QueryProviderIsParameterised(queryProvider) {
 		return nil
 	}
 

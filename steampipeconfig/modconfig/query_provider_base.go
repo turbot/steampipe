@@ -24,15 +24,6 @@ func (b *QueryProviderBase) VerifyQuery(queryProvider QueryProvider) error {
 	return nil
 }
 
-// IsParameterised returns whether the query provider has a parameterised query
-// the query is parameterised if either there are any param defintions, or any positional arguments passed,
-// or it has runtime dependencies (which must be args)
-func (b *QueryProviderBase) IsParameterised(baseArgs *QueryArgs, params []*ParamDef) bool {
-	return baseArgs != nil && len(baseArgs.ArgList) > 0 ||
-		len(b.runtimeDependencies) > 0 ||
-		len(params) > 0
-}
-
 func (b *QueryProviderBase) RequiresExecution(queryProvider QueryProvider) bool {
 	return queryProvider.GetQuery() != nil || queryProvider.GetSQL() != nil
 }
