@@ -3,15 +3,22 @@ import { PanelDefinition } from "./useDashboard";
 
 interface IPanelContext {
   definition: PanelDefinition;
-  dimensions: DOMRect;
-  showExpand: boolean;
+  allowExpand: boolean;
+  setZoomIconClassName: (className: string) => void;
 }
 
 const PanelContext = createContext<IPanelContext | null>(null);
 
-const PanelProvider = ({ children, definition, dimensions, showExpand }) => {
+const PanelProvider = ({
+  children,
+  definition,
+  allowExpand,
+  setZoomIconClassName,
+}) => {
   return (
-    <PanelContext.Provider value={{ definition, dimensions, showExpand }}>
+    <PanelContext.Provider
+      value={{ definition, allowExpand, setZoomIconClassName }}
+    >
       {children}
     </PanelContext.Provider>
   );

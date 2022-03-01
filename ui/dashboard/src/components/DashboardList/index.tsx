@@ -70,7 +70,7 @@ interface SectionProps {
 // };
 
 const stringColorMap = {};
-const colorGenerator = new ColorGenerator(24, 4);
+const colorGenerator = new ColorGenerator(16, 0);
 
 // https://stackoverflow.com/questions/3426404/create-a-hexadecimal-colour-based-on-a-string-with-javascript
 const stringToColour = (str) => {
@@ -361,7 +361,7 @@ const DashboardList = () => {
               //@ts-ignore
               disabled={!metadataLoaded || !availableDashboardsLoaded}
               placeholder="Search dashboards..."
-              value={search}
+              value={search || ""}
               setValue={setSearch}
             />
           </div>

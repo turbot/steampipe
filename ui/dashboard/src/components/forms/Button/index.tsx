@@ -4,7 +4,7 @@ export interface ButtonProps {
   children: JSX.Element | JSX.Element[];
   className?: string;
   disabled?: boolean;
-  onClick(): void;
+  onClick(): void | Promise<void>;
   size?: "sm" | "md" | "lg";
   title?: string;
   type?: "button" | "submit";

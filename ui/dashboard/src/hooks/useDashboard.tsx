@@ -97,12 +97,15 @@ export interface PanelDefinition {
   name: string;
   node_type?: string;
   title?: string;
+  original_title?: string;
   width?: number;
   sql?: string;
   data?: LeafNodeData;
+  source_definition?: string;
   execution_tree?: CheckLeafNodeExecutionTree;
   error?: Error;
   properties?: PanelProperties;
+  dashboard: string;
 }
 
 export interface DashboardDefinition {
@@ -110,6 +113,7 @@ export interface DashboardDefinition {
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
+  dashboard: string;
 }
 
 interface SocketMessagePayload {
