@@ -51,7 +51,7 @@ const getTextClasses = (type) => {
   }
 };
 
-export type CardType = "alert" | "info" | "ok" | "table" | null;
+type CardType = "alert" | "info" | "ok" | "table" | null;
 
 export type CardProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
