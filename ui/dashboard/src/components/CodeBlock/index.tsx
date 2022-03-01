@@ -1,10 +1,9 @@
-import SyntaxHighlighter from "react-syntax-highlighter";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { classNames } from "../../utils/styles";
 import {
-  dark,
-  github,
-  githubGist,
-} from "react-syntax-highlighter/dist/esm/styles/hljs";
+  vs,
+  vscDarkPlus,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { ThemeNames, useTheme } from "../../hooks/useTheme";
 import { useMemo } from "react";
 
@@ -13,7 +12,6 @@ interface CodeBlockProps {
   language?: "hcl" | "json" | "sql";
   onClick?: () => void;
   style?: any;
-  withBackground?: boolean;
 }
 
 const CodeBlock = ({
@@ -21,28 +19,56 @@ const CodeBlock = ({
   language = "sql",
   onClick,
   style = {},
-  withBackground = false,
 }: CodeBlockProps) => {
   const { theme } = useTheme();
   const styles = useMemo(() => {
-    if (language === "sql" && theme.name === ThemeNames.STEAMPIPE_DARK) {
+    if (theme.name === ThemeNames.STEAMPIPE_DARK) {
       return {
-        ...dark,
-        "hljs-keyword": {
-          ...dark["hljs-keyword"],
-          color: "#0000FF",
+        ...vscDarkPlus,
+        'code[class*="language-"]': {
+          ...vscDarkPlus['code[class*="language-"]'],
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
+          fontSize: "13px",
+          lineHeight: 1.5,
+          margin: 0,
         },
-      };
-    } else if (language === "sql" && theme.name !== ThemeNames.STEAMPIPE_DARK) {
-      return {
-        ...githubGist,
-        "hljs-keyword": {
-          ...githubGist["hljs-keyword"],
-          color: "#0000FF",
+        'pre[class*="language-"]': {
+          ...vscDarkPlus['pre[class*="language-"]'],
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
+          fontSize: "13px",
+          lineHeight: 1.5,
+          margin: 0,
         },
       };
     } else {
-      return github;
+      return {
+        ...vs,
+        'code[class*="language-"]': {
+          ...vs['code[class*="language-"]'],
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
+          fontSize: "13px",
+          lineHeight: 1.5,
+          margin: 0,
+        },
+        'pre > code[class*="language-"]': {
+          ...vs['pre > code[class*="language-"]'],
+          fontSize: "13px",
+          lineHeight: 1.5,
+          margin: 0,
+        },
+        'pre[class*="language-"]': {
+          ...vs['pre[class*="language-"]'],
+          border: "none",
+          fontFamily:
+            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;',
+          fontSize: "13px",
+          lineHeight: 1.5,
+          margin: 0,
+        },
+      };
     }
   }, [language, theme.name]);
 
@@ -57,12 +83,7 @@ const CodeBlock = ({
         customStyle={{
           padding: 0,
           wordBreak: "break-all",
-          background:
-            withBackground && theme.name === ThemeNames.STEAMPIPE_DARK
-              ? "var(--color-black-scale-2)"
-              : withBackground
-              ? "var(--color-black-scale-2)"
-              : "transparent",
+          background: "transparent",
           borderRadius: "4px",
           ...style,
         }}

@@ -1,11 +1,32 @@
-import Children from "../common/Children";
+import CodeBlock from "../../../CodeBlock";
+import { format } from "@supabase/sql-formatter";
 import { PanelDetailProps } from "./index";
+import { useMemo } from "react";
 
-const PanelDetailQuery = ({ definition }: PanelDetailProps) => (
-  <Children
-    children={[{ ...definition, width: 12 }]}
-    allowPanelExpand={false}
-  />
-);
+const beautify = (query) => {
+  if (!query) {
+    return null;
+  }
+  return format(query || "", {
+    language: "postgresql",
+  });
+};
+
+const PanelDetailQuery = ({ definition }: PanelDetailProps) => {
+  const formattedQuery = useMemo(
+    () => beautify(definition.sql),
+    [definition.sql]
+  );
+
+  if (!formattedQuery) {
+    return <></>;
+  }
+
+  return (
+    <div className="col-span-12 mt-4">
+      <CodeBlock language="sql">{formattedQuery}</CodeBlock>
+    </div>
+  );
+};
 
 export default PanelDetailQuery;

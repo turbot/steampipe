@@ -66,18 +66,18 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
   }, [definition, selectedTab]);
   const { closePanelDetail } = useDashboard();
   return (
-    <LayoutPanel definition={definition} withPadding={true}>
-      <div className="col-span-11">
+    <LayoutPanel definition={definition} withNarrowVertical withPadding>
+      <div className="col-span-6">
         <h2 className="text-2xl font-medium break-all">Panel Detail</h2>
       </div>
-      <div className="col-span-1 text-right">
+      <div className="col-span-6 text-right">
         <NeutralButton onClick={closePanelDetail}>
           <>
             Close<span className="ml-2 font-light text-xxs">ESC</span>
           </>
         </NeutralButton>
       </div>
-      <div className="col-span-6 sm:hidden">
+      <div className="col-span-12 sm:hidden ">
         <label htmlFor="tabs" className="sr-only">
           Select a tab
         </label>
@@ -85,7 +85,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         <select
           id="tabs"
           name="tabs"
-          className="mt-4 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
+          className="mt-2 block w-full pl-3 pr-10 py-2 bg-background text-foreground border-black-scale-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
           defaultValue={selectedTab.name}
         >
           {availableTabs.map((tab) => (
@@ -94,16 +94,16 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         </select>
       </div>
       <div className="col-span-12 hidden sm:block">
-        <div className="border-b border-gray-200">
-          <nav className="mt-2 -mb-px flex space-x-8" aria-label="Tabs">
+        <div className="border-b border-black-scale-3">
+          <nav className="-mb-px flex space-x-6" aria-label="Tabs">
             {availableTabs.map((tab) => (
               <span
                 key={tab.name}
                 className={classNames(
                   tab.selected
-                    ? "border-purple-500 text-purple-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200",
-                  "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                    ? "border-black-scale-4 text-foreground cursor-pointer"
+                    : "border-transparent text-foreground-lighter hover:text-foreground cursor-pointer",
+                  "whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
                 )}
                 onClick={() => setSelectedTab(tab)}
               >
