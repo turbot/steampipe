@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
@@ -149,9 +151,11 @@ func (w *Workspace) Close() {
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
-	modFilePath := filepaths.ModFilePath(w.Path)
-	_, err := os.Stat(modFilePath)
-	modFileExists := err == nil
+	modFile, err := w.findModFilePath(w.Path)
+	modFileExists := err != ErrModSpNotFound
+	if modFileExists {
+		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(*modFile))
+	}
 
 	if modFileExists {
 		log.Printf("[TRACE] modfile exists in workspace folder - creating pseudo-resources and loading files recursively ")
@@ -163,6 +167,33 @@ func (w *Workspace) setModfileExists() {
 		w.listFlag = filehelpers.Files
 		w.loadPseudoResources = false
 	}
+}
+
+func (w *Workspace) findModFilePath(folder string) (*string, error) {
+	if !fs.ValidPath(folder) {
+		return nil, fs.ErrInvalid
+	}
+	folder, err := filepath.Abs(folder)
+	if err != nil {
+		return nil, err
+	}
+	modFilePath := filepaths.ModFilePath(w.Path)
+	_, err = os.Stat(modFilePath)
+	if err != nil {
+		// found the modfile
+		return &modFilePath, nil
+	}
+
+	if os.IsNotExist(err) {
+		// if the file wasn't found, search in the parent directory
+		parent := filepath.Dir(folder)
+		if folder == parent {
+			// this typically means that we are already in the root directory
+			return nil, ErrModSpNotFound
+		}
+		return w.findModFilePath(filepath.Dir(folder))
+	}
+	return &modFilePath, nil
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
