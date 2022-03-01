@@ -17,7 +17,7 @@ const PanelDetailDataDownloadButton = ({ downloadQueryData, size }) => {
       onClick={downloading ? noop : () => downloadData()}
       size={size}
     >
-      <>Download Data</>
+      <>Download</>
     </NeutralButton>
   );
 };

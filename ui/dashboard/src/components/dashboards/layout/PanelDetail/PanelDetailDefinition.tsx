@@ -6,11 +6,7 @@ const PanelDetailDefinition = ({ definition }: PanelDetailProps) => {
     return <></>;
   }
 
-  return (
-    <div className="col-span-12 mt-4">
-      <CodeBlock language="hcl">{definition.source_definition}</CodeBlock>
-    </div>
-  );
+  return <CodeBlock language="hcl">{definition.source_definition}</CodeBlock>;
 };
 
 export default PanelDetailDefinition;

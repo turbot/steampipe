@@ -22,11 +22,7 @@ const PanelDetailQuery = ({ definition }: PanelDetailProps) => {
     return <></>;
   }
 
-  return (
-    <div className="col-span-12 mt-4">
-      <CodeBlock language="sql">{formattedQuery}</CodeBlock>
-    </div>
-  );
+  return <CodeBlock language="sql">{formattedQuery}</CodeBlock>;
 };
 
 export default PanelDetailQuery;

@@ -171,7 +171,9 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         </div>
       </div>
 
-      <>{<selectedTab.Component definition={definition} />}</>
+      <div className="col-span-12 mt-4">
+        {<selectedTab.Component definition={definition} />}
+      </div>
     </LayoutPanel>
   );
 };
