@@ -123,6 +123,16 @@ func initGlobalConfig() {
 
 	// set viper config defaults from config and env vars
 	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
+
+	// now validate all config values have appropriate values
+	validateConfig()
+}
+
+// now validate  config values have appropriate values
+func validateConfig() {
+	if !helpers.StringSliceContains(constants.TelemetryLevels, viper.GetString(constants.EnvTelemetry)) {
+		viper.Set(constants.EnvTelemetry, constants.TelemetryInfo)
+	}
 }
 
 func setWorkspaceChDir() string {

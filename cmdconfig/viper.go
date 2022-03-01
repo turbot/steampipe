@@ -27,6 +27,7 @@ func SetViperDefaults(configMap map[string]interface{}) {
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		constants.ArgUpdateCheck: true,
+		constants.ArgTelemetry:   constants.TelemetryInfo,
 		constants.ArgInstallDir:  filepaths.DefaultInstallDir,
 	}
 
@@ -50,6 +51,7 @@ type envMapping struct {
 func overrideDefaultsFromEnv() {
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
+		constants.EnvTelemetry:         {constants.ArgTelemetry, "bool"},
 		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
 		constants.EnvInstallDir:        {constants.ArgInstallDir, "string"},
 		constants.EnvWorkspaceChDir:    {constants.ArgWorkspaceChDir, "string"},

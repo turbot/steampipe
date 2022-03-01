@@ -5,20 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"reflect"
-	"strings"
 	"sync"
 
-	"github.com/turbot/steampipe/constants"
-
-	"github.com/turbot/steampipe/steampipeconfig"
-
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
@@ -95,19 +92,13 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 				FullName:  workspaceResources.Mod.FullName,
 				ShortName: workspaceResources.Mod.ShortName,
 			},
-			InstalledMods:    installedMods,
-			Cloud:            cloudMetadata,
-			TelemetryEnabled: getTelemetryEnabled(),
+			InstalledMods: installedMods,
+			Cloud:         cloudMetadata,
+			Telemetry:     viper.GetString(constants.ArgTelemetry),
 		},
 	}
 
 	return json.Marshal(payload)
-}
-func getTelemetryEnabled() bool {
-	telemtryEnv, set := os.LookupEnv(constants.EnvDashboardTelemetryEnabled)
-	// default to true if env var is not set
-	telemetryEnabled := !set || strings.ToUpper(telemtryEnv) == "TRUE"
-	return telemetryEnabled
 }
 
 func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {

@@ -19,6 +19,7 @@ const (
 	ArgForeground        = "foreground"
 	ArgInvoker           = "invoker"
 	ArgUpdateCheck       = "update-check"
+	ArgTelemetry         = "telemetry"
 	ArgInstallDir        = "install-dir"
 	ArgWorkspace         = "workspace"
 	ArgWorkspaceChDir    = "workspace-chdir"
