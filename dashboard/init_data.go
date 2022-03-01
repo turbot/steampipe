@@ -34,11 +34,14 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 			return initData
 		}
 	}
-	err := cmdconfig.ValidateConnectionStringArgs()
+	cloudMetadata, err := cmdconfig.ValidateConnectionStringArgs()
 	if err != nil {
 		initData.Result.Error = err
 		return initData
 	}
+
+	// set cloud metadata (may be nil)
+	initData.Workspace.CloudMetadata = cloudMetadata
 
 	// check if the required plugins are installed
 	err = initData.Workspace.CheckRequiredPluginsInstalled()

@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/turbot/steampipe/steampipeconfig"
+
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
@@ -67,7 +69,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 	return server, err
 }
 
-func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
+func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, cloudMetadata *steampipeconfig.CloudMetadata) ([]byte, error) {
 	installedMods := make(map[string]ModDashboardMetadata)
 	for _, mod := range workspaceResources.Mods {
 		// Ignore current mod
@@ -91,6 +93,17 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources) (
 			},
 			InstalledMods: installedMods,
 		},
+	}
+	if cloudMetadata != nil {
+		payload.Metadata.Actor = &ActorMetadata{
+			Id:     cloudMetadata.ActorId,
+			Handle: cloudMetadata.ActorHandle,
+		}
+		payload.Metadata.Identity = &IdentityMetadata{
+			Id:     cloudMetadata.IdentityId,
+			Handle: cloudMetadata.IdentityHandle,
+			Type:   cloudMetadata.IdentityType,
+		}
 	}
 	return json.Marshal(payload)
 }

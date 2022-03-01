@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/steampipe/steampipeconfig"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cloud"
 	"github.com/turbot/steampipe/constants"
 )
 
-func ValidateConnectionStringArgs() error {
+func ValidateConnectionStringArgs() (*steampipeconfig.CloudMetadata, error) {
 	workspaceDatabase := viper.GetString(constants.ArgWorkspaceDatabase)
 	if workspaceDatabase == "local" {
 		// local database - nothing to do here
-		return nil
+		return nil, nil
 	}
 	connectionString := workspaceDatabase
 
@@ -22,18 +24,19 @@ func ValidateConnectionStringArgs() error {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
-			return fmt.Errorf("cannot resolve workspace: required argument '--%s' missing", constants.ArgCloudToken)
+			return nil, fmt.Errorf("cannot resolve workspace: required argument '--%s' missing", constants.ArgCloudToken)
 		}
 
 		// so we have a database and a token - build the connection string and set it in viper
 		var err error
 		if connectionString, err = cloud.GetConnectionString(workspaceDatabase, cloudToken); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
+	cloudMetadata := &steampipeconfig.CloudMetadata{}
 	// now set the connection string in viper
 	viper.Set(constants.ArgConnectionString, connectionString)
 
-	return nil
+	return cloudMetadata, nil
 }

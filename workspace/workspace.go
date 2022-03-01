@@ -28,7 +28,8 @@ type Workspace struct {
 	ModInstallationPath string
 	Mod                 *modconfig.Mod
 
-	Mods map[string]*modconfig.Mod
+	Mods          map[string]*modconfig.Mod
+	CloudMetadata *steampipeconfig.CloudMetadata
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
