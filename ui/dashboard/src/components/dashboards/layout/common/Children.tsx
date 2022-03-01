@@ -166,7 +166,12 @@ const Children = ({
               child={child}
               level="panel"
               renderChild={() => (
-                <Panel definition={child} allowExpand={false}>
+                <Panel
+                  definition={child}
+                  allowExpand={
+                    allowPanelExpand && child.properties?.type === "table"
+                  }
+                >
                   <Input {...child} />
                 </Panel>
               )}
