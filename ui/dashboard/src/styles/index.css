@@ -190,7 +190,7 @@
   }
 
   h3 {
-    @apply text-lg font-semibold;
+    @apply text-xl mt-1 font-semibold;
   }
 }
 
