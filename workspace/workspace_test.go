@@ -33,58 +33,60 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				Require:     &modconfig.Require{},
 				Description: toStringPointer("this mod is to test runtime dependencies for named arguments"),
 				Title:       toStringPointer("dashboard runtime dependencies named arguments"),
-				Queries: map[string]*modconfig.Query{
-					"dashboard_runtime_deps_named_arg.query.query1": {
-						FullName:        "dashboard_runtime_deps_named_arg.query.query1",
-						ShortName:       "query1",
-						UnqualifiedName: "query.query1",
-						SQL:             toStringPointer("select 1 as query1"),
-					},
-					"dashboard_runtime_deps_named_arg.query.query2": {
-						FullName:        "dashboard_runtime_deps_named_arg.query.query2",
-						ShortName:       "query2",
-						UnqualifiedName: "query.query2",
-						SQL:             toStringPointer("select 2 as query2"),
-					},
-				},
-				Dashboards: map[string]*modconfig.Dashboard{
-					"dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args": {
-						FullName:        "dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args",
-						ShortName:       "dashboard_named_args",
-						UnqualifiedName: "dashboard.dashboard_named_args",
-						Title:           toStringPointer("dashboard with named arguments"),
-						ChildNames:      []string{"dashboard_runtime_deps_named_arg.input.user", "dashboard_runtime_deps_named_arg.table.dashboard_dashboard_named_args_anonymous_table_0"},
-						HclType:         "dashboard",
-					},
-				},
-				DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
-					"dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args": {
-						"dashboard_runtime_deps_named_arg.input.user": {
-							FullName:        "dashboard_runtime_deps_named_arg.input.user",
-							ShortName:       "user",
-							UnqualifiedName: "input.user",
-							DashboardName:   "dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args",
-							Title:           toStringPointer("AWS IAM User"),
-							Width:           toIntegerPointer(4),
+				ResourceMaps: &modconfig.ModResources{
+					Queries: map[string]*modconfig.Query{
+						"dashboard_runtime_deps_named_arg.query.query1": {
+							FullName:        "dashboard_runtime_deps_named_arg.query.query1",
+							ShortName:       "query1",
+							UnqualifiedName: "query.query1",
 							SQL:             toStringPointer("select 1 as query1"),
 						},
+						"dashboard_runtime_deps_named_arg.query.query2": {
+							FullName:        "dashboard_runtime_deps_named_arg.query.query2",
+							ShortName:       "query2",
+							UnqualifiedName: "query.query2",
+							SQL:             toStringPointer("select 2 as query2"),
+						},
 					},
-				},
-				DashboardTables: map[string]*modconfig.DashboardTable{
-					"dashboard_runtime_deps_named_arg.table.dashboard_dashboard_named_args_anonymous_table_0": {
-						FullName:        "dashboard_runtime_deps_named_arg.table.dashboard_dashboard_named_args_anonymous_table_0",
-						ShortName:       "dashboard_dashboard_named_args_anonymous_table_0",
-						UnqualifiedName: "table.dashboard_dashboard_named_args_anonymous_table_0",
-						ColumnList: modconfig.DashboardTableColumnList{
-							&modconfig.DashboardTableColumn{
-								Name:    "depth",
-								Display: toStringPointer("none"),
+					Dashboards: map[string]*modconfig.Dashboard{
+						"dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args": {
+							FullName:        "dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args",
+							ShortName:       "dashboard_named_args",
+							UnqualifiedName: "dashboard.dashboard_named_args",
+							Title:           toStringPointer("dashboard with named arguments"),
+							ChildNames:      []string{"dashboard_runtime_deps_named_arg.input.user", "dashboard_runtime_deps_named_arg.table.dashboard_dashboard_named_args_anonymous_table_0"},
+							HclType:         "dashboard",
+						},
+					},
+					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
+						"dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args": {
+							"dashboard_runtime_deps_named_arg.input.user": {
+								FullName:        "dashboard_runtime_deps_named_arg.input.user",
+								ShortName:       "user",
+								UnqualifiedName: "input.user",
+								DashboardName:   "dashboard_runtime_deps_named_arg.dashboard.dashboard_named_args",
+								Title:           toStringPointer("AWS IAM User"),
+								Width:           toIntegerPointer(4),
+								SQL:             toStringPointer("select 1 as query1"),
 							},
 						},
-						Columns: map[string]*modconfig.DashboardTableColumn{
-							"depth": {
-								Name:    "depth",
-								Display: toStringPointer("none"),
+					},
+					DashboardTables: map[string]*modconfig.DashboardTable{
+						"dashboard_runtime_deps_named_arg.table.dashboard_dashboard_named_args_anonymous_table_0": {
+							FullName:        "dashboard_runtime_deps_named_arg.table.dashboard_dashboard_named_args_anonymous_table_0",
+							ShortName:       "dashboard_dashboard_named_args_anonymous_table_0",
+							UnqualifiedName: "table.dashboard_dashboard_named_args_anonymous_table_0",
+							ColumnList: modconfig.DashboardTableColumnList{
+								&modconfig.DashboardTableColumn{
+									Name:    "depth",
+									Display: toStringPointer("none"),
+								},
+							},
+							Columns: map[string]*modconfig.DashboardTableColumn{
+								"depth": {
+									Name:    "depth",
+									Display: toStringPointer("none"),
+								},
 							},
 						},
 					},
@@ -113,56 +115,58 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				Require:     &modconfig.Require{},
 				Description: toStringPointer("this mod is to test runtime dependencies for positional arguments"),
 				Title:       toStringPointer("dashboard runtime dependencies positional arguments"),
-				Queries: map[string]*modconfig.Query{
-					"dashboard_runtime_deps_pos_arg.query.query1": {
-						FullName:  "dashboard_runtime_deps_pos_arg.query.query1",
-						ShortName: "query1",
-						SQL:       toStringPointer("select 1 as query1"),
-					},
-					"dashboard_runtime_deps_pos_arg.query.query2": {
-						FullName:  "dashboard_runtime_deps_pos_arg.query.query2",
-						ShortName: "query2",
-						SQL:       toStringPointer("select 2 as query2"),
-					},
-				},
-				Dashboards: map[string]*modconfig.Dashboard{
-					"dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args": {
-						FullName:        "dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args",
-						ShortName:       "dashboard_pos_args",
-						UnqualifiedName: "dashboard.dashboard_pos_args",
-						Title:           toStringPointer("dashboard with positional arguments"),
-						ChildNames:      []string{"dashboard_runtime_deps_pos_arg.input.user", "dashboard_runtime_deps_pos_arg.table.dashboard_dashboard_pos_args_anonymous_table_0"},
-						HclType:         "dashboard",
-					},
-				},
-				DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
-					"dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args": {
-						"dashboard_runtime_deps_pos_arg.input.user": {
-							FullName:        "dashboard_runtime_deps_pos_arg.input.user",
-							ShortName:       "user",
-							UnqualifiedName: "input.user",
-							DashboardName:   "dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args",
-							Title:           toStringPointer("AWS IAM User"),
-							Width:           toIntegerPointer(4),
-							SQL:             toStringPointer("select 1 as query1"),
+				ResourceMaps: &modconfig.ModResources{
+					Queries: map[string]*modconfig.Query{
+						"dashboard_runtime_deps_pos_arg.query.query1": {
+							FullName:  "dashboard_runtime_deps_pos_arg.query.query1",
+							ShortName: "query1",
+							SQL:       toStringPointer("select 1 as query1"),
+						},
+						"dashboard_runtime_deps_pos_arg.query.query2": {
+							FullName:  "dashboard_runtime_deps_pos_arg.query.query2",
+							ShortName: "query2",
+							SQL:       toStringPointer("select 2 as query2"),
 						},
 					},
-				},
-				DashboardTables: map[string]*modconfig.DashboardTable{
-					"dashboard_runtime_deps_pos_arg.table.dashboard_dashboard_pos_args_anonymous_table_0": {
-						FullName:        "dashboard_runtime_deps_pos_arg.table.dashboard_dashboard_pos_args_anonymous_table_0",
-						ShortName:       "dashboard_dashboard_pos_args_anonymous_table_0",
-						UnqualifiedName: "table.dashboard_dashboard_pos_args_anonymous_table_0",
-						ColumnList: modconfig.DashboardTableColumnList{
-							&modconfig.DashboardTableColumn{
-								Name:    "depth",
-								Display: toStringPointer("none"),
+					Dashboards: map[string]*modconfig.Dashboard{
+						"dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args": {
+							FullName:        "dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args",
+							ShortName:       "dashboard_pos_args",
+							UnqualifiedName: "dashboard.dashboard_pos_args",
+							Title:           toStringPointer("dashboard with positional arguments"),
+							ChildNames:      []string{"dashboard_runtime_deps_pos_arg.input.user", "dashboard_runtime_deps_pos_arg.table.dashboard_dashboard_pos_args_anonymous_table_0"},
+							HclType:         "dashboard",
+						},
+					},
+					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
+						"dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args": {
+							"dashboard_runtime_deps_pos_arg.input.user": {
+								FullName:        "dashboard_runtime_deps_pos_arg.input.user",
+								ShortName:       "user",
+								UnqualifiedName: "input.user",
+								DashboardName:   "dashboard_runtime_deps_pos_arg.dashboard.dashboard_pos_args",
+								Title:           toStringPointer("AWS IAM User"),
+								Width:           toIntegerPointer(4),
+								SQL:             toStringPointer("select 1 as query1"),
 							},
 						},
-						Columns: map[string]*modconfig.DashboardTableColumn{
-							"depth": {
-								Name:    "depth",
-								Display: toStringPointer("none"),
+					},
+					DashboardTables: map[string]*modconfig.DashboardTable{
+						"dashboard_runtime_deps_pos_arg.table.dashboard_dashboard_pos_args_anonymous_table_0": {
+							FullName:        "dashboard_runtime_deps_pos_arg.table.dashboard_dashboard_pos_args_anonymous_table_0",
+							ShortName:       "dashboard_dashboard_pos_args_anonymous_table_0",
+							UnqualifiedName: "table.dashboard_dashboard_pos_args_anonymous_table_0",
+							ColumnList: modconfig.DashboardTableColumnList{
+								&modconfig.DashboardTableColumn{
+									Name:    "depth",
+									Display: toStringPointer("none"),
+								},
+							},
+							Columns: map[string]*modconfig.DashboardTableColumn{
+								"depth": {
+									Name:    "depth",
+									Display: toStringPointer("none"),
+								},
 							},
 						},
 					},
@@ -191,57 +195,59 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				Require:     &modconfig.Require{},
 				Description: toStringPointer("this mod is to test runtime dependencies for positional arguments"),
 				Title:       toStringPointer("dashboard runtime dependencies positional arguments"),
-				Queries: map[string]*modconfig.Query{
-					"dashboard_runtime_deps_pos_args2.query.query1": {
-						FullName:  "dashboard_runtime_deps_pos_args2.query.query1",
-						ShortName: "query1",
-						SQL:       toStringPointer("select 1 as query1"),
-					},
-					"dashboard_runtime_deps_pos_args2.query.query2": {
-						FullName:  "dashboard_runtime_deps_pos_args2.query.query2",
-						ShortName: "query2",
-						SQL:       toStringPointer("select 2 as query2"),
-					},
-				},
-				Dashboards: map[string]*modconfig.Dashboard{
-					"dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args": {
-						FullName:        "dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args",
-						ShortName:       "dashboard_pos_args",
-						UnqualifiedName: "dashboard.dashboard_pos_args",
-						Title:           toStringPointer("dashboard with positional arguments"),
-						ChildNames:      []string{"dashboard_runtime_deps_pos_args2.input.user", "dashboard_runtime_deps_pos_args2.table.dashboard_dashboard_pos_args_anonymous_table_0"},
-						HclType:         "dashboard",
-					},
-				},
-				DashboardTables: map[string]*modconfig.DashboardTable{
-					"dashboard_runtime_deps_pos_args2.table.dashboard_dashboard_pos_args_anonymous_table_0": {
-						FullName:        "dashboard_runtime_deps_pos_args2.table.dashboard_dashboard_pos_args_anonymous_table_0",
-						ShortName:       "dashboard_dashboard_pos_args_anonymous_table_0",
-						UnqualifiedName: "table.dashboard_dashboard_pos_args_anonymous_table_0",
-						ColumnList: modconfig.DashboardTableColumnList{
-							&modconfig.DashboardTableColumn{
-								Name:    "depth",
-								Display: toStringPointer("none"),
-							},
+				ResourceMaps: &modconfig.ModResources{
+					Queries: map[string]*modconfig.Query{
+						"dashboard_runtime_deps_pos_args2.query.query1": {
+							FullName:  "dashboard_runtime_deps_pos_args2.query.query1",
+							ShortName: "query1",
+							SQL:       toStringPointer("select 1 as query1"),
 						},
-						Columns: map[string]*modconfig.DashboardTableColumn{
-							"depth": {
-								Name:    "depth",
-								Display: toStringPointer("none"),
-							},
+						"dashboard_runtime_deps_pos_args2.query.query2": {
+							FullName:  "dashboard_runtime_deps_pos_args2.query.query2",
+							ShortName: "query2",
+							SQL:       toStringPointer("select 2 as query2"),
 						},
 					},
-				},
-				DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
-					"dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args": {
-						"dashboard_runtime_deps_pos_args2.input.user": {
-							FullName:        "dashboard_runtime_deps_pos_args2.input.user",
-							ShortName:       "user",
-							UnqualifiedName: "input.user",
-							DashboardName:   "dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args",
-							Title:           toStringPointer("AWS IAM User"),
-							Width:           toIntegerPointer(4),
-							SQL:             toStringPointer("select 1 as query1"),
+					Dashboards: map[string]*modconfig.Dashboard{
+						"dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args": {
+							FullName:        "dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args",
+							ShortName:       "dashboard_pos_args",
+							UnqualifiedName: "dashboard.dashboard_pos_args",
+							Title:           toStringPointer("dashboard with positional arguments"),
+							ChildNames:      []string{"dashboard_runtime_deps_pos_args2.input.user", "dashboard_runtime_deps_pos_args2.table.dashboard_dashboard_pos_args_anonymous_table_0"},
+							HclType:         "dashboard",
+						},
+					},
+					DashboardTables: map[string]*modconfig.DashboardTable{
+						"dashboard_runtime_deps_pos_args2.table.dashboard_dashboard_pos_args_anonymous_table_0": {
+							FullName:        "dashboard_runtime_deps_pos_args2.table.dashboard_dashboard_pos_args_anonymous_table_0",
+							ShortName:       "dashboard_dashboard_pos_args_anonymous_table_0",
+							UnqualifiedName: "table.dashboard_dashboard_pos_args_anonymous_table_0",
+							ColumnList: modconfig.DashboardTableColumnList{
+								&modconfig.DashboardTableColumn{
+									Name:    "depth",
+									Display: toStringPointer("none"),
+								},
+							},
+							Columns: map[string]*modconfig.DashboardTableColumn{
+								"depth": {
+									Name:    "depth",
+									Display: toStringPointer("none"),
+								},
+							},
+						},
+					},
+					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
+						"dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args": {
+							"dashboard_runtime_deps_pos_args2.input.user": {
+								FullName:        "dashboard_runtime_deps_pos_args2.input.user",
+								ShortName:       "user",
+								UnqualifiedName: "input.user",
+								DashboardName:   "dashboard_runtime_deps_pos_args2.dashboard.dashboard_pos_args",
+								Title:           toStringPointer("AWS IAM User"),
+								Width:           toIntegerPointer(4),
+								SQL:             toStringPointer("select 1 as query1"),
+							},
 						},
 					},
 				},
@@ -292,8 +298,7 @@ func executeWorkspaceLoadTest(t *testing.T, name string, test loadWorkspaceTest,
 	}
 
 	expectedWorkspace := test.expected.(*Workspace)
-	// expectedMod := test.expected.(*modconfig.Mod)
-	expectedWorkspace.Mod.PopulateResourceMaps()
+
 	// ensure parents and children are set correctly in expected mod (this is normally done as part of decode)
 	err = setChildren(expectedWorkspace.Mod)
 	if err != nil {
@@ -319,7 +324,7 @@ func executeWorkspaceLoadTest(t *testing.T, name string, test loadWorkspaceTest,
 
 // try to resolve mod resource children using their child names
 func setChildren(mod *modconfig.Mod) error {
-	for _, benchmark := range mod.Benchmarks {
+	for _, benchmark := range mod.ResourceMaps.Benchmarks {
 		for _, childName := range benchmark.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName.Name)
 			child, found := modconfig.GetResource(mod, parsed)
@@ -329,7 +334,7 @@ func setChildren(mod *modconfig.Mod) error {
 			benchmark.Children = append(benchmark.Children, child.(modconfig.ModTreeItem))
 		}
 	}
-	for _, container := range mod.DashboardContainers {
+	for _, container := range mod.ResourceMaps.DashboardContainers {
 		var children []modconfig.ModTreeItem
 		for _, childName := range container.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)
@@ -348,7 +353,7 @@ func setChildren(mod *modconfig.Mod) error {
 		container.SetChildren(children)
 
 	}
-	for _, dashboard := range mod.Dashboards {
+	for _, dashboard := range mod.ResourceMaps.Dashboards {
 		var children []modconfig.ModTreeItem
 		for _, childName := range dashboard.ChildNames {
 			parsed, _ := modconfig.ParseResourceName(childName)

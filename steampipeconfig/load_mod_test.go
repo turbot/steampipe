@@ -145,65 +145,65 @@ func init() {
 				},
 			},
 		},
-		"query_with_paramdefs_control_with_named_params": {
-			source: "testdata/mods/query_with_paramdefs_control_with_named_params",
-			expected: &modconfig.Mod{
-				ShortName:   "m1",
-				FullName:    "mod.m1",
-				Require:     require,
-				Title:       toStringPointer("M1"),
-				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
-					Queries: map[string]*modconfig.Query{
-						"m1.query.q1": {
-							ShortName:   "q1",
-							FullName:    "m1.query.q1",
-							Title:       toStringPointer("Q1"),
-							Description: toStringPointer("THIS IS QUERY 1"),
-							SQL:         toStringPointer("select 1"),
-							Params: []*modconfig.ParamDef{
-								{
-									Name:        "p1",
-									FullName:    "param.p1",
-									Description: utils.ToStringPointer("desc"),
-									Default:     utils.ToStringPointer("'I am default'"),
-								},
-								{
-									Name:        "p2",
-									FullName:    "param.p2",
-									Description: utils.ToStringPointer("desc 2"),
-									Default:     utils.ToStringPointer("'I am default 2'"),
-								},
-							},
-						},
-					},
-					Controls: map[string]*modconfig.Control{
-						"m1.control.c1": {
-							ShortName:   "c1",
-							FullName:    "m1.control.c1",
-							Title:       toStringPointer("C1"),
-							Description: toStringPointer("THIS IS CONTROL 1"),
-							SQL:         toStringPointer("select 'ok' as status, 'foo' as resource, 'bar' as reason"),
-							Params: []*modconfig.ParamDef{
-								{
-									Name:     "p1",
-									FullName: "param.p1",
-									Default:  utils.ToStringPointer("'val1'"),
-								},
-								{
-									Name:     "p2",
-									FullName: "param.p2",
-									Default:  utils.ToStringPointer("'val2'"),
-								},
-							},
-							Args: &modconfig.QueryArgs{
-								ArgMap:  map[string]string{},
-								ArgList: []*string{utils.ToStringPointer("'my val1'"), utils.ToStringPointer("'my val2'")}},
-						},
-					},
-				},
-			},
-		},
+		// "query_with_paramdefs_control_with_named_params": {
+		// 	source: "testdata/mods/query_with_paramdefs_control_with_named_params",
+		// 	expected: &modconfig.Mod{
+		// 		ShortName:   "m1",
+		// 		FullName:    "mod.m1",
+		// 		Require:     require,
+		// 		Title:       toStringPointer("M1"),
+		// 		Description: toStringPointer("THIS IS M1"),
+		// 		ResourceMaps: &modconfig.ModResources{
+		// 			Queries: map[string]*modconfig.Query{
+		// 				"m1.query.q1": {
+		// 					ShortName:   "q1",
+		// 					FullName:    "m1.query.q1",
+		// 					Title:       toStringPointer("Q1"),
+		// 					Description: toStringPointer("THIS IS QUERY 1"),
+		// 					SQL:         toStringPointer("select 1"),
+		// 					Params: []*modconfig.ParamDef{
+		// 						{
+		// 							Name:        "p1",
+		// 							FullName:    "param.p1",
+		// 							Description: utils.ToStringPointer("desc"),
+		// 							Default:     utils.ToStringPointer("'I am default'"),
+		// 						},
+		// 						{
+		// 							Name:        "p2",
+		// 							FullName:    "param.p2",
+		// 							Description: utils.ToStringPointer("desc 2"),
+		// 							Default:     utils.ToStringPointer("'I am default 2'"),
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 			Controls: map[string]*modconfig.Control{
+		// 				"m1.control.c1": {
+		// 					ShortName:   "c1",
+		// 					FullName:    "m1.control.c1",
+		// 					Title:       toStringPointer("C1"),
+		// 					Description: toStringPointer("THIS IS CONTROL 1"),
+		// 					SQL:         toStringPointer("select 'ok' as status, 'foo' as resource, 'bar' as reason"),
+		// 					Params: []*modconfig.ParamDef{
+		// 						{
+		// 							Name:     "p1",
+		// 							FullName: "param.p1",
+		// 							Default:  utils.ToStringPointer("'val1'"),
+		// 						},
+		// 						{
+		// 							Name:     "p2",
+		// 							FullName: "param.p2",
+		// 							Default:  utils.ToStringPointer("'val2'"),
+		// 						},
+		// 					},
+		// 					Args: &modconfig.QueryArgs{
+		// 						ArgMap:  map[string]string{},
+		// 						ArgList: []*string{utils.ToStringPointer("'my val1'"), utils.ToStringPointer("'my val2'")}},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
 		"single_mod_one_query_one_control": {
 			source: "testdata/mods/single_mod_one_query_one_control",
 			expected: &modconfig.Mod{
@@ -1217,7 +1217,6 @@ func init() {
 				},
 			},
 		},
-
 		//"two_mods": {
 		//	source:   "testdata/mods/two_mods",
 		//	expected: "ERROR",
