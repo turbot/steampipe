@@ -194,7 +194,7 @@ const TableView = (props: TableProps) => {
     );
   useEffect(() => {
     setZoomIconClassName("bg-background left-1 top-3");
-  }, []);
+  }, [setZoomIconClassName]);
   return props.data ? (
     <>
       <table

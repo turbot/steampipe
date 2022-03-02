@@ -193,7 +193,7 @@ const Card = (props: CardProps) => {
 
   useEffect(() => {
     setZoomIconClassName(textClasses ? textClasses : "");
-  }, [textClasses]);
+  }, [setZoomIconClassName, textClasses]);
 
   return (
     <div

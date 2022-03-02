@@ -64,7 +64,7 @@ const CopyToClipboard = ({
     if (doCopy) {
       triggerCopy();
     }
-  }, [doCopy]);
+  }, [doCopy, setDoCopy]);
 
   return (
     <>
