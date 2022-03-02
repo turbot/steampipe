@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/workspace"
@@ -28,7 +29,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	e.ClearDashboard(ctx, sessionId)
 
 	// now create a new execution
-	executionTree, err := NewReportExecutionTree(dashboardName, sessionId, client, workspace)
+	executionTree, err := NewDashboardExecutionTree(dashboardName, sessionId, client, workspace)
 	if err != nil {
 		return err
 	}
@@ -47,12 +48,23 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	return nil
 }
 
-func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId string, inputs map[string]interface{}) error {
+func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string, inputs map[string]interface{}, changedInput string) error {
 	// find the execution
 	executionTree, found := e.executions[sessionId]
 	if !found {
 		return fmt.Errorf("no dashboard running for session %s", sessionId)
 	}
+
+	// first see if any other inputs rely on the one which was just changed
+	clearedInputs := e.clearDependentInputs(executionTree.Root, changedInput, inputs)
+	if len(clearedInputs) > 0 {
+		event := &dashboardevents.InputValuesCleared{
+			ClearedInputs: clearedInputs,
+			Session:       executionTree.sessionId,
+		}
+		executionTree.workspace.PublishDashboardEvent(event)
+	}
+	// oif there are any dependent inputs, set their value to nil and send an event to the UI
 	// if the dashboard run is complete, just re-execute
 	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
 		return e.ExecuteDashboard(
@@ -70,6 +82,23 @@ func (e *DashboardExecutor) SetDashboardInputs(ctx context.Context, sessionId st
 	}
 
 	return nil
+}
+
+func (e *DashboardExecutor) clearDependentInputs(dashboard *DashboardRun, changedInput string, inputs map[string]interface{}) []string {
+	dependentInputs := dashboard.GetInputsDependingOn(changedInput)
+	clearedInputs := dependentInputs
+	if len(dependentInputs) > 0 {
+		for _, inputName := range dependentInputs {
+			if inputs[inputName] != nil {
+				// clear the input value
+				inputs[inputName] = nil
+				childDependentInputs := e.clearDependentInputs(dashboard, inputName, inputs)
+				clearedInputs = append(clearedInputs, childDependentInputs...)
+			}
+		}
+	}
+
+	return clearedInputs
 }
 
 func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) {

@@ -301,7 +301,6 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 }
 
 func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
-
 	d.Inputs = inputs
 
 	// add all our direct child inputs to a mp
@@ -335,6 +334,15 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
 	}
 
 	var diags hcl.Diagnostics
+	//  ensure they inputs not have cyclical dependencies
+	if err := d.validateInputDependencies(inputs); err != nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("Failed to resolve input dependency order for dashboard '%s'", d.Name()),
+			Detail:   err.Error(),
+			Subject:  &d.DeclRange,
+		}}
+	}
 	// now 'claim' all inputs and add to mod
 	for _, input := range inputs {
 		input.SetDashboard(d)
@@ -418,4 +426,34 @@ func (d *Dashboard) addBaseInputs(baseInputs []*DashboardInput) {
 	// add inputs to beginning of our children
 	d.children = append(inheritedChildren, d.children...)
 	d.setInputMap()
+}
+
+// ensure that depdnecneis between inputs are resolveable
+func (d *Dashboard) validateInputDependencies(inputs []*DashboardInput) error {
+	dependencyGraph := topsort.NewGraph()
+	rootDependencyNode := "dashboard"
+	dependencyGraph.AddNode(rootDependencyNode)
+	for _, i := range inputs {
+		for _, runtimeDep := range i.GetRuntimeDependencies() {
+			depName := runtimeDep.PropertyPath.ToResourceName()
+			to := depName
+			from := i.UnqualifiedName
+			if !dependencyGraph.ContainsNode(from) {
+				dependencyGraph.AddNode(from)
+			}
+			if !dependencyGraph.ContainsNode(to) {
+				dependencyGraph.AddNode(to)
+			}
+			if err := dependencyGraph.AddEdge(from, to); err != nil {
+				return err
+			}
+			if err := dependencyGraph.AddEdge(rootDependencyNode, i.UnqualifiedName); err != nil {
+				return err
+			}
+		}
+	}
+
+	// now verify we can get a dependency order
+	_, err := dependencyGraph.TopSort(rootDependencyNode)
+	return err
 }

@@ -12,15 +12,11 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardexecute"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
-
-type ListenType string
-type ListenPort int
 
 const (
 	ListenTypeLocal   ListenType = "local"
@@ -42,31 +38,6 @@ func (lp ListenPort) IsValid() error {
 		return fmt.Errorf("invalid port - must be within range (1:65535)")
 	}
 	return nil
-}
-
-type Server struct {
-	context          context.Context
-	dbClient         db_common.Client
-	mutex            *sync.Mutex
-	dashboardClients map[string]*DashboardClientInfo
-	webSocket        *melody.Melody
-	workspace        *workspace.Workspace
-}
-
-type ErrorPayload struct {
-	Action string `json:"action"`
-	Error  string `json:"error"`
-}
-
-type ExecutionPayload struct {
-	Action        string                               `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
-}
-
-type DashboardClientInfo struct {
-	Session         *melody.Session
-	Dashboard       *string
-	DashboardInputs map[string]interface{}
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
@@ -185,6 +156,14 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 	payload := ExecutionPayload{
 		Action:        "execution_complete",
 		DashboardNode: event.Dashboard,
+	}
+	return json.Marshal(payload)
+}
+
+func buildInputValuesClearedPayload(event *dashboardevents.InputValuesCleared) ([]byte, error) {
+	payload := InputValuesClearedPayload{
+		Action:        "input_values_cleared",
+		ClearedInputs: event.ClearedInputs,
 	}
 	return json.Marshal(payload)
 }
@@ -381,6 +360,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			s.mutex.Lock()
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == changedDashboardName {
+					// 					outputMessage(s.context, fmt.Sprintf("Dashboard Changed - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
 					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
@@ -401,6 +381,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			s.mutex.Lock()
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == newDashboardName {
+					// 					outputMessage(s.context, fmt.Sprintf("New Dashboard - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
 					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
@@ -424,6 +405,23 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
 		outputReady(s.context, fmt.Sprintf("Execution complete: %s", dashboardName))
+
+	case *dashboardevents.InputValuesCleared:
+		log.Println("[TRACE] input values cleared event", *e)
+
+		payload, payloadError = buildInputValuesClearedPayload(e)
+		if payloadError != nil {
+			return
+		}
+		s.mutex.Lock()
+		if sessionInfo, ok := s.dashboardClients[e.Session]; ok {
+			for _, clearedInput := range e.ClearedInputs {
+				delete(sessionInfo.DashboardInputs, clearedInput)
+			}
+			// 			outputMessage(s.context, fmt.Sprintf("Input Values Cleared - dashboard inputs updated: %v", sessionInfo.DashboardInputs))
+		}
+		s.writePayloadToSession(e.Session, payload)
+		s.mutex.Unlock()
 	}
 }
 
@@ -446,41 +444,44 @@ func (s *Server) Init(ctx context.Context) {
 func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Session, msg []byte) {
 	return func(session *melody.Session, msg []byte) {
 
-		// TODO TEMP GET SESSION ID
 		sessionId := s.getSessionId(session)
 
 		var request ClientRequest
 		// if we could not decode message - ignore
-		if err := json.Unmarshal(msg, &request); err == nil {
-
-			if request.Action != "keep_alive" {
-				log.Println("[TRACE] message", string(msg))
-			}
-
-			switch request.Action {
-			case "get_dashboard_metadata":
-				payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())
-				if err != nil {
-					panic(fmt.Errorf("error building payload for get_metadata: %v", err))
-				}
-				session.Write(payload)
-			case "get_available_dashboards":
-				payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
-				if err != nil {
-					panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
-				}
-				session.Write(payload)
-			case "select_dashboard":
-				s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues)
-				dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
-			case "set_dashboard_inputs":
-				s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
-				dashboardexecute.Executor.SetDashboardInputs(ctx, sessionId, request.Payload.InputValues)
-			case "clear_dashboard":
-				s.setDashboardInputsForSession(sessionId, nil)
-				dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
-			}
+		err := json.Unmarshal(msg, &request)
+		if err != nil {
+			log.Printf("[WARN] failed to marshal message: %s", err.Error())
+			return
 		}
+
+		if request.Action != "keep_alive" {
+			log.Println("[TRACE] message", string(msg))
+		}
+
+		switch request.Action {
+		case "get_dashboard_metadata":
+			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())
+			if err != nil {
+				panic(fmt.Errorf("error building payload for get_metadata: %v", err))
+			}
+			session.Write(payload)
+		case "get_available_dashboards":
+			payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
+			if err != nil {
+				panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
+			}
+			session.Write(payload)
+		case "select_dashboard":
+			s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues)
+			dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
+		case "input_changed":
+			s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
+			dashboardexecute.Executor.OnInputChanged(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
+		case "clear_dashboard":
+			s.setDashboardInputsForSession(sessionId, nil)
+			dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
+		}
+
 	}
 }
 
@@ -489,6 +490,7 @@ func (s *Server) setDashboardForSession(sessionId string, dashboardName string, 
 	dashboardClientInfo := s.dashboardClients[sessionId]
 	dashboardClientInfo.Dashboard = &dashboardName
 	dashboardClientInfo.DashboardInputs = inputs
+	//outputMessage(s.context, fmt.Sprintf("Set Dashboard For Session - initial inputs: %v", dashboardClientInfo.DashboardInputs))
 	s.mutex.Unlock()
 	return dashboardClientInfo
 }
@@ -513,6 +515,7 @@ func (s *Server) setDashboardInputsForSession(sessionId string, inputs map[strin
 	s.mutex.Lock()
 	if sessionInfo, ok := s.dashboardClients[sessionId]; ok {
 		sessionInfo.DashboardInputs = inputs
+		// 		outputMessage(s.context, fmt.Sprintf("Set Dashboard Inputs For Session: %v", sessionInfo.DashboardInputs))
 	}
 	s.mutex.Unlock()
 }

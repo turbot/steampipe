@@ -78,129 +78,107 @@ const MultiValueLabelWithTags = ({ children, ...props }: SingleValueProps) => {
   );
 };
 
-const SelectInput = (props: SelectInputProps) => {
+const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
+
+  // Get the options for the select
   const options: SelectOption[] = useMemo(() => {
-    if (props.properties.options) {
-      return props.properties.options.map((option) => ({
+    // If no options defined at all
+    if (
+      (!properties?.options || properties?.options.length === 0) &&
+      (!data || !data.columns || !data.rows)
+    ) {
+      return [];
+    }
+
+    if (data) {
+      const labelColIndex = getColumnIndex(data.columns, "label");
+      const valueColIndex = getColumnIndex(data.columns, "value");
+      const tagsColIndex = getColumnIndex(data.columns, "tags");
+
+      if (labelColIndex === -1 || valueColIndex === -1) {
+        return [];
+      }
+
+      return data.rows.map((row) => ({
+        label: row[labelColIndex],
+        value: row[valueColIndex],
+        tags: tagsColIndex > -1 ? row[tagsColIndex] : {},
+      }));
+    } else if (properties.options) {
+      return properties.options.map((option) => ({
         label: option.label || option.name,
         value: option.name,
         tags: {},
       }));
-    }
-
-    // If no options defined at all
-    if (!props.data || !props.data.columns || !props.data.rows) {
+    } else {
       return [];
     }
-    const labelColIndex = getColumnIndex(props.data.columns, "label");
-    const valueColIndex = getColumnIndex(props.data.columns, "value");
-    const tagsColIndex = getColumnIndex(props.data.columns, "tags");
+  }, [properties.options, data]);
 
-    if (labelColIndex === -1 || valueColIndex === -1) {
-      return [];
-    }
+  const stateValue = selectedDashboardInputs[name];
 
-    return props.data.rows.map((row) => ({
-      label: row[labelColIndex],
-      value: row[valueColIndex],
-      tags: tagsColIndex > -1 ? row[tagsColIndex] : {},
-    }));
-  }, [props.properties.options, props.data]);
-
+  // Bind the selected option to the reducer state
   useEffect(() => {
-    // If we've already set a value...
-    if (initialisedFromState) {
-      return;
-    }
-
-    const stateValue = selectedDashboardInputs[props.name];
-
-    if (!stateValue) {
-      setInitialisedFromState(true);
-      return;
-    }
-
     // If we haven't got the data we need yet...
     if (!options || options.length === 0) {
       return;
     }
 
-    const parsedUrlValue = props.multi ? stateValue.split(",") : stateValue;
+    // If this is first load and we have a value from state, initialise it
+    if (!initialisedFromState && stateValue) {
+      const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
 
-    const foundOption = props.multi
-      ? options.filter((option) =>
-          option.value
-            ? parsedUrlValue.indexOf(option.value.toString()) >= 0
-            : false
-        )
-      : options.find((option) =>
-          option.value ? option.value.toString() === parsedUrlValue : false
-        );
-
-    if (!foundOption) {
+      const foundOption = multi
+        ? options.filter((option) =>
+            option.value
+              ? parsedUrlValue.indexOf(option.value.toString()) >= 0
+              : false
+          )
+        : options.find((option) =>
+            option.value ? option.value.toString() === parsedUrlValue : false
+          );
+      setValue(foundOption || null);
       setInitialisedFromState(true);
-      return;
+    } else if (!initialisedFromState && !stateValue) {
+      setInitialisedFromState(true);
+    } else if (initialisedFromState && !stateValue) {
+      setValue(null);
     }
-
-    setValue(foundOption);
-    setInitialisedFromState(true);
-  }, [
-    props.name,
-    props.multi,
-    initialisedFromState,
-    selectedDashboardInputs,
-    options,
-  ]);
+  }, [initialisedFromState, multi, name, options, stateValue]);
 
   useEffect(() => {
     if (!initialisedFromState) {
       return;
     }
 
-    const stateValue = selectedDashboardInputs[props.name];
-
     // @ts-ignore
-    if ((!value || value.length === 0) && stateValue) {
-      dispatch({ type: "delete_dashboard_input", name: props.name });
+    if (!value || value.length === 0) {
+      dispatch({ type: "delete_dashboard_input", name });
       return;
     }
 
-    if (props.multi) {
-      if (value) {
-        // @ts-ignore
-        const desiredValue = value.map((v) => v.value).join(",");
-        if (stateValue !== desiredValue) {
-          dispatch({
-            type: "set_dashboard_input",
-            name: props.name,
-            value: desiredValue,
-          });
-        }
-      }
-    } else {
+    if (multi) {
       // @ts-ignore
-      if (value && stateValue !== value.value) {
-        dispatch({
-          type: "set_dashboard_input",
-          name: props.name,
-          // @ts-ignore
-          value: value.value,
-        });
-      }
+      const desiredValue = value.map((v) => v.value).join(",");
+      dispatch({
+        type: "set_dashboard_input",
+        name,
+        value: desiredValue,
+      });
+    } else {
+      dispatch({
+        type: "set_dashboard_input",
+        name,
+        // @ts-ignore
+        value: value.value,
+      });
     }
-  }, [
-    dispatch,
-    props.name,
-    props.multi,
-    initialisedFromState,
-    selectedDashboardInputs,
-    value,
-  ]);
+  }, [dispatch, initialisedFromState, multi, name, value]);
 
   const styles = useSelectInputStyles();
 
@@ -210,17 +188,17 @@ const SelectInput = (props: SelectInputProps) => {
 
   return (
     <form>
-      {props.properties && props.properties.label && (
+      {properties && properties.label && (
         <label
           className="block mb-1 text-sm"
-          id={`${props.name}.label`}
-          htmlFor={`${props.name}.input`}
+          id={`${name}.label`}
+          htmlFor={`${name}.input`}
         >
-          {props.properties.label}
+          {properties.label}
         </label>
       )}
       <Select
-        aria-labelledby={`${props.name}.input`}
+        aria-labelledby={`${name}.input`}
         className="basic-single"
         classNamePrefix="select"
         components={{
@@ -232,21 +210,20 @@ const SelectInput = (props: SelectInputProps) => {
           SingleValue: SingleValueWithTags,
         }}
         menuPortalTarget={document.body}
-        inputId={`${props.name}.input`}
-        isDisabled={!props.properties.options && !props.data}
-        isLoading={!props.properties.options && !props.data}
+        inputId={`${name}.input`}
+        isDisabled={!properties.options && !data}
+        isLoading={!properties.options && !data}
         isClearable
         isRtl={false}
         isSearchable
-        isMulti={props.multi}
+        isMulti={multi}
         // menuIsOpen
-        name={props.name}
+        name={name}
         // @ts-ignore
         onChange={(value) => setValue(value)}
         options={options}
         placeholder={
-          (props.properties && props.properties.placeholder) ||
-          "Please select..."
+          (properties && properties.placeholder) || "Please select..."
         }
         styles={styles}
         value={value}
