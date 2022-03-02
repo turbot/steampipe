@@ -14,7 +14,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 # This test consists of a mod with nested folders, with mod.sp file within one of them(folder11).
-# Running steampipe check from folder1 should return an error, since the mod.sp file is present nowhere
+# Running steampipe check from folder1(i.e. _above_ the mod folder) should return an error, since the mod.sp file is present nowhere
 # up the directory tree
 @test "load a mod from an arbitrarily nested sub folder - FAIL" {
   # go to the nested sub directory within the mod
