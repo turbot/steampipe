@@ -249,7 +249,7 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 			continue
 		}
 		// add pseudo resource to mod
-		mod.AddPseudoResource(r)
+		mod.AddResource(r.(modconfig.HclResource))
 		// add to map of existing resources
 		hclResources[name] = true
 	}

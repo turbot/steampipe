@@ -485,6 +485,8 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.Queries[name] = r
+		// also add to LocalQueries
+		m.LocalQueries[r.GetUnqualifiedName()] = r
 
 	case *Control:
 		name := r.Name()
@@ -493,6 +495,8 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.Controls[name] = r
+		// also add to LocalControls
+		m.LocalControls[r.GetUnqualifiedName()] = r
 
 	case *Benchmark:
 		name := r.Name()
@@ -501,6 +505,8 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.Benchmarks[name] = r
+		// also add to LocalBenchmarks
+		m.LocalBenchmarks[r.GetUnqualifiedName()] = r
 
 	case *Dashboard:
 		name := r.Name()

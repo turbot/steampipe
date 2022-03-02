@@ -235,23 +235,6 @@ func (m *Mod) GetPaths() []NodePath {
 // SetPaths implements ModTreeItem
 func (m *Mod) SetPaths() {}
 
-// AddPseudoResource adds the pseudo resource to the mod,
-// as long as there is no existing resource of same name
-//
-// A pseudo resource ids a resource created by loading a content file (e.g. a SQL file),
-// rather than parsing a HCL definition
-func (m *Mod) AddPseudoResource(resource MappableResource) {
-	switch r := resource.(type) {
-	case *Query:
-		// check there is not already a query with the same name
-		if _, ok := m.ResourceMaps.Queries[r.Name()]; !ok {
-			m.ResourceMaps.Queries[r.Name()] = r
-			// set the mod on the query metadata
-			r.GetMetadata().SetMod(m)
-		}
-	}
-}
-
 // CtyValue implements HclResource
 func (m *Mod) CtyValue() (cty.Value, error) {
 	return getCtyValue(m)
