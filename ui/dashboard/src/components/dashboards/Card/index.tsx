@@ -235,7 +235,7 @@ const Card = (props: CardProps) => {
       >
         <p
           className={classNames(
-            "text-4xl mt-1 font-semibold text-left",
+            "text-4xl mt-1 font-semibold text-left truncate",
             textClasses
           )}
         >
