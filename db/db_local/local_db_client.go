@@ -154,6 +154,8 @@ func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPa
 	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix, currentSearchPath)
 }
 
+// GetSchemaFromDB for LocalDBClient optimises the schema extraction by extracting schema
+// information for connections backed by distinct plugins and then fanning back out.
 func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
 	// build a ConnectionSchemaMap object to identify the schemas to load
 	// (pass nil for connection state - this forces NewConnectionSchemaMap to load it)
@@ -194,6 +196,8 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, 
 	return metadata, nil
 }
 
+// update schemaMetadata to add in all other schemas which have the same schemas as those we have loaded
+// NOTE: this mutates 	schemaMetadata
 func (c *LocalDbClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) {
 	// we now need to add in all other schemas which have the same schemas as those we have loaded
 	for loadedSchema, otherSchemas := range connectionSchemaMap {
@@ -210,11 +214,11 @@ func (c *LocalDbClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, 
 	}
 }
 
-func (c *LocalDbClient) buildSchemasQuery(hintSchemas []string) string {
-	for idx, s := range hintSchemas {
-		hintSchemas[idx] = fmt.Sprintf("'%s'", s)
+func (c *LocalDbClient) buildSchemasQuery(schemas []string) string {
+	for idx, s := range schemas {
+		schemas[idx] = fmt.Sprintf("'%s'", s)
 	}
-	schemaClause := strings.Join(hintSchemas, ",")
+	schemaClause := strings.Join(schemas, ",")
 	query := fmt.Sprintf(`
 SELECT
     table_name,

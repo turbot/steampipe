@@ -182,6 +182,8 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampi
 	return res
 }
 
+// GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
+// and creates golang struct representations from the result
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
