@@ -156,32 +156,30 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 
 func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []*modconfig.Connection {
 	updateConnections := u.Update.Connections()
-	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
-	// - remove these from list of plugins to create
-	var connectionsToCreate = make([]*modconfig.Connection, len(updateConnections))
-	for i, connection := range updateConnections {
+	// put connections into a map to avoid dupes
+	var connectionMap = make(map[string]*modconfig.Connection, len(updateConnections))
+	for _, connection := range updateConnections {
 		// if this connection is an aggregator, instantiate its first child connection instead
 		if connection.Type == modconfig.ConnectionTypeAggregator {
 			connection = connection.FirstChild()
 		}
-		connectionsToCreate[i] = connection
-	}
-	connectionsToCreate = removeConnectionsFromList(connectionsToCreate, alreadyCreatedConnectionPlugins)
-	return connectionsToCreate
-}
 
-func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connectionsToRemove map[string]*ConnectionPlugin) []*modconfig.Connection {
-	if connectionsToRemove == nil {
-		return sourceConnections
+		connectionMap[connection.Name] = connection
+	}
+	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
+	// - remove these from list of plugins to create
+	for name := range alreadyCreatedConnectionPlugins {
+		delete(connectionMap, name)
 	}
 
-	// build list of required connections
-	var res []*modconfig.Connection
-	for _, c := range sourceConnections {
-		if _, ok := connectionsToRemove[c.Name]; !ok {
-			res = append(res, c)
-		}
+	// now copy result into array
+	res := make([]*modconfig.Connection, len(connectionMap))
+	idx := 0
+	for _, c := range connectionMap {
+		res[idx] = c
+		idx++
 	}
+
 	return res
 }
 
