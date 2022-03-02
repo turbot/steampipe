@@ -53,5 +53,4 @@ func (w *Workspace) populateResourceMaps() {
 
 	// now populate references in the resource map
 	w.resourceMaps.PopulateReferences()
-
 }
