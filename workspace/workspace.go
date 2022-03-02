@@ -155,7 +155,7 @@ func (w *Workspace) ModfileExists() bool {
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
 	modFile, err := w.findModFilePath(w.Path)
-	modFileExists := err != ErrModSpNotFound
+	modFileExists := err != ErrorNoModDefinition
 	if modFileExists {
 		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
 	}
@@ -190,7 +190,7 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 		parent := filepath.Dir(folder)
 		if folder == parent {
 			// this typically means that we are already in the root directory
-			return "", ErrModSpNotFound
+			return "", ErrorNoModDefinition
 		}
 		return w.findModFilePath(filepath.Dir(folder))
 	}

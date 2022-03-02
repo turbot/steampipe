@@ -27,7 +27,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	}
 
 	if !w.ModfileExists() {
-		initData.Result.Error = workspace.ErrModSpNotFound
+		initData.Result.Error = workspace.ErrorNoModDefinition
 		return initData
 	}
 

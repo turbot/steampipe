@@ -221,7 +221,7 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	initData := control.NewInitData(ctx, w)
 
 	if !w.ModfileExists() {
-		initData.Result.Error = workspace.ErrModSpNotFound
+		initData.Result.Error = workspace.ErrorNoModDefinition
 	}
 
 	return initData
