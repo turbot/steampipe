@@ -53,6 +53,8 @@ type Mod struct {
 	ModPath   string
 	DeclRange hcl.Range
 
+	// the filepath of the mod.sp file (will be empty for default mod)
+	modFilePath string
 	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
 	// convenient aggregation of all resources
@@ -158,7 +160,7 @@ func CreateDefaultMod(modPath string) (*Mod, error) {
 
 // IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition
 func (m *Mod) IsDefaultMod() bool {
-	return m.ShortName == defaultModName
+	return m.modFilePath == ""
 }
 
 func (m *Mod) NameWithVersion() string {
@@ -457,4 +459,8 @@ func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 
 func (m *Mod) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
 	return m.ResourceMaps.WalkResources(resourceFunc)
+}
+
+func (m *Mod) SetFilePath(modFilePath string) {
+	m.modFilePath = modFilePath
 }

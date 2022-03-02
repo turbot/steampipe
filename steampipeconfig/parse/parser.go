@@ -124,6 +124,8 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 			if err := mod.OnDecoded(block, nil); err != nil {
 				return nil, err
 			}
+			// set modfilename
+			mod.SetFilePath(modFilePath)
 			return mod, nil
 		}
 	}

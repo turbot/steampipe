@@ -76,7 +76,9 @@ func getTableInsertSql(workspaceResources *modconfig.ModResources) string {
 		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 	}
 	for _, mod := range workspaceResources.Mods {
-		insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
+		if !mod.IsDefaultMod() {
+			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
+		}
 	}
 	for _, variable := range workspaceResources.Variables {
 		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
