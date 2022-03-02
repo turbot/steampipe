@@ -1,5 +1,49 @@
 package dashboardserver
 
+import (
+	"context"
+	"sync"
+
+	"gopkg.in/olahol/melody.v1"
+
+	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/workspace"
+)
+
+type ListenType string
+type ListenPort int
+
+type Server struct {
+	context          context.Context
+	dbClient         db_common.Client
+	mutex            *sync.Mutex
+	dashboardClients map[string]*DashboardClientInfo
+	webSocket        *melody.Melody
+	workspace        *workspace.Workspace
+}
+
+type ErrorPayload struct {
+	Action string `json:"action"`
+	Error  string `json:"error"`
+}
+
+type ExecutionPayload struct {
+	Action        string                               `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
+}
+
+type InputValuesClearedPayload struct {
+	Action        string   `json:"action"`
+	ClearedInputs []string `json:"cleared_inputs"`
+}
+
+type DashboardClientInfo struct {
+	Session         *melody.Session
+	Dashboard       *string
+	DashboardInputs map[string]interface{}
+}
+
 type ClientRequestDashboardPayload struct {
 	FullName string `json:"full_name"`
 }

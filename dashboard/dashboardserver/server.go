@@ -12,15 +12,11 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardexecute"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
-
-type ListenType string
-type ListenPort int
 
 const (
 	ListenTypeLocal   ListenType = "local"
@@ -42,31 +38,6 @@ func (lp ListenPort) IsValid() error {
 		return fmt.Errorf("invalid port - must be within range (1:65535)")
 	}
 	return nil
-}
-
-type Server struct {
-	context          context.Context
-	dbClient         db_common.Client
-	mutex            *sync.Mutex
-	dashboardClients map[string]*DashboardClientInfo
-	webSocket        *melody.Melody
-	workspace        *workspace.Workspace
-}
-
-type ErrorPayload struct {
-	Action string `json:"action"`
-	Error  string `json:"error"`
-}
-
-type ExecutionPayload struct {
-	Action        string                               `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
-}
-
-type DashboardClientInfo struct {
-	Session         *melody.Session
-	Dashboard       *string
-	DashboardInputs map[string]interface{}
 }
 
 func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
@@ -185,6 +156,14 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 	payload := ExecutionPayload{
 		Action:        "execution_complete",
 		DashboardNode: event.Dashboard,
+	}
+	return json.Marshal(payload)
+}
+
+func buildInputValuesClearedPayload(event *dashboardevents.InputValuesCleared) ([]byte, error) {
+	payload := InputValuesClearedPayload{
+		Action:        "input_values_cleared",
+		ClearedInputs: event.ClearedInputs,
 	}
 	return json.Marshal(payload)
 }
@@ -424,6 +403,23 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
 		outputReady(s.context, fmt.Sprintf("Execution complete: %s", dashboardName))
+
+	case *dashboardevents.InputValuesCleared:
+		log.Println("[TRACE] input values cleared event", *e)
+
+		payload, payloadError = buildInputValuesClearedPayload(e)
+		if payloadError != nil {
+			return
+		}
+		s.mutex.Lock()
+		if sessionInfo, ok := s.dashboardClients[e.Session]; ok {
+			for _, clearedInput := range e.ClearedInputs {
+				delete(sessionInfo.DashboardInputs, clearedInput)
+			}
+			//outputMessage(s.context, fmt.Sprintf("Dashboard inputs updated: %v", sessionInfo.DashboardInputs))
+		}
+		s.writePayloadToSession(e.Session, payload)
+		s.mutex.Unlock()
 	}
 }
 
