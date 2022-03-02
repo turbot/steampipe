@@ -1,5 +1,6 @@
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
+import { getColumnIndex } from "../../../utils/data";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -341,6 +342,96 @@ const adjustMaxValue = (initial) => {
   return max;
 };
 
+interface Node {
+  id: string;
+  title?: string;
+  category?: string;
+}
+
+interface Edge {
+  from_id: string;
+  to_id: string;
+}
+
+interface NodeMap {
+  [id: string]: Node;
+}
+
+interface EdgeMap {
+  [edge_id: string]: Edge;
+}
+
+const buildNodesAndEdges = (rawData: LeafNodeData) => {
+  if (!rawData || !rawData.columns || !rawData.rows) {
+    return {};
+  }
+
+  const id_index = getColumnIndex(rawData.columns, "id");
+  const from_index = getColumnIndex(rawData.columns, "from_id");
+  const to_index = getColumnIndex(rawData.columns, "to_id");
+  const title_index = getColumnIndex(rawData.columns, "title");
+  const category_index = getColumnIndex(rawData.columns, "category");
+
+  if (id_index === -1 && from_index === -1 && to_index === -1) {
+    throw new Error("No node or edge rows defined in the dataset");
+  }
+
+  const node_lookup: NodeMap = {};
+  const root_node_lookup: NodeMap = {};
+  const edge_lookup: EdgeMap = {};
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+  const categories = {};
+
+  rawData.rows.map((row) => {
+    const node_id = row[id_index];
+    const from_id = row[from_index];
+    const to_id = row[to_index];
+    const title = row[title_index];
+    const category = row[category_index];
+
+    // We must have at least a node id or an edge from_id / to_id pairing
+    if (!node_id && !from_id && !node_id) {
+      return new Error(
+        `Encountered dataset row with no node or edge definition: ${JSON.stringify(
+          row
+        )}`
+      );
+    }
+
+    // If this row is a node
+    if (node_id) {
+      const existingNode = node_lookup[node_id];
+      if (existingNode) {
+        return new Error(`Duplicate node definition: ${node_id}`);
+      }
+      const node = {
+        id: node_id,
+        title,
+        category,
+      };
+      node_lookup[node_id] = node;
+
+      nodes.push(node);
+
+      // This must be a root node
+      if (!from_id) {
+        root_node_lookup[node_id] = node;
+      } else {
+      }
+    }
+    // Else it must be an edge
+    else {
+    }
+  });
+
+  return {
+    nodes,
+    edges,
+    categories,
+  };
+};
+
 const buildSankeyDataInputs = (
   rawData: LeafNodeData,
   properties: HierarchyProperties | undefined,
@@ -600,6 +691,7 @@ export {
   adjustMinValue,
   adjustMaxValue,
   buildChartDataset,
+  buildNodesAndEdges,
   buildSankeyDataInputs,
   buildTreeDataInputs,
   getColorOverride,

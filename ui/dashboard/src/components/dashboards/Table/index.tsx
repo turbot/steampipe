@@ -1,5 +1,6 @@
 import {
   BasePrimitiveProps,
+  buildNodesAndEdges,
   ExecutablePrimitiveProps,
   isNumericCol,
   LeafNodeDataColumn,
@@ -297,10 +298,12 @@ const TableView = (props: TableProps) => {
     () => getColumns(props.data ? props.data.columns : [], props.properties),
     [props.data, props.properties]
   );
-  const rowData = useMemo(
-    () => getData(columns, props.data ? props.data.rows : []),
-    [columns, props.data]
-  );
+  const rowData = useMemo(() => {
+    if (props.data) {
+      console.log(buildNodesAndEdges(props.data));
+    }
+    return getData(columns, props.data ? props.data.rows : []);
+  }, [columns, props.data]);
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
     useTable(
       { columns, data: rowData, initialState: { hiddenColumns } },
