@@ -335,6 +335,17 @@ function reducer(state, action) {
         selectedDashboardInputs: action.value,
         lastChangedInput: null,
       };
+    case "input_values_cleared": {
+      const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
+      for (const input of action.cleared_inputs || []) {
+        delete newSelectedDashboardInputs[input];
+      }
+      return {
+        ...state,
+        selectedDashboardInputs: newSelectedDashboardInputs,
+        lastChangedInput: null,
+      };
+    }
     case "workspace_error":
       return { ...state, error: action.error };
     // Not emitting these from the dashboard server yet
