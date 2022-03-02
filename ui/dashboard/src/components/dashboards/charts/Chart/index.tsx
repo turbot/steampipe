@@ -243,7 +243,11 @@ const getCommonBaseOptionsForChartType = (
         // The category map the first row in the dataset by default.
         xAxis: {
           type: "category",
-          axisLabel: { color: themeColors.foreground },
+          axisLabel: {
+            color: themeColors.foreground,
+            rotate: 45,
+            overflow: "truncate",
+          },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
           nameGap: 30,
