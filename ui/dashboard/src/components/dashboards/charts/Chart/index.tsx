@@ -245,7 +245,7 @@ const getCommonBaseOptionsForChartType = (
           type: "category",
           axisLabel: {
             color: themeColors.foreground,
-            rotate: 45,
+            rotate: dataset.length >= 6 ? 45 : 0,
             overflow: "truncate",
           },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
