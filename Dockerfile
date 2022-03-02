@@ -11,7 +11,7 @@ RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --she
 # updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' interactive mode
 RUN apt-get update -y && apt-get install -y wget less
 
-# downlaod the published image
+# download the release as given in TARGETVERSION, TARGETOS and TARGETARCH
 RUN echo \
  && cd /tmp \
  && wget -nv https://github.com/turbot/steampipe/releases/download/${TARGETVERSION}/steampipe_${TARGETOS}_${TARGETARCH}.tar.gz \
