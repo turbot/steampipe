@@ -38,14 +38,14 @@ func steampipeSubDir(dirName string) string {
 	return filepath.Join(SteampipeDir, dirName)
 }
 
-// TmpDir returns the path to the tmp directory in STEAMPIPE_HOME (creates if missing)
+// TmpDir returns the path to the tmp directory in STEAMPIPE_HOME/plugins
 func TmpDir() string {
-	return steampipeSubDir("tmp")
+	return steampipeSubDir(filepath.Join(EnsurePluginDir(), "tmp"))
 }
 
-// EnsureTmpDir returns the path to the tmp directory in STEAMPIPE_HOME (creates if missing)
+// EnsureTmpDir returns the path to the tmp directory in STEAMPIPE_HOME/plugins (creates if missing)
 func EnsureTmpDir() string {
-	return ensureSteampipeSubDir("tmp")
+	return ensureSteampipeSubDir(TmpDir())
 }
 
 // EnsureTemplateDir returns the path to the templates directory (creates if missing)
@@ -79,7 +79,7 @@ func EnsureLogDir() string {
 }
 
 func EnsureDashboardAssetsDir() string {
-	return ensureSteampipeSubDir(filepath.Join(filepath.Join("report", "assets")))
+	return ensureSteampipeSubDir(filepath.Join("report", "assets"))
 }
 
 // ConnectionStatePath returns the path of the connections state file
