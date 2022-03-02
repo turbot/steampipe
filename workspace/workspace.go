@@ -28,8 +28,7 @@ type Workspace struct {
 	ModInstallationPath string
 	Mod                 *modconfig.Mod
 
-	Mods      map[string]*modconfig.Mod
-	Variables map[string]*modconfig.Variable
+	Mods map[string]*modconfig.Mod
 
 	watcher    *utils.FileWatcher
 	loadLock   sync.Mutex
@@ -46,7 +45,7 @@ type Workspace struct {
 	loadPseudoResources        bool
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	resourceMaps *modconfig.WorkspaceResourceMaps
+	resourceMaps *modconfig.ModResources
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -190,7 +189,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Mod = m
 
 	// set variables on workspace
-	w.Variables = m.Variables
 	w.Mods = runCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod

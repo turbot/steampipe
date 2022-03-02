@@ -83,7 +83,7 @@ func (d *Dashboard) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	d.setBaseProperties(resourceMapProvider)
 
 	d.ChildNames = make([]string, len(d.children))
@@ -239,7 +239,7 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 	return nil
 }
 
-func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
+func (d *Dashboard) BuildRuntimeDependencyTree(workspace ModResourcesProvider) error {
 	d.runtimeDependencyGraph = topsort.NewGraph()
 	// add root node - this will depend on all other nodes
 	d.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
@@ -359,7 +359,7 @@ func (d *Dashboard) setInputMap() []string {
 	return duplicates
 }
 
-func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (d *Dashboard) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

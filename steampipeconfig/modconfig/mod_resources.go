@@ -1,10 +1,13 @@
 package modconfig
 
-import "github.com/turbot/go-kit/helpers"
+import (
+	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
+)
 
-// WorkspaceResourceMaps is a struct containing maps of all mod resource types
+// ModResources is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
-type WorkspaceResourceMaps struct {
+type ModResources struct {
 	// the parent mod
 	Mod *Mod
 	// all mods (including deps)
@@ -31,13 +34,14 @@ type WorkspaceResourceMaps struct {
 	LocalBenchmarks map[string]*Benchmark
 }
 
-func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
-	return &WorkspaceResourceMaps{
+func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
+	return &ModResources{
 		Mod:                   mod,
-		Mods:                  make(map[string]*Mod),
+		Mods:                  map[string]*Mod{mod.Name(): mod},
 		Queries:               make(map[string]*Query),
 		Controls:              make(map[string]*Control),
 		Benchmarks:            make(map[string]*Benchmark),
+		Locals:                make(map[string]*Local),
 		Variables:             make(map[string]*Variable),
 		Dashboards:            make(map[string]*Dashboard),
 		DashboardContainers:   make(map[string]*DashboardContainer),
@@ -56,35 +60,7 @@ func NewWorkspaceResourceMaps(mod *Mod) *WorkspaceResourceMaps {
 	}
 }
 
-func CreateWorkspaceResourceMapForMod(mod *Mod) *WorkspaceResourceMaps {
-	resourceMaps := &WorkspaceResourceMaps{
-		Mod:                   mod,
-		Mods:                  make(map[string]*Mod),
-		Queries:               mod.Queries,
-		Controls:              mod.Controls,
-		Benchmarks:            mod.Benchmarks,
-		Variables:             mod.Variables,
-		Dashboards:            mod.Dashboards,
-		DashboardContainers:   mod.DashboardContainers,
-		DashboardCharts:       mod.DashboardCharts,
-		DashboardCards:        mod.DashboardCards,
-		DashboardHierarchies:  mod.DashboardHierarchies,
-		DashboardImages:       mod.DashboardImages,
-		DashboardInputs:       mod.DashboardInputs,
-		GlobalDashboardInputs: mod.GlobalDashboardInputs,
-		DashboardTables:       mod.DashboardTables,
-		DashboardTexts:        mod.DashboardTexts,
-		Locals:                mod.Locals,
-	}
-	// if mod is not a default mod (i.e. if there is a mod.sp), add it into the resource maps
-	if !mod.IsDefaultMod() {
-		resourceMaps.Mods[mod.Name()] = mod
-	}
-
-	return resourceMaps
-}
-
-func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *Mod) *WorkspaceResourceMaps {
+func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *Mod) *ModResources {
 	res := NewWorkspaceResourceMaps(mod)
 	for _, p := range queryProviders {
 		res.addControlOrQuery(p)
@@ -92,7 +68,7 @@ func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *M
 	return res
 }
 
-func (m *WorkspaceResourceMaps) QueryProviders() []QueryProvider {
+func (m *ModResources) QueryProviders() []QueryProvider {
 	numDashboardInputs := 0
 	for _, inputs := range m.DashboardInputs {
 		numDashboardInputs += len(inputs)
@@ -145,7 +121,7 @@ func (m *WorkspaceResourceMaps) QueryProviders() []QueryProvider {
 	return res
 }
 
-func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
+func (m *ModResources) Equals(other *ModResources) bool {
 	if other == nil {
 		return false
 	}
@@ -367,11 +343,10 @@ func (m *WorkspaceResourceMaps) Equals(other *WorkspaceResourceMaps) bool {
 	return true
 }
 
-func (m *WorkspaceResourceMaps) PopulateReferences() {
+func (m *ModResources) PopulateReferences() {
 	m.References = make(map[string]*ResourceReference)
 
 	resourceFunc := func(resource HclResource) (bool, error) {
-
 		parsedName, _ := ParseResourceName(resource.Name())
 		if helpers.StringSliceContains(ReferenceBlocks, parsedName.ItemType) {
 			for _, ref := range resource.GetReferences() {
@@ -385,7 +360,7 @@ func (m *WorkspaceResourceMaps) PopulateReferences() {
 	m.WalkResources(resourceFunc)
 }
 
-func (m *WorkspaceResourceMaps) Empty() bool {
+func (m *ModResources) Empty() bool {
 	return len(m.Mods)+
 		len(m.Queries)+
 		len(m.Controls)+
@@ -403,8 +378,8 @@ func (m *WorkspaceResourceMaps) Empty() bool {
 		len(m.References) == 0
 }
 
-// this is used to create an optimized WorkspaceResourceMaps containing only the queries which will be run
-func (m *WorkspaceResourceMaps) addControlOrQuery(provider QueryProvider) {
+// this is used to create an optimized ModResources containing only the queries which will be run
+func (m *ModResources) addControlOrQuery(provider QueryProvider) {
 	switch p := provider.(type) {
 	case *Query:
 		if p != nil {
@@ -419,12 +394,11 @@ func (m *WorkspaceResourceMaps) addControlOrQuery(provider QueryProvider) {
 
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false or an error, return immediately
-func (m *WorkspaceResourceMaps) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
+func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
 	for _, r := range m.Queries {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
-
 	}
 	for _, r := range m.Controls {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
@@ -499,4 +473,207 @@ func (m *WorkspaceResourceMaps) WalkResources(resourceFunc func(item HclResource
 		}
 	}
 	return nil
+}
+
+func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	switch r := item.(type) {
+	case *Query:
+		name := r.Name()
+		if existing, ok := m.Queries[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.Queries[name] = r
+
+	case *Control:
+		name := r.Name()
+		if existing, ok := m.Controls[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.Controls[name] = r
+
+	case *Benchmark:
+		name := r.Name()
+		if existing, ok := m.Benchmarks[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.Benchmarks[name] = r
+
+	case *Dashboard:
+		name := r.Name()
+		if existing, ok := m.Dashboards[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.Dashboards[name] = r
+
+	case *DashboardContainer:
+		name := r.Name()
+		if existing, ok := m.DashboardContainers[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardContainers[name] = r
+
+	case *DashboardCard:
+		name := r.Name()
+		if existing, ok := m.DashboardCards[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		} else {
+			m.DashboardCards[name] = r
+		}
+
+	case *DashboardChart:
+		name := r.Name()
+		if existing, ok := m.DashboardCharts[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardCharts[name] = r
+
+	case *DashboardHierarchy:
+		name := r.Name()
+		if existing, ok := m.DashboardHierarchies[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardHierarchies[name] = r
+
+	case *DashboardImage:
+		name := r.Name()
+		if existing, ok := m.DashboardImages[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardImages[name] = r
+
+	case *DashboardInput:
+		// if input has a dashboard asssigned, add to DashboardInputs
+		name := r.Name()
+		if dashboardName := r.DashboardName; dashboardName != "" {
+			inputsForDashboard := m.DashboardInputs[dashboardName]
+			if inputsForDashboard == nil {
+				inputsForDashboard = make(map[string]*DashboardInput)
+				m.DashboardInputs[dashboardName] = inputsForDashboard
+			}
+			// no need to check for dupes as we have already checked before adding the input to th m od
+			inputsForDashboard[name] = r
+			break
+		}
+
+		// so Dashboard Input must be global
+		if existing, ok := m.GlobalDashboardInputs[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.GlobalDashboardInputs[name] = r
+
+	case *DashboardTable:
+		name := r.Name()
+		if existing, ok := m.DashboardTables[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardTables[name] = r
+
+	case *DashboardText:
+		name := r.Name()
+		if existing, ok := m.DashboardTexts[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardTexts[name] = r
+
+	case *Variable:
+		// NOTE: add variable by unqualified name
+		name := r.UnqualifiedName
+		if existing, ok := m.Variables[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.Variables[name] = r
+
+	case *Local:
+		name := r.Name()
+		if existing, ok := m.Locals[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.Locals[name] = r
+
+	}
+	return diags
+}
+
+func (m *ModResources) Merge(others []*ModResources) *ModResources {
+	res := NewWorkspaceResourceMaps(m.Mod)
+	sourceMaps := append([]*ModResources{m}, others...)
+
+	// take local resources from ourselves
+	for k, v := range m.LocalQueries {
+		res.LocalQueries[k] = v
+	}
+	for k, v := range m.LocalControls {
+		res.LocalControls[k] = v
+	}
+	for k, v := range m.LocalBenchmarks {
+		res.LocalBenchmarks[k] = v
+	}
+
+	for _, source := range sourceMaps {
+		for k, v := range source.Mods {
+			res.Mods[k] = v
+		}
+		for k, v := range source.Queries {
+			res.Queries[k] = v
+		}
+		for k, v := range source.Controls {
+			res.Controls[k] = v
+		}
+		for k, v := range source.Benchmarks {
+			res.Benchmarks[k] = v
+		}
+		for k, v := range source.Locals {
+			res.Locals[k] = v
+		}
+		for k, v := range source.Variables {
+			res.Variables[k] = v
+		}
+		for k, v := range source.Dashboards {
+			res.Dashboards[k] = v
+		}
+		for k, v := range source.DashboardContainers {
+			res.DashboardContainers[k] = v
+		}
+		for k, v := range source.DashboardCards {
+			res.DashboardCards[k] = v
+		}
+		for k, v := range source.DashboardCharts {
+			res.DashboardCharts[k] = v
+		}
+		for k, v := range source.DashboardHierarchies {
+			res.DashboardHierarchies[k] = v
+		}
+		for k, v := range source.DashboardImages {
+			res.DashboardImages[k] = v
+		}
+		for k, v := range source.DashboardInputs {
+			res.DashboardInputs[k] = v
+		}
+		for k, v := range source.GlobalDashboardInputs {
+			res.GlobalDashboardInputs[k] = v
+		}
+		for k, v := range source.DashboardTables {
+			res.DashboardTables[k] = v
+		}
+		for k, v := range source.DashboardTexts {
+			res.DashboardTexts[k] = v
+		}
+	}
+
+	return res
 }

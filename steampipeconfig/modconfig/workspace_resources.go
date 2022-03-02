@@ -2,6 +2,8 @@ package modconfig
 
 import "sort"
 
+// WorkspaceResources is used exclusively for the query/check command completeion
+// TODO to be refactored
 type WorkspaceResources struct {
 	Query     map[string]bool
 	Control   map[string]bool

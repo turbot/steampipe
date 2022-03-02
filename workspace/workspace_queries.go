@@ -15,7 +15,7 @@ import (
 // GetQueriesFromArgs retrieves queries from args
 //
 // For each arg check if it is a named query or a file, before falling back to treating it as sql
-func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.WorkspaceResourceMaps, error) {
+func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.ModResources, error) {
 	utils.LogTime("execute.GetQueriesFromArgs start")
 	defer utils.LogTime("execute.GetQueriesFromArgs end")
 
@@ -33,7 +33,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.Work
 
 		}
 	}
-	var preparedStatementSource *modconfig.WorkspaceResourceMaps
+	var preparedStatementSource *modconfig.ModResources
 	if len(queries) > 0 {
 		preparedStatementSource = modconfig.CreateWorkspaceResourceMapForQueries(queryProviders, w.Mod)
 	}

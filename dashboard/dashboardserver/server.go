@@ -96,7 +96,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 	return server, err
 }
 
-func buildDashboardMetadataPayload(workspaceResources *modconfig.WorkspaceResourceMaps) ([]byte, error) {
+func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
 	installedMods := make(map[string]ModDashboardMetadata)
 	for _, mod := range workspaceResources.Mods {
 		// Ignore current mod
@@ -124,14 +124,14 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.WorkspaceResour
 	return json.Marshal(payload)
 }
 
-func buildAvailableDashboardsPayload(workspaceResources *modconfig.WorkspaceResourceMaps) ([]byte, error) {
+func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
 	dashboardsByMod := make(map[string]map[string]ModAvailableDashboard)
 	for _, mod := range workspaceResources.Mods {
 		_, ok := dashboardsByMod[mod.FullName]
 		if !ok {
 			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
 		}
-		for _, dashboard := range mod.Dashboards {
+		for _, dashboard := range mod.ResourceMaps.Dashboards {
 			if dashboard.IsTopLevel {
 				dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
 					Title:     typeHelpers.SafeString(dashboard.Title),

@@ -83,7 +83,7 @@ func (c *DashboardChart) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
 	// populate series map
 	if len(c.SeriesList) > 0 {
@@ -289,7 +289,7 @@ func (c *DashboardChart) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) 
 	return c.getPreparedStatementExecuteSQL(c, runtimeArgs)
 }
 
-func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (c *DashboardChart) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

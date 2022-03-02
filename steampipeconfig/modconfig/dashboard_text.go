@@ -64,7 +64,7 @@ func (t *DashboardText) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (t *DashboardText) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
+func (t *DashboardText) OnDecoded(*hcl.Block, ModResourcesProvider) hcl.Diagnostics {
 	t.setBaseProperties()
 	return nil
 }

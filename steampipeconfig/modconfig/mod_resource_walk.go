@@ -15,7 +15,7 @@ func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
 		// continue walking
 		return true, nil
 	}
-	m.resourceMaps.WalkResources(resourceFunc)
+	m.ResourceMaps.WalkResources(resourceFunc)
 
 	// if this item has no parents and is a child of the mod, set the mod as parent
 	if len(parents) == 0 && m.containsResource(item.Name()) {
@@ -38,6 +38,6 @@ func (m *Mod) containsResource(childName string) bool {
 		// continue walking
 		return true, nil
 	}
-	m.resourceMaps.WalkResources(resourceFunc)
+	m.ResourceMaps.WalkResources(resourceFunc)
 	return res
 }

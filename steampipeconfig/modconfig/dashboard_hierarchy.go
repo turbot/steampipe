@@ -77,7 +77,7 @@ func (h *DashboardHierarchy) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	h.setBaseProperties(resourceMapProvider)
 	// populate categories map
 	if len(h.CategoryList) > 0 {
@@ -258,7 +258,7 @@ func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(runtimeArgs *QueryAr
 	return h.getPreparedStatementExecuteSQL(h, runtimeArgs)
 }
 
-func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
