@@ -1,4 +1,7 @@
-report "sibling_containers_report" {
+// this dashboard is used to test the parsing of a dashboard containing
+// multiple sibling containers
+
+dashboard "sibling_containers_report" {
   container {
     text {
       value = "container 1"

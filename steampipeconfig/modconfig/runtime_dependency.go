@@ -13,13 +13,13 @@ type RuntimeDependency struct {
 
 func (d *RuntimeDependency) String() string {
 	if d.ArgIndex != nil {
-		return fmt.Sprintf("arg.%d->%s", d.ArgIndex, d.PropertyPath.String())
+		return fmt.Sprintf("arg.%d->%s", *d.ArgIndex, d.PropertyPath.String())
 	}
 
 	return fmt.Sprintf("arg.%s->%s", *d.ArgName, d.PropertyPath.String())
 }
 
-func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
+func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace ModResourcesProvider) error {
 	resourceName := d.PropertyPath.ToResourceName()
 	var found bool
 	var sourceResource HclResource
@@ -36,4 +36,35 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 
 	d.SourceResource = sourceResource
 	return nil
+}
+
+func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
+
+	// TargetPropertyPath
+	if d.PropertyPath.PropertyPath == nil {
+		if other.PropertyPath.PropertyPath != nil {
+			return false
+		}
+	} else {
+		// we have TargetPropertyPath
+		if other.PropertyPath.PropertyPath == nil {
+			return false
+		}
+
+		if len(d.PropertyPath.PropertyPath) != len(other.PropertyPath.PropertyPath) {
+			return false
+		}
+		for i, c := range d.PropertyPath.PropertyPath {
+			if other.PropertyPath.PropertyPath[i] != c {
+				return false
+			}
+		}
+	}
+
+	// SourceResource
+	if d.SourceResource.Name() != other.SourceResource.Name() {
+		return false
+	}
+
+	return true
 }

@@ -30,7 +30,7 @@ func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.
 
 	// TACTICAL - as the tf derived code builds a map keyed by the short variable name, do the same
 	variableMap := make(map[string]*modconfig.Variable)
-	for k, v := range mod.Variables {
+	for k, v := range mod.ResourceMaps.Variables {
 		name := strings.Split(k, ".")[1]
 		variableMap[name] = v
 	}

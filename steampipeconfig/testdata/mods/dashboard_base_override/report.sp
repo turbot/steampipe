@@ -1,4 +1,5 @@
-
+// this dashboard is a simple dashboard containing charts with axes.
+// we are testing the parsing and the inheritance(override) of the base values.
 
 chart aws_bucket_info {
   type = "column"
@@ -22,7 +23,7 @@ chart aws_bucket_info {
   }
 }
 
-report override_base_values {
+dashboard override_base_values {
   title = "override_base_values"
 
   chart {

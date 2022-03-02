@@ -39,7 +39,7 @@ type HclResource interface {
 	Name() string
 	GetUnqualifiedName() string
 	CtyValue() (cty.Value, error)
-	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
+	OnDecoded(*hcl.Block, ModResourcesProvider) hcl.Diagnostics
 	AddReference(ref *ResourceReference)
 	GetReferences() []*ResourceReference
 	GetDeclRange() *hcl.Range
@@ -82,6 +82,6 @@ type DashboardLeafNode interface {
 	GetMetadata() *ResourceMetadata
 }
 
-type ResourceMapsProvider interface {
-	GetResourceMaps() *WorkspaceResourceMaps
+type ModResourcesProvider interface {
+	GetResourceMaps() *ModResources
 }

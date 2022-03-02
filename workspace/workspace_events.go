@@ -44,7 +44,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	w.raiseDashboardChangedEvents(resourceMaps, prevResourceMaps)
 }
 
-func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.WorkspaceResourceMaps, *modconfig.WorkspaceResourceMaps, error) {
+func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ModResources, *modconfig.ModResources, error) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
@@ -79,7 +79,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Workspac
 
 }
 
-func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *modconfig.WorkspaceResourceMaps) {
+func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *modconfig.ModResources) {
 	event := &dashboardevents.DashboardChanged{}
 
 	// TODO reports can we use a ResourceMaps diff function to do all of this - we are duplicating logic

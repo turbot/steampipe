@@ -38,6 +38,10 @@ func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	return
 }
 
+func (p *ParsedResourceName) ToResourceName() string {
+	return BuildModResourceName(p.ItemType, p.Name)
+}
+
 // UnqualifiedResourceName removes the mod prefix from the given name
 func UnqualifiedResourceName(fullName string) string {
 	parts := strings.Split(fullName, ".")

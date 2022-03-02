@@ -331,7 +331,7 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 	return nil
 }
 
-func (r *RunContext) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
+func (r *RunContext) GetResourceMaps() *modconfig.ModResources {
 	// TODO [reports] add dep mods
 	return r.CurrentMod.GetResourceMaps()
 }

@@ -4,8 +4,8 @@ import "github.com/turbot/go-kit/helpers"
 
 // we cannot use the Base directly as decoded as the runtime dependencies and resource metadata
 // are not stored in the evaluation context
-// instead, resolve the base from the run context (passed as a ResourceMapsProvider)
-func resolveBase(base HclResource, resourceMapProvider ResourceMapsProvider) (HclResource, bool) {
+// instead, resolve the base from the run context (passed as a ModResourcesProvider)
+func resolveBase(base HclResource, resourceMapProvider ModResourcesProvider) (HclResource, bool) {
 	if helpers.IsNil(base) {
 		return nil, false
 	}

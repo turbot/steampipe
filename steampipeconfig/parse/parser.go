@@ -124,6 +124,8 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 			if err := mod.OnDecoded(block, nil); err != nil {
 				return nil, err
 			}
+			// set modfilename
+			mod.SetFilePath(modFilePath)
 			return mod, nil
 		}
 	}
@@ -247,7 +249,7 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 			continue
 		}
 		// add pseudo resource to mod
-		mod.AddPseudoResource(r)
+		mod.AddResource(r.(modconfig.HclResource))
 		// add to map of existing resources
 		hclResources[name] = true
 	}

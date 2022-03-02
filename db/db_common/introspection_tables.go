@@ -19,7 +19,7 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -63,7 +63,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	return strings.Join(createSql, "\n")
 }
 
-func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) string {
+func getTableInsertSql(workspaceResources *modconfig.ModResources) string {
 	var insertSql []string
 
 	for _, control := range workspaceResources.Controls {
@@ -76,7 +76,9 @@ func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) stri
 		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 	}
 	for _, mod := range workspaceResources.Mods {
-		insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
+		if !mod.IsDefaultMod() {
+			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
+		}
 	}
 	for _, variable := range workspaceResources.Variables {
 		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
