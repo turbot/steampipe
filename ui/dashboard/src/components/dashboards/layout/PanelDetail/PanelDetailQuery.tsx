@@ -2,7 +2,6 @@ import CodeBlock from "../../../CodeBlock";
 import { format } from "@supabase/sql-formatter";
 import { PanelDetailProps } from "./index";
 import { useMemo } from "react";
-import CopyToClipboard from "../../../CopyToClipboard";
 
 const beautify = (query) => {
   if (!query) {
@@ -23,12 +22,7 @@ const PanelDetailQuery = ({ definition }: PanelDetailProps) => {
     return <></>;
   }
 
-  return (
-    <div className="space-y-4">
-      <CopyToClipboard data={formattedQuery} />
-      <CodeBlock language="sql">{formattedQuery}</CodeBlock>
-    </div>
-  );
+  return <CodeBlock language="sql">{formattedQuery}</CodeBlock>;
 };
 
 export default PanelDetailQuery;

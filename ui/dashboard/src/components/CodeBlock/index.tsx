@@ -1,7 +1,8 @@
+import CopyToClipboard, { CopyToClipboardProvider } from "../CopyToClipboard";
 import { classNames } from "../../utils/styles";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeNames, useTheme } from "../../hooks/useTheme";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   vs,
   vscDarkPlus,
@@ -18,9 +19,10 @@ interface CodeBlockProps {
 const CodeBlock = ({
   children,
   language = "sql",
-  onClick,
   style = {},
+  copyToClipboard = true,
 }: CodeBlockProps) => {
+  const [showCopyIcon, setShowCopyIcon] = useState(false);
   const { theme } = useTheme();
 
   const styles = useMemo(() => {
@@ -64,25 +66,56 @@ const CodeBlock = ({
   }, [theme.name]);
 
   return (
-    <div
-      className={classNames("relative", onClick ? "cursor-pointer" : "")}
-      onClick={onClick}
-    >
-      <SyntaxHighlighter
-        language={language}
-        style={styles}
-        customStyle={{
-          padding: 0,
-          wordBreak: "break-all",
-          background: "transparent",
-          borderRadius: "4px",
-          ...style,
-        }}
-        wrapLongLines
-      >
-        {children || ""}
-      </SyntaxHighlighter>
-    </div>
+    <CopyToClipboardProvider>
+      {({ setDoCopy }) => (
+        <div
+          className={classNames(
+            "relative p-1",
+            copyToClipboard ? "cursor-pointer" : null,
+            copyToClipboard && showCopyIcon ? "bg-black-scale-1" : null
+          )}
+          onMouseEnter={
+            copyToClipboard
+              ? () => {
+                  setShowCopyIcon(true);
+                }
+              : undefined
+          }
+          onMouseLeave={
+            copyToClipboard
+              ? () => {
+                  setShowCopyIcon(false);
+                }
+              : undefined
+          }
+          onClick={() => setDoCopy(true)}
+        >
+          <SyntaxHighlighter
+            language={language}
+            style={styles}
+            customStyle={{
+              padding: 0,
+              wordBreak: "break-all",
+              background: "transparent",
+              borderRadius: "4px",
+              ...style,
+            }}
+            wrapLongLines
+          >
+            {children || ""}
+          </SyntaxHighlighter>
+          {showCopyIcon && (
+            <div
+              className={classNames(
+                "absolute cursor-pointer z-50 right-1 top-1"
+              )}
+            >
+              <CopyToClipboard data={children} />
+            </div>
+          )}
+        </div>
+      )}
+    </CopyToClipboardProvider>
   );
 };
 

@@ -1,5 +1,4 @@
 import CodeBlock from "../../../CodeBlock";
-import CopyToClipboard from "../../../CopyToClipboard";
 import { PanelDetailProps } from "./index";
 import { useMemo } from "react";
 
@@ -23,12 +22,7 @@ const PanelDetailDefinition = ({ definition }: PanelDetailProps) => {
     return <></>;
   }
 
-  return (
-    <div className="space-y-4">
-      <CopyToClipboard data={formattedDefinition} />
-      <CodeBlock language="hcl">{formattedDefinition}</CodeBlock>
-    </div>
-  );
+  return <CodeBlock language="hcl">{formattedDefinition}</CodeBlock>;
 };
 
 export default PanelDetailDefinition;
