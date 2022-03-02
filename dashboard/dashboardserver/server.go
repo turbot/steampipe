@@ -360,7 +360,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			s.mutex.Lock()
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == changedDashboardName {
-					outputMessage(s.context, fmt.Sprintf("Executing with inputs: %v", dashboardClientInfo.DashboardInputs))
+					// 					outputMessage(s.context, fmt.Sprintf("Dashboard Changed - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
 					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
@@ -381,7 +381,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			s.mutex.Lock()
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == newDashboardName {
-					outputMessage(s.context, fmt.Sprintf("Executing with inputs: %v", dashboardClientInfo.DashboardInputs))
+					// 					outputMessage(s.context, fmt.Sprintf("New Dashboard - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
 					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
@@ -418,7 +418,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			for _, clearedInput := range e.ClearedInputs {
 				delete(sessionInfo.DashboardInputs, clearedInput)
 			}
-			outputMessage(s.context, fmt.Sprintf("Dashboard inputs updated: %v", sessionInfo.DashboardInputs))
+			// 			outputMessage(s.context, fmt.Sprintf("Input Values Cleared - dashboard inputs updated: %v", sessionInfo.DashboardInputs))
 		}
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
@@ -490,7 +490,7 @@ func (s *Server) setDashboardForSession(sessionId string, dashboardName string, 
 	dashboardClientInfo := s.dashboardClients[sessionId]
 	dashboardClientInfo.Dashboard = &dashboardName
 	dashboardClientInfo.DashboardInputs = inputs
-	outputMessage(s.context, fmt.Sprintf("Setting initial inputs: %v", dashboardClientInfo.DashboardInputs))
+	//outputMessage(s.context, fmt.Sprintf("Set Dashboard For Session - initial inputs: %v", dashboardClientInfo.DashboardInputs))
 	s.mutex.Unlock()
 	return dashboardClientInfo
 }
@@ -515,7 +515,7 @@ func (s *Server) setDashboardInputsForSession(sessionId string, inputs map[strin
 	s.mutex.Lock()
 	if sessionInfo, ok := s.dashboardClients[sessionId]; ok {
 		sessionInfo.DashboardInputs = inputs
-		outputMessage(s.context, fmt.Sprintf("Dashboard inputs updated: %v", sessionInfo.DashboardInputs))
+		// 		outputMessage(s.context, fmt.Sprintf("Set Dashboard Inputs For Session: %v", sessionInfo.DashboardInputs))
 	}
 	s.mutex.Unlock()
 }

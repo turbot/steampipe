@@ -149,7 +149,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     } else if (initialisedFromState && !stateValue) {
       setValue(null);
     }
-  }, [initialisedFromState, name, options, stateValue]);
+  }, [initialisedFromState, multi, name, options, stateValue]);
 
   useEffect(() => {
     if (!initialisedFromState) {
@@ -157,119 +157,28 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     }
 
     // @ts-ignore
-    if ((!value || value.length === 0) && stateValue) {
+    if (!value || value.length === 0) {
       dispatch({ type: "delete_dashboard_input", name });
       return;
     }
 
     if (multi) {
-      if (value) {
-        // @ts-ignore
-        const desiredValue = value.map((v) => v.value).join(",");
-        if (stateValue !== desiredValue) {
-          dispatch({
-            type: "set_dashboard_input",
-            name,
-            value: desiredValue,
-          });
-        }
-      }
-    } else {
       // @ts-ignore
-      if (value && stateValue !== value.value) {
-        dispatch({
-          type: "set_dashboard_input",
-          name,
-          // @ts-ignore
-          value: value.value,
-        });
-      }
+      const desiredValue = value.map((v) => v.value).join(",");
+      dispatch({
+        type: "set_dashboard_input",
+        name,
+        value: desiredValue,
+      });
+    } else {
+      dispatch({
+        type: "set_dashboard_input",
+        name,
+        // @ts-ignore
+        value: value.value,
+      });
     }
-  }, [dispatch, initialisedFromState, stateValue, value]);
-
-  // useEffect(() => {
-  //   // If we've already set a value...
-  //   if (initialisedFromState) {
-  //     return;
-  //   }
-  //
-  //   const stateValue = selectedDashboardInputs[name];
-  //
-  //   if (!stateValue) {
-  //     setInitialisedFromState(true);
-  //     return;
-  //   }
-  //
-  //   // If we haven't got the data we need yet...
-  //   if (!options || options.length === 0) {
-  //     return;
-  //   }
-  //
-  //   const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-  //
-  //   const foundOption = multi
-  //     ? options.filter((option) =>
-  //         option.value
-  //           ? parsedUrlValue.indexOf(option.value.toString()) >= 0
-  //           : false
-  //       )
-  //     : options.find((option) =>
-  //         option.value ? option.value.toString() === parsedUrlValue : false
-  //       );
-  //
-  //   if (!foundOption) {
-  //     setInitialisedFromState(true);
-  //     return;
-  //   }
-  //
-  //   setValue(foundOption);
-  //   setInitialisedFromState(true);
-  // }, [name, multi, initialisedFromState, selectedDashboardInputs, options]);
-  //
-  // useEffect(() => {
-  //   if (!initialisedFromState) {
-  //     return;
-  //   }
-  //
-  //   const stateValue = selectedDashboardInputs[name];
-  //
-  //   // @ts-ignore
-  //   if ((!value || value.length === 0) && stateValue) {
-  //     dispatch({ type: "delete_dashboard_input", name });
-  //     return;
-  //   }
-  //
-  //   if (multi) {
-  //     if (value) {
-  //       // @ts-ignore
-  //       const desiredValue = value.map((v) => v.value).join(",");
-  //       if (stateValue !== desiredValue) {
-  //         dispatch({
-  //           type: "set_dashboard_input",
-  //           name,
-  //           value: desiredValue,
-  //         });
-  //       }
-  //     }
-  //   } else {
-  //     // @ts-ignore
-  //     if (value && stateValue !== value.value) {
-  //       dispatch({
-  //         type: "set_dashboard_input",
-  //         name,
-  //         // @ts-ignore
-  //         value: value.value,
-  //       });
-  //     }
-  //   }
-  // }, [
-  //   dispatch,
-  //   name,
-  //   multi,
-  //   initialisedFromState,
-  //   selectedDashboardInputs,
-  //   value,
-  // ]);
+  }, [dispatch, initialisedFromState, multi, name, value]);
 
   const styles = useSelectInputStyles();
 
