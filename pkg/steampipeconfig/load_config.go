@@ -91,6 +91,8 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 	// now set default options on all connections without options set
 	steampipeConfig.setDefaultConnectionOptions()
 
+	steampipeConfig.setDatabaseOptions()
+
 	// now validate the config
 	if err := steampipeConfig.Validate(); err != nil {
 		return nil, err

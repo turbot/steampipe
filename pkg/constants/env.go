@@ -18,6 +18,7 @@ const (
 	EnvCacheEnabled      = "STEAMPIPE_CACHE"
 	EnvCacheTTL          = "STEAMPIPE_CACHE_TTL"
 	EnvCacheMaxSize      = "STEAMPIPE_CACHE_MAX_SIZE_MB"
+	EnvQueryTimeout      = "STEAMPIPE_QUERY_TIMEOUT"
 
 	EnvConnectionWatcher = "STEAMPIPE_CONNECTION_WATCHER"
 	EnvWorkspaceChDir    = "STEAMPIPE_WORKSPACE_CHDIR"

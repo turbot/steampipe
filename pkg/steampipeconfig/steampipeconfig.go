@@ -146,8 +146,32 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	}
 
 	if c.DefaultConnectionOptions.CacheTTL == nil {
-		// if DefaultConnectionOptions.Cache value is NOT set, default it to true
+		// if DefaultConnectionOptions.CacheTTL value is NOT set, default it to true
 		c.DefaultConnectionOptions.CacheTTL = &defaultTTL
+	}
+}
+
+// if default database options have been set, assign them to the database
+func (c *SteampipeConfig) setDatabaseOptions() {
+	if c.DatabaseOptions == nil {
+		c.DatabaseOptions = &options.Database{}
+	}
+
+	// precedence for the default is (high to low):
+	// env var
+	// base default
+
+	// if EnvQueryTimeout is set, overwrite the value in DatabaseOptions
+	if envStr, ok := os.LookupEnv(constants.EnvQueryTimeout); ok {
+		if parsedEnv, err := types.ToInt64(envStr); err == nil {
+			c.DatabaseOptions.QueryTimeout = &parsedEnv
+		}
+	}
+
+	if c.DatabaseOptions.QueryTimeout == nil {
+		// if DatabaseOptions.QueryTimeout value is NOT set, default it to 240
+		var queryTimeout int64 = constants.DatabaseDefaultQueryTimeout
+		c.DatabaseOptions.QueryTimeout = &queryTimeout
 	}
 }
 
