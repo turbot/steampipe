@@ -28,9 +28,6 @@ WORKDIR /workspace
 # disable auto-update
 ENV STEAMPIPE_UPDATE_CHECK=false
 
-# Run --version
-RUN steampipe --version
-
 # Run steampipe service once
 RUN steampipe service start --dashboard
 # and stop it
