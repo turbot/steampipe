@@ -200,11 +200,9 @@ const searchAgainstDashboard = (
   dashboard: AvailableDashboardWithMod,
   searchParts: string[]
 ): boolean => {
-  const joined = `${dashboard.mod?.title || ""} ${
-    dashboard.mod?.short_name || ""
-  } ${dashboard.title || ""} ${dashboard.short_name || ""} ${Object.entries(
-    dashboard.tags || {}
-  )
+  const joined = `${dashboard.mod?.title || dashboard.mod?.short_name || ""} ${
+    dashboard.title || dashboard.short_name || ""
+  } ${Object.entries(dashboard.tags || {})
     .map(([tagKey, tagValue]) => `${tagKey}=${tagValue}`)
     .join(" ")}`.toLowerCase();
   return searchParts.every((searchPart) => joined.indexOf(searchPart) >= 0);
