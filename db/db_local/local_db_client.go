@@ -214,11 +214,11 @@ func (c *LocalDbClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, 
 	}
 }
 
-func (c *LocalDbClient) buildSchemasQuery(schemas []string) string {
-	for idx, s := range schemas {
-		schemas[idx] = fmt.Sprintf("'%s'", s)
+func (c *LocalDbClient) buildSchemasQuery(exemplarSchemas []string) string {
+	for idx, s := range exemplarSchemas {
+		exemplarSchemas[idx] = fmt.Sprintf("'%s'", s)
 	}
-	schemaClause := strings.Join(schemas, ",")
+	schemaClause := strings.Join(exemplarSchemas, ",")
 	query := fmt.Sprintf(`
 SELECT
     table_name,
