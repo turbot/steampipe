@@ -1,5 +1,0 @@
-# pldebugger extension control file
-comment = 'server-side support for debugging PL/pgSQL functions'
-default_version = '1.1'
-module_pathname = '$libdir/pldbgapi'
-relocatable = true

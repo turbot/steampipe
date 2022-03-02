@@ -1,7 +1,0 @@
-# pltclu extension
-comment = 'PL/TclU untrusted procedural language'
-default_version = '1.0'
-module_pathname = '$libdir/pltcl'
-relocatable = false
-schema = pg_catalog
-superuser = true
