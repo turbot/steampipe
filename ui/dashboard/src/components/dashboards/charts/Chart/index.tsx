@@ -130,6 +130,22 @@ const getCommonBaseOptions = () => ({
   },
 });
 
+const getXAxisRotation = (length: number) => {
+  if (length < 5) {
+    return 0;
+  }
+  if (length < 10) {
+    return 30;
+  }
+  if (length < 15) {
+    return 45;
+  }
+  if (length < 20) {
+    return 60;
+  }
+  return 90;
+};
+
 const getCommonBaseOptionsForChartType = (
   type: ChartType | undefined,
   width: Width | undefined,
@@ -245,7 +261,7 @@ const getCommonBaseOptionsForChartType = (
           type: "category",
           axisLabel: {
             color: themeColors.foreground,
-            rotate: dataset.length >= 6 ? 45 : 0,
+            rotate: getXAxisRotation(dataset.length),
             overflow: "truncate",
           },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
