@@ -45,6 +45,10 @@ func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, 
 		return "", nil, err
 	}
 
+	var escapedParamStrs = make([]string, len(paramStrs))
+	for i, p := range paramStrs {
+		escapedParamStrs[i] = pgEscapeParamString(p)
+	}
 	// did we resolve them all?
 	if len(missingParams) > 0 {
 		return "", nil, fmt.Errorf("ResolveAsString failed for %s - failed to resolve value for %d %s: %s",
@@ -60,7 +64,12 @@ func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, 
 	}
 
 	// success!
-	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), paramStrs, nil
+	return fmt.Sprintf("(%s)", strings.Join(escapedParamStrs, ",")), paramStrs, nil
+}
+
+// format a string for use as a postgre param
+func pgEscapeParamString(val string) string {
+	return fmt.Sprintf("'%s'", val)
 }
 
 func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {
