@@ -78,6 +78,15 @@ const MultiValueLabelWithTags = ({ children, ...props }: SingleValueProps) => {
   );
 };
 
+const getValueForState = (multi, option) => {
+  if (multi) {
+    // @ts-ignore
+    return option.map((v) => v.value).join(",");
+  } else {
+    return option.value;
+  }
+};
+
 const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
@@ -144,8 +153,20 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
           );
       setValue(foundOption || null);
       setInitialisedFromState(true);
-    } else if (!initialisedFromState && !stateValue) {
+    } else if (!initialisedFromState && !stateValue && properties.placeholder) {
       setInitialisedFromState(true);
+    } else if (
+      !initialisedFromState &&
+      !stateValue &&
+      !properties.placeholder
+    ) {
+      setInitialisedFromState(true);
+      setValue(options[0]);
+      dispatch({
+        type: "set_dashboard_input",
+        name,
+        value: getValueForState(multi, options[0]),
+      });
     } else if (initialisedFromState && !stateValue) {
       setValue(null);
     }
@@ -162,22 +183,11 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       return;
     }
 
-    if (multi) {
-      // @ts-ignore
-      const desiredValue = value.map((v) => v.value).join(",");
-      dispatch({
-        type: "set_dashboard_input",
-        name,
-        value: desiredValue,
-      });
-    } else {
-      dispatch({
-        type: "set_dashboard_input",
-        name,
-        // @ts-ignore
-        value: value.value,
-      });
-    }
+    dispatch({
+      type: "set_dashboard_input",
+      name,
+      value: getValueForState(multi, value),
+    });
   }, [dispatch, initialisedFromState, multi, name, value]);
 
   const styles = useSelectInputStyles();
@@ -213,7 +223,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         inputId={`${name}.input`}
         isDisabled={!properties.options && !data}
         isLoading={!properties.options && !data}
-        isClearable
+        isClearable={!!properties.placeholder}
         isRtl={false}
         isSearchable
         isMulti={multi}
@@ -223,7 +233,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         onChange={(value) => setValue(value)}
         options={options}
         placeholder={
-          (properties && properties.placeholder) || "Please select..."
+          properties && properties.placeholder ? properties.placeholder : null
         }
         styles={styles}
         value={value}
