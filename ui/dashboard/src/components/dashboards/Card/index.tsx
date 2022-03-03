@@ -242,7 +242,7 @@ const Card = (props: CardProps) => {
           {state.loading && (
             <LoadingIndicator
               className={classNames(
-                "h-8 w-8 mt-2",
+                "h-9 w-9 mt-1",
                 theme.name === ThemeNames.STEAMPIPE_DEFAULT
                   ? "text-black-scale-4"
                   : null
@@ -251,7 +251,7 @@ const Card = (props: CardProps) => {
           )}
           {!state.loading &&
             (state.value === null || state.value === undefined) && (
-              <Icon className="h-10 w-10 -ml-1" icon="heroicons-solid:minus" />
+              <Icon className="h-10 w-10" icon="heroicons-solid:minus" />
             )}
           {state.value !== null &&
             state.value !== undefined &&
