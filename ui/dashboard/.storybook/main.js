@@ -1,3 +1,5 @@
+const { set } = require("lodash");
+
 module.exports = {
   stories: ["../src/**/*.stories.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
   addons: [
@@ -8,5 +10,9 @@ module.exports = {
   ],
   core: {
     builder: "webpack5",
+  },
+  webpackFinal: async (config) => {
+    config = set(config, "resolve.fallback.fs", false);
+    return config;
   },
 };
