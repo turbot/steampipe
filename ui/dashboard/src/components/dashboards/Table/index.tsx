@@ -16,6 +16,7 @@ import {
 } from "../../../constants/icons";
 import { usePanel } from "../../../hooks/usePanel";
 import { useSortBy, useTable } from "react-table";
+import ExternalLink from "../../ExternalLink";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
@@ -133,13 +134,13 @@ const CellValue = ({
   const dataType = column.data_type_name.toLowerCase();
   if (value === null || value === undefined) {
     return href ? (
-      <Link
+      <ExternalLink
         to={href}
         className="link-highlight"
         title={showTitle ? `${column.name}=null` : undefined}
       >
-        null
-      </Link>
+        <>null</>
+      </ExternalLink>
     ) : (
       <span
         className="text-black-scale-3"
@@ -152,13 +153,13 @@ const CellValue = ({
   if (dataType === "bool") {
     // True should be
     return href ? (
-      <Link
+      <ExternalLink
         to={href}
         className="link-highlight"
         title={showTitle ? `${column.name}=${value.toString()}` : undefined}
       >
         {value.toString()}
-      </Link>
+      </ExternalLink>
     ) : (
       <span
         className={classNames(value ? null : "text-foreground-light")}
@@ -171,13 +172,13 @@ const CellValue = ({
   if (dataType === "jsonb" || isObject(value)) {
     const asJsonString = JSON.stringify(value, null, 2);
     return href ? (
-      <Link
+      <ExternalLink
         to={href}
         className="link-highlight"
         title={showTitle ? `${column.name}=${asJsonString}` : undefined}
       >
-        {asJsonString}
-      </Link>
+        <>{asJsonString}</>
+      </ExternalLink>
     ) : (
       <span title={showTitle ? `${column.name}=${asJsonString}` : undefined}>
         {asJsonString}
@@ -187,40 +188,36 @@ const CellValue = ({
   if (dataType === "text") {
     if (value.match("^https?://")) {
       return (
-        <a
-          className="text-link"
-          target="_blank"
-          rel="noopener noreferrer"
-          href={value}
+        <ExternalLink
+          className="link-highlight"
+          to={value}
           title={showTitle ? `${column.name}=${value}` : undefined}
         >
           {value}
-        </a>
+        </ExternalLink>
       );
     }
     const mdMatch = value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
     if (mdMatch) {
       return (
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href={mdMatch[2]}
+        <ExternalLink
+          to={mdMatch[2]}
           title={showTitle ? `${column.name}=${value}` : undefined}
         >
           {mdMatch[1]}
-        </a>
+        </ExternalLink>
       );
     }
   }
   if (dataType === "timestamp" || dataType === "timestamptz") {
     return href ? (
-      <Link
+      <ExternalLink
         to={href}
         className="link-highlight tabular-nums"
         title={showTitle ? `${column.name}=${value}` : undefined}
       >
         {value}
-      </Link>
+      </ExternalLink>
     ) : (
       <span
         className="tabular-nums"
@@ -232,13 +229,13 @@ const CellValue = ({
   }
   if (isNumericCol(dataType)) {
     return href ? (
-      <Link
+      <ExternalLink
         to={href}
         className="link-highlight tabular-nums"
         title={showTitle ? `${column.name}=${value}` : undefined}
       >
         {value}
-      </Link>
+      </ExternalLink>
     ) : (
       <span
         className="tabular-nums"
@@ -250,13 +247,13 @@ const CellValue = ({
   }
   // Fallback is just show it as a string
   return href ? (
-    <Link
+    <ExternalLink
       to={href}
       className="link-highlight"
       title={showTitle ? `${column.name}=${value}` : undefined}
     >
       {value}
-    </Link>
+    </ExternalLink>
   ) : (
     <span title={showTitle ? `${column.name}=${value}` : undefined}>
       {value}
