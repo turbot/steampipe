@@ -14,15 +14,18 @@ import {
 import { useEffect, useMemo } from "react";
 import { usePanel } from "../../../hooks/usePanel";
 import { useSortBy, useTable } from "react-table";
+import { getInterpolatedTemplateValue } from "../../../utils/template";
+import { Link } from "react-router-dom";
 
 type TableColumnWrap = "all" | "none";
 
 interface TableColumnInfo {
   Header: string;
   accessor: string;
+  name: string;
   data_type_name: string;
   wrap: TableColumnWrap;
-  href?: string;
+  href_template?: string;
 }
 
 const getColumns = (
@@ -53,11 +56,12 @@ const getColumns = (
     const colInfo: TableColumnInfo = {
       Header: col.name,
       accessor: col.name,
+      name: col.name,
       data_type_name: col.data_type_name,
       wrap: colWrap,
     };
     if (colHref) {
-      colInfo.href = colHref;
+      colInfo.href_template = colHref;
     }
     return colInfo;
   });
@@ -81,15 +85,27 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
   });
 };
 
+interface TableRow {
+  [key: string]: any;
+}
+
 interface CellValueProps {
-  column?: LeafNodeDataColumn;
+  column: TableColumnInfo;
+  row?: TableRow;
   value: any;
   showTitle?: boolean;
 }
 
-const CellValue = ({ column, value, showTitle = false }: CellValueProps) => {
-  if (!column) {
-    return <>null</>;
+const CellValue = ({
+  column,
+  row,
+  value,
+  showTitle = false,
+}: CellValueProps) => {
+  // Calculate a link for this cell
+  let href: string | null = null;
+  if (column.href_template) {
+    href = getInterpolatedTemplateValue(column.href_template, { row });
   }
 
   const dataType = column.data_type_name.toLowerCase();
@@ -157,7 +173,11 @@ const CellValue = ({ column, value, showTitle = false }: CellValueProps) => {
     return <span className="tabular-nums">{value}</span>;
   }
   // Fallback is just show it as a string
-  return (
+  return href ? (
+    <Link to={href} className="link-highlight">
+      {value}
+    </Link>
+  ) : (
     <span title={showTitle ? `${column.name}=${value}` : undefined}>
       {value}
     </span>
@@ -273,7 +293,11 @@ const TableView = (props: TableProps) => {
                         : "whitespace-nowrap"
                     )}
                   >
-                    <CellValue column={cell.column} value={cell.value} />
+                    <CellValue
+                      column={cell.column}
+                      row={row.values}
+                      value={cell.value}
+                    />
                   </td>
                 ))}
               </tr>
@@ -296,6 +320,8 @@ const LineView = (props: TableProps) => {
     return null;
   }
 
+  // TODO don't show hidden columns
+
   return (
     <div className="space-y-4">
       {props.data.rows.map((row, rowIndex) => {
@@ -309,7 +335,11 @@ const LineView = (props: TableProps) => {
                     {col?.name}
                   </span>
                   <span className="block truncate">
-                    <CellValue column={col} value={cellValue} showTitle />
+                    <CellValue
+                      column={col as TableColumnInfo}
+                      value={cellValue}
+                      showTitle
+                    />
                   </span>
                 </div>
               );

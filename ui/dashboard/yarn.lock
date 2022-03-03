@@ -11227,6 +11227,11 @@ jest@^27.4.3:
     import-local "^3.0.2"
     jest-cli "^27.4.5"
 
+jq-web@0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/jq-web/-/jq-web-0.5.1.tgz#4456cd3be4c2688c43f287b1fec2e3ea29e427e3"
+  integrity sha512-3Fa3E6g3U1O1j46ljy0EM10yRr4txzILga8J7bqOG8F89gZ6Lilz82WG9z6TItWpYEO0YGa4W8yFGj+NMM1xqQ==
+
 js-string-escape@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/js-string-escape/-/js-string-escape-1.0.1.tgz"
