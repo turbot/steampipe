@@ -192,9 +192,11 @@ const TableView = (props: TableProps) => {
       { columns, data: rowData, initialState: { hiddenColumns } },
       useSortBy
     );
+
   useEffect(() => {
     setZoomIconClassName("bg-background left-1 top-3");
   }, [setZoomIconClassName]);
+
   return props.data ? (
     <>
       <table
@@ -247,25 +249,22 @@ const TableView = (props: TableProps) => {
             prepareRow(row);
             return (
               <tr {...row.getRowProps()}>
-                {row.cells.map((cell, index) => {
-                  const colInfo = props.data?.columns[index];
-                  return (
-                    <td
-                      {...cell.getCellProps()}
-                      className={classNames(
-                        "px-4 py-4 align-top content-center text-sm",
-                        isNumericCol(colInfo?.data_type_name)
-                          ? "text-right"
-                          : "",
-                        cell.column.wrap === "all"
-                          ? "break-all"
-                          : "whitespace-nowrap"
-                      )}
-                    >
-                      <CellValue column={colInfo} value={cell.value} />
-                    </td>
-                  );
-                })}
+                {row.cells.map((cell) => (
+                  <td
+                    {...cell.getCellProps()}
+                    className={classNames(
+                      "px-4 py-4 align-top content-center text-sm",
+                      isNumericCol(cell.column.data_type_name)
+                        ? "text-right"
+                        : "",
+                      cell.column.wrap === "all"
+                        ? "break-all"
+                        : "whitespace-nowrap"
+                    )}
+                  >
+                    <CellValue column={cell.column} value={cell.value} />
+                  </td>
+                ))}
               </tr>
             );
           })}
