@@ -5,6 +5,8 @@ import (
 	"log"
 	"strings"
 
+	typehelpers "github.com/turbot/go-kit/types"
+
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
@@ -60,14 +62,18 @@ func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string 
 }
 
 // return the SQLs to run the query as a prepared statement
-func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, runtimeArgs *QueryArgs) (string, error) {
-	paramsString, err := ResolveArgsAsString(queryProvider, runtimeArgs)
+func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+	argsString, argsArray, err := ResolveArgsAsString(queryProvider, runtimeArgs)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
+		return nil, fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
 	}
-	executeString := fmt.Sprintf("execute %s%s", queryProvider.GetPreparedStatementName(), paramsString)
+	executeString := fmt.Sprintf("execute %s%s", queryProvider.GetPreparedStatementName(), argsString)
 	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", queryProvider.Name(), executeString, runtimeArgs)
-	return executeString, nil
+	return &ResolvedQuery{
+		ExecuteSQL: executeString,
+		RawSQL:     typehelpers.SafeString(queryProvider.GetSQL()),
+		Args:       argsArray,
+	}, nil
 }
 
 func (b *QueryProviderBase) AddRuntimeDependencies(dependencies []*RuntimeDependency) {

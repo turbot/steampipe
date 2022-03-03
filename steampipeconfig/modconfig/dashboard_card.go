@@ -33,7 +33,7 @@ type DashboardCard struct {
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"json:"-"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 
 	Base       *DashboardCard       `hcl:"base" json:"-"`
@@ -231,7 +231,7 @@ func (c *DashboardCard) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (c *DashboardCard) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
+func (c *DashboardCard) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return c.getPreparedStatementExecuteSQL(c, runtimeArgs)
 }

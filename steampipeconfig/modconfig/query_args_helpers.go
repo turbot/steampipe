@@ -28,7 +28,7 @@ func MergeArgs(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*QueryArgs,
 // falling back on defaults from param definitions in the source (if present)
 // it returns the arg values as a csv string which can be used in a prepared statement invocation
 // (the arg values and param defaults will already have been converted to postgres format)
-func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, error) {
+func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, []string, error) {
 	var paramStrs, missingParams []string
 	var err error
 	// validate args
@@ -42,12 +42,12 @@ func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, 
 		paramStrs, missingParams, err = resolvePositionalParameters(source, runtimeArgs)
 	}
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// did we resolve them all?
 	if len(missingParams) > 0 {
-		return "", fmt.Errorf("ResolveAsString failed for %s - failed to resolve value for %d %s: %s",
+		return "", nil, fmt.Errorf("ResolveAsString failed for %s - failed to resolve value for %d %s: %s",
 			source.Name(),
 			len(missingParams),
 			utils.Pluralize("parameter", len(missingParams)),
@@ -56,11 +56,11 @@ func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, 
 
 	// are there any params?
 	if len(paramStrs) == 0 {
-		return "", nil
+		return "", nil, nil
 	}
 
 	// success!
-	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), nil
+	return fmt.Sprintf("(%s)", strings.Join(paramStrs, ",")), paramStrs, nil
 }
 
 func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argStrs []string, missingParams []string, err error) {

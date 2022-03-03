@@ -14,9 +14,11 @@ import (
 type LeafRun struct {
 	Name string `json:"name"`
 
-	Title               string                      `json:"title,omitempty"`
-	Width               int                         `json:"width,omitempty"`
-	SQL                 string                      `json:"sql,omitempty"`
+	Title               string `json:"title,omitempty"`
+	Width               int    `json:"width,omitempty"`
+	executeSQL          string
+	RawSQL              string                      `json:"sql,omitempty"`
+	Args                []string                    `json:"args,omitempty"`
 	Data                *LeafData                   `json:"data,omitempty"`
 	Error               error                       `json:"error,omitempty"`
 	DashboardNode       modconfig.DashboardLeafNode `json:"properties"`
@@ -111,7 +113,7 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 
 	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
 
-	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.SQL)
+	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
 	if err != nil {
 		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
 		// set the error status on the counter - this will raise counter error event
@@ -199,10 +201,15 @@ func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	return nil
 }
 
+// resolve the sql for this leaf run into the source sql (i.e. NOT the prepared statement name) and resolved args
 func (r *LeafRun) resolveSQL() error {
 	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
 	if !queryProvider.RequiresExecution(queryProvider) {
 		return nil
+	}
+	err := queryProvider.VerifyQuery(queryProvider)
+	if err != nil {
+		return err
 	}
 
 	// convert runtime dependencies into arg map
@@ -210,11 +217,12 @@ func (r *LeafRun) resolveSQL() error {
 	if err != nil {
 		return err
 	}
-	sql, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
-	if err != nil {
-		return err
-	}
-	r.SQL = sql
+
+	resolvedQuery, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
+
+	r.RawSQL = resolvedQuery.RawSQL
+	r.executeSQL = resolvedQuery.ExecuteSQL
+	r.Args = resolvedQuery.Args
 	return nil
 }
 

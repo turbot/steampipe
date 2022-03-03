@@ -55,6 +55,8 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 		return fmt.Errorf("no dashboard running for session %s", sessionId)
 	}
 
+	// get the previous value oif this input
+	inputPrevValue := executionTree.inputValues[changedInput]
 	// first see if any other inputs rely on the one which was just changed
 	clearedInputs := e.clearDependentInputs(executionTree.Root, changedInput, inputs)
 	if len(clearedInputs) > 0 {
@@ -66,7 +68,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	}
 	// oif there are any dependent inputs, set their value to nil and send an event to the UI
 	// if the dashboard run is complete, just re-execute
-	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
+	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete || inputPrevValue != nil {
 		return e.ExecuteDashboard(
 			ctx,
 			sessionId,

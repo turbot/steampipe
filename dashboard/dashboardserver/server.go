@@ -494,6 +494,7 @@ func (s *Server) setDashboardForSession(sessionId string, dashboardName string, 
 	s.mutex.Unlock()
 	return dashboardClientInfo
 }
+
 func (s *Server) clearSession(ctx context.Context, session *melody.Session) {
 	s.mutex.Lock()
 	sessionId := s.getSessionId(session)
