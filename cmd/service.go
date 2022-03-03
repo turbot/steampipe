@@ -209,6 +209,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	dashboardState, err := startDashboardServer(ctx)
 	if err != nil {
 		db_local.StopServices(ctx, false, constants.InvokerService)
+		utils.ShowError(ctx, err)
 		return
 	}
 
