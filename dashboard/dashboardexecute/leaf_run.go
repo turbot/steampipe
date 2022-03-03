@@ -18,7 +18,7 @@ type LeafRun struct {
 	Width               int    `json:"width,omitempty"`
 	executeSQL          string
 	RawSQL              string                      `json:"sql,omitempty"`
-	Args                string                      `json:"arg,omitempty"`
+	Args                []string                    `json:"arg,omitempty"`
 	Data                *LeafData                   `json:"data,omitempty"`
 	Error               error                       `json:"error,omitempty"`
 	DashboardNode       modconfig.DashboardLeafNode `json:"properties"`

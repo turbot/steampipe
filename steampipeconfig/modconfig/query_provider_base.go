@@ -63,7 +63,7 @@ func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string 
 
 // return the SQLs to run the query as a prepared statement
 func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	argsString, err := ResolveArgsAsString(queryProvider, runtimeArgs)
+	argsString, argsArray, err := ResolveArgsAsString(queryProvider, runtimeArgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
 	}
@@ -72,7 +72,7 @@ func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryPr
 	return &ResolvedQuery{
 		ExecuteSQL: executeString,
 		RawSQL:     typehelpers.SafeString(queryProvider.GetSQL()),
-		Args:       argsString,
+		Args:       argsArray,
 	}, nil
 }
 

@@ -4,5 +4,5 @@ package modconfig
 type ResolvedQuery struct {
 	ExecuteSQL string
 	RawSQL     string
-	Args       string
+	Args       []string
 }

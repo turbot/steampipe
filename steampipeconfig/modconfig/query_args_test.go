@@ -307,7 +307,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 func TestResolveAsString(t *testing.T) {
 	for name, test := range testCasesResolveParams {
 		query := &Control{FullName: "control.test_control", Params: test.paramDefs, Args: test.baseArgs}
-		res, err := ResolveArgsAsString(query, test.runtimeArgs)
+		res, _, err := ResolveArgsAsString(query, test.runtimeArgs)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED : \nunexpected error %v", name, err)
