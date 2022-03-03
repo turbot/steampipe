@@ -362,10 +362,7 @@ function reducer(state, action) {
   }
 }
 
-const initialiseInputs = (
-  initialState: IDashboardContext,
-  searchParams: URLSearchParams
-) => {
+const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   const selectedDashboardInputs = {};
   // @ts-ignore
   for (const entry of searchParams.entries()) {
@@ -374,11 +371,17 @@ const initialiseInputs = (
     }
     selectedDashboardInputs[entry[0]] = entry[1];
   }
-  return {
-    ...initialState,
-    selectedDashboardInputs,
-  };
+  return selectedDashboardInputs;
 };
+
+const initialiseInputs = (
+  initialState: IDashboardContext,
+  searchParams: URLSearchParams
+) => ({
+  ...initialState,
+  selectedDashboardInputs:
+    buildSelectedDashboardInputsFromSearchParams(searchParams),
+});
 
 const DashboardProvider = ({ children }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -495,18 +498,15 @@ const DashboardProvider = ({ children }) => {
       state.selectedDashboard &&
       dashboardName !== state.selectedDashboard.full_name
     ) {
-      dispatch({ type: "clear_dashboard_inputs" });
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboardName
       );
       dispatch({ type: "select_dashboard", dashboard });
+      const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
+      console.log("Reinitialising dashboard inputs", value);
+      dispatch({ type: "set_dashboard_inputs", value });
     }
-  }, [
-    dashboardName,
-    state.dashboards,
-    state.selectedDashboard,
-    state.selectedDashboardInputs,
-  ]);
+  }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
 
   // Keep track of the previous selected dashboard and inputs
   const previousSelectedDashboardStates: SelectedDashboardStates | undefined =

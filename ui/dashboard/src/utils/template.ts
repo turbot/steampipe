@@ -35,7 +35,7 @@ const getInterpolatedTemplateValue = async (
       // });
     }
   } catch (err) {
-    console.log(err);
+    console.log("Error rendering column template", err);
     return null;
   }
 
