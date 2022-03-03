@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/turbot/steampipe/statushooks"
+	"github.com/turbot/steampipe/workspace"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -55,6 +57,13 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		logging.LogTime("runDashboardCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(dashboardCtx, helpers.ToError(r))
+			if viper.GetBool(constants.ArgServiceMode) {
+				state := &dashboardserver.DashboardServiceState{
+					State: dashboardserver.ServiceStateError,
+					Error: helpers.ToError(r).Error(),
+				}
+				dashboardserver.WriteServiceStateFile(state)
+			}
 		}
 	}()
 
@@ -83,7 +92,22 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	server.Start()
 
-	if !viper.GetBool(constants.ArgServiceMode) {
+	if viper.GetBool(constants.ArgServiceMode) {
+		state := &dashboardserver.DashboardServiceState{
+			State:      dashboardserver.ServiceStateRunning,
+			Error:      "",
+			Pid:        os.Getpid(),
+			Port:       int(serverPort),
+			ListenType: string(serverListen),
+			Listen:     constants.DatabaseListenAddresses,
+		}
+
+		if serverListen == dashboardserver.ListenTypeNetwork {
+			addrs, _ := utils.LocalAddresses()
+			state.Listen = append(state.Listen, addrs...)
+		}
+		utils.FailOnError(dashboardserver.WriteServiceStateFile(state))
+	} else {
 		err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort))
 		if err != nil {
 			log.Println("[TRACE] dashboard server started but failed to start client", err)
@@ -97,6 +121,9 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 }
 
 func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) bool {
+	if initData.Result.Error == workspace.ErrorNoModDefinition {
+		exitCode = constants.EC_NoModFile
+	}
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures
 	utils.FailOnError(initData.Result.Error)
