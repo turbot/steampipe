@@ -1,3 +1,4 @@
+// import * as AsBind from "as-bind";
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
 import usePrevious from "./usePrevious";
@@ -397,6 +398,23 @@ const DashboardProvider = ({ children }) => {
   const { dashboardName } = useParams();
   const navigate = useNavigate();
   const webSocket = useRef<WebSocket | null>(null);
+
+  // useEffect(() => {
+  //   const loadJqWasm = async () => {
+  //     // @ts-ignore
+  //     const jq = await fetch("../jq.wasm.wasm");
+  //     // @ts-ignore
+  //     const instance = await AsBind.instantiate(jq, {});
+  //     console.log(jq);
+  //     console.log(instance);
+  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
+  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
+  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
+  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
+  //     // jq.json
+  //   };
+  //   loadJqWasm();
+  // }, []);
 
   const onSocketError = (evt: any) => {
     console.error(evt);

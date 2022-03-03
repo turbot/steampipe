@@ -12,10 +12,10 @@
     "build-storybook": "build-storybook -s public"
   },
   "dependencies": {
-    "@cassiozen/usestatemachine": "1.0.1",
     "@headlessui/react": "1.5.0",
     "@heroicons/react": "1.0.6",
     "@supabase/sql-formatter": "4.0.3",
+    "as-bind": "0.8.2",
     "color-convert": "2.0.1",
     "copy-to-clipboard": "3.3.1",
     "deepdash": "5.3.9",
@@ -74,6 +74,7 @@
     "storybook-dark-mode": "1.0.9",
     "tailwindcss": "3.0.23",
     "typescript": "4.5.5",
+    "wasm-loader": "1.3.0",
     "webpack": "5.69.1"
   },
   "eslintConfig": {

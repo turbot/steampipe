@@ -6,16 +6,16 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
+import { getInterpolatedTemplateValue } from "../../../utils/template";
 import { isObject } from "lodash";
+import { Link } from "react-router-dom";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
-import { useEffect, useMemo } from "react";
 import { usePanel } from "../../../hooks/usePanel";
 import { useSortBy, useTable } from "react-table";
-import { getInterpolatedTemplateValue } from "../../../utils/template";
-import { Link } from "react-router-dom";
 
 type TableColumnWrap = "all" | "none";
 
@@ -102,10 +102,30 @@ const CellValue = ({
   value,
   showTitle = false,
 }: CellValueProps) => {
+  const [href, setHref] = useState<string | null>(null);
+  const [rendered, setRendered] = useState(false);
+
   // Calculate a link for this cell
-  let href: string | null = null;
-  if (column.href_template) {
-    href = getInterpolatedTemplateValue(column.href_template, { row });
+  useEffect(() => {
+    const render = async () => {
+      const renderedVal = await getInterpolatedTemplateValue(
+        column.href_template,
+        { row }
+      );
+      // console.log(renderedVal);
+      setHref(renderedVal);
+      setRendered(true);
+    };
+
+    if (column.href_template) {
+      render();
+    } else {
+      setRendered(true);
+    }
+  }, [column, row]);
+
+  if (!rendered) {
+    return null;
   }
 
   const dataType = column.data_type_name.toLowerCase();
@@ -183,6 +203,8 @@ const CellValue = ({
     </span>
   );
 };
+
+const MemoCellValue = memo(CellValue);
 
 interface TableColumnOptions {
   display?: string;
@@ -293,7 +315,7 @@ const TableView = (props: TableProps) => {
                         : "whitespace-nowrap"
                     )}
                   >
-                    <CellValue
+                    <MemoCellValue
                       column={cell.column}
                       row={row.values}
                       value={cell.value}
