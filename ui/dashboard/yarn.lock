@@ -2531,11 +2531,6 @@
   resolved "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@cassiozen/usestatemachine@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.npmjs.org/@cassiozen/usestatemachine/-/usestatemachine-1.0.1.tgz"
-  integrity sha512-KWik9Kj+h/Cle/8/4LTF6cWcUslrS3Us9du3JlyneMduiGYx5ZxkdkA+YOS1NxlyMp7Lztb+1cChiTOSh3AntQ==
-
 "@cnakazawa/watch@^1.0.3":
   version "1.0.4"
   resolved "https://registry.npmjs.org/@cnakazawa/watch/-/watch-1.0.4.tgz"
@@ -11226,6 +11221,11 @@ jest@^27.4.3:
     "@jest/core" "^27.4.5"
     import-local "^3.0.2"
     jest-cli "^27.4.5"
+
+jq-web@0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/jq-web/-/jq-web-0.5.1.tgz#4456cd3be4c2688c43f287b1fec2e3ea29e427e3"
+  integrity sha512-3Fa3E6g3U1O1j46ljy0EM10yRr4txzILga8J7bqOG8F89gZ6Lilz82WG9z6TItWpYEO0YGa4W8yFGj+NMM1xqQ==
 
 js-string-escape@^1.0.1:
   version "1.0.1"

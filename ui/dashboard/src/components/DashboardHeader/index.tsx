@@ -16,24 +16,24 @@ const DashboardHeader = () => (
     <div className="w-full space-x-4 md:space-x-8 flex items-center justify-end">
       <ExternalLink
         className="text-base text-foreground-lighter hover:text-foreground"
+        to="https://steampipe.io/docs"
         withReferrer={true}
-        url="https://steampipe.io/docs"
       >
-        Docs
+        <>Docs</>
       </ExternalLink>
       <ExternalLink
         className="text-base text-foreground-lighter hover:text-foreground"
+        to="https://hub.steampipe.io/plugins"
         withReferrer={true}
-        url="https://hub.steampipe.io/plugins"
       >
-        Plugins
+        <>Plugins</>
       </ExternalLink>
       <ExternalLink
         className="text-base text-foreground-lighter hover:text-foreground"
+        to="https://hub.steampipe.io/mods"
         withReferrer={true}
-        url="https://hub.steampipe.io/mods"
       >
-        Mods
+        <>Mods</>
       </ExternalLink>
       <ThemeToggle />
     </div>

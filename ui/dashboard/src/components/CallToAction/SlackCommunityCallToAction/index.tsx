@@ -23,10 +23,10 @@ const SlackCommunityCallToAction = () => (
     action={
       <ExternalLink
         className="link-highlight"
-        url="https://steampipe.slack.com/archives/C02NMCM2QKE"
+        to="https://steampipe.slack.com/archives/C02NMCM2QKE"
         withReferrer={true}
       >
-        Let us know in #cloud on Slack!
+        <>Let us know in #cloud on Slack!</>
       </ExternalLink>
     }
   />

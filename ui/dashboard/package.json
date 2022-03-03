@@ -12,7 +12,6 @@
     "build-storybook": "build-storybook -s public"
   },
   "dependencies": {
-    "@cassiozen/usestatemachine": "1.0.1",
     "@headlessui/react": "1.5.0",
     "@heroicons/react": "1.0.6",
     "@supabase/sql-formatter": "4.0.3",
@@ -23,6 +22,7 @@
     "echarts-for-react": "3.0.2",
     "echarts-gl": "2.0.9",
     "file-saver": "2.0.5",
+    "jq-web": "0.5.1",
     "lodash": "4.17.21",
     "moment": "2.29.1",
     "react": "17.0.2",
