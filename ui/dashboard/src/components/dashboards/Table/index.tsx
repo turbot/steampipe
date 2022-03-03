@@ -20,7 +20,9 @@ type TableColumnWrap = "all" | "none";
 interface TableColumnInfo {
   Header: string;
   accessor: string;
-  wrap?: TableColumnWrap;
+  data_type_name: string;
+  wrap: TableColumnWrap;
+  href?: string;
 }
 
 const getColumns = (
@@ -33,6 +35,7 @@ const getColumns = (
 
   const hiddenColumns: string[] = [];
   const columns: TableColumnInfo[] = cols.map((col) => {
+    let colHref: string | null = null;
     let colWrap: TableColumnWrap = "none";
     if (properties && properties.columns && properties.columns[col.name]) {
       const c = properties.columns[col.name];
@@ -42,14 +45,21 @@ const getColumns = (
       if (c.wrap) {
         colWrap = c.wrap as TableColumnWrap;
       }
+      if (c.href) {
+        colHref = c.href;
+      }
     }
 
-    return {
+    const colInfo: TableColumnInfo = {
       Header: col.name,
       accessor: col.name,
       data_type_name: col.data_type_name,
       wrap: colWrap,
     };
+    if (colHref) {
+      colInfo.href = colHref;
+    }
+    return colInfo;
   });
   return { columns, hiddenColumns };
 };
@@ -156,6 +166,7 @@ const CellValue = ({ column, value, showTitle = false }: CellValueProps) => {
 
 interface TableColumnOptions {
   display?: string;
+  href?: string;
   wrap?: string;
 }
 
