@@ -132,7 +132,15 @@ const CellValue = ({
 
   const dataType = column.data_type_name.toLowerCase();
   if (value === null || value === undefined) {
-    return (
+    return href ? (
+      <Link
+        to={href}
+        className="link-highlight"
+        title={showTitle ? `${column.name}=null` : undefined}
+      >
+        null
+      </Link>
+    ) : (
       <span
         className="text-black-scale-3"
         title={showTitle ? `${column.name}=null` : undefined}
@@ -143,7 +151,15 @@ const CellValue = ({
   }
   if (dataType === "bool") {
     // True should be
-    return (
+    return href ? (
+      <Link
+        to={href}
+        className="link-highlight"
+        title={showTitle ? `${column.name}=${value.toString()}` : undefined}
+      >
+        {value.toString()}
+      </Link>
+    ) : (
       <span
         className={classNames(value ? null : "text-foreground-light")}
         title={showTitle ? `${column.name}=${value.toString()}` : undefined}
@@ -154,7 +170,15 @@ const CellValue = ({
   }
   if (dataType === "jsonb" || isObject(value)) {
     const asJsonString = JSON.stringify(value, null, 2);
-    return (
+    return href ? (
+      <Link
+        to={href}
+        className="link-highlight"
+        title={showTitle ? `${column.name}=${asJsonString}` : undefined}
+      >
+        {asJsonString}
+      </Link>
+    ) : (
       <span title={showTitle ? `${column.name}=${asJsonString}` : undefined}>
         {asJsonString}
       </span>
@@ -189,14 +213,48 @@ const CellValue = ({
     }
   }
   if (dataType === "timestamp" || dataType === "timestamptz") {
-    return <span className="tabular-nums">{value}</span>;
+    return href ? (
+      <Link
+        to={href}
+        className="link-highlight tabular-nums"
+        title={showTitle ? `${column.name}=${value}` : undefined}
+      >
+        {value}
+      </Link>
+    ) : (
+      <span
+        className="tabular-nums"
+        title={showTitle ? `${column.name}=${value}` : undefined}
+      >
+        {value}
+      </span>
+    );
   }
   if (isNumericCol(dataType)) {
-    return <span className="tabular-nums">{value}</span>;
+    return href ? (
+      <Link
+        to={href}
+        className="link-highlight tabular-nums"
+        title={showTitle ? `${column.name}=${value}` : undefined}
+      >
+        {value}
+      </Link>
+    ) : (
+      <span
+        className="tabular-nums"
+        title={showTitle ? `${column.name}=${value}` : undefined}
+      >
+        {value}
+      </span>
+    );
   }
   // Fallback is just show it as a string
   return href ? (
-    <Link to={href} className="link-highlight">
+    <Link
+      to={href}
+      className="link-highlight"
+      title={showTitle ? `${column.name}=${value}` : undefined}
+    >
       {value}
     </Link>
   ) : (
