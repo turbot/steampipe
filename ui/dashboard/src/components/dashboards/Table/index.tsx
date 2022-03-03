@@ -121,6 +121,7 @@ const CellValue = ({
     if (column.href_template) {
       render();
     } else {
+      setHref(null);
       setRendered(true);
     }
   }, [column, row]);
