@@ -228,7 +228,7 @@ func (i *DashboardImage) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (i *DashboardImage) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
+func (i *DashboardImage) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return i.getPreparedStatementExecuteSQL(i, runtimeArgs)
 }

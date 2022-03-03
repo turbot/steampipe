@@ -280,7 +280,7 @@ func (i *DashboardInput) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (i *DashboardInput) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
+func (i *DashboardInput) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return i.getPreparedStatementExecuteSQL(i, runtimeArgs)
 }

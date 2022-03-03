@@ -239,7 +239,7 @@ func (t *DashboardTable) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (t *DashboardTable) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
+func (t *DashboardTable) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return t.getPreparedStatementExecuteSQL(t, runtimeArgs)
 }

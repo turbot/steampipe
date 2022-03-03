@@ -270,7 +270,7 @@ func (c *DashboardChart) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (c *DashboardChart) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
+func (c *DashboardChart) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return c.getPreparedStatementExecuteSQL(c, runtimeArgs)
 }

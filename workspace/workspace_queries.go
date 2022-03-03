@@ -63,21 +63,21 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 
 		// copy control SQL into query and continue resolution
 		var err error
-		sqlString, err = w.ResolveQueryFromQueryProvider(control, args)
+		resolvedQuery, err := w.ResolveQueryFromQueryProvider(control, args)
 		if err != nil {
 			return "", nil, err
 		}
 		log.Printf("[TRACE] resolved control query: %s", sqlString)
-		return sqlString, control, nil
+		return resolvedQuery.ExecuteSQL, control, nil
 	}
 
 	// 2) is this a named query
 	if namedQuery, ok := w.GetQuery(sqlString); ok {
-		sql, err := w.ResolveQueryFromQueryProvider(namedQuery, args)
+		resolvedQuery, err := w.ResolveQueryFromQueryProvider(namedQuery, args)
 		if err != nil {
 			return "", nil, err
 		}
-		return sql, namedQuery, nil
+		return resolvedQuery.ExecuteSQL, namedQuery, nil
 	}
 
 	// 	3) is this a file
@@ -103,13 +103,13 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 }
 
 // ResolveQueryFromQueryProvider resolves the query for the given QueryProvider
-func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryProvider, runtimeArgs *modconfig.QueryArgs) (string, error) {
+func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryProvider, runtimeArgs *modconfig.QueryArgs) (*modconfig.ResolvedQuery, error) {
 	log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
 
 	// verify the resource has qa query or sql, if required
 	err := queryProvider.VerifyQuery(queryProvider)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	query := queryProvider.GetQuery()
@@ -119,7 +119,7 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 	// merge the base args with the runtime args
 	runtimeArgs, err = modconfig.MergeArgs(queryProvider, runtimeArgs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// determine the source for the query
@@ -136,26 +136,27 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 		queryProviderSQL := typehelpers.SafeString(sql)
 		log.Printf("[TRACE] control defines inline SQL")
 
-		// if the control SQL refers to a named query, this is the same as if the control 'Query' property is set
+		// if the SQL refers to a named query, this is the same as if the 'Query' property is set
 		if namedQuery, ok := w.GetQuery(queryProviderSQL); ok {
-			// in this case, it is NOT valid for the control to define its own Param definitions
+			// in this case, it is NOT valid for the query provider to define its own Param definitions
 			if params != nil {
-				return "", fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQuery.FullName)
+				return nil, fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQuery.FullName)
 			}
 			return w.ResolveQueryFromQueryProvider(namedQuery, runtimeArgs)
 		}
 
-		// so the control sql is NOT a named query
+		// so the  sql is NOT a named query
 
 		// determine whether there are any params - there may either be param defs, OR positional args
 		// if there are NO params OR list args, use the control SQL as is
 		if !modconfig.QueryProviderIsParameterised(queryProvider) {
-			return queryProviderSQL, nil
+			return &modconfig.ResolvedQuery{ExecuteSQL: queryProviderSQL, RawSQL: queryProviderSQL}, nil
 		}
 	}
 
 	// so the control defines SQL and has params - it is a prepared statement
 	return queryProvider.GetPreparedStatementExecuteSQL(runtimeArgs)
+
 }
 
 func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {

@@ -315,7 +315,7 @@ func (c *Control) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (c *Control) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (string, error) {
+func (c *Control) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return c.getPreparedStatementExecuteSQL(c, runtimeArgs)
 }
