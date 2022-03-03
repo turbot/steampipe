@@ -17,6 +17,7 @@ import {
 import { usePanel } from "../../../hooks/usePanel";
 import { useSortBy, useTable } from "react-table";
 
+type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
 
 interface TableColumnInfo {
@@ -207,9 +208,9 @@ const CellValue = ({
 const MemoCellValue = memo(CellValue);
 
 interface TableColumnOptions {
-  display?: string;
+  display?: TableColumnDisplay;
   href?: string;
-  wrap?: string;
+  wrap?: TableColumnWrap;
 }
 
 type TableColumns = {
@@ -342,23 +343,47 @@ const LineView = (props: TableProps) => {
     return null;
   }
 
-  // TODO don't show hidden columns
-
   return (
     <div className="space-y-4">
       {props.data.rows.map((row, rowIndex) => {
+        const rowObj = {};
+        (props.data?.columns || []).forEach((col, index) => {
+          rowObj[col.name] = row[index];
+        });
         return (
           <div key={rowIndex} className="space-y-2">
             {row.map((cellValue, columnIndex) => {
               const col = props.data?.columns[columnIndex];
+              if (!col) {
+                return null;
+              }
+              const columnOverrides =
+                props.properties?.columns && props.properties.columns[col.name];
+              if (columnOverrides?.display === "none") {
+                return null;
+              }
+              const newColDef: TableColumnInfo = {
+                ...col,
+                Header: col.name,
+                accessor: col.name,
+                wrap: columnOverrides?.wrap ? columnOverrides.wrap : "none",
+                href_template: columnOverrides?.href,
+              };
+
               return (
                 <div key={`${col?.name}-${rowIndex}`}>
                   <span className="block text-sm text-table-head truncate">
                     {col?.name}
                   </span>
-                  <span className="block truncate">
-                    <CellValue
-                      column={col as TableColumnInfo}
+                  <span
+                    className={classNames(
+                      "block",
+                      newColDef.wrap === "all" ? "break-words" : "truncate"
+                    )}
+                  >
+                    <MemoCellValue
+                      column={newColDef}
+                      row={rowObj}
                       value={cellValue}
                       showTitle
                     />
