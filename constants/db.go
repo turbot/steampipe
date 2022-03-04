@@ -35,7 +35,7 @@ const (
 	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is
 	// on a newer build, we can delete the old image move the 12.1.0 tag to the new image, and
 	// change this back for consistency
-	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
+	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:" + DatabaseVersion
 	FdwImageRef      = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
 
