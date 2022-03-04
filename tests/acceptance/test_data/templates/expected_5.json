@@ -1,5 +1,8 @@
 [
  {
+  "_ctx": {
+   "connection_name": "chaos"
+  },
   "hydrate_column_1": "hydrate1-0",
   "hydrate_column_2": "hydrate2-0-hydrate1-0",
   "hydrate_column_3": "hydrate3-0-hydrate2-0-hydrate1-0",
