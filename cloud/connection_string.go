@@ -17,12 +17,11 @@ const actorAPI = "/api/v1/actor"
 const actorWorkspacesAPI = "/api/v1/actor/workspace"
 const passwordAPIFormat = "/api/v1/user/%s/password"
 
-func GetConnectionString(workspaceDatabaseString, token string) (string, *steampipeconfig.CloudMetadata, error) {
-
+func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {
 	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
 	parts := strings.Split(workspaceDatabaseString, "/")
 	if len(parts) != 2 {
-		return "", nil, fmt.Errorf("invalid 'workspace-database' argument '%s' - must be either a connection string or in format <identity>/<workspace>", workspaceDatabaseString)
+		return nil, fmt.Errorf("invalid 'workspace-database' argument '%s' - must be either a connection string or in format <identity>/<workspace>", workspaceDatabaseString)
 	}
 	identityHandle := parts[0]
 	workspaceHandle := parts[1]
@@ -35,10 +34,10 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, *steamp
 	// org or user?
 	workspace, err := getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	if workspace == nil {
-		return "", nil, fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
+		return nil, fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
 	}
 
 	workspaceHost := workspace["host"].(string)
@@ -46,11 +45,11 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, *steamp
 
 	userHandle, userId, err := getActor(baseURL, bearer, client)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	password, err := getPassword(baseURL, userHandle, bearer, client)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
@@ -63,8 +62,9 @@ func GetConnectionString(workspaceDatabaseString, token string) (string, *steamp
 	cloudMetadata.Identity.Handle = identityHandle
 	cloudMetadata.Actor.Id = userId
 	cloudMetadata.Actor.Handle = userHandle
+	cloudMetadata.ConnectionString = connectionString
 
-	return connectionString, cloudMetadata, nil
+	return cloudMetadata, nil
 }
 
 func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {

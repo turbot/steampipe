@@ -34,7 +34,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 			return initData
 		}
 	}
-	cloudMetadata, err := cmdconfig.ValidateConnectionStringArgs()
+	cloudMetadata, err := cmdconfig.GetCloudMetadata()
 	if err != nil {
 		initData.Result.Error = err
 		return initData

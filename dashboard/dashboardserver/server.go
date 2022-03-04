@@ -93,9 +93,13 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 				ShortName: workspaceResources.Mod.ShortName,
 			},
 			InstalledMods: installedMods,
-			Cloud:         cloudMetadata,
 			Telemetry:     viper.GetString(constants.ArgTelemetry),
 		},
+	}
+
+	// if telemetry is enabled, send cloud metadata
+	if payload.Metadata.Telemetry != constants.TelemetryNone {
+		payload.Metadata.Cloud = cloudMetadata
 	}
 
 	return json.Marshal(payload)
@@ -466,7 +470,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 
 		switch request.Action {
 		case "get_dashboard_metadata":
-			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())
+			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps(), s.workspace.CloudMetadata)
 			if err != nil {
 				panic(fmt.Errorf("error building payload for get_metadata: %v", err))
 			}

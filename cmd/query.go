@@ -92,7 +92,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		args = append(args, stdinData)
 	}
 
-	cloudMetadata, err := cmdconfig.ValidateConnectionStringArgs()
+	cloudMetadata, err := cmdconfig.GetCloudMetadata()
 	utils.FailOnError(err)
 
 	// enable spinner only in interactive mode

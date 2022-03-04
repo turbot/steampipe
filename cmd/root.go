@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -105,8 +106,8 @@ func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
-	// setup viper without the settings in the config files
-	cmdconfig.SetViperDefaults(nil)
+	// setup viper with the essential path config (workspace-chdir and install-dir)
+	cmdconfig.BootstrapViper()
 
 	// set the working folder
 	workspaceChdir := setWorkspaceChDir()
@@ -125,14 +126,18 @@ func initGlobalConfig() {
 	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
 
 	// now validate all config values have appropriate values
-	validateConfig()
+	if err := validateConfig(); err != nil {
+		panic(err)
+	}
 }
 
 // now validate  config values have appropriate values
-func validateConfig() {
-	if !helpers.StringSliceContains(constants.TelemetryLevels, viper.GetString(constants.EnvTelemetry)) {
-		viper.Set(constants.EnvTelemetry, constants.TelemetryInfo)
+func validateConfig() error {
+	telemetry := viper.GetString(constants.ArgTelemetry)
+	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
+		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ","))
 	}
+	return nil
 }
 
 func setWorkspaceChDir() string {
@@ -203,6 +208,7 @@ func Execute() int {
 	defer utils.LogTime("cmd.root.Execute end")
 
 	ctx := createRootContext()
+
 	rootCmd.ExecuteContext(ctx)
 	return exitCode
 }

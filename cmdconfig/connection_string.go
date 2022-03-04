@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/steampipeconfig"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cloud"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig"
 )
 
-func ValidateConnectionStringArgs() (*steampipeconfig.CloudMetadata, error) {
+func GetCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 	workspaceDatabase := viper.GetString(constants.ArgWorkspaceDatabase)
 	if workspaceDatabase == "local" {
 		// local database - nothing to do here
@@ -31,9 +30,11 @@ func ValidateConnectionStringArgs() (*steampipeconfig.CloudMetadata, error) {
 
 		// so we have a database and a token - build the connection string and set it in viper
 		var err error
-		if connectionString, cloudMetadata, err = cloud.GetConnectionString(workspaceDatabase, cloudToken); err != nil {
+		if cloudMetadata, err = cloud.GetCloudMetadata(workspaceDatabase, cloudToken); err != nil {
 			return nil, err
 		}
+		// read connection string out of cloudMetadata
+		connectionString = cloudMetadata.ConnectionString
 	}
 
 	// now set the connection string in viper

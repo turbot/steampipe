@@ -47,7 +47,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		viper.Set(constants.ArgProgress, false)
 	}
 
-	cloudMetadata, err := cmdconfig.ValidateConnectionStringArgs()
+	cloudMetadata, err := cmdconfig.GetCloudMetadata()
 	if err != nil {
 		initData.Result.Error = err
 		return initData
