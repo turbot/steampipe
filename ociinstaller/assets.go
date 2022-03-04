@@ -10,20 +10,19 @@ import (
 )
 
 // InstallAssets installs the Steampipe report server assets
-func InstallAssets(ctx context.Context, dest string) error {
-	imageRef := constants.DashboardAssetsImageRef()
-	tempDir := NewTempDir(imageRef)
+func InstallAssets(ctx context.Context, assetsLocation string) error {
+	tempDir := NewTempDir(assetsLocation)
 	defer tempDir.Delete()
 
 	// download the blobs
 	imageDownloader := NewOciDownloader()
-	image, err := imageDownloader.Download(ctx, imageRef, ImageTypeAssets, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, constants.DashboardAssetsImageRef, ImageTypeAssets, tempDir.Path)
 	if err != nil {
 		return err
 	}
 
 	// install the files
-	if err = installAssetsFiles(image, tempDir.Path, dest); err != nil {
+	if err = installAssetsFiles(image, tempDir.Path, assetsLocation); err != nil {
 		return err
 	}
 
