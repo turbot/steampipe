@@ -338,7 +338,7 @@ const DashboardList = () => {
     }, [searchParams]);
 
   const url_group_by = searchParams.get("group_by") || "tag";
-  const url_tag = searchParams.get("tag") || "category";
+  const url_tag = searchParams.get("tag") || "service";
 
   const sections = useGroupedDashboards(
     filteredDashboards,
@@ -386,19 +386,17 @@ const DashboardList = () => {
                 Category
               </Link>
             )}
-            {dashboardTagKeys.includes("service") && (
-              <Link
-                className={classNames(
-                  "block",
-                  url_group_by === "tag" && url_tag === "service"
-                    ? "text-foreground-lighter"
-                    : "link-highlight"
-                )}
-                to={`/?${serviceGroupUrl}`}
-              >
-                Service
-              </Link>
-            )}
+            <Link
+              className={classNames(
+                "block",
+                url_group_by === "tag" && url_tag === "service"
+                  ? "text-foreground-lighter"
+                  : "link-highlight"
+              )}
+              to={`/?${serviceGroupUrl}`}
+            >
+              Service
+            </Link>
             {dashboardTagKeys.includes("type") && (
               <Link
                 className={classNames(
