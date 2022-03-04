@@ -34,9 +34,12 @@ type DashboardServiceState struct {
 }
 
 func GetDashboardServiceState() (*DashboardServiceState, error) {
-	state, err := LoadServiceStateFile()
+	state, err := loadServiceStateFile()
 	if err != nil {
 		return nil, err
+	}
+	if state == nil {
+		return nil, nil
 	}
 	pidExists, err := utils.PidExists(state.Pid)
 	if err != nil {
@@ -96,10 +99,10 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		"dashboard",
 		fmt.Sprintf("--%s=%s", constants.ArgDashboardListen, string(serverListen)),
 		fmt.Sprintf("--%s=%d", constants.ArgDashboardPort, serverPort),
-		fmt.Sprintf("--%s", constants.ArgServiceMode),
+		fmt.Sprintf("--%s=%s", constants.ArgInstallDir, filepaths.SteampipeDir),
+		fmt.Sprintf("--%s=true", constants.ArgServiceMode),
 	)
-
-	cmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
+	cmd.Env = os.Environ()
 
 	// set group pgid attributes on the command to ensure the process is not shutdown when its parent terminates
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -134,10 +137,10 @@ func waitForDashboardService(ctx context.Context) error {
 		case <-pingTimer.C:
 			// poll for the state file.
 			// when it comes up, return it
-			state, err := LoadServiceStateFile()
+			state, err := loadServiceStateFile()
 			if err != nil {
 				if os.IsNotExist(err) {
-					// if the file hasn't been generated yet, that means 'dashboard' is still booting
+					// if the file hasn't been generated yet, that means 'dashboard' is still booting up
 					continue
 				}
 				// there was an unexpected error
@@ -145,9 +148,13 @@ func waitForDashboardService(ctx context.Context) error {
 			}
 			if len(state.Error) > 0 {
 				// there was an error during start up
+				// remove the state file, since we don't need it anymore
+				os.Remove(filepaths.DashboardServiceStateFilePath())
+				// and return the error from the state file
 				return errors.New(state.Error)
 			}
-			// we loaded the state and there was no error
+
+			// we loaded the state and there was no error -- aal-is-well
 			return nil
 		case <-timeoutAt:
 			return fmt.Errorf("dashboard server startup timed out")
@@ -163,10 +170,13 @@ func WriteServiceStateFile(state *DashboardServiceState) error {
 	return os.WriteFile(filepaths.DashboardServiceStateFilePath(), stateBytes, 0666)
 }
 
-func LoadServiceStateFile() (*DashboardServiceState, error) {
+func loadServiceStateFile() (*DashboardServiceState, error) {
 	state := new(DashboardServiceState)
 	stateBytes, err := os.ReadFile(filepaths.DashboardServiceStateFilePath())
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	err = json.Unmarshal(stateBytes, state)

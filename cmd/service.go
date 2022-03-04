@@ -234,15 +234,22 @@ func startDashboardServer(ctx context.Context) (*dashboardserver.DashboardServic
 
 		dashboardState, err := dashboardserver.GetDashboardServiceState()
 		if err != nil {
-			db_local.StopServices(ctx, false, constants.InvokerService)
 			return nil, err
 		}
 
 		if dashboardState == nil {
+			// try stopping the previous service
+			// StopDashboardService does nothing if the service is not running
+			err = dashboardserver.StopDashboardService(ctx)
+			if err != nil {
+				return nil, err
+			}
+			// start dashboard service
 			err = dashboardserver.RunForService(ctx, serverListen, serverPort)
 			if err != nil {
 				return nil, err
 			}
+			// get the updated state
 			dashboardState, err = dashboardserver.GetDashboardServiceState()
 			if err != nil {
 				utils.ShowWarning(fmt.Sprintf("Started Dashboard server, but could not retrieve state: %v", err))

@@ -58,11 +58,16 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		if r := recover(); r != nil {
 			utils.ShowError(dashboardCtx, helpers.ToError(r))
 			if viper.GetBool(constants.ArgServiceMode) {
-				state := &dashboardserver.DashboardServiceState{
-					State: dashboardserver.ServiceStateError,
-					Error: helpers.ToError(r).Error(),
+				state, _ := dashboardserver.GetDashboardServiceState()
+				if state == nil {
+					// write the state file with an error, only if it doesn't exist already
+					// if it exists, that means dashboard stated properly and 'service start' already known about it
+					state = &dashboardserver.DashboardServiceState{
+						State: dashboardserver.ServiceStateError,
+						Error: helpers.ToError(r).Error(),
+					}
+					dashboardserver.WriteServiceStateFile(state)
 				}
-				dashboardserver.WriteServiceStateFile(state)
 			}
 		}
 	}()
