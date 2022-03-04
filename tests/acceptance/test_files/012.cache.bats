@@ -1,7 +1,10 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
+# need to re-design cache tests, skipping for now
+
 @test "steampipe cache functionality check ON" {
+  skip
   run steampipe plugin install chaos
   cd $FUNCTIONALITY_TEST_MOD
 
@@ -20,6 +23,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe cache functionality check OFF" {
+  skip
   run steampipe plugin install chaos
   cd $FUNCTIONALITY_TEST_MOD
 
