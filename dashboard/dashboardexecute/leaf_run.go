@@ -231,6 +231,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 
 	// build map of default params
 	for _, r := range r.runtimeDependencies {
+		// format the arg value as a postgres string (this will also work for numbers)
 		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", r.value))
 		if r.dependency.ArgName != nil {
 			res.ArgMap[*r.dependency.ArgName] = formattedVal
@@ -249,9 +250,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 	return res, nil
 }
 
-// format a string for use as a postgre param
-// TODO [report] verify this is correct
-
+// format a string for use as a postgres string param
 func pgEscapeParamString(val string) string {
 	return fmt.Sprintf("'%s'", val)
 }

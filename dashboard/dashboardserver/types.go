@@ -4,11 +4,11 @@ import (
 	"context"
 	"sync"
 
-	"gopkg.in/olahol/melody.v1"
-
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/workspace"
+	"gopkg.in/olahol/melody.v1"
 )
 
 type ListenType string
@@ -80,6 +80,8 @@ type ModDashboardMetadata struct {
 type DashboardMetadata struct {
 	Mod           ModDashboardMetadata            `json:"mod"`
 	InstalledMods map[string]ModDashboardMetadata `json:"installed_mods,omitempty"`
+	Cloud         *steampipeconfig.CloudMetadata  `json:"cloud,omitempty"`
+	Telemetry     string                          `json:"telemetry"`
 }
 
 type DashboardMetadataPayload struct {

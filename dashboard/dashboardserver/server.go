@@ -8,11 +8,14 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"gopkg.in/olahol/melody.v1"
@@ -67,7 +70,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 	return server, err
 }
 
-func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
+func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, cloudMetadata *steampipeconfig.CloudMetadata) ([]byte, error) {
 	installedMods := make(map[string]ModDashboardMetadata)
 	for _, mod := range workspaceResources.Mods {
 		// Ignore current mod
@@ -90,8 +93,15 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources) (
 				ShortName: workspaceResources.Mod.ShortName,
 			},
 			InstalledMods: installedMods,
+			Telemetry:     viper.GetString(constants.ArgTelemetry),
 		},
 	}
+
+	// if telemetry is enabled, send cloud metadata
+	if payload.Metadata.Telemetry != constants.TelemetryNone {
+		payload.Metadata.Cloud = cloudMetadata
+	}
+
 	return json.Marshal(payload)
 }
 
@@ -460,7 +470,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 
 		switch request.Action {
 		case "get_dashboard_metadata":
-			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps())
+			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps(), s.workspace.CloudMetadata)
 			if err != nil {
 				panic(fmt.Errorf("error building payload for get_metadata: %v", err))
 			}
