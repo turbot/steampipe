@@ -172,61 +172,61 @@ load "$LIB_BATS_SUPPORT/load.bash"
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
 
-@test "steampipe check options config is being parsed and used(cache=false; hcl)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
-    cp $SRC_DATA_DIR/chaos_options_2.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
+# @test "steampipe check options config is being parsed and used(cache=false; hcl)" {
+#     run steampipe plugin install chaos
+#     run steampipe plugin install steampipe
+#     cp $SRC_DATA_DIR/chaos_options_2.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
 
-    # cache functionality check since cache=false in options
-    cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
+#     # cache functionality check since cache=false in options
+#     cd $CONFIG_PARSING_TEST_MOD
+#     run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
-    # store the date from 1st control in `content`
-    content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
-    # store the date from 2nd control in `new_content`
-    new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
-    echo $content
-    echo $new_content
+#     # store the date from 1st control in `content`
+#     content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
+#     # store the date from 2nd control in `new_content`
+#     new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
+#     echo $content
+#     echo $new_content
 
-    # verify that `content` and `new_content` are not the same
-    if [[ "$content" == "$new_content" ]]; then
-        flag=1
-    else
-        flag=0
-    fi
-    assert_equal "$flag" "0"
+#     # verify that `content` and `new_content` are not the same
+#     if [[ "$content" == "$new_content" ]]; then
+#         flag=1
+#     else
+#         flag=0
+#     fi
+#     assert_equal "$flag" "0"
 
-    rm -f benchmark.*.json
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
-}
+#     rm -f benchmark.*.json
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
+# }
 
-@test "steampipe check options config is being parsed and used(cache=false; yml)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
-    cp $SRC_DATA_DIR/chaos_options_2.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
+# @test "steampipe check options config is being parsed and used(cache=false; yml)" {
+#     run steampipe plugin install chaos
+#     run steampipe plugin install steampipe
+#     cp $SRC_DATA_DIR/chaos_options_2.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
 
-    # cache functionality check since cache=false in options
-    cd $CONFIG_PARSING_TEST_MOD
-    run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
+#     # cache functionality check since cache=false in options
+#     cd $CONFIG_PARSING_TEST_MOD
+#     run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
-    # store the date from 1st control in `content`
-    content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
-    # store the date from 2nd control in `new_content`
-    new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
-    echo $content
-    echo $new_content
+#     # store the date from 1st control in `content`
+#     content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
+#     # store the date from 2nd control in `new_content`
+#     new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
+#     echo $content
+#     echo $new_content
 
-    # verify that `content` and `new_content` are not the same
-    if [[ "$content" == "$new_content" ]]; then
-        flag=1
-    else
-        flag=0
-    fi
-    assert_equal "$flag" "0"
+#     # verify that `content` and `new_content` are not the same
+#     if [[ "$content" == "$new_content" ]]; then
+#         flag=1
+#     else
+#         flag=0
+#     fi
+#     assert_equal "$flag" "0"
     
-    rm -f benchmark.*.json
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
-}
+#     rm -f benchmark.*.json
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
+# }
 
 @test "steampipe check regions in connection config is being parsed and used(hcl)" {
     run steampipe plugin install chaos
@@ -238,7 +238,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     result=$(echo $output | tr -d '[:space:]')
 
     # check output
-    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 }
@@ -253,7 +253,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     result=$(echo $output | tr -d '[:space:]')
 
     # check output
-    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 }
@@ -268,7 +268,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     result=$(echo $output | tr -d '[:space:]')
 
     # check output
-    assert_equal "$result" '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
+    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
