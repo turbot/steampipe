@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 
 interface DashboardSearchStates {
   dashboardName: string | null;
+  dashboardSearch: string | null;
 }
 
 const DashboardSearch = () => {
@@ -33,6 +34,7 @@ const DashboardSearch = () => {
   const previousDashboardSearchStates: DashboardSearchStates | undefined =
     usePrevious({
       dashboardName,
+      dashboardSearch,
     });
 
   useEffect(() => {
@@ -47,6 +49,13 @@ const DashboardSearch = () => {
       setDashboardSearch("");
     }
   }, [dashboardName, previousDashboardSearchStates]);
+
+  useEffect(() => {
+    // console.log(searchParams.get("search"), dashboardSearch);
+    if (!searchParams.get("search") && !!dashboardSearch) {
+      setDashboardSearch("");
+    }
+  }, [dashboardSearch, searchParams]);
 
   return (
     <SearchInput

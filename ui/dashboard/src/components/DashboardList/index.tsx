@@ -5,7 +5,6 @@ import {
   ModDashboardMetadata,
   useDashboard,
 } from "../../hooks/useDashboard";
-import { classNames } from "../../utils/styles";
 import { ColorGenerator } from "../../utils/color";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -24,12 +23,14 @@ interface DashboardTagProps {
   tagKey: string;
   tagValue: string;
   searchParams: URLSearchParams;
+  setDashboardSearch: (search: string) => void;
 }
 
 interface SectionProps {
   title: string;
   dashboards: AvailableDashboardWithMod[];
   searchParams: URLSearchParams;
+  setDashboardSearch: (search: string) => void;
 }
 
 // /*!
@@ -85,44 +86,36 @@ const DashboardTag = ({
   tagKey,
   tagValue,
   searchParams,
+  setDashboardSearch,
 }: DashboardTagProps) => {
-  const group_by = searchParams.get("group_by");
-  const tag = searchParams.get("tag");
   const search = searchParams.get("search");
-  const searchUrl = useMemo(() => {
-    const newSearchParams = new URLSearchParams();
-    if (group_by) {
-      newSearchParams.set("group_by", group_by);
-    }
-    if (tag) {
-      newSearchParams.set("tag", tag);
-    }
+  const searchWithTag = useMemo(() => {
     const existingSearch = (search || "").trim();
-    newSearchParams.set(
-      "search",
-      existingSearch
-        ? existingSearch.indexOf(tagValue) < 0
-          ? `${existingSearch} ${tagValue}`
-          : existingSearch
-        : tagValue
-    );
-    return newSearchParams.toString();
-  }, [tagValue, group_by, tag, search]);
+    return existingSearch
+      ? existingSearch.indexOf(tagValue) < 0
+        ? `${existingSearch} ${tagValue}`
+        : existingSearch
+      : tagValue;
+  }, [tagValue, search]);
 
   return (
-    <Link to={`/?${searchUrl}`}>
-      <span
-        className="rounded-md text-xs"
-        style={{ color: stringToColour(tagValue) }}
-        title={`${tagKey} = ${tagValue}`}
-      >
-        {tagValue}
-      </span>
-    </Link>
+    <span
+      className="cursor-pointer rounded-md text-xs"
+      onClick={() => setDashboardSearch(searchWithTag)}
+      style={{ color: stringToColour(tagValue) }}
+      title={`${tagKey} = ${tagValue}`}
+    >
+      {tagValue}
+    </span>
   );
 };
 
-const Section = ({ title, dashboards, searchParams }: SectionProps) => {
+const Section = ({
+  title,
+  dashboards,
+  searchParams,
+  setDashboardSearch,
+}: SectionProps) => {
   return (
     <div className="space-y-2">
       <h3 className="truncate">{title}</h3>
@@ -140,6 +133,7 @@ const Section = ({ title, dashboards, searchParams }: SectionProps) => {
                 tagKey={key}
                 tagValue={value}
                 searchParams={searchParams}
+                setDashboardSearch={setDashboardSearch}
               />
             ))}
           </div>
@@ -219,7 +213,6 @@ const DashboardList = () => {
     metadata,
     dashboards,
     dashboardSearch: search,
-    dashboardTagKeys,
     setDashboardSearch,
     setDashboardTagKeys,
   } = useDashboard();
@@ -295,37 +288,6 @@ const DashboardList = () => {
     search,
   ]);
 
-  const { modGroupUrl, typeGroupUrl, categoryGroupUrl, serviceGroupUrl } =
-    useMemo(() => {
-      const url_search = searchParams.get("search");
-
-      const modGroupSearchParams = new URLSearchParams();
-      modGroupSearchParams.set("group_by", "mod");
-      if (url_search) modGroupSearchParams.set("search", url_search);
-
-      const typeGroupSearchParams = new URLSearchParams();
-      typeGroupSearchParams.set("group_by", "tag");
-      typeGroupSearchParams.set("tag", "type");
-      if (url_search) typeGroupSearchParams.set("search", url_search);
-
-      const categoryGroupSearchParams = new URLSearchParams();
-      categoryGroupSearchParams.set("group_by", "tag");
-      categoryGroupSearchParams.set("tag", "category");
-      if (url_search) categoryGroupSearchParams.set("search", url_search);
-
-      const serviceGroupSearchParams = new URLSearchParams();
-      serviceGroupSearchParams.set("group_by", "tag");
-      serviceGroupSearchParams.set("tag", "service");
-      if (url_search) serviceGroupSearchParams.set("search", url_search);
-
-      return {
-        modGroupUrl: modGroupSearchParams.toString(),
-        typeGroupUrl: typeGroupSearchParams.toString(),
-        categoryGroupUrl: categoryGroupSearchParams.toString(),
-        serviceGroupUrl: serviceGroupSearchParams.toString(),
-      };
-    }, [searchParams]);
-
   const url_group_by = searchParams.get("group_by") || "tag";
   const url_tag = searchParams.get("tag") || "service";
 
@@ -340,57 +302,6 @@ const DashboardList = () => {
     <div className="w-full grid grid-cols-6 p-4 gap-x-4">
       <div className="col-span-6 lg:col-span-4 space-y-4">
         <div className="grid grid-cols-6">
-          <div className="mt-4 col-span-6 flex flex-wrap space-x-2">
-            <div>Group by:</div>
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "mod"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
-              )}
-              to={`/?${modGroupUrl}`}
-            >
-              Mod
-            </Link>
-            {dashboardTagKeys.includes("category") && (
-              <Link
-                className={classNames(
-                  "block",
-                  url_group_by === "tag" && url_tag === "category"
-                    ? "text-foreground-lighter"
-                    : "link-highlight"
-                )}
-                to={`/?${categoryGroupUrl}`}
-              >
-                Category
-              </Link>
-            )}
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "tag" && url_tag === "service"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
-              )}
-              to={`/?${serviceGroupUrl}`}
-            >
-              Service
-            </Link>
-            {dashboardTagKeys.includes("type") && (
-              <Link
-                className={classNames(
-                  "block",
-                  url_group_by === "tag" && url_tag === "type"
-                    ? "text-foreground-lighter"
-                    : "link-highlight"
-                )}
-                to={`/?${typeGroupUrl}`}
-              >
-                Type
-              </Link>
-            )}
-          </div>
           {(!availableDashboardsLoaded || !metadataLoaded) && (
             <div className="col-span-6 mt-4 ml-1 text-black-scale-4 flex">
               <LoadingIndicator className="w-4 h-4" />{" "}
@@ -418,13 +329,14 @@ const DashboardList = () => {
                   )}
                 </div>
               )}
-            <div className="mt-4 space-y-4">
+            <div className="mt-2 space-y-4">
               {sections.map((section) => (
                 <Section
                   key={section.title}
                   title={section.title}
                   dashboards={section.dashboards}
                   searchParams={searchParams}
+                  setDashboardSearch={setDashboardSearch}
                 />
               ))}
             </div>
