@@ -1,5 +1,4 @@
 import LoadingIndicator from "../dashboards/LoadingIndicator";
-import SearchInput from "../SearchInput";
 import SlackCommunityCallToAction from "../CallToAction/SlackCommunityCallToAction";
 import {
   AvailableDashboard,
@@ -213,33 +212,23 @@ const sortDashboards = (dashboards: AvailableDashboard[] = []) => {
 };
 
 const DashboardList = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const { availableDashboardsLoaded, metadataLoaded, metadata, dashboards } =
-    useDashboard();
+  const [searchParams] = useSearchParams();
+  const {
+    availableDashboardsLoaded,
+    metadataLoaded,
+    metadata,
+    dashboards,
+    dashboardSearch: search,
+    dashboardTagKeys,
+    setDashboardSearch,
+    setDashboardTagKeys,
+  } = useDashboard();
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
   const [filteredDashboards, setFilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
-  const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
-
-  /*eslint-disable */
-  useEffect(() => {
-    if (search) {
-      searchParams.set("search", search);
-    } else {
-      searchParams.delete("search");
-    }
-    setSearchParams(searchParams);
-  }, [search]);
-  /*eslint-enable */
-
-  useEffect(() => {
-    const newSearch = searchParams.get("search");
-    setSearch(newSearch || "");
-  }, [searchParams]);
 
   // Initialise dashboards with their mod + update when the list of dashboards is updated
   useEffect(() => {
@@ -351,15 +340,6 @@ const DashboardList = () => {
     <div className="w-full grid grid-cols-6 p-4 gap-x-4">
       <div className="col-span-6 lg:col-span-4 space-y-4">
         <div className="grid grid-cols-6">
-          <div className="col-span-6 lg:col-span-3 mt-2">
-            <SearchInput
-              //@ts-ignore
-              disabled={!metadataLoaded || !availableDashboardsLoaded}
-              placeholder="Search dashboards..."
-              value={search || ""}
-              setValue={setSearch}
-            />
-          </div>
           <div className="mt-4 col-span-6 flex flex-wrap space-x-2">
             <div>Group by:</div>
             <Link
@@ -427,7 +407,7 @@ const DashboardList = () => {
                       <span>No search results.</span>{" "}
                       <span
                         className="link-highlight"
-                        onClick={() => setSearch("")}
+                        onClick={() => setDashboardSearch("")}
                       >
                         Clear
                       </span>
@@ -462,8 +442,10 @@ const DashboardList = () => {
 
 const DashboardListWrapper = () => {
   const { dashboardName } = useParams();
+  const { dashboardSearch } = useDashboard();
 
-  if (dashboardName) {
+  // If we have a dashboard selected and no search, we don't want to show the list
+  if (dashboardName && !dashboardSearch) {
     return null;
   }
 
