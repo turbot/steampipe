@@ -146,7 +146,7 @@ const CellValue = ({
         className="text-black-scale-3"
         title={showTitle ? `${column.name}=null` : undefined}
       >
-        null
+        <>null</>
       </span>
     );
   }
@@ -158,14 +158,14 @@ const CellValue = ({
         className="link-highlight"
         title={showTitle ? `${column.name}=${value.toString()}` : undefined}
       >
-        {value.toString()}
+        <>{value.toString()}</>
       </ExternalLink>
     ) : (
       <span
         className={classNames(value ? null : "text-foreground-light")}
         title={showTitle ? `${column.name}=${value.toString()}` : undefined}
       >
-        {value.toString()}
+        <>{value.toString()}</>
       </span>
     );
   }
@@ -189,7 +189,7 @@ const CellValue = ({
     if (value.match("^https?://")) {
       return (
         <ExternalLink
-          className="link-highlight"
+          className="link-highlight tabular-nums"
           to={value}
           title={showTitle ? `${column.name}=${value}` : undefined}
         >
@@ -201,6 +201,7 @@ const CellValue = ({
     if (mdMatch) {
       return (
         <ExternalLink
+          className="tabular-nums"
           to={mdMatch[2]}
           title={showTitle ? `${column.name}=${value}` : undefined}
         >
@@ -249,13 +250,16 @@ const CellValue = ({
   return href ? (
     <ExternalLink
       to={href}
-      className="link-highlight"
+      className="link-highlight tabular-nums"
       title={showTitle ? `${column.name}=${value}` : undefined}
     >
       {value}
     </ExternalLink>
   ) : (
-    <span title={showTitle ? `${column.name}=${value}` : undefined}>
+    <span
+      className="tabular-nums"
+      title={showTitle ? `${column.name}=${value}` : undefined}
+    >
       {value}
     </span>
   );
