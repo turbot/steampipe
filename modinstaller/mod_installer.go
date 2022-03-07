@@ -337,7 +337,7 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 	// find a version which satisfies the version constraint
 	var version = getVersionSatisfyingConstraint(modVersion.Constraint, availableVersions)
 	if version == nil {
-		return nil, fmt.Errorf("no version of %s found satisfying verison constraint: %s", modVersion.Name, modVersion.Constraint.Original)
+		return nil, fmt.Errorf("no version of %s found satisfying version constraint: %s", modVersion.Name, modVersion.Constraint.Original)
 	}
 
 	return NewResolvedModRef(modVersion, version)
