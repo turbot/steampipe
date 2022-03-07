@@ -34,6 +34,7 @@ import {
 } from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
 import { get, has, merge, set } from "lodash";
+import { FlowType } from "../../flows";
 import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
@@ -638,7 +639,7 @@ const buildChartOptions = (
 
 interface ChartComponentProps {
   options: EChartsOption;
-  type: ChartType | HierarchyType;
+  type: ChartType | FlowType | HierarchyType;
 }
 
 const Chart = ({ options, type }: ChartComponentProps) => {

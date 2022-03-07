@@ -1,3 +1,4 @@
+import ExternalLink from "../../ExternalLink";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -8,7 +9,6 @@ import {
 import { classNames } from "../../../utils/styles";
 import { getInterpolatedTemplateValue } from "../../../utils/template";
 import { isObject } from "lodash";
-import { Link } from "react-router-dom";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   SortAscendingIcon,
@@ -16,7 +16,6 @@ import {
 } from "../../../constants/icons";
 import { usePanel } from "../../../hooks/usePanel";
 import { useSortBy, useTable } from "react-table";
-import ExternalLink from "../../ExternalLink";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";

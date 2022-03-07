@@ -25,6 +25,8 @@ func GetResource(provider ModResourcesProvider, parsedName *ParsedResourceName) 
 		resource, found = resourceMaps.DashboardCards[longName]
 	case BlockTypeChart:
 		resource, found = resourceMaps.DashboardCharts[longName]
+	case BlockTypeFlow:
+		resource, found = resourceMaps.DashboardFlows[longName]
 	case BlockTypeHierarchy:
 		resource, found = resourceMaps.DashboardHierarchies[longName]
 	case BlockTypeImage:

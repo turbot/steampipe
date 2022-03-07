@@ -11,6 +11,7 @@ type DashboardChanged struct {
 	ChangedBenchmarks  []*modconfig.DashboardTreeItemDiffs
 	ChangedCards       []*modconfig.DashboardTreeItemDiffs
 	ChangedCharts      []*modconfig.DashboardTreeItemDiffs
+	ChangedFlows       []*modconfig.DashboardTreeItemDiffs
 	ChangedHierarchies []*modconfig.DashboardTreeItemDiffs
 	ChangedImages      []*modconfig.DashboardTreeItemDiffs
 	ChangedInputs      []*modconfig.DashboardTreeItemDiffs
@@ -23,6 +24,7 @@ type DashboardChanged struct {
 	NewBenchmarks  []*modconfig.Benchmark
 	NewCards       []*modconfig.DashboardCard
 	NewCharts      []*modconfig.DashboardChart
+	NewFlows       []*modconfig.DashboardFlow
 	NewHierarchies []*modconfig.DashboardHierarchy
 	NewImages      []*modconfig.DashboardImage
 	NewInputs      []*modconfig.DashboardInput
@@ -35,6 +37,7 @@ type DashboardChanged struct {
 	DeletedBenchmarks  []*modconfig.Benchmark
 	DeletedCards       []*modconfig.DashboardCard
 	DeletedCharts      []*modconfig.DashboardChart
+	DeletedFlows       []*modconfig.DashboardFlow
 	DeletedHierarchies []*modconfig.DashboardHierarchy
 	DeletedImages      []*modconfig.DashboardImage
 	DeletedInputs      []*modconfig.DashboardInput
@@ -52,6 +55,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.ChangedControls)+
 		len(c.ChangedCards)+
 		len(c.ChangedCharts)+
+		len(c.ChangedFlows)+
 		len(c.ChangedHierarchies)+
 		len(c.ChangedImages)+
 		len(c.ChangedInputs)+
@@ -63,6 +67,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.NewControls)+
 		len(c.NewCards)+
 		len(c.NewCharts)+
+		len(c.NewFlows)+
 		len(c.NewHierarchies)+
 		len(c.NewImages)+
 		len(c.NewInputs)+
@@ -74,6 +79,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.DeletedControls)+
 		len(c.DeletedCards)+
 		len(c.DeletedCharts)+
+		len(c.DeletedFlows)+
 		len(c.DeletedHierarchies)+
 		len(c.DeletedImages)+
 		len(c.DeletedInputs)+

@@ -15,6 +15,7 @@ import {
 } from "../../../../hooks/useDashboard";
 import { Dashboard } from "../Dashboard";
 import { RenderChart as Chart } from "../../charts/Chart";
+import { RenderFlow as Flow } from "../../flows/Flow";
 import { RenderHierarchy as Hierarchy } from "../../hierarchies/Hierarchy";
 import { RenderInput as Input } from "../../inputs/Input";
 
@@ -121,6 +122,23 @@ const Children = ({
               renderChild={() => (
                 <Panel definition={child} allowExpand={allowPanelExpand}>
                   <ErrorPanel error={child.error} />
+                </Panel>
+              )}
+            />
+          );
+        case "flow":
+          return (
+            <ChildWithTitle
+              key={child.name}
+              child={child}
+              level="panel"
+              renderChild={() => (
+                <Panel
+                  definition={child}
+                  ready={!!child.data}
+                  allowExpand={allowPanelExpand}
+                >
+                  <Flow {...child} />
                 </Panel>
               )}
             />

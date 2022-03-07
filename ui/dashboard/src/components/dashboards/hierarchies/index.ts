@@ -1,5 +1,4 @@
 import React from "react";
-import Sankey from "./Sankey";
 import Table from "../Table";
 import Tree from "./Tree";
 import {
@@ -15,7 +14,7 @@ interface HierarchyCategoryOptions {
   color?: ColorOverride;
 }
 
-type HierarchyCategories = {
+export type HierarchyCategories = {
   [category: string]: HierarchyCategoryOptions;
 };
 
@@ -28,7 +27,7 @@ export type HierarchyProps = BaseChartProps & {
   properties?: HierarchyProperties;
 };
 
-export type HierarchyType = "sankey" | "table" | "tree";
+export type HierarchyType = "table" | "tree";
 
 export interface IHierarchy {
   type: HierarchyType;
@@ -41,7 +40,6 @@ const TableWrapper: IHierarchy = {
 };
 
 const hierarchies = {
-  [Sankey.type]: Sankey,
   [TableWrapper.type]: TableWrapper,
   [Tree.type]: Tree,
 };

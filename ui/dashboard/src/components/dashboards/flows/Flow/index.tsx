@@ -1,17 +1,14 @@
 import ErrorPanel from "../../Error";
-import Hierarchies, {
-  HierarchyProperties,
-  HierarchyType,
-} from "../../hierarchies";
+import Flows, { FlowProperties, FlowProps, FlowType } from "../index";
 import {
   buildNodesAndEdges,
-  buildTreeDataInputs,
+  buildSankeyDataInputs,
   LeafNodeData,
   NodesAndEdges,
+  toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { get, merge, set } from "lodash";
-import { HierarchyProps } from "../index";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 import { useTheme } from "../../../../hooks/useTheme";
@@ -24,20 +21,22 @@ const getCommonBaseOptions = () => ({
   },
 });
 
-const getCommonBaseOptionsForHierarchyType = (
-  type: HierarchyType = "tree",
+const getCommonBaseOptionsForFlowType = (
+  type: FlowType = "sankey",
   namedColors
 ) => {
   switch (type) {
+    case "sankey":
+      return {};
     default:
       return {};
   }
 };
 
-const getSeriesForHierarchyType = (
-  type: HierarchyType = "tree",
+const getSeriesForFlowType = (
+  type: FlowType = "sankey",
   data: LeafNodeData | undefined,
-  properties: HierarchyProperties | undefined,
+  properties: FlowProperties | undefined,
   nodesAndEdges: NodesAndEdges,
   namedColors
 ) => {
@@ -48,36 +47,29 @@ const getSeriesForHierarchyType = (
   const seriesLength = 1;
   for (let seriesIndex = 0; seriesIndex < seriesLength; seriesIndex++) {
     switch (type) {
-      case "tree": {
-        const { data: treeData } = buildTreeDataInputs(nodesAndEdges);
+      case "sankey": {
+        const { data: sankeyData, links } =
+          buildSankeyDataInputs(nodesAndEdges);
         series.push({
-          type: "tree",
-          data: treeData,
-          top: "1%",
-          left: "7%",
-          bottom: "1%",
-          right: "20%",
-          symbolSize: 7,
-          label: {
-            color: namedColors.foreground,
-            position: "left",
-            verticalAlign: "middle",
-            align: "right",
-          },
-          leaves: {
-            label: {
-              position: "right",
-              verticalAlign: "middle",
-              align: "left",
-            },
-          },
+          type: toEChartsType(type),
+          layout: "none",
+          draggable: true,
+          label: { color: namedColors.foreground, formatter: "{b}" },
           emphasis: {
-            focus: "descendant",
+            focus: "adjacency",
+            blurScope: "coordinateSystem",
           },
-          expandAndCollapse: false,
-          animationDuration: 550,
-          animationDurationUpdate: 750,
+          lineStyle: {
+            color: "source",
+            curveness: 0.5,
+          },
+          data: sankeyData,
+          links,
+          tooltip: {
+            formatter: "{b}",
+          },
         });
+        break;
       }
     }
   }
@@ -85,9 +77,9 @@ const getSeriesForHierarchyType = (
   return { series };
 };
 
-const getOptionOverridesForHierarchyType = (
-  type: HierarchyType = "tree",
-  properties: HierarchyProperties | undefined
+const getOptionOverridesForFlowType = (
+  type: FlowType = "sankey",
+  properties: FlowProperties | undefined
 ) => {
   if (!properties) {
     return {};
@@ -98,11 +90,7 @@ const getOptionOverridesForHierarchyType = (
   return overrides;
 };
 
-const buildHierarchyOptions = (
-  props: HierarchyProps,
-  theme,
-  themeWrapperRef
-) => {
+const buildFlowOptions = (props: FlowProps, theme, themeWrapperRef) => {
   // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
   // @ts-ignore
   const style = window.getComputedStyle(themeWrapperRef);
@@ -129,19 +117,19 @@ const buildHierarchyOptions = (
 
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForHierarchyType(props.properties?.type, namedColors),
-    getSeriesForHierarchyType(
+    getCommonBaseOptionsForFlowType(props.properties?.type, namedColors),
+    getSeriesForFlowType(
       props.properties?.type,
       props.data,
       props.properties,
       nodesAndEdges,
       namedColors
     ),
-    getOptionOverridesForHierarchyType(props.properties?.type, props.properties)
+    getOptionOverridesForFlowType(props.properties?.type, props.properties)
   );
 };
 
-const HierarchyWrapper = (props: HierarchyProps) => {
+const FlowWrapper = (props: FlowProps) => {
   const [, setRandomVal] = useState(0);
   const { theme, wrapperRef } = useTheme();
 
@@ -158,40 +146,40 @@ const HierarchyWrapper = (props: HierarchyProps) => {
 
   return (
     <Chart
-      options={buildHierarchyOptions(props, theme, wrapperRef)}
-      type={props.properties ? props.properties.type : "tree"}
+      options={buildFlowOptions(props, theme, wrapperRef)}
+      type={props.properties ? props.properties.type : "sankey"}
     />
   );
 };
 
-type HierarchyDefinition = PanelDefinition & {
-  properties: HierarchyProps;
+type FlowDefinition = PanelDefinition & {
+  properties: FlowProps;
 };
 
-const renderHierarchy = (definition: HierarchyDefinition) => {
-  // We default to tree diagram if not specified
+const renderFlow = (definition: FlowDefinition) => {
+  // We default to sankey diagram if not specified
   if (!get(definition, "properties.type")) {
     // @ts-ignore
-    definition = set(definition, "properties.type", "tree");
+    definition = set(definition, "properties.type", "sankey");
   }
   const {
     properties: { type },
   } = definition;
 
-  const hierarchy = Hierarchies[type];
+  const flow = Flows[type];
 
-  if (!hierarchy) {
-    return <ErrorPanel error={`Unknown hierarchy type ${type}`} />;
+  if (!flow) {
+    return <ErrorPanel error={`Unknown flow type ${type}`} />;
   }
 
-  const Component = hierarchy.component;
+  const Component = flow.component;
   return <Component {...definition} />;
 };
 
-const RenderHierarchy = (props: HierarchyDefinition) => {
-  return renderHierarchy(props);
+const RenderFlow = (props: FlowDefinition) => {
+  return renderFlow(props);
 };
 
-export default HierarchyWrapper;
+export default FlowWrapper;
 
-export { RenderHierarchy };
+export { RenderFlow };
