@@ -39,7 +39,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Validate Branch
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.inputs.branch }}
 
@@ -124,7 +124,7 @@ jobs:
         oras version
       
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.inputs.branch }}
 
@@ -245,7 +245,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.inputs.branch }}
 
@@ -310,7 +310,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         submodules: true
         ref: ${{ github.event.inputs.branch }}
@@ -387,7 +387,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.inputs.branch }}
 
@@ -420,7 +420,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.inputs.version }}
 
