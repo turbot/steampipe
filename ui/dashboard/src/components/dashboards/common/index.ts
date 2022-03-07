@@ -6,6 +6,7 @@ import {
 } from "../hierarchies";
 import { getColumnIndex } from "../../../utils/data";
 import { has } from "lodash";
+import { FlowProperties, FlowType } from "../flows";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -52,7 +53,9 @@ export type ColorOverride = "alert" | "info" | "ok" | string;
 
 export type EChartsType = "bar" | "line" | "pie" | "sankey";
 
-const toEChartsType = (type: ChartType | HierarchyType): EChartsType => {
+const toEChartsType = (
+  type: ChartType | FlowType | HierarchyType
+): EChartsType => {
   // A column chart in chart.js is a bar chart with different options
   if (type === "column") {
     return "bar";
@@ -416,7 +419,7 @@ const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
 
 const buildNodesAndEdges = (
   rawData: LeafNodeData | undefined,
-  properties: HierarchyProperties | undefined,
+  properties: FlowProperties | HierarchyProperties | undefined,
   namedColors
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
