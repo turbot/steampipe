@@ -34,7 +34,7 @@ type Client interface {
 
 	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
 	RefreshSessions(ctx context.Context) *AcquireSessionResult
-	GetSchemaFromDB(context.Context, []string) (*schema.Metadata, error)
+	GetSchemaFromDB(context.Context) (*schema.Metadata, error)
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths(context.Context) *steampipeconfig.RefreshConnectionResult
 	LoadForeignSchemaNames(context.Context) error
