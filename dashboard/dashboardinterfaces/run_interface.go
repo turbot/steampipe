@@ -15,10 +15,11 @@ const (
 )
 
 type DashboardNodeRun interface {
-	Execute(ctx context.Context) error
+	Execute(ctx context.Context)
 	GetName() string
 	GetRunStatus() DashboardRunStatus
 	SetError(err error)
+	GetError() error
 	SetComplete()
 	RunComplete() bool
 	ChildrenComplete() bool

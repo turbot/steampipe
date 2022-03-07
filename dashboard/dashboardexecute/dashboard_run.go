@@ -19,12 +19,13 @@ type DashboardRun struct {
 	Description      string                                 `json:"description,omitempty"`
 	Documentation    string                                 `json:"documentation,omitempty"`
 	Tags             map[string]string                      `json:"tags,omitempty"`
-	Error            error                                  `json:"error,omitempty"`
+	ErrorString      string                                 `json:"error,omitempty"`
 	Children         []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
 	NodeType         string                                 `json:"node_type"`
 	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName    string                                 `json:"dashboard"`
 	SourceDefinition string                                 `json:"source_definition"`
+	error            error
 	dashboardNode    *modconfig.Dashboard
 	parent           dashboardinterfaces.DashboardNodeParent
 	executionTree    *DashboardExecutionTree
@@ -125,22 +126,23 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
-func (r *DashboardRun) Execute(ctx context.Context) error {
-	errChan := make(chan error, len(r.Children))
+func (r *DashboardRun) Execute(ctx context.Context) {
 	// execute all children asynchronously
 	for _, child := range r.Children {
-		go r.executeChild(ctx, child, errChan)
+		go child.Execute(ctx)
 	}
 
 	// wait for children to complete
 	var errors []error
 	for !r.ChildrenComplete() {
 		select {
-		case <-r.childComplete:
+		case completeChild := <-r.childComplete:
+			if completeChild.GetRunStatus() == dashboardinterfaces.DashboardRunError {
+				errors = append(errors, completeChild.GetError())
+			}
 			// fall through to recheck ChildrenComplete
-		case err := <-errChan:
-			errors = append(errors, err)
-			// TODO TIMEOUT??
+
+			// TODO [reports]  timeout?
 		}
 	}
 
@@ -151,15 +153,6 @@ func (r *DashboardRun) Execute(ctx context.Context) error {
 		r.SetComplete()
 	} else {
 		r.SetError(err)
-	}
-
-	return err
-}
-
-func (r *DashboardRun) executeChild(ctx context.Context, child dashboardinterfaces.DashboardNodeRun, errChan chan error) {
-	err := child.Execute(ctx)
-	if err != nil {
-		errChan <- err
 	}
 }
 
@@ -176,7 +169,9 @@ func (r *DashboardRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
 // SetError implements DashboardNodeRun
 // tell parent we are done
 func (r *DashboardRun) SetError(err error) {
-	r.Error = err
+	r.error = err
+	// error type does not serialise to JSON so copy into a string
+	r.ErrorString = err.Error()
 	r.Status = dashboardinterfaces.DashboardRunError
 	// raise container error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{
@@ -184,7 +179,11 @@ func (r *DashboardRun) SetError(err error) {
 		Session:   r.executionTree.sessionId,
 	})
 	r.parent.ChildCompleteChan() <- r
+}
 
+// GetError implements DashboardNodeRun
+func (r *DashboardRun) GetError() error {
+	return r.error
 }
 
 // SetComplete implements DashboardNodeRun

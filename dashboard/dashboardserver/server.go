@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -506,6 +508,10 @@ func (s *Server) setDashboardForSession(sessionId string, dashboardName string, 
 }
 
 func (s *Server) clearSession(ctx context.Context, session *melody.Session) {
+	if strings.ToUpper(os.Getenv("DEBUG")) == "TRUE" {
+		return
+	}
+
 	s.mutex.Lock()
 	sessionId := s.getSessionId(session)
 	dashboardexecute.Executor.ClearDashboard(ctx, sessionId)

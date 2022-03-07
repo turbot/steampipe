@@ -24,7 +24,17 @@ func newDashboardExecutor() *DashboardExecutor {
 
 var Executor = newDashboardExecutor()
 
-func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]interface{}, workspace *workspace.Workspace, client db_common.Client) error {
+func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]interface{}, workspace *workspace.Workspace, client db_common.Client) (err error) {
+	defer func() {
+		// if there was an error executing, send an ExecutionError event
+		if err != nil {
+			workspace.PublishDashboardEvent(&dashboardevents.ExecutionError{
+				Error:   err,
+				Session: sessionId,
+			})
+		}
+	}()
+
 	// reset any existing executions for this session
 	e.ClearDashboard(ctx, sessionId)
 

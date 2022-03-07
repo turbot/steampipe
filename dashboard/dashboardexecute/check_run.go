@@ -12,16 +12,19 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
+// TODO [dashboard]: not supported yet
+
 // CheckRun is a struct representing the execution of a leaf dashboard node
 type CheckRun struct {
 	Name                 string                        `json:"name"`
 	Title                string                        `json:"title,omitempty"`
 	Width                int                           `json:"width,omitempty"`
-	Error                error                         `json:"error,omitempty"`
+	ErrorString          string                        `json:"error,omitempty"`
 	NodeType             string                        `json:"node_type"`
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
 	DashboardName        string                        `json:"dashboard"`
 	SourceDefinition     string                        `json:"source_definition"`
+	error                error
 	dashboardNode        modconfig.DashboardLeafNode
 	parent               dashboardinterfaces.DashboardNodeParent
 	runStatus            dashboardinterfaces.DashboardRunStatus
@@ -68,12 +71,12 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 }
 
 // Execute implements DashboardRunNode
-func (r *CheckRun) Execute(ctx context.Context) error {
+func (r *CheckRun) Execute(ctx context.Context) {
 	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.dashboardNode.Name())
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)
-		return err
+		return
 	}
 	// create a context with a ControlEventHooks to report control execution progress
 	ctx = controlhooks.AddControlHooksToContext(ctx, NewControlEventHooks(r))
@@ -82,8 +85,6 @@ func (r *CheckRun) Execute(ctx context.Context) error {
 
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
-
-	return nil
 }
 
 // GetName implements DashboardNodeRun
@@ -98,7 +99,10 @@ func (r *CheckRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
 
 // SetError implements DashboardNodeRun
 func (r *CheckRun) SetError(err error) {
-	r.Error = err
+	r.error = err
+	// error type does not serialise to JSON so copy into a string
+	r.ErrorString = err.Error()
+
 	r.runStatus = dashboardinterfaces.DashboardRunError
 	// raise dashboard error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
@@ -108,7 +112,11 @@ func (r *CheckRun) SetError(err error) {
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
+}
 
+// GetError implements DashboardNodeRun
+func (r *CheckRun) GetError() error {
+	return r.error
 }
 
 // SetComplete implements DashboardNodeRun
