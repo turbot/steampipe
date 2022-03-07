@@ -57,7 +57,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		logging.LogTime("runDashboardCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(dashboardCtx, helpers.ToError(r))
-			if viper.GetBool(constants.ArgServiceMode) {
+			if isRunningAsService() {
 				state, _ := dashboardserver.GetDashboardServiceState()
 				if state == nil {
 					// write the state file with an error, only if it doesn't exist already
@@ -97,7 +97,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	server.Start()
 
-	if viper.GetBool(constants.ArgServiceMode) {
+	if isRunningAsService() {
 		state := &dashboardserver.DashboardServiceState{
 			State:      dashboardserver.ServiceStateRunning,
 			Error:      "",
@@ -125,9 +125,13 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	server.Shutdown(dashboardCtx)
 }
 
+func isRunningAsService() bool {
+	return viper.GetBool(constants.ArgServiceMode)
+}
+
 func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) bool {
 	if initData.Result.Error == workspace.ErrorNoModDefinition {
-		exitCode = constants.EC_NoModFile
+		exitCode = constants.ExitCodeNoModFile
 	}
 	// if there is an error or cancellation we bomb out
 	// check for the various kinds of failures

@@ -125,10 +125,9 @@ func waitForDashboardService(ctx context.Context) error {
 	utils.LogTime("db.waitForDashboardServerStartup start")
 	defer utils.LogTime("db.waitForDashboardServerStartup end")
 
-	pingTimer := time.NewTicker(10 * time.Millisecond)
+	pingTimer := time.NewTicker(constants.ServicePingInterval)
+	timeoutAt := time.After(constants.ServiceStartTimeout)
 	defer pingTimer.Stop()
-
-	timeoutAt := time.After(5 * time.Second)
 
 	for {
 		select {
@@ -163,7 +162,7 @@ func waitForDashboardService(ctx context.Context) error {
 }
 
 func WriteServiceStateFile(state *DashboardServiceState) error {
-	stateBytes, err := json.Marshal(state)
+	stateBytes, err := json.MarshalIndent(state, "", " ")
 	if err != nil {
 		return err
 	}

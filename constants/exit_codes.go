@@ -1,5 +1,5 @@
 package constants
 
 const (
-	EC_NoModFile = 15
+	ExitCodeNoModFile = 15
 )
