@@ -112,7 +112,7 @@ const CellValue = ({
     const render = async () => {
       const renderedVal = await getInterpolatedTemplateValue(
         column.href_template,
-        { row }
+        { ...row }
       );
       // console.log(renderedVal);
       setHref(renderedVal);
