@@ -387,6 +387,7 @@ export interface NodesAndEdges {
   edges: Edge[];
   categories: CategoryMap;
   metadata?: NodesAndEdgesMetadata;
+  next_color_index: number;
 }
 
 const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
@@ -424,6 +425,7 @@ const buildNodesAndEdges = (
       root_nodes: {},
       edges: [],
       categories: {},
+      next_color_index: 0,
     };
   }
 
@@ -451,6 +453,7 @@ const buildNodesAndEdges = (
   const categories: CategoryMap = {};
 
   let contains_duplicate_edges = false;
+  let colorIndex = 0;
 
   rawData.rows.map((row) => {
     const node_id = id_index > -1 ? row[id_index] : null;
@@ -548,6 +551,9 @@ const buildNodesAndEdges = (
       if (overrides) {
         // @ts-ignore
         categorySettings.color = getColorOverride(overrides.color, namedColors);
+      } else {
+        // @ts-ignore
+        categorySettings.color = themeColors[colorIndex++];
       }
       categories[category] = categorySettings;
     }
@@ -562,6 +568,7 @@ const buildNodesAndEdges = (
       has_multiple_roots: Object.keys(root_node_lookup).length > 1,
       contains_duplicate_edges,
     },
+    next_color_index: colorIndex,
   };
 };
 
@@ -601,7 +608,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
         color:
           node.category && nodesAndEdges.categories[node.category].color
             ? nodesAndEdges.categories[node.category].color
-            : themeColors[index],
+            : themeColors[nodesAndEdges.next_color_index++],
       },
     };
     data.push(dataNode);
