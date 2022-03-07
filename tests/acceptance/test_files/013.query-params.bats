@@ -37,8 +37,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query query.query_params_with_no_defaults --output json
 
-  # should return an error `failed to resolve value for 3 parameters`
-  assert_output --partial 'failed to resolve value for 3 parameters'
+  assert_output --partial 'failed to resolve args for functionality_test_mod.query.query_params_with_no_defaults: p1,p2,p3'
 }
 
 @test "query with no default params and all params passed through CLI" {

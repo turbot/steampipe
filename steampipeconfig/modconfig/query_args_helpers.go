@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/utils"
-
 	typehelpers "github.com/turbot/go-kit/types"
 )
 
@@ -47,11 +45,8 @@ func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, 
 
 	// did we resolve them all?
 	if len(missingParams) > 0 {
-		return "", nil, fmt.Errorf("ResolveAsString failed for %s - failed to resolve value for %d %s: %s",
-			source.Name(),
-			len(missingParams),
-			utils.Pluralize("parameter", len(missingParams)),
-			strings.Join(missingParams, ","))
+		// a better error will be constructed by the calling code
+		return "", nil, fmt.Errorf("%s", strings.Join(missingParams, ","))
 	}
 
 	// are there any params?

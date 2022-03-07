@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-
-	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/utils"
 )
 
 // ValidationResult :: response for Validate
@@ -65,7 +65,7 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		}
 		if numArgs > 1 {
 			return ValidationResult{
-				Err: fmt.Errorf("command needs %d argument(s) - got %d", 1, numArgs),
+				Err: fmt.Errorf("command needs 1 argument - got %d", numArgs),
 			}
 		}
 		return buildValidationResult(args, validators)
@@ -96,7 +96,7 @@ var atLeastNArgs = func(n int) validator {
 		numArgs := len(args)
 		if numArgs < n {
 			return ValidationResult{
-				Err: fmt.Errorf("command needs at least %d argument(s) - got %d", n, numArgs),
+				Err: fmt.Errorf("command needs at least %d %s - got %d", n, utils.Pluralize("argument", n), numArgs),
 			}
 		}
 		return ValidationResult{ShouldRun: true}
@@ -108,7 +108,7 @@ var atMostNArgs = func(n int) validator {
 		numArgs := len(args)
 		if numArgs > n {
 			return ValidationResult{
-				Err: fmt.Errorf("command needs at most %d argument(s) - got %d", n, numArgs),
+				Err: fmt.Errorf("command needs at most %d %s - got %d", n, utils.Pluralize("argument", n), numArgs),
 			}
 		}
 		return ValidationResult{ShouldRun: true}
@@ -120,7 +120,7 @@ var exactlyNArgs = func(n int) validator {
 		numArgs := len(args)
 		if numArgs != n {
 			return ValidationResult{
-				Err: fmt.Errorf("command needs %d argument(s) - got %d", n, numArgs),
+				Err: fmt.Errorf("command needs %d %s - got %d", n, utils.Pluralize("argument", n), numArgs),
 			}
 		}
 		return ValidationResult{

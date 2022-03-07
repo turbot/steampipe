@@ -72,7 +72,7 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRu
 
 }
 
-func (e *DashboardExecutionTree) Execute(ctx context.Context) error {
+func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
@@ -92,19 +92,14 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) error {
 	if e.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
 		// there must be no nodes to execute
 		log.Println("[TRACE]", "execution tree already complete")
-		return nil
+		return
 	}
 
-	err := e.Root.Execute(cancelCtx)
-	if err != nil {
-		// if the tree is not already in error state, set the error
-		// (this is to avoid overwriting a previous error)
-		if e.GetRunStatus() != dashboardinterfaces.DashboardRunError {
-			// set error state on the root node
-			e.SetError(err)
-		}
+	// there is no strict need to run this async but it follows the pattern of child execution elsewhere
+	go e.Root.Execute(cancelCtx)
+	select {
+	case <-e.runComplete:
 	}
-	return err
 }
 
 // GetRunStatus returns the stats of the Root run

@@ -20,11 +20,12 @@ type LeafRun struct {
 	RawSQL              string                      `json:"sql,omitempty"`
 	Args                []string                    `json:"args,omitempty"`
 	Data                *LeafData                   `json:"data,omitempty"`
-	Error               error                       `json:"error,omitempty"`
+	ErrorString         string                      `json:"error,omitempty"`
 	DashboardNode       modconfig.DashboardLeafNode `json:"properties"`
 	NodeType            string                      `json:"node_type"`
 	DashboardName       string                      `json:"dashboard"`
 	SourceDefinition    string                      `json:"source_definition"`
+	error               error
 	parent              dashboardinterfaces.DashboardNodeParent
 	runStatus           dashboardinterfaces.DashboardRunStatus
 	executionTree       *DashboardExecutionTree
@@ -32,7 +33,6 @@ type LeafRun struct {
 }
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
-
 	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
 	// so FOR NOW it is safe to use the node name directly as the run name
@@ -58,7 +58,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		return nil, err
 	}
 	r.NodeType = parsedName.ItemType
-	// if we have a query provider which requireds execution, set status to ready
+	// if we have a query provider which requires execution, set status to ready
 	if provider, ok := resource.(modconfig.QueryProvider); ok && provider.RequiresExecution(provider) {
 		// if the provider has sql or a query, set status to ready
 		r.runStatus = dashboardinterfaces.DashboardRunReady
@@ -89,10 +89,10 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 }
 
 // Execute implements DashboardRunNode
-func (r *LeafRun) Execute(ctx context.Context) error {
+func (r *LeafRun) Execute(ctx context.Context) {
 	// if there is nothing to do, return
 	if r.runStatus == dashboardinterfaces.DashboardRunComplete {
-		return nil
+		return
 	}
 
 	log.Printf("[TRACE] LeafRun '%s' Execute()", r.DashboardNode.Name())
@@ -102,12 +102,14 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	// if there are any unresolved runtime dependencies, wait for them
 	if len(r.runtimeDependencies) > 0 {
 		if err := r.waitForRuntimeDependencies(ctx); err != nil {
-			return err
+			r.SetError(err)
+			return
 		}
 
 		// ok now we have runtime dependencies, we can resolve the query
 		if err := r.resolveSQL(); err != nil {
-			return err
+			r.SetError(err)
+			return
 		}
 	}
 
@@ -118,7 +120,7 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)
-		return err
+		return
 
 	}
 	log.Printf("[TRACE] LeafRun '%s' complete", r.DashboardNode.Name())
@@ -126,7 +128,6 @@ func (r *LeafRun) Execute(ctx context.Context) error {
 	r.Data = NewLeafData(queryResult)
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
-	return nil
 }
 
 // GetName implements DashboardNodeRun
@@ -141,16 +142,22 @@ func (r *LeafRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
 
 // SetError implements DashboardNodeRun
 func (r *LeafRun) SetError(err error) {
-	r.Error = err
+	r.error = err
+	// error type does not serialise to JSON so copy into a string
+	r.ErrorString = err.Error()
+
 	r.runStatus = dashboardinterfaces.DashboardRunError
 	// raise counter error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
 		LeafNode: r,
 		Session:  r.executionTree.sessionId,
 	})
-	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
+}
 
+// GetError implements DashboardNodeRun
+func (r *LeafRun) GetError() error {
+	return r.error
 }
 
 // SetComplete implements DashboardNodeRun
@@ -225,7 +232,9 @@ func (r *LeafRun) resolveSQL() error {
 	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", r.DashboardNode.Name(), runtimeArgs)
 
 	resolvedQuery, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
-
+	if err != nil {
+		return err
+	}
 	r.RawSQL = resolvedQuery.RawSQL
 	r.executeSQL = resolvedQuery.ExecuteSQL
 	r.Args = resolvedQuery.Args
