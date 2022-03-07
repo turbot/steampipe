@@ -568,7 +568,7 @@ const buildNodesAndEdges = (
         colorIndex++;
       } else {
         // @ts-ignore
-        categorySettings.color = themeColors[colorIndex];
+        categorySettings.color = themeColors[colorIndex++];
       }
       categories[category] = categorySettings;
     }
@@ -589,9 +589,8 @@ const buildNodesAndEdges = (
 const buildSankeyDataInputs = (
   nodesAndEdges: NodesAndEdges,
   properties: HierarchyProperties | undefined,
-  themeColors
+  namedColors
 ) => {
-  let colorIndex = 0;
   const data: any[] = [];
   const links: any[] = [];
   const categories = {};
@@ -614,23 +613,19 @@ const buildSankeyDataInputs = (
     });
   });
 
-  nodesAndEdges.nodes.forEach((node) => {
+  nodesAndEdges.nodes.forEach((node, index) => {
     const dataNode = {
       id: node.id,
       name: node.title,
       depth: has(node, "depth") ? node.depth : nodeDepths[node.id],
+      itemStyle: {
+        color: node.category
+          ? nodesAndEdges.categories[node.category].color
+          : themeColors[index],
+      },
     };
-    if (node.category) {
-      const categoryInfo = nodesAndEdges.categories[node.category];
-      // @ts-ignore
-      dataNode.itemStyle = {
-        color: categoryInfo.color,
-      };
-    }
     data.push(dataNode);
   });
-
-  console.log({ data, links });
 
   return {
     data,
