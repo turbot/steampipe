@@ -203,20 +203,26 @@ func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 
 // resolve the sql for this leaf run into the source sql (i.e. NOT the prepared statement name) and resolved args
 func (r *LeafRun) resolveSQL() error {
+	log.Printf("[TRACE] LeafRun '%s' resolveSQL", r.DashboardNode.Name())
 	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
 	if !queryProvider.RequiresExecution(queryProvider) {
+		log.Printf("[TRACE] LeafRun '%s'does NOT require execution - returning", r.DashboardNode.Name())
 		return nil
 	}
 	err := queryProvider.VerifyQuery(queryProvider)
 	if err != nil {
+		log.Printf("[TRACE] LeafRun '%s' VerifyQuery failed: %s", r.DashboardNode.Name(), err.Error())
 		return err
 	}
 
 	// convert runtime dependencies into arg map
 	runtimeArgs, err := r.buildRuntimeDependencyArgs()
 	if err != nil {
+		log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs failed: %s", r.DashboardNode.Name(), err.Error())
 		return err
 	}
+
+	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", r.DashboardNode.Name(), runtimeArgs)
 
 	resolvedQuery, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
 
@@ -229,22 +235,32 @@ func (r *LeafRun) resolveSQL() error {
 func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 	res := modconfig.NewQueryArgs()
 
+	log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs - %d runtime dependencies", r.DashboardNode.Name(), len(r.runtimeDependencies))
+
+	// if the runtime dependencies use position args, get the max index and ensure the args array is large enough
+	maxArgIndex := -1
+	for _, dep := range r.runtimeDependencies {
+		if dep.dependency.ArgIndex != nil && *dep.dependency.ArgIndex > maxArgIndex {
+			maxArgIndex = *dep.dependency.ArgIndex
+		}
+	}
+	if maxArgIndex != -1 {
+		res.ArgList = make([]*string, maxArgIndex+1)
+	}
+
 	// build map of default params
-	for _, r := range r.runtimeDependencies {
+	for _, dep := range r.runtimeDependencies {
 		// format the arg value as a postgres string (this will also work for numbers)
-		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", r.value))
-		if r.dependency.ArgName != nil {
-			res.ArgMap[*r.dependency.ArgName] = formattedVal
+		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", dep.value))
+		if dep.dependency.ArgName != nil {
+			res.ArgMap[*dep.dependency.ArgName] = formattedVal
 		} else {
-			if r.dependency.ArgIndex == nil {
+			if dep.dependency.ArgIndex == nil {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
-			// append nils to res.ArgsList until we get to desired index
-			for idx := len(res.ArgList); idx < *r.dependency.ArgIndex; {
-				res.ArgList = append(res.ArgList, nil)
-			}
+
 			// now add at correct index
-			res.ArgList = append(res.ArgList, &formattedVal)
+			res.ArgList[*dep.dependency.ArgIndex] = &formattedVal
 		}
 	}
 	return res, nil
