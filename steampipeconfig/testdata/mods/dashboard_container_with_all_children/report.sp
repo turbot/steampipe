@@ -17,6 +17,10 @@ dashboard container_with_child_res {
       sql = "select 1"
       type = "ok"
     }
+    flow {
+      title = "example flow"
+      type = "sankey"
+    }
     hierarchy {
       title = "example hierarchy"
       type = "graph"

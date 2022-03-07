@@ -77,6 +77,10 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
+			Type:       modconfig.BlockTypeFlow,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type:       modconfig.BlockTypeHierarchy,
 			LabelNames: []string{"name"},
 		},
@@ -132,6 +136,9 @@ var DashboardBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeControl,
 		},
 		{
+			Type: modconfig.BlockTypeFlow,
+		},
+		{
 			Type: modconfig.BlockTypeHierarchy,
 		},
 		{
@@ -174,6 +181,9 @@ var DashboardContainerBlockSchema = &hcl.BodySchema{
 		},
 		{
 			Type: modconfig.BlockTypeControl,
+		},
+		{
+			Type: modconfig.BlockTypeFlow,
 		},
 		{
 			Type: modconfig.BlockTypeHierarchy,

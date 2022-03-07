@@ -54,6 +54,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
@@ -94,6 +95,9 @@ func getTableInsertSql(workspaceResources *modconfig.ModResources) string {
 	}
 	for _, chart := range workspaceResources.DashboardCharts {
 		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableDashboardChart))
+	}
+	for _, flow := range workspaceResources.DashboardFlows {
+		insertSql = append(insertSql, getTableInsertSqlForResource(flow, constants.IntrospectionTableDashboardFlow))
 	}
 	for _, hierarchy := range workspaceResources.DashboardHierarchies {
 		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableDashboardHierarchy))

@@ -172,6 +172,8 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 		resource = modconfig.NewDashboardChart(block, mod, blockName)
 	case modconfig.BlockTypeCard:
 		resource = modconfig.NewDashboardCard(block, mod, blockName)
+	case modconfig.BlockTypeFlow:
+		resource = modconfig.NewDashboardFlow(block, mod, blockName)
 	case modconfig.BlockTypeHierarchy:
 		resource = modconfig.NewDashboardHierarchy(block, mod, blockName)
 	case modconfig.BlockTypeImage:
@@ -388,7 +390,7 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 	res.handleDecodeDiags(diags)
 
 	if dashboard.Base != nil && len(dashboard.Base.ChildNames) > 0 {
-		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCard, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
+		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCard, modconfig.BlockTypeFlow, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
 		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
 		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
 		children, _ := resolveChildrenFromNames(dashboard.Base.ChildNames, block, supportedChildren, runCtx)

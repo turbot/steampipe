@@ -20,6 +20,7 @@ type ModResources struct {
 	DashboardContainers   map[string]*DashboardContainer
 	DashboardCards        map[string]*DashboardCard
 	DashboardCharts       map[string]*DashboardChart
+	DashboardFlows        map[string]*DashboardFlow
 	DashboardHierarchies  map[string]*DashboardHierarchy
 	DashboardImages       map[string]*DashboardImage
 	DashboardInputs       map[string]map[string]*DashboardInput
@@ -47,6 +48,7 @@ func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 		DashboardContainers:   make(map[string]*DashboardContainer),
 		DashboardCards:        make(map[string]*DashboardCard),
 		DashboardCharts:       make(map[string]*DashboardChart),
+		DashboardFlows:        make(map[string]*DashboardFlow),
 		DashboardHierarchies:  make(map[string]*DashboardHierarchy),
 		DashboardImages:       make(map[string]*DashboardImage),
 		DashboardInputs:       make(map[string]map[string]*DashboardInput),
@@ -226,6 +228,19 @@ func (m *ModResources) Equals(other *ModResources) bool {
 	}
 	for name := range other.DashboardCharts {
 		if _, ok := m.DashboardCharts[name]; !ok {
+			return false
+		}
+	}
+
+	for name, flows := range m.DashboardFlows {
+		if otherFlow, ok := other.DashboardFlows[name]; !ok {
+			return false
+		} else if !flows.Equals(otherFlow) {
+			return false
+		}
+	}
+	for name := range other.DashboardFlows {
+		if _, ok := m.DashboardFlows[name]; !ok {
 			return false
 		}
 	}
@@ -540,6 +555,14 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.DashboardCharts[name] = r
+
+	case *DashboardFlow:
+		name := r.Name()
+		if existing, ok := m.DashboardFlows[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardFlows[name] = r
 
 	case *DashboardHierarchy:
 		name := r.Name()
