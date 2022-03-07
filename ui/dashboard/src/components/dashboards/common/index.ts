@@ -700,114 +700,160 @@ interface TreeItem {
 }
 
 // Taken from https://github.com/philipstanislaus/performant-array-to-tree
-const arrayToTree = (rawData: LeafNodeData): TreeItem[] => {
-  const rootParentIds = { "": true };
+const nodesAndEdgesToTree = (nodesAndEdges: NodesAndEdges): TreeItem[] => {
+  // const rootParentIds = { "": true };
 
   // the resulting unflattened tree
-  const rootItems: TreeItem[] = [];
+  // const rootItems: TreeItem[] = [];
 
   // stores all already processed items with their ids as key so we can easily look them up
   const lookup: { [id: string]: TreeItem } = {};
 
   // stores all item ids that have not been added to the resulting unflattened tree yet
   // this is an opt-in property, since it has a slight runtime overhead
-  const orphanIds: null | Set<string | number> = new Set();
+  // const orphanIds: null | Set<string | number> = new Set();
+
+  let colorIndex = 0;
+
+  // Add in the nodes to the lookup
+  for (const node of nodesAndEdges.nodes) {
+    // look whether item already exists in the lookup table
+    if (!lookup[node.id]) {
+      // item is not yet there, so add a preliminary item (its data will be added later)
+      lookup[node.id] = { children: [] };
+    }
+
+    let color;
+    if (node.category && nodesAndEdges.categories[node.category]) {
+      const categoryOverrides = nodesAndEdges.categories[node.category];
+      if (categoryOverrides.color) {
+        color = categoryOverrides.color;
+        colorIndex++;
+      } else {
+        color = themeColors[colorIndex++];
+      }
+    }
+
+    lookup[node.id] = {
+      ...node,
+      name: node.title || node.id,
+      itemStyle: {
+        color,
+      },
+      children: lookup[node.id].children,
+    };
+  }
+  // Fill in the children with the edge relationships
+  for (const edge of nodesAndEdges.edges) {
+    const childId = edge.to_id;
+    const parentId = edge.from_id;
+
+    // look whether the parent already exists in the lookup table
+    if (!lookup[parentId]) {
+      // parent is not yet there, so add a preliminary parent (its data will be added later)
+      lookup[parentId] = { children: [] };
+    }
+
+    const childItem = lookup[childId];
+
+    // add the current item to the parent
+    lookup[parentId].children.push(childItem);
+  }
+  return Object.values(lookup).filter(
+    (node) => nodesAndEdges.root_nodes[node.id]
+  );
 
   // idea of this loop:
   // whenever an item has a parent, but the parent is not yet in the lookup object, we store a preliminary parent
   // in the lookup object and fill it with the data of the parent later
   // if an item has no parentId, add it as a root element to rootItems
-  for (const rawRow of rawData.rows) {
-    const row: HierarchyDataRow = {
-      parent: null,
-      category: "",
-      id: "",
-      name: "",
-    };
-    for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
-      const column = rawData.columns[colIndex];
-      row[column.name] = rawRow[colIndex];
-    }
+  // for (const rawRow of rawData.rows) {
+  //   const row: HierarchyDataRow = {
+  //     parent: null,
+  //     category: "",
+  //     id: "",
+  //     name: "",
+  //   };
+  //   for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
+  //     const column = rawData.columns[colIndex];
+  //     row[column.name] = rawRow[colIndex];
+  //   }
+  //
+  //   const itemId = row.id;
+  //   const parentId = row.parent;
+  //
+  //   if (rootParentIds[itemId]) {
+  //     throw new Error(
+  //       `The row contains a node whose parent both exists in another node and is in ` +
+  //         `\`rootParentIds\` (\`itemId\`: "${itemId}", \`rootParentIds\`: ${Object.keys(
+  //           rootParentIds
+  //         )
+  //           .map((r) => `"${r}"`)
+  //           .join(", ")}).`
+  //     );
+  //   }
+  //
+  //   // look whether item already exists in the lookup table
+  //   if (!Object.prototype.hasOwnProperty.call(lookup, itemId)) {
+  //     // item is not yet there, so add a preliminary item (its data will be added later)
+  //     lookup[itemId] = { children: [] };
+  //   }
+  //
+  //   // if we track orphans, delete this item from the orphan set if it is in it
+  //   if (orphanIds) {
+  //     orphanIds.delete(itemId);
+  //   }
+  //
+  //   // add the current item's data to the item in the lookup table
+  //
+  //   lookup[itemId] = {
+  //     ...row,
+  //     children: lookup[itemId].children,
+  //   };
+  //
+  //   const treeItem = lookup[itemId];
+  //
+  //   if (
+  //     parentId === null ||
+  //     parentId === undefined ||
+  //     rootParentIds[parentId]
+  //   ) {
+  //     // is a root item
+  //     rootItems.push(treeItem);
+  //   } else {
+  //     // has a parent
+  //
+  //     // look whether the parent already exists in the lookup table
+  //     if (!Object.prototype.hasOwnProperty.call(lookup, parentId)) {
+  //       // parent is not yet there, so add a preliminary parent (its data will be added later)
+  //       lookup[parentId] = { children: [] };
+  //
+  //       // if we track orphans, add the generated parent to the orphan list
+  //       if (orphanIds) {
+  //         orphanIds.add(parentId);
+  //       }
+  //     }
+  //
+  //     // add the current item to the parent
+  //     lookup[parentId].children.push(treeItem);
+  //   }
+  // }
 
-    const itemId = row.id;
-    const parentId = row.parent;
+  // if (orphanIds?.size) {
+  //   throw new Error(
+  //     `The items array contains orphans that point to the following parentIds: ` +
+  //       `[${Array.from(
+  //         orphanIds
+  //       )}]. These parentIds do not exist in the items array. Hint: prevent orphans to result ` +
+  //       `in an error by passing the following option: { throwIfOrphans: false }`
+  //   );
+  // }
 
-    if (rootParentIds[itemId]) {
-      throw new Error(
-        `The row contains a node whose parent both exists in another node and is in ` +
-          `\`rootParentIds\` (\`itemId\`: "${itemId}", \`rootParentIds\`: ${Object.keys(
-            rootParentIds
-          )
-            .map((r) => `"${r}"`)
-            .join(", ")}).`
-      );
-    }
-
-    // look whether item already exists in the lookup table
-    if (!Object.prototype.hasOwnProperty.call(lookup, itemId)) {
-      // item is not yet there, so add a preliminary item (its data will be added later)
-      lookup[itemId] = { children: [] };
-    }
-
-    // if we track orphans, delete this item from the orphan set if it is in it
-    if (orphanIds) {
-      orphanIds.delete(itemId);
-    }
-
-    // add the current item's data to the item in the lookup table
-
-    lookup[itemId] = {
-      ...row,
-      children: lookup[itemId].children,
-    };
-
-    const treeItem = lookup[itemId];
-
-    if (
-      parentId === null ||
-      parentId === undefined ||
-      rootParentIds[parentId]
-    ) {
-      // is a root item
-      rootItems.push(treeItem);
-    } else {
-      // has a parent
-
-      // look whether the parent already exists in the lookup table
-      if (!Object.prototype.hasOwnProperty.call(lookup, parentId)) {
-        // parent is not yet there, so add a preliminary parent (its data will be added later)
-        lookup[parentId] = { children: [] };
-
-        // if we track orphans, add the generated parent to the orphan list
-        if (orphanIds) {
-          orphanIds.add(parentId);
-        }
-      }
-
-      // add the current item to the parent
-      lookup[parentId].children.push(treeItem);
-    }
-  }
-
-  if (orphanIds?.size) {
-    throw new Error(
-      `The items array contains orphans that point to the following parentIds: ` +
-        `[${Array.from(
-          orphanIds
-        )}]. These parentIds do not exist in the items array. Hint: prevent orphans to result ` +
-        `in an error by passing the following option: { throwIfOrphans: false }`
-    );
-  }
-
-  return rootItems;
+  // return rootItems;
 };
 
-const buildTreeDataInputs = (
-  rawData: LeafNodeData,
-  properties: HierarchyProperties | undefined,
-  themeColors
-) => {
-  const tree = arrayToTree(rawData);
+const buildTreeDataInputs = (nodesAndEdges: NodesAndEdges) => {
+  const tree = nodesAndEdgesToTree(nodesAndEdges);
   return {
     data: tree,
   };

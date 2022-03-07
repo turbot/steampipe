@@ -49,11 +49,7 @@ const getSeriesForHierarchyType = (
   for (let seriesIndex = 0; seriesIndex < seriesLength; seriesIndex++) {
     switch (type) {
       case "tree": {
-        const { data: treeData } = buildTreeDataInputs(
-          data,
-          properties,
-          namedColors
-        );
+        const { data: treeData } = buildTreeDataInputs(nodesAndEdges);
         series.push({
           type: "tree",
           data: treeData,
