@@ -358,7 +358,7 @@ interface NodeMap {
 }
 
 interface EdgeMap {
-  [edge_id: string]: Edge;
+  [edge_id: string]: boolean;
 }
 
 const buildNodesAndEdges = (rawData: LeafNodeData) => {
@@ -382,6 +382,8 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   const categories = {};
+
+  let contains_duplicate_edges = false;
 
   rawData.rows.map((row) => {
     const node_id = row[id_index];
@@ -414,21 +416,64 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
 
       nodes.push(node);
 
-      // This must be a root node
-      if (!from_id) {
-        root_node_lookup[node_id] = node;
+      if (from_id) {
+        // If we've previously recorded this as a root node, remove it
+        delete root_node_lookup[node_id];
+
+        // Find any existing edge
+        const edge_id = `${from_id}:${node_id}`;
+        const existingNode = edge_lookup[edge_id];
+        if (existingNode) {
+          contains_duplicate_edges = true;
+        } else {
+          edge_lookup[edge_id] = true;
+        }
+
+        const edge = {
+          id: edge_id,
+          from_id,
+          to_id: node_id,
+        };
+        edges.push(edge);
       } else {
+        // Record this as a root node for now - we may remove that once we process the edges
+        root_node_lookup[node_id] = node;
       }
     }
     // Else it must be an edge
     else {
+      // If we've previously recorded this as a root node, remove it
+      delete root_node_lookup[to_id];
+
+      // Find any existing edge
+      const edge_id = `${from_id}:${node_id}`;
+      const existingNode = edge_lookup[edge_id];
+      if (existingNode) {
+        contains_duplicate_edges = true;
+      } else {
+        edge_lookup[edge_id] = true;
+      }
+
+      const edge = {
+        id: edge_id,
+        from_id,
+        to_id,
+        title,
+        category,
+      };
+      edges.push(edge);
     }
   });
 
   return {
     nodes,
+    root_nodes: root_node_lookup,
     edges,
     categories,
+    metadata: {
+      has_multiple_roots: Object.keys(root_node_lookup).length > 1,
+      contains_duplicate_edges,
+    },
   };
 };
 
