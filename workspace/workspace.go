@@ -32,10 +32,10 @@ type Workspace struct {
 	Mods      map[string]*modconfig.Mod
 	Variables map[string]*modconfig.Variable
 
-	watcher         *utils.FileWatcher
-	loadLock        sync.Mutex
-	exclusions      []string
-	modFileLocation string
+	watcher     *utils.FileWatcher
+	loadLock    sync.Mutex
+	exclusions  []string
+	modFilePath string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)
@@ -148,7 +148,7 @@ func (w *Workspace) Close() {
 }
 
 func (w *Workspace) ModfileExists() bool {
-	return len(w.modFileLocation) > 0
+	return len(w.modFilePath) > 0
 }
 
 // check  whether the workspace contains a modfile
@@ -156,16 +156,16 @@ func (w *Workspace) ModfileExists() bool {
 func (w *Workspace) setModfileExists() {
 	modFile, err := w.findModFilePath(w.Path)
 	modFileExists := err != ErrorNoModDefinition
-	if modFileExists {
-		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
-	}
 
 	if modFileExists {
 		log.Printf("[TRACE] modfile exists in workspace folder - creating pseudo-resources and loading files recursively ")
 		// only load/watch recursively if a mod sp file exists in the workspace folder
 		w.listFlag = filehelpers.FilesRecursive
 		w.loadPseudoResources = true
-		w.modFileLocation = modFile
+		w.modFilePath = modFile
+
+		// also set it in the viper config, so that it is available to whoever is using it
+		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
 	} else {
 		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and onnly loading resource files from top level folder")
 		w.listFlag = filehelpers.Files

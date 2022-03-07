@@ -145,6 +145,8 @@ func waitForDashboardService(ctx context.Context) error {
 				// there was an unexpected error
 				return err
 			}
+
+			// check the state file for an error
 			if len(state.Error) > 0 {
 				// there was an error during start up
 				// remove the state file, since we don't need it anymore
@@ -153,7 +155,7 @@ func waitForDashboardService(ctx context.Context) error {
 				return errors.New(state.Error)
 			}
 
-			// we loaded the state and there was no error -- aal-is-well
+			// we loaded the state and there was no error
 			return nil
 		case <-timeoutAt:
 			return fmt.Errorf("dashboard server startup timed out")

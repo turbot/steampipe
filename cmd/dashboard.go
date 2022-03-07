@@ -58,16 +58,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		if r := recover(); r != nil {
 			utils.ShowError(dashboardCtx, helpers.ToError(r))
 			if isRunningAsService() {
-				state, _ := dashboardserver.GetDashboardServiceState()
-				if state == nil {
-					// write the state file with an error, only if it doesn't exist already
-					// if it exists, that means dashboard stated properly and 'service start' already known about it
-					state = &dashboardserver.DashboardServiceState{
-						State: dashboardserver.ServiceStateError,
-						Error: helpers.ToError(r).Error(),
-					}
-					dashboardserver.WriteServiceStateFile(state)
-				}
+				saveErrorToDashboardState(helpers.ToError(r))
 			}
 		}
 	}()
@@ -98,20 +89,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	server.Start()
 
 	if isRunningAsService() {
-		state := &dashboardserver.DashboardServiceState{
-			State:      dashboardserver.ServiceStateRunning,
-			Error:      "",
-			Pid:        os.Getpid(),
-			Port:       int(serverPort),
-			ListenType: string(serverListen),
-			Listen:     constants.DatabaseListenAddresses,
-		}
-
-		if serverListen == dashboardserver.ListenTypeNetwork {
-			addrs, _ := utils.LocalAddresses()
-			state.Listen = append(state.Listen, addrs...)
-		}
-		utils.FailOnError(dashboardserver.WriteServiceStateFile(state))
+		saveDashboardState(serverPort, serverListen)
 	} else {
 		err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort))
 		if err != nil {
@@ -127,6 +105,36 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 func isRunningAsService() bool {
 	return viper.GetBool(constants.ArgServiceMode)
+}
+
+func saveErrorToDashboardState(err error) {
+	state, _ := dashboardserver.GetDashboardServiceState()
+	if state == nil {
+		// write the state file with an error, only if it doesn't exist already
+		// if it exists, that means dashboard stated properly and 'service start' already known about it
+		state = &dashboardserver.DashboardServiceState{
+			State: dashboardserver.ServiceStateError,
+			Error: err.Error(),
+		}
+		dashboardserver.WriteServiceStateFile(state)
+	}
+}
+
+func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType) {
+	state := &dashboardserver.DashboardServiceState{
+		State:      dashboardserver.ServiceStateRunning,
+		Error:      "",
+		Pid:        os.Getpid(),
+		Port:       int(serverPort),
+		ListenType: string(serverListen),
+		Listen:     constants.DatabaseListenAddresses,
+	}
+
+	if serverListen == dashboardserver.ListenTypeNetwork {
+		addrs, _ := utils.LocalAddresses()
+		state.Listen = append(state.Listen, addrs...)
+	}
+	utils.FailOnError(dashboardserver.WriteServiceStateFile(state))
 }
 
 func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) bool {
