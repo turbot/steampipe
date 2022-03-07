@@ -361,6 +361,30 @@ interface EdgeMap {
   [edge_id: string]: boolean;
 }
 
+const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
+  let duplicate_edge = false;
+  // Find any existing edge
+  const edge_id = `${from_id}:${to_id}`;
+  const existingNode = edge_lookup[edge_id];
+  if (existingNode) {
+    duplicate_edge = true;
+  } else {
+    edge_lookup[edge_id] = true;
+  }
+
+  const edge = {
+    id: edge_id,
+    from_id,
+    to_id,
+    title,
+    category,
+  };
+  return {
+    edge,
+    duplicate_edge,
+  };
+};
+
 const buildNodesAndEdges = (rawData: LeafNodeData) => {
   if (!rawData || !rawData.columns || !rawData.rows) {
     return {};
@@ -420,20 +444,16 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
         // If we've previously recorded this as a root node, remove it
         delete root_node_lookup[node_id];
 
-        // Find any existing edge
-        const edge_id = `${from_id}:${node_id}`;
-        const existingNode = edge_lookup[edge_id];
-        if (existingNode) {
-          contains_duplicate_edges = true;
-        } else {
-          edge_lookup[edge_id] = true;
-        }
-
-        const edge = {
-          id: edge_id,
+        const { edge, duplicate_edge } = recordEdge(
+          edge_lookup,
           from_id,
-          to_id: node_id,
-        };
+          node_id,
+          null,
+          null
+        );
+        if (duplicate_edge) {
+          contains_duplicate_edges = true;
+        }
         edges.push(edge);
       } else {
         // Record this as a root node for now - we may remove that once we process the edges
@@ -445,23 +465,23 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
       // If we've previously recorded this as a root node, remove it
       delete root_node_lookup[to_id];
 
-      // Find any existing edge
-      const edge_id = `${from_id}:${node_id}`;
-      const existingNode = edge_lookup[edge_id];
-      if (existingNode) {
-        contains_duplicate_edges = true;
-      } else {
-        edge_lookup[edge_id] = true;
-      }
-
-      const edge = {
-        id: edge_id,
+      const { edge, duplicate_edge } = recordEdge(
+        edge_lookup,
         from_id,
         to_id,
         title,
-        category,
-      };
+        category
+      );
+      if (duplicate_edge) {
+        contains_duplicate_edges = true;
+      }
       edges.push(edge);
+    }
+
+    if (category) {
+      categories[category] = {
+        color: null,
+      };
     }
   });
 
