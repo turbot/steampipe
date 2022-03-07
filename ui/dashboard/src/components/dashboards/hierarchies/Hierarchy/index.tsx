@@ -28,7 +28,7 @@ const getCommonBaseOptions = () => ({
 
 const getCommonBaseOptionsForHierarchyType = (
   type: HierarchyType = "sankey",
-  themeColors
+  namedColors
 ) => {
   switch (type) {
     case "sankey":
@@ -43,7 +43,7 @@ const getSeriesForHierarchyType = (
   data: LeafNodeData | undefined,
   properties: HierarchyProperties | undefined,
   nodesAndEdges: NodesAndEdges,
-  themeColors
+  namedColors
 ) => {
   if (!data) {
     return {};
@@ -56,13 +56,13 @@ const getSeriesForHierarchyType = (
         const { data: sankeyData, links } = buildSankeyDataInputs(
           nodesAndEdges,
           properties,
-          themeColors
+          namedColors
         );
         series.push({
           type: toEChartsType(type),
           layout: "none",
           draggable: true,
-          label: { color: themeColors.foreground, formatter: "{b}" },
+          label: { color: namedColors.foreground, formatter: "{b}" },
           emphasis: {
             focus: "adjacency",
             blurScope: "coordinateSystem",
@@ -83,7 +83,7 @@ const getSeriesForHierarchyType = (
         const { data: treeData } = buildTreeDataInputs(
           data,
           properties,
-          themeColors
+          namedColors
         );
         series.push({
           type: "tree",
@@ -94,7 +94,7 @@ const getSeriesForHierarchyType = (
           right: "20%",
           symbolSize: 7,
           label: {
-            color: themeColors.foreground,
+            color: namedColors.foreground,
             position: "left",
             verticalAlign: "middle",
             align: "right",
@@ -138,8 +138,6 @@ const buildHierarchyOptions = (
   theme,
   themeWrapperRef
 ) => {
-  const nodesAndEdges = buildNodesAndEdges(props.data, props.properties);
-
   // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
   // @ts-ignore
   const style = window.getComputedStyle(themeWrapperRef);
@@ -150,22 +148,29 @@ const buildHierarchyOptions = (
   const alert = style.getPropertyValue("--color-alert");
   const info = style.getPropertyValue("--color-info");
   const ok = style.getPropertyValue("--color-ok");
-  const themeColors = {
+  const namedColors = {
     foreground,
     foregroundLightest,
     alert,
     info,
     ok,
   };
+
+  const nodesAndEdges = buildNodesAndEdges(
+    props.data,
+    props.properties,
+    namedColors
+  );
+
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForHierarchyType(props.properties?.type, themeColors),
+    getCommonBaseOptionsForHierarchyType(props.properties?.type, namedColors),
     getSeriesForHierarchyType(
       props.properties?.type,
       props.data,
       props.properties,
       nodesAndEdges,
-      themeColors
+      namedColors
     ),
     getOptionOverridesForHierarchyType(props.properties?.type, props.properties)
   );

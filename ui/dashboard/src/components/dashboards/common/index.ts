@@ -414,7 +414,8 @@ const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
 
 const buildNodesAndEdges = (
   rawData: LeafNodeData | undefined,
-  properties: HierarchyProperties | undefined
+  properties: HierarchyProperties | undefined,
+  namedColors
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
     return {
@@ -424,6 +425,8 @@ const buildNodesAndEdges = (
       categories: {},
     };
   }
+
+  let colorIndex = 0;
 
   let categoryProperties: HierarchyCategories = {};
   if (properties && properties.categories) {
@@ -441,7 +444,7 @@ const buildNodesAndEdges = (
   //       color = properties.categories[row.category].color;
   //       colorIndex++;
   //     } else {
-  //       color = themeColors[colorIndex++];
+  //       color = namedColors[colorIndex++];
   //     }
   //     categories[row.category] = { color };
   //   }
@@ -467,15 +470,15 @@ const buildNodesAndEdges = (
   let contains_duplicate_edges = false;
 
   rawData.rows.map((row) => {
-    const node_id = row[id_index];
-    const from_id = row[from_index];
-    const to_id = row[to_index];
-    const title = row[title_index];
-    const category = row[category_index];
-    const depth = row[depth_index];
+    const node_id = id_index > -1 ? row[id_index] : null;
+    const from_id = from_index > -1 ? row[from_index] : null;
+    const to_id = to_index > -1 ? row[to_index] : null;
+    const title = title_index > -1 ? row[title_index] : null;
+    const category = category_index > -1 ? row[category_index] : null;
+    const depth = depth_index > -1 ? row[depth_index] : null;
 
     // We must have at least a node id or an edge from_id / to_id pairing
-    if (!node_id && !from_id && !node_id) {
+    if (node_id === null && from_id === null && to_id === null) {
       return new Error(
         `Encountered dataset row with no node or edge definition: ${JSON.stringify(
           row
@@ -484,22 +487,26 @@ const buildNodesAndEdges = (
     }
 
     // If this row is a node
-    if (node_id) {
+    if (node_id !== null) {
       const existingNode = node_lookup[node_id];
-      if (existingNode) {
-        return new Error(`Duplicate node definition: ${node_id}`);
+
+      if (!existingNode) {
+        const node = {
+          id: node_id,
+          title,
+          category,
+          depth,
+        };
+        node_lookup[node_id] = node;
+
+        nodes.push(node);
+
+        // Record this as a root node for now - we may remove that once we process the edges
+        root_node_lookup[node_id] = node;
       }
-      const node = {
-        id: node_id,
-        title,
-        category,
-        depth,
-      };
-      node_lookup[node_id] = node;
 
-      nodes.push(node);
-
-      if (from_id) {
+      // If this also has an implicit edge
+      if (from_id !== null) {
         // If we've previously recorded this as a root node, remove it
         delete root_node_lookup[node_id];
 
@@ -514,13 +521,10 @@ const buildNodesAndEdges = (
           contains_duplicate_edges = true;
         }
         edges.push(edge);
-      } else {
-        // Record this as a root node for now - we may remove that once we process the edges
-        root_node_lookup[node_id] = node;
       }
     }
     // Else if it looks like an edge
-    else if (from_id && to_id) {
+    else if (from_id !== null && to_id !== null) {
       // If we've previously recorded this as a root node, remove it
       delete root_node_lookup[to_id];
 
@@ -558,20 +562,15 @@ const buildNodesAndEdges = (
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
       const categorySettings = { color: null };
-      // if (overrides) {
-      //   categorySettings.color = overrides.color;
-      // }
-    }
-
-    {
-      //       color = properties.categories[row.category].color;
-      //       colorIndex++;
-      //     } else {
-      //       color = themeColors[colorIndex++];
-      //     }
-      categories[category] = {
-        color: null,
-      };
+      if (overrides) {
+        // @ts-ignore
+        categorySettings.color = getColorOverride(overrides.color, namedColors);
+        colorIndex++;
+      } else {
+        // @ts-ignore
+        categorySettings.color = themeColors[colorIndex];
+      }
+      categories[category] = categorySettings;
     }
   });
 
@@ -616,11 +615,19 @@ const buildSankeyDataInputs = (
   });
 
   nodesAndEdges.nodes.forEach((node) => {
-    data.push({
+    const dataNode = {
       id: node.id,
       name: node.title,
       depth: has(node, "depth") ? node.depth : nodeDepths[node.id],
-    });
+    };
+    if (node.category) {
+      const categoryInfo = nodesAndEdges.categories[node.category];
+      // @ts-ignore
+      dataNode.itemStyle = {
+        color: categoryInfo.color,
+      };
+    }
+    data.push(dataNode);
   });
 
   console.log({ data, links });
