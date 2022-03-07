@@ -357,6 +357,7 @@ interface Node {
 interface Edge {
   from_id: string;
   to_id: string;
+  category?: string;
 }
 
 interface NodeMap {
@@ -426,28 +427,10 @@ const buildNodesAndEdges = (
     };
   }
 
-  let colorIndex = 0;
-
   let categoryProperties: HierarchyCategories = {};
   if (properties && properties.categories) {
     categoryProperties = properties.categories;
   }
-
-  //   if (row.category && !categories[row.category]) {
-  //     let color;
-  //     if (
-  //       properties &&
-  //       properties.categories &&
-  //       properties.categories[row.category] &&
-  //       properties.categories[row.category].color
-  //     ) {
-  //       color = properties.categories[row.category].color;
-  //       colorIndex++;
-  //     } else {
-  //       color = namedColors[colorIndex++];
-  //     }
-  //     categories[row.category] = { color };
-  //   }
 
   const id_index = getColumnIndex(rawData.columns, "id");
   const from_index = getColumnIndex(rawData.columns, "from_id");
@@ -565,10 +548,6 @@ const buildNodesAndEdges = (
       if (overrides) {
         // @ts-ignore
         categorySettings.color = getColorOverride(overrides.color, namedColors);
-        colorIndex++;
-      } else {
-        // @ts-ignore
-        categorySettings.color = themeColors[colorIndex++];
       }
       categories[category] = categorySettings;
     }
@@ -586,15 +565,9 @@ const buildNodesAndEdges = (
   };
 };
 
-const buildSankeyDataInputs = (
-  nodesAndEdges: NodesAndEdges,
-  properties: HierarchyProperties | undefined,
-  namedColors
-) => {
+const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const data: any[] = [];
   const links: any[] = [];
-  const categories = {};
-  const usedIds = {};
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
@@ -610,6 +583,12 @@ const buildSankeyDataInputs = (
       source: edge.from_id,
       target: edge.to_id,
       value: 0.01,
+      lineStyle: {
+        color:
+          edge.category && nodesAndEdges.categories[edge.category].color
+            ? nodesAndEdges.categories[edge.category].color
+            : "target",
+      },
     });
   });
 
@@ -619,9 +598,10 @@ const buildSankeyDataInputs = (
       name: node.title,
       depth: has(node, "depth") ? node.depth : nodeDepths[node.id],
       itemStyle: {
-        color: node.category
-          ? nodesAndEdges.categories[node.category].color
-          : themeColors[index],
+        color:
+          node.category && nodesAndEdges.categories[node.category].color
+            ? nodesAndEdges.categories[node.category].color
+            : themeColors[index],
       },
     };
     data.push(dataNode);

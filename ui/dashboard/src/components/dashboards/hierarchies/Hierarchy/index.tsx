@@ -53,11 +53,8 @@ const getSeriesForHierarchyType = (
   for (let seriesIndex = 0; seriesIndex < seriesLength; seriesIndex++) {
     switch (type) {
       case "sankey": {
-        const { data: sankeyData, links } = buildSankeyDataInputs(
-          nodesAndEdges,
-          properties,
-          namedColors
-        );
+        const { data: sankeyData, links } =
+          buildSankeyDataInputs(nodesAndEdges);
         series.push({
           type: toEChartsType(type),
           layout: "none",
