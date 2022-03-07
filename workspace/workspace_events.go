@@ -50,7 +50,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ModResou
 
 	// get the pre-load resource maps
 	// NOTE: do not call GetResourceMaps - we DO NOT want to lock loadLock
-	prevResourceMaps := w.resourceMaps
+	prevResourceMaps := w.Mod.ResourceMaps
 	// if there is an outstanding watcher error, set prevResourceMaps to empty to force refresh
 	if w.watcherError != nil {
 		prevResourceMaps = modconfig.NewWorkspaceResourceMaps(w.Mod)
@@ -73,7 +73,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ModResou
 	w.watcherError = nil
 
 	// reload the resource maps
-	resourceMaps := w.resourceMaps
+	resourceMaps := w.Mod.ResourceMaps
 
 	return prevResourceMaps, resourceMaps, nil
 
