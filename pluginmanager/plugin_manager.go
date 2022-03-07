@@ -72,7 +72,6 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 			resultLock.Lock()
 			if err != nil {
 				errors = append(errors, err)
-				resultLock.Unlock()
 			} else {
 				resp.ReattachMap[connectionName] = reattach
 			}
@@ -88,7 +87,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	}
 
 	// TODO ADD PLUGINS TO OUR STATE FILE - JUST SERIALISE THE Plugins map?
-	log.Printf("[TRACE] PluginManager get returning %+v", resp)
+	log.Printf("[TRACE] PluginManager Get returning %+v", resp)
 	return resp, nil
 }
 
@@ -138,6 +137,9 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 		// remove from map
 		m.mut.Lock()
 		delete(m.Plugins, connection)
+		m.Plugins[connection] = &runningPlugin{
+			initialized: make(chan (bool), 1),
+		}
 		m.mut.Unlock()
 		// update reason
 		reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, connection)
@@ -160,12 +162,13 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 	// so we need to start the plugin
 	client, err := m.startPlugin(connection)
 	if err != nil {
+		log.Println("[TRACE] startPlugin failed with", err)
 		return nil, err
 	}
 
 	// store the client to our map
 	reattach := m.storeClientToMap(connection, client)
-	log.Printf("[TRACE] PluginManager Get complete, returning reattach config with PID: %d", reattach.Pid)
+	log.Printf("[TRACE] PluginManager getPlugin complete, returning reattach config with PID: %d", reattach.Pid)
 
 	// and return
 	return reattach, nil
