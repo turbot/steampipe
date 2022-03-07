@@ -197,7 +197,7 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, 
 }
 
 // update schemaMetadata to add in all other schemas which have the same schemas as those we have loaded
-// NOTE: this mutates 	schemaMetadata
+// NOTE: this mutates schemaMetadata
 func (c *LocalDbClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) {
 	// we now need to add in all other schemas which have the same schemas as those we have loaded
 	for loadedSchema, otherSchemas := range connectionSchemaMap {
@@ -214,11 +214,11 @@ func (c *LocalDbClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, 
 	}
 }
 
-func (c *LocalDbClient) buildSchemasQuery(exemplarSchemas []string) string {
-	for idx, s := range exemplarSchemas {
-		exemplarSchemas[idx] = fmt.Sprintf("'%s'", s)
+func (c *LocalDbClient) buildSchemasQuery(schemas []string) string {
+	for idx, s := range schemas {
+		schemas[idx] = fmt.Sprintf("'%s'", s)
 	}
-	schemaClause := strings.Join(exemplarSchemas, ",")
+	schemaClause := strings.Join(schemas, ",")
 	query := fmt.Sprintf(`
 SELECT
     table_name,
