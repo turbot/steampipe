@@ -1235,6 +1235,34 @@ func init() {
 				},
 			},
 		},
+		"dashboard_with_child_dashboard": {
+			source:   "testdata/mods/dashboard_with_child_dashboard",
+			expected: "ERROR",
+		},
+		"anonymous_top_level_resource": {
+			source:   "testdata/mods/anonymous_top_level_resource",
+			expected: "ERROR",
+		},
+		"dashboard_with_named_child_res": {
+			source:   "testdata/mods/dashboard_with_named_child_res",
+			expected: "ERROR",
+		},
+		"anonymous_input": {
+			source:   "testdata/mods/anonymous_input",
+			expected: "ERROR",
+		},
+		"duplicate_dashboard": {
+			source:   "testdata/mods/duplicate_dashboard",
+			expected: "ERROR",
+		},
+		"wrong_title_referencing": {
+			source:   "testdata/mods/wrong_title_referencing",
+			expected: "ERROR",
+		},
+		"inputs_with_cyclic_dependency": {
+			source:   "testdata/mods/inputs_with_cyclic_dependency",
+			expected: "ERROR",
+		},
 		//"two_mods": {
 		//	source:   "testdata/mods/two_mods",
 		//	expected: "ERROR",
