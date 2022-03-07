@@ -216,6 +216,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 		return err
 	}
 
+	// populate the mod references map references
+	m.ResourceMaps.PopulateReferences()
+
 	// now set workspace properties
 	w.Mod = m
 
