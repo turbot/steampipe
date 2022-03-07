@@ -3,8 +3,8 @@ package dashboardserver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"syscall"
@@ -17,7 +17,16 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+type ServiceState string
+
+const (
+	ServiceStateRunning ServiceState = "running"
+	ServiceStateError   ServiceState = "running"
+)
+
 type DashboardServiceState struct {
+	State      ServiceState
+	Error      string
 	Pid        int
 	Port       int
 	ListenType string
@@ -25,17 +34,12 @@ type DashboardServiceState struct {
 }
 
 func GetDashboardServiceState() (*DashboardServiceState, error) {
-	state := &DashboardServiceState{}
-	fileContent, err := os.ReadFile(filepaths.DashboardServiceStateFilePath())
+	state, err := loadServiceStateFile()
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
-	err = json.Unmarshal(fileContent, state)
-	if err != nil {
-		return nil, err
+	if state == nil {
+		return nil, nil
 	}
 	pidExists, err := utils.PidExists(state.Pid)
 	if err != nil {
@@ -79,6 +83,9 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		return err
 	}
 
+	// remove the state file (if any)
+	os.Remove(filepaths.DashboardServiceStateFilePath())
+
 	err = dashboardassets.Ensure(ctx)
 	if err != nil {
 		return err
@@ -92,10 +99,10 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		"dashboard",
 		fmt.Sprintf("--%s=%s", constants.ArgDashboardListen, string(serverListen)),
 		fmt.Sprintf("--%s=%d", constants.ArgDashboardPort, serverPort),
-		fmt.Sprintf("--%s", constants.ArgServiceMode),
+		fmt.Sprintf("--%s=%s", constants.ArgInstallDir, filepaths.SteampipeDir),
+		fmt.Sprintf("--%s=true", constants.ArgServiceMode),
 	)
-
-	cmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
+	cmd.Env = os.Environ()
 
 	// set group pgid attributes on the command to ensure the process is not shutdown when its parent terminates
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -108,43 +115,18 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		return err
 	}
 
-	err = waitForDashboardServerStartup(ctx, int(serverPort))
-	if err != nil {
-		return err
-	}
-
-	state := &DashboardServiceState{
-		Pid:        cmd.Process.Pid,
-		Port:       int(serverPort),
-		ListenType: string(serverListen),
-		Listen:     constants.DatabaseListenAddresses,
-	}
-
-	if serverListen == ListenTypeNetwork {
-		addrs, _ := utils.LocalAddresses()
-		state.Listen = append(state.Listen, addrs...)
-	}
-
-	stateBytes, err := json.Marshal(state)
-	if err != nil {
-		cmd.Process.Signal(syscall.SIGINT)
-		return err
-	}
-	err = os.WriteFile(filepaths.DashboardServiceStateFilePath(), stateBytes, 0666)
-	if err != nil {
-		cmd.Process.Signal(syscall.SIGINT)
-		return err
-	}
-
-	return nil
+	return waitForDashboardService(ctx)
 }
 
-func waitForDashboardServerStartup(ctx context.Context, serverPort int) error {
-	utils.LogTime("db.waitForConnection start")
-	defer utils.LogTime("db.waitForConnection end")
+// when started as a service, 'steampipe dashboard' always writes a
+// state file in 'internal' with the outcome - even on failures
+// this function polls for the file and loads up the error, if any
+func waitForDashboardService(ctx context.Context) error {
+	utils.LogTime("db.waitForDashboardServerStartup start")
+	defer utils.LogTime("db.waitForDashboardServerStartup end")
 
-	pingTimer := time.NewTicker(10 * time.Millisecond)
-	timeoutAt := time.After(5 * time.Second)
+	pingTimer := time.NewTicker(constants.ServicePingInterval)
+	timeoutAt := time.After(constants.ServiceStartTimeout)
 	defer pingTimer.Stop()
 
 	for {
@@ -152,12 +134,52 @@ func waitForDashboardServerStartup(ctx context.Context, serverPort int) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-pingTimer.C:
-			_, err := http.Get(fmt.Sprintf("http://localhost:%d", serverPort))
-			if err == nil {
+			// poll for the state file.
+			// when it comes up, return it
+			state, err := loadServiceStateFile()
+			if err != nil {
+				if os.IsNotExist(err) {
+					// if the file hasn't been generated yet, that means 'dashboard' is still booting up
+					continue
+				}
+				// there was an unexpected error
 				return err
 			}
+
+			// check the state file for an error
+			if len(state.Error) > 0 {
+				// there was an error during start up
+				// remove the state file, since we don't need it anymore
+				os.Remove(filepaths.DashboardServiceStateFilePath())
+				// and return the error from the state file
+				return errors.New(state.Error)
+			}
+
+			// we loaded the state and there was no error
+			return nil
 		case <-timeoutAt:
-			return fmt.Errorf("dashboard server startup failed")
+			return fmt.Errorf("dashboard server startup timed out")
 		}
 	}
+}
+
+func WriteServiceStateFile(state *DashboardServiceState) error {
+	stateBytes, err := json.MarshalIndent(state, "", " ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepaths.DashboardServiceStateFilePath(), stateBytes, 0666)
+}
+
+func loadServiceStateFile() (*DashboardServiceState, error) {
+	state := new(DashboardServiceState)
+	stateBytes, err := os.ReadFile(filepaths.DashboardServiceStateFilePath())
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	err = json.Unmarshal(stateBytes, state)
+	return state, err
 }

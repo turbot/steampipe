@@ -220,6 +220,10 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 	initData := control.NewInitData(ctx, w)
 
+	if !w.ModfileExists() {
+		initData.Result.Error = workspace.ErrorNoModDefinition
+	}
+
 	return initData
 }
 

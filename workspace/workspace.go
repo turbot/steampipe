@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
@@ -31,9 +32,10 @@ type Workspace struct {
 	Mods          map[string]*modconfig.Mod
 	CloudMetadata *steampipeconfig.CloudMetadata
 
-	watcher    *utils.FileWatcher
-	loadLock   sync.Mutex
-	exclusions []string
+	watcher     *utils.FileWatcher
+	loadLock    sync.Mutex
+	exclusions  []string
+	modFilePath string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)
@@ -42,7 +44,6 @@ type Workspace struct {
 	dashboardEventHandlers []dashboardevents.DashboardEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
-	modFileExists              bool
 	loadPseudoResources        bool
 
 	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
@@ -146,23 +147,55 @@ func (w *Workspace) Close() {
 	}
 }
 
+func (w *Workspace) ModfileExists() bool {
+	return len(w.modFilePath) > 0
+}
+
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
-	modFilePath := filepaths.ModFilePath(w.Path)
-	_, err := os.Stat(modFilePath)
-	modFileExists := err == nil
+	modFile, err := w.findModFilePath(w.Path)
+	modFileExists := err != ErrorNoModDefinition
 
 	if modFileExists {
 		log.Printf("[TRACE] modfile exists in workspace folder - creating pseudo-resources and loading files recursively ")
 		// only load/watch recursively if a mod sp file exists in the workspace folder
 		w.listFlag = filehelpers.FilesRecursive
 		w.loadPseudoResources = true
+		w.modFilePath = modFile
+
+		// also set it in the viper config, so that it is available to whoever is using it
+		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
+		w.Path = filepath.Dir(modFile)
 	} else {
 		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and onnly loading resource files from top level folder")
 		w.listFlag = filehelpers.Files
 		w.loadPseudoResources = false
 	}
+}
+
+func (w *Workspace) findModFilePath(folder string) (string, error) {
+	folder, err := filepath.Abs(folder)
+	if err != nil {
+		return "", err
+	}
+	modFilePath := filepaths.ModFilePath(folder)
+	_, err = os.Stat(modFilePath)
+	if err == nil {
+		// found the modfile
+		return modFilePath, nil
+	}
+
+	if os.IsNotExist(err) {
+		// if the file wasn't found, search in the parent directory
+		parent := filepath.Dir(folder)
+		if folder == parent {
+			// this typically means that we are already in the root directory
+			return "", ErrorNoModDefinition
+		}
+		return w.findModFilePath(filepath.Dir(folder))
+	}
+	return modFilePath, nil
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
