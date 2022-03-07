@@ -332,8 +332,19 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 }
 
 func (r *RunContext) GetResourceMaps() *modconfig.ModResources {
-	// TODO [reports] add dep mods
-	return r.CurrentMod.GetResourceMaps()
+	dependencyResourceMaps := make([]*modconfig.ModResources, len(r.LoadedDependencyMods))
+	idx := 0
+	// use the current mod as the base resource map
+	resourceMap := r.CurrentMod.GetResourceMaps()
+
+	// merge in the dependency mods
+	for _, m := range r.LoadedDependencyMods {
+		dependencyResourceMaps[idx] = m.GetResourceMaps()
+		idx++
+	}
+
+	resourceMap = resourceMap.Merge(dependencyResourceMaps)
+	return resourceMap
 }
 
 func (r *RunContext) newDependencyGraph() *topsort.Graph {

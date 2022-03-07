@@ -45,9 +45,6 @@ type Workspace struct {
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
 	loadPseudoResources        bool
-
-	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	resourceMaps *modconfig.ModResources
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -219,6 +216,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 		return err
 	}
 
+	// populate the mod references map references
+	m.ResourceMaps.PopulateReferences()
+
 	// now set workspace properties
 	w.Mod = m
 
@@ -226,9 +226,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Mods = runCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod
-
-	// populate the workspace resource map
-	w.populateResourceMaps()
 
 	// verify all runtime dependencies can be resolved
 	return w.verifyResourceRuntimeDependencies()
@@ -320,7 +317,7 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 }
 
 func (w *Workspace) verifyResourceRuntimeDependencies() error {
-	for _, d := range w.resourceMaps.Dashboards {
+	for _, d := range w.Mod.ResourceMaps.Dashboards {
 		if err := d.BuildRuntimeDependencyTree(w); err != nil {
 			return err
 		}

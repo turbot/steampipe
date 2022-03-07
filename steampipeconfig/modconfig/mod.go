@@ -259,9 +259,6 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvid
 		m.Require = m.LegacyRequire
 	}
 
-	// populate resource map references
-	m.ResourceMaps.PopulateReferences()
-
 	// initialise our Require
 	if m.Require == nil {
 		return nil
