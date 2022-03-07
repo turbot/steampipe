@@ -1,6 +1,6 @@
+import ExternalLink from "../../ExternalLink";
 import {
   BasePrimitiveProps,
-  buildNodesAndEdges,
   ExecutablePrimitiveProps,
   isNumericCol,
   LeafNodeDataColumn,
@@ -9,7 +9,6 @@ import {
 import { classNames } from "../../../utils/styles";
 import { getInterpolatedTemplateValue } from "../../../utils/template";
 import { isObject } from "lodash";
-import { Link } from "react-router-dom";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   SortAscendingIcon,
@@ -17,7 +16,6 @@ import {
 } from "../../../constants/icons";
 import { usePanel } from "../../../hooks/usePanel";
 import { useSortBy, useTable } from "react-table";
-import ExternalLink from "../../ExternalLink";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
@@ -298,12 +296,10 @@ const TableView = (props: TableProps) => {
     () => getColumns(props.data ? props.data.columns : [], props.properties),
     [props.data, props.properties]
   );
-  const rowData = useMemo(() => {
-    if (props.data) {
-      console.log(buildNodesAndEdges(props.data));
-    }
-    return getData(columns, props.data ? props.data.rows : []);
-  }, [columns, props.data]);
+  const rowData = useMemo(
+    () => getData(columns, props.data ? props.data.rows : []),
+    [columns, props.data]
+  );
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
     useTable(
       { columns, data: rowData, initialState: { hiddenColumns } },

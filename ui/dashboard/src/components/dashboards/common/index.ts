@@ -1,6 +1,11 @@
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
-import { HierarchyProperties, HierarchyType } from "../hierarchies";
+import {
+  HierarchyCategories,
+  HierarchyProperties,
+  HierarchyType,
+} from "../hierarchies";
 import { getColumnIndex } from "../../../utils/data";
+import { has } from "lodash";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -346,6 +351,7 @@ interface Node {
   id: string;
   title?: string;
   category?: string;
+  depth?: number;
 }
 
 interface Edge {
@@ -359,6 +365,27 @@ interface NodeMap {
 
 interface EdgeMap {
   [edge_id: string]: boolean;
+}
+
+interface Category {
+  color: string | null;
+}
+
+interface CategoryMap {
+  [category: string]: Category;
+}
+
+interface NodesAndEdgesMetadata {
+  has_multiple_roots: boolean;
+  contains_duplicate_edges: boolean;
+}
+
+export interface NodesAndEdges {
+  nodes: Node[];
+  root_nodes: NodeMap;
+  edges: Edge[];
+  categories: CategoryMap;
+  metadata?: NodesAndEdgesMetadata;
 }
 
 const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
@@ -385,16 +412,46 @@ const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
   };
 };
 
-const buildNodesAndEdges = (rawData: LeafNodeData) => {
+const buildNodesAndEdges = (
+  rawData: LeafNodeData | undefined,
+  properties: HierarchyProperties | undefined
+): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
-    return {};
+    return {
+      nodes: [],
+      root_nodes: {},
+      edges: [],
+      categories: {},
+    };
   }
+
+  let categoryProperties: HierarchyCategories = {};
+  if (properties && properties.categories) {
+    categoryProperties = properties.categories;
+  }
+
+  //   if (row.category && !categories[row.category]) {
+  //     let color;
+  //     if (
+  //       properties &&
+  //       properties.categories &&
+  //       properties.categories[row.category] &&
+  //       properties.categories[row.category].color
+  //     ) {
+  //       color = properties.categories[row.category].color;
+  //       colorIndex++;
+  //     } else {
+  //       color = themeColors[colorIndex++];
+  //     }
+  //     categories[row.category] = { color };
+  //   }
 
   const id_index = getColumnIndex(rawData.columns, "id");
   const from_index = getColumnIndex(rawData.columns, "from_id");
   const to_index = getColumnIndex(rawData.columns, "to_id");
   const title_index = getColumnIndex(rawData.columns, "title");
   const category_index = getColumnIndex(rawData.columns, "category");
+  const depth_index = getColumnIndex(rawData.columns, "depth");
 
   if (id_index === -1 && from_index === -1 && to_index === -1) {
     throw new Error("No node or edge rows defined in the dataset");
@@ -405,7 +462,7 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
   const edge_lookup: EdgeMap = {};
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  const categories = {};
+  const categories: CategoryMap = {};
 
   let contains_duplicate_edges = false;
 
@@ -415,6 +472,7 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
     const to_id = row[to_index];
     const title = row[title_index];
     const category = row[category_index];
+    const depth = row[depth_index];
 
     // We must have at least a node id or an edge from_id / to_id pairing
     if (!node_id && !from_id && !node_id) {
@@ -435,6 +493,7 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
         id: node_id,
         title,
         category,
+        depth,
       };
       node_lookup[node_id] = node;
 
@@ -460,10 +519,28 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
         root_node_lookup[node_id] = node;
       }
     }
-    // Else it must be an edge
-    else {
+    // Else if it looks like an edge
+    else if (from_id && to_id) {
       // If we've previously recorded this as a root node, remove it
       delete root_node_lookup[to_id];
+
+      // Record implicit nodes from edge definition
+      const existingFromNode = node_lookup[from_id];
+      if (!existingFromNode) {
+        const node = {
+          id: from_id,
+        };
+        node_lookup[from_id] = node;
+        nodes.push(node);
+      }
+      const existingToNode = node_lookup[to_id];
+      if (!existingToNode) {
+        const node = {
+          id: to_id,
+        };
+        node_lookup[to_id] = node;
+        nodes.push(node);
+      }
 
       const { edge, duplicate_edge } = recordEdge(
         edge_lookup,
@@ -478,7 +555,20 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
       edges.push(edge);
     }
 
-    if (category) {
+    if (category && !categories[category]) {
+      const overrides = categoryProperties[category];
+      const categorySettings = { color: null };
+      // if (overrides) {
+      //   categorySettings.color = overrides.color;
+      // }
+    }
+
+    {
+      //       color = properties.categories[row.category].color;
+      //       colorIndex++;
+      //     } else {
+      //       color = themeColors[colorIndex++];
+      //     }
       categories[category] = {
         color: null,
       };
@@ -498,81 +588,115 @@ const buildNodesAndEdges = (rawData: LeafNodeData) => {
 };
 
 const buildSankeyDataInputs = (
-  rawData: LeafNodeData,
+  nodesAndEdges: NodesAndEdges,
   properties: HierarchyProperties | undefined,
   themeColors
 ) => {
   let colorIndex = 0;
-  const builtData = [];
+  const data: any[] = [];
+  const links: any[] = [];
   const categories = {};
   const usedIds = {};
-  const objectData = rawData.rows.map((dataRow) => {
-    const row: HierarchyDataRow = {
-      parent: null,
-      category: "",
-      id: "",
-      name: "",
-    };
-    for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
-      const column = rawData.columns[colIndex];
-      row[column.name] = dataRow[colIndex];
-    }
+  const nodeDepths = {};
 
-    if (row.category && !categories[row.category]) {
-      let color;
-      if (
-        properties &&
-        properties.categories &&
-        properties.categories[row.category] &&
-        properties.categories[row.category].color
-      ) {
-        color = properties.categories[row.category].color;
-        colorIndex++;
-      } else {
-        color = themeColors[colorIndex++];
-      }
-      categories[row.category] = { color };
+  nodesAndEdges.edges.forEach((edge) => {
+    const existingFromDepth = nodeDepths[edge.from_id];
+    if (!existingFromDepth) {
+      nodeDepths[edge.from_id] = 0;
     }
-
-    if (!usedIds[row.id]) {
-      builtData.push({
-        ...row,
-        itemStyle: {
-          // @ts-ignore
-          color: getColorOverride(categories[row.category].color, themeColors),
-        },
-      });
-      usedIds[row.id] = true;
+    const existingToDepth = nodeDepths[edge.to_id];
+    if (!existingToDepth) {
+      nodeDepths[edge.to_id] = nodeDepths[edge.from_id] + 1;
     }
-    return row;
+    links.push({
+      source: edge.from_id,
+      target: edge.to_id,
+      value: 0.01,
+    });
   });
-  const edges: HierarchyDataRowEdge[] = [];
-  const edgeValues = {};
-  for (const d of objectData) {
-    // TODO remove <null> after Kai fixes base64 issue and removes col string conversion
-    if (d.parent === null || d.parent === "<null>") {
-      d.parent = null;
-      continue;
-    }
-    edges.push({ source: d.parent, target: d.id, value: 0.01 });
-    edgeValues[d.parent] = (edgeValues[d.parent] || 0) + 0.01;
-  }
-  for (const e of edges) {
-    var v = 0;
-    if (edgeValues[e.target]) {
-      for (const e2 of edges) {
-        if (e.target === e2.source) {
-          v += edgeValues[e2.target] || 0.01;
-        }
-      }
-      e.value = v;
-    }
-  }
+
+  nodesAndEdges.nodes.forEach((node) => {
+    data.push({
+      id: node.id,
+      name: node.title,
+      depth: has(node, "depth") ? node.depth : nodeDepths[node.id],
+    });
+  });
+
+  console.log({ data, links });
 
   return {
-    data: builtData,
-    links: edges,
+    data,
+    links,
   };
+
+  // const objectData = rawData.rows.map((dataRow) => {
+  //   const row: HierarchyDataRow = {
+  //     parent: null,
+  //     category: "",
+  //     id: "",
+  //     name: "",
+  //   };
+  //   for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
+  //     const column = rawData.columns[colIndex];
+  //     row[column.name] = dataRow[colIndex];
+  //   }
+  //
+  //   if (row.category && !categories[row.category]) {
+  //     let color;
+  //     if (
+  //       properties &&
+  //       properties.categories &&
+  //       properties.categories[row.category] &&
+  //       properties.categories[row.category].color
+  //     ) {
+  //       color = properties.categories[row.category].color;
+  //       colorIndex++;
+  //     } else {
+  //       color = themeColors[colorIndex++];
+  //     }
+  //     categories[row.category] = { color };
+  //   }
+  //
+  //   if (!usedIds[row.id]) {
+  //     builtData.push({
+  //       ...row,
+  //       itemStyle: {
+  //         // @ts-ignore
+  //         color: getColorOverride(categories[row.category].color, themeColors),
+  //       },
+  //     });
+  //     usedIds[row.id] = true;
+  //   }
+  //   return row;
+  // });
+  // const edges: HierarchyDataRowEdge[] = [];
+  // const edgeValues = {};
+  // for (const d of objectData) {
+  //   // TODO remove <null> after Kai fixes base64 issue and removes col string conversion
+  //   if (d.parent === null || d.parent === "<null>") {
+  //     d.parent = null;
+  //     continue;
+  //   }
+  //   edges.push({ source: d.parent, target: d.id, value: 0.01 });
+  //   edgeValues[d.parent] = (edgeValues[d.parent] || 0) + 0.01;
+  // }
+  // for (const e of edges) {
+  //   var v = 0;
+  //   if (edgeValues[e.target]) {
+  //     for (const e2 of edges) {
+  //       if (e.target === e2.source) {
+  //         v += edgeValues[e2.target] || 0.01;
+  //       }
+  //     }
+  //     e.value = v;
+  //   }
+  // }
+  //
+  // return {
+  //   data: builtData,
+  //   links: edges,
+  // };
 };
 
 interface Item {

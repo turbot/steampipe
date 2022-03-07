@@ -15,7 +15,7 @@ interface HierarchyCategoryOptions {
   color?: ColorOverride;
 }
 
-type HierarchyCategories = {
+export type HierarchyCategories = {
   [category: string]: HierarchyCategoryOptions;
 };
 

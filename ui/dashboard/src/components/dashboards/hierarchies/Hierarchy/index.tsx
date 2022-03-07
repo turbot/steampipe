@@ -4,9 +4,11 @@ import Hierarchies, {
   HierarchyType,
 } from "../../hierarchies";
 import {
+  buildNodesAndEdges,
   buildSankeyDataInputs,
   buildTreeDataInputs,
   LeafNodeData,
+  NodesAndEdges,
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
@@ -40,6 +42,7 @@ const getSeriesForHierarchyType = (
   type: HierarchyType = "sankey",
   data: LeafNodeData | undefined,
   properties: HierarchyProperties | undefined,
+  nodesAndEdges: NodesAndEdges,
   themeColors
 ) => {
   if (!data) {
@@ -51,7 +54,7 @@ const getSeriesForHierarchyType = (
     switch (type) {
       case "sankey": {
         const { data: sankeyData, links } = buildSankeyDataInputs(
-          data,
+          nodesAndEdges,
           properties,
           themeColors
         );
@@ -135,6 +138,8 @@ const buildHierarchyOptions = (
   theme,
   themeWrapperRef
 ) => {
+  const nodesAndEdges = buildNodesAndEdges(props.data, props.properties);
+
   // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
   // @ts-ignore
   const style = window.getComputedStyle(themeWrapperRef);
@@ -159,6 +164,7 @@ const buildHierarchyOptions = (
       props.properties?.type,
       props.data,
       props.properties,
+      nodesAndEdges,
       themeColors
     ),
     getOptionOverridesForHierarchyType(props.properties?.type, props.properties)
