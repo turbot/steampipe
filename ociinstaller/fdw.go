@@ -12,14 +12,13 @@ import (
 
 // InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
 func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
-	imageRef := constants.FdwImageRef
-	tempDir := NewTempDir(imageRef)
+	tempDir := NewTempDir(dbLocation)
 	defer tempDir.Delete()
 
 	imageDownloader := NewOciDownloader()
 
 	// download the blobs.
-	image, err := imageDownloader.Download(ctx, imageRef, ImageTypeFdw, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, constants.FdwImageRef, ImageTypeFdw, tempDir.Path)
 	if err != nil {
 		return "", err
 	}

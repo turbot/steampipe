@@ -64,7 +64,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
-	_, err = ociinstaller.InstallDB(ctx, constants.PostgresImageRef, getDatabaseLocation())
+	_, err = ociinstaller.InstallDB(ctx, getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
