@@ -12,6 +12,7 @@ export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 interface FlowCategoryOptions {
   title?: string;
   color?: ColorOverride;
+  depth?: number;
 }
 
 export type FlowCategories = {

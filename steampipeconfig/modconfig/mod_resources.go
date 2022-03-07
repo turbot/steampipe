@@ -80,6 +80,7 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 			len(m.Controls)+
 			len(m.DashboardCards)+
 			len(m.DashboardCharts)+
+			len(m.DashboardFlows)+
 			len(m.DashboardHierarchies)+
 			numDashboardInputs+
 			len(m.GlobalDashboardInputs)+
@@ -99,6 +100,10 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 		idx++
 	}
 	for _, p := range m.DashboardCharts {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardFlows {
 		res[idx] = p
 		idx++
 	}
@@ -385,6 +390,7 @@ func (m *ModResources) Empty() bool {
 		len(m.DashboardContainers)+
 		len(m.DashboardCards)+
 		len(m.DashboardCharts)+
+		len(m.DashboardFlows)+
 		len(m.DashboardHierarchies)+
 		len(m.DashboardImages)+
 		len(m.DashboardInputs)+
@@ -441,6 +447,11 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 		}
 	}
 	for _, r := range m.DashboardCharts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardFlows {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -683,6 +694,9 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		}
 		for k, v := range source.DashboardCharts {
 			res.DashboardCharts[k] = v
+		}
+		for k, v := range source.DashboardFlows {
+			res.DashboardFlows[k] = v
 		}
 		for k, v := range source.DashboardHierarchies {
 			res.DashboardHierarchies[k] = v

@@ -6,6 +6,7 @@ type DashboardFlowCategory struct {
 	Name  string  `hcl:"name,label" json:"-"`
 	Title *string `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
+	Depth *int    `cty:"depth" hcl:"depth" json:"depth,omitempty"`
 }
 
 func (c DashboardFlowCategory) Equals(other *DashboardFlowCategory) bool {
@@ -15,5 +16,6 @@ func (c DashboardFlowCategory) Equals(other *DashboardFlowCategory) bool {
 
 	return utils.SafeStringsEqual(c.Name, other.Name) &&
 		utils.SafeStringsEqual(c.Title, other.Title) &&
-		utils.SafeStringsEqual(c.Color, other.Color)
+		utils.SafeStringsEqual(c.Color, other.Color) &&
+		utils.SafeIntEqual(c.Depth, other.Depth)
 }

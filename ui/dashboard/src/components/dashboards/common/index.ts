@@ -1,12 +1,8 @@
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
-import {
-  HierarchyCategories,
-  HierarchyProperties,
-  HierarchyType,
-} from "../hierarchies";
+import { HierarchyProperties, HierarchyType } from "../hierarchies";
 import { getColumnIndex } from "../../../utils/data";
 import { has } from "lodash";
-import { FlowProperties, FlowType } from "../flows";
+import { FlowCategories, FlowProperties, FlowType } from "../flows";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -23,18 +19,18 @@ export interface LeafNodeDataColumn {
   data_type_name: string;
 }
 
-export interface HierarchyDataRow {
-  id: string;
-  category: string;
-  parent: string | null;
-  name: string | null;
-}
-
-export interface HierarchyDataRowEdge {
-  source: string;
-  target: string;
-  value: number;
-}
+// export interface HierarchyDataRow {
+//   id: string;
+//   category: string;
+//   parent: string | null;
+//   name: string | null;
+// }
+//
+// export interface HierarchyDataRowEdge {
+//   source: string;
+//   target: string;
+//   value: number;
+// }
 
 export type LeafNodeDataRow = any[];
 
@@ -432,7 +428,7 @@ const buildNodesAndEdges = (
     };
   }
 
-  let categoryProperties: HierarchyCategories = {};
+  let categoryProperties: FlowCategories = {};
   if (properties && properties.categories) {
     categoryProperties = properties.categories;
   }
@@ -522,6 +518,7 @@ const buildNodesAndEdges = (
       if (!existingFromNode) {
         const node = {
           id: from_id,
+          title: to_id,
         };
         node_lookup[from_id] = node;
         nodes.push(node);
@@ -530,6 +527,7 @@ const buildNodesAndEdges = (
       if (!existingToNode) {
         const node = {
           id: to_id,
+          title: to_id,
         };
         node_lookup[to_id] = node;
         nodes.push(node);
@@ -550,10 +548,14 @@ const buildNodesAndEdges = (
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
-      const categorySettings = { color: null };
+      const categorySettings = { color: null, depth: null };
       if (overrides) {
         // @ts-ignore
         categorySettings.color = getColorOverride(overrides.color, namedColors);
+        // @ts-ignore
+        categorySettings.depth = has(overrides, "depth")
+          ? overrides.depth
+          : null;
       } else {
         // @ts-ignore
         categorySettings.color = themeColors[colorIndex++];
@@ -581,6 +583,11 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
+    let categoryOverrides;
+    if (edge.category && nodesAndEdges.categories[edge.category]) {
+      categoryOverrides = nodesAndEdges.categories[edge.category];
+    }
+
     const existingFromDepth = nodeDepths[edge.from_id];
     if (!existingFromDepth) {
       nodeDepths[edge.from_id] = 0;
@@ -595,22 +602,31 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
       value: 0.01,
       lineStyle: {
         color:
-          edge.category && nodesAndEdges.categories[edge.category].color
-            ? nodesAndEdges.categories[edge.category].color
+          categoryOverrides && categoryOverrides.color
+            ? categoryOverrides.color
             : "target",
       },
     });
   });
 
   nodesAndEdges.nodes.forEach((node, index) => {
+    let categoryOverrides;
+    if (node.category && nodesAndEdges.categories[node.category]) {
+      categoryOverrides = nodesAndEdges.categories[node.category];
+    }
     const dataNode = {
       id: node.id,
       name: node.title,
-      depth: has(node, "depth") ? node.depth : nodeDepths[node.id],
+      depth:
+        node.depth !== null
+          ? node.depth
+          : has(categoryOverrides, "depth")
+          ? categoryOverrides.depth
+          : nodeDepths[node.id],
       itemStyle: {
         color:
-          node.category && nodesAndEdges.categories[node.category].color
-            ? nodesAndEdges.categories[node.category].color
+          categoryOverrides && categoryOverrides.color
+            ? categoryOverrides.color
             : themeColors[nodesAndEdges.next_color_index++],
       },
     };
@@ -736,7 +752,7 @@ const nodesAndEdgesToTree = (nodesAndEdges: NodesAndEdges): TreeItem[] => {
 
     lookup[node.id] = {
       ...node,
-      name: node.title || node.id,
+      name: node.title,
       itemStyle: {
         color,
       },
