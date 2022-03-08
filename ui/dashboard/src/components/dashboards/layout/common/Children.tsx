@@ -21,11 +21,13 @@ import { RenderInput as Input } from "../../inputs/Input";
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
   allowPanelExpand?: boolean;
+  withTitle?: boolean;
 }
 
 const Children = ({
   children = [],
   allowPanelExpand = true,
+  withTitle = true,
 }: ChildrenProps) => (
   <>
     {children.map((child) => {
@@ -36,6 +38,7 @@ const Children = ({
               key={child.name}
               definition={child}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Benchmark {...child} />
             </Panel>
@@ -46,6 +49,7 @@ const Children = ({
               key={child.name}
               definition={child}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Card {...child} />
             </Panel>
@@ -57,6 +61,7 @@ const Children = ({
               definition={child}
               ready={!!child.data}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Chart {...child} />
             </Panel>
@@ -69,6 +74,7 @@ const Children = ({
               key={child.name}
               definition={child}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Control {...child} />
             </Panel>
@@ -81,6 +87,7 @@ const Children = ({
               key={child.name}
               definition={child}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <ErrorPanel error={child.error} />
             </Panel>
@@ -92,6 +99,7 @@ const Children = ({
               definition={child}
               ready={!!child.data}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Flow {...child} />
             </Panel>
@@ -103,6 +111,7 @@ const Children = ({
               definition={child}
               ready={!!child.data}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Hierarchy {...child} />
             </Panel>
@@ -114,6 +123,7 @@ const Children = ({
               definition={child}
               ready={child.sql ? !!child.data : !!child.properties.src}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Image {...child} />
             </Panel>
@@ -124,8 +134,10 @@ const Children = ({
               key={child.name}
               definition={child}
               allowExpand={
-                allowPanelExpand && child.properties?.type === "table"
+                allowPanelExpand &&
+                (child.title || child.properties?.type === "table")
               }
+              withTitle={withTitle}
             >
               <Input {...child} />
             </Panel>
@@ -137,13 +149,19 @@ const Children = ({
               definition={child}
               ready={!!child.data}
               allowExpand={allowPanelExpand}
+              withTitle={withTitle}
             >
               <Table {...child} />
             </Panel>
           );
         case "text":
           return (
-            <Panel key={child.name} definition={child} allowExpand={false}>
+            <Panel
+              key={child.name}
+              definition={child}
+              allowExpand={false}
+              withTitle={withTitle}
+            >
               <Text {...child} />
             </Panel>
           );

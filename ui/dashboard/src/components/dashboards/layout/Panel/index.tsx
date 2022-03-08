@@ -4,6 +4,7 @@ import { BaseChartProps } from "../../charts";
 import { CardProps } from "../../Card";
 import { CheckProps } from "../../check/common";
 import { classNames } from "../../../../utils/styles";
+import { get } from "lodash";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";
@@ -14,7 +15,6 @@ import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
 import { ZoomIcon } from "../../../../constants/icons";
-import { get } from "lodash";
 
 interface PanelProps {
   children: null | JSX.Element | JSX.Element[];
@@ -30,6 +30,7 @@ interface PanelProps {
     | TextProps;
   ready?: boolean;
   allowExpand?: boolean;
+  withTitle?: boolean;
 }
 
 const Panel = ({
@@ -37,6 +38,7 @@ const Panel = ({
   definition,
   allowExpand = true,
   ready = true,
+  withTitle = true,
 }: PanelProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
   const [zoomIconClassName, setZoomIconClassName] =
@@ -78,12 +80,14 @@ const Panel = ({
       >
         <section
           aria-labelledby={
-            definition.title ? `${definition.name}-title` : undefined
+            withTitle && definition.title
+              ? `${definition.name}-title`
+              : undefined
           }
           className={classNames(
             "col-span-12",
-            definition.node_type !== "text" && definition.node_type !== "card"
-              ? "bg-white shadow sm:rounded-lg"
+            definition.node_type !== "card"
+              ? "bg-white shadow rounded-sm sm:rounded-md"
               : null
           )}
         >
@@ -103,15 +107,14 @@ const Panel = ({
               <ZoomIcon className="h-5 w-5" />
             </div>
           )}
-          {definition.title && (
-            <div className="px-2 py-5 sm:px-4">
+          {withTitle && definition.title && (
+            <div className="px-2 py-4 sm:px-4">
               <h3 id={`${definition.name}-title`}>{definition.title}</h3>
             </div>
           )}
 
           <div
             className={classNames(
-              "col-span-12",
               definition.title &&
                 (definition.node_type !== "table" ||
                   (definition.node_type === "table" &&
