@@ -61,13 +61,17 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		UrlPath:         fmt.Sprintf("/%s.%s.%s", mod.ShortName, block.Type, shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
 	}
 	c.SetAnonymous(block)
+	c.setUrlPath()
 
 	return c
+}
+
+func (d *Dashboard) setUrlPath() {
+	d.UrlPath = fmt.Sprintf("/%s", d.FullName)
 }
 
 func (d *Dashboard) Equals(other *Dashboard) bool {
