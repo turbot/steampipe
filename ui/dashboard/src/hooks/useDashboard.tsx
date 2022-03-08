@@ -58,9 +58,32 @@ interface InstalledModsDashboardMetadata {
   [key: string]: ModDashboardMetadata;
 }
 
+export interface CloudDashboardActorMetadata {
+  id: string;
+  handle: string;
+}
+
+export interface CloudDashboardIdentityMetadata {
+  id: string;
+  handle: string;
+  type: "org" | "user";
+}
+
+export interface CloudDashboardWorkspaceMetadata {
+  id: string;
+  handle: string;
+}
+
+interface CloudDashboardMetadata {
+  actor: CloudDashboardActorMetadata;
+  identity: CloudDashboardIdentityMetadata;
+  workspace: CloudDashboardWorkspaceMetadata;
+}
+
 interface DashboardMetadata {
   mod: ModDashboardMetadata;
-  installed_mods: InstalledModsDashboardMetadata;
+  installed_mods?: InstalledModsDashboardMetadata;
+  cloud?: CloudDashboardMetadata;
 }
 
 interface AvailableDashboardTags {

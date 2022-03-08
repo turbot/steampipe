@@ -55,13 +55,15 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
 	identity := workspace["identity"].(map[string]interface{})
-	cloudMetadata := steampipeconfig.NewCloudMetadata()
 
+	cloudMetadata := steampipeconfig.NewCloudMetadata()
+	cloudMetadata.Actor.Id = userId
+	cloudMetadata.Actor.Handle = userHandle
 	cloudMetadata.Identity.Id = identity["id"].(string)
 	cloudMetadata.Identity.Type = identity["type"].(string)
 	cloudMetadata.Identity.Handle = identityHandle
-	cloudMetadata.Actor.Id = userId
-	cloudMetadata.Actor.Handle = userHandle
+	cloudMetadata.Workspace.Id = workspace["id"].(string)
+	cloudMetadata.Workspace.Handle = workspace["handle"].(string)
 	cloudMetadata.ConnectionString = connectionString
 
 	return cloudMetadata, nil
