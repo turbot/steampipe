@@ -111,8 +111,8 @@
   --color-success: #0070f3;
   --color-error: red;
   --color-warning: #f9a825;
-  --color-background: #121212;
-  --color-background-panel: var(--color-black-scale-1);
+  --color-background: #1e2329;
+  --color-background-panel: #2d333b; /*var(--color-black-scale-1);*/
   --color-foreground: #fff;
   --color-foreground-light: #ccc;
   --color-foreground-lighter: #777;

@@ -14,10 +14,9 @@ const useSelectInputStyles = () => {
 
   // @ts-ignore
   const style = window.getComputedStyle(wrapperRef);
-  const background = style.getPropertyValue("--color-background");
+  const backgroundPanel = style.getPropertyValue("--color-background-panel");
   const foreground = style.getPropertyValue("--color-foreground");
   const blackScale1 = style.getPropertyValue("--color-black-scale-1");
-  const blackScale2 = style.getPropertyValue("--color-black-scale-2");
   const blackScale3 = style.getPropertyValue("--color-black-scale-3");
 
   return {
@@ -28,8 +27,7 @@ const useSelectInputStyles = () => {
     control: (provided, state) => {
       return {
         ...provided,
-        backgroundColor:
-          theme.name === ThemeNames.STEAMPIPE_DARK ? blackScale2 : background,
+        backgroundColor: backgroundPanel,
         borderColor: state.isFocused ? "#2684FF" : blackScale3,
         boxShadow: "none",
       };
@@ -53,8 +51,7 @@ const useSelectInputStyles = () => {
     menu: (provided) => {
       return {
         ...provided,
-        backgroundColor:
-          theme.name === ThemeNames.STEAMPIPE_DARK ? blackScale2 : background,
+        backgroundColor: backgroundPanel,
         border: `1px solid ${blackScale3}`,
         boxShadow: "none",
         marginTop: 0,
