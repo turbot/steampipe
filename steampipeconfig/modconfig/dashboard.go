@@ -33,6 +33,8 @@ type Dashboard struct {
 	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
 	Tags            map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb" json:"tags,omitempty"`
 
+	UrlPath string `cty:"url_path"  column:"url_path,jsonb" json:"url_path"`
+
 	Base *Dashboard `hcl:"base" json:"-"`
 
 	IsTopLevel bool                 `column:"is_top_level,bool" json:"-"`
@@ -63,8 +65,13 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 		DeclRange:       block.DefRange,
 	}
 	c.SetAnonymous(block)
+	c.setUrlPath()
 
 	return c
+}
+
+func (d *Dashboard) setUrlPath() {
+	d.UrlPath = fmt.Sprintf("/%s", d.FullName)
 }
 
 func (d *Dashboard) Equals(other *Dashboard) bool {
@@ -90,6 +97,7 @@ func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ModResources
 	for i, child := range d.children {
 		d.ChildNames[i] = child.Name()
 	}
+
 	return nil
 }
 
