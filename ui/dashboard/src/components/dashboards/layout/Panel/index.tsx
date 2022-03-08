@@ -103,7 +103,7 @@ const Panel = ({
             </div>
           )}
           {definition.title && (
-            <div className="px-4 py-5 sm:px-6">
+            <div className="px-2 py-5 sm:px-4">
               <h3 id={`${definition.name}-title`}>{definition.title}</h3>
             </div>
           )}
