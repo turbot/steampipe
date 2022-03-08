@@ -146,6 +146,11 @@ func waitForDashboardService(ctx context.Context) error {
 				return err
 			}
 
+			if state == nil {
+				// no state file yet
+				continue
+			}
+
 			// check the state file for an error
 			if len(state.Error) > 0 {
 				// there was an error during start up

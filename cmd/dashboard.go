@@ -69,6 +69,11 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
 	utils.FailOnError(serverListen.IsValid())
 
+	if err := utils.IsPortBindable(int(serverPort)); err != nil {
+		exitCode = constants.ExitCodeBindPortUnavailable
+		utils.FailOnError(err)
+	}
+
 	// ensure dashboard assets are present and extract if not
 	err := dashboardassets.Ensure(dashboardCtx)
 	utils.FailOnError(err)

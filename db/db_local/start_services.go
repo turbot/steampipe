@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -163,7 +162,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := isPortBindable(port); err != nil {
+	if err := utils.IsPortBindable(port); err != nil {
 		return res.SetError(fmt.Errorf("cannot listen on port %d", constants.Bold(port)))
 	}
 
@@ -533,15 +532,6 @@ func ensureTempTablePermissions(ctx context.Context, databaseName string, rootCl
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func isPortBindable(port int) error {
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
-	if err != nil {
-		return err
-	}
-	defer l.Close()
 	return nil
 }
 
