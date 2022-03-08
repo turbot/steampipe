@@ -33,7 +33,7 @@ func LocalAddresses() ([]string, error) {
 }
 
 func IsPortBindable(port int) error {
-	timeout := 50 * time.Millisecond
+	timeout := 5 * time.Millisecond
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", fmt.Sprintf("%d", port)), timeout)
 	if err != nil {
 		return nil
