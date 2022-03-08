@@ -88,7 +88,12 @@ const Panel = ({
           }
           className={classNames(
             "col-span-12 m-0.5",
-            forceBackground || definition.node_type !== "card"
+            forceBackground ||
+              (definition.node_type !== "card" &&
+                definition.node_type !== "input") ||
+              ((definition.node_type === "card" ||
+                definition.node_type === "input") &&
+                get(definition, "properties.type") === "table")
               ? "bg-background-panel shadow-sm rounded-sm sm:rounded-md"
               : null
           )}
@@ -130,8 +135,9 @@ const Panel = ({
                     get(definition, "properties.type") === "line"))
                 ? "border-t border-gray-200"
                 : null,
-              definition.node_type === "table" &&
-                get(definition, "properties.type") !== "line"
+              (definition.node_type === "table" &&
+                get(definition, "properties.type") !== "line") ||
+                get(definition, "properties.type") === "table"
                 ? "overflow-x-auto"
                 : "overflow-x-hidden"
             )}
