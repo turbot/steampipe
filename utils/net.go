@@ -1,6 +1,10 @@
 package utils
 
-import "net"
+import (
+	"fmt"
+	"net"
+	"time"
+)
 
 func LocalAddresses() ([]string, error) {
 	addresses := []string{}
@@ -26,4 +30,17 @@ func LocalAddresses() ([]string, error) {
 	}
 
 	return addresses, nil
+}
+
+func IsPortBindable(port int) error {
+	timeout := 50 * time.Millisecond
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", fmt.Sprintf("%d", port)), timeout)
+	if err != nil {
+		return nil
+	}
+	if conn != nil {
+		defer conn.Close()
+		return fmt.Errorf("port %d is already in use", port)
+	}
+	return nil
 }
