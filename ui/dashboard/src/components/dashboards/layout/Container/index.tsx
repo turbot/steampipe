@@ -4,11 +4,15 @@ import { ContainerDefinition } from "../../../../hooks/useDashboard";
 
 interface ContainerProps {
   definition: ContainerDefinition;
+  withNarrowVertical?: boolean;
 }
 
-const Container = ({ definition }: ContainerProps) => {
+const Container = ({ definition, withNarrowVertical }: ContainerProps) => {
   return (
-    <LayoutPanel definition={definition}>
+    <LayoutPanel
+      definition={definition}
+      withNarrowVertical={withNarrowVertical}
+    >
       <Children children={definition.children} />
     </LayoutPanel>
   );

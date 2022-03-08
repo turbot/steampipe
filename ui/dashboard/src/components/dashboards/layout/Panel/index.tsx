@@ -109,7 +109,13 @@ const Panel = ({
           )}
           {withTitle && definition.title && (
             <div className="px-2 py-4 sm:px-4">
-              <h3 id={`${definition.name}-title`}>{definition.title}</h3>
+              <h3
+                id={`${definition.name}-title`}
+                className="truncate"
+                title={definition.title}
+              >
+                {definition.title}
+              </h3>
             </div>
           )}
 
