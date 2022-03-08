@@ -28,8 +28,9 @@ interface PanelProps {
     | PanelDefinition
     | TableProps
     | TextProps;
-  ready?: boolean;
   allowExpand?: boolean;
+  forceBackground?: boolean;
+  ready?: boolean;
   withTitle?: boolean;
 }
 
@@ -37,6 +38,7 @@ const Panel = ({
   children,
   definition,
   allowExpand = true,
+  forceBackground = true,
   ready = true,
   withTitle = true,
 }: PanelProps) => {
@@ -85,9 +87,9 @@ const Panel = ({
               : undefined
           }
           className={classNames(
-            "col-span-12",
-            definition.node_type !== "card"
-              ? "bg-white shadow rounded-sm sm:rounded-md"
+            "col-span-12 m-0.5",
+            forceBackground || definition.node_type !== "card"
+              ? "bg-white shadow-sm rounded-sm sm:rounded-md"
               : null
           )}
         >
@@ -121,7 +123,8 @@ const Panel = ({
 
           <div
             className={classNames(
-              definition.title &&
+              withTitle &&
+                definition.title &&
                 (definition.node_type !== "table" ||
                   (definition.node_type === "table" &&
                     get(definition, "properties.type") === "line"))

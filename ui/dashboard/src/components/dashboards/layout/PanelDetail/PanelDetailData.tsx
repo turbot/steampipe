@@ -4,7 +4,12 @@ import { PanelDetailProps } from "./index";
 
 const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
   return (
-    <Panel definition={definition} allowExpand={false} withTitle={false}>
+    <Panel
+      definition={definition}
+      allowExpand={false}
+      forceBackground={true}
+      withTitle={false}
+    >
       <Table
         name={`${definition}.table.detail`}
         node_type="table"
