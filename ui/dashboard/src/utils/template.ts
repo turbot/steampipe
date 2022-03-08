@@ -13,7 +13,7 @@ const getInterpolatedTemplateValue = async (
   template,
   context
 ): Promise<string | null> => {
-  const interpolatedMatcher = /\{\{([^}]+)}}/g;
+  const interpolatedMatcher = /\{\{([^}]+)}}/gm;
   let updatedTemplate = template;
   try {
     let match;
@@ -24,15 +24,14 @@ const getInterpolatedTemplateValue = async (
       }
 
       const templatePart = match[1];
-      // console.log("Rendering", templatePart, context);
-      const rendered = await jq.json(context, templatePart);
+
+      const doubleQuotedString = (templatePart || "").replace(
+        /(?<!\\)'/gm,
+        '"'
+      );
+      const rendered = await jq.json(context, doubleQuotedString);
 
       updatedTemplate = updatedTemplate.replace(match[0], rendered);
-
-      // // The result can be accessed through the `m`-variable.
-      // match.forEach((match, groupIndex) => {
-      //   // console.log(`Found match, group ${groupIndex}: ${match}`);
-      // });
     }
   } catch (err) {
     console.log("Error rendering column template", err);
