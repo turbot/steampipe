@@ -35,14 +35,10 @@ const LayoutPanel = ({
       )}
     >
       {withTitle && definition.title && isDashboard && (
-        <h1 className={classNames("col-span-12", panelWidthClass)}>
-          {definition.title}
-        </h1>
+        <h1 className={classNames("col-span-12")}>{definition.title}</h1>
       )}
       {withTitle && definition.title && !isDashboard && (
-        <h2 className={classNames("col-span-12", panelWidthClass)}>
-          {definition.title}
-        </h2>
+        <h2 className={classNames("col-span-12")}>{definition.title}</h2>
       )}
       {/*<section*/}
       {/*  className="col-span-12"*/}

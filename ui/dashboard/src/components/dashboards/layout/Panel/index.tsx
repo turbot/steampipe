@@ -14,6 +14,7 @@ import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
 import { ZoomIcon } from "../../../../constants/icons";
+import { get } from "lodash";
 
 interface PanelProps {
   children: null | JSX.Element | JSX.Element[];
@@ -111,7 +112,16 @@ const Panel = ({
           <div
             className={classNames(
               "col-span-12",
-              definition.title ? "border-t border-gray-200" : null
+              definition.title &&
+                (definition.node_type !== "table" ||
+                  (definition.node_type === "table" &&
+                    get(definition, "properties.type") === "line"))
+                ? "border-t border-gray-200"
+                : null,
+              definition.node_type === "table" &&
+                get(definition, "properties.type") !== "line"
+                ? "overflow-x-auto"
+                : "overflow-x-hidden"
             )}
           >
             <PlaceholderComponent
