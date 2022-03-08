@@ -488,6 +488,10 @@ const buildNodesAndEdges = (
 
         // Record this as a root node for now - we may remove that once we process the edges
         root_node_lookup[node_id] = node;
+      } else {
+        existingNode.title = title;
+        existingNode.category = category;
+        existingNode.depth = depth;
       }
 
       // If this also has an implicit edge
@@ -518,10 +522,12 @@ const buildNodesAndEdges = (
       if (!existingFromNode) {
         const node = {
           id: from_id,
-          title: to_id,
+          title: from_id,
         };
         node_lookup[from_id] = node;
         nodes.push(node);
+        // Record this as a root node for now - we may remove that once we process the edges
+        root_node_lookup[from_id] = node;
       }
       const existingToNode = node_lookup[to_id];
       if (!existingToNode) {
