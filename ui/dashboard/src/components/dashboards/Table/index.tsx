@@ -14,7 +14,6 @@ import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
-import { usePanel } from "../../../hooks/usePanel";
 import { useSortBy, useTable } from "react-table";
 
 type TableColumnDisplay = "all" | "none";
@@ -291,7 +290,6 @@ export type TableProps = BaseTableProps & {
 
 // TODO retain full width on mobile, no padding
 const TableView = (props: TableProps) => {
-  const { setZoomIconClassName } = usePanel();
   const { columns, hiddenColumns } = useMemo(
     () => getColumns(props.data ? props.data.columns : [], props.properties),
     [props.data, props.properties]
@@ -305,10 +303,6 @@ const TableView = (props: TableProps) => {
       { columns, data: rowData, initialState: { hiddenColumns } },
       useSortBy
     );
-
-  useEffect(() => {
-    setZoomIconClassName("bg-background left-1 top-3");
-  }, [setZoomIconClassName]);
 
   return props.data ? (
     <>
@@ -403,7 +397,7 @@ const LineView = (props: TableProps) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="px-2 sm:px-4 py-3 space-y-4">
       {props.data.rows.map((row, rowIndex) => {
         const rowObj = {};
         (props.data?.columns || []).forEach((col, index) => {

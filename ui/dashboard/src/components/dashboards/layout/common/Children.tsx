@@ -8,7 +8,6 @@ import Panel from "../Panel";
 import React from "react";
 import Table from "../../Table";
 import Text from "../../Text";
-import TitleWrapper from "../../TitleWrapper";
 import {
   ContainerDefinition,
   PanelDefinition,
@@ -19,211 +18,152 @@ import { RenderFlow as Flow } from "../../flows/Flow";
 import { RenderHierarchy as Hierarchy } from "../../hierarchies/Hierarchy";
 import { RenderInput as Input } from "../../inputs/Input";
 
-const ChildWithTitle = ({ child, level, renderChild }) => {
-  return (
-    <TitleWrapper definition={child} level={level} title={child.title}>
-      {child.title ? null : renderChild()}
-    </TitleWrapper>
-  );
-};
-
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
   allowPanelExpand?: boolean;
+  withTitle?: boolean;
 }
 
 const Children = ({
   children = [],
   allowPanelExpand = true,
+  withTitle = true,
 }: ChildrenProps) => (
   <>
     {children.map((child) => {
       switch (child.node_type) {
         case "benchmark":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="container"
-              renderChild={() => (
-                <Panel definition={child} allowExpand={allowPanelExpand}>
-                  <Benchmark {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Benchmark {...child} />
+            </Panel>
           );
         case "card":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel definition={child} allowExpand={allowPanelExpand}>
-                  <Card {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Card {...child} />
+            </Panel>
           );
         case "chart":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={!!child.data}
-                  allowExpand={allowPanelExpand}
-                >
-                  <Chart {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              ready={!!child.data}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Chart {...child} />
+            </Panel>
           );
         case "container":
-          return (
-            <ChildWithTitle
-              key={child.name}
-              child={child}
-              level="container"
-              renderChild={() => <Container definition={child} />}
-            />
-          );
+          return <Container key={child.name} definition={child} />;
         case "control":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel definition={child} allowExpand={allowPanelExpand}>
-                  <Control {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Control {...child} />
+            </Panel>
           );
         case "dashboard":
-          return (
-            <ChildWithTitle
-              key={child.name}
-              child={child}
-              level="container"
-              renderChild={() => <Dashboard definition={child} />}
-            />
-          );
+          return <Dashboard key={child.name} definition={child} />;
         case "error":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel definition={child} allowExpand={allowPanelExpand}>
-                  <ErrorPanel error={child.error} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <ErrorPanel error={child.error} />
+            </Panel>
           );
         case "flow":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={!!child.data}
-                  allowExpand={allowPanelExpand}
-                >
-                  <Flow {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              ready={!!child.data}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Flow {...child} />
+            </Panel>
           );
         case "hierarchy":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={!!child.data}
-                  allowExpand={allowPanelExpand}
-                >
-                  <Hierarchy {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              ready={!!child.data}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Hierarchy {...child} />
+            </Panel>
           );
         case "image":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={child.sql ? !!child.data : !!child.properties.src}
-                  allowExpand={allowPanelExpand}
-                >
-                  <Image {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              ready={child.sql ? !!child.data : !!child.properties.src}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Image {...child} />
+            </Panel>
           );
         case "input":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel
-                  definition={child}
-                  allowExpand={
-                    allowPanelExpand && child.properties?.type === "table"
-                  }
-                >
-                  <Input {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              allowExpand={
+                allowPanelExpand &&
+                (child.title || child.properties?.type === "table")
+              }
+              withTitle={withTitle}
+            >
+              <Input {...child} />
+            </Panel>
           );
         case "table":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel
-                  definition={child}
-                  ready={!!child.data}
-                  allowExpand={allowPanelExpand}
-                >
-                  <Table {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              ready={!!child.data}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <Table {...child} />
+            </Panel>
           );
         case "text":
           return (
-            <ChildWithTitle
+            <Panel
               key={child.name}
-              child={child}
-              level="panel"
-              renderChild={() => (
-                <Panel definition={child} allowExpand={false}>
-                  <Text {...child} />
-                </Panel>
-              )}
-            />
+              definition={child}
+              allowExpand={false}
+              withTitle={withTitle}
+            >
+              <Text {...child} />
+            </Panel>
           );
         default:
           return null;

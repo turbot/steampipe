@@ -111,11 +111,14 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
   }, [definition, jsonToCSV, selectedDashboard]);
 
   return (
-    <LayoutPanel definition={definition} withNarrowVertical withPadding>
+    <LayoutPanel
+      definition={definition}
+      withNarrowVertical
+      withPadding
+      withTitle={false}
+    >
       <div className="col-span-6">
-        <h2 className="break-all">
-          {definition.title || definition.original_title || "Panel Detail"}
-        </h2>
+        <h2 className="break-all">{definition.title || "Panel Detail"}</h2>
       </div>
       <div className="col-span-6 space-x-2 text-right">
         <PanelDetailDataDownloadButton

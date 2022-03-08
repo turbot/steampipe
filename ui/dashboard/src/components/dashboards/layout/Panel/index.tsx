@@ -4,6 +4,7 @@ import { BaseChartProps } from "../../charts";
 import { CardProps } from "../../Card";
 import { CheckProps } from "../../check/common";
 import { classNames } from "../../../../utils/styles";
+import { get } from "lodash";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";
@@ -27,15 +28,19 @@ interface PanelProps {
     | PanelDefinition
     | TableProps
     | TextProps;
-  ready?: boolean;
   allowExpand?: boolean;
+  forceBackground?: boolean;
+  ready?: boolean;
+  withTitle?: boolean;
 }
 
 const Panel = ({
   children,
   definition,
   allowExpand = true,
+  forceBackground = false,
   ready = true,
+  withTitle = true,
 }: PanelProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
   const [zoomIconClassName, setZoomIconClassName] =
@@ -75,31 +80,78 @@ const Panel = ({
             : undefined
         }
       >
-        {showZoomIcon && (
+        <section
+          aria-labelledby={
+            withTitle && definition.title
+              ? `${definition.name}-title`
+              : undefined
+          }
+          className={classNames(
+            "col-span-12 m-0.5",
+            forceBackground ||
+              (definition.node_type !== "card" &&
+                definition.node_type !== "input") ||
+              ((definition.node_type === "card" ||
+                definition.node_type === "input") &&
+                get(definition, "properties.type") === "table")
+              ? "bg-background-panel shadow-sm rounded-sm sm:rounded-md"
+              : null
+          )}
+        >
+          {showZoomIcon && (
+            <div
+              className={classNames(
+                "absolute cursor-pointer z-50 right-1 top-1",
+                zoomIconClassName
+              )}
+              onClick={() =>
+                dispatch({
+                  type: "select_panel",
+                  panel: { ...definition },
+                })
+              }
+            >
+              <ZoomIcon className="h-5 w-5" />
+            </div>
+          )}
+          {withTitle && definition.title && (
+            <div className="px-2 py-4 sm:px-4">
+              <h3
+                id={`${definition.name}-title`}
+                className="truncate"
+                title={definition.title}
+              >
+                {definition.title}
+              </h3>
+            </div>
+          )}
+
           <div
             className={classNames(
-              "absolute cursor-pointer z-50 right-1 top-1",
-              zoomIconClassName
+              withTitle &&
+                definition.title &&
+                ((definition.node_type !== "input" &&
+                  definition.node_type !== "table") ||
+                  (definition.node_type === "table" &&
+                    get(definition, "properties.type") === "line"))
+                ? "border-t border-gray-200"
+                : null,
+              (definition.node_type === "table" &&
+                get(definition, "properties.type") !== "line") ||
+                get(definition, "properties.type") === "table"
+                ? "overflow-x-auto"
+                : "overflow-x-hidden"
             )}
-            onClick={() =>
-              dispatch({
-                type: "select_panel",
-                panel: { ...definition },
-              })
-            }
           >
-            <ZoomIcon className="h-5 w-5" />
+            <PlaceholderComponent
+              animate={!!children}
+              ready={ready || !!definition.error}
+            >
+              <ErrorComponent error={definition.error} />
+              <>{!definition.error ? children : null}</>
+            </PlaceholderComponent>
           </div>
-        )}
-        <div className="col-span-12">
-          <PlaceholderComponent
-            animate={!!children}
-            ready={ready || !!definition.error}
-          >
-            <ErrorComponent error={definition.error} />
-            <>{!definition.error ? children : null}</>
-          </PlaceholderComponent>
-        </div>
+        </section>
       </div>
     </PanelProvider>
   );
