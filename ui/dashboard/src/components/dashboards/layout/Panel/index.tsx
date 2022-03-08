@@ -38,7 +38,7 @@ const Panel = ({
   children,
   definition,
   allowExpand = true,
-  forceBackground = true,
+  forceBackground = false,
   ready = true,
   withTitle = true,
 }: PanelProps) => {
@@ -89,7 +89,7 @@ const Panel = ({
           className={classNames(
             "col-span-12 m-0.5",
             forceBackground || definition.node_type !== "card"
-              ? "bg-white shadow-sm rounded-sm sm:rounded-md"
+              ? "bg-background-panel shadow-sm rounded-sm sm:rounded-md"
               : null
           )}
         >

@@ -21,6 +21,7 @@ module.exports = {
       },
       colors: {
         background: "var(--color-background)",
+        "background-panel": "var(--color-background-panel)",
         foreground: "var(--color-foreground)",
         "foreground-light": "var(--color-foreground-light)",
         "foreground-lighter": "var(--color-foreground-lighter)",
