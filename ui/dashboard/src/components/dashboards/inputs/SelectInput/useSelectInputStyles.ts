@@ -14,9 +14,9 @@ const useSelectInputStyles = () => {
 
   // @ts-ignore
   const style = window.getComputedStyle(wrapperRef);
+  const background = style.getPropertyValue("--color-background");
   const backgroundPanel = style.getPropertyValue("--color-background-panel");
   const foreground = style.getPropertyValue("--color-foreground");
-  const blackScale1 = style.getPropertyValue("--color-black-scale-1");
   const blackScale3 = style.getPropertyValue("--color-black-scale-3");
 
   return {
@@ -68,7 +68,7 @@ const useSelectInputStyles = () => {
     option: (provided, state) => {
       return {
         ...provided,
-        backgroundColor: state.isFocused ? blackScale1 : "none",
+        backgroundColor: state.isFocused ? background : "none",
         color: foreground,
       };
     },
