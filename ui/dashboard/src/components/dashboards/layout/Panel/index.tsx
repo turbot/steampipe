@@ -130,7 +130,8 @@ const Panel = ({
             className={classNames(
               withTitle &&
                 definition.title &&
-                (definition.node_type !== "table" ||
+                ((definition.node_type !== "input" &&
+                  definition.node_type !== "table") ||
                   (definition.node_type === "table" &&
                     get(definition, "properties.type") === "line"))
                 ? "border-t border-gray-200"
