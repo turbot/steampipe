@@ -80,6 +80,12 @@ const useAnalyticsProvider = () => {
 
     setEnabled(metadata.telemetry === "info");
 
+    if (metadata.telemetry !== "info") {
+      // @ts-ignore
+      window.heap = null;
+      return;
+    }
+
     const cloudMetadata = metadata.cloud;
 
     const identity = cloudMetadata?.identity;
@@ -90,7 +96,7 @@ const useAnalyticsProvider = () => {
 
     const actor = cloudMetadata?.actor;
 
-    if (metadata.telemetry === "info" && actor) {
+    if (actor) {
       // @ts-ignore
       window.heap && window.heap.identify(actor.id);
     } else {
