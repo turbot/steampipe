@@ -67,7 +67,7 @@ const useAnalyticsProvider = () => {
         ...additionalProperties,
         ...properties,
       };
-      console.log("Tracking", { event, properties: finalProperties });
+      // console.log("Tracking", { event, properties: finalProperties });
       // @ts-ignore
       window.heap && window.heap.track(event, properties);
     },
