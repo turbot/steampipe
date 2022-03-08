@@ -263,7 +263,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		outputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Dashboard.GetName()))
 
 	case *dashboardevents.LeafNodeError:
-		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %s", e.Session, e.LeafNode.GetName(), e.Error)
+		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %v", e.Session, e.LeafNode.GetName(), e.Error)
 
 	case *dashboardevents.LeafNodeProgress:
 		log.Printf("[TRACE] LeafNodeProgress event session %s, node %s", e.Session, e.LeafNode.GetName())

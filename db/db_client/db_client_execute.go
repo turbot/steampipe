@@ -198,7 +198,7 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 				continueToNext = false
 			} else {
 				// TACTICAL
-				// determine whether to stop the spinner as soon as we stream a row or to wait for completeion
+				// determine whether to stop the spinner as soon as we stream a row or to wait for completion
 				if isStreamingOutput(viper.GetString(constants.ArgOutput)) {
 					statushooks.Done(ctx)
 				}
