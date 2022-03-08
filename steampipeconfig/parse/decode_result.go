@@ -9,13 +9,20 @@ import (
 // struct to hold the result of a decoding operation
 type decodeResult struct {
 	Diags   hcl.Diagnostics
-	Depends []*modconfig.ResourceDependency
+	Depends map[string]*modconfig.ResourceDependency
+}
+
+func newDecodeResult() *decodeResult {
+	return &decodeResult{Depends: make(map[string]*modconfig.ResourceDependency)}
 }
 
 // Merge merges this decode result with another
 func (p *decodeResult) Merge(other *decodeResult) *decodeResult {
 	p.Diags = append(p.Diags, other.Diags...)
-	p.Depends = append(p.Depends, other.Depends...)
+	for k, v := range other.Depends {
+		p.Depends[k] = v
+	}
+
 	return p
 }
 
@@ -24,12 +31,12 @@ func (p *decodeResult) Success() bool {
 	return !p.Diags.HasErrors() && len(p.Depends) == 0
 }
 
-// if the diags containsdependency errors, add dependencies to the result
+// if the diags contains dependency errors, add dependencies to the result
 // otherwise add diags to the result
 func (p *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
 	for _, diag := range diags {
 		if dependency := diagsToDependency(diag); dependency != nil {
-			p.Depends = append(p.Depends, dependency)
+			p.Depends[dependency.String()] = dependency
 		}
 	}
 	// only register errors if there are NOT any missing variables

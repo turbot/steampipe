@@ -173,28 +173,26 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to add mod to run context", diags)
 	}
 
-	// perform initial decode to get dependencies
-	// (if there are no dependencies, this is all that is needed)
-	if diags = decode(runCtx); diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+	// we may need to decode more than once as we gather dependencies as we go
+	const maxDecodes = 3
+	for attempt := 0; attempt < maxDecodes; attempt++ {
+		if diags = decode(runCtx); diags.HasErrors() {
+			return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+		}
+
+		// if eval is complete, we're done
+		if runCtx.EvalComplete() {
+			break
+		}
 	}
 
-	// if eval is not complete, there must be dependencies - run again in dependency order
+	// we failed to resolve dependencies
 	if !runCtx.EvalComplete() {
-		diags = decode(runCtx)
-		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
-		}
-
-		// we failed to resolve dependencies
-		if !runCtx.EvalComplete() {
-			str := runCtx.FormatDependencies()
-			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", str)
-		}
+		str := runCtx.FormatDependencies()
+		return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", str)
 	}
 
 	// now tell mod to build tree of controls.
-	// NOTE: this also builds the sorted benchmark list
 	if err := mod.BuildResourceTree(runCtx.LoadedDependencyMods); err != nil {
 		return nil, err
 	}
