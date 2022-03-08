@@ -1,8 +1,8 @@
 import {
   AvailableDashboard,
-  CloudDashboardActorMetadata,
   CloudDashboardIdentityMetadata,
   CloudDashboardWorkspaceMetadata,
+  ModDashboardMetadata,
   useDashboard,
 } from "./useDashboard";
 import {
@@ -13,6 +13,8 @@ import {
   useState,
 } from "react";
 import usePrevious from "./usePrevious";
+import { useTheme } from "./useTheme";
+import { get } from "lodash";
 
 interface AnalyticsProperties {
   [key: string]: any;
@@ -35,7 +37,7 @@ const AnalyticsContext = createContext<IAnalyticsContext>({
 const useAnalyticsProvider = () => {
   // const location = useLocation();
   const { metadata, metadataLoaded, selectedDashboard } = useDashboard();
-  const [actor, setActor] = useState<CloudDashboardActorMetadata | null>(null);
+  const { localStorageTheme, theme } = useTheme();
   const [identity, setIdentity] =
     useState<CloudDashboardIdentityMetadata | null>(null);
   const [workspace, setWorkspace] =
@@ -44,13 +46,33 @@ const useAnalyticsProvider = () => {
   const reset = useCallback(() => {
     // @ts-ignore
     window.heap && window.heap.resetIdentity();
-    // }, [analytics]);
   }, []);
 
-  const track = useCallback((event, properties) => {
-    // @ts-ignore
-    window.heap && window.heap.track(event, properties);
-  }, []);
+  const track = useCallback(
+    (event, properties) => {
+      const additionalProperties = {
+        theme: theme.name,
+        using_system_theme: !localStorageTheme,
+      };
+      if (identity) {
+        additionalProperties["identity.type"] = identity.type;
+        additionalProperties["identity.id"] = identity.id;
+        additionalProperties["identity.handle"] = identity.handle;
+      }
+      if (workspace) {
+        additionalProperties["workspace.id"] = workspace.id;
+        additionalProperties["workspace.handle"] = workspace.handle;
+      }
+      const finalProperties = {
+        ...additionalProperties,
+        ...properties,
+      };
+      console.log("Tracking", { event, properties: finalProperties });
+      // @ts-ignore
+      window.heap && window.heap.track(event, properties);
+    },
+    [identity, workspace, localStorageTheme, theme]
+  );
 
   useEffect(() => {
     if (!metadataLoaded) {
@@ -67,7 +89,6 @@ const useAnalyticsProvider = () => {
     const identity = cloudMetadata?.identity;
     const workspace = cloudMetadata?.workspace;
 
-    setActor(actor ? actor : null);
     setIdentity(identity ? identity : null);
     setWorkspace(workspace ? workspace : null);
 
@@ -79,26 +100,43 @@ const useAnalyticsProvider = () => {
     }
   }, [metadataLoaded, metadata]);
 
-  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
-    usePrevious({
-      selectedDashboard,
-    });
+  // @ts-ignore
+  const previousSelectedDashboardStates: SelectedDashboardStates = usePrevious({
+    selectedDashboard,
+  });
 
   useEffect(() => {
-    console.log({
-      actor,
-      identity,
-      workspace,
-      previousSelectedDashboardStates,
-      selectedDashboard,
-    });
-  }, [
-    actor,
-    identity,
-    workspace,
-    previousSelectedDashboardStates,
-    selectedDashboard,
-  ]);
+    if (
+      ((!previousSelectedDashboardStates ||
+        !previousSelectedDashboardStates.selectedDashboard) &&
+        selectedDashboard) ||
+      (previousSelectedDashboardStates &&
+        previousSelectedDashboardStates.selectedDashboard &&
+        selectedDashboard &&
+        previousSelectedDashboardStates.selectedDashboard.full_name !==
+          selectedDashboard?.full_name)
+    ) {
+      let mod: ModDashboardMetadata;
+      if (selectedDashboard.mod_full_name === metadata.mod.full_name) {
+        mod = get(metadata, "mod", {} as ModDashboardMetadata);
+      } else {
+        mod = get(
+          metadata,
+          `installed_mods["${selectedDashboard.mod_full_name}"]`,
+          {} as ModDashboardMetadata
+        );
+      }
+      track("cli.ui.dashboard.select", {
+        "mod.title": mod
+          ? mod.title
+            ? mod.title
+            : mod.short_name
+          : selectedDashboard.mod_full_name,
+        "mod.name": mod ? mod.short_name : selectedDashboard.mod_full_name,
+        dashboard: selectedDashboard.short_name,
+      });
+    }
+  }, [metadata, previousSelectedDashboardStates, selectedDashboard]);
 
   return {
     reset,
