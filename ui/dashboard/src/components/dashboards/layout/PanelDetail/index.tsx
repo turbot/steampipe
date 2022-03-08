@@ -113,9 +113,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
   return (
     <LayoutPanel definition={definition} withNarrowVertical withPadding>
       <div className="col-span-6">
-        <h2 className="break-all">
-          {definition.title || definition.original_title || "Panel Detail"}
-        </h2>
+        <h2 className="break-all">{definition.title || "Panel Detail"}</h2>
       </div>
       <div className="col-span-6 space-x-2 text-right">
         <PanelDetailDataDownloadButton

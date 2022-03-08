@@ -24,7 +24,7 @@ const getWrapperClasses = (type) => {
     case "ok":
       return "bg-ok";
     default:
-      return "bg-black-scale-2";
+      return "bg-background";
   }
 };
 

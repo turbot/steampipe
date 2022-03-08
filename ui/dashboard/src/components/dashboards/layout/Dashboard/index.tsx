@@ -13,26 +13,11 @@ interface DashboardProps {
 
 // TODO allow full-screen of a panel
 const Dashboard = ({ definition, withPadding = false }: DashboardProps) => (
-  <LayoutPanel definition={definition} withPadding={withPadding}>
-    {
-      <>
-        {definition.title ? (
-          <Children
-            children={[
-              {
-                name: `${definition.name}.root.text.title`,
-                node_type: "text",
-                properties: {
-                  type: "markdown",
-                  value: `# ${definition.title}`,
-                },
-                dashboard: definition.dashboard,
-              },
-            ]}
-          />
-        ) : null}
-      </>
-    }
+  <LayoutPanel
+    definition={definition}
+    isDashboard={true}
+    withPadding={withPadding}
+  >
     <Children children={definition.children} />
   </LayoutPanel>
 );

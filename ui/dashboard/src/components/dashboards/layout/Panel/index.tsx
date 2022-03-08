@@ -75,31 +75,54 @@ const Panel = ({
             : undefined
         }
       >
-        {showZoomIcon && (
+        <section
+          aria-labelledby={
+            definition.title ? `${definition.name}-title` : undefined
+          }
+          className={classNames(
+            "col-span-12",
+            definition.node_type !== "text" && definition.node_type !== "card"
+              ? "bg-white shadow sm:rounded-lg"
+              : null
+          )}
+        >
+          {showZoomIcon && (
+            <div
+              className={classNames(
+                "absolute cursor-pointer z-50 right-1 top-1",
+                zoomIconClassName
+              )}
+              onClick={() =>
+                dispatch({
+                  type: "select_panel",
+                  panel: { ...definition },
+                })
+              }
+            >
+              <ZoomIcon className="h-5 w-5" />
+            </div>
+          )}
+          {definition.title && (
+            <div className="px-4 py-5 sm:px-6">
+              <h3 id={`${definition.name}-title`}>{definition.title}</h3>
+            </div>
+          )}
+
           <div
             className={classNames(
-              "absolute cursor-pointer z-50 right-1 top-1",
-              zoomIconClassName
+              "col-span-12",
+              definition.title ? "border-t border-gray-200" : null
             )}
-            onClick={() =>
-              dispatch({
-                type: "select_panel",
-                panel: { ...definition },
-              })
-            }
           >
-            <ZoomIcon className="h-5 w-5" />
+            <PlaceholderComponent
+              animate={!!children}
+              ready={ready || !!definition.error}
+            >
+              <ErrorComponent error={definition.error} />
+              <>{!definition.error ? children : null}</>
+            </PlaceholderComponent>
           </div>
-        )}
-        <div className="col-span-12">
-          <PlaceholderComponent
-            animate={!!children}
-            ready={ready || !!definition.error}
-          >
-            <ErrorComponent error={definition.error} />
-            <>{!definition.error ? children : null}</>
-          </PlaceholderComponent>
-        </div>
+        </section>
       </div>
     </PanelProvider>
   );

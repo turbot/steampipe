@@ -119,7 +119,7 @@ const FullHeightThemeWrapper = ({ children }) => {
     <div
       ref={setWrapperRef}
       className={classNames(
-        `min-h-screen flex flex-col theme-${theme.name} bg-background text-foreground`,
+        `min-h-screen flex flex-col theme-${theme.name} bg-gray-200 text-foreground`,
         withFooterPadding ? "pb-8" : ""
       )}
     >
