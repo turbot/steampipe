@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -33,7 +32,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	blocks, err := runCtx.BlocksToDecode()
 
 	// now clear dependencies from run context - they will be rebuilt
-	oldDeps := runCtx.ClearDependencies()
+	runCtx.ClearDependencies()
 
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -53,7 +52,6 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 
 	}
 
-	log.Println(oldDeps)
 	return diags
 }
 

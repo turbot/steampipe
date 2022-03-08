@@ -173,7 +173,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to add mod to run context", diags)
 	}
 
-	// we may need to decode mnore than once as we gather dependencies as we go
+	// we may need to decode more than once as we gather dependencies as we go
 	const maxDecodes = 3
 	for attempt := 0; attempt < maxDecodes; attempt++ {
 		// (if there are no dependencies, this is all that is needed)
@@ -184,7 +184,6 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		// if eval is not complete, there must be dependencies - run again in dependency order
 		if runCtx.EvalComplete() {
 			break
-
 		}
 	}
 

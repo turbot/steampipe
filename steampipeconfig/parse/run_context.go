@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -181,11 +180,9 @@ func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
 	return true
 }
 
-func (r *RunContext) ClearDependencies() *topsort.Graph {
-	oldDeps := r.dependencyGraph
+func (r *RunContext) ClearDependencies() {
 	r.UnresolvedBlocks = make(map[string]*unresolvedBlock)
 	r.dependencyGraph = r.newDependencyGraph()
-	return oldDeps
 }
 
 // AddDependencies :: the block could not be resolved as it has dependencies
@@ -208,15 +205,12 @@ func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 			Detail:   err.Error()})
 	}
 
-	log.Printf("[WARN] AddDependencies %s %d deps", name, len(dependencies))
-
 	for _, dep := range dependencies {
 		// each dependency object may have multiple traversals
 		for _, t := range dep.Traversals {
 			parsedPropertyPath, err := modconfig.ParseResourcePropertyPath(hclhelpers.TraversalAsString(t))
 
 			if err != nil {
-				log.Printf("[WARN] FAILED TO PARSE: %v", err)
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "failed to parse dependency",
@@ -230,10 +224,7 @@ func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 			if !r.dependencyGraph.ContainsNode(dependencyResourceName) {
 				r.dependencyGraph.AddNode(dependencyResourceName)
 			}
-
-			log.Printf("[WARN] DEP: %s", dependencyResourceName)
 			if err := r.dependencyGraph.AddEdge(name, dependencyResourceName); err != nil {
-				log.Printf("[WARN] FAILED TO ADD EDGE")
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "failed to add dependency to graph",
@@ -260,9 +251,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	// make a map of blocks we have already included, keyed by the block def range
 	blocksMap := make(map[string]bool)
 	var blocksToDecode hcl.Blocks
-	log.Printf("[WARN] BlocksToDecode")
 	for _, name := range depOrder {
-		log.Printf("[WARN] %s", name)
 		// depOrder is all the blocks required to resolve dependencies.
 		// if this one is unparsed, added to list
 		block, ok := r.UnresolvedBlocks[name]
@@ -325,8 +314,8 @@ func (r *RunContext) FormatDependencies() string {
 			depStrings[i] = fmt.Sprintf("  MISSING: %s", resourceName)
 		}
 	}
-	raw := strings.Join(depStrings, "\n")
-	return helpers.Tabify(raw, "   ")
+
+	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }
 
 func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
