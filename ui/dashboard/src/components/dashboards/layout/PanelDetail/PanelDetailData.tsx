@@ -1,20 +1,16 @@
+import Panel from "../Panel";
 import Table from "../../Table";
 import { PanelDetailProps } from "./index";
-import { PanelProvider } from "../../../../hooks/usePanel";
 
 const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
   return (
-    <PanelProvider
-      definition={definition}
-      allowExpand={false}
-      setZoomIconClassName={() => {}}
-    >
+    <Panel definition={definition} allowExpand={false} withTitle={false}>
       <Table
         name={`${definition}.table.detail`}
         node_type="table"
         data={definition.data}
       />
-    </PanelProvider>
+    </Panel>
   );
 };
 
