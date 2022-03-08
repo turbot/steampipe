@@ -3,7 +3,7 @@ package steampipeconfig
 type CloudMetadata struct {
 	Actor            *ActorMetadata    `json:"actor,omitempty"`
 	Identity         *IdentityMetadata `json:"identity,omitempty"`
-	ConnectionString string            `json:"-`
+	ConnectionString string            `json:"-"`
 }
 
 func NewCloudMetadata() *CloudMetadata {
