@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
@@ -43,17 +44,25 @@ func output(_ context.Context, prefix string, msg interface{}) {
 }
 
 func outputMessage(ctx context.Context, msg string) {
-	output(ctx, color.HiGreenString(messagePrefix), msg)
+	output(ctx, applyColor(messagePrefix, color.HiGreenString), msg)
 }
 
 func outputError(ctx context.Context, err error) {
-	output(ctx, color.RedString(errorPrefix), err)
+	output(ctx, applyColor(errorPrefix, color.RedString), err)
 }
 
 func outputReady(ctx context.Context, msg string) {
-	output(ctx, color.GreenString(readyPrefix), msg)
+	output(ctx, applyColor(readyPrefix, color.GreenString), msg)
 }
 
 func outputWait(ctx context.Context, msg string) {
-	output(ctx, color.CyanString(waitPrefix), msg)
+	output(ctx, applyColor(waitPrefix, color.CyanString), msg)
+}
+
+func applyColor(str string, color func(format string, a ...interface{}) string) string {
+	if !isatty.IsTerminal(os.Stdout.Fd()) || viper.GetBool(constants.ArgServiceMode) {
+		return str
+	} else {
+		return color((str))
+	}
 }
