@@ -35,9 +35,9 @@ const AnalyticsContext = createContext<IAnalyticsContext>({
 });
 
 const useAnalyticsProvider = () => {
-  // const location = useLocation();
   const { metadata, metadataLoaded, selectedDashboard } = useDashboard();
   const { localStorageTheme, theme } = useTheme();
+  const [enabled, setEnabled] = useState<boolean>(true);
   const [identity, setIdentity] =
     useState<CloudDashboardIdentityMetadata | null>(null);
   const [workspace, setWorkspace] =
@@ -67,9 +67,8 @@ const useAnalyticsProvider = () => {
         ...additionalProperties,
         ...properties,
       };
-      // console.log("Tracking", { event, properties: finalProperties });
       // @ts-ignore
-      window.heap && window.heap.track(event, properties);
+      window.heap && window.heap.track(event, finalProperties);
     },
     [identity, workspace, localStorageTheme, theme]
   );
@@ -79,20 +78,19 @@ const useAnalyticsProvider = () => {
       return;
     }
 
+    setEnabled(metadata.telemetry === "info");
+
     const cloudMetadata = metadata.cloud;
 
-    if (!cloudMetadata) {
-      reset();
-    }
-
-    const actor = cloudMetadata?.actor;
     const identity = cloudMetadata?.identity;
     const workspace = cloudMetadata?.workspace;
 
     setIdentity(identity ? identity : null);
     setWorkspace(workspace ? workspace : null);
 
-    if (actor) {
+    const actor = cloudMetadata?.actor;
+
+    if (metadata.telemetry === "info" && actor) {
       // @ts-ignore
       window.heap && window.heap.identify(actor.id);
     } else {
@@ -106,6 +104,10 @@ const useAnalyticsProvider = () => {
   });
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     if (
       ((!previousSelectedDashboardStates ||
         !previousSelectedDashboardStates.selectedDashboard) &&
@@ -136,7 +138,7 @@ const useAnalyticsProvider = () => {
         dashboard: selectedDashboard.short_name,
       });
     }
-  }, [metadata, previousSelectedDashboardStates, selectedDashboard]);
+  }, [enabled, metadata, previousSelectedDashboardStates, selectedDashboard]);
 
   return {
     reset,

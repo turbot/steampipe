@@ -84,6 +84,7 @@ interface DashboardMetadata {
   mod: ModDashboardMetadata;
   installed_mods?: InstalledModsDashboardMetadata;
   cloud?: CloudDashboardMetadata;
+  telemetry: "info" | "none";
 }
 
 interface AvailableDashboardTags {

@@ -27,6 +27,7 @@ export const PanelStoryDecorator = ({
             short_name: "storybook",
           },
           installed_mods: {},
+          telemetry: "none",
         },
         metadataLoaded: true,
         availableDashboardsLoaded: true,
