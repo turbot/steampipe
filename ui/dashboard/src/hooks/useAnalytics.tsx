@@ -1,3 +1,4 @@
+import usePrevious from "./usePrevious";
 import {
   AvailableDashboard,
   CloudDashboardIdentityMetadata,
@@ -12,9 +13,8 @@ import {
   useEffect,
   useState,
 } from "react";
-import usePrevious from "./usePrevious";
-import { useTheme } from "./useTheme";
 import { get } from "lodash";
+import { useTheme } from "./useTheme";
 
 interface AnalyticsProperties {
   [key: string]: any;
