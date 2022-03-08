@@ -65,7 +65,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 }
 
 func shouldRunConnectionWatcher() bool {
-	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
+	// if EnvConnectionWatcher is set, overwrite the value in DefaultConnectionOptions
 	if envStr, ok := os.LookupEnv(constants.EnvConnectionWatcher); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			return parsedEnv

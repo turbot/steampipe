@@ -79,7 +79,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 		log.Printf("[WARN] error loading updated connection config: %s", err.Error())
 		return
 	}
-	log.Printf("[TRACE] loaded updated config")
+	log.Printf("[TRACE] loaded updated config %v", config)
 
 	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
 	if err != nil {
@@ -92,7 +92,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	log.Printf("[TRACE] calling onConnectionConfigChanged")
 	// convert config to format expected by plugin manager
 	// (plugin manager cannot reference steampipe config to avoid circular deps)
-	configMap := NewConnectionConfigMap(steampipeconfig.GlobalConfig.Connections)
+	configMap := NewConnectionConfigMap(config.Connections)
 	// call on changed callback
 	// (this calls pluginmanager.SetConnectionConfigMap)
 	w.onConnectionConfigChanged(configMap)

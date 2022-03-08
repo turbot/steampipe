@@ -20,7 +20,7 @@ import (
 type runningPlugin struct {
 	client      *plugin.Client
 	reattach    *pb.ReattachConfig
-	initialized chan (bool)
+	initialized chan bool
 }
 
 // PluginManager is the real implementation of grpc.PluginManager
@@ -208,8 +208,13 @@ func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResp
 		}
 	}()
 
-	for _, p := range m.Plugins {
-		log.Printf("[TRACE] killing plugin %v", p.reattach.Pid)
+	for name, p := range m.Plugins {
+		if p.client == nil {
+			log.Printf("[WARN] plugin %s has no client - cannot kill", name)
+			// shouldn't happen but has been observed in error situations
+			continue
+		}
+		log.Printf("[TRACE] killing plugin %s (%v)", name, p.reattach.Pid)
 		p.client.Kill()
 	}
 	return &pb.ShutdownResponse{}, nil
