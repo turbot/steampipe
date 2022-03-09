@@ -92,7 +92,7 @@ const getIconForType = (type, icon) => {
 
   switch (type) {
     case "alert":
-      return "heroicons-solid:x-circle";
+      return "heroicons-solid:exclamation-circle";
     case "ok":
       return "heroicons-solid:check-circle";
     case "info":
