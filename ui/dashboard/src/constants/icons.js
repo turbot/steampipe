@@ -1,9 +1,11 @@
 import {
+  ArrowCircleDownIcon as ArrowCircleDownIconOutline,
   ArrowsExpandIcon as ArrowsExpandIconOutline,
+  ChatAltIcon as ChatAltIconOutline,
   ClipboardListIcon as ClipboardListIconOutline,
   ExclamationCircleIcon as ExclamationCircleIconOutline,
   SearchIcon as SearchIconOutline,
-  UserGroupIcon as UserGroupIconOutline,
+  TerminalIcon as TerminalIconOutline,
   XIcon as XIconOutline,
 } from "@heroicons/react/outline";
 import {
@@ -11,7 +13,6 @@ import {
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
   ClipboardCheckIcon as ClipboardCheckIconSolid,
-  HeartIcon as HeartIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
   XIcon as XIconSolid,
 } from "@heroicons/react/solid";
@@ -26,8 +27,9 @@ export const SearchIcon = SearchIconOutline;
 export const ZoomIcon = ArrowsExpandIconOutline;
 
 // Call to Action
-export const FeedbackIcon = UserGroupIconOutline;
-export const HeartIcon = HeartIconSolid;
+export const BuildDashboardIcon = TerminalIconOutline;
+export const CommunityIcon = ChatAltIconOutline;
+export const InstallDashboardIcon = ArrowCircleDownIconOutline;
 
 // Control
 export const AlarmIcon = XIconSolid;

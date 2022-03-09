@@ -1,5 +1,5 @@
+import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
-import SlackCommunityCallToAction from "../CallToAction/SlackCommunityCallToAction";
 import {
   AvailableDashboard,
   ModDashboardMetadata,
@@ -343,9 +343,7 @@ const DashboardList = () => {
         </div>
       </div>
       <div className="col-span-6 lg:col-span-2 mt-4 lg:mt-2">
-        <div className="space-y-4">
-          <SlackCommunityCallToAction />
-        </div>
+        <CallToActions />
       </div>
     </div>
   );
