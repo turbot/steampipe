@@ -576,7 +576,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState, dashboardState *dashboardserver.DashboardServiceState, addAlready bool) {
+func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState, dashboardState *dashboardserver.DashboardServiceState, alreadyRunning bool) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return
@@ -586,7 +586,7 @@ func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, p
 
 	prefix := `Steampipe service is running:
 `
-	if addAlready {
+	if alreadyRunning {
 		prefix = `Steampipe service is already running:
 `
 	}
