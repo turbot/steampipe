@@ -1,9 +1,9 @@
 import SearchInput from "../SearchInput";
 import usePrevious from "../../hooks/usePrevious";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useBreakpoint } from "../../hooks/useBreakpoint";
 
 interface DashboardSearchStates {
   dashboardName: string | null;

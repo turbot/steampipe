@@ -198,7 +198,7 @@ const Card = (props: CardProps) => {
   return (
     <div
       className={classNames(
-        "relative pt-4 px-3 pb-4 sm:px-4 rounded-sm sm:rounded-md overflow-hidden",
+        "relative pt-4 px-3 pb-4 sm:px-4 rounded-md overflow-hidden",
         getWrapperClasses(state.type)
       )}
     >
