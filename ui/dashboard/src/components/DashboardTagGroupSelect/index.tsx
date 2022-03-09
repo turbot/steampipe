@@ -100,7 +100,11 @@ const DashboardTagGroupSelect = () => {
   //   setTag(selectedValue.tag);
   // };
 
-  if (!availableDashboardsLoaded || !value) {
+  if (
+    !availableDashboardsLoaded ||
+    !value ||
+    (dashboardName && !dashboardSearch)
+  ) {
     return null;
   }
 

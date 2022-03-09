@@ -329,7 +329,7 @@ const DashboardList = () => {
                   )}
                 </div>
               )}
-            <div className="mt-2 space-y-4">
+            <div className="space-y-4">
               {sections.map((section) => (
                 <Section
                   key={section.title}
