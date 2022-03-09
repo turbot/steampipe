@@ -82,6 +82,14 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		return queryresult.NewQueryResult(nil), nil
 	}
 
+	// fail-safes
+	if session == nil {
+		return nil, fmt.Errorf("nil session passed to ExecuteInSession")
+	}
+	if session.Connection == nil {
+		return nil, fmt.Errorf("nil database connection passed to ExecuteInSession")
+	}
+
 	startTime := time.Now()
 	var tx *sql.Tx
 
