@@ -43,6 +43,7 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 
 	for _, block := range blocks {
 		resources, res := decodeBlock(block, runCtx)
+
 		if !res.Success() {
 			diags = append(diags, res.Diags...)
 			continue
