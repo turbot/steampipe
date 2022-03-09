@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -45,16 +46,21 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var parsedConfigFiles []*hcl.File
 	var diags hcl.Diagnostics
 	parser := hclparse.NewParser()
-	for configPath, data := range fileData {
+
+	// build ordered list of files so that we parse in a repeatable order
+	filePaths := buildOrderedFileNameList(fileData)
+
+	for _, filePath := range filePaths {
 		var file *hcl.File
 		var moreDiags hcl.Diagnostics
-		ext := filepath.Ext(configPath)
+		ext := filepath.Ext(filePath)
 		if ext == constants.JsonExtension {
-			file, moreDiags = json.ParseFile(configPath)
+			file, moreDiags = json.ParseFile(filePath)
 		} else if constants.IsYamlExtension(ext) {
-			file, moreDiags = parseYamlFile(configPath)
+			file, moreDiags = parseYamlFile(filePath)
 		} else {
-			file, moreDiags = parser.ParseHCL(data, configPath)
+			data := fileData[filePath]
+			file, moreDiags = parser.ParseHCL(data, filePath)
 		}
 
 		if moreDiags.HasErrors() {
@@ -65,6 +71,17 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	}
 
 	return hcl.MergeFiles(parsedConfigFiles), diags
+}
+
+func buildOrderedFileNameList(fileData map[string][]byte) []string {
+	filePaths := make([]string, len(fileData))
+	idx := 0
+	for filePath := range fileData {
+		filePaths[idx] = filePath
+		idx++
+	}
+	sort.Strings(filePaths)
+	return filePaths
 }
 
 // ModfileExists returns whether a mod file exists at the specified path
@@ -174,9 +191,10 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	}
 
 	// we may need to decode more than once as we gather dependencies as we go
-	const maxDecodes = 3
+	const maxDecodes = 2
 	for attempt := 0; attempt < maxDecodes; attempt++ {
-		if diags = decode(runCtx); diags.HasErrors() {
+		diags = decode(runCtx)
+		if diags.HasErrors() {
 			return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
 		}
 

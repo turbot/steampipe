@@ -26,7 +26,7 @@ func (p *decodeResult) Merge(other *decodeResult) *decodeResult {
 	return p
 }
 
-// Success :: was the parsing successful - true if there are no errors and no dependencies
+// Success returns if the was parsing successful - true if there are no errors and no dependencies
 func (p *decodeResult) Success() bool {
 	return !p.Diags.HasErrors() && len(p.Depends) == 0
 }
