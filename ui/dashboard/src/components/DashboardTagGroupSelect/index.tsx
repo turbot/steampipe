@@ -113,10 +113,13 @@ const DashboardTagGroupSelect = () => {
       {({ open }) => (
         <>
           <div className="relative">
-            <Listbox.Button className="relative w-full bg-background-panel border border-table-border rounded-md shadow-sm pl-3 pr-10 py-2 text-left text-sm md:text-base cursor-default focus:outline-none focus:ring-1">
+            <Listbox.Button className="relative w-full bg-background-panel border border-table-border rounded-md pl-3 pr-7 md:pr-10 py-2 text-left text-sm md:text-base cursor-default focus:outline-none focus:ring-1">
               {/*@ts-ignore*/}
-              <span className="block truncate">Group by: {value.label}</span>
-              <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <span className="block truncate">
+                <span className="hidden md:inline mr-1">Group by:</span>
+                {value.label}
+              </span>
+              <span className="absolute inset-y-0 right-0 flex items-center pr-1 md:pr-2 pointer-events-none">
                 <SelectorIcon
                   className="h-5 w-5 text-gray-400"
                   aria-hidden="true"
@@ -131,7 +134,7 @@ const DashboardTagGroupSelect = () => {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <Listbox.Options className="absolute z-10 mt-1 w-full bg-background shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+              <Listbox.Options className="absolute z-10 w-32 sm:w-full bg-background-panel shadow-lg max-h-60 rounded-md text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                 {options.map((option) => (
                   <Listbox.Option
                     key={`${option.groupBy}:${option.tag}`}
@@ -148,15 +151,7 @@ const DashboardTagGroupSelect = () => {
                   >
                     {({ selected, active }) => (
                       <>
-                        <span
-                          className={classNames(
-                            selected ? "font-semibold" : "font-normal",
-                            "block truncate"
-                          )}
-                        >
-                          {option.label}
-                        </span>
-
+                        <span className="block truncate">{option.label}</span>
                         {selected ? (
                           <span
                             className={
