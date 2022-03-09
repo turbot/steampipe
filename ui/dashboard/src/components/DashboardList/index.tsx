@@ -1,12 +1,10 @@
 import LoadingIndicator from "../dashboards/LoadingIndicator";
-import SearchInput from "../SearchInput";
 import SlackCommunityCallToAction from "../CallToAction/SlackCommunityCallToAction";
 import {
   AvailableDashboard,
   ModDashboardMetadata,
   useDashboard,
 } from "../../hooks/useDashboard";
-import { classNames } from "../../utils/styles";
 import { ColorGenerator } from "../../utils/color";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -24,13 +22,15 @@ type AvailableDashboardWithMod = AvailableDashboard & {
 interface DashboardTagProps {
   tagKey: string;
   tagValue: string;
-  searchParams: URLSearchParams;
+  search: string;
+  setDashboardSearch: (search: string) => void;
 }
 
 interface SectionProps {
   title: string;
   dashboards: AvailableDashboardWithMod[];
-  searchParams: URLSearchParams;
+  search: string;
+  setDashboardSearch: (search: string) => void;
 }
 
 // /*!
@@ -85,45 +85,36 @@ const stringToColour = (str) => {
 const DashboardTag = ({
   tagKey,
   tagValue,
-  searchParams,
+  search,
+  setDashboardSearch,
 }: DashboardTagProps) => {
-  const group_by = searchParams.get("group_by");
-  const tag = searchParams.get("tag");
-  const search = searchParams.get("search");
-  const searchUrl = useMemo(() => {
-    const newSearchParams = new URLSearchParams();
-    if (group_by) {
-      newSearchParams.set("group_by", group_by);
-    }
-    if (tag) {
-      newSearchParams.set("tag", tag);
-    }
+  const searchWithTag = useMemo(() => {
     const existingSearch = (search || "").trim();
-    newSearchParams.set(
-      "search",
-      existingSearch
-        ? existingSearch.indexOf(tagValue) < 0
-          ? `${existingSearch} ${tagValue}`
-          : existingSearch
-        : tagValue
-    );
-    return newSearchParams.toString();
-  }, [tagValue, group_by, tag, search]);
+    return existingSearch
+      ? existingSearch.indexOf(tagValue) < 0
+        ? `${existingSearch} ${tagValue}`
+        : existingSearch
+      : tagValue;
+  }, [tagValue, search]);
 
   return (
-    <Link to={`/?${searchUrl}`}>
-      <span
-        className="rounded-md text-xs"
-        style={{ color: stringToColour(tagValue) }}
-        title={`${tagKey} = ${tagValue}`}
-      >
-        {tagValue}
-      </span>
-    </Link>
+    <span
+      className="cursor-pointer rounded-md text-xs"
+      onClick={() => setDashboardSearch(searchWithTag)}
+      style={{ color: stringToColour(tagValue) }}
+      title={`${tagKey} = ${tagValue}`}
+    >
+      {tagValue}
+    </span>
   );
 };
 
-const Section = ({ title, dashboards, searchParams }: SectionProps) => {
+const Section = ({
+  title,
+  dashboards,
+  search,
+  setDashboardSearch,
+}: SectionProps) => {
   return (
     <div className="space-y-2">
       <h3 className="truncate">{title}</h3>
@@ -140,7 +131,8 @@ const Section = ({ title, dashboards, searchParams }: SectionProps) => {
                 key={key}
                 tagKey={key}
                 tagValue={value}
-                searchParams={searchParams}
+                search={search}
+                setDashboardSearch={setDashboardSearch}
               />
             ))}
           </div>
@@ -213,33 +205,22 @@ const sortDashboards = (dashboards: AvailableDashboard[] = []) => {
 };
 
 const DashboardList = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const { availableDashboardsLoaded, metadataLoaded, metadata, dashboards } =
-    useDashboard();
+  const [searchParams] = useSearchParams();
+  const {
+    availableDashboardsLoaded,
+    metadataLoaded,
+    metadata,
+    dashboards,
+    dashboardSearch: search,
+    setDashboardSearch,
+    setDashboardTagKeys,
+  } = useDashboard();
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
   const [filteredDashboards, setFilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
-  const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
-
-  /*eslint-disable */
-  useEffect(() => {
-    if (search) {
-      searchParams.set("search", search);
-    } else {
-      searchParams.delete("search");
-    }
-    setSearchParams(searchParams);
-  }, [search]);
-  /*eslint-enable */
-
-  useEffect(() => {
-    const newSearch = searchParams.get("search");
-    setSearch(newSearch || "");
-  }, [searchParams]);
 
   // Initialise dashboards with their mod + update when the list of dashboards is updated
   useEffect(() => {
@@ -306,37 +287,6 @@ const DashboardList = () => {
     search,
   ]);
 
-  const { modGroupUrl, typeGroupUrl, categoryGroupUrl, serviceGroupUrl } =
-    useMemo(() => {
-      const url_search = searchParams.get("search");
-
-      const modGroupSearchParams = new URLSearchParams();
-      modGroupSearchParams.set("group_by", "mod");
-      if (url_search) modGroupSearchParams.set("search", url_search);
-
-      const typeGroupSearchParams = new URLSearchParams();
-      typeGroupSearchParams.set("group_by", "tag");
-      typeGroupSearchParams.set("tag", "type");
-      if (url_search) typeGroupSearchParams.set("search", url_search);
-
-      const categoryGroupSearchParams = new URLSearchParams();
-      categoryGroupSearchParams.set("group_by", "tag");
-      categoryGroupSearchParams.set("tag", "category");
-      if (url_search) categoryGroupSearchParams.set("search", url_search);
-
-      const serviceGroupSearchParams = new URLSearchParams();
-      serviceGroupSearchParams.set("group_by", "tag");
-      serviceGroupSearchParams.set("tag", "service");
-      if (url_search) serviceGroupSearchParams.set("search", url_search);
-
-      return {
-        modGroupUrl: modGroupSearchParams.toString(),
-        typeGroupUrl: typeGroupSearchParams.toString(),
-        categoryGroupUrl: categoryGroupSearchParams.toString(),
-        serviceGroupUrl: serviceGroupSearchParams.toString(),
-      };
-    }, [searchParams]);
-
   const url_group_by = searchParams.get("group_by") || "tag";
   const url_tag = searchParams.get("tag") || "service";
 
@@ -351,68 +301,8 @@ const DashboardList = () => {
     <div className="w-full grid grid-cols-6 p-4 gap-x-4">
       <div className="col-span-6 lg:col-span-4 space-y-4">
         <div className="grid grid-cols-6">
-          <div className="col-span-6 lg:col-span-3 mt-2">
-            <SearchInput
-              //@ts-ignore
-              disabled={!metadataLoaded || !availableDashboardsLoaded}
-              placeholder="Search dashboards..."
-              value={search || ""}
-              setValue={setSearch}
-            />
-          </div>
-          <div className="mt-4 col-span-6 flex flex-wrap space-x-2">
-            <div>Group by:</div>
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "mod"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
-              )}
-              to={`/?${modGroupUrl}`}
-            >
-              Mod
-            </Link>
-            {dashboardTagKeys.includes("category") && (
-              <Link
-                className={classNames(
-                  "block",
-                  url_group_by === "tag" && url_tag === "category"
-                    ? "text-foreground-lighter"
-                    : "link-highlight"
-                )}
-                to={`/?${categoryGroupUrl}`}
-              >
-                Category
-              </Link>
-            )}
-            <Link
-              className={classNames(
-                "block",
-                url_group_by === "tag" && url_tag === "service"
-                  ? "text-foreground-lighter"
-                  : "link-highlight"
-              )}
-              to={`/?${serviceGroupUrl}`}
-            >
-              Service
-            </Link>
-            {dashboardTagKeys.includes("type") && (
-              <Link
-                className={classNames(
-                  "block",
-                  url_group_by === "tag" && url_tag === "type"
-                    ? "text-foreground-lighter"
-                    : "link-highlight"
-                )}
-                to={`/?${typeGroupUrl}`}
-              >
-                Type
-              </Link>
-            )}
-          </div>
           {(!availableDashboardsLoaded || !metadataLoaded) && (
-            <div className="col-span-6 mt-4 ml-1 text-black-scale-4 flex">
+            <div className="col-span-6 mt-2 ml-1 text-black-scale-4 flex">
               <LoadingIndicator className="w-4 h-4" />{" "}
               <span className="italic -ml-1">Loading...</span>
             </div>
@@ -421,13 +311,13 @@ const DashboardList = () => {
             {availableDashboardsLoaded &&
               metadataLoaded &&
               filteredDashboards.length === 0 && (
-                <div className="col-span-6 mt-4">
+                <div className="col-span-6 mt-2">
                   {search ? (
                     <>
                       <span>No search results.</span>{" "}
                       <span
                         className="link-highlight"
-                        onClick={() => setSearch("")}
+                        onClick={() => setDashboardSearch("")}
                       >
                         Clear
                       </span>
@@ -438,13 +328,14 @@ const DashboardList = () => {
                   )}
                 </div>
               )}
-            <div className="mt-4 space-y-4">
+            <div className="space-y-4">
               {sections.map((section) => (
                 <Section
                   key={section.title}
                   title={section.title}
                   dashboards={section.dashboards}
-                  searchParams={searchParams}
+                  search={search}
+                  setDashboardSearch={setDashboardSearch}
                 />
               ))}
             </div>
@@ -462,8 +353,10 @@ const DashboardList = () => {
 
 const DashboardListWrapper = () => {
   const { dashboardName } = useParams();
+  const { dashboardSearch } = useDashboard();
 
-  if (dashboardName) {
+  // If we have a dashboard selected and no search, we don't want to show the list
+  if (dashboardName && !dashboardSearch) {
     return null;
   }
 

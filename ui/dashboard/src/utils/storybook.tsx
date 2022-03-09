@@ -60,6 +60,10 @@ export const PanelStoryDecorator = ({
           ],
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
+        dashboardSearch: "",
+        dashboardTagKeys: [],
+        setDashboardSearch: () => {},
+        setDashboardTagKeys: () => {},
         sqlDataMap: {
           storybook: definition.data,
         },

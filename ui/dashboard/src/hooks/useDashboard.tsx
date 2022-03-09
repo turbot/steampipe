@@ -28,6 +28,10 @@ interface IDashboardContext {
   error: any;
   dashboards: AvailableDashboard[];
   dashboard: DashboardDefinition | null;
+  dashboardSearch: string;
+  setDashboardSearch: (search: string) => void;
+  dashboardTagKeys: string[];
+  setDashboardTagKeys: (keys: string[]) => void;
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
@@ -384,6 +388,10 @@ const initialiseInputs = (
 
 const DashboardProvider = ({ children }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [dashboardSearch, setDashboardSearch] = useState(
+    searchParams.get("search") || ""
+  );
+  const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
   const [state, dispatch] = useReducer(
     reducer,
     {
@@ -677,7 +685,17 @@ const DashboardProvider = ({ children }) => {
   }, [closePanelDetail]);
 
   return (
-    <DashboardContext.Provider value={{ ...state, dispatch, closePanelDetail }}>
+    <DashboardContext.Provider
+      value={{
+        ...state,
+        dispatch,
+        closePanelDetail,
+        dashboardSearch,
+        dashboardTagKeys,
+        setDashboardSearch,
+        setDashboardTagKeys,
+      }}
+    >
       <GlobalHotKeys
         allowChanges
         keyMap={hotKeysMap}
