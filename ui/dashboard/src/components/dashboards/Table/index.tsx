@@ -159,7 +159,6 @@ const CellValue = ({
   // Calculate a link for this cell
   useDeepCompareEffect(() => {
     const render = async () => {
-      console.log("Rendering");
       const renderedVal = await getInterpolatedTemplateValue(
         column.href_template,
         { ...row }
