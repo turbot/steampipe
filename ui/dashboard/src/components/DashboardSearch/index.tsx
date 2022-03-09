@@ -76,7 +76,7 @@ const DashboardSearch = () => {
       <SearchInput
         //@ts-ignore
         disabled={!metadataLoaded || !availableDashboardsLoaded}
-        placeholder={minBreakpoint("md") ? "Search dashboards..." : "Search..."}
+        placeholder={minBreakpoint("sm") ? "Search dashboards..." : "Search..."}
         value={dashboardSearch}
         setValue={setDashboardSearch}
       />
