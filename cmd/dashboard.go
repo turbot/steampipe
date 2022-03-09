@@ -45,12 +45,7 @@ The current mod is the working directory, or the directory specified by the --wo
 }
 
 func runDashboardCmd(cmd *cobra.Command, args []string) {
-	// create context for the dashboard execution
-	ctx, cancel := context.WithCancel(cmd.Context())
-	// disable all status messages
-	dashboardCtx := statushooks.DisableStatusHooks(ctx)
-
-	contexthelpers.StartCancelHandler(cancel)
+	dashboardCtx := cmd.Context()
 
 	logging.LogTime("runDashboardCmd start")
 	defer func() {
@@ -74,9 +69,16 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 	}
 
+	// create context for the dashboard execution
+	dashboardCtx, cancel := context.WithCancel(dashboardCtx)
+	contexthelpers.StartCancelHandler(cancel)
+
 	// ensure dashboard assets are present and extract if not
 	err := dashboardassets.Ensure(dashboardCtx)
 	utils.FailOnError(err)
+
+	// disable all status messages
+	dashboardCtx = statushooks.DisableStatusHooks(dashboardCtx)
 
 	// load the workspace
 	w, err := loadWorkspacePromptingForVariables(dashboardCtx)
