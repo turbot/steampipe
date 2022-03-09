@@ -1,4 +1,5 @@
 import ExternalLink from "../../ExternalLink";
+import useDeepCompareEffect from "use-deep-compare-effect";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -9,7 +10,7 @@ import {
 import { classNames } from "../../../utils/styles";
 import { getInterpolatedTemplateValue } from "../../../utils/template";
 import { isObject } from "lodash";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   SortAscendingIcon,
   SortDescendingIcon,
@@ -96,6 +97,55 @@ interface CellValueProps {
   showTitle?: boolean;
 }
 
+// // create a worker pool using an external worker script
+// const jqRenderPool = createPool("../../../workers/renderJqTemplate", {
+//   maxWorkers: 3,
+// });
+
+// const workers = [];
+// function getWorker(url, metaUrl) {
+//   var w;
+//   if (workers.length > 0) {
+//     w = workers.pop();
+//   } else {
+//     // @ts-ignore
+//     // w = new Worker(
+//     //   new URL("../../../workers/renderJqTemplate", import.meta.url)
+//     // );
+//     w = new Worker(url);
+//   }
+//   return w;
+// }
+//
+// const releaseWorker = (worker) => {
+//   // @ts-ignore
+//   workers.push(worker);
+// };
+//
+// function WorkerPool(url, metaUrl) {
+//   // @ts-ignore
+//   this.url = url;
+//   // @ts-ignore
+//   this.metaUrl = metaUrl;
+//   // @ts-ignore
+//   this.pool = [];
+// }
+// WorkerPool.prototype.getWorker = function () {
+//   var w;
+//   if (this.pool.length > 0) {
+//     w = this.pool.pop();
+//   } else {
+//     // @ts-ignore
+//     w = new Worker(new URL(this.url, this.metaUrl));
+//   }
+//   return w;
+// };
+// WorkerPool.prototype.releaseWorker = function (w) {
+//   this.pool.push(w);
+// };
+
+// var pool = new WorkerPool("../../../workers/renderJqTemplate", import.meta.url);
+
 const CellValue = ({
   column,
   row,
@@ -103,11 +153,13 @@ const CellValue = ({
   showTitle = false,
 }: CellValueProps) => {
   const [href, setHref] = useState<string | null>(null);
+  // const [rendering, setRendering] = useState(false);
   const [rendered, setRendered] = useState(false);
 
   // Calculate a link for this cell
-  useEffect(() => {
+  useDeepCompareEffect(() => {
     const render = async () => {
+      console.log("Rendering");
       const renderedVal = await getInterpolatedTemplateValue(
         column.href_template,
         { ...row }
@@ -123,15 +175,119 @@ const CellValue = ({
       setHref(null);
       setRendered(true);
     }
-  }, [column, row]);
+  }, [column.href_template, row]);
 
-  if (!rendered) {
-    return null;
-  }
+  // const previous = usePrevious({
+  //   template: column.href_template,
+  //   row,
+  // });
+
+  // // Calculate a link for this cell
+  // useEffect(() => {
+  //   console.log({ rendering, row });
+  //   const render = async () => {
+  //     console.log("Rendering", { column, row });
+  //     // if (column.href_template) {
+  //     //   jqRenderPool
+  //     //     .exec("fibonacci", [column.href_template, row])
+  //     //     .then((res) => {
+  //     //       setHref(res);
+  //     //       setRendered(true);
+  //     //     })
+  //     //     .catch(console.error)
+  //     //     // @ts-ignore
+  //     //     .then(jqRenderPool.terminate);
+  //     // }
+  //
+  //     // jqRenderPool.exec("fibonacci", [234]);
+  //     // const worker = new Worker(
+  //     //   new URL("../../../workers/renderJqTemplate", import.meta.url)
+  //     // );
+  //     // if (column.href_template) {
+  //     var worker;
+  //     if (workers.length > 0) {
+  //       worker = workers.pop();
+  //     } else {
+  //       // @ts-ignore
+  //       // w = new Worker(
+  //       //   new URL("../../../workers/renderJqTemplate", import.meta.url)
+  //       // );
+  //
+  //       console.log("Creating worker");
+  //       worker = new Worker(
+  //         new URL("../../../workers/renderJqTemplate", import.meta.url)
+  //       );
+  //     }
+  //     // const worker = new Worker(
+  //     //   new URL("../../../workers/renderJqTemplate", import.meta.url)
+  //     // );
+  //     // const worker = getWorker(
+  //     //   "../../../workers/renderJqTemplate",
+  //     //   import.meta.url
+  //     // );
+  //     // const worker = getWorker(
+  //     //   "../../../workers/renderJqTemplate",
+  //     //   import.meta.url
+  //     // );
+  //     worker.postMessage({
+  //       context: row,
+  //       template: column.href_template,
+  //     });
+  //     worker.onmessage = ({ data: { result } }) => {
+  //       console.log("Got result", result);
+  //       // @ts-ignore
+  //       workers.push(worker);
+  //       setHref(result);
+  //       setRendering(false);
+  //       setRendered(true);
+  //     };
+  //     // }
+  //   };
+  //
+  //   if (!column.href_template) {
+  //     setHref(null);
+  //     setRendering(true);
+  //     setRendered(true);
+  //     return;
+  //   }
+  //
+  //   // @ts-ignore
+  //   if (!previous || !previous.template) {
+  //     setRendering(true);
+  //     render();
+  //   }
+  //   if (column.href_template && !rendering) {
+  //     setRendering(true);
+  //     render();
+  //   } else if (!column.href_template) {
+  //     setHref(null);
+  //     setRendered(true);
+  //   }
+  //   // const render = async () => {
+  //   //   const renderedVal = await getInterpolatedTemplateValue(
+  //   //     column.href_template,
+  //   //     { ...row }
+  //   //   );
+  //   //   // console.log(renderedVal);
+  //   //   setHref(renderedVal);
+  //   //   setRendered(true);
+  //   // };
+  //   //
+  //   // if (column.href_template) {
+  //   //   render();
+  //   // } else {
+  //   //   setHref(null);
+  //   //   setRendered(true);
+  //   // }
+  // }, [column.href_template, rendering, row, previous]);
+
+  // if (!rendered) {
+  //   return null;
+  // }
 
   const dataType = column.data_type_name.toLowerCase();
   if (value === null || value === undefined) {
-    return href ? (
+    return href && rendered ? (
       <ExternalLink
         to={href}
         className="link-highlight"
@@ -150,7 +306,7 @@ const CellValue = ({
   }
   if (dataType === "bool") {
     // True should be
-    return href ? (
+    return href && rendered ? (
       <ExternalLink
         to={href}
         className="link-highlight"
@@ -169,7 +325,7 @@ const CellValue = ({
   }
   if (dataType === "jsonb" || isObject(value)) {
     const asJsonString = JSON.stringify(value, null, 2);
-    return href ? (
+    return href && rendered ? (
       <ExternalLink
         to={href}
         className="link-highlight"
@@ -209,7 +365,7 @@ const CellValue = ({
     }
   }
   if (dataType === "timestamp" || dataType === "timestamptz") {
-    return href ? (
+    return href && rendered ? (
       <ExternalLink
         to={href}
         className="link-highlight tabular-nums"
@@ -227,7 +383,7 @@ const CellValue = ({
     );
   }
   if (isNumericCol(dataType)) {
-    return href ? (
+    return href && rendered ? (
       <ExternalLink
         to={href}
         className="link-highlight tabular-nums"
@@ -245,7 +401,7 @@ const CellValue = ({
     );
   }
   // Fallback is just show it as a string
-  return href ? (
+  return href && rendered ? (
     <ExternalLink
       to={href}
       className="link-highlight tabular-nums"
