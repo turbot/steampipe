@@ -132,14 +132,16 @@ func init() {
 							Title:       toStringPointer("Q1"),
 							Description: toStringPointer("THIS IS QUERY 1"),
 							SQL:         toStringPointer("select $1"),
-							Params: []*modconfig.ParamDef{
-								{
-									Name:        "p1",
-									FullName:    "param.p1",
-									Description: utils.ToStringPointer("desc"),
-									Default:     utils.ToStringPointer("'I am default'"),
-								},
-							},
+						},
+					},
+					LocalQueries: map[string]*modconfig.Query{
+						"query.q1": {
+							ShortName:       "q1",
+							FullName:        "m1.query.q1",
+							Description:     toStringPointer("THIS IS QUERY 1"),
+							Title:           toStringPointer("Q1"),
+							SQL:             toStringPointer("select $1"),
+							UnqualifiedName: "query.q1",
 						},
 					},
 				},
@@ -935,7 +937,7 @@ func init() {
 							ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_flow_0",
 							UnqualifiedName: "flow.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_flow_0",
 							Title:           toStringPointer("example flow"),
-							Type:            toStringPointer("graph"),
+							Type:            toStringPointer("sankey"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -1029,7 +1031,7 @@ func init() {
 							ShortName:       "dashboard_dashboard_with_child_res_anonymous_flow_0",
 							UnqualifiedName: "flow.dashboard_dashboard_with_child_res_anonymous_flow_0",
 							Title:           toStringPointer("example flow"),
-							Type:            toStringPointer("graph"),
+							Type:            toStringPointer("sankey"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -1263,10 +1265,10 @@ func init() {
 			source:   "testdata/mods/inputs_with_cyclic_dependency",
 			expected: "ERROR",
 		},
-		//"two_mods": {
-		//	source:   "testdata/mods/two_mods",
-		//	expected: "ERROR",
-		//},
+		// "two_mods": {
+		// 	source:   "testdata/mods/two_mods",
+		// 	expected: "ERROR",
+		// },
 	}
 }
 
