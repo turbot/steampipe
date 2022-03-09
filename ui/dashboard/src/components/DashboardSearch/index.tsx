@@ -8,6 +8,7 @@ import { useBreakpoint } from "../../hooks/useBreakpoint";
 interface DashboardSearchStates {
   dashboardName: string | null;
   dashboardSearch: string | null;
+  searchParamsSearch: string | null;
 }
 
 const DashboardSearch = () => {
@@ -21,6 +22,25 @@ const DashboardSearch = () => {
   const { minBreakpoint } = useBreakpoint();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Keep track of the previous selected dashboard and inputs
+  const previousDashboardSearchStates: DashboardSearchStates | undefined =
+    usePrevious({
+      dashboardName,
+      dashboardSearch,
+      searchParamsSearch: searchParams.get("search"),
+    });
+
+  useEffect(() => {
+    const previousSearchParamsSearch = previousDashboardSearchStates
+      ? // @ts-ignore
+        previousDashboardSearchStates.searchParamsSearch
+      : null;
+
+    if (!!previousSearchParamsSearch && !searchParams.get("search")) {
+      setDashboardSearch("");
+    }
+  }, [previousDashboardSearchStates, searchParams]);
+
   /*eslint-disable */
   useEffect(() => {
     if (dashboardSearch) {
@@ -32,28 +52,20 @@ const DashboardSearch = () => {
   }, [dashboardSearch, searchParams]);
   /*eslint-enable */
 
-  // Keep track of the previous selected dashboard and inputs
-  const previousDashboardSearchStates: DashboardSearchStates | undefined =
-    usePrevious({
-      dashboardName,
-      dashboardSearch,
-    });
-
   useEffect(() => {
-    const previous = previousDashboardSearchStates
+    const previousDashboard = previousDashboardSearchStates
       ? // @ts-ignore
         previousDashboardSearchStates.dashboardName
       : null;
     if (
-      (!previous && dashboardName) ||
-      (previous && previous !== dashboardName)
+      (!previousDashboard && dashboardName) ||
+      (previousDashboard && previousDashboard !== dashboardName)
     ) {
       setDashboardSearch("");
     }
   }, [dashboardName, previousDashboardSearchStates]);
 
   useEffect(() => {
-    // console.log(searchParams.get("search"), dashboardSearch);
     if (!searchParams.get("search") && !!dashboardSearch) {
       setDashboardSearch("");
     }

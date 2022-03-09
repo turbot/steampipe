@@ -22,14 +22,14 @@ type AvailableDashboardWithMod = AvailableDashboard & {
 interface DashboardTagProps {
   tagKey: string;
   tagValue: string;
-  searchParams: URLSearchParams;
+  search: string;
   setDashboardSearch: (search: string) => void;
 }
 
 interface SectionProps {
   title: string;
   dashboards: AvailableDashboardWithMod[];
-  searchParams: URLSearchParams;
+  search: string;
   setDashboardSearch: (search: string) => void;
 }
 
@@ -85,10 +85,9 @@ const stringToColour = (str) => {
 const DashboardTag = ({
   tagKey,
   tagValue,
-  searchParams,
+  search,
   setDashboardSearch,
 }: DashboardTagProps) => {
-  const search = searchParams.get("search");
   const searchWithTag = useMemo(() => {
     const existingSearch = (search || "").trim();
     return existingSearch
@@ -113,7 +112,7 @@ const DashboardTag = ({
 const Section = ({
   title,
   dashboards,
-  searchParams,
+  search,
   setDashboardSearch,
 }: SectionProps) => {
   return (
@@ -132,7 +131,7 @@ const Section = ({
                 key={key}
                 tagKey={key}
                 tagValue={value}
-                searchParams={searchParams}
+                search={search}
                 setDashboardSearch={setDashboardSearch}
               />
             ))}
@@ -303,7 +302,7 @@ const DashboardList = () => {
       <div className="col-span-6 lg:col-span-4 space-y-4">
         <div className="grid grid-cols-6">
           {(!availableDashboardsLoaded || !metadataLoaded) && (
-            <div className="col-span-6 mt-4 ml-1 text-black-scale-4 flex">
+            <div className="col-span-6 mt-2 ml-1 text-black-scale-4 flex">
               <LoadingIndicator className="w-4 h-4" />{" "}
               <span className="italic -ml-1">Loading...</span>
             </div>
@@ -312,7 +311,7 @@ const DashboardList = () => {
             {availableDashboardsLoaded &&
               metadataLoaded &&
               filteredDashboards.length === 0 && (
-                <div className="col-span-6 mt-4">
+                <div className="col-span-6 mt-2">
                   {search ? (
                     <>
                       <span>No search results.</span>{" "}
@@ -335,7 +334,7 @@ const DashboardList = () => {
                   key={section.title}
                   title={section.title}
                   dashboards={section.dashboards}
-                  searchParams={searchParams}
+                  search={search}
                   setDashboardSearch={setDashboardSearch}
                 />
               ))}
