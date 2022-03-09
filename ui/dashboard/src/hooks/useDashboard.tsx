@@ -502,7 +502,6 @@ const DashboardProvider = ({ children }) => {
       );
       dispatch({ type: "select_dashboard", dashboard });
       const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
-      console.log("Reinitialising dashboard inputs", value);
       dispatch({ type: "set_dashboard_inputs", value });
     }
   }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
