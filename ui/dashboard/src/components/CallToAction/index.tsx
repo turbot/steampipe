@@ -20,7 +20,7 @@ const CallToAction = ({
   return (
     <div
       className={classNames(
-        "flex flex-col sm:flex-row p-4 sm:p-12 border border-divide rounded-lg space-x-0 sm:space-x-8 space-y-2 sm:space-y-0",
+        "flex flex-col sm:flex-row p-4 sm:p-12 bg-background-panel rounded-sm sm:rounded-md space-x-0 sm:space-x-8 space-y-2 sm:space-y-0",
         className
       )}
     >
