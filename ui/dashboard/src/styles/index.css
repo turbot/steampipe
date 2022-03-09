@@ -3,11 +3,7 @@
 @tailwind utilities;
 
 .theme-steampipe-default {
-  /*!* Background colors *!*/
-  /*--color-bg-app: theme('colors.white');*/
-  /*--color-bg-report: theme('colors.white');*/
-
-  /*!* Control colors *!*/
+  /* Control colors */
   --color-alert: #da1e28;
   --color-alert-light: rgba(218, 30, 40, 0.3);
   --color-alert-inverse: theme("colors.white");
@@ -21,20 +17,6 @@
   --color-info-inverse: theme("colors.white");
   --color-tbd: theme("colors.gray.300");
   --color-tbd-inverse: theme("colors.white");
-
-  /*!* Counters *!*/
-  /*--color-bg-counter: theme('colors.white');*/
-
-  /*!* Borders *!*/
-  /*--color-table-border: theme('colors.gray.200');*/
-  /*--color-table-divide: theme('colors.gray.200');*/
-  /*--color-table-head: theme('colors.steampipe-black');*/
-
-  /*!* Tables *!*/
-  /*--color-bg-table-head: theme('colors.gray.50');*/
-
-  /*!* Text *!*/
-  /*--color-text-default: theme('colors.steampipe-black');*/
 
   /* Primary colours */
   --color-success: #0070f3;
@@ -64,7 +46,6 @@
 
   /* Visual colors */
   --color-danger: rgb(238, 0, 0);
-  /*--color-info: rgb(0, 112, 243);*/
 
   /* Borders */
   --color-table-border: theme("colors.gray.200");
@@ -74,11 +55,7 @@
 }
 
 .theme-steampipe-dark {
-  /*!* Background colors *!*/
-  /*--color-bg-app: #181717;*/
-  /*--color-bg-report: #181717;*/
-
-  /*!* Control colors *!*/
+  /* Control colors */
   --color-alert: #f83741;
   --color-alert-light: rgba(250, 77, 86, 0.3);
   --color-alert-inverse: theme("colors.white");
@@ -93,20 +70,6 @@
   --color-tbd: theme("colors.gray.400");
   --color-tbd-inverse: theme("colors.white");
 
-  /*!* Counters *!*/
-  /*--color-bg-counter: theme('colors.gray.100');*/
-
-  /*!* Borders *!*/
-  /*--color-table-border: theme('colors.gray.700');*/
-  /*--color-table-divide: theme('colors.gray.700');*/
-  /*--color-table-head: theme('colors.gray.300');*/
-
-  /*!* Tables *!*/
-  /*--color-bg-table-head: rgba(255, 255,255,0.1);*/
-
-  /*!* Text *!*/
-  /*--color-text-default: theme('colors.white');*/
-
   /* Primary colours */
   --color-success: #0070f3;
   --color-error: red;
@@ -115,7 +78,7 @@
   --color-background-panel: #2d333b; /*var(--color-black-scale-1);*/
   --color-foreground: #fff;
   --color-foreground-light: #ccc;
-  --color-foreground-lighter: #777;
+  --color-foreground-lighter: #888;
   --color-foreground-lightest: #515151;
   --color-link: #809fff;
   --color-black-scale-1: #222;
@@ -135,7 +98,6 @@
 
   /* Visual colors */
   --color-danger: rgb(255, 0, 0);
-  /*--color-info: rgb(0, 112, 243);*/
 
   /* Borders */
   --color-table-border: theme("colors.gray.700");
@@ -143,29 +105,6 @@
   --color-table-head: var(--color-black-scale-6);
   --color-table-alternating-row: #23282f;
 }
-
-/*.theme-startup {*/
-/*    --color-bg-primary: #ff73b3;*/
-/*    --color-bg-secondary: #6f72b9;*/
-/*    --color-bg-default: #fff;*/
-/*    --color-bg-inverse: #5255ac;*/
-
-/*    --color-text-primary: #fff;*/
-/*    --color-text-secondary: #44467b;*/
-/*    --color-text-default: #373737;*/
-/*    --color-text-default-soft: #6a6a6a;*/
-/*    --color-text-inverse: #fff;*/
-/*    --color-text-inverse-soft: rgba(255, 255, 255, 0.7);*/
-
-/*    --font-display: Futura, Trebuchet MS, Arial, sans-serif;*/
-/*    --font-body: Futura, Trebuchet MS, Arial, sans-serif;*/
-
-/*    --font-weight-normal: 400;*/
-/*    --font-weight-display: 600;*/
-/*    --font-weight-btn: 600;*/
-
-/*    --rounded-btn: 9999px;*/
-/*}*/
 
 @layer base {
   html {
