@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -193,6 +194,14 @@ func (m *PluginManager) storeClientToMap(connection string, client *plugin.Clien
 func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.ConnectionConfig) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
+
+	names := make([]string, len(configMap))
+	idx := 0
+	for name := range configMap {
+		names[idx] = name
+		idx++
+	}
+	log.Printf("[TRACE] SetConnectionConfigMap: %s", strings.Join(names, ","))
 
 	m.connectionConfig = configMap
 }

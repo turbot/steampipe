@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/turbot/go-kit/types"
@@ -44,11 +45,13 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
-	log.Printf("[TRACE] loaded config map")
+	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
 	pluginManager := pluginmanager.NewPluginManager(configMap, logger)
 
 	if shouldRunConnectionWatcher() {
+		log.Printf("[INFO] starting connection watcher")
+
 		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
