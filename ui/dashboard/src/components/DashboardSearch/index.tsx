@@ -3,6 +3,7 @@ import usePrevious from "../../hooks/usePrevious";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 
 interface DashboardSearchStates {
   dashboardName: string | null;
@@ -17,6 +18,7 @@ const DashboardSearch = () => {
     setDashboardSearch,
   } = useDashboard();
   const { dashboardName } = useParams();
+  const { minBreakpoint } = useBreakpoint();
   const [searchParams, setSearchParams] = useSearchParams();
 
   /*eslint-disable */
@@ -58,13 +60,15 @@ const DashboardSearch = () => {
   }, [dashboardSearch, searchParams]);
 
   return (
-    <SearchInput
-      //@ts-ignore
-      disabled={!metadataLoaded || !availableDashboardsLoaded}
-      placeholder="Search dashboards..."
-      value={dashboardSearch}
-      setValue={setDashboardSearch}
-    />
+    <div className="w-32 sm:w-56 md:w-72 lg:w-96">
+      <SearchInput
+        //@ts-ignore
+        disabled={!metadataLoaded || !availableDashboardsLoaded}
+        placeholder={minBreakpoint("md") ? "Search dashboards..." : "Search..."}
+        value={dashboardSearch}
+        setValue={setDashboardSearch}
+      />
+    </div>
   );
 };
 

@@ -10,7 +10,7 @@ import { ThemeNames, useTheme } from "../../hooks/useTheme";
 const SteampipeLogo = () => {
   const { theme } = useTheme();
   return (
-    <div className="mr-4">
+    <div className="mr-1 md:mr-4">
       <Link to="/">
         <div className="block md:hidden w-8">
           <Logo />
