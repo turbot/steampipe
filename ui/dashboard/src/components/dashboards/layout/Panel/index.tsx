@@ -115,7 +115,14 @@ const Panel = ({
             </div>
           )}
           {withTitle && definition.title && (
-            <div className="px-2 py-4 sm:px-4">
+            <div
+              className={classNames(
+                definition.node_type === "input" &&
+                  get(definition, "properties.type") !== "table"
+                  ? "pl-0 pr-2 sm:pr-4 py-2"
+                  : "px-2 sm:px-4 py-4"
+              )}
+            >
               <h3
                 id={`${definition.name}-title`}
                 className="truncate"
