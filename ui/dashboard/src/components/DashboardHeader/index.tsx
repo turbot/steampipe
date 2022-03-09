@@ -14,6 +14,13 @@ const DashboardHeader = () => (
     <div className="space-x-2 sm:space-x-4 md:space-x-8 flex items-center justify-end">
       <ExternalLink
         className="text-base text-foreground-lighter hover:text-foreground"
+        to="https://hub.steampipe.io"
+        withReferrer={true}
+      >
+        <>Hub</>
+      </ExternalLink>
+      <ExternalLink
+        className="text-base text-foreground-lighter hover:text-foreground"
         to="https://steampipe.io/docs"
         withReferrer={true}
       >

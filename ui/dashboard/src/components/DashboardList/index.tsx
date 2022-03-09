@@ -1,5 +1,5 @@
+import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
-import SlackCommunityCallToAction from "../CallToAction/SlackCommunityCallToAction";
 import {
   AvailableDashboard,
   ModDashboardMetadata,
@@ -298,8 +298,8 @@ const DashboardList = () => {
   );
 
   return (
-    <div className="w-full grid grid-cols-6 p-4 gap-x-4">
-      <div className="col-span-6 lg:col-span-4 space-y-4">
+    <div className="w-full grid grid-cols-12 p-4 gap-x-4">
+      <div className="col-span-12 lg:col-span-9 space-y-4">
         <div className="grid grid-cols-6">
           {(!availableDashboardsLoaded || !metadataLoaded) && (
             <div className="col-span-6 mt-2 ml-1 text-black-scale-4 flex">
@@ -342,10 +342,8 @@ const DashboardList = () => {
           </div>
         </div>
       </div>
-      <div className="col-span-6 lg:col-span-2 mt-4 lg:mt-2">
-        <div className="space-y-4">
-          <SlackCommunityCallToAction />
-        </div>
+      <div className="col-span-12 lg:col-span-3 mt-4 lg:mt-2">
+        <CallToActions />
       </div>
     </div>
   );
