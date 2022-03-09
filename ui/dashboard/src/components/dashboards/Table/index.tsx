@@ -318,8 +318,8 @@ const TableView = (props: TableProps) => {
                   {...column.getHeaderProps(column.getSortByToggleProps())}
                   scope="col"
                   className={classNames(
-                    "py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap",
-                    isNumericCol(column.data_type_name) ? " text-right" : "pl-4"
+                    "py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap pl-4",
+                    isNumericCol(column.data_type_name) ? "text-right" : null
                   )}
                 >
                   {column.render("Header")}
