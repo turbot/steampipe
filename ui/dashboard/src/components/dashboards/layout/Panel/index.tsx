@@ -13,6 +13,7 @@ import { memo, useState } from "react";
 import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
+import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
 import { ZoomIcon } from "../../../../constants/icons";
 
@@ -46,6 +47,7 @@ const Panel = ({
   const [zoomIconClassName, setZoomIconClassName] =
     useState("text-black-scale-4");
   const { dispatch } = useDashboard();
+  const { theme } = useTheme();
 
   const baseStyles = classNames(
     "relative col-span-12",
@@ -141,7 +143,12 @@ const Panel = ({
                   definition.node_type !== "table") ||
                   (definition.node_type === "table" &&
                     get(definition, "properties.type") === "line"))
-                ? "border-t border-gray-200"
+                ? classNames(
+                    "border-t",
+                    theme.name === ThemeNames.STEAMPIPE_DARK
+                      ? "border-table-divide"
+                      : "border-background"
+                  )
                 : null,
               (definition.node_type === "table" &&
                 get(definition, "properties.type") !== "line") ||

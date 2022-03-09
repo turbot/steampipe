@@ -3,7 +3,7 @@ import ThemeToggle from "../ThemeToggle";
 import { Link } from "react-router-dom";
 
 const DashboardHeader = () => (
-  <div className="flex w-screen p-3 items-center bg-background-panel border-b border-black-scale-3 print:hidden">
+  <div className="flex w-screen p-3 items-center bg-background-panel border-b border-table-divide print:hidden">
     <div>
       <Link to="/">
         <img

@@ -308,7 +308,7 @@ const TableView = (props: TableProps) => {
     <>
       <table
         {...getTableProps()}
-        className="min-w-full divide-y divide-table-divide border-t border-table-border overflow-hidden"
+        className="min-w-full divide-y divide-table-divide border-t border-table-divide overflow-hidden"
       >
         <thead className="bg-table-head text-table-head">
           {headerGroups.map((headerGroup) => (

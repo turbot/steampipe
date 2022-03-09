@@ -21,6 +21,7 @@ const Placeholder = ({
       rows={8}
       type={type}
       showLoadingAnimation={animate}
+      style={{ padding: "1em" }}
     >
       {children}
     </ReactPlaceholder>

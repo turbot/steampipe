@@ -68,7 +68,7 @@
 
   /* Borders */
   --color-table-border: theme("colors.gray.200");
-  --color-table-divide: theme("colors.gray.200");
+  --color-table-divide: #e7e9ed;
   --color-table-head: var(--color-black-scale-6);
   --color-table-alternating-row: #fcfcfc;
 }
