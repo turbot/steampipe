@@ -37,6 +37,7 @@
     "react-syntax-highlighter": "15.4.5",
     "react-table": "7.7.0",
     "remark-gfm": "3.0.1",
+    "use-deep-compare-effect": "1.8.1",
     "uuid": "8.3.2",
     "web-vitals": "2.1.4"
   },
