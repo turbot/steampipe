@@ -1,0 +1,9 @@
+{
+  "local": {
+    "github.com/pskrbasu/steampipe-mod-m1": {
+      "Name": "github.com/pskrbasu/steampipe-mod-m1",
+      "Version": "4.0.0",
+      "Constraint": "4.0"
+    }
+  }
+}

@@ -132,14 +132,16 @@ func init() {
 							Title:       toStringPointer("Q1"),
 							Description: toStringPointer("THIS IS QUERY 1"),
 							SQL:         toStringPointer("select $1"),
-							Params: []*modconfig.ParamDef{
-								{
-									Name:        "p1",
-									FullName:    "param.p1",
-									Description: utils.ToStringPointer("desc"),
-									Default:     utils.ToStringPointer("'I am default'"),
-								},
-							},
+						},
+					},
+					LocalQueries: map[string]*modconfig.Query{
+						"query.q1": {
+							ShortName:       "q1",
+							FullName:        "m1.query.q1",
+							Description:     toStringPointer("THIS IS QUERY 1"),
+							Title:           toStringPointer("Q1"),
+							SQL:             toStringPointer("select $1"),
+							UnqualifiedName: "query.q1",
 						},
 					},
 				},
@@ -935,7 +937,7 @@ func init() {
 							ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_flow_0",
 							UnqualifiedName: "flow.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_flow_0",
 							Title:           toStringPointer("example flow"),
-							Type:            toStringPointer("graph"),
+							Type:            toStringPointer("sankey"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -1029,7 +1031,7 @@ func init() {
 							ShortName:       "dashboard_dashboard_with_child_res_anonymous_flow_0",
 							UnqualifiedName: "flow.dashboard_dashboard_with_child_res_anonymous_flow_0",
 							Title:           toStringPointer("example flow"),
-							Type:            toStringPointer("graph"),
+							Type:            toStringPointer("sankey"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -1235,10 +1237,38 @@ func init() {
 				},
 			},
 		},
-		//"two_mods": {
-		//	source:   "testdata/mods/two_mods",
-		//	expected: "ERROR",
-		//},
+		"dashboard_with_child_dashboard": {
+			source:   "testdata/mods/dashboard_with_child_dashboard",
+			expected: "ERROR",
+		},
+		"anonymous_top_level_resource": {
+			source:   "testdata/mods/anonymous_top_level_resource",
+			expected: "ERROR",
+		},
+		"dashboard_with_named_child_res": {
+			source:   "testdata/mods/dashboard_with_named_child_res",
+			expected: "ERROR",
+		},
+		"anonymous_input": {
+			source:   "testdata/mods/anonymous_input",
+			expected: "ERROR",
+		},
+		"duplicate_dashboard": {
+			source:   "testdata/mods/duplicate_dashboard",
+			expected: "ERROR",
+		},
+		"wrong_title_referencing": {
+			source:   "testdata/mods/wrong_title_referencing",
+			expected: "ERROR",
+		},
+		"inputs_with_cyclic_dependency": {
+			source:   "testdata/mods/inputs_with_cyclic_dependency",
+			expected: "ERROR",
+		},
+		// "two_mods": {
+		// 	source:   "testdata/mods/two_mods",
+		// 	expected: "ERROR",
+		// },
 	}
 }
 
