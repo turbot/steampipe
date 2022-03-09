@@ -31,6 +31,11 @@ const getInterpolatedTemplateValue = async (
       );
       const rendered = await jq.json(context, doubleQuotedString);
 
+      // If we get a null result, we don't want to continue
+      if (rendered === null) {
+        return null;
+      }
+
       updatedTemplate = updatedTemplate.replace(match[0], rendered);
     }
   } catch (err) {
