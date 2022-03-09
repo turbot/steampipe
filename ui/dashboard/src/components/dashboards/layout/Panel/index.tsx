@@ -122,7 +122,7 @@ const Panel = ({
                 definition.node_type === "input" &&
                   get(definition, "properties.type") !== "table"
                   ? "pl-0 pr-2 sm:pr-4 py-2"
-                  : "px-2 sm:px-4 py-4"
+                  : "px-4 py-4"
               )}
             >
               <h3

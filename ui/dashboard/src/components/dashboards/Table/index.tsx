@@ -400,7 +400,7 @@ const LineView = (props: TableProps) => {
   }
 
   return (
-    <div className="px-2 sm:px-4 py-3 space-y-4">
+    <div className="px-4 py-3 space-y-4">
       {props.data.rows.map((row, rowIndex) => {
         const rowObj = {};
         (props.data?.columns || []).forEach((col, index) => {
