@@ -176,9 +176,6 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if startResult.Status == db_local.ServiceAlreadyRunning {
-		if startResult.DbState.Invoker == constants.InvokerService {
-			fmt.Println("Steampipe service is already running.")
-		}
 
 		// check that we have the same port and listen parameters
 		if port != startResult.DbState.Port {
@@ -206,20 +203,28 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	dashboardState, err := startDashboardServer(ctx)
-	if err != nil {
-		db_local.StopServices(ctx, false, constants.InvokerService)
-		utils.ShowError(ctx, err)
-		return
+	servicesStarted := (startResult.Status == db_local.ServiceStarted)
+
+	var dashboardState *dashboardserver.DashboardServiceState
+	if viper.GetBool(constants.ArgDashboard) {
+		dashboardState, err = dashboardserver.GetDashboardServiceState()
+		if err != nil {
+			db_local.StopServices(ctx, false, constants.InvokerService)
+			utils.ShowError(ctx, err)
+			return
+		}
+		if dashboardState == nil {
+			dashboardState, err = startDashboardServer(ctx)
+			if err != nil {
+				db_local.StopServices(ctx, false, constants.InvokerService)
+				utils.ShowError(ctx, err)
+				return
+			}
+			servicesStarted = true
+		}
 	}
 
-	// service was already running - and we didn't have to start the dashboard
-	if startResult.Status == db_local.ServiceAlreadyRunning && !viper.GetBool(constants.ArgDashboard) {
-		// nothing more to do
-		return
-	}
-
-	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState)
+	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, !servicesStarted)
 
 	if viper.GetBool(constants.ArgForeground) {
 		runServiceInForeground(ctx, invoker)
@@ -228,38 +233,36 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 func startDashboardServer(ctx context.Context) (*dashboardserver.DashboardServiceState, error) {
 	var dashboardState *dashboardserver.DashboardServiceState
-	if viper.GetBool(constants.ArgDashboard) {
-		serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
-		serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
+	var err error
 
-		dashboardState, err := dashboardserver.GetDashboardServiceState()
+	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
+	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
+
+	dashboardState, err = dashboardserver.GetDashboardServiceState()
+	if err != nil {
+		return nil, err
+	}
+
+	if dashboardState == nil {
+		// try stopping the previous service
+		// StopDashboardService does nothing if the service is not running
+		err = dashboardserver.StopDashboardService(ctx)
 		if err != nil {
 			return nil, err
 		}
-
-		if dashboardState == nil {
-			// try stopping the previous service
-			// StopDashboardService does nothing if the service is not running
-			err = dashboardserver.StopDashboardService(ctx)
-			if err != nil {
-				return nil, err
-			}
-			// start dashboard service
-			err = dashboardserver.RunForService(ctx, serverListen, serverPort)
-			if err != nil {
-				return nil, err
-			}
-			// get the updated state
-			dashboardState, err = dashboardserver.GetDashboardServiceState()
-			if err != nil {
-				utils.ShowWarning(fmt.Sprintf("Started Dashboard server, but could not retrieve state: %v", err))
-			}
-			return dashboardState, err
-		} else {
-			fmt.Println("Dashboard service is already running.")
+		// start dashboard service
+		err = dashboardserver.RunForService(ctx, serverListen, serverPort)
+		if err != nil {
+			return nil, err
+		}
+		// get the updated state
+		dashboardState, err = dashboardserver.GetDashboardServiceState()
+		if err != nil {
+			utils.ShowWarning(fmt.Sprintf("Started Dashboard server, but could not retrieve state: %v", err))
 		}
 	}
-	return dashboardState, nil
+
+	return dashboardState, err
 }
 
 func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
@@ -364,9 +367,9 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	startResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
-	utils.FailOnError(startResult.Error)
-	if startResult.Status == db_local.ServiceFailedToStart {
+	dbStartResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	utils.FailOnError(dbStartResult.Error)
+	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		fmt.Println("Steampipe service was stopped, but failed to restart.")
 		return
 	}
@@ -374,7 +377,6 @@ to force a restart.
 	// refresh connections
 	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
 	utils.FailOnError(err)
-	fmt.Println("Steampipe service restarted.")
 
 	// if the dashboard was running, start it
 	if currentDashboardState != nil {
@@ -386,7 +388,7 @@ to force a restart.
 		utils.FailOnError(err)
 	}
 
-	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, currentDashboardState)
+	printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
 }
 
 func runServiceStatusCmd(cmd *cobra.Command, args []string) {
@@ -414,7 +416,7 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(ctx, composeStateError(dbStateErr, pmStateErr, dashboardStateErr))
 			return
 		}
-		printStatus(ctx, dbState, pmState, dashboardState)
+		printStatus(ctx, dbState, pmState, dashboardState, false)
 	}
 }
 
@@ -500,11 +502,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 	switch status {
 	case db_local.ServiceStopped:
-		if dbState != nil {
-			fmt.Printf("Steampipe service stopped [port %d].\n", dbState.Port)
-		} else {
-			fmt.Println("Steampipe service stopped.")
-		}
+		fmt.Println("Steampipe database service stopped.")
 	case db_local.ServiceNotRunning:
 		fmt.Println("Steampipe service is not running.")
 	case db_local.ServiceStopFailed:
@@ -573,7 +571,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState, dashboardState *dashboardserver.DashboardServiceState) {
+func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState, dashboardState *dashboardserver.DashboardServiceState, alreadyRunning bool) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return
@@ -583,6 +581,10 @@ func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, p
 
 	prefix := `Steampipe service is running:
 `
+	if alreadyRunning {
+		prefix = `Steampipe service is already running:
+`
+	}
 	suffix := `
 Managing the Steampipe service:
 
@@ -623,12 +625,14 @@ Database:
 	dashboardMsg := ""
 
 	if dashboardState != nil {
+		browserUrl := fmt.Sprintf("http://localhost:%d/", dashboardState.Port)
 		dashboardMsg = fmt.Sprintf(`
 Dashboard:
 
   Host(s):  %v
   Port:     %v
-`, strings.Join(dashboardState.Listen, ", "), dashboardState.Port)
+  URL:      %v
+`, strings.Join(dashboardState.Listen, ", "), dashboardState.Port, browserUrl)
 	}
 
 	if dbState.Invoker == constants.InvokerService {
