@@ -67,7 +67,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 
 	w.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
 	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
-	outputMessage(ctx, "Workspace loaded")
+	OutputMessage(ctx, "Workspace loaded")
 
 	return server, err
 }
@@ -327,7 +327,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 
 		// If) any deleted/new/changed dashboards, emit an available dashboards message to clients
 		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 {
-			outputMessage(s.context, "Available Dashboards updated")
+			OutputMessage(s.context, "Available Dashboards updated")
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if payloadError != nil {
 				return
@@ -453,7 +453,7 @@ func (s *Server) Init(ctx context.Context) {
 	})
 
 	s.webSocket.HandleMessage(s.handleMessageFunc(ctx))
-	outputMessage(ctx, "Initialization complete")
+	OutputMessage(ctx, "Initialization complete")
 }
 
 func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Session, msg []byte) {

@@ -43,7 +43,7 @@ func output(_ context.Context, prefix string, msg interface{}) {
 	fmt.Fprintf(logSink, "%s %v\n", prefix, msg)
 }
 
-func outputMessage(ctx context.Context, msg string) {
+func OutputMessage(ctx context.Context, msg string) {
 	output(ctx, applyColor(messagePrefix, color.HiGreenString), msg)
 }
 

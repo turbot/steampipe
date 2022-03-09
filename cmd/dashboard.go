@@ -99,7 +99,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort))
 		if err != nil {
 			log.Println("[TRACE] dashboard server started but failed to start client", err)
+		} else {
+			dashboardserver.OutputMessage(dashboardCtx, fmt.Sprintf("Visit http://localhost:%d", serverPort))
 		}
+		dashboardserver.OutputMessage(dashboardCtx, "Press Ctrl+C to exit")
 	}
 
 	// wait for the given context to cancel

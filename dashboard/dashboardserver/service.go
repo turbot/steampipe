@@ -64,7 +64,7 @@ func StopDashboardService(ctx context.Context) error {
 		return err
 	}
 	if !pidExists {
-		return os.Remove(filepaths.DashboardServiceStateFilePath())
+		return nil
 	}
 	process, err := process.NewProcessWithContext(ctx, int32(state.Pid))
 	if err != nil {
