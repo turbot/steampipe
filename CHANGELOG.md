@@ -1,8 +1,27 @@
-## v0.12.3 [tbd]
+## v0.13.0 [2022-03-10]
+_What's new?_
+* Add `steampipe dashboard` command ([#1364](https://github.com/turbot/steampipe/issues/1364))
+* Add `--dashboard` option to `steampipe service` command.  ([#1472](https://github.com/turbot/steampipe/issues/1472))
+* Add support for `ltree` columns. ([#157](https://github.com/turbot/steampipe-postgres-fdw/issues/157))
+* Add support for `inet` columns. ([#156](https://github.com/turbot/steampipe-postgres-fdw/issues/156))
+* Add support for finding the mod definition by searching up the working directory tree. ([#1533](https://github.com/turbot/steampipe/issues/1533))
+* Update OCI download to use a tmp folder underneath the destination folder. ([#1545](https://github.com/turbot/steampipe/issues/1545))
+* Disable update checks running for plugin update command. ([#1470](https://github.com/turbot/steampipe/issues/1470))
+
 _Bug fixes_
-* Ensure SetConnectionConfig is only called once. ([#1368](https://github.com/turbot/steampipe/issues/1368))
+* Fix connection file watching. ([#1469](https://github.com/turbot/steampipe/issues/1469))
+* Fix `.inspect` command for steampipe cloud connections. ([#1497](https://github.com/turbot/steampipe/issues/1497))
 * Fix plugin validation error sometimes causing Steampipe to crash. ([#1387](https://github.com/turbot/steampipe/issues/1387), [#146](https://github.com/turbot/steampipe-postgres-fdw/issues/146))
 * Fix plugin validation errors not being displayed as warnings on startup. ([#1413](https://github.com/turbot/steampipe/issues/1413))
+* Fix workspace event handler causing freeze during initialisation. ([#1428](https://github.com/turbot/steampipe/issues/1428))
+* Fix duplicate resources not being reported during mod load. ([#1477](https://github.com/turbot/steampipe/issues/1477))
+* Fix interactive query cancellation only working once.([#1625](https://github.com/turbot/steampipe/issues/1625))
+* Fix failure to detect duplicate pseudo resources. ([#1478](https://github.com/turbot/steampipe/issues/1478))
+* Fix refreshing an aggregate connection causing a plugin crash. ([#1537](https://github.com/turbot/steampipe/issues/1537))
+* Ensure SetConnectionConfig is only called once. ([#1368](https://github.com/turbot/steampipe/issues/1368))
+* Fix 'is nil' qual causing a plugin crash. ([#154](https://github.com/turbot/steampipe-postgres-fdw/issues/154))
+* Update plugin manager to remove plugin from map if startup fails. Prevents timeout when retrying to start a failed plugin. ([#1631](https://github.com/turbot/steampipe/issues/1631))
+* Fix issue where plugin-manager becomes unstable if plugins crash. ([#1453](https://github.com/turbot/steampipe/issues/1453))
 
 ## v0.12.2 [2022-01-27]
 _Bug fixes_
