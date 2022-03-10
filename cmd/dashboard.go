@@ -39,6 +39,7 @@ The current mod is the working directory, or the directory specified by the --wo
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the dashboard").
 		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
 		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.").
+		AddBoolFlag(constants.ArgBrowser, "", true, "Specify whether to launch the browser after starting the dashboard server").
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
@@ -96,15 +97,16 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	server.Start()
 
 	if isRunningAsService() {
+		// for service mode only, save the state
 		saveDashboardState(serverPort, serverListen)
 	} else {
-		err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort))
-		if err != nil {
-			log.Println("[TRACE] dashboard server started but failed to start client", err)
-		} else {
-			dashboardserver.OutputMessage(dashboardCtx, fmt.Sprintf("Visit http://localhost:%d", serverPort))
+
+		// start browser if required
+		if viper.GetBool(constants.ArgBrowser) {
+			if err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort)); err != nil {
+				log.Println("[TRACE] dashboard server started but failed to start client", err)
+			}
 		}
-		dashboardserver.OutputMessage(dashboardCtx, "Press Ctrl+C to exit")
 	}
 
 	// wait for the given context to cancel

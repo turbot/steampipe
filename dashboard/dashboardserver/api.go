@@ -74,6 +74,8 @@ func StartAPI(ctx context.Context, webSocket *melody.Melody) *http.Server {
 	}()
 
 	outputReady(ctx, fmt.Sprintf("Dashboard server started on %d and listening on %s", dashboardServerPort, viper.GetString(constants.ArgDashboardListen)))
+	OutputMessage(ctx, fmt.Sprintf("Visit http://localhost:%d", dashboardServerPort))
+	OutputMessage(ctx, "Press Ctrl+C to exit")
 	<-ctx.Done()
 	log.Println("Shutdown Server ...")
 
