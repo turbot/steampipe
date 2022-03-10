@@ -44,7 +44,7 @@ const useAnalyticsProvider = () => {
     useState<CloudDashboardWorkspaceMetadata | null>(null);
   const [initialised, setInitialised] = useState(false);
 
-  const identify = useCallback(() => {
+  const identify = useCallback((actor) => {
     // @ts-ignore
     window.heap && window.heap.identify(actor.id);
   }, []);
@@ -119,7 +119,7 @@ const useAnalyticsProvider = () => {
     const actor = cloudMetadata?.actor;
 
     if (actor && enabled) {
-      identify();
+      identify(actor);
     } else if (enabled) {
       reset();
     }
