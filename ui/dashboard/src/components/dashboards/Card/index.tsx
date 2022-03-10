@@ -24,7 +24,7 @@ const getWrapperClasses = (type) => {
     case "ok":
       return "bg-ok";
     default:
-      return "bg-background-panel shadow-sm m-0.5";
+      return "bg-background-panel shadow-sm";
   }
 };
 
@@ -198,7 +198,7 @@ const Card = (props: CardProps) => {
   return (
     <div
       className={classNames(
-        "relative pt-4 px-3 pb-4 sm:px-4 rounded-md overflow-hidden",
+        "relative pt-4 px-3 pb-4 sm:px-4 m-0.5 rounded-md overflow-hidden",
         getWrapperClasses(state.type)
       )}
     >
