@@ -164,6 +164,10 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 	// so we need to start the plugin
 	client, err := m.startPlugin(connection)
 	if err != nil {
+		m.mut.Lock()
+		delete(m.Plugins, connection)
+		m.mut.Unlock()
+
 		log.Println("[TRACE] startPlugin failed with", err)
 		return nil, err
 	}
