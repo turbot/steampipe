@@ -108,12 +108,13 @@ const getThemeColorsWithPointOverrides = (
 const getCommonBaseOptions = () => ({
   animation: false,
   grid: {
+    bottom: 40,
     containLabel: true,
   },
   legend: {
     orient: "horizontal",
     left: "center",
-    top: "top",
+    top: "10",
     textStyle: {
       fontSize: 11,
     },
@@ -131,20 +132,36 @@ const getCommonBaseOptions = () => ({
   },
 });
 
-const getXAxisRotation = (length: number) => {
-  if (length < 5) {
+const getXAxisLabelRotation = (number_of_rows: number) => {
+  if (number_of_rows < 5) {
     return 0;
   }
-  if (length < 10) {
+  if (number_of_rows < 10) {
     return 30;
   }
-  if (length < 15) {
+  if (number_of_rows < 15) {
     return 45;
   }
-  if (length < 20) {
+  if (number_of_rows < 20) {
     return 60;
   }
   return 90;
+};
+
+const getXAxisLabelWidth = (number_of_rows: number) => {
+  if (number_of_rows < 5) {
+    return null;
+  }
+  if (number_of_rows < 10) {
+    return 85;
+  }
+  if (number_of_rows < 15) {
+    return 75;
+  }
+  if (number_of_rows < 20) {
+    return 60;
+  }
+  return 50;
 };
 
 const getCommonBaseOptionsForChartType = (
@@ -223,8 +240,8 @@ const getCommonBaseOptionsForChartType = (
           boundaryGap: type !== "area",
           axisLabel: {
             color: themeColors.foreground,
-            rotate: getXAxisRotation(dataset.length),
-            width: 50,
+            rotate: getXAxisLabelRotation(dataset.length - 1),
+            width: getXAxisLabelWidth(dataset.length),
             overflow: "truncate",
           },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
@@ -271,8 +288,8 @@ const getCommonBaseOptionsForChartType = (
           type: "category",
           axisLabel: {
             color: themeColors.foreground,
-            rotate: getXAxisRotation(dataset.length),
-            width: 50,
+            rotate: getXAxisLabelRotation(dataset.length - 1),
+            width: getXAxisLabelWidth(dataset.length),
             overflow: "truncate",
           },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
@@ -360,19 +377,26 @@ const getOptionOverridesForChartType = (
     if (legendPosition === "top") {
       overrides = set(overrides, "legend.orient", "horizontal");
       overrides = set(overrides, "legend.left", "center");
-      overrides = set(overrides, "legend.top", "top");
+      overrides = set(overrides, "legend.top", 10);
+      overrides = set(overrides, "legend.bottom", "auto");
     } else if (legendPosition === "right") {
       overrides = set(overrides, "legend.orient", "vertical");
       overrides = set(overrides, "legend.left", "right");
       overrides = set(overrides, "legend.top", "middle");
+      overrides = set(overrides, "legend.bottom", "auto");
+      overrides = set(overrides, "grid.right", "20%");
     } else if (legendPosition === "bottom") {
       overrides = set(overrides, "legend.orient", "horizontal");
       overrides = set(overrides, "legend.left", "center");
-      overrides = set(overrides, "legend.top", "bottom");
+      overrides = set(overrides, "legend.top", "auto");
+      overrides = set(overrides, "legend.bottom", 10);
+      overrides = set(overrides, "grid.top", 30);
     } else if (legendPosition === "left") {
       overrides = set(overrides, "legend.orient", "vertical");
       overrides = set(overrides, "legend.left", "left");
       overrides = set(overrides, "legend.top", "middle");
+      overrides = set(overrides, "legend.bottom", "auto");
+      overrides = set(overrides, "grid.left", "20%");
     }
   }
 
@@ -547,7 +571,7 @@ const getSeriesForChartType = (
         series.push({
           name: seriesName,
           type: "pie",
-          center: ["50%", "40%"],
+          center: ["50%", "45%"],
           radius: ["30%", "50%"],
           label: { color: themeColors.foreground },
         });
