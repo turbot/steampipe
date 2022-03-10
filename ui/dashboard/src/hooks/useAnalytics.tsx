@@ -42,6 +42,12 @@ const useAnalyticsProvider = () => {
     useState<CloudDashboardIdentityMetadata | null>(null);
   const [workspace, setWorkspace] =
     useState<CloudDashboardWorkspaceMetadata | null>(null);
+  const [initialised, setInitialised] = useState(false);
+
+  const identify = useCallback(() => {
+    // @ts-ignore
+    window.heap && window.heap.identify(actor.id);
+  }, []);
 
   const reset = useCallback(() => {
     // @ts-ignore
@@ -50,6 +56,9 @@ const useAnalyticsProvider = () => {
 
   const track = useCallback(
     (event, properties) => {
+      if (!initialised || !enabled) {
+        return;
+      }
       const additionalProperties = {
         theme: theme.name,
         using_system_theme: !localStorageTheme,
@@ -70,7 +79,7 @@ const useAnalyticsProvider = () => {
       // @ts-ignore
       window.heap && window.heap.track(event, finalProperties);
     },
-    [identity, workspace, localStorageTheme, theme]
+    [enabled, initialised, identity, workspace, localStorageTheme, theme]
   );
 
   useEffect(() => {
@@ -78,11 +87,24 @@ const useAnalyticsProvider = () => {
       return;
     }
 
-    setEnabled(metadata.telemetry === "info");
+    setEnabled(
+      metadata.telemetry === "info" && !!process.env.REACT_APP_HEAP_ID
+    );
 
     if (metadata.telemetry !== "info") {
+    } else {
       // @ts-ignore
-      window.heap = null;
+      if (window.heap) {
+        // @ts-ignore
+        window.heap.load(process.env.REACT_APP_HEAP_ID);
+      }
+    }
+
+    setInitialised(true);
+  }, [metadataLoaded, metadata]);
+
+  useEffect(() => {
+    if (!metadataLoaded || !initialised) {
       return;
     }
 
@@ -96,13 +118,12 @@ const useAnalyticsProvider = () => {
 
     const actor = cloudMetadata?.actor;
 
-    if (actor) {
-      // @ts-ignore
-      window.heap && window.heap.identify(actor.id);
-    } else {
+    if (actor && enabled) {
+      identify();
+    } else if (enabled) {
       reset();
     }
-  }, [metadataLoaded, metadata]);
+  }, [metadataLoaded, metadata, enabled, initialised]);
 
   // @ts-ignore
   const previousSelectedDashboardStates: SelectedDashboardStates = usePrevious({
