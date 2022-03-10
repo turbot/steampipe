@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/signal"
 	"sort"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/contexthelpers"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/query/metaquery"
@@ -88,7 +88,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, results
 func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
 	// (registered when we call createQueryContext)
-	interruptSignalChannel := contexthelpers.StartCancelHandler(c.cancelActiveQueryIfAny)
+	quitChannel := c.startCancelHandler()
 
 	// create a cancel context for the prompt - this will set c.cancelPrompt
 	parentContext := ctx
@@ -99,8 +99,8 @@ func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
-		signal.Stop(interruptSignalChannel)
-		close(interruptSignalChannel)
+		quitChannel <- true
+		close(quitChannel)
 
 		// cleanup the init data to ensure any services we started are stopped
 		c.initData.Cleanup(ctx)
@@ -578,4 +578,27 @@ func (c *InteractiveClient) addControlSuggestion(control *modconfig.Control, con
 		description += fmt.Sprintf(": %s", *control.Description)
 	}
 	return prompt.Suggest{Text: controlName, Output: controlName, Description: description}
+}
+
+func (c *InteractiveClient) startCancelHandler() chan bool {
+	sigIntChannel := make(chan os.Signal, 1)
+	quitChannel := make(chan bool, 1)
+	signal.Notify(sigIntChannel, os.Interrupt)
+	go func() {
+		for {
+			select {
+			case <-sigIntChannel:
+				log.Println("[TRACE] got SIGINT")
+				// call context cancellation function
+				c.cancelActiveQueryIfAny()
+				// keep waiting for further cancellations
+			case <-quitChannel:
+				log.Println("[TRACE] cancel handler exiting")
+				c.cancelActiveQueryIfAny()
+				// we're done
+				return
+			}
+		}
+	}()
+	return quitChannel
 }
