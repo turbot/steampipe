@@ -188,7 +188,11 @@ const getCommonBaseOptionsForChartType = (
         // Declare a y-axis (value axis).
         yAxis: {
           type: "category",
-          axisLabel: { color: themeColors.foreground },
+          axisLabel: {
+            color: themeColors.foreground,
+            width: 50,
+            overflow: "truncate",
+          },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
           nameGap: width ? width + 42 : 50,
@@ -217,7 +221,12 @@ const getCommonBaseOptionsForChartType = (
         xAxis: {
           type: "category",
           boundaryGap: type !== "area",
-          axisLabel: { color: themeColors.foreground },
+          axisLabel: {
+            color: themeColors.foreground,
+            rotate: getXAxisRotation(dataset.length),
+            width: 50,
+            overflow: "truncate",
+          },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
           axisTick: { show: false },
           nameGap: 30,
@@ -263,6 +272,7 @@ const getCommonBaseOptionsForChartType = (
           axisLabel: {
             color: themeColors.foreground,
             rotate: getXAxisRotation(dataset.length),
+            width: 50,
             overflow: "truncate",
           },
           axisLine: { lineStyle: { color: themeColors.foregroundLightest } },
