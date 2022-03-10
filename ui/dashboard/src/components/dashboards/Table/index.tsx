@@ -296,7 +296,7 @@ const CellValue = ({
       </ExternalLink>
     ) : (
       <span
-        className="text-black-scale-3"
+        className="text-foreground-lightest"
         title={showTitle ? `${column.name}=null` : undefined}
       >
         <>null</>
