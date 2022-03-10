@@ -165,7 +165,7 @@ func (w *Workspace) setModfileExists() {
 		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
 		w.Path = filepath.Dir(modFile)
 	} else {
-		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and onnly loading resource files from top level folder")
+		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and only loading resource files from top level folder")
 		w.listFlag = filehelpers.Files
 		w.loadPseudoResources = false
 	}
