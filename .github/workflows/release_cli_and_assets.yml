@@ -155,6 +155,8 @@ jobs:
       run: |-
         unset CI
         yarn build
+      env:
+        REACT_APP_HEAP_ID: ${{ secrets.HEAP_ANALYTICS_PRODUCTION_ID }}
 
     - name: Move Build Assets
       run: |-

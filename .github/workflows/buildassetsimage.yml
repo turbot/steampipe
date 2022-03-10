@@ -17,8 +17,6 @@ env:
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
   VERSION: ${{ github.event.inputs.tag }}
-  REACT_APP_STAGE: "production"
-  REACT_APP_HEAP_ID: "2696375185"
 
 jobs:
   build:
@@ -63,8 +61,7 @@ jobs:
         yarn build
       working-directory: ./ui/dashboard
       env:
-        REACT_APP_STAGE: ${{ env.REACT_APP_STAGE }}
-        REACT_APP_HEAP_ID: ${{ env.REACT_APP_HEAP_ID }}
+        REACT_APP_HEAP_ID: ${{ secrets.HEAP_ANALYTICS_PRODUCTION_ID }}
 
     - name: Move Build Assets
       run: |-
