@@ -7,7 +7,7 @@ import (
 	"os/signal"
 )
 
-func StartCancelHandler(cancel context.CancelFunc) chan os.Signal {
+func StartCancelHandler(cancel context.CancelFunc) {
 	sigIntChannel := make(chan os.Signal, 1)
 	signal.Notify(sigIntChannel, os.Interrupt)
 	go func() {
@@ -17,5 +17,4 @@ func StartCancelHandler(cancel context.CancelFunc) chan os.Signal {
 		cancel()
 		// leave the channel open - any subsequent interrupts hits will be ignored
 	}()
-	return sigIntChannel
 }
