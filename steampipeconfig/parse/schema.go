@@ -130,12 +130,6 @@ var DashboardBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeChart,
 		},
 		{
-			Type: modconfig.BlockTypeBenchmark,
-		},
-		{
-			Type: modconfig.BlockTypeControl,
-		},
-		{
 			Type: modconfig.BlockTypeFlow,
 		},
 		{
@@ -175,12 +169,6 @@ var DashboardContainerBlockSchema = &hcl.BodySchema{
 		},
 		{
 			Type: modconfig.BlockTypeChart,
-		},
-		{
-			Type: modconfig.BlockTypeBenchmark,
-		},
-		{
-			Type: modconfig.BlockTypeControl,
 		},
 		{
 			Type: modconfig.BlockTypeFlow,
