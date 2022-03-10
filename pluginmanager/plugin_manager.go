@@ -134,6 +134,7 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 			return reattach, nil
 		}
 
+		// TODO combine with 'else' code to remove duplication
 		//  either the pid does not exist or the plugin has exited
 		// remove from map
 		m.mut.Lock()

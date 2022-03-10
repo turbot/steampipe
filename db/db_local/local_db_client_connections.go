@@ -112,7 +112,6 @@ func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*ste
 	var schemaQueries []string
 	for connectionName, connectionData := range updates {
 		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
-		log.Printf("[TRACE] update connection %s, plugin Name %s, schema %s, schemaQueries %v\n ", connectionName, connectionData.Plugin, remoteSchema, schemaQueries)
 		queries := updateConnectionQuery(connectionName, remoteSchema)
 		schemaQueries = append(schemaQueries, queries...)
 
