@@ -11,13 +11,9 @@ type PanelStoryDecoratorProps = {
 };
 
 const stubDashboardSearch: DashboardSearch = {
-  search: "",
+  value: "",
   groupBy: "mod",
   groupByTag: null,
-
-  setSearch: noop,
-  setGroupBy: noop,
-  setGroupByTag: noop,
 };
 
 export const PanelStoryDecorator = ({
@@ -70,16 +66,15 @@ export const PanelStoryDecorator = ({
           ],
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
-        dashboardSearch: "",
-        dashboardTagKeys: [],
-        setDashboardSearch: () => {},
-        setDashboardTagKeys: () => {},
-
-        search: stubDashboardSearch,
 
         sqlDataMap: {
           storybook: definition.data,
         },
+
+        dashboardTagKeys: [],
+        setDashboardTagKeys: () => {},
+
+        search: stubDashboardSearch,
       }}
     >
       <Dashboard />

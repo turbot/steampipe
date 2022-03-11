@@ -1,32 +1,32 @@
 import SearchInput from "../SearchInput";
 import usePrevious from "../../hooks/usePrevious";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
-import { useDashboard } from "../../hooks/useDashboard";
-import { useEffect } from "react";
+import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
+import { useCallback, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 interface DashboardSearchStates {
   dashboardName: string | null;
-  dashboardSearch: string | null;
   searchParamsSearch: string | null;
 }
 
 const DashboardSearch = () => {
-  const {
-    availableDashboardsLoaded,
-    dashboardSearch,
-    metadata,
-    setDashboardSearch,
-  } = useDashboard();
+  const { availableDashboardsLoaded, dispatch, search, metadata } =
+    useDashboard();
   const { dashboardName } = useParams();
   const { minBreakpoint } = useBreakpoint();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const updateSearchValue = useCallback(
+    (value) =>
+      dispatch({ type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE, value }),
+    [dispatch]
+  );
 
   // Keep track of the previous selected dashboard and inputs
   const previousDashboardSearchStates: DashboardSearchStates | undefined =
     usePrevious({
       dashboardName,
-      dashboardSearch,
       searchParamsSearch: searchParams.get("search"),
     });
 
@@ -37,19 +37,19 @@ const DashboardSearch = () => {
       : null;
 
     if (!!previousSearchParamsSearch && !searchParams.get("search")) {
-      setDashboardSearch("");
+      updateSearchValue("");
     }
-  }, [previousDashboardSearchStates, searchParams]);
+  }, [previousDashboardSearchStates, searchParams, updateSearchValue]);
 
   /*eslint-disable */
   useEffect(() => {
-    if (dashboardSearch) {
-      searchParams.set("search", dashboardSearch);
+    if (search.value) {
+      searchParams.set("search", search.value);
     } else {
       searchParams.delete("search");
     }
     setSearchParams(searchParams, { replace: true });
-  }, [dashboardSearch, searchParams]);
+  }, [search.value, searchParams]);
   /*eslint-enable */
 
   useEffect(() => {
@@ -61,15 +61,15 @@ const DashboardSearch = () => {
       (!previousDashboard && dashboardName) ||
       (previousDashboard && previousDashboard !== dashboardName)
     ) {
-      setDashboardSearch("");
+      updateSearchValue("");
     }
-  }, [dashboardName, previousDashboardSearchStates]);
+  }, [dashboardName, previousDashboardSearchStates, updateSearchValue]);
 
   useEffect(() => {
-    if (!searchParams.get("search") && !!dashboardSearch) {
-      setDashboardSearch("");
+    if (!searchParams.get("search") && !!search.value) {
+      updateSearchValue("");
     }
-  }, [dashboardSearch, searchParams]);
+  }, [search.value, searchParams, updateSearchValue]);
 
   return (
     <div className="w-32 sm:w-56 md:w-72 lg:w-96">
@@ -77,8 +77,8 @@ const DashboardSearch = () => {
         //@ts-ignore
         disabled={!metadata || !availableDashboardsLoaded}
         placeholder={minBreakpoint("sm") ? "Search dashboards..." : "Search..."}
-        value={dashboardSearch}
-        setValue={setDashboardSearch}
+        value={search.value}
+        setValue={updateSearchValue}
       />
     </div>
   );

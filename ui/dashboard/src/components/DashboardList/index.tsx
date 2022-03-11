@@ -2,12 +2,14 @@ import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
 import {
   AvailableDashboard,
+  DashboardAction,
+  DashboardActions,
   ModDashboardMetadata,
   useDashboard,
 } from "../../hooks/useDashboard";
 import { ColorGenerator } from "../../utils/color";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 
 interface DashboardListSection {
@@ -22,57 +24,20 @@ type AvailableDashboardWithMod = AvailableDashboard & {
 interface DashboardTagProps {
   tagKey: string;
   tagValue: string;
-  search: string;
-  setDashboardSearch: (search: string) => void;
+  dispatch: (action: DashboardAction) => void;
+  searchValue: string;
 }
 
 interface SectionProps {
   title: string;
   dashboards: AvailableDashboardWithMod[];
-  search: string;
-  setDashboardSearch: (search: string) => void;
+  dispatch: (action: DashboardAction) => void;
+  searchValue: string;
 }
-
-// /*!
-//  * Get the contrasting color for any hex color
-//  * (c) 2019 Chris Ferdinandi, MIT License, https://gomakethings.com
-//  * Derived from work by Brian Suda, https://24ways.org/2010/calculating-color-contrast/
-//  * @param  {String} A hexcolor value
-//  * @return {String} The contrasting color (black or white)
-//  */
-// // https://gomakethings.com/dynamically-changing-the-text-color-based-on-background-color-contrast-with-vanilla-js/
-// const getContrastColour = (hexcolor) => {
-//   // If a leading # is provided, remove it
-//   if (hexcolor.slice(0, 1) === "#") {
-//     hexcolor = hexcolor.slice(1);
-//   }
-//
-//   // If a three-character hexcode, make six-character
-//   if (hexcolor.length === 3) {
-//     hexcolor = hexcolor
-//       .split("")
-//       .map(function (hex) {
-//         return hex + hex;
-//       })
-//       .join("");
-//   }
-//
-//   // Convert to RGB value
-//   const r = parseInt(hexcolor.substr(0, 2), 16);
-//   const g = parseInt(hexcolor.substr(2, 2), 16);
-//   const b = parseInt(hexcolor.substr(4, 2), 16);
-//
-//   // Get YIQ ratio
-//   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-//
-//   // Check contrast
-//   return yiq >= 128 ? "black" : "white";
-// };
 
 const stringColorMap = {};
 const colorGenerator = new ColorGenerator(16, 0);
 
-// https://stackoverflow.com/questions/3426404/create-a-hexadecimal-colour-based-on-a-string-with-javascript
 const stringToColour = (str) => {
   if (stringColorMap[str]) {
     return stringColorMap[str];
@@ -85,22 +50,27 @@ const stringToColour = (str) => {
 const DashboardTag = ({
   tagKey,
   tagValue,
-  search,
-  setDashboardSearch,
+  dispatch,
+  searchValue,
 }: DashboardTagProps) => {
   const searchWithTag = useMemo(() => {
-    const existingSearch = (search || "").trim();
+    const existingSearch = searchValue.trim();
     return existingSearch
       ? existingSearch.indexOf(tagValue) < 0
         ? `${existingSearch} ${tagValue}`
         : existingSearch
       : tagValue;
-  }, [tagValue, search]);
+  }, [tagValue, searchValue]);
 
   return (
     <span
       className="cursor-pointer rounded-md text-xs"
-      onClick={() => setDashboardSearch(searchWithTag)}
+      onClick={() =>
+        dispatch({
+          type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+          value: searchWithTag,
+        })
+      }
       style={{ color: stringToColour(tagValue) }}
       title={`${tagKey} = ${tagValue}`}
     >
@@ -112,8 +82,8 @@ const DashboardTag = ({
 const Section = ({
   title,
   dashboards,
-  search,
-  setDashboardSearch,
+  dispatch,
+  searchValue,
 }: SectionProps) => {
   return (
     <div className="space-y-2">
@@ -131,8 +101,8 @@ const Section = ({
                 key={key}
                 tagKey={key}
                 tagValue={value}
-                search={search}
-                setDashboardSearch={setDashboardSearch}
+                dispatch={dispatch}
+                searchValue={searchValue}
               />
             ))}
           </div>
@@ -205,13 +175,16 @@ const sortDashboards = (dashboards: AvailableDashboard[] = []) => {
 };
 
 const DashboardList = () => {
-  const [searchParams] = useSearchParams();
   const {
     availableDashboardsLoaded,
     metadata,
     dashboards,
-    dashboardSearch: search,
-    setDashboardSearch,
+    dispatch,
+    search: {
+      value: searchValue,
+      groupBy: searchGroupBy,
+      groupByTag: searchGroupByTag,
+    },
     setDashboardTagKeys,
   } = useDashboard();
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
@@ -262,12 +235,12 @@ const DashboardList = () => {
     if (!availableDashboardsLoaded || !metadata) {
       return;
     }
-    if (!search) {
+    if (!searchValue) {
       setFilteredDashboards(unfilteredDashboards);
       return;
     }
 
-    const searchParts = search.trim().toLowerCase().split(" ");
+    const searchParts = searchValue.trim().toLowerCase().split(" ");
     const filtered: AvailableDashboard[] = [];
 
     unfilteredDashboards.forEach((dashboard) => {
@@ -278,15 +251,12 @@ const DashboardList = () => {
     });
 
     setFilteredDashboards(sortDashboards(filtered));
-  }, [availableDashboardsLoaded, unfilteredDashboards, metadata, search]);
-
-  const url_group_by = searchParams.get("group_by") || "tag";
-  const url_tag = searchParams.get("tag") || "service";
+  }, [availableDashboardsLoaded, unfilteredDashboards, metadata, searchValue]);
 
   const sections = useGroupedDashboards(
     filteredDashboards,
-    url_group_by,
-    url_tag,
+    searchGroupBy,
+    searchGroupByTag,
     metadata
   );
 
@@ -305,12 +275,17 @@ const DashboardList = () => {
               metadata &&
               filteredDashboards.length === 0 && (
                 <div className="col-span-6 mt-2">
-                  {search ? (
+                  {searchValue ? (
                     <>
                       <span>No search results.</span>{" "}
                       <span
                         className="link-highlight"
-                        onClick={() => setDashboardSearch("")}
+                        onClick={() =>
+                          dispatch({
+                            type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+                            value: "",
+                          })
+                        }
                       >
                         Clear
                       </span>
@@ -327,8 +302,8 @@ const DashboardList = () => {
                   key={section.title}
                   title={section.title}
                   dashboards={section.dashboards}
-                  search={search}
-                  setDashboardSearch={setDashboardSearch}
+                  dispatch={dispatch}
+                  searchValue={searchValue}
                 />
               ))}
             </div>
@@ -344,10 +319,10 @@ const DashboardList = () => {
 
 const DashboardListWrapper = () => {
   const { dashboardName } = useParams();
-  const { dashboardSearch } = useDashboard();
+  const { search } = useDashboard();
 
   // If we have a dashboard selected and no search, we don't want to show the list
-  if (dashboardName && !dashboardSearch) {
+  if (dashboardName && !search.value) {
     return null;
   }
 

@@ -7,12 +7,10 @@ import { useDashboard } from "../../hooks/useDashboard";
 import { useParams, useSearchParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
-  const { dashboardSearch, dashboardTagKeys, availableDashboardsLoaded } =
+  const { search, dashboardTagKeys, availableDashboardsLoaded } =
     useDashboard();
   const { dashboardName } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  // const [groupBy, setGroupBy] = useState(searchParams.get("group_by") || "tag");
-  // const [tag, setTag] = useState(searchParams.get("tag") || "service");
 
   const options = useMemo(() => {
     const o = [
@@ -70,40 +68,17 @@ const DashboardTagGroupSelect = () => {
   }, [searchParams, value]);
 
   useEffect(() => {
-    if (dashboardName && !dashboardSearch) {
+    if (dashboardName && !search.value) {
       searchParams.delete("group_by");
       searchParams.delete("tag");
       setSearchParams(searchParams, { replace: true });
     }
-  }, [dashboardName, dashboardSearch, searchParams]);
-
-  // useEffect(() => {
-  //   console.log(availableDashboardsLoaded, dashboardTagKeys, options);
-  //   if (availableDashboardsLoaded) {
-  //     return;
-  //   }
-  //   let option;
-  //   const hasServiceTag = dashboardTagKeys.includes("service");
-  //   if (hasServiceTag) {
-  //     option = options.find((o) => o.tag === "service");
-  //   } else {
-  //     option = options.find((o) => o.groupBy === "mod");
-  //   }
-  //   console.log("Setting", option);
-  //   setValue(option);
-  // }, [availableDashboardsLoaded, dashboardTagKeys, options]);
-
-  // const value = useMemo(() => ({ groupBy, tag }), [groupBy, tag]);
-
-  // const updateValues = (selectedValue) => {
-  //   setGroupBy(selectedValue.groupBy);
-  //   setTag(selectedValue.tag);
-  // };
+  }, [dashboardName, search.value, searchParams]);
 
   if (
     !availableDashboardsLoaded ||
     !value ||
-    (dashboardName && !dashboardSearch)
+    (dashboardName && !search.value)
   ) {
     return null;
   }

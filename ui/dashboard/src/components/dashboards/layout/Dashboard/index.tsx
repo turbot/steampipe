@@ -23,10 +23,10 @@ const Dashboard = ({ definition, withPadding = false }: DashboardProps) => (
 );
 
 const DashboardWrapper = () => {
-  const { dashboard, dashboardSearch, selectedDashboard, selectedPanel } =
+  const { dashboard, search, selectedDashboard, selectedPanel } =
     useDashboard();
 
-  if (dashboardSearch || !dashboard || !selectedDashboard) {
+  if (search.value || !dashboard || !selectedDashboard) {
     return null;
   }
 

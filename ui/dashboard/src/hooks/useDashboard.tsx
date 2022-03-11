@@ -1,4 +1,3 @@
-// import * as AsBind from "as-bind";
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
 import usePrevious from "./usePrevious";
@@ -38,8 +37,6 @@ interface IDashboardContext {
 
   sqlDataMap: SQLDataMap;
 
-  dashboardSearch: string;
-  setDashboardSearch: (search: string) => void;
   dashboardTagKeys: string[];
   setDashboardTagKeys: (keys: string[]) => void;
 
@@ -49,13 +46,9 @@ interface IDashboardContext {
 type DashboardSearchGroupByMode = "mod" | "tag";
 
 export interface DashboardSearch {
-  search: string;
+  value: string;
   groupBy: DashboardSearchGroupByMode;
   groupByTag: string | null;
-
-  setSearch: (search: string) => void;
-  setGroupBy: (groupBy: DashboardSearchGroupByMode) => void;
-  setGroupByTag: (tag: string | null) => void;
 }
 
 interface SelectedDashboardStates {
@@ -262,6 +255,30 @@ function addDataToDashboard(
   return dashboard;
 }
 
+interface IDashboardActions {
+  [type: string]: string;
+}
+
+const DashboardActions: IDashboardActions = {
+  SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
+  SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
+  SET_DASHBOARD_SEARCH_GROUP_BY_TAG: "set_dashboard_search_group_by_tag",
+};
+
+const actions = Object.values(DashboardActions);
+// https://github.com/microsoft/TypeScript/issues/28046
+type ElementType<T extends ReadonlyArray<unknown>> = T extends ReadonlyArray<
+  infer ElementType
+>
+  ? ElementType
+  : never;
+type DashboardActionType = ElementType<typeof actions>;
+
+export interface DashboardAction {
+  type: DashboardActionType;
+  [key: string]: any;
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case "dashboard_metadata":
@@ -392,6 +409,30 @@ function reducer(state, action) {
         lastChangedInput: null,
       };
     }
+    case DashboardActions.SET_DASHBOARD_SEARCH_VALUE:
+      return {
+        ...state,
+        search: {
+          ...state.search,
+          value: action.value,
+        },
+      };
+    case DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY:
+      return {
+        ...state,
+        search: {
+          ...state.search,
+          groupBy: action.groupBy,
+        },
+      };
+    case DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY_TAG:
+      return {
+        ...state,
+        search: {
+          ...state.search,
+          groupByTag: action.groupByTag,
+        },
+      };
     case "workspace_error":
       return { ...state, error: action.error };
     // Not emitting these from the dashboard server yet
@@ -430,21 +471,28 @@ const initialiseInputs = (
 
 const DashboardProvider = ({ children }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [dashboardSearch, setDashboardSearch] = useState(
-    searchParams.get("search") || ""
-  );
   const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
   const [state, dispatch] = useReducer(
     reducer,
     {
+      availableDashboardsLoaded: false,
       metadata: null,
       dashboards: [],
       dashboard: null,
+      error: null,
       selectedPanel: null,
       selectedDashboard: null,
       selectedDashboardInputs: {},
+      lastChangedInput: null,
+
+      search: {
+        value: searchParams.get("search") || "",
+        groupBy: "tag",
+        groupByTag: "service",
+      },
+
       sqlDataMap: {},
-    },
+    } as IDashboardContext,
     (initialState) => initialiseInputs(initialState, searchParams)
   );
 
@@ -762,9 +810,7 @@ const DashboardProvider = ({ children }) => {
         ...state,
         dispatch,
         closePanelDetail,
-        dashboardSearch,
         dashboardTagKeys,
-        setDashboardSearch,
         setDashboardTagKeys,
       }}
     >
@@ -786,4 +832,4 @@ const useDashboard = () => {
   return context as IDashboardContext;
 };
 
-export { DashboardContext, DashboardProvider, useDashboard };
+export { DashboardActions, DashboardContext, DashboardProvider, useDashboard };
