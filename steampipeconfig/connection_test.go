@@ -463,12 +463,12 @@ type connectionDataEqual struct {
 
 var data1 = ConnectionData{
 	Plugin:     "plugin",
-	ModTime:    time.Now(),
+	ModTime:    time.Now().Round(time.Second),
 	Connection: &modconfig.Connection{Name: "a"},
 }
 var data1_duplicate = ConnectionData{
 	Plugin:     "plugin",
-	ModTime:    time.Now(),
+	ModTime:    time.Now().Round(time.Second),
 	Connection: &modconfig.Connection{Name: "a"},
 }
 var data2 = ConnectionData{
