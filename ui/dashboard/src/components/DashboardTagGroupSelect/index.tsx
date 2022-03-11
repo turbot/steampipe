@@ -66,14 +66,14 @@ const DashboardTagGroupSelect = () => {
     } else {
       searchParams.delete("tag");
     }
-    setSearchParams(searchParams);
+    setSearchParams(searchParams, { replace: true });
   }, [searchParams, value]);
 
   useEffect(() => {
     if (dashboardName && !dashboardSearch) {
       searchParams.delete("group_by");
       searchParams.delete("tag");
-      setSearchParams(searchParams);
+      setSearchParams(searchParams, { replace: true });
     }
   }, [dashboardName, dashboardSearch, searchParams]);
 
