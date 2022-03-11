@@ -2,6 +2,9 @@ package controldisplay
 
 import (
 	"testing"
+
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/filepaths"
 )
 
 type Testcase struct {
@@ -11,6 +14,8 @@ type Testcase struct {
 
 func TestExportFormat(t *testing.T) {
 	for name, test := range exportFormatTestCases {
+		home, _ := helpers.Tildefy("~/.steampipe")
+		filepaths.SteampipeDir = home
 		fff, _, err := ResolveExportTemplate(test.input, true)
 		if err != nil {
 			if test.expected != "ERROR" {
@@ -41,13 +46,6 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 			OutputExtension: ".html",
 		},
 	},
-	"brief": {
-		input: "brief",
-		expected: ExportTemplate{
-			FormatFullName:  "brief.html",
-			OutputExtension: ".html",
-		},
-	},
 	"nunit3": {
 		input: "nunit3",
 		expected: ExportTemplate{
@@ -56,30 +54,16 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 		},
 	},
 	"markdown": {
-		input: "markdown",
+		input: "md",
 		expected: ExportTemplate{
-			FormatFullName:  "markdown.md",
+			FormatFullName:  "md.md",
 			OutputExtension: ".md",
-		},
-	},
-	"txt": {
-		input: "txt",
-		expected: ExportTemplate{
-			FormatFullName:  "txt.dat",
-			OutputExtension: ".dat",
-		},
-	},
-	"foo": {
-		input: "foo",
-		expected: ExportTemplate{
-			FormatFullName:  "foo.xml",
-			OutputExtension: ".xml",
 		},
 	},
 	"brief.html": {
 		input: "brief.html",
 		expected: ExportTemplate{
-			FormatFullName:  "brief.html",
+			FormatFullName:  "html.html",
 			OutputExtension: ".html",
 		},
 	},
@@ -93,28 +77,28 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 	"markdown.md": {
 		input: "markdown.md",
 		expected: ExportTemplate{
-			FormatFullName:  "markdown.md",
+			FormatFullName:  "md.md",
 			OutputExtension: ".md",
 		},
 	},
-	"txt.dat": {
-		input: "txt.dat",
-		expected: ExportTemplate{
-			FormatFullName:  "txt.dat",
-			OutputExtension: ".dat",
-		},
-	},
-	"custom.txt": {
-		input: "custom.txt",
-		expected: ExportTemplate{
-			FormatFullName:  "custom.txt",
-			OutputExtension: ".txt",
-		},
-	},
+	// "txt.dat": {
+	// 	input: "txt.dat",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "txt.dat",
+	// 		OutputExtension: ".dat",
+	// 	},
+	// },
+	// "custom.txt": {
+	// 	input: "custom.txt",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "custom.txt",
+	// 		OutputExtension: ".txt",
+	// 	},
+	// },
 	"foo.xml": {
 		input: "foo.xml",
 		expected: ExportTemplate{
-			FormatFullName:  "foo.xml",
+			FormatFullName:  "nunit3.xml",
 			OutputExtension: ".xml",
 		},
 	},
@@ -128,32 +112,32 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 	"output.md": {
 		input: "output.md",
 		expected: ExportTemplate{
-			FormatFullName:  "markdown.md",
+			FormatFullName:  "md.md",
 			OutputExtension: ".md",
 		},
 	},
-	"output.txt": {
-		input: "output.txt",
-		expected: ExportTemplate{
-			FormatFullName:  "custom.txt",
-			OutputExtension: ".txt",
-		},
-	},
-	"output.dat": {
-		input: "output.dat",
-		expected: ExportTemplate{
-			FormatFullName:  "txt.dat",
-			OutputExtension: ".dat",
-		},
-	},
+	// "output.txt": {
+	// 	input: "output.txt",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "custom.txt",
+	// 		OutputExtension: ".txt",
+	// 	},
+	// },
+	// "output.dat": {
+	// 	input: "output.dat",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "txt.dat",
+	// 		OutputExtension: ".dat",
+	// 	},
+	// },
 	"output.brief.html": {
 		input: "output.brief.html",
 		expected: ExportTemplate{
-			FormatFullName:  "brief.html",
+			FormatFullName:  "html.html",
 			OutputExtension: ".html",
 		},
 	},
-	"output.nuni3.xml": {
+	"output.nunit3.xml": {
 		input: "output.nunit3.xml",
 		expected: ExportTemplate{
 			FormatFullName:  "nunit3.xml",
@@ -163,7 +147,7 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 	"output.foo.xml": {
 		input: "output.foo.xml",
 		expected: ExportTemplate{
-			FormatFullName:  "foo.xml",
+			FormatFullName:  "nunit3.xml",
 			OutputExtension: ".xml",
 		},
 	},

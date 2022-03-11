@@ -18,25 +18,25 @@ func testCasesResultReason() map[string]resultReasonTest {
 			status:   "error",
 			reason:   "short error reason",
 			width:    100,
-			expected: fmt.Sprintf("%s", ControlColors.ReasonColors["error"]("short error reason")),
+			expected: fmt.Sprintf("%s", ControlColors.ReasonColors["error"]("short error reason ")),
 		},
 		"ok fit": {
 			status:   "ok",
 			reason:   "short ok reason",
 			width:    100,
-			expected: fmt.Sprintf("%s", ControlColors.ReasonColors["ok"]("short ok reason")),
+			expected: fmt.Sprintf("%s", ControlColors.ReasonColors["ok"]("short ok reason ")),
 		},
 		"error truncate": {
 			status:   "error",
 			reason:   "long error reason is very long and goes on and on",
 			width:    40,
-			expected: fmt.Sprintf("%s", ControlColors.ReasonColors["error"]("long error reason is very long and goes…")),
+			expected: fmt.Sprintf("%s", ControlColors.ReasonColors["error"]("long error reason is very long and goe… ")),
 		},
 	}
 }
 
 func TestResultReason(t *testing.T) {
-	themeDef := ColorSchemes["dark"]
+	themeDef := ColorSchemes["plain"]
 	scheme, _ := NewControlColorScheme(themeDef)
 	ControlColors = scheme
 
