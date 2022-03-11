@@ -48,7 +48,7 @@ const DashboardSearch = () => {
     } else {
       searchParams.delete("search");
     }
-    setSearchParams(searchParams);
+    setSearchParams(searchParams, { replace: true });
   }, [dashboardSearch, searchParams]);
   /*eslint-enable */
 
