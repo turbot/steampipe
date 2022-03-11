@@ -1,14 +1,13 @@
 import SearchInput from "../SearchInput";
-import usePrevious from "../../hooks/usePrevious";
 import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useParams } from "react-router-dom";
 
-interface DashboardSearchStates {
-  dashboardName: string | null;
-  searchParamsSearch: string | null;
-}
+// interface DashboardSearchStates {
+//   dashboardName: string | null;
+//   searchParamsSearch: string | null;
+// }
 
 const DashboardSearch = () => {
   const { availableDashboardsLoaded, dispatch, search, metadata } =

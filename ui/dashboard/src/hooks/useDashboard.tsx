@@ -1,7 +1,7 @@
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
-import usePrevious from "./usePrevious";
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
+import usePrevious from "./usePrevious";
 import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
 import {
   createContext,

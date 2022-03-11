@@ -1,10 +1,10 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
 import copy from "copy-to-clipboard";
+import { classNames } from "../../utils/styles";
 import {
   CopyToClipboardIcon,
   CopyToClipboardSuccessIcon,
 } from "../../constants/icons";
-import { classNames } from "../../utils/styles";
+import { useState, useEffect, createContext, useContext } from "react";
 
 interface ICopyToClipboardContext {
   doCopy: boolean;
