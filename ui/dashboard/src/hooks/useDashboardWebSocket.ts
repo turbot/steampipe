@@ -81,7 +81,7 @@ const useDashboardWebSocket = (dispatch): IWebSocket => {
           return;
         }
 
-        const timeout = 20000;
+        const timeout = 30000;
         if (webSocket.current.readyState === webSocket.current.CLOSED) {
           webSocket.current = new WebSocket(getSocketServerUrl());
           webSocket.current.onerror = onSocketError;
@@ -118,17 +118,14 @@ const useDashboardWebSocket = (dispatch): IWebSocket => {
     };
   }, []);
 
-  const send = useCallback(
-    (message) => {
-      // TODO log this?
-      if (!webSocket.current) {
-        return;
-      }
+  const send = useCallback((message) => {
+    // TODO log this?
+    if (!webSocket.current) {
+      return;
+    }
 
-      webSocket.current.send(JSON.stringify(message));
-    },
-    [webSocket.current]
-  );
+    webSocket.current.send(JSON.stringify(message));
+  }, []);
 
   return {
     ready: webSocket.current

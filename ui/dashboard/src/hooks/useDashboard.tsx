@@ -541,7 +541,7 @@ const DashboardProvider = ({ children }) => {
     }
 
     setSearchParams(searchParams, { replace: true });
-  }, [searchParams, state.search]);
+  }, [dashboardName, searchParams, setSearchParams, state.search]);
 
   useEffect(() => {
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
@@ -637,6 +637,8 @@ const DashboardProvider = ({ children }) => {
     }
   }, [
     previousSelectedDashboardStates,
+    sendSocketMessage,
+    socketReady,
     state.selectedDashboard,
     state.selectedDashboardInputs,
     state.lastChangedInput,
@@ -660,7 +662,12 @@ const DashboardProvider = ({ children }) => {
           action: SocketActions.CLEAR_DASHBOARD,
         });
       }
-  }, [previousSelectedDashboardStates, state.selectedDashboard]);
+  }, [
+    previousSelectedDashboardStates,
+    sendSocketMessage,
+    socketReady,
+    state.selectedDashboard,
+  ]);
 
   /*eslint-disable */
   useEffect(() => {

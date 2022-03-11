@@ -2,7 +2,6 @@ import SearchInput from "../SearchInput";
 import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { useCallback } from "react";
-import { useParams } from "react-router-dom";
 
 // interface DashboardSearchStates {
 //   dashboardName: string | null;
@@ -12,7 +11,6 @@ import { useParams } from "react-router-dom";
 const DashboardSearch = () => {
   const { availableDashboardsLoaded, dispatch, search, metadata } =
     useDashboard();
-  const { dashboardName } = useParams();
   const { minBreakpoint } = useBreakpoint();
 
   const updateSearchValue = useCallback(
