@@ -447,15 +447,6 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   return selectedDashboardInputs;
 };
 
-// const initialiseInputs = (
-//   initialState: IDashboardContext,
-//   searchParams: URLSearchParams
-// ) => ({
-//   ...initialState,
-//   selectedDashboardInputs:
-//     buildSelectedDashboardInputsFromSearchParams(searchParams),
-// });
-
 const getInitialState = (searchParams) => {
   return {
     availableDashboardsLoaded: false,
@@ -498,6 +489,59 @@ const DashboardProvider = ({ children }) => {
   const { dashboardName } = useParams();
   const { ready: socketReady, send: sendSocketMessage } =
     useDashboardWebSocket(dispatch);
+
+  useEffect(() => {
+    console.log("Search changed", {
+      dashboardName,
+      searchParams,
+      search: state.search,
+    });
+
+    const {
+      value: searchValue,
+      groupBy: { value: groupByValue, tag },
+    } = state.search;
+
+    if (dashboardName) {
+      // Only set group_by and tag if we have a search
+      if (searchValue) {
+        searchParams.set("search", searchValue);
+        searchParams.set("group_by", groupByValue);
+
+        if (groupByValue === "mod") {
+          searchParams.delete("tag");
+        } else if (groupByValue === "tag") {
+          searchParams.set("tag", tag);
+        } else {
+          searchParams.delete("group_by");
+          searchParams.delete("tag");
+        }
+      } else {
+        searchParams.delete("search");
+        searchParams.delete("group_by");
+        searchParams.delete("tag");
+      }
+    } else {
+      if (searchValue) {
+        searchParams.set("search", searchValue);
+      } else {
+        searchParams.delete("search");
+      }
+
+      searchParams.set("group_by", groupByValue);
+
+      if (groupByValue === "mod") {
+        searchParams.delete("tag");
+      } else if (groupByValue === "tag") {
+        searchParams.set("tag", tag);
+      } else {
+        searchParams.delete("group_by");
+        searchParams.delete("tag");
+      }
+    }
+
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, state.search]);
 
   useEffect(() => {
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
