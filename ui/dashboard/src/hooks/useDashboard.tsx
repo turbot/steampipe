@@ -37,11 +37,12 @@ interface IDashboardContext {
 
   sqlDataMap: SQLDataMap;
 
-  dashboardTagKeys: string[];
-  setDashboardTagKeys: (keys: string[]) => void;
+  dashboardTags: DashboardTags;
 
   search: DashboardSearch;
 }
+
+const DashboardContext = createContext<IDashboardContext | null>(null);
 
 type DashboardSearchGroupByMode = "mod" | "tag";
 
@@ -49,6 +50,10 @@ export interface DashboardSearch {
   value: string;
   groupBy: DashboardSearchGroupByMode;
   groupByTag: string | null;
+}
+
+export interface DashboardTags {
+  keys: string[];
 }
 
 interface SelectedDashboardStates {
@@ -165,8 +170,6 @@ interface SocketMessage {
   data: string;
 }
 
-const DashboardContext = createContext<IDashboardContext | null>(null);
-
 const getSocketServerUrl = () => {
   // In this scenario the browser will be at http://localhost:3000,
   // so I have no idea what host + port the dashboard server is on
@@ -263,6 +266,7 @@ const DashboardActions: IDashboardActions = {
   SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
   SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
   SET_DASHBOARD_SEARCH_GROUP_BY_TAG: "set_dashboard_search_group_by_tag",
+  SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
 };
 
 const actions = Object.values(DashboardActions);
@@ -433,6 +437,14 @@ function reducer(state, action) {
           groupByTag: action.groupByTag,
         },
       };
+    case DashboardActions.SET_DASHBOARD_TAG_KEYS:
+      return {
+        ...state,
+        dashboardTags: {
+          ...state.dashboardTags,
+          keys: action.keys,
+        },
+      };
     case "workspace_error":
       return { ...state, error: action.error };
     // Not emitting these from the dashboard server yet
@@ -471,15 +483,18 @@ const initialiseInputs = (
 
 const DashboardProvider = ({ children }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
   const [state, dispatch] = useReducer(
     reducer,
     {
       availableDashboardsLoaded: false,
       metadata: null,
       dashboards: [],
-      dashboard: null,
+      dashboardTags: {
+        keys: [],
+      },
       error: null,
+
+      dashboard: null,
       selectedPanel: null,
       selectedDashboard: null,
       selectedDashboardInputs: {},
@@ -492,30 +507,13 @@ const DashboardProvider = ({ children }) => {
       },
 
       sqlDataMap: {},
-    } as IDashboardContext,
+    },
     (initialState) => initialiseInputs(initialState, searchParams)
   );
 
   const { dashboardName } = useParams();
   const navigate = useNavigate();
   const webSocket = useRef<WebSocket | null>(null);
-
-  // useEffect(() => {
-  //   const loadJqWasm = async () => {
-  //     // @ts-ignore
-  //     const jq = await fetch("../jq.wasm.wasm");
-  //     // @ts-ignore
-  //     const instance = await AsBind.instantiate(jq, {});
-  //     console.log(jq);
-  //     console.log(instance);
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // jq.json
-  //   };
-  //   loadJqWasm();
-  // }, []);
 
   const onSocketError = (evt: any) => {
     console.error(evt);
@@ -810,8 +808,6 @@ const DashboardProvider = ({ children }) => {
         ...state,
         dispatch,
         closePanelDetail,
-        dashboardTagKeys,
-        setDashboardTagKeys,
       }}
     >
       <GlobalHotKeys

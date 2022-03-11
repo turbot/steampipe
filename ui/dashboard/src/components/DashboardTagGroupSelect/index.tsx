@@ -7,8 +7,7 @@ import { useDashboard } from "../../hooks/useDashboard";
 import { useParams, useSearchParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
-  const { search, dashboardTagKeys, availableDashboardsLoaded } =
-    useDashboard();
+  const { search, dashboardTags, availableDashboardsLoaded } = useDashboard();
   const { dashboardName } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -31,7 +30,7 @@ const DashboardTagGroupSelect = () => {
         label: "Type",
       },
     ];
-    for (const dashboardTagKey of dashboardTagKeys) {
+    for (const dashboardTagKey of dashboardTags.keys) {
       if (!o.find((i) => i.tag === dashboardTagKey)) {
         o.push({
           groupBy: "tag",
@@ -41,7 +40,7 @@ const DashboardTagGroupSelect = () => {
       }
     }
     return sortBy(o, ["label"]);
-  }, [dashboardTagKeys]);
+  }, [dashboardTags.keys]);
 
   const [value, setValue] = useState(() => {
     let option = options.find((o) => o.tag === "service");

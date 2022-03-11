@@ -71,8 +71,9 @@ export const PanelStoryDecorator = ({
           storybook: definition.data,
         },
 
-        dashboardTagKeys: [],
-        setDashboardTagKeys: () => {},
+        dashboardTags: {
+          keys: [],
+        },
 
         search: stubDashboardSearch,
       }}

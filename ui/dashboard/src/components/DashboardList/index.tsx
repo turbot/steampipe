@@ -185,7 +185,6 @@ const DashboardList = () => {
       groupBy: searchGroupBy,
       groupByTag: searchGroupByTag,
     },
-    setDashboardTagKeys,
   } = useDashboard();
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
     AvailableDashboardWithMod[]
@@ -227,7 +226,10 @@ const DashboardList = () => {
       });
     }
     setUnfilteredDashboards(dashboardsWithMod);
-    setDashboardTagKeys(newDashboardTagKeys);
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_TAG_KEYS,
+      keys: newDashboardTagKeys,
+    });
   }, [availableDashboardsLoaded, dashboards, metadata]);
 
   // Filter dashboards according to the search
