@@ -259,7 +259,7 @@ func LoadModResourceNames(modPath string, runCtx *parse.RunContext) (resources *
 
 	// add pseudo resources to result
 	for _, r := range pseudoResources {
-		if strings.HasPrefix(r.Name(), "query.") {
+		if strings.HasPrefix(r.Name(), "query.") || strings.HasPrefix(r.Name(), "local.query.") {
 			resources.Query[r.Name()] = true
 		}
 	}
