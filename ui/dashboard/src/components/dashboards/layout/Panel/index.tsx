@@ -91,9 +91,11 @@ const Panel = ({
           className={classNames(
             "col-span-12 m-0.5",
             forceBackground ||
-              (definition.node_type !== "card" &&
+              (definition.node_type !== "image" &&
+                definition.node_type !== "card" &&
                 definition.node_type !== "input") ||
-              ((definition.node_type === "card" ||
+              ((definition.node_type === "image" ||
+                definition.node_type === "card" ||
                 definition.node_type === "input") &&
                 get(definition, "properties.type") === "table")
               ? "bg-background-panel shadow-sm rounded-md"
