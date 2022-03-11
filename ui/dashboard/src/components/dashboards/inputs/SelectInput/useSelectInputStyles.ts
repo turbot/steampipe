@@ -1,5 +1,5 @@
-import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useEffect, useState } from "react";
+import { useTheme } from "../../../../hooks/useTheme";
 
 const useSelectInputStyles = () => {
   const [, setRandomVal] = useState(0);

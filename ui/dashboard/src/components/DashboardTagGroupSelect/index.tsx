@@ -1,15 +1,15 @@
 import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
 import { classNames } from "../../utils/styles";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
 import { sortBy, startCase } from "lodash";
-import { useDashboard } from "../../hooks/useDashboard";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
-  const { search, dashboardTags, availableDashboardsLoaded } = useDashboard();
+  const { availableDashboardsLoaded, dashboardTags, dispatch, search } =
+    useDashboard();
   const { dashboardName } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const options = useMemo(() => {
     const o = [
@@ -42,37 +42,55 @@ const DashboardTagGroupSelect = () => {
     return sortBy(o, ["label"]);
   }, [dashboardTags.keys]);
 
-  const [value, setValue] = useState(() => {
-    let option = options.find((o) => o.tag === "service");
-    if (!option) {
-      option = options.find((o) => o.groupBy === "mod");
-    }
-    return option;
-  });
+  const findOption = useCallback(
+    (groupBy) => {
+      if (groupBy.value === "tag") {
+        return options.find((o) => o.tag === groupBy.tag);
+      }
+      return options.find((o) => o.groupBy === "mod");
+    },
+    [options]
+  );
+
+  const [value, setValue] = useState(() => findOption(search.groupBy));
+
+  const updateState = useCallback(
+    (option) =>
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY,
+        value: option.groupBy,
+        tag: option.tag,
+      }),
+    [dispatch]
+  );
 
   useEffect(() => {
-    if (!value) {
-      return;
-    }
-    // @ts-ignore
-    searchParams.set("group_by", value.groupBy);
-    // @ts-ignore
-    if (value.tag) {
-      // @ts-ignore
-      searchParams.set("tag", value.tag);
-    } else {
-      searchParams.delete("tag");
-    }
-    setSearchParams(searchParams, { replace: true });
-  }, [searchParams, value]);
+    setValue(findOption(search.groupBy));
+  }, [findOption, search.groupBy]);
 
-  useEffect(() => {
-    if (dashboardName && !search.value) {
-      searchParams.delete("group_by");
-      searchParams.delete("tag");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [dashboardName, search.value, searchParams]);
+  // useEffect(() => {
+  //   if (!value) {
+  //     return;
+  //   }
+  //   // @ts-ignore
+  //   searchParams.set("group_by", value.groupBy);
+  //   // @ts-ignore
+  //   if (value.tag) {
+  //     // @ts-ignore
+  //     searchParams.set("tag", value.tag);
+  //   } else {
+  //     searchParams.delete("tag");
+  //   }
+  //   setSearchParams(searchParams, { replace: true });
+  // }, [searchParams, value]);
+  //
+  // useEffect(() => {
+  //   if (dashboardName && !search.value) {
+  //     searchParams.delete("group_by");
+  //     searchParams.delete("tag");
+  //     setSearchParams(searchParams, { replace: true });
+  //   }
+  // }, [dashboardName, search.value, searchParams]);
 
   if (
     !availableDashboardsLoaded ||
@@ -83,7 +101,7 @@ const DashboardTagGroupSelect = () => {
   }
 
   return (
-    <Listbox value={value} onChange={setValue}>
+    <Listbox value={value} onChange={updateState}>
       {({ open }) => (
         <>
           <div className="relative">

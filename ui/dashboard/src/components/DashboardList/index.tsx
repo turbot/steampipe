@@ -116,14 +116,14 @@ interface GroupedDashboards {
   [key: string]: AvailableDashboardWithMod[];
 }
 
-const useGroupedDashboards = (dashboards, group_by, tag, metadata) => {
+const useGroupedDashboards = (dashboards, group_by, metadata) => {
   const [sections, setSections] = useState<DashboardListSection[]>([]);
 
   useEffect(() => {
     let groupedDashboards: GroupedDashboards;
-    if (group_by === "tag") {
+    if (group_by.value === "tag") {
       groupedDashboards = lodashGroupBy(dashboards, (dashboard) => {
-        return get(dashboard, `tags["${tag}"]`, "Other");
+        return get(dashboard, `tags["${group_by.tag}"]`, "Other");
       });
     } else {
       groupedDashboards = lodashGroupBy(dashboards, (dashboard) => {
@@ -153,7 +153,7 @@ const useGroupedDashboards = (dashboards, group_by, tag, metadata) => {
           return 0;
         })
     );
-  }, [dashboards, group_by, tag, metadata]);
+  }, [dashboards, group_by, metadata]);
 
   return sections;
 };
@@ -180,11 +180,7 @@ const DashboardList = () => {
     metadata,
     dashboards,
     dispatch,
-    search: {
-      value: searchValue,
-      groupBy: searchGroupBy,
-      groupByTag: searchGroupByTag,
-    },
+    search: { value: searchValue, groupBy: searchGroupBy },
   } = useDashboard();
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
     AvailableDashboardWithMod[]
@@ -230,7 +226,7 @@ const DashboardList = () => {
       type: DashboardActions.SET_DASHBOARD_TAG_KEYS,
       keys: newDashboardTagKeys,
     });
-  }, [availableDashboardsLoaded, dashboards, metadata]);
+  }, [availableDashboardsLoaded, dashboards, dispatch, metadata]);
 
   // Filter dashboards according to the search
   useEffect(() => {
@@ -258,7 +254,6 @@ const DashboardList = () => {
   const sections = useGroupedDashboards(
     filteredDashboards,
     searchGroupBy,
-    searchGroupByTag,
     metadata
   );
 

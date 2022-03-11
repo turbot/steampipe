@@ -12,8 +12,7 @@ type PanelStoryDecoratorProps = {
 
 const stubDashboardSearch: DashboardSearch = {
   value: "",
-  groupBy: "mod",
-  groupByTag: null,
+  groupBy: { value: "mod", tag: null },
 };
 
 export const PanelStoryDecorator = ({

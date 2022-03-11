@@ -25,7 +25,7 @@ const items = [
 ];
 
 const CallToActions = () => (
-  <ul role="list" className="mt-4 md:mt-0 space-y-6">
+  <ul className="mt-4 md:mt-0 space-y-6">
     {items.map((item, itemIdx) => (
       <li key={itemIdx} className="flow-root">
         <div className="p-3 flex items-center space-x-4 rounded-md hover:bg-background-panel focus-within:ring-2 focus-within:ring-blue-500">

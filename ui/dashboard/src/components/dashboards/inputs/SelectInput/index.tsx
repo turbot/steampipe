@@ -170,7 +170,15 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     } else if (initialisedFromState && !stateValue) {
       setValue(null);
     }
-  }, [initialisedFromState, multi, name, options, stateValue]);
+  }, [
+    dispatch,
+    initialisedFromState,
+    multi,
+    name,
+    options,
+    properties.placeholder,
+    stateValue,
+  ]);
 
   useEffect(() => {
     if (!initialisedFromState) {
