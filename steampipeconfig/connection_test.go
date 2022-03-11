@@ -425,6 +425,9 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 	for name, test := range testCasesGetConnectionsToUpdate {
 		// setup connection config
 		setup(test)
+		defer func(t getConnectionsToUpdateTest) {
+			teardown(t)
+		}(test)
 
 		config, err := LoadSteampipeConfig(wd, "")
 		if err != nil {
@@ -438,7 +441,7 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 		updates, res := NewConnectionUpdates([]string{"a", "b"})
 
 		if res.Error != nil && test.expected != "ERROR" {
-			t.Fatalf("NewConnectionUpdates failed with unexpected error: %v", err)
+			t.Fatalf("NewConnectionUpdates failed with unexpected error for \"%s\": %v", name, res.Error)
 			continue
 		}
 
@@ -451,7 +454,6 @@ func TestGetConnectionsToUpdate(t *testing.T) {
 		}
 
 		fmt.Printf("\n\n'Test: %s' PASSED\n\n", name)
-		resetConfig(test)
 	}
 }
 
@@ -506,6 +508,16 @@ func setup(test getConnectionsToUpdateTest) {
 	}
 	setupTestConfig(test)
 }
+func teardown(test getConnectionsToUpdateTest) {
+	os.RemoveAll(filepaths.EnsurePluginDir())
+	os.RemoveAll(filepaths.EnsureConfigDir())
+	os.RemoveAll(filepaths.EnsureInternalDir())
+
+	for _, plugin := range test.current {
+		deletePlugin(plugin.Plugin)
+	}
+	resetConfig(test)
+}
 
 func setupTestConfig(test getConnectionsToUpdateTest) {
 	for i, config := range test.required {
@@ -533,7 +545,8 @@ func connectionConfigPath(i int) string {
 }
 
 func copyPlugin(plugin string) {
-	source, err := filepath.Abs(filepath.Join("plugins_src", plugin))
+	source, err := filepath.Abs(filepath.Join("testdata", "connections_to_update", "plugins_src", plugin))
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -546,6 +559,13 @@ func copyPlugin(plugin string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+func deletePlugin(plugin string) {
+	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
+	if err != nil {
+		log.Fatal(err)
+	}
+	os.RemoveAll(dest)
 }
 
 func getTestFileModTime(file string) time.Time {
