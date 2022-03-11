@@ -20,23 +20,42 @@ import { noop } from "../utils/func";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 interface IDashboardContext {
-  metadata: DashboardMetadata;
-  metadataLoaded: boolean;
+  metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
+
   closePanelDetail(): void;
   dispatch(DispatchAction): void;
+
   error: any;
+
   dashboards: AvailableDashboard[];
   dashboard: DashboardDefinition | null;
-  dashboardSearch: string;
-  setDashboardSearch: (search: string) => void;
-  dashboardTagKeys: string[];
-  setDashboardTagKeys: (keys: string[]) => void;
+
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
   lastChangedInput: string | null;
+
   sqlDataMap: SQLDataMap;
+
+  dashboardSearch: string;
+  setDashboardSearch: (search: string) => void;
+  dashboardTagKeys: string[];
+  setDashboardTagKeys: (keys: string[]) => void;
+
+  search: DashboardSearch;
+}
+
+type DashboardSearchGroupByMode = "mod" | "tag";
+
+export interface DashboardSearch {
+  search: string;
+  groupBy: DashboardSearchGroupByMode;
+  groupByTag: string | null;
+
+  setSearch: (search: string) => void;
+  setGroupBy: (groupBy: DashboardSearchGroupByMode) => void;
+  setGroupByTag: (tag: string | null) => void;
 }
 
 interface SelectedDashboardStates {
@@ -248,7 +267,6 @@ function reducer(state, action) {
     case "dashboard_metadata":
       return {
         ...state,
-        metadataLoaded: true,
         metadata: action.metadata,
       };
     case "available_dashboards":
@@ -419,6 +437,7 @@ const DashboardProvider = ({ children }) => {
   const [state, dispatch] = useReducer(
     reducer,
     {
+      metadata: null,
       dashboards: [],
       dashboard: null,
       selectedPanel: null,
@@ -657,9 +676,38 @@ const DashboardProvider = ({ children }) => {
     ) {
       return;
     }
+
+    // Only record history when there's a report before and after and the inputs have changed
+    const shouldRecordHistory =
+      // @ts-ignore
+      !!previousSelectedDashboardStates.selectedDashboard &&
+      !!state.selectedDashboard;
+
+    console.log("Inputs changed", {
+      previous: {
+        // @ts-ignore
+        dashboard: previousSelectedDashboardStates.selectedDashboard,
+        inputs: JSON.stringify(
+          // @ts-ignore
+          previousSelectedDashboardStates.selectedDashboardInputs
+        ),
+      },
+      current: {
+        dashboard: state.selectedDashboard,
+        inputs: JSON.stringify(state.selectedDashboardInputs),
+      },
+      recordingHistory: shouldRecordHistory,
+    });
+
     // Sync params into the URL
-    setSearchParams(state.selectedDashboardInputs);
-  }, [previousSelectedDashboardStates, state.selectedDashboardInputs]);
+    setSearchParams(state.selectedDashboardInputs, {
+      replace: !shouldRecordHistory,
+    });
+  }, [
+    previousSelectedDashboardStates,
+    state.selectedDashboard,
+    state.selectedDashboardInputs,
+  ]);
   /*eslint-enable */
 
   useEffect(() => {

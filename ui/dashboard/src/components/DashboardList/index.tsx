@@ -208,7 +208,6 @@ const DashboardList = () => {
   const [searchParams] = useSearchParams();
   const {
     availableDashboardsLoaded,
-    metadataLoaded,
     metadata,
     dashboards,
     dashboardSearch: search,
@@ -224,7 +223,7 @@ const DashboardList = () => {
 
   // Initialise dashboards with their mod + update when the list of dashboards is updated
   useEffect(() => {
-    if (!availableDashboardsLoaded) {
+    if (!metadata || !availableDashboardsLoaded) {
       setUnfilteredDashboards([]);
       return;
     }
@@ -260,7 +259,7 @@ const DashboardList = () => {
 
   // Filter dashboards according to the search
   useEffect(() => {
-    if (!availableDashboardsLoaded || !metadataLoaded) {
+    if (!availableDashboardsLoaded || !metadata) {
       return;
     }
     if (!search) {
@@ -279,13 +278,7 @@ const DashboardList = () => {
     });
 
     setFilteredDashboards(sortDashboards(filtered));
-  }, [
-    availableDashboardsLoaded,
-    metadataLoaded,
-    unfilteredDashboards,
-    metadata,
-    search,
-  ]);
+  }, [availableDashboardsLoaded, unfilteredDashboards, metadata, search]);
 
   const url_group_by = searchParams.get("group_by") || "tag";
   const url_tag = searchParams.get("tag") || "service";
@@ -301,7 +294,7 @@ const DashboardList = () => {
     <div className="w-full grid grid-cols-12 p-4 gap-x-4">
       <div className="col-span-12 lg:col-span-9 space-y-4">
         <div className="grid grid-cols-6">
-          {(!availableDashboardsLoaded || !metadataLoaded) && (
+          {(!availableDashboardsLoaded || !metadata) && (
             <div className="col-span-6 mt-2 ml-1 text-black-scale-4 flex">
               <LoadingIndicator className="w-4 h-4" />{" "}
               <span className="italic -ml-1">Loading...</span>
@@ -309,7 +302,7 @@ const DashboardList = () => {
           )}
           <div className="col-span-6">
             {availableDashboardsLoaded &&
-              metadataLoaded &&
+              metadata &&
               filteredDashboards.length === 0 && (
                 <div className="col-span-6 mt-2">
                   {search ? (

@@ -15,7 +15,7 @@ const DashboardSearch = () => {
   const {
     availableDashboardsLoaded,
     dashboardSearch,
-    metadataLoaded,
+    metadata,
     setDashboardSearch,
   } = useDashboard();
   const { dashboardName } = useParams();
@@ -75,7 +75,7 @@ const DashboardSearch = () => {
     <div className="w-32 sm:w-56 md:w-72 lg:w-96">
       <SearchInput
         //@ts-ignore
-        disabled={!metadataLoaded || !availableDashboardsLoaded}
+        disabled={!metadata || !availableDashboardsLoaded}
         placeholder={minBreakpoint("sm") ? "Search dashboards..." : "Search..."}
         value={dashboardSearch}
         setValue={setDashboardSearch}

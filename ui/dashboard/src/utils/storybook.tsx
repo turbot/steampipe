@@ -1,5 +1,5 @@
 import Dashboard from "../components/dashboards/layout/Dashboard";
-import { DashboardContext } from "../hooks/useDashboard";
+import { DashboardContext, DashboardSearch } from "../hooks/useDashboard";
 import { noop } from "./func";
 
 type PanelStoryDecoratorProps = {
@@ -8,6 +8,16 @@ type PanelStoryDecoratorProps = {
   additionalProperties?: {
     [key: string]: any;
   };
+};
+
+const stubDashboardSearch: DashboardSearch = {
+  search: "",
+  groupBy: "mod",
+  groupByTag: null,
+
+  setSearch: noop,
+  setGroupBy: noop,
+  setGroupByTag: noop,
 };
 
 export const PanelStoryDecorator = ({
@@ -29,7 +39,6 @@ export const PanelStoryDecorator = ({
           installed_mods: {},
           telemetry: "none",
         },
-        metadataLoaded: true,
         availableDashboardsLoaded: true,
         closePanelDetail: noop,
         dispatch: () => {},
@@ -65,6 +74,9 @@ export const PanelStoryDecorator = ({
         dashboardTagKeys: [],
         setDashboardSearch: () => {},
         setDashboardTagKeys: () => {},
+
+        search: stubDashboardSearch,
+
         sqlDataMap: {
           storybook: definition.data,
         },
