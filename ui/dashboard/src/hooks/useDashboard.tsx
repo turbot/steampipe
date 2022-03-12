@@ -808,7 +808,10 @@ const DashboardProvider = ({ children }) => {
     const shouldRecordHistory =
       // @ts-ignore
       !!previousSelectedDashboardStates.selectedDashboard &&
-      !!state.selectedDashboard;
+      !!state.selectedDashboard &&
+      // @ts-ignore
+      previousSelectedDashboardStates.selectedDashboard.full_name ===
+        state.selectedDashboard.full_name;
 
     // console.log("Inputs changed", {
     //   previous: {
@@ -832,6 +835,7 @@ const DashboardProvider = ({ children }) => {
     });
   }, [
     previousSelectedDashboardStates,
+    setSearchParams,
     state.selectedDashboard,
     state.selectedDashboardInputs,
   ]);
