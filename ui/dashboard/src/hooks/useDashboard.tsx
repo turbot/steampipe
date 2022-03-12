@@ -16,7 +16,13 @@ import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useNavigationType,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
@@ -47,9 +53,24 @@ export interface IActions {
 }
 
 const DashboardActions: IActions = {
+  AVAILABLE_DASHBOARDS: "available_dashboards",
+  CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
+  DASHBOARD_METADATA: "dashboard_metadata",
+  DELETE_DASHBOARD_INPUT: "delete_dashboard_input",
+  EXECUTION_COMPLETE: "execution_complete",
+  EXECUTION_ERROR: "execution_error",
+  EXECUTION_STARTED: "execution_started",
+  INPUT_VALUES_CLEARED: "input_values_cleared",
+  LEAF_NODE_COMPLETE: "leaf_node_complete",
+  LEAF_NODE_PROGRESS: "leaf_node_progress",
+  SELECT_DASHBOARD: "select_dashboard",
+  SELECT_PANEL: "select_panel",
+  SET_DASHBOARD_INPUT: "set_dashboard_input",
+  SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
   SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
   SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
   SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
+  WORKSPACE_ERROR: "workspace_error",
 };
 
 const dashboardActions = Object.values(DashboardActions);
@@ -81,6 +102,8 @@ export interface DashboardTags {
 }
 
 interface SelectedDashboardStates {
+  dashboardName: string | null;
+  search: DashboardSearch;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
 }
@@ -265,12 +288,12 @@ function addDataToDashboard(
 
 function reducer(state, action) {
   switch (action.type) {
-    case "dashboard_metadata":
+    case DashboardActions.DASHBOARD_METADATA:
       return {
         ...state,
         metadata: action.metadata,
       };
-    case "available_dashboards":
+    case DashboardActions.AVAILABLE_DASHBOARDS:
       const dashboards = buildDashboardsList(action.dashboards_by_mod);
       const selectedDashboard = updateSelectedDashboard(
         state.selectedDashboard,
@@ -291,7 +314,7 @@ function reducer(state, action) {
             ? state.dashboard
             : null,
       };
-    case "execution_started":
+    case DashboardActions.EXECUTION_STARTED:
       const dashboardWithData = addDataToDashboard(
         action.dashboard_node,
         state.sqlDataMap
@@ -302,7 +325,7 @@ function reducer(state, action) {
         dashboard: dashboardWithData,
         state: "running",
       };
-    case "execution_complete":
+    case DashboardActions.EXECUTION_COMPLETE:
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(action.dashboard_node);
       // Replace the whole dashboard as this event contains everything
@@ -313,8 +336,11 @@ function reducer(state, action) {
         sqlDataMap,
         state: "complete",
       };
-    case "leaf_node_progress":
-    case "leaf_node_complete": {
+    case DashboardActions.EXECUTION_ERROR:
+      console.log("Got execution error", action);
+      return state;
+    case DashboardActions.LEAF_NODE_PROGRESS:
+    case DashboardActions.LEAF_NODE_COMPLETE: {
       // Find the path to the name key that matches this panel and replace it
       const { dashboard_node } = action;
       let panelPath: string = findPathDeep(
@@ -341,9 +367,9 @@ function reducer(state, action) {
         dashboard: newDashboard,
       };
     }
-    case "select_panel":
+    case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
-    case "select_dashboard":
+    case DashboardActions.SELECT_DASHBOARD:
       return {
         ...state,
         dashboard: null,
@@ -351,13 +377,13 @@ function reducer(state, action) {
         selectedPanel: null,
         lastChangedInput: null,
       };
-    case "clear_dashboard_inputs":
+    case DashboardActions.CLEAR_DASHBOARD_INPUTS:
       return {
         ...state,
         selectedDashboardInputs: {},
         lastChangedInput: null,
       };
-    case "delete_dashboard_input":
+    case DashboardActions.DELETE_DASHBOARD_INPUT:
       const { [action.name]: toDelete, ...rest } =
         state.selectedDashboardInputs;
       return {
@@ -367,7 +393,7 @@ function reducer(state, action) {
         },
         lastChangedInput: action.name,
       };
-    case "set_dashboard_input":
+    case DashboardActions.SET_DASHBOARD_INPUT:
       return {
         ...state,
         selectedDashboardInputs: {
@@ -376,13 +402,13 @@ function reducer(state, action) {
         },
         lastChangedInput: action.name,
       };
-    case "set_dashboard_inputs":
+    case DashboardActions.SET_DASHBOARD_INPUTS:
       return {
         ...state,
         selectedDashboardInputs: action.value,
         lastChangedInput: null,
       };
-    case "input_values_cleared": {
+    case DashboardActions.INPUT_VALUES_CLEARED: {
       const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
       for (const input of action.cleared_inputs || []) {
         delete newSelectedDashboardInputs[input];
@@ -420,15 +446,8 @@ function reducer(state, action) {
           keys: action.keys,
         },
       };
-    case "workspace_error":
+    case DashboardActions.WORKSPACE_ERROR:
       return { ...state, error: action.error };
-    // Not emitting these from the dashboard server yet
-    case "panel_changed":
-    case "report_changed":
-    case "report_complete":
-    case "report_error":
-    case "report_event":
-      return state;
     default:
       console.warn(`Unsupported action ${action.type}`, action);
       return state;
@@ -481,21 +500,122 @@ const DashboardContext = createContext<IDashboardContext | null>(null);
 const DashboardProvider = ({ children }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [state, dispatch] = useReducer(
-    reducer,
-    getInitialState(searchParams)
-    // (initialState) => initialiseInputs(initialState, searchParams)
-  );
+  const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
   const { dashboardName } = useParams();
   const { ready: socketReady, send: sendSocketMessage } =
     useDashboardWebSocket(dispatch);
 
+  const location = useLocation();
+  const navigationType = useNavigationType();
+
   useEffect(() => {
-    console.log("Search changed", {
-      dashboardName,
-      searchParams,
-      search: state.search,
+    if (navigationType !== "POP" && navigationType !== "PUSH") {
+      return;
+    }
+    if (location.key === "default") {
+      return;
+    }
+    const search = searchParams.get("search") || "";
+    const groupBy = searchParams.get("group_by") || "tag";
+    const tag = searchParams.get("tag") || "service";
+    const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+      value: search,
     });
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY,
+      value: groupBy,
+      tag,
+    });
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_INPUTS,
+      value: inputs,
+    });
+  }, [dispatch, location, navigationType, searchParams]);
+
+  // Keep track of the previous selected dashboard and inputs
+  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
+    usePrevious({
+      searchParams,
+      dashboardName,
+      search: state.search,
+      selectedDashboard: state.selectedDashboard,
+      selectedDashboardInputs: state.selectedDashboardInputs,
+    });
+
+  // useEffect(() => {
+  //   if (
+  //     previousSelectedDashboardStates &&
+  //     previousSelectedDashboardStates.search.value(
+  //       // @ts-ignore
+  //       (!previousSelectedDashboardStates.search &&
+  //         // @ts-ignore
+  //         dashboardName) ||
+  //         // @ts-ignore
+  //         (previousSelectedDashboardStates.dashboardName &&
+  //           // @ts-ignore
+  //           previousSelectedDashboardStates.dashboardName !== dashboardName) ||
+  //         // @ts-ignore
+  //         (previousSelectedDashboardStates.dashboardName && !dashboardName)
+  //     )
+  //   ) {
+  //     console.log("Dashboard changed - clearing search");
+  //     dispatch({
+  //       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+  //       value: "",
+  //     });
+  //   }
+  // }, [previousSelectedDashboardStates, searchParams]);
+
+  useEffect(() => {
+    // If nothing changed
+    if (
+      previousSelectedDashboardStates &&
+      // @ts-ignore
+      previousSelectedDashboardStates?.dashboardName === dashboardName &&
+      // @ts-ignore
+      previousSelectedDashboardStates.search.value === state.search.value &&
+      // @ts-ignore
+      previousSelectedDashboardStates.search.groupBy.value ===
+        state.search.groupBy.value &&
+      // @ts-ignore
+      previousSelectedDashboardStates.search.groupBy.tag ===
+        state.search.groupBy.tag &&
+      // @ts-ignore
+      previousSelectedDashboardStates.searchParams.toString() ===
+        searchParams.toString()
+    ) {
+      // console.log("Nothing changed");
+      return;
+    }
+
+    // console.log("Search changed", {
+    //   previousSelectedDashboardStates,
+    //   dashboardName,
+    //   searchParams,
+    //   search: state.search,
+    // });
+    //
+    // if (
+    //   previousSelectedDashboardStates &&
+    //   // @ts-ignore
+    //   ((!previousSelectedDashboardStates.dashboardName &&
+    //     // @ts-ignore
+    //     dashboardName) ||
+    //     // @ts-ignore
+    //     (previousSelectedDashboardStates.dashboardName &&
+    //       // @ts-ignore
+    //       previousSelectedDashboardStates.dashboardName !== dashboardName) ||
+    //     // @ts-ignore
+    //     (previousSelectedDashboardStates.dashboardName && !dashboardName))
+    // ) {
+    //   console.log("Dashboard changed - clearing search");
+    //   dispatch({
+    //     type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+    //     value: "",
+    //   });
+    // }
 
     const {
       value: searchValue,
@@ -541,14 +661,20 @@ const DashboardProvider = ({ children }) => {
     }
 
     setSearchParams(searchParams, { replace: true });
-  }, [dashboardName, searchParams, setSearchParams, state.search]);
+  }, [
+    previousSelectedDashboardStates,
+    dashboardName,
+    searchParams,
+    setSearchParams,
+    state.search,
+  ]);
 
   useEffect(() => {
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
     // then clear both the inputs and the selected dashboard in state
     if (!dashboardName && state.selectedDashboard) {
-      dispatch({ type: "clear_dashboard_inputs" });
-      dispatch({ type: "select_dashboard", dashboard: null });
+      dispatch({ type: DashboardActions.CLEAR_DASHBOARD_INPUTS });
+      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard: null });
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
     // select that dashboard
@@ -556,7 +682,7 @@ const DashboardProvider = ({ children }) => {
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboardName
       );
-      dispatch({ type: "select_dashboard", dashboard });
+      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
     }
     // Else if we've changed to a different report in the URL then clear the inputs and select the
     // dashboard in state
@@ -568,18 +694,11 @@ const DashboardProvider = ({ children }) => {
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboardName
       );
-      dispatch({ type: "select_dashboard", dashboard });
+      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
       const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
-      dispatch({ type: "set_dashboard_inputs", value });
+      dispatch({ type: DashboardActions.SET_DASHBOARD_INPUTS, value });
     }
   }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
-
-  // Keep track of the previous selected dashboard and inputs
-  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
-    usePrevious({
-      selectedDashboard: state.selectedDashboard,
-      selectedDashboardInputs: state.selectedDashboardInputs,
-    });
 
   useEffect(() => {
     // This effect will send events over websockets and depends on there being a dashboard selected,
@@ -753,7 +872,7 @@ const DashboardProvider = ({ children }) => {
 
   const closePanelDetail = useCallback(() => {
     dispatch({
-      type: "select_panel",
+      type: DashboardActions.SELECT_PANEL,
       panel: null,
     });
   }, []);

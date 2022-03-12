@@ -5,9 +5,9 @@ import Select, {
 } from "react-select";
 import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
+import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getColumnIndex } from "../../../../utils/data";
 import { InputProps } from "../index";
-import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface SelectOption {
@@ -163,7 +163,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       setInitialisedFromState(true);
       setValue(options[0]);
       dispatch({
-        type: "set_dashboard_input",
+        type: DashboardActions.SET_DASHBOARD_INPUT,
         name,
         value: getValueForState(multi, options[0]),
       });
@@ -187,12 +187,12 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
 
     // @ts-ignore
     if (!value || value.length === 0) {
-      dispatch({ type: "delete_dashboard_input", name });
+      dispatch({ type: DashboardActions.DELETE_DASHBOARD_INPUT, name });
       return;
     }
 
     dispatch({
-      type: "set_dashboard_input",
+      type: DashboardActions.SET_DASHBOARD_INPUT,
       name,
       value: getValueForState(multi, value),
     });
