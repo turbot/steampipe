@@ -544,32 +544,8 @@ const DashboardProvider = ({ children }) => {
       selectedDashboardInputs: state.selectedDashboardInputs,
     });
 
-  // useEffect(() => {
-  //   if (
-  //     previousSelectedDashboardStates &&
-  //     previousSelectedDashboardStates.search.value(
-  //       // @ts-ignore
-  //       (!previousSelectedDashboardStates.search &&
-  //         // @ts-ignore
-  //         dashboardName) ||
-  //         // @ts-ignore
-  //         (previousSelectedDashboardStates.dashboardName &&
-  //           // @ts-ignore
-  //           previousSelectedDashboardStates.dashboardName !== dashboardName) ||
-  //         // @ts-ignore
-  //         (previousSelectedDashboardStates.dashboardName && !dashboardName)
-  //     )
-  //   ) {
-  //     console.log("Dashboard changed - clearing search");
-  //     dispatch({
-  //       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-  //       value: "",
-  //     });
-  //   }
-  // }, [previousSelectedDashboardStates, searchParams]);
-
   useEffect(() => {
-    // If nothing changed
+    // If no search params have changed
     if (
       previousSelectedDashboardStates &&
       // @ts-ignore
@@ -586,36 +562,8 @@ const DashboardProvider = ({ children }) => {
       previousSelectedDashboardStates.searchParams.toString() ===
         searchParams.toString()
     ) {
-      // console.log("Nothing changed");
       return;
     }
-
-    // console.log("Search changed", {
-    //   previousSelectedDashboardStates,
-    //   dashboardName,
-    //   searchParams,
-    //   search: state.search,
-    // });
-    //
-    // if (
-    //   previousSelectedDashboardStates &&
-    //   // @ts-ignore
-    //   ((!previousSelectedDashboardStates.dashboardName &&
-    //     // @ts-ignore
-    //     dashboardName) ||
-    //     // @ts-ignore
-    //     (previousSelectedDashboardStates.dashboardName &&
-    //       // @ts-ignore
-    //       previousSelectedDashboardStates.dashboardName !== dashboardName) ||
-    //     // @ts-ignore
-    //     (previousSelectedDashboardStates.dashboardName && !dashboardName))
-    // ) {
-    //   console.log("Dashboard changed - clearing search");
-    //   dispatch({
-    //     type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-    //     value: "",
-    //   });
-    // }
 
     const {
       value: searchValue,
@@ -701,8 +649,7 @@ const DashboardProvider = ({ children }) => {
   }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
 
   useEffect(() => {
-    // This effect will send events over websockets and depends on there being a dashboard selected,
-    // so assert that
+    // This effect will send events over websockets and depends on there being a dashboard selected
     if (!socketReady || !state.selectedDashboard) {
       return;
     }
@@ -764,8 +711,7 @@ const DashboardProvider = ({ children }) => {
   ]);
 
   useEffect(() => {
-    // This effect will send events over websockets and depends on there being no dashboard selected,
-    // so assert that
+    // This effect will send events over websockets and depends on there being no dashboard selected
     if (!socketReady || state.selectedDashboard) {
       return;
     }
@@ -788,7 +734,6 @@ const DashboardProvider = ({ children }) => {
     state.selectedDashboard,
   ]);
 
-  /*eslint-disable */
   useEffect(() => {
     if (!previousSelectedDashboardStates) {
       return;
@@ -804,7 +749,7 @@ const DashboardProvider = ({ children }) => {
       return;
     }
 
-    // Only record history when there's a report before and after and the inputs have changed
+    // Only record history when it's the same report before and after and the inputs have changed
     const shouldRecordHistory =
       // @ts-ignore
       !!previousSelectedDashboardStates.selectedDashboard &&
@@ -812,22 +757,6 @@ const DashboardProvider = ({ children }) => {
       // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard.full_name ===
         state.selectedDashboard.full_name;
-
-    // console.log("Inputs changed", {
-    //   previous: {
-    //     // @ts-ignore
-    //     dashboard: previousSelectedDashboardStates.selectedDashboard,
-    //     inputs: JSON.stringify(
-    //       // @ts-ignore
-    //       previousSelectedDashboardStates.selectedDashboardInputs
-    //     ),
-    //   },
-    //   current: {
-    //     dashboard: state.selectedDashboard,
-    //     inputs: JSON.stringify(state.selectedDashboardInputs),
-    //   },
-    //   recordingHistory: shouldRecordHistory,
-    // });
 
     // Sync params into the URL
     setSearchParams(state.selectedDashboardInputs, {
@@ -839,7 +768,6 @@ const DashboardProvider = ({ children }) => {
     state.selectedDashboard,
     state.selectedDashboardInputs,
   ]);
-  /*eslint-enable */
 
   useEffect(() => {
     if (!state.availableDashboardsLoaded || !dashboardName) {
