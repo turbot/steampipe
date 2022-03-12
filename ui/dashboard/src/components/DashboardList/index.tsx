@@ -1,5 +1,3 @@
-import CallToActions from "../CallToActions";
-import LoadingIndicator from "../dashboards/LoadingIndicator";
 import {
   AvailableDashboard,
   DashboardAction,
@@ -7,6 +5,8 @@ import {
   ModDashboardMetadata,
   useDashboard,
 } from "../../hooks/useDashboard";
+import CallToActions from "../CallToActions";
+import LoadingIndicator from "../dashboards/LoadingIndicator";
 import { ColorGenerator } from "../../utils/color";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
 import { Link, useParams } from "react-router-dom";

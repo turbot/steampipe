@@ -10,17 +10,16 @@ import {
 
 interface CodeBlockProps {
   children: string;
-  language?: "hcl" | "json" | "sql";
-  onClick?: () => void;
-  style?: any;
   copyToClipboard?: boolean;
+  language?: "hcl" | "json" | "sql";
+  style?: any;
 }
 
 const CodeBlock = ({
   children,
+  copyToClipboard = true,
   language = "sql",
   style = {},
-  copyToClipboard = true,
 }: CodeBlockProps) => {
   const [showCopyIcon, setShowCopyIcon] = useState(false);
   const { theme } = useTheme();

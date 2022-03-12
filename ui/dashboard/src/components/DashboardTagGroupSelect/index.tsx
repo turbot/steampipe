@@ -68,30 +68,6 @@ const DashboardTagGroupSelect = () => {
     setValue(findOption(search.groupBy));
   }, [findOption, search.groupBy]);
 
-  // useEffect(() => {
-  //   if (!value) {
-  //     return;
-  //   }
-  //   // @ts-ignore
-  //   searchParams.set("group_by", value.groupBy);
-  //   // @ts-ignore
-  //   if (value.tag) {
-  //     // @ts-ignore
-  //     searchParams.set("tag", value.tag);
-  //   } else {
-  //     searchParams.delete("tag");
-  //   }
-  //   setSearchParams(searchParams, { replace: true });
-  // }, [searchParams, value]);
-  //
-  // useEffect(() => {
-  //   if (dashboardName && !search.value) {
-  //     searchParams.delete("group_by");
-  //     searchParams.delete("tag");
-  //     setSearchParams(searchParams, { replace: true });
-  //   }
-  // }, [dashboardName, search.value, searchParams]);
-
   if (
     !availableDashboardsLoaded ||
     !value ||
