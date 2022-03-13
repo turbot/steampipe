@@ -337,7 +337,7 @@ function reducer(state, action) {
         state: "complete",
       };
     case DashboardActions.EXECUTION_ERROR:
-      console.log("Got execution error", action);
+      // console.error("Got execution error", action);
       return state;
     case DashboardActions.LEAF_NODE_PROGRESS:
     case DashboardActions.LEAF_NODE_COMPLETE: {
