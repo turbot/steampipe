@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { FullHeightThemeWrapper } from "./useTheme";
-import { get, has, isEqual, set, sortBy } from "lodash";
+import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
@@ -531,13 +531,23 @@ const DashboardProvider = ({ children }) => {
     if (location.key === "default") {
       return;
     }
+
+    // If we've just popped or pushed from one dashboard to another, then we don't want to add the search to the URL
+    // as that will show the dashboard list, but we want to see the dashboard that we came from / went to previously.
+    const goneFromDashboardToDashboard =
+      // @ts-ignore
+      previousSelectedDashboardStates?.dashboardName &&
+      dashboardName &&
+      // @ts-ignore
+      previousSelectedDashboardStates.dashboardName !== dashboardName;
+
     const search = searchParams.get("search") || "";
     const groupBy = searchParams.get("group_by") || "tag";
     const tag = searchParams.get("tag") || "service";
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-      value: search,
+      value: goneFromDashboardToDashboard ? "" : search,
     });
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY,
@@ -549,7 +559,14 @@ const DashboardProvider = ({ children }) => {
       value: inputs,
       recordInputsHistory: false,
     });
-  }, [dispatch, location, navigationType, searchParams]);
+  }, [
+    dashboardName,
+    dispatch,
+    location,
+    navigationType,
+    previousSelectedDashboardStates,
+    searchParams,
+  ]);
 
   useEffect(() => {
     // If no search params have changed
@@ -784,21 +801,6 @@ const DashboardProvider = ({ children }) => {
       previousSelectedDashboardStates.selectedDashboard.full_name ===
         state.selectedDashboard.full_name;
 
-    console.log("Setting inputs to search params", {
-      recordingHistory: shouldRecordHistory,
-      navigationType,
-      searchParams,
-      recordInputsHistory: state.recordInputsHistory,
-      previousSelectedDashboard:
-        // @ts-ignore
-        previousSelectedDashboardStates.selectedDashboard,
-      selectedDashboard: state.selectedDashboard,
-      previousSelectedDashboardInputs:
-        // @ts-ignore
-        previousSelectedDashboardStates.selectedDashboardInputs,
-      selectedDashboardInputs: state.selectedDashboardInputs,
-    });
-
     // Sync params into the URL
     setSearchParams(state.selectedDashboardInputs, {
       replace: !shouldRecordHistory,
@@ -806,7 +808,6 @@ const DashboardProvider = ({ children }) => {
   }, [
     navigationType,
     previousSelectedDashboardStates,
-    searchParams,
     setSearchParams,
     state.recordInputsHistory,
     state.selectedDashboard,
