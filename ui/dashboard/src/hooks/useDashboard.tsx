@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { FullHeightThemeWrapper } from "./useTheme";
-import { get, isEqual, set, sortBy } from "lodash";
+import { get, has, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
@@ -382,6 +382,7 @@ function reducer(state, action) {
         ...state,
         selectedDashboardInputs: {},
         lastChangedInput: null,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
     case DashboardActions.DELETE_DASHBOARD_INPUT:
       const { [action.name]: toDelete, ...rest } =
@@ -392,6 +393,7 @@ function reducer(state, action) {
           ...rest,
         },
         lastChangedInput: action.name,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
     case DashboardActions.SET_DASHBOARD_INPUT:
       return {
@@ -401,12 +403,14 @@ function reducer(state, action) {
           [action.name]: action.value,
         },
         lastChangedInput: action.name,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
     case DashboardActions.SET_DASHBOARD_INPUTS:
       return {
         ...state,
         selectedDashboardInputs: action.value,
         lastChangedInput: null,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
     case DashboardActions.INPUT_VALUES_CLEARED: {
       const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
@@ -417,6 +421,7 @@ function reducer(state, action) {
         ...state,
         selectedDashboardInputs: newSelectedDashboardInputs,
         lastChangedInput: null,
+        recordInputsHistory: false,
       };
     }
     case DashboardActions.SET_DASHBOARD_SEARCH_VALUE:
@@ -508,6 +513,17 @@ const DashboardProvider = ({ children }) => {
   const location = useLocation();
   const navigationType = useNavigationType();
 
+  // Keep track of the previous selected dashboard and inputs
+  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
+    usePrevious({
+      searchParams,
+      dashboardName,
+      search: state.search,
+      selectedDashboard: state.selectedDashboard,
+      selectedDashboardInputs: state.selectedDashboardInputs,
+    });
+
+  // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
     if (navigationType !== "POP" && navigationType !== "PUSH") {
       return;
@@ -531,18 +547,9 @@ const DashboardProvider = ({ children }) => {
     dispatch({
       type: DashboardActions.SET_DASHBOARD_INPUTS,
       value: inputs,
+      recordInputsHistory: false,
     });
   }, [dispatch, location, navigationType, searchParams]);
-
-  // Keep track of the previous selected dashboard and inputs
-  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
-    usePrevious({
-      searchParams,
-      dashboardName,
-      search: state.search,
-      selectedDashboard: state.selectedDashboard,
-      selectedDashboardInputs: state.selectedDashboardInputs,
-    });
 
   useEffect(() => {
     // If no search params have changed
@@ -621,20 +628,29 @@ const DashboardProvider = ({ children }) => {
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
     // then clear both the inputs and the selected dashboard in state
     if (!dashboardName && state.selectedDashboard) {
-      dispatch({ type: DashboardActions.CLEAR_DASHBOARD_INPUTS });
-      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard: null });
+      dispatch({
+        type: DashboardActions.CLEAR_DASHBOARD_INPUTS,
+        recordInputsHistory: false,
+      });
+      dispatch({
+        type: DashboardActions.SELECT_DASHBOARD,
+        dashboard: null,
+        recordInputsHistory: false,
+      });
+      return;
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
     // select that dashboard
-    else if (dashboardName && !state.selectedDashboard) {
+    if (dashboardName && !state.selectedDashboard) {
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboardName
       );
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
+      return;
     }
     // Else if we've changed to a different report in the URL then clear the inputs and select the
     // dashboard in state
-    else if (
+    if (
       dashboardName &&
       state.selectedDashboard &&
       dashboardName !== state.selectedDashboard.full_name
@@ -644,7 +660,11 @@ const DashboardProvider = ({ children }) => {
       );
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
       const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
-      dispatch({ type: DashboardActions.SET_DASHBOARD_INPUTS, value });
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_INPUTS,
+        value,
+        recordInputsHistory: false,
+      });
     }
   }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
 
@@ -677,10 +697,11 @@ const DashboardProvider = ({ children }) => {
           input_values: state.selectedDashboardInputs,
         },
       });
+      return;
     }
     // Else if we did previously have a dashboard selected in state and the
     // inputs have changed, then update the inputs over the socket
-    else if (
+    if (
       previousSelectedDashboardStates &&
       // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard &&
@@ -717,16 +738,15 @@ const DashboardProvider = ({ children }) => {
     }
 
     // If we've gone from having a report selected, to having nothing selected, clear the dashboard state
-    if (previousSelectedDashboardStates)
-      if (
-        previousSelectedDashboardStates &&
-        // @ts-ignore
-        previousSelectedDashboardStates.selectedDashboard
-      ) {
-        sendSocketMessage({
-          action: SocketActions.CLEAR_DASHBOARD,
-        });
-      }
+    if (
+      previousSelectedDashboardStates &&
+      // @ts-ignore
+      previousSelectedDashboardStates.selectedDashboard
+    ) {
+      sendSocketMessage({
+        action: SocketActions.CLEAR_DASHBOARD,
+      });
+    }
   }, [
     previousSelectedDashboardStates,
     sendSocketMessage,
@@ -735,6 +755,11 @@ const DashboardProvider = ({ children }) => {
   ]);
 
   useEffect(() => {
+    // Don't do anything as this is handled elsewhere
+    if (navigationType === "POP" || navigationType === "PUSH") {
+      return;
+    }
+
     if (!previousSelectedDashboardStates) {
       return;
     }
@@ -751,6 +776,7 @@ const DashboardProvider = ({ children }) => {
 
     // Only record history when it's the same report before and after and the inputs have changed
     const shouldRecordHistory =
+      state.recordInputsHistory &&
       // @ts-ignore
       !!previousSelectedDashboardStates.selectedDashboard &&
       !!state.selectedDashboard &&
@@ -758,13 +784,31 @@ const DashboardProvider = ({ children }) => {
       previousSelectedDashboardStates.selectedDashboard.full_name ===
         state.selectedDashboard.full_name;
 
+    console.log("Setting inputs to search params", {
+      recordingHistory: shouldRecordHistory,
+      navigationType,
+      searchParams,
+      recordInputsHistory: state.recordInputsHistory,
+      previousSelectedDashboard:
+        // @ts-ignore
+        previousSelectedDashboardStates.selectedDashboard,
+      selectedDashboard: state.selectedDashboard,
+      previousSelectedDashboardInputs:
+        // @ts-ignore
+        previousSelectedDashboardStates.selectedDashboardInputs,
+      selectedDashboardInputs: state.selectedDashboardInputs,
+    });
+
     // Sync params into the URL
     setSearchParams(state.selectedDashboardInputs, {
       replace: !shouldRecordHistory,
     });
   }, [
+    navigationType,
     previousSelectedDashboardStates,
+    searchParams,
     setSearchParams,
+    state.recordInputsHistory,
     state.selectedDashboard,
     state.selectedDashboardInputs,
   ]);
