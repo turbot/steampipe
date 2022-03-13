@@ -35,7 +35,7 @@ const AnalyticsContext = createContext<IAnalyticsContext>({
 });
 
 const useAnalyticsProvider = () => {
-  const { metadata, metadataLoaded, selectedDashboard } = useDashboard();
+  const { metadata, selectedDashboard } = useDashboard();
   const { localStorageTheme, theme } = useTheme();
   const [enabled, setEnabled] = useState<boolean>(true);
   const [identity, setIdentity] =
@@ -83,7 +83,7 @@ const useAnalyticsProvider = () => {
   );
 
   useEffect(() => {
-    if (!metadataLoaded) {
+    if (!metadata) {
       return;
     }
 
@@ -101,10 +101,10 @@ const useAnalyticsProvider = () => {
     }
 
     setInitialised(true);
-  }, [metadataLoaded, metadata]);
+  }, [metadata]);
 
   useEffect(() => {
-    if (!metadataLoaded || !initialised) {
+    if (!metadata || !initialised) {
       return;
     }
 
@@ -123,7 +123,7 @@ const useAnalyticsProvider = () => {
     } else if (enabled) {
       reset();
     }
-  }, [metadataLoaded, metadata, enabled, initialised]);
+  }, [metadata, enabled, initialised]);
 
   // @ts-ignore
   const previousSelectedDashboardStates: SelectedDashboardStates = usePrevious({
@@ -131,7 +131,7 @@ const useAnalyticsProvider = () => {
   });
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !metadata) {
       return;
     }
 

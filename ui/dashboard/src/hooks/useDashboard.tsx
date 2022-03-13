@@ -1,6 +1,6 @@
-// import * as AsBind from "as-bind";
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
+import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
 import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
 import {
@@ -9,7 +9,6 @@ import {
   useContext,
   useEffect,
   useReducer,
-  useRef,
   useState,
 } from "react";
 import { FullHeightThemeWrapper } from "./useTheme";
@@ -17,29 +16,94 @@ import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useNavigationType,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 interface IDashboardContext {
-  metadata: DashboardMetadata;
-  metadataLoaded: boolean;
+  metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
+
   closePanelDetail(): void;
   dispatch(DispatchAction): void;
+
   error: any;
+
   dashboards: AvailableDashboard[];
   dashboard: DashboardDefinition | null;
-  dashboardSearch: string;
-  setDashboardSearch: (search: string) => void;
-  dashboardTagKeys: string[];
-  setDashboardTagKeys: (keys: string[]) => void;
+
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
   lastChangedInput: string | null;
+
   sqlDataMap: SQLDataMap;
+
+  dashboardTags: DashboardTags;
+
+  search: DashboardSearch;
+}
+
+export interface IActions {
+  [type: string]: string;
+}
+
+const DashboardActions: IActions = {
+  AVAILABLE_DASHBOARDS: "available_dashboards",
+  CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
+  DASHBOARD_METADATA: "dashboard_metadata",
+  DELETE_DASHBOARD_INPUT: "delete_dashboard_input",
+  EXECUTION_COMPLETE: "execution_complete",
+  EXECUTION_ERROR: "execution_error",
+  EXECUTION_STARTED: "execution_started",
+  INPUT_VALUES_CLEARED: "input_values_cleared",
+  LEAF_NODE_COMPLETE: "leaf_node_complete",
+  LEAF_NODE_PROGRESS: "leaf_node_progress",
+  SELECT_DASHBOARD: "select_dashboard",
+  SELECT_PANEL: "select_panel",
+  SET_DASHBOARD_INPUT: "set_dashboard_input",
+  SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
+  SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
+  SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
+  SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
+  WORKSPACE_ERROR: "workspace_error",
+};
+
+const dashboardActions = Object.values(DashboardActions);
+
+// https://github.com/microsoft/TypeScript/issues/28046
+export type ElementType<T extends ReadonlyArray<unknown>> =
+  T extends ReadonlyArray<infer ElementType> ? ElementType : never;
+type DashboardActionType = ElementType<typeof dashboardActions>;
+
+export interface DashboardAction {
+  type: DashboardActionType;
+  [key: string]: any;
+}
+
+type DashboardSearchGroupByMode = "mod" | "tag";
+
+interface DashboardSearchGroupBy {
+  value: DashboardSearchGroupByMode;
+  tag: string | null;
+}
+
+export interface DashboardSearch {
+  value: string;
+  groupBy: DashboardSearchGroupBy;
+}
+
+export interface DashboardTags {
+  keys: string[];
 }
 
 interface SelectedDashboardStates {
+  dashboardName: string | null;
+  search: DashboardSearch;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
 }
@@ -145,27 +209,6 @@ export interface DashboardDefinition {
   dashboard: string;
 }
 
-interface SocketMessagePayload {
-  action: string;
-}
-
-interface SocketMessage {
-  data: string;
-}
-
-const DashboardContext = createContext<IDashboardContext | null>(null);
-
-const getSocketServerUrl = () => {
-  // In this scenario the browser will be at http://localhost:3000,
-  // so I have no idea what host + port the dashboard server is on
-  if (process.env.NODE_ENV === "development") {
-    return "ws://localhost:9194/ws";
-  }
-  // Otherwise, it's a production build, so use the URL details
-  const url = new URL(window.location.toString());
-  return `ws://${url.host}/ws`;
-};
-
 const buildDashboardsList = (
   dashboards_by_mod: DashboardsByModDictionary
 ): AvailableDashboard[] => {
@@ -245,13 +288,12 @@ function addDataToDashboard(
 
 function reducer(state, action) {
   switch (action.type) {
-    case "dashboard_metadata":
+    case DashboardActions.DASHBOARD_METADATA:
       return {
         ...state,
-        metadataLoaded: true,
         metadata: action.metadata,
       };
-    case "available_dashboards":
+    case DashboardActions.AVAILABLE_DASHBOARDS:
       const dashboards = buildDashboardsList(action.dashboards_by_mod);
       const selectedDashboard = updateSelectedDashboard(
         state.selectedDashboard,
@@ -272,7 +314,7 @@ function reducer(state, action) {
             ? state.dashboard
             : null,
       };
-    case "execution_started":
+    case DashboardActions.EXECUTION_STARTED:
       const dashboardWithData = addDataToDashboard(
         action.dashboard_node,
         state.sqlDataMap
@@ -283,7 +325,7 @@ function reducer(state, action) {
         dashboard: dashboardWithData,
         state: "running",
       };
-    case "execution_complete":
+    case DashboardActions.EXECUTION_COMPLETE:
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(action.dashboard_node);
       // Replace the whole dashboard as this event contains everything
@@ -294,8 +336,11 @@ function reducer(state, action) {
         sqlDataMap,
         state: "complete",
       };
-    case "leaf_node_progress":
-    case "leaf_node_complete": {
+    case DashboardActions.EXECUTION_ERROR:
+      // console.error("Got execution error", action);
+      return state;
+    case DashboardActions.LEAF_NODE_PROGRESS:
+    case DashboardActions.LEAF_NODE_COMPLETE: {
       // Find the path to the name key that matches this panel and replace it
       const { dashboard_node } = action;
       let panelPath: string = findPathDeep(
@@ -322,9 +367,9 @@ function reducer(state, action) {
         dashboard: newDashboard,
       };
     }
-    case "select_panel":
+    case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
-    case "select_dashboard":
+    case DashboardActions.SELECT_DASHBOARD:
       return {
         ...state,
         dashboard: null,
@@ -332,13 +377,14 @@ function reducer(state, action) {
         selectedPanel: null,
         lastChangedInput: null,
       };
-    case "clear_dashboard_inputs":
+    case DashboardActions.CLEAR_DASHBOARD_INPUTS:
       return {
         ...state,
         selectedDashboardInputs: {},
         lastChangedInput: null,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
-    case "delete_dashboard_input":
+    case DashboardActions.DELETE_DASHBOARD_INPUT:
       const { [action.name]: toDelete, ...rest } =
         state.selectedDashboardInputs;
       return {
@@ -347,8 +393,9 @@ function reducer(state, action) {
           ...rest,
         },
         lastChangedInput: action.name,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
-    case "set_dashboard_input":
+    case DashboardActions.SET_DASHBOARD_INPUT:
       return {
         ...state,
         selectedDashboardInputs: {
@@ -356,14 +403,16 @@ function reducer(state, action) {
           [action.name]: action.value,
         },
         lastChangedInput: action.name,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
-    case "set_dashboard_inputs":
+    case DashboardActions.SET_DASHBOARD_INPUTS:
       return {
         ...state,
         selectedDashboardInputs: action.value,
         lastChangedInput: null,
+        recordInputsHistory: !!action.recordInputsHistory,
       };
-    case "input_values_cleared": {
+    case DashboardActions.INPUT_VALUES_CLEARED: {
       const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
       for (const input of action.cleared_inputs || []) {
         delete newSelectedDashboardInputs[input];
@@ -372,17 +421,38 @@ function reducer(state, action) {
         ...state,
         selectedDashboardInputs: newSelectedDashboardInputs,
         lastChangedInput: null,
+        recordInputsHistory: false,
       };
     }
-    case "workspace_error":
+    case DashboardActions.SET_DASHBOARD_SEARCH_VALUE:
+      return {
+        ...state,
+        search: {
+          ...state.search,
+          value: action.value,
+        },
+      };
+    case DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY:
+      return {
+        ...state,
+        search: {
+          ...state.search,
+          groupBy: {
+            value: action.value,
+            tag: action.tag,
+          },
+        },
+      };
+    case DashboardActions.SET_DASHBOARD_TAG_KEYS:
+      return {
+        ...state,
+        dashboardTags: {
+          ...state.dashboardTags,
+          keys: action.keys,
+        },
+      };
+    case DashboardActions.WORKSPACE_ERROR:
       return { ...state, error: action.error };
-    // Not emitting these from the dashboard server yet
-    case "panel_changed":
-    case "report_changed":
-    case "report_complete":
-    case "report_error":
-    case "report_event":
-      return state;
     default:
       console.warn(`Unsupported action ${action.type}`, action);
       return state;
@@ -401,130 +471,203 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   return selectedDashboardInputs;
 };
 
-const initialiseInputs = (
-  initialState: IDashboardContext,
-  searchParams: URLSearchParams
-) => ({
-  ...initialState,
-  selectedDashboardInputs:
-    buildSelectedDashboardInputsFromSearchParams(searchParams),
-});
+const getInitialState = (searchParams) => {
+  return {
+    availableDashboardsLoaded: false,
+    metadata: null,
+    dashboards: [],
+    dashboardTags: {
+      keys: [],
+    },
+    error: null,
+
+    dashboard: null,
+    selectedPanel: null,
+    selectedDashboard: null,
+    selectedDashboardInputs:
+      buildSelectedDashboardInputsFromSearchParams(searchParams),
+    lastChangedInput: null,
+
+    search: {
+      value: searchParams.get("search") || "",
+      groupBy: {
+        value: searchParams.get("group_by") || "tag",
+        tag: searchParams.get("tag") || "service",
+      },
+    },
+
+    sqlDataMap: {},
+  };
+};
+
+const DashboardContext = createContext<IDashboardContext | null>(null);
 
 const DashboardProvider = ({ children }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [dashboardSearch, setDashboardSearch] = useState(
-    searchParams.get("search") || ""
-  );
-  const [dashboardTagKeys, setDashboardTagKeys] = useState<string[]>([]);
-  const [state, dispatch] = useReducer(
-    reducer,
-    {
-      dashboards: [],
-      dashboard: null,
-      selectedPanel: null,
-      selectedDashboard: null,
-      selectedDashboardInputs: {},
-      sqlDataMap: {},
-    },
-    (initialState) => initialiseInputs(initialState, searchParams)
-  );
-
-  const { dashboardName } = useParams();
   const navigate = useNavigate();
-  const webSocket = useRef<WebSocket | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
+  const { dashboardName } = useParams();
+  const { ready: socketReady, send: sendSocketMessage } =
+    useDashboardWebSocket(dispatch);
 
-  // useEffect(() => {
-  //   const loadJqWasm = async () => {
-  //     // @ts-ignore
-  //     const jq = await fetch("../jq.wasm.wasm");
-  //     // @ts-ignore
-  //     const instance = await AsBind.instantiate(jq, {});
-  //     console.log(jq);
-  //     console.log(instance);
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // console.log(jq.json({ row: { name: "mike" } }, ".row.name"));
-  //     // jq.json
-  //   };
-  //   loadJqWasm();
-  // }, []);
+  const location = useLocation();
+  const navigationType = useNavigationType();
 
-  const onSocketError = (evt: any) => {
-    console.error(evt);
-  };
+  // Keep track of the previous selected dashboard and inputs
+  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
+    usePrevious({
+      searchParams,
+      dashboardName,
+      search: state.search,
+      selectedDashboard: state.selectedDashboard,
+      selectedDashboardInputs: state.selectedDashboardInputs,
+    });
 
-  const onSocketMessage = (message: SocketMessage) => {
-    const payload: SocketMessagePayload = JSON.parse(message.data);
-    dispatch({ type: payload.action, ...payload });
-  };
+  // Ensure that on history pop / push we sync the new values into state
+  useEffect(() => {
+    if (navigationType !== "POP" && navigationType !== "PUSH") {
+      return;
+    }
+    if (location.key === "default") {
+      return;
+    }
+
+    // If we've just popped or pushed from one dashboard to another, then we don't want to add the search to the URL
+    // as that will show the dashboard list, but we want to see the dashboard that we came from / went to previously.
+    const goneFromDashboardToDashboard =
+      // @ts-ignore
+      previousSelectedDashboardStates?.dashboardName &&
+      dashboardName &&
+      // @ts-ignore
+      previousSelectedDashboardStates.dashboardName !== dashboardName;
+
+    const search = searchParams.get("search") || "";
+    const groupBy = searchParams.get("group_by") || "tag";
+    const tag = searchParams.get("tag") || "service";
+    const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+      value: goneFromDashboardToDashboard ? "" : search,
+    });
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY,
+      value: groupBy,
+      tag,
+    });
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_INPUTS,
+      value: inputs,
+      recordInputsHistory: false,
+    });
+  }, [
+    dashboardName,
+    dispatch,
+    location,
+    navigationType,
+    previousSelectedDashboardStates,
+    searchParams,
+  ]);
 
   useEffect(() => {
-    let keepAliveTimerId: NodeJS.Timeout;
-    webSocket.current = new WebSocket(getSocketServerUrl());
-    webSocket.current.onerror = onSocketError;
-    webSocket.current.onmessage = onSocketMessage;
-    webSocket.current.onopen = () => {
-      const keepAlive = () => {
-        if (!webSocket.current) {
-          return;
-        }
+    // If no search params have changed
+    if (
+      previousSelectedDashboardStates &&
+      // @ts-ignore
+      previousSelectedDashboardStates?.dashboardName === dashboardName &&
+      // @ts-ignore
+      previousSelectedDashboardStates.search.value === state.search.value &&
+      // @ts-ignore
+      previousSelectedDashboardStates.search.groupBy.value ===
+        state.search.groupBy.value &&
+      // @ts-ignore
+      previousSelectedDashboardStates.search.groupBy.tag ===
+        state.search.groupBy.tag &&
+      // @ts-ignore
+      previousSelectedDashboardStates.searchParams.toString() ===
+        searchParams.toString()
+    ) {
+      return;
+    }
 
-        const timeout = 20000;
-        if (webSocket.current.readyState === webSocket.current.CLOSED) {
-          webSocket.current = new WebSocket(getSocketServerUrl());
-          webSocket.current.onerror = onSocketError;
-          webSocket.current.onmessage = onSocketMessage;
-        }
-        if (webSocket.current.readyState === webSocket.current.OPEN) {
-          webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
-        }
-        keepAliveTimerId = setTimeout(keepAlive, timeout);
-      };
+    const {
+      value: searchValue,
+      groupBy: { value: groupByValue, tag },
+    } = state.search;
 
-      if (!webSocket.current) {
-        return;
+    if (dashboardName) {
+      // Only set group_by and tag if we have a search
+      if (searchValue) {
+        searchParams.set("search", searchValue);
+        searchParams.set("group_by", groupByValue);
+
+        if (groupByValue === "mod") {
+          searchParams.delete("tag");
+        } else if (groupByValue === "tag") {
+          searchParams.set("tag", tag);
+        } else {
+          searchParams.delete("group_by");
+          searchParams.delete("tag");
+        }
+      } else {
+        searchParams.delete("search");
+        searchParams.delete("group_by");
+        searchParams.delete("tag");
+      }
+    } else {
+      if (searchValue) {
+        searchParams.set("search", searchValue);
+      } else {
+        searchParams.delete("search");
       }
 
-      // Send message to ask for dashboard metadata
-      webSocket.current.send(
-        JSON.stringify({
-          action: "get_dashboard_metadata",
-        })
-      );
+      searchParams.set("group_by", groupByValue);
 
-      // Send message to ask for available dashboards
-      webSocket.current.send(
-        JSON.stringify({
-          action: "get_available_dashboards",
-        })
-      );
-      keepAlive();
-    };
-    return () => {
-      clearTimeout(keepAliveTimerId);
-      webSocket.current && webSocket.current.close();
-    };
-  }, []);
+      if (groupByValue === "mod") {
+        searchParams.delete("tag");
+      } else if (groupByValue === "tag") {
+        searchParams.set("tag", tag);
+      } else {
+        searchParams.delete("group_by");
+        searchParams.delete("tag");
+      }
+    }
+
+    setSearchParams(searchParams, { replace: true });
+  }, [
+    previousSelectedDashboardStates,
+    dashboardName,
+    searchParams,
+    setSearchParams,
+    state.search,
+  ]);
 
   useEffect(() => {
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
     // then clear both the inputs and the selected dashboard in state
     if (!dashboardName && state.selectedDashboard) {
-      dispatch({ type: "clear_dashboard_inputs" });
-      dispatch({ type: "select_dashboard", dashboard: null });
+      dispatch({
+        type: DashboardActions.CLEAR_DASHBOARD_INPUTS,
+        recordInputsHistory: false,
+      });
+      dispatch({
+        type: DashboardActions.SELECT_DASHBOARD,
+        dashboard: null,
+        recordInputsHistory: false,
+      });
+      return;
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
     // select that dashboard
-    else if (dashboardName && !state.selectedDashboard) {
+    if (dashboardName && !state.selectedDashboard) {
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboardName
       );
-      dispatch({ type: "select_dashboard", dashboard });
+      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
+      return;
     }
     // Else if we've changed to a different report in the URL then clear the inputs and select the
     // dashboard in state
-    else if (
+    if (
       dashboardName &&
       state.selectedDashboard &&
       dashboardName !== state.selectedDashboard.full_name
@@ -532,27 +675,19 @@ const DashboardProvider = ({ children }) => {
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboardName
       );
-      dispatch({ type: "select_dashboard", dashboard });
+      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
       const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
-      dispatch({ type: "set_dashboard_inputs", value });
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_INPUTS,
+        value,
+        recordInputsHistory: false,
+      });
     }
   }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
 
-  // Keep track of the previous selected dashboard and inputs
-  const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
-    usePrevious({
-      selectedDashboard: state.selectedDashboard,
-      selectedDashboardInputs: state.selectedDashboardInputs,
-    });
-
   useEffect(() => {
-    // This effect will send events over websockets and depends on there being a dashboard selected,
-    // so assert that
-    if (
-      !webSocket.current ||
-      webSocket.current?.readyState !== webSocket.current.OPEN ||
-      !state.selectedDashboard
-    ) {
+    // This effect will send events over websockets and depends on there being a dashboard selected
+    if (!socketReady || !state.selectedDashboard) {
       return;
     }
 
@@ -567,26 +702,23 @@ const DashboardProvider = ({ children }) => {
         // @ts-ignore
         previousSelectedDashboardStates.selectedDashboard.full_name
     ) {
-      webSocket.current.send(
-        JSON.stringify({
-          action: "clear_dashboard",
-        })
-      );
-      webSocket.current.send(
-        JSON.stringify({
-          action: "select_dashboard",
-          payload: {
-            dashboard: {
-              full_name: state.selectedDashboard.full_name,
-            },
-            input_values: state.selectedDashboardInputs,
+      sendSocketMessage({
+        action: SocketActions.CLEAR_DASHBOARD,
+      });
+      sendSocketMessage({
+        action: SocketActions.SELECT_DASHBOARD,
+        payload: {
+          dashboard: {
+            full_name: state.selectedDashboard.full_name,
           },
-        })
-      );
+          input_values: state.selectedDashboardInputs,
+        },
+      });
+      return;
     }
     // Else if we did previously have a dashboard selected in state and the
     // inputs have changed, then update the inputs over the socket
-    else if (
+    if (
       previousSelectedDashboardStates &&
       // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard &&
@@ -596,54 +728,55 @@ const DashboardProvider = ({ children }) => {
         state.selectedDashboardInputs
       )
     ) {
-      webSocket.current.send(
-        JSON.stringify({
-          action: "input_changed",
-          payload: {
-            dashboard: {
-              full_name: state.selectedDashboard.full_name,
-            },
-            changed_input: state.lastChangedInput,
-            input_values: state.selectedDashboardInputs,
+      sendSocketMessage({
+        action: SocketActions.INPUT_CHANGED,
+        payload: {
+          dashboard: {
+            full_name: state.selectedDashboard.full_name,
           },
-        })
-      );
+          changed_input: state.lastChangedInput,
+          input_values: state.selectedDashboardInputs,
+        },
+      });
     }
   }, [
     previousSelectedDashboardStates,
+    sendSocketMessage,
+    socketReady,
     state.selectedDashboard,
     state.selectedDashboardInputs,
     state.lastChangedInput,
   ]);
 
   useEffect(() => {
-    // This effect will send events over websockets and depends on there being no dashboard selected,
-    // so assert that
-    if (
-      !webSocket.current ||
-      webSocket.current?.readyState !== webSocket.current.OPEN ||
-      state.selectedDashboard
-    ) {
+    // This effect will send events over websockets and depends on there being no dashboard selected
+    if (!socketReady || state.selectedDashboard) {
       return;
     }
 
     // If we've gone from having a report selected, to having nothing selected, clear the dashboard state
-    if (previousSelectedDashboardStates)
-      if (
-        previousSelectedDashboardStates &&
-        // @ts-ignore
-        previousSelectedDashboardStates.selectedDashboard
-      ) {
-        webSocket.current.send(
-          JSON.stringify({
-            action: "clear_dashboard",
-          })
-        );
-      }
-  }, [previousSelectedDashboardStates, state.selectedDashboard]);
+    if (
+      previousSelectedDashboardStates &&
+      // @ts-ignore
+      previousSelectedDashboardStates.selectedDashboard
+    ) {
+      sendSocketMessage({
+        action: SocketActions.CLEAR_DASHBOARD,
+      });
+    }
+  }, [
+    previousSelectedDashboardStates,
+    sendSocketMessage,
+    socketReady,
+    state.selectedDashboard,
+  ]);
 
-  /*eslint-disable */
   useEffect(() => {
+    // Don't do anything as this is handled elsewhere
+    if (navigationType === "POP" || navigationType === "PUSH") {
+      return;
+    }
+
     if (!previousSelectedDashboardStates) {
       return;
     }
@@ -657,10 +790,29 @@ const DashboardProvider = ({ children }) => {
     ) {
       return;
     }
+
+    // Only record history when it's the same report before and after and the inputs have changed
+    const shouldRecordHistory =
+      state.recordInputsHistory &&
+      // @ts-ignore
+      !!previousSelectedDashboardStates.selectedDashboard &&
+      !!state.selectedDashboard &&
+      // @ts-ignore
+      previousSelectedDashboardStates.selectedDashboard.full_name ===
+        state.selectedDashboard.full_name;
+
     // Sync params into the URL
-    setSearchParams(state.selectedDashboardInputs);
-  }, [previousSelectedDashboardStates, state.selectedDashboardInputs]);
-  /*eslint-enable */
+    setSearchParams(state.selectedDashboardInputs, {
+      replace: !shouldRecordHistory,
+    });
+  }, [
+    navigationType,
+    previousSelectedDashboardStates,
+    setSearchParams,
+    state.recordInputsHistory,
+    state.selectedDashboard,
+    state.selectedDashboardInputs,
+  ]);
 
   useEffect(() => {
     if (!state.availableDashboardsLoaded || !dashboardName) {
@@ -697,7 +849,7 @@ const DashboardProvider = ({ children }) => {
 
   const closePanelDetail = useCallback(() => {
     dispatch({
-      type: "select_panel",
+      type: DashboardActions.SELECT_PANEL,
       panel: null,
     });
   }, []);
@@ -714,10 +866,6 @@ const DashboardProvider = ({ children }) => {
         ...state,
         dispatch,
         closePanelDetail,
-        dashboardSearch,
-        dashboardTagKeys,
-        setDashboardSearch,
-        setDashboardTagKeys,
       }}
     >
       <GlobalHotKeys
@@ -738,4 +886,4 @@ const useDashboard = () => {
   return context as IDashboardContext;
 };
 
-export { DashboardContext, DashboardProvider, useDashboard };
+export { DashboardActions, DashboardContext, DashboardProvider, useDashboard };

@@ -1,18 +1,15 @@
 import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
 import { classNames } from "../../utils/styles";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
 import { sortBy, startCase } from "lodash";
-import { useDashboard } from "../../hooks/useDashboard";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
-  const { dashboardSearch, dashboardTagKeys, availableDashboardsLoaded } =
+  const { availableDashboardsLoaded, dashboardTags, dispatch, search } =
     useDashboard();
   const { dashboardName } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  // const [groupBy, setGroupBy] = useState(searchParams.get("group_by") || "tag");
-  // const [tag, setTag] = useState(searchParams.get("tag") || "service");
 
   const options = useMemo(() => {
     const o = [
@@ -33,7 +30,7 @@ const DashboardTagGroupSelect = () => {
         label: "Type",
       },
     ];
-    for (const dashboardTagKey of dashboardTagKeys) {
+    for (const dashboardTagKey of dashboardTags.keys) {
       if (!o.find((i) => i.tag === dashboardTagKey)) {
         o.push({
           groupBy: "tag",
@@ -43,73 +40,44 @@ const DashboardTagGroupSelect = () => {
       }
     }
     return sortBy(o, ["label"]);
-  }, [dashboardTagKeys]);
+  }, [dashboardTags.keys]);
 
-  const [value, setValue] = useState(() => {
-    let option = options.find((o) => o.tag === "service");
-    if (!option) {
-      option = options.find((o) => o.groupBy === "mod");
-    }
-    return option;
-  });
+  const findOption = useCallback(
+    (groupBy) => {
+      if (groupBy.value === "tag") {
+        return options.find((o) => o.tag === groupBy.tag);
+      }
+      return options.find((o) => o.groupBy === "mod");
+    },
+    [options]
+  );
 
-  useEffect(() => {
-    if (!value) {
-      return;
-    }
-    // @ts-ignore
-    searchParams.set("group_by", value.groupBy);
-    // @ts-ignore
-    if (value.tag) {
-      // @ts-ignore
-      searchParams.set("tag", value.tag);
-    } else {
-      searchParams.delete("tag");
-    }
-    setSearchParams(searchParams);
-  }, [searchParams, value]);
+  const [value, setValue] = useState(() => findOption(search.groupBy));
+
+  const updateState = useCallback(
+    (option) =>
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY,
+        value: option.groupBy,
+        tag: option.tag,
+      }),
+    [dispatch]
+  );
 
   useEffect(() => {
-    if (dashboardName && !dashboardSearch) {
-      searchParams.delete("group_by");
-      searchParams.delete("tag");
-      setSearchParams(searchParams);
-    }
-  }, [dashboardName, dashboardSearch, searchParams]);
-
-  // useEffect(() => {
-  //   console.log(availableDashboardsLoaded, dashboardTagKeys, options);
-  //   if (availableDashboardsLoaded) {
-  //     return;
-  //   }
-  //   let option;
-  //   const hasServiceTag = dashboardTagKeys.includes("service");
-  //   if (hasServiceTag) {
-  //     option = options.find((o) => o.tag === "service");
-  //   } else {
-  //     option = options.find((o) => o.groupBy === "mod");
-  //   }
-  //   console.log("Setting", option);
-  //   setValue(option);
-  // }, [availableDashboardsLoaded, dashboardTagKeys, options]);
-
-  // const value = useMemo(() => ({ groupBy, tag }), [groupBy, tag]);
-
-  // const updateValues = (selectedValue) => {
-  //   setGroupBy(selectedValue.groupBy);
-  //   setTag(selectedValue.tag);
-  // };
+    setValue(findOption(search.groupBy));
+  }, [findOption, search.groupBy]);
 
   if (
     !availableDashboardsLoaded ||
     !value ||
-    (dashboardName && !dashboardSearch)
+    (dashboardName && !search.value)
   ) {
     return null;
   }
 
   return (
-    <Listbox value={value} onChange={setValue}>
+    <Listbox value={value} onChange={updateState}>
       {({ open }) => (
         <>
           <div className="relative">

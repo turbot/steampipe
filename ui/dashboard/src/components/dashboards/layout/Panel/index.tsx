@@ -10,7 +10,11 @@ import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs";
 import { memo, useState } from "react";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import {
+  DashboardActions,
+  PanelDefinition,
+  useDashboard,
+} from "../../../../hooks/useDashboard";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
@@ -110,7 +114,7 @@ const Panel = ({
               )}
               onClick={() =>
                 dispatch({
-                  type: "select_panel",
+                  type: DashboardActions.SELECT_PANEL,
                   panel: { ...definition },
                 })
               }

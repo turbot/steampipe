@@ -5,9 +5,9 @@ import Select, {
 } from "react-select";
 import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
+import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getColumnIndex } from "../../../../utils/data";
 import { InputProps } from "../index";
-import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface SelectOption {
@@ -87,6 +87,16 @@ const getValueForState = (multi, option) => {
   }
 };
 
+const findOptions = (options, multi, value) => {
+  return multi
+    ? options.filter((option) =>
+        option.value ? value.indexOf(option.value.toString()) >= 0 : false
+      )
+    : options.find((option) =>
+        option.value ? option.value.toString() === value : false
+      );
+};
+
 const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
@@ -141,17 +151,8 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     // If this is first load and we have a value from state, initialise it
     if (!initialisedFromState && stateValue) {
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-
-      const foundOption = multi
-        ? options.filter((option) =>
-            option.value
-              ? parsedUrlValue.indexOf(option.value.toString()) >= 0
-              : false
-          )
-        : options.find((option) =>
-            option.value ? option.value.toString() === parsedUrlValue : false
-          );
-      setValue(foundOption || null);
+      const foundOptions = findOptions(options, multi, parsedUrlValue);
+      setValue(foundOptions || null);
       setInitialisedFromState(true);
     } else if (!initialisedFromState && !stateValue && properties.placeholder) {
       setInitialisedFromState(true);
@@ -163,14 +164,35 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       setInitialisedFromState(true);
       setValue(options[0]);
       dispatch({
-        type: "set_dashboard_input",
+        type: DashboardActions.SET_DASHBOARD_INPUT,
         name,
         value: getValueForState(multi, options[0]),
+        recordInputsHistory: false,
       });
-    } else if (initialisedFromState && !stateValue) {
-      setValue(null);
+    } else {
+      if (
+        initialisedFromState &&
+        stateValue &&
+        value &&
+        // @ts-ignore
+        stateValue !== value.value
+      ) {
+        const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
+        const foundOptions = findOptions(options, multi, parsedUrlValue);
+        setValue(foundOptions || null);
+      } else if (initialisedFromState && !stateValue) {
+        setValue(null);
+      }
     }
-  }, [initialisedFromState, multi, name, options, stateValue]);
+  }, [
+    dispatch,
+    initialisedFromState,
+    multi,
+    name,
+    options,
+    properties.placeholder,
+    stateValue,
+  ]);
 
   useEffect(() => {
     if (!initialisedFromState) {
@@ -179,14 +201,19 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
 
     // @ts-ignore
     if (!value || value.length === 0) {
-      dispatch({ type: "delete_dashboard_input", name });
+      dispatch({
+        type: DashboardActions.DELETE_DASHBOARD_INPUT,
+        name,
+        recordInputsHistory: true,
+      });
       return;
     }
 
     dispatch({
-      type: "set_dashboard_input",
+      type: DashboardActions.SET_DASHBOARD_INPUT,
       name,
       value: getValueForState(multi, value),
+      recordInputsHistory: true,
     });
   }, [dispatch, initialisedFromState, multi, name, value]);
 

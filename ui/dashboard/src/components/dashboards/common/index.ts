@@ -1,8 +1,8 @@
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
+import { FlowCategories, FlowProperties, FlowType } from "../flows";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
 import { getColumnIndex } from "../../../utils/data";
 import { has } from "lodash";
-import { FlowCategories, FlowProperties, FlowType } from "../flows";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -454,7 +454,7 @@ const buildNodesAndEdges = (
   let contains_duplicate_edges = false;
   let colorIndex = 0;
 
-  rawData.rows.map((row) => {
+  rawData.rows.forEach((row) => {
     const node_id = id_index > -1 ? row[id_index] : null;
     const from_id = from_index > -1 ? row[from_index] : null;
     const to_id = to_index > -1 ? row[to_index] : null;
