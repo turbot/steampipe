@@ -2,11 +2,14 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/db/db_common"
@@ -42,25 +45,16 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 		return res
 	}
 
+	if !connectionUpdates.HasUpdates() {
+		log.Println("[TRACE] RefreshConnections: no updates required")
+		return res
+	}
+
 	// now build list of necessary queries to perform the update
-	connectionQueries, otherRes := c.buildConnectionUpdateQueries(connectionUpdates)
+	otherRes := c.executeConnectionUpdateQueries(ctx, connectionUpdates)
 	// merge results into local results
 	res.Merge(otherRes)
 	if res.Error != nil {
-		return res
-	}
-
-	log.Printf("[TRACE] refreshConnections, %d connection update %s\n", len(connectionQueries), utils.Pluralize("query", len(connectionQueries)))
-
-	// if there are no connection queries, we are done
-	if len(connectionQueries) == 0 {
-		return res
-	}
-
-	// so there ARE connections to update
-	// execute the connection queries
-	if err := executeConnectionQueries(ctx, connectionQueries); err != nil {
-		res.Error = err
 		return res
 	}
 
@@ -71,7 +65,7 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 		return res
 	}
 	// reload the database foreign schema names, since they have changed
-	// this is to ensuire search paths are correctly updated
+	// this is to ensure search paths are correctly updated
 	log.Println("[TRACE] RefreshConnections: reloading foreign schema names")
 	c.LoadForeignSchemaNames(ctx)
 
@@ -79,12 +73,17 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	return res
 }
 
-func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampipeconfig.ConnectionUpdates) ([]string, *steampipeconfig.RefreshConnectionResult) {
-	var connectionQueries []string
-	res := &steampipeconfig.RefreshConnectionResult{}
-	numUpdates := len(connectionUpdates.Update)
+func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {
 
-	log.Printf("[TRACE] buildConnectionUpdateQueries: num updates %d", numUpdates)
+	res := &steampipeconfig.RefreshConnectionResult{}
+	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	if err != nil {
+		res.Error = err
+		return res
+	}
+
+	numUpdates := len(connectionUpdates.Update)
+	log.Printf("[TRACE] executeConnectionUpdateQueries: num updates %d", numUpdates)
 
 	if numUpdates > 0 {
 		// find any plugins which use a newer sdk version than steampipe.
@@ -94,50 +93,102 @@ func (c *LocalDbClient) buildConnectionUpdateQueries(connectionUpdates *steampip
 		}
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
-		connectionQueries = getSchemaQueries(validatedUpdates, validationFailures)
-		if viper.GetBool(constants.ArgSchemaComments) {
-			// add comments queries for validated connections
-			connectionQueries = append(connectionQueries, getCommentQueries(validatedPlugins)...)
+		err := executeUpdateQueries(rootClient, validationFailures, validatedUpdates, validatedPlugins)
+		if err != nil {
+			res.Error = err
+			return res
 		}
+
 	}
 
 	for c := range connectionUpdates.Delete {
 		log.Printf("[TRACE] delete connection %s\n ", c)
-		connectionQueries = append(connectionQueries, deleteConnectionQuery(c)...)
-	}
-	return connectionQueries, res
-}
-
-func getSchemaQueries(updates steampipeconfig.ConnectionDataMap, failures []*steampipeconfig.ValidationFailure) []string {
-	var schemaQueries []string
-	for connectionName, connectionData := range updates {
-		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
-		queries := updateConnectionQuery(connectionName, remoteSchema)
-		schemaQueries = append(schemaQueries, queries...)
-
-	}
-	for _, failure := range failures {
-		log.Printf("[TRACE] remove schema for conneciton failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
-		if failure.ShouldDropIfExists {
-			schemaQueries = append(schemaQueries, deleteConnectionQuery(failure.ConnectionName)...)
+		query := getDeleteConnectionQuery(c)
+		_, err := rootClient.Exec(query)
+		if err != nil {
+			res.Error = err
+			return res
 		}
 	}
 
-	return schemaQueries
+	return res
 }
 
-func getCommentQueries(plugins []*steampipeconfig.ConnectionPlugin) []string {
+func executeUpdateQueries(rootClient *sql.DB, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins []*steampipeconfig.ConnectionPlugin) error {
+	defer func() {
+		log.Println("[WARN] DONE!!!")
+		f, _ := os.Create("/tmp/steampipe.pb.gz")
+		runtime.GC()
+		pprof.WriteHeapProfile(f)
+		f.Close()
+	}()
+
+	idx := 0
+	for connectionName, connectionData := range updates {
+		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
+		query := getUpdateConnectionQuery(connectionName, remoteSchema)
+		idx++
+		//log.Println(query)
+		log.Println("[WARN]", idx)
+		_, err := rootClient.Exec(query)
+		if err != nil {
+			return err
+		}
+	}
+	for _, failure := range failures {
+		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
+		if failure.ShouldDropIfExists {
+			query := getDeleteConnectionQuery(failure.ConnectionName)
+			_, err := rootClient.Exec(query)
+			if err != nil {
+				return err
+			}
+
+		}
+	}
+	//if viper.GetBool(constants.ArgSchemaComments) {
+	//	// add comments queries for validated connections
+	//	query := getCommentsQuery(validatedPlugins)
+	//	_, err := rootClient.Exec(query)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+	return nil
+}
+
+func getCommentsQuery(plugins []*steampipeconfig.ConnectionPlugin) string {
 	var commentQueries []string
 	for _, plugin := range plugins {
-		commentQueries = append(commentQueries, commentsQuery(plugin)...)
+		commentQueries = append(commentQueries, getCommentsQueryForPlugin(plugin)...)
 	}
-	return commentQueries
+	return strings.Join(commentQueries, ";\n")
 }
 
-func updateConnectionQuery(localSchema, remoteSchema string) []string {
+func getCommentsQueryForPlugin(p *steampipeconfig.ConnectionPlugin) []string {
+	var statements []string
+	for t, schema := range p.Schema.Schema {
+		table := db_common.PgEscapeName(t)
+		schemaName := db_common.PgEscapeName(p.ConnectionName)
+		if schema.Description != "" {
+			tableDescription := db_common.PgEscapeString(schema.Description)
+			statements = append(statements, fmt.Sprintf("COMMENT ON FOREIGN TABLE %s.%s is %s;", schemaName, table, tableDescription))
+		}
+		for _, c := range schema.Columns {
+			if c.Description != "" {
+				column := db_common.PgEscapeName(c.Name)
+				columnDescription := db_common.PgEscapeString(c.Description)
+				statements = append(statements, fmt.Sprintf("COMMENT ON COLUMN %s.%s.%s is %s;", schemaName, table, column, columnDescription))
+			}
+		}
+	}
+	return statements
+}
+
+func getUpdateConnectionQuery(localSchema, remoteSchema string) string {
 	// escape the name
 	localSchema = db_common.PgEscapeName(localSchema)
-	return []string{
+	queries := []string{
 
 		// Each connection has a unique schema. The schema, and all objects inside it,
 		// are owned by the root user.
@@ -162,40 +213,12 @@ func updateConnectionQuery(localSchema, remoteSchema string) []string {
 		// Import the foreign schema into this connection.
 		fmt.Sprintf(`import foreign schema "%s" from server steampipe into %s;`, remoteSchema, localSchema),
 	}
+	return strings.Join(queries, ";\n")
 }
 
-func commentsQuery(p *steampipeconfig.ConnectionPlugin) []string {
-	var statements []string
-	for t, schema := range p.Schema.Schema {
-		table := db_common.PgEscapeName(t)
-		schemaName := db_common.PgEscapeName(p.ConnectionName)
-		if schema.Description != "" {
-			tableDescription := db_common.PgEscapeString(schema.Description)
-			statements = append(statements, fmt.Sprintf("COMMENT ON FOREIGN TABLE %s.%s is %s;", schemaName, table, tableDescription))
-		}
-		for _, c := range schema.Columns {
-			if c.Description != "" {
-				column := db_common.PgEscapeName(c.Name)
-				columnDescription := db_common.PgEscapeString(c.Description)
-				statements = append(statements, fmt.Sprintf("COMMENT ON COLUMN %s.%s.%s is %s;", schemaName, table, column, columnDescription))
-			}
-		}
-	}
-	return statements
-}
-
-func deleteConnectionQuery(name string) []string {
-	return []string{
+func getDeleteConnectionQuery(name string) string {
+	queries := []string{
 		fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE;`, db_common.PgEscapeName(name)),
 	}
-}
-
-func executeConnectionQueries(ctx context.Context, schemaQueries []string) error {
-	log.Printf("[TRACE] there are connections to update\n")
-	_, err := executeSqlAsRoot(ctx, schemaQueries...)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return strings.Join(queries, ";\n")
 }

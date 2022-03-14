@@ -512,11 +512,11 @@ func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
 
 // create the command schema and grant insert permission
 func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
-	commandSchemaStatements := updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)
-	commandSchemaStatements = append(
-		commandSchemaStatements,
+	commandSchemaStatements := []string{
+		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
-	)
+	}
+
 	for _, statement := range commandSchemaStatements {
 		if _, err := rootClient.ExecContext(ctx, statement); err != nil {
 			return err
