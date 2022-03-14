@@ -136,8 +136,6 @@ func init() {
 
 func TestExportFormat(t *testing.T) {
 	for name, test := range exportFormatTestCases {
-		home, _ := helpers.Tildefy("~/.steampipe")
-		filepaths.SteampipeDir = home
 		fff, _, err := ResolveExportTemplate(test.input, true)
 		if err != nil {
 			if test.expected != "ERROR" {
