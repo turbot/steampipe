@@ -8,11 +8,7 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import {
-  getInterpolatedTemplateValue,
-  RenderResults,
-  renderTemplates,
-} from "../../../utils/template";
+import { RenderResults, renderTemplates } from "../../../utils/template";
 import { isEmpty, isObject } from "lodash";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
