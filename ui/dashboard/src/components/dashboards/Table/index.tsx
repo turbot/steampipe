@@ -513,6 +513,7 @@ const LineView = (props: TableProps) => {
       newColumns.forEach((col, index) => {
         rowObj[col.name] = row[index];
       });
+      newRows.push({ row, obj: rowObj });
     });
 
     setColumns(newColumns);
@@ -535,7 +536,6 @@ const LineView = (props: TableProps) => {
         templates,
         data
       );
-      console.log(renderedResults);
       setRowTemplateData(renderedResults);
     };
 
@@ -550,6 +550,8 @@ const LineView = (props: TableProps) => {
   if (columns.length === 0 || rows.length === 0) {
     return null;
   }
+
+  console.log(rowTemplateData);
 
   return (
     <div className="px-4 py-3 space-y-4">
