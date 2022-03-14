@@ -5,13 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
-	"runtime"
-	"runtime/pprof"
 	"strings"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -74,13 +71,13 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 }
 
 func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {
-
 	res := &steampipeconfig.RefreshConnectionResult{}
 	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		res.Error = err
 		return res
 	}
+	defer rootClient.Close()
 
 	numUpdates := len(connectionUpdates.Update)
 	log.Printf("[TRACE] executeConnectionUpdateQueries: num updates %d", numUpdates)
@@ -93,8 +90,9 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 		}
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
-		err := executeUpdateQueries(rootClient, validationFailures, validatedUpdates, validatedPlugins)
+		err := executeUpdateQueries(ctx, rootClient, validationFailures, validatedUpdates, validatedPlugins)
 		if err != nil {
+			log.Printf("[TRACE] executeUpdateQueries returned error: %v", err)
 			res.Error = err
 			return res
 		}
@@ -104,7 +102,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	for c := range connectionUpdates.Delete {
 		log.Printf("[TRACE] delete connection %s\n ", c)
 		query := getDeleteConnectionQuery(c)
-		_, err := rootClient.Exec(query)
+		_, err := rootClient.ExecContext(ctx, query)
 		if err != nil {
 			res.Error = err
 			return res
@@ -114,46 +112,39 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	return res
 }
 
-func executeUpdateQueries(rootClient *sql.DB, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins []*steampipeconfig.ConnectionPlugin) error {
-	defer func() {
-		log.Println("[WARN] DONE!!!")
-		f, _ := os.Create("/tmp/steampipe.pb.gz")
-		runtime.GC()
-		pprof.WriteHeapProfile(f)
-		f.Close()
-	}()
-
+func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins []*steampipeconfig.ConnectionPlugin) error {
 	idx := 0
+	numUpdates := len(updates)
 	for connectionName, connectionData := range updates {
+		log.Printf("[TRACE] executing update query %d of %d for connection '%s'", idx, numUpdates, connectionName)
 		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
 		query := getUpdateConnectionQuery(connectionName, remoteSchema)
-		idx++
-		//log.Println(query)
-		log.Println("[WARN]", idx)
-		_, err := rootClient.Exec(query)
+		_, err := rootClient.ExecContext(ctx, query)
 		if err != nil {
 			return err
 		}
+		idx++
 	}
+
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
 			query := getDeleteConnectionQuery(failure.ConnectionName)
-			_, err := rootClient.Exec(query)
+			_, err := rootClient.ExecContext(ctx, query)
 			if err != nil {
 				return err
 			}
-
 		}
 	}
-	//if viper.GetBool(constants.ArgSchemaComments) {
-	//	// add comments queries for validated connections
-	//	query := getCommentsQuery(validatedPlugins)
-	//	_, err := rootClient.Exec(query)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
+	if viper.GetBool(constants.ArgSchemaComments) {
+		// add comments queries for validated connections
+		query := getCommentsQuery(validatedPlugins)
+		_, err := rootClient.ExecContext(ctx, query)
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("[TRACE] executeUpdateQueries complete")
 	return nil
 }
 
