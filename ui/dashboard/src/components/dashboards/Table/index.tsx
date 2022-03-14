@@ -8,10 +8,14 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { RenderResults, renderTemplates } from "../../../utils/template";
 import { isEmpty, isObject } from "lodash";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
+  RowRenderResult,
+  renderInterpolatedTemplates,
+} from "../../../utils/template";
+import {
+  ErrorIcon,
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
@@ -90,7 +94,7 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
 interface CellValueProps {
   column: TableColumnInfo;
   rowIndex: number;
-  rowTemplateData: RenderResults[];
+  rowTemplateData: RowRenderResult[];
   value: any;
   showTitle?: boolean;
 }
@@ -152,27 +156,35 @@ const CellValue = ({
   showTitle = false,
 }: CellValueProps) => {
   const [href, setHref] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Calculate a link for this cell
   useEffect(() => {
     const renderedTemplateObj = rowTemplateData[rowIndex];
     if (!renderedTemplateObj) {
       setHref(null);
+      setError(null);
       return;
     }
     const renderedTemplateForColumn = renderedTemplateObj[column.name];
     if (!renderedTemplateForColumn) {
       setHref(null);
+      setError(null);
       return;
     }
     if (renderedTemplateForColumn.result) {
       setHref(renderedTemplateForColumn.result);
+      setError(null);
+    } else if (renderedTemplateForColumn.error) {
+      setHref(null);
+      setError(renderedTemplateForColumn.error);
     }
-  }, [rowIndex, rowTemplateData]);
+  }, [column, rowIndex, rowTemplateData]);
 
+  let cellContent;
   const dataType = column.data_type_name.toLowerCase();
   if (value === null || value === undefined) {
-    return href ? (
+    cellContent = href ? (
       <ExternalLink
         to={href}
         className="link-highlight"
@@ -188,10 +200,9 @@ const CellValue = ({
         <>null</>
       </span>
     );
-  }
-  if (dataType === "bool") {
+  } else if (dataType === "bool") {
     // True should be
-    return href ? (
+    cellContent = href ? (
       <ExternalLink
         to={href}
         className="link-highlight"
@@ -207,10 +218,9 @@ const CellValue = ({
         <>{value.toString()}</>
       </span>
     );
-  }
-  if (dataType === "jsonb" || isObject(value)) {
+  } else if (dataType === "jsonb" || isObject(value)) {
     const asJsonString = JSON.stringify(value, null, 2);
-    return href ? (
+    cellContent = href ? (
       <ExternalLink
         to={href}
         className="link-highlight"
@@ -223,10 +233,9 @@ const CellValue = ({
         {asJsonString}
       </span>
     );
-  }
-  if (dataType === "text") {
+  } else if (dataType === "text") {
     if (value.match("^https?://")) {
-      return (
+      cellContent = (
         <ExternalLink
           className="link-highlight tabular-nums"
           to={value}
@@ -238,7 +247,7 @@ const CellValue = ({
     }
     const mdMatch = value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
     if (mdMatch) {
-      return (
+      cellContent = (
         <ExternalLink
           className="tabular-nums"
           to={mdMatch[2]}
@@ -248,9 +257,8 @@ const CellValue = ({
         </ExternalLink>
       );
     }
-  }
-  if (dataType === "timestamp" || dataType === "timestamptz") {
-    return href ? (
+  } else if (dataType === "timestamp" || dataType === "timestamptz") {
+    cellContent = href ? (
       <ExternalLink
         to={href}
         className="link-highlight tabular-nums"
@@ -266,9 +274,8 @@ const CellValue = ({
         {value}
       </span>
     );
-  }
-  if (isNumericCol(dataType)) {
-    return href ? (
+  } else if (isNumericCol(dataType)) {
+    cellContent = href ? (
       <ExternalLink
         to={href}
         className="link-highlight tabular-nums"
@@ -286,21 +293,30 @@ const CellValue = ({
     );
   }
   // Fallback is just show it as a string
-  return href ? (
-    <ExternalLink
-      to={href}
-      className="link-highlight tabular-nums"
-      title={showTitle ? `${column.name}=${value}` : undefined}
-    >
-      {value}
-    </ExternalLink>
-  ) : (
-    <span
-      className="tabular-nums"
-      title={showTitle ? `${column.name}=${value}` : undefined}
-    >
-      {value}
+  if (!cellContent) {
+    cellContent = href ? (
+      <ExternalLink
+        to={href}
+        className="link-highlight tabular-nums"
+        title={showTitle ? `${column.name}=${value}` : undefined}
+      >
+        {value}
+      </ExternalLink>
+    ) : (
+      <span
+        className="tabular-nums"
+        title={showTitle ? `${column.name}=${value}` : undefined}
+      >
+        {value}
+      </span>
+    );
+  }
+  return error ? (
+    <span className="flex items-center space-x-2" title={error}>
+      {cellContent} <ErrorIcon className="inline h-4 w-4 text-alert" />
     </span>
+  ) : (
+    cellContent
   );
 };
 
@@ -331,7 +347,7 @@ export type TableProps = BaseTableProps & {
 
 // TODO retain full width on mobile, no padding
 const TableView = (props: TableProps) => {
-  const [rowTemplateData, setRowTemplateData] = useState<RenderResults[]>([]);
+  const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
   const { columns, hiddenColumns } = useMemo(
     () => getColumns(props.data ? props.data.columns : [], props.properties),
     [props.data, props.properties]
@@ -358,7 +374,10 @@ const TableView = (props: TableProps) => {
         return;
       }
       const data = rows.map((row) => row.values);
-      const renderedResults = await renderTemplates(templates, data);
+      const renderedResults = await renderInterpolatedTemplates(
+        templates,
+        data
+      );
       setRowTemplateData(renderedResults);
     };
 
@@ -467,7 +486,7 @@ interface LineModeRows {
 const LineView = (props: TableProps) => {
   const [columns, setColumns] = useState<TableColumnInfo[]>([]);
   const [rows, setRows] = useState<LineModeRows[]>([]);
-  const [rowTemplateData, setRowTemplateData] = useState<RenderResults[]>([]);
+  const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   useEffect(() => {
     if (!props.data || !props.data.columns || !props.data.rows) {
@@ -498,7 +517,7 @@ const LineView = (props: TableProps) => {
 
     setColumns(newColumns);
     setRows(newRows);
-  }, [props.data]);
+  }, [props.data, props.properties]);
 
   useDeepCompareEffect(() => {
     const doRender = async () => {
@@ -512,7 +531,10 @@ const LineView = (props: TableProps) => {
         return;
       }
       const data = rows.map((row) => row.obj);
-      const renderedResults = await renderTemplates(templates, data);
+      const renderedResults = await renderInterpolatedTemplates(
+        templates,
+        data
+      );
       console.log(renderedResults);
       setRowTemplateData(renderedResults);
     };
