@@ -1,13 +1,7 @@
-// // @ts-ignore
 import jq from "jq-web";
-//
-// // console.log(foo);
-// console.log(foo.json());
 
-// const interpolatedMatcher = /(?<=\{\{).*?(?=}})/g;
-
-// @ts-ignore
-// import("../jq.wasm").then(({ json }) => console.log(json));
+const interpolatedStringSplitter = /((?<!\\){(?<!\\){[^}]+(?<!\\)}(?<!\\)})/gm;
+const interpolatedMatcher = /(?<!\\){(?<!\\){([^}]+)(?<!\\)}(?<!\\)}/gm;
 
 interface TemplatesMap {
   [key: string]: string;
@@ -28,10 +22,6 @@ const renderTemplates = async (
   templates: TemplatesMap,
   data: DataMap[]
 ): Promise<RenderResults[]> => {
-  const interpolatedStringSplitter =
-    /((?<!\\){(?<!\\){[^}]+(?<!\\)}(?<!\\)})/gm;
-  const interpolatedMatcher = /(?<!\\){(?<!\\){([^}]+)(?<!\\)}(?<!\\)}/gm;
-
   const filters: TemplatesMap = {};
   for (const [field, template] of Object.entries(templates)) {
     const templateParts = template
