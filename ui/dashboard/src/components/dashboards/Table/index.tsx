@@ -551,8 +551,6 @@ const LineView = (props: TableProps) => {
     return null;
   }
 
-  console.log(rowTemplateData);
-
   return (
     <div className="px-4 py-3 space-y-4">
       {rows.map((rowInfo, rowIndex) => {
