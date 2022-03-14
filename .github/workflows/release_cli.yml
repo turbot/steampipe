@@ -192,7 +192,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup GCloud CLI
-        uses: google-github-actions/setup-gcloud@v0.5.1
+        uses: google-github-actions/setup-gcloud@v0.6.0
         with:
           service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
           project_id: ${{ env.PROJECT_ID }}
