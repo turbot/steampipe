@@ -48,7 +48,7 @@ require (
 	github.com/zclconf/go-cty-yaml v1.0.2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
-	google.golang.org/grpc v1.44.0
+	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	sigs.k8s.io/yaml v1.3.0
@@ -70,7 +70,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
-	github.com/turbot/steampipe-plugin-sdk/v3 v3.0.0
+	github.com/turbot/steampipe-plugin-sdk/v3 v3.0.1
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/mod v0.5.1 // indirect
