@@ -1,16 +1,18 @@
+import ExternalLink from "../../ExternalLink";
 import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
 import LoadingIndicator from "../LoadingIndicator";
 import Table from "../Table";
+import useDeepCompareEffect from "use-deep-compare-effect";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
   LeafNodeData,
-  Width,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { get, isNumber, isObject } from "lodash";
+import { get, has, isNumber, isObject } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
+import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames, useTheme } from "../../../hooks/useTheme";
 import { useEffect, useState } from "react";
 import { usePanel } from "../../../hooks/usePanel";
@@ -60,7 +62,7 @@ export type CardProps = BasePrimitiveProps &
       type?: CardType;
       value?: string;
       icon?: string;
-      parentWidth?: Width;
+      href?: string;
     };
   };
 
@@ -72,6 +74,7 @@ interface CardState {
   value: any | null;
   type: CardType;
   icon: string | null;
+  href: string | null;
 }
 
 const getDataFormat = (data: LeafNodeData): CardDataFormat => {
@@ -109,6 +112,7 @@ const useCardState = ({ data, properties }: CardProps) => {
     value: null,
     type: properties.type || null,
     icon: getIconForType(properties.type, properties.icon),
+    href: properties.href || null,
   });
 
   useEffect(() => {
@@ -128,6 +132,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         value: null,
         type: properties.type || null,
         icon: getIconForType(properties.type, properties.icon),
+        href: properties.href || null,
       });
       return;
     }
@@ -143,6 +148,7 @@ const useCardState = ({ data, properties }: CardProps) => {
         value: row[0],
         type: properties.type || null,
         icon: getIconForType(properties.type, properties.icon),
+        href: properties.href || null,
       });
     } else {
       const labelColIndex = getColumnIndex(data.columns, "label");
@@ -157,6 +163,9 @@ const useCardState = ({ data, properties }: CardProps) => {
       const iconColIndex = getColumnIndex(data.columns, "icon");
       const formalIcon =
         iconColIndex >= 0 ? get(data, `rows[0][${iconColIndex}]`) : null;
+      const hrefColIndex = getColumnIndex(data.columns, "href");
+      const formalHref =
+        hrefColIndex >= 0 ? get(data, `rows[0][${hrefColIndex}]`) : null;
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
@@ -166,6 +175,7 @@ const useCardState = ({ data, properties }: CardProps) => {
           formalType || properties.type,
           formalIcon || properties.icon
         ),
+        href: formalHref || properties.href || null,
       });
     }
   }, [data, properties]);
@@ -187,6 +197,10 @@ const Label = ({ value }) => {
 
 const Card = (props: CardProps) => {
   const state = useCardState(props);
+  const [renderedHref, setRenderedHref] = useState<string | null>(
+    state.href || null
+  );
+  const [rendereError, setRenderError] = useState<string | null>(null);
   const textClasses = getTextClasses(state.type);
   const { setZoomIconClassName } = usePanel();
   const { theme } = useTheme();
@@ -195,7 +209,47 @@ const Card = (props: CardProps) => {
     setZoomIconClassName(textClasses ? textClasses : "");
   }, [setZoomIconClassName, textClasses]);
 
-  return (
+  useDeepCompareEffect(() => {
+    if (state.loading || !state.href) {
+      setRenderedHref(null);
+      setRenderError(null);
+      return;
+    }
+    // const { label, loading, value, ...rest } = state;
+    const renderData = { ...state };
+    if (props.data && props.data.columns && props.data.rows) {
+      const row = props.data.rows[0];
+      props.data.columns.forEach((col, index) => {
+        if (!has(renderData, col.name)) {
+          renderData[col.name] = row[index];
+        }
+      });
+    }
+
+    const doRender = async () => {
+      const renderedResults = await renderInterpolatedTemplates(
+        { card: state.href as string },
+        [renderData]
+      );
+      if (
+        !renderedResults ||
+        renderedResults.length === 0 ||
+        !renderedResults[0].card
+      ) {
+        setRenderedHref(null);
+        setRenderError(null);
+      } else if (renderedResults[0].card.result) {
+        setRenderedHref(renderedResults[0].card.result as string);
+        setRenderError(null);
+      } else if (renderedResults[0].card.error) {
+        setRenderError(renderedResults[0].card.error as string);
+        setRenderedHref(null);
+      }
+    };
+    doRender();
+  }, [state, props.data]);
+
+  const card = (
     <div
       className={classNames(
         "relative pt-4 px-3 pb-4 sm:px-4 m-0.5 rounded-md overflow-hidden",
@@ -274,6 +328,14 @@ const Card = (props: CardProps) => {
       </dd>
     </div>
   );
+
+  // console.log(renderedHref);
+
+  if (renderedHref) {
+    return <ExternalLink to={renderedHref}>{card}</ExternalLink>;
+  }
+
+  return card;
 };
 
 const CardWrapper = (props: CardProps) => {

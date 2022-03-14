@@ -82,7 +82,6 @@ export type ChartProperties = {
   series?: ChartSeries;
   transform?: ChartTransform;
   grouping?: ChartGrouping;
-  parentWidth?: Width;
 };
 
 export type ChartProps = BaseChartProps & {

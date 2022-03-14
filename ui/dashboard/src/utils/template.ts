@@ -8,7 +8,7 @@ interface TemplatesMap {
 }
 
 interface DataMap {
-  [key: string]: string;
+  [key: string]: any;
 }
 
 export interface RowRenderResult {

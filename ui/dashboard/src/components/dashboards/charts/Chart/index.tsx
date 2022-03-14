@@ -655,7 +655,7 @@ const buildChartOptions = (
     getCommonBaseOptions(),
     getCommonBaseOptionsForChartType(
       props.properties?.type,
-      props.properties?.parentWidth || props.width,
+      props.width,
       dataset,
       series,
       props.properties?.series,

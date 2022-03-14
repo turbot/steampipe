@@ -26,6 +26,7 @@ type DashboardCard struct {
 	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type    *string        `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
 	Icon    *string        `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
+	HREF    *string        `cty:"href" hcl:"href" json:"href,omitempty"`
 	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
@@ -165,6 +166,10 @@ func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Icon")
 	}
 
+	if !utils.SafeStringsEqual(c.HREF, other.HREF) {
+		res.AddPropertyDiff("HREF")
+	}
+
 	res.populateChildDiffs(c, other)
 	res.queryProviderDiff(c, other)
 	res.dashboardLeafNodeDiff(c, other)
@@ -256,6 +261,10 @@ func (c *DashboardCard) setBaseProperties(resourceMapProvider ModResourcesProvid
 
 	if c.Icon == nil {
 		c.Icon = c.Base.Icon
+	}
+
+	if c.HREF == nil {
+		c.HREF = c.Base.HREF
 	}
 
 	if c.Width == nil {

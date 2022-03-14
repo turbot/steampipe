@@ -112,12 +112,13 @@ const Panel = ({
                 "absolute cursor-pointer z-50 right-1 top-1",
                 zoomIconClassName
               )}
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
                 dispatch({
                   type: DashboardActions.SELECT_PANEL,
                   panel: { ...definition },
-                })
-              }
+                });
+              }}
             >
               <ZoomIcon className="h-5 w-5" />
             </div>
