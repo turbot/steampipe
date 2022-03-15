@@ -590,11 +590,12 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 			case <-sigIntChannel:
 				log.Println("[TRACE] got SIGINT")
 				// if initialisation is not complete, just close the prompt
+				// this will cancel the context used for initialisation so cancel any initialisation queries
 				if !c.isInitialised() {
 					c.ClosePrompt(AfterPromptCloseExit)
 					return
 				} else {
-					// otherwise call context cancellation function
+					// otherwise call cancelActiveQueryIfAny which the for the active query, if there is one
 					c.cancelActiveQueryIfAny()
 					// keep waiting for further cancellations
 				}
