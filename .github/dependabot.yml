@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: "daily"
     commit-message:
-      prefix: "[Dependabot][actions]"
+      prefix: "[dep][actions]"
       include: "scope"
 
   - package-ecosystem: "gomod"
@@ -17,7 +17,7 @@ updates:
       # at 2:01 am
       time: "02:01"
     commit-message:
-      prefix: "[Dependabot]"
+      prefix: "[dep][go]"
       include: "scope"
     pull-request-branch-name:
       separator: "-"
@@ -33,7 +33,7 @@ updates:
     schedule:
       interval: "daily"
     commit-message:
-      prefix: "[Dependabot][dashboard]"
+      prefix: "[dep][dash]"
       include: "scope"
     pull-request-branch-name:
       separator: "-"
