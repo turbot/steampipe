@@ -59,7 +59,7 @@ func BuildInstallSummary(installData *InstallData) string {
 	}
 
 	if installCount+uninstallCount+upgradeCount+downgradeCount == 0 {
-		if len(installData.Lock.InstallCache) == 0 {
+		if installData.Lock.Empty() {
 			return "No mods are installed"
 		}
 		return "All mods are up to date"

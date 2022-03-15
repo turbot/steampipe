@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
@@ -68,16 +69,6 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	i.mods = requiredMods
 
 	return i, nil
-}
-
-func (i *ModInstaller) setModsPath() error {
-	dir, err := os.MkdirTemp(os.TempDir(), "sp_dr_*")
-	if err != nil {
-		return err
-	}
-	i.tmpPath = dir
-	i.modsPath = filepaths.WorkspaceModPath(i.workspacePath)
-	return nil
 }
 
 func (i *ModInstaller) UninstallWorkspaceDependencies() error {
@@ -186,30 +177,61 @@ func (i *ModInstaller) GetModList() string {
 	return i.installData.Lock.GetModList(i.workspaceMod.GetModDependencyPath())
 }
 
+func (i *ModInstaller) setModsPath() error {
+	dir, err := os.MkdirTemp(os.TempDir(), "sp_dr_*")
+	if err != nil {
+		return err
+	}
+	i.tmpPath = dir
+	i.modsPath = filepaths.WorkspaceModPath(i.workspacePath)
+	return nil
+}
+
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
 	// clean up the temp location
 	defer os.RemoveAll(i.tmpPath)
 
 	var errors []error
-	for _, requiredModVersion := range mods {
-		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
+	errChan := make(chan error)
+	doneChan := make(chan bool)
+	var wg sync.WaitGroup
 
-		// if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
-		// this ensures that we update any dependencies which have updates available
-		shouldUpdate := modToUse == nil
-		if err := i.installModDependencesRecursively(requiredModVersion, modToUse, parent, shouldUpdate); err != nil {
-			errors = append(errors, err)
-		}
+	for _, requiredModVersion := range mods {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			// if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
+			// this ensures that we update any dependencies which have updates available
+			shouldUpdate := modToUse == nil
+			if err := i.installModDependencesRecursively(requiredModVersion, modToUse, parent, shouldUpdate); err != nil {
+				errors = append(errors, err)
+				errChan <- err
+			}
+		}()
 	}
 
-	// update the lock to be the new lock, and record any uninstalled mods
-	i.installData.onInstallComplete()
+	go func() {
+		wg.Wait()
+		doneChan <- true
+	}()
 
-	return i.buildInstallError(errors)
+	for {
+		select {
+		case err := <-errChan:
+			errors = append(errors, err)
+		case <-doneChan:
+			// update the lock to be the new lock, and record any uninstalled mods
+			i.installData.onInstallComplete()
+			return i.buildInstallError(errors)
+		}
+	}
 }
 
 func (i *ModInstaller) buildInstallError(errors []error) error {
@@ -278,7 +300,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 
 func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, forceUpdate bool) (*modconfig.Mod, error) {
 	// do we have an installed version of this mod matching the required mod constraint
-	installedVersion, err := i.installData.Lock.GetLockedModVersion(requiredModVersion, parent)
+	installedVersion, err := i.installData.GetLockedModVersion(requiredModVersion, parent)
 	if err != nil {
 		return nil, err
 	}

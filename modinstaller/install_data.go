@@ -15,7 +15,7 @@ type InstallData struct {
 	Lock    *versionmap.WorkspaceLock
 	NewLock *versionmap.WorkspaceLock
 
-	// ALL the available versions for each dependency mod(we populate this in a lazy fashion)
+	// ALL the available versions for each dependency mod (we populate this in a lazy fashion)
 	allAvailable versionmap.VersionListMap
 
 	// list of dependencies installed by recent install operation
@@ -42,40 +42,20 @@ func NewInstallData(workspaceLock *versionmap.WorkspaceLock, workspaceMod *modco
 	}
 }
 
-// GetAvailableUpdates returns a map of all installed mods which are not in the lock file
-func (d *InstallData) GetAvailableUpdates() (versionmap.DependencyVersionMap, error) {
-	res := make(versionmap.DependencyVersionMap)
-	for parent, deps := range d.Lock.InstallCache {
-		for name, resolvedConstraint := range deps {
-			includePrerelease := resolvedConstraint.IsPrerelease()
-			availableVersions, err := d.getAvailableModVersions(name, includePrerelease)
-			if err != nil {
-				return nil, err
-			}
-			constraint, _ := versionhelpers.NewConstraint(resolvedConstraint.Constraint)
-			var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
-			if latestVersion.GreaterThan(resolvedConstraint.Version) {
-				res.Add(name, latestVersion, constraint.Original, parent)
-			}
-		}
-	}
-	return res, nil
-}
-
 // onModInstalled is called when a dependency is satisfied by installing a mod version
 func (d *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconfig.Mod) {
 	parentPath := parent.GetModDependencyPath()
 	// get the constraint from the parent (it must be there)
 	modVersion := parent.Require.GetModDependency(dependency.Name)
 	// update lock
-	d.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parentPath)
+	d.NewLock.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parentPath)
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
 func (d *InstallData) addExisting(name string, version *semver.Version, constraint *versionhelpers.Constraints, parent *modconfig.Mod) {
 	// update lock
 	parentPath := parent.GetModDependencyPath()
-	d.NewLock.InstallCache.Add(name, version, constraint.Original, parentPath)
+	d.NewLock.Add(name, version, constraint.Original, parentPath)
 }
 
 // retrieve all available mod versions from our cache, or from Git if not yet cached
@@ -97,12 +77,12 @@ func (d *InstallData) getAvailableModVersions(modName string, includePrerelease 
 	return availableVersions, nil
 }
 
-// update the lock with the NewLock and dtermine if any mods have been uninstalled
+// update the lock with the NewLock and determine if any mods have been uninstalled
 func (d *InstallData) onInstallComplete() {
-	d.Installed = d.NewLock.InstallCache.GetMissingFromOther(d.Lock.InstallCache)
-	d.Uninstalled = d.Lock.InstallCache.GetMissingFromOther(d.NewLock.InstallCache)
-	d.Upgraded = d.Lock.InstallCache.GetUpgradedInOther(d.NewLock.InstallCache)
-	d.Downgraded = d.Lock.InstallCache.GetDowngradedInOther(d.NewLock.InstallCache)
+	d.Installed = d.NewLock.GetMissingFromOther(d.Lock)
+	d.Uninstalled = d.Lock.GetMissingFromOther(d.NewLock)
+	d.Upgraded = d.Lock.GetUpgradedInOther(d.NewLock)
+	d.Downgraded = d.Lock.GetDowngradedInOther(d.NewLock)
 	d.Lock = d.NewLock
 }
 
@@ -116,4 +96,17 @@ func (d *InstallData) GetInstalledTree() treeprint.Tree {
 
 func (d *InstallData) GetUninstalledTree() treeprint.Tree {
 	return d.Uninstalled.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
+}
+
+// GetLockedModVersion looks for a lock file entry matching the required constraint and returns nil if not found
+// it checks both the existing and new lock files
+func (d *InstallData) GetLockedModVersion(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) (*versionmap.ResolvedVersionConstraint, error) {
+	// first try the d.Lock - this is the mods which were already installed before this instrallation started
+	lockedVersion, err := d.Lock.GetLockedModVersion(requiredModVersion, parent)
+	if lockedVersion != nil || err != nil {
+		return lockedVersion, err
+	}
+
+	// if no version was found, try d.NewLock - this is mods which have been installed as part of this installation
+	return d.NewLock.GetLockedModVersion(requiredModVersion, parent)
 }
