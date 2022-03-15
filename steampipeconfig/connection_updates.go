@@ -138,7 +138,7 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) *RefreshConnectionResult {
 	// get list of connections to update:
 	// - exclude connections already created
-	// - for any aggregator connections, instantiate the first child conneciotn instead
+	// - for any aggregator connections, instantiate the first child connection instead
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
 	// now create them
 	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate, &CreateConnectionPluginOptions{SetConnectionConfig: true})
@@ -181,6 +181,10 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 	}
 
 	return res
+}
+
+func (u *ConnectionUpdates) HasUpdates() bool {
+	return len(u.Update)+len(u.Delete) > 0
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {
