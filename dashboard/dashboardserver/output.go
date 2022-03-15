@@ -40,6 +40,9 @@ func initLogSink() {
 }
 
 func output(_ context.Context, prefix string, msg interface{}) {
+	if logSink == nil {
+		logSink = os.Stdout
+	}
 	fmt.Fprintf(logSink, "%s %v\n", prefix, msg)
 }
 
@@ -55,7 +58,7 @@ func outputReady(ctx context.Context, msg string) {
 	output(ctx, applyColor(readyPrefix, color.GreenString), msg)
 }
 
-func outputWait(ctx context.Context, msg string) {
+func OutputWait(ctx context.Context, msg string) {
 	output(ctx, applyColor(waitPrefix, color.CyanString), msg)
 }
 

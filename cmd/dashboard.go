@@ -82,6 +82,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	dashboardCtx = statushooks.DisableStatusHooks(dashboardCtx)
 
 	// load the workspace
+	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
 	w, err := loadWorkspacePromptingForVariables(dashboardCtx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
