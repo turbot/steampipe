@@ -24,7 +24,7 @@ func modCmd() *cobra.Command {
 		Short: "Steampipe mod management",
 		Long: `Steampipe mod management.
 
-Mods enable security/compliance as code for Steampipe. 
+Mods provide an easy way to share dashboards, benchmarks, and other resources.
 
 Find pre-built mods in the public registry at https://hub.steampipe.io.
 
