@@ -30,14 +30,26 @@ func ResolveArgsAsString(source QueryProvider, runtimeArgs *QueryArgs) (string, 
 	var paramStrs, missingParams []string
 	var err error
 	// validate args
+	if runtimeArgs == nil {
+		runtimeArgs = &QueryArgs{}
+	}
 
-	if len(runtimeArgs.ArgMap) > 0 {
+	// merge the query provider args (if any) with the runtime args
+	sourceArgs := source.GetArgs()
+	if sourceArgs == nil {
+		sourceArgs = &QueryArgs{}
+	}
+	mergedArgs, err := sourceArgs.Merge(runtimeArgs, source)
+	if err != nil {
+		return "", nil, err
+	}
+	if len(mergedArgs.ArgMap) > 0 {
 		// do params contain named params?
-		paramStrs, missingParams, err = resolveNamedParameters(source, runtimeArgs)
+		paramStrs, missingParams, err = resolveNamedParameters(source, mergedArgs)
 	} else {
 		// resolve as positional parameters
 		// (or fall back to defaults if no positional params are present)
-		paramStrs, missingParams, err = resolvePositionalParameters(source, runtimeArgs)
+		paramStrs, missingParams, err = resolvePositionalParameters(source, mergedArgs)
 	}
 	if err != nil {
 		return "", nil, err
@@ -112,11 +124,10 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 
 	// if no param defs are defined, just use the given values, using runtime dependencies where available
 	if len(params) == 0 {
-
 		// no params defined, so we return as many args as are provided
 		// (convert from *string to string)
 		argStrs = args.ArgsStringList()
-		return
+		return argStrs, nil, nil
 	}
 
 	// so there are param defintions - use these to populate argStrs
@@ -136,7 +147,7 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 			missingParams = append(missingParams, param.Name)
 		}
 	}
-	return
+	return argStrs, missingParams, nil
 }
 
 // QueryProviderIsParameterised returns whether the query provider has a parameterised query
