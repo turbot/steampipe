@@ -22,7 +22,29 @@ func modCmd() *cobra.Command {
 		Use:   "mod [command]",
 		Args:  cobra.NoArgs,
 		Short: "Steampipe mod management",
-		Long:  `Steampipe mod management.`,
+		Long: `Steampipe mod management.
+
+Mods enable security/compliance as code for Steampipe. 
+
+Find pre-built mods in the public registry at https://hub.steampipe.io.
+
+Examples:
+
+    # Create a new mod in the current directory
+    steampipe mod init
+
+    # Install a mod
+    steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
+    
+    # Update a mod
+    steampipe mod update github.com/turbot/steampipe-mod-aws-compliance
+    
+    # List installed mods
+    steampipe mod list
+    
+    # Uninstall a mod
+    steampipe mod uninstall github.com/turbot/steampipe-mod-aws-compliance
+	`,
 	}
 
 	cmd.AddCommand(modInstallCmd())
