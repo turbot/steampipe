@@ -24,7 +24,7 @@ func modCmd() *cobra.Command {
 		Short: "Steampipe mod management",
 		Long: `Steampipe mod management.
 
-Mods provide an easy way to share dashboards, benchmarks, and other resources.
+Mods enable you to run, build, and share compliance benchmarks and dashboards.
 
 Find pre-built mods in the public registry at https://hub.steampipe.io.
 
