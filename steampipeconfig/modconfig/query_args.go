@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/utils"
 )
 
 // QueryArgs is a struct which contains the arguments used to invoke a prepared statement
@@ -64,12 +65,12 @@ func (q *QueryArgs) Equals(other *QueryArgs) bool {
 		return false
 	}
 	for k, v := range q.ArgMap {
-		if other.ArgMap[k] != v {
+		if !utils.SafeStringsEqual(other.ArgMap[k], v) {
 			return false
 		}
 	}
 	for i, v := range q.ArgList {
-		if other.ArgList[i] != v {
+		if !utils.SafeStringsEqual(other.ArgList[i], v) {
 			return false
 		}
 	}
