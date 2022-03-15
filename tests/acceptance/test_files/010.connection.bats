@@ -44,8 +44,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe json connection config" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos2.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
     run steampipe query "select time_col from chaos4.chaos_cache_check"
@@ -53,8 +51,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe should return an error for duplicate connection name" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
     # this should fail because of duplicate connection name
@@ -65,8 +61,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe yaml connection config" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos2.yml $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
 
     run steampipe query "select time_col from chaos5.chaos_cache_check"
@@ -74,8 +68,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test connection config with options(hcl)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     run steampipe query "select time_col from chaos6.chaos_cache_check"
@@ -84,8 +76,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test connection config with options(yml)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     run steampipe query "select time_col from chaos6.chaos_cache_check"
@@ -94,8 +84,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test connection config with options(json)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     run steampipe query "select time_col from chaos6.chaos_cache_check"
@@ -104,17 +92,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; hcl)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # cache functionality check since cache=true in options
     cd $CONFIG_PARSING_TEST_MOD
     run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
-    # store the date from 1st control in `content`
+    # store the unique number from 1st control in `content`
     content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
-    # store the date from 2nd control in `new_content`
+    # store the unique number from 2nd control in `new_content`
     new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
     echo $content
     echo $new_content
@@ -127,17 +113,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; yml)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     # cache functionality check since cache=true in options
     cd $CONFIG_PARSING_TEST_MOD
     run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
-    # store the date from 1st control in `content`
+    # store the unique number from 1st control in `content`
     content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
-    # store the date from 2nd control in `new_content`
+    # store the unique number from 2nd control in `new_content`
     new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
     echo $content
     echo $new_content
@@ -150,17 +134,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; json)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     # cache functionality check since cache=true in options
     cd $CONFIG_PARSING_TEST_MOD
     run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
-    # store the date from 1st control in `content`
+    # store the unique number from 1st control in `content`
     content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
-    # store the date from 2nd control in `new_content`
+    # store the unique number from 2nd control in `new_content`
     new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
     echo $content
     echo $new_content
@@ -172,21 +154,16 @@ load "$LIB_BATS_SUPPORT/load.bash"
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
 
-# need to re-design cache tests, skipping for now
-
 @test "steampipe check options config is being parsed and used(cache=false; hcl)" {
-    skip
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options_2.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
 
     # cache functionality check since cache=false in options
     cd $CONFIG_PARSING_TEST_MOD
     run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
-    # store the date from 1st control in `content`
+    # store the unique number from 1st control in `content`
     content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
-    # store the date from 2nd control in `new_content`
+    # store the unique number from 2nd control in `new_content`
     new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
     echo $content
     echo $new_content
@@ -204,18 +181,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=false; yml)" {
-    skip
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options_2.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
 
     # cache functionality check since cache=false in options
     cd $CONFIG_PARSING_TEST_MOD
     run steampipe check benchmark.config_parsing_benchmark --export json --max-parallel 1
 
-    # store the date from 1st control in `content`
+    # store the unique number from 1st control in `content`
     content=$(cat benchmark.*.json | jq '.groups[].controls[0].results[0].resource')
-    # store the date from 2nd control in `new_content`
+    # store the unique number from 2nd control in `new_content`
     new_content=$(cat benchmark.*.json | jq '.groups[].controls[1].results[0].resource')
     echo $content
     echo $new_content
@@ -233,8 +207,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(hcl)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # check regions in connection config is being parsed and used
@@ -248,8 +220,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(yml)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     # check regions in connection config is being parsed and used
@@ -263,8 +233,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(json)" {
-    run steampipe plugin install chaos
-    run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     # check regions in connection config is being parsed and used
