@@ -20,6 +20,13 @@ type InitData struct {
 	Result    *db_common.InitResult
 }
 
+func (i InitData) Cleanup(ctx context.Context) {
+	// if a client was initialised, close it
+	if i.Client != nil {
+		i.Client.Close(ctx)
+	}
+}
+
 func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	initData := &InitData{
 		Workspace: w,

@@ -96,13 +96,19 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	initData := dashboard.NewInitData(dashboardCtx, w)
+	// ensure we close the service
+	defer initData.Cleanup(dashboardCtx)
+
 	if shouldExit := handleDashboardInitResult(dashboardCtx, initData); shouldExit {
+		// and return
 		return
 	}
 	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
 	if err != nil {
 		utils.FailOnError(err)
 	}
+	// cleanup init data
+	defer server.Shutdown(dashboardCtx)
 
 	server.Start()
 
@@ -121,8 +127,6 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	// wait for the given context to cancel
 	<-dashboardCtx.Done()
-
-	server.Shutdown(dashboardCtx)
 }
 
 func isRunningAsService() bool {

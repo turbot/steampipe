@@ -110,6 +110,12 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 
 }
 
+func (i InitData) Cleanup(ctx context.Context) {
+	if i.Client != nil {
+		i.Client.Close(ctx)
+	}
+}
+
 func initialiseColorScheme() error {
 	theme := viper.GetString(constants.ArgTheme)
 	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
