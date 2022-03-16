@@ -1,5 +1,5 @@
 {
-  "name": "steampipe-reports",
+  "name": "steampipe-dashboard-ui",
   "version": "0.13.0",
   "private": true,
   "scripts": {
