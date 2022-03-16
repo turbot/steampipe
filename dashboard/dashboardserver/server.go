@@ -48,7 +48,7 @@ func (lp ListenPort) IsValid() error {
 func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
 	initLogSink()
 
-	outputWait(ctx, "Starting Dashboard Server")
+	OutputWait(ctx, "Starting Dashboard Server")
 
 	webSocket := melody.New()
 
@@ -260,7 +260,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.mutex.Lock()
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
-		outputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Dashboard.GetName()))
+		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Dashboard.GetName()))
 
 	case *dashboardevents.LeafNodeError:
 		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %v", e.Session, e.LeafNode.GetName(), e.Error)
