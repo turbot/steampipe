@@ -67,3 +67,5 @@ const App = () => {
 };
 
 export default App;
+
+export { DashboardApp };
