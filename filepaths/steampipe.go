@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -38,6 +39,7 @@ func steampipeSubDir(dirName string) string {
 		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
 	}
 	log.Printf("[TRACE] SteampipeDir: %s dirName: %s in steampipeSubDir\n", SteampipeDir, dirName)
+	log.Printf("[TRACE] %s", debug.Stack())
 	return filepath.Join(SteampipeDir, dirName)
 }
 
