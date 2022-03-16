@@ -152,7 +152,7 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 
 	_, _, stream := ref.GetOrgNameAndStream()
 	if stream != "latest" {
-		inputData = transform(inputData, ref)
+		inputData = addPluginStreamToConfig(inputData, ref)
 	}
 
 	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
@@ -161,7 +161,7 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 	return nil
 }
 
-func transform(src []byte, ref *SteampipeImageRef) []byte {
+func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
 	_, _, stream := ref.GetOrgNameAndStream()
 
 	regex := regexp.MustCompile(`^(\s*)plugin\s*=\s*"(.*)"\s*$`)
@@ -173,7 +173,7 @@ func transform(src []byte, ref *SteampipeImageRef) []byte {
 
 	for srcScanner.Scan() {
 		line := srcScanner.Text()
-		if strings.HasPrefix(strings.TrimSpace(line), "plugin") {
+		if regex.MatchString(line) {
 			line = regex.ReplaceAllString(line, substitution)
 		}
 		destBuffer.WriteString(fmt.Sprintf("%s\n", line))
