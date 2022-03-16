@@ -1,12 +1,15 @@
 import SearchInput from "../SearchInput";
 import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
-import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { useCallback } from "react";
 
 const DashboardSearch = () => {
-  const { availableDashboardsLoaded, dispatch, search, metadata } =
-    useDashboard();
-  const { minBreakpoint } = useBreakpoint();
+  const {
+    availableDashboardsLoaded,
+    breakpointContext: { minBreakpoint },
+    dispatch,
+    search,
+    metadata,
+  } = useDashboard();
 
   const updateSearchValue = useCallback(
     (value) =>

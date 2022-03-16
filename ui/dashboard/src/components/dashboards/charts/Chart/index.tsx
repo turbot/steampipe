@@ -37,8 +37,8 @@ import { get, has, merge, set } from "lodash";
 import { FlowType } from "../../flows";
 import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";
-import { PanelDefinition } from "../../../../hooks/useDashboard";
-import { Theme, useTheme } from "../../../../hooks/useTheme";
+import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import { Theme } from "../../../../hooks/useTheme";
 import * as echarts from "echarts/core";
 
 echarts.use([
@@ -726,7 +726,9 @@ const Chart = ({ options, type }: ChartComponentProps) => {
 
 const ChartWrapper = (props: ChartProps) => {
   const [, setRandomVal] = useState(0);
-  const { theme, wrapperRef } = useTheme();
+  const {
+    themeContext: { theme, wrapperRef },
+  } = useDashboard();
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);

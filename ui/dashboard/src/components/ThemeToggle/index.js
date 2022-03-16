@@ -1,8 +1,11 @@
 import Icon from "../Icon";
-import { ThemeNames, useTheme } from "../../hooks/useTheme";
+import { ThemeNames } from "../../hooks/useTheme";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const ThemeToggle = () => {
-  const { setTheme, theme } = useTheme();
+  const {
+    themeContext: { setTheme, theme },
+  } = useDashboard();
   return (
     <button
       type="button"

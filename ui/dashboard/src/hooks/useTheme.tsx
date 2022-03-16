@@ -37,11 +37,11 @@ const Themes: IThemes = {
 interface IThemeContext {
   localStorageTheme: string | null;
   theme: Theme;
-  setTheme(theme: string): void;
-  setWrapperRef(element: any): void;
   withFooterPadding: boolean;
   wrapperRef: React.Ref<null>;
+  setTheme(theme: string): void;
   setWithFooterPadding(newValue: boolean): void;
+  setWrapperRef(element: any): void;
 }
 
 const ThemeContext = createContext<IThemeContext | undefined>(undefined);

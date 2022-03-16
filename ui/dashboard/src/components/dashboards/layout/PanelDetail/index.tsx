@@ -11,7 +11,6 @@ import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { saveAs } from "file-saver";
 import { useCallback, useMemo, useState } from "react";
 import { usePapaParse } from "react-papaparse";
-import { useBreakpoint } from "../../../../hooks/useBreakpoint";
 
 export type PanelDetailProps = {
   definition: PanelDefinition;
@@ -42,9 +41,12 @@ const Tabs = {
 
 const PanelDetail = ({ definition }: PanelDetailProps) => {
   const [selectedTab, setSelectedTab] = useState(Tabs.PREVIEW);
-  const { closePanelDetail, selectedDashboard } = useDashboard();
+  const {
+    breakpointContext: { minBreakpoint },
+    closePanelDetail,
+    selectedDashboard,
+  } = useDashboard();
   const { jsonToCSV } = usePapaParse();
-  const { minBreakpoint } = useBreakpoint();
   const isTablet = minBreakpoint("md");
 
   const availableTabs = useMemo(() => {

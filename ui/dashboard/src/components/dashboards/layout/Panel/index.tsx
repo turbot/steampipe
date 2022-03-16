@@ -17,7 +17,7 @@ import {
 } from "../../../../hooks/useDashboard";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
-import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
+import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
 import { ZoomIcon } from "../../../../constants/icons";
 
@@ -50,8 +50,10 @@ const Panel = ({
   const [showZoomIcon, setShowZoomIcon] = useState(false);
   const [zoomIconClassName, setZoomIconClassName] =
     useState("text-black-scale-4");
-  const { dispatch } = useDashboard();
-  const { theme } = useTheme();
+  const {
+    dispatch,
+    themeContext: { theme },
+  } = useDashboard();
 
   const baseStyles = classNames(
     "relative col-span-12",

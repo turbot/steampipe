@@ -3,7 +3,7 @@ import paths from "deepdash/paths";
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
 import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
-import {
+import React, {
   createContext,
   useCallback,
   useContext,
@@ -11,7 +11,7 @@ import {
   useReducer,
   useState,
 } from "react";
-import { FullHeightThemeWrapper } from "./useTheme";
+import { FullHeightThemeWrapper, Theme } from "./useTheme";
 import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
@@ -23,6 +23,19 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+
+interface IBreakpointContext {
+  currentBreakpoint: string | null;
+  maxBreakpoint(breakpointAndDown: string): boolean;
+  minBreakpoint(breakpointAndUp: string): boolean;
+  width: number;
+}
+
+interface IThemeContext {
+  theme: Theme;
+  setTheme(theme: string): void;
+  wrapperRef: React.Ref<null>;
+}
 
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
@@ -46,6 +59,9 @@ interface IDashboardContext {
   dashboardTags: DashboardTags;
 
   search: DashboardSearch;
+
+  breakpointContext: IBreakpointContext;
+  themeContext: IThemeContext;
 }
 
 export interface IActions {
@@ -144,7 +160,7 @@ interface CloudDashboardMetadata {
   workspace: CloudDashboardWorkspaceMetadata;
 }
 
-interface DashboardMetadata {
+export interface DashboardMetadata {
   mod: ModDashboardMetadata;
   installed_mods?: InstalledModsDashboardMetadata;
   cloud?: CloudDashboardMetadata;
@@ -502,13 +518,22 @@ const getInitialState = (searchParams) => {
 
 const DashboardContext = createContext<IDashboardContext | null>(null);
 
-const DashboardProvider = ({ children }) => {
+const DashboardProvider = ({
+  analyticsContext,
+  breakpointContext,
+  children,
+  themeContext,
+}) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
   const { dashboardName } = useParams();
   const { ready: socketReady, send: sendSocketMessage } =
     useDashboardWebSocket(dispatch);
+  const {
+    setMetadata: setAnalyticsMetadata,
+    setSelectedDashboard: setAnalyticsSelectedDashboard,
+  } = analyticsContext;
 
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -522,6 +547,14 @@ const DashboardProvider = ({ children }) => {
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
     });
+
+  // Alert analytics
+  useEffect(() => {
+    setAnalyticsMetadata(state.metadata);
+  }, [state.metadata, setAnalyticsMetadata]);
+  useEffect(() => {
+    setAnalyticsSelectedDashboard(state.metadata);
+  }, [state.selectedDashboard, setAnalyticsSelectedDashboard]);
 
   // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
@@ -864,8 +897,11 @@ const DashboardProvider = ({ children }) => {
     <DashboardContext.Provider
       value={{
         ...state,
+        analyticsContext,
+        breakpointContext,
         dispatch,
         closePanelDetail,
+        themeContext,
       }}
     >
       <GlobalHotKeys

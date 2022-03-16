@@ -3,8 +3,8 @@ import {
   AvailableDashboard,
   CloudDashboardIdentityMetadata,
   CloudDashboardWorkspaceMetadata,
+  DashboardMetadata,
   ModDashboardMetadata,
-  useDashboard,
 } from "./useDashboard";
 import {
   createContext,
@@ -35,13 +35,15 @@ const AnalyticsContext = createContext<IAnalyticsContext>({
 });
 
 const useAnalyticsProvider = () => {
-  const { metadata, selectedDashboard } = useDashboard();
   const { localStorageTheme, theme } = useTheme();
   const [enabled, setEnabled] = useState<boolean>(true);
   const [identity, setIdentity] =
     useState<CloudDashboardIdentityMetadata | null>(null);
   const [workspace, setWorkspace] =
     useState<CloudDashboardWorkspaceMetadata | null>(null);
+  const [metadata, setMetadata] = useState<DashboardMetadata | null>(null);
+  const [selectedDashboard, setSelectedDashboard] =
+    useState<AvailableDashboard | null>(null);
   const [initialised, setInitialised] = useState(false);
 
   const identify = useCallback((actor) => {
@@ -169,6 +171,8 @@ const useAnalyticsProvider = () => {
 
   return {
     reset,
+    setMetadata,
+    setSelectedDashboard,
     track,
   };
 };
