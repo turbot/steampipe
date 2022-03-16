@@ -149,9 +149,13 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 		return fmt.Errorf("couldn't read source file permissions: %s", err)
 	}
 	// transform
-	transformedData := transform(inputData, ref)
 
-	if err = os.WriteFile(destFile, transformedData, inputStat.Mode()); err != nil {
+	_, _, stream := ref.GetOrgNameAndStream()
+	if stream != "latest" {
+		inputData = transform(inputData, ref)
+	}
+
+	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
 	return nil
@@ -159,9 +163,6 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 
 func transform(src []byte, ref *SteampipeImageRef) []byte {
 	_, _, stream := ref.GetOrgNameAndStream()
-	if stream == "latest" {
-		return src
-	}
 
 	regex := regexp.MustCompile(`^(\s*)plugin\s*=\s*"(.*)"\s*$`)
 	substitution := fmt.Sprintf(`$1 plugin = "$2@%s"`, stream)
