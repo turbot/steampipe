@@ -126,6 +126,8 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 		idx++
 	}
 
+	log.Printf("[TRACE] all update queries executed")
+
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
@@ -137,9 +139,9 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 		}
 	}
 	if viper.GetBool(constants.ArgSchemaComments) {
+		log.Printf("[TRACE] adding schema comments")
 		// add comments queries for validated connections
-		query := getCommentsQuery(validatedPlugins)
-		_, err := rootClient.ExecContext(ctx, query)
+		err := executeCommentsQuery(ctx, rootClient, validatedPlugins)
 		if err != nil {
 			return err
 		}
@@ -148,15 +150,22 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 	return nil
 }
 
-func getCommentsQuery(plugins []*steampipeconfig.ConnectionPlugin) string {
-	var commentQueries []string
-	for _, plugin := range plugins {
-		commentQueries = append(commentQueries, getCommentsQueryForPlugin(plugin)...)
+func executeCommentsQuery(ctx context.Context, rootClient *sql.DB, connections []*steampipeconfig.ConnectionPlugin) error {
+	idx := 0
+	numUpdates := len(connections)
+	for _, connection := range connections {
+		log.Printf("[TRACE] executing comment query %d of %d for plugin '%s'", idx, numUpdates, connection.ConnectionName)
+		query := getCommentsQueryForPlugin(connection)
+		_, err := rootClient.ExecContext(ctx, query)
+		if err != nil {
+			return err
+		}
 	}
-	return strings.Join(commentQueries, ";\n")
+	return nil
+
 }
 
-func getCommentsQueryForPlugin(p *steampipeconfig.ConnectionPlugin) []string {
+func getCommentsQueryForPlugin(p *steampipeconfig.ConnectionPlugin) string {
 	var statements []string
 	for t, schema := range p.Schema.Schema {
 		table := db_common.PgEscapeName(t)
@@ -173,7 +182,7 @@ func getCommentsQueryForPlugin(p *steampipeconfig.ConnectionPlugin) []string {
 			}
 		}
 	}
-	return statements
+	return strings.Join(statements, "\n")
 }
 
 func getUpdateConnectionQuery(localSchema, remoteSchema string) string {
