@@ -4,9 +4,9 @@ import DashboardHeader from "./components/DashboardHeader";
 import DashboardList from "./components/DashboardList";
 import useAnalytics from "./hooks/useAnalytics";
 import { DashboardProvider } from "./hooks/useDashboard";
+import { FullHeightThemeWrapper, useTheme } from "./hooks/useTheme";
 import { Route, Routes } from "react-router-dom";
 import { useBreakpoint } from "./hooks/useBreakpoint";
-import { useTheme } from "./hooks/useTheme";
 
 const Dashboards = ({
   analyticsContext,
@@ -55,12 +55,14 @@ const App = () => {
   const themeContext = useTheme();
 
   return (
-    <DashboardApp
-      analyticsContext={analyticsContext}
-      breakpointContext={breakpointContext}
-      header={<DashboardHeader />}
-      themeContext={themeContext}
-    />
+    <FullHeightThemeWrapper>
+      <DashboardApp
+        analyticsContext={analyticsContext}
+        breakpointContext={breakpointContext}
+        header={<DashboardHeader />}
+        themeContext={themeContext}
+      />
+    </FullHeightThemeWrapper>
   );
 };
 

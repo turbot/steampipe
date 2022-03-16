@@ -11,7 +11,7 @@ import React, {
   useReducer,
   useState,
 } from "react";
-import { FullHeightThemeWrapper, Theme } from "./useTheme";
+import { Theme } from "./useTheme";
 import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
@@ -909,7 +909,7 @@ const DashboardProvider = ({
         keyMap={hotKeysMap}
         handlers={hotKeysHandlers}
       />
-      <FullHeightThemeWrapper>{children}</FullHeightThemeWrapper>
+      {children}
     </DashboardContext.Provider>
   );
 };
