@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/pluginmanager"
 )
@@ -17,7 +18,7 @@ type findPluginFolderTest struct {
 var testCasesFindPluginFolderTest map[string]findPluginFolderTest
 
 func init() {
-	filepaths.SteampipeDir = "~/.steampipe"
+	filepaths.SteampipeDir, _ = helpers.Tildefy("~/.steampipe")
 
 	testCasesFindPluginFolderTest = map[string]findPluginFolderTest{
 		"truncated 1": {
