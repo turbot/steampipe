@@ -111,6 +111,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 }
 
 func (i InitData) Cleanup(ctx context.Context) {
+	// if a client was initialised, close it
 	if i.Client != nil {
 		i.Client.Close(ctx)
 	}
