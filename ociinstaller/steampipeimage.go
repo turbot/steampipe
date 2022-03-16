@@ -11,7 +11,7 @@ import (
 
 type SteampipeImage struct {
 	OCIDescriptor *ocispec.Descriptor
-	ImageRef      string
+	ImageRef      *SteampipeImageRef
 	Config        *config
 	Plugin        *PluginImage
 	Database      *DbImage
@@ -58,7 +58,7 @@ const (
 	ImageTypePlugin   = "plugin"
 )
 
-func (o *ociDownloader) Download(ctx context.Context, ref string, imageType string, destDir string) (*SteampipeImage, error) {
+func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, imageType string, destDir string) (*SteampipeImage, error) {
 	var mediaTypes []string
 	Image := o.newSteampipeImage()
 	Image.ImageRef = ref
@@ -68,7 +68,7 @@ func (o *ociDownloader) Download(ctx context.Context, ref string, imageType stri
 	mediaTypes = append(mediaTypes, ConfigMediaTypes()...)
 
 	// Download the files
-	imageDesc, _, configBytes, layers, err := o.Pull(ctx, ref, mediaTypes, destDir)
+	imageDesc, _, configBytes, layers, err := o.Pull(ctx, ref.ActualImageRef(), mediaTypes, destDir)
 	if err != nil {
 		return nil, err
 	}

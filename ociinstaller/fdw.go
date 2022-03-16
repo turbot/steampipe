@@ -18,7 +18,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	imageDownloader := NewOciDownloader()
 
 	// download the blobs.
-	image, err := imageDownloader.Download(ctx, constants.FdwImageRef, ImageTypeFdw, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.FdwImageRef), ImageTypeFdw, tempDir.Path)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +44,7 @@ func updateVersionFileFdw(image *SteampipeImage) error {
 	v.FdwExtension.Version = image.Config.Fdw.Version
 	v.FdwExtension.Name = "fdwExtension"
 	v.FdwExtension.ImageDigest = string(image.OCIDescriptor.Digest)
-	v.FdwExtension.InstalledFrom = image.ImageRef
+	v.FdwExtension.InstalledFrom = image.ImageRef.requestedRef
 	v.FdwExtension.LastCheckedDate = timeNow
 	v.FdwExtension.InstallDate = timeNow
 	return v.Save()

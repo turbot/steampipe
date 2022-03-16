@@ -68,13 +68,6 @@ func copyFile(sourcePath, destPath string) error {
 	return nil
 }
 
-func copyFileUnlessExists(sourcePath string, destPath string) error {
-	if fileExists(destPath) {
-		return nil
-	}
-	return copyFile(sourcePath, destPath)
-}
-
 // moves a file within an fs partition. panics if movement is attempted between partitions
 // this is done separately to achieve performance benefits of os.Rename over reading and writing content
 func moveFileWithinPartition(sourcePath, destPath string) error {
