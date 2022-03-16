@@ -19,6 +19,7 @@ type findPluginFolderTest struct {
 var testCasesFindPluginFolderTest map[string]findPluginFolderTest
 
 func init() {
+	log.Printf("[TRACE] BEginning of init")
 	filepaths.SteampipeDir, _ = helpers.Tildefy("~/.steampipe")
 
 	testCasesFindPluginFolderTest = map[string]findPluginFolderTest{
@@ -35,9 +36,12 @@ func init() {
 		// 	filepath.Join(filepaths.EnsurePluginDir(), "hub.steampipe.io/plugins/test/test@latest"),
 		// },
 	}
+	log.Printf("[TRACE] End of init, SteampipeDir: %s", filepaths.SteampipeDir)
 }
 
 func TestFindPluginFolderTest(t *testing.T) {
+	log.Printf("[TRACE] BEginning of test, SteampipeDir: %s", filepaths.SteampipeDir)
+
 	directories := []string{
 		"hub.steampipe.io/plugins/test/test@sha256-a5ec85d9332910f42a2a9dd44d646eba95f77a0236289a1a14a14abbbdea7a42",
 		"hub.steampipe.io/plugins/test/test@sha256-5f77a0236289a1a14a14abbbdea7a42a5ec85d9332910f42a2a9dd44d646eb00",
