@@ -80,7 +80,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	defer rootClient.Close()
 
 	numUpdates := len(connectionUpdates.Update)
-	log.Printf("[WARN] executeConnectionUpdateQueries: num updates %d", numUpdates)
+	log.Printf("[TRACE] executeConnectionUpdateQueries: num updates %d", numUpdates)
 
 	if numUpdates > 0 {
 		// find any plugins which use a newer sdk version than steampipe.
