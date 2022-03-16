@@ -43,5 +43,5 @@ updates:
       - "kaidaguerre"
     labels:
       - "dependencies"
-      - "dashboard"
+      - "dashboards"
       - "house-keeping"
