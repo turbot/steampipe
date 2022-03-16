@@ -27,8 +27,8 @@ func (v ValidationFailure) String() string {
 	)
 }
 
-func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPlugin) ([]*ValidationFailure, ConnectionDataMap, []*ConnectionPlugin) {
-	var validatedPlugins []*ConnectionPlugin
+func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPlugin) ([]*ValidationFailure, ConnectionDataMap, map[string]*ConnectionPlugin) {
+	var validatedPlugins = make(map[string]*ConnectionPlugin)
 	var validatedUpdates = ConnectionDataMap{}
 
 	var validationFailures []*ValidationFailure
@@ -41,7 +41,7 @@ func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPl
 			validationFailures = append(validationFailures, validationFailure)
 		} else {
 			// validation passed - add to list of validated plugins
-			validatedPlugins = append(validatedPlugins, p)
+			validatedPlugins[p.ConnectionName] = p
 			// if this connection has updates, add them
 			if _, ok := updates[p.ConnectionName]; ok {
 				validatedUpdates[p.ConnectionName] = updates[p.ConnectionName]
