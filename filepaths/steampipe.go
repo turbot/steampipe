@@ -2,6 +2,7 @@ package filepaths
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -27,6 +28,7 @@ func ensureSteampipeSubDir(dirName string) string {
 		err = os.MkdirAll(subDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create %s directory", dirName))
 	}
+	log.Printf("[TRACE] subDir %s\n", subDir)
 
 	return subDir
 }
@@ -35,6 +37,7 @@ func steampipeSubDir(dirName string) string {
 	if SteampipeDir == "" {
 		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
 	}
+	log.Printf("[TRACE] SteampipeDir: %s dirName: %s in steampipeSubDir\n", SteampipeDir, dirName)
 	return filepath.Join(SteampipeDir, dirName)
 }
 

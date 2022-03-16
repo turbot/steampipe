@@ -71,6 +71,7 @@ func trimSchemaName(pluginFQN string) string {
 // FindPluginFolder searches for a folder which when hashed would match the schema
 func FindPluginFolder(remoteSchema string) (string, error) {
 	pluginDir := filepaths.EnsurePluginDir()
+	log.Printf("[TRACE] pluginDir %s\n", pluginDir)
 
 	// first try searching by prefix - trim the schema name
 	globPattern := filepath.Join(pluginDir, trimSchemaName(remoteSchema)) + "*"
@@ -82,7 +83,7 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 	}
 
 	for _, match := range matches {
-		// // get the relative path to this mat fromn the plugin folder
+		// get the relative path to this match from the plugin folder
 		folderRelativePath, err := filepath.Rel(pluginDir, match)
 		if err != nil {
 			// do not fail on error here
