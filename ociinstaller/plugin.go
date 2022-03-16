@@ -172,8 +172,7 @@ func transform(src []byte, ref *SteampipeImageRef) []byte {
 
 	for srcScanner.Scan() {
 		line := srcScanner.Text()
-		if regex.MatchString(line) {
-			fmt.Println("match with", line)
+		if strings.HasPrefix(strings.TrimSpace(line), "plugin") {
 			line = regex.ReplaceAllString(line, substitution)
 		}
 		destBuffer.WriteString(fmt.Sprintf("%s\n", line))
