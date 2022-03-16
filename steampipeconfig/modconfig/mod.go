@@ -248,7 +248,7 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvid
 	}
 
 	// handle legacy requires block
-	if m.LegacyRequire != nil && !m.Require.Empty() {
+	if m.LegacyRequire != nil {
 		if m.Require != nil && !m.Require.Empty() {
 			return hcl.Diagnostics{&hcl.Diagnostic{
 				Severity: hcl.DiagError,
