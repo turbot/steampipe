@@ -216,9 +216,6 @@ func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 }
 
 func initialiseCheck(ctx context.Context) *control.InitData {
-
-	log.Printf("[WARN] initialiseCheck\n")
-
 	statushooks.SetStatus(ctx, "Initializing...")
 	defer statushooks.Done(ctx)
 
@@ -226,10 +223,8 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	w, err := loadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	log.Printf("[WARN] create init data")
 	initData := control.NewInitData(ctx, w)
 
-	log.Printf("[WARN] NewInitData returned %v\n", initData.Result)
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition
 	}
