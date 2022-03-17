@@ -1,10 +1,14 @@
 package ociinstaller
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/turbot/steampipe/filepaths"
@@ -20,7 +24,7 @@ func InstallPlugin(ctx context.Context, imageRef string) (*SteampipeImage, error
 	ref := NewSteampipeImageRef(imageRef)
 	imageDownloader := NewOciDownloader()
 
-	image, err := imageDownloader.Download(ctx, ref.ActualImageRef(), ImageTypePlugin, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ref, ImageTypePlugin, tempDir.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +52,7 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 		return err
 	}
 
-	ref := NewSteampipeImageRef(image.ImageRef)
-
-	pluginFullName := ref.DisplayImageRef()
+	pluginFullName := image.ImageRef.DisplayImageRef()
 
 	plugin, ok := v.Plugins[pluginFullName]
 	if !ok {
@@ -61,7 +63,7 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 	plugin.Name = pluginFullName
 	plugin.Version = image.Config.Plugin.Version
 	plugin.ImageDigest = string(image.OCIDescriptor.Digest)
-	plugin.InstalledFrom = ref.ActualImageRef()
+	plugin.InstalledFrom = image.ImageRef.ActualImageRef()
 	plugin.LastCheckedDate = timeNow
 	plugin.InstallDate = timeNow
 
@@ -126,18 +128,64 @@ func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
 	for _, obj := range objects {
 		sourceFile := filepath.Join(sourcePath, obj.Name())
 		destFile := filepath.Join(installTo, obj.Name())
-
-		if err := copyFileUnlessExists(sourceFile, destFile); err != nil {
-			return fmt.Errorf("could not copy %s to %s", sourceFile, destFile)
-
+		if err := copyConfigFileUnlessExists(sourceFile, destFile, image.ImageRef); err != nil {
+			return fmt.Errorf("could not copy config file from %s to %s", sourceFile, destFile)
 		}
 	}
 
 	return nil
 }
 
-func pluginInstallDir(imageRef string) string {
-	ref := NewSteampipeImageRef(imageRef)
+func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *SteampipeImageRef) error {
+	if fileExists(destFile) {
+		return nil
+	}
+	inputData, err := os.ReadFile(sourceFile)
+	if err != nil {
+		return fmt.Errorf("couldn't open source file: %s", err)
+	}
+	inputStat, err := os.Stat(sourceFile)
+	if err != nil {
+		return fmt.Errorf("couldn't read source file permissions: %s", err)
+	}
+	// update the connection config with the correct plugin version
+	inputData = addPluginStreamToConfig(inputData, ref)
+	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
+		return fmt.Errorf("writing to output file failed: %s", err)
+	}
+	return nil
+}
+
+// The default config files have the plugin set to the 'latest' stream (as this is what is installed by default)
+// When installing non-latest plugins, that property needs to be adjusted to the stream actually getting installed.
+// Otherwise, during plugin resolution, it will resolve to an incorrect plugin instance
+// (or none at at all, if  'latest' versions isn't installed)
+func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
+	_, _, stream := ref.GetOrgNameAndStream()
+	if stream == "latest" {
+		return src
+	}
+
+	regex := regexp.MustCompile(`^(\s*)plugin\s*=\s*"(.*)"\s*$`)
+	substitution := fmt.Sprintf(`$1 plugin = "$2@%s"`, stream)
+
+	srcScanner := bufio.NewScanner(strings.NewReader(string(src)))
+	srcScanner.Split(bufio.ScanLines)
+	destBuffer := bytes.NewBufferString("")
+
+	for srcScanner.Scan() {
+		line := srcScanner.Text()
+		if regex.MatchString(line) {
+			line = regex.ReplaceAllString(line, substitution)
+			// remove the extra space we had to add to the substitution token
+			line = line[1:]
+		}
+		destBuffer.WriteString(fmt.Sprintf("%s\n", line))
+	}
+	return destBuffer.Bytes()
+}
+
+func pluginInstallDir(ref *SteampipeImageRef) string {
 	osSafePath := filepath.FromSlash(ref.DisplayImageRef())
 
 	fullPath := filepath.Join(filepaths.EnsurePluginDir(), osSafePath)

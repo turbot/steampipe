@@ -17,7 +17,7 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	imageDownloader := NewOciDownloader()
 
 	// Download the blobs
-	image, err := imageDownloader.Download(ctx, constants.PostgresImageRef, ImageTypeDatabase, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.PostgresImageRef), ImageTypeDatabase, tempDir.Path)
 	if err != nil {
 		return "", err
 	}
@@ -42,7 +42,7 @@ func updateVersionFileDB(image *SteampipeImage) error {
 	v.EmbeddedDB.Version = image.Config.Database.Version
 	v.EmbeddedDB.Name = "embeddedDB"
 	v.EmbeddedDB.ImageDigest = string(image.OCIDescriptor.Digest)
-	v.EmbeddedDB.InstalledFrom = image.ImageRef
+	v.EmbeddedDB.InstalledFrom = image.ImageRef.requestedRef
 	v.EmbeddedDB.LastCheckedDate = timeNow
 	v.EmbeddedDB.InstallDate = timeNow
 	return v.Save()
