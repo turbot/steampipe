@@ -85,7 +85,6 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 // exitCode=2 For insufficient args
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
-
 	utils.LogTime("runCheckCmd start")
 	initData := &control.InitData{}
 
@@ -123,7 +122,12 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	initData = initialiseCheck(ctx)
-	if shouldExit := handleCheckInitResult(ctx, initData); shouldExit {
+
+	// check the init result - should we quit?
+	if shouldExit, err := handleCheckInitResult(ctx, initData); shouldExit {
+		initData.Cleanup(ctx)
+		// if there was an error, display it
+		utils.FailOnError(err)
 		return
 	}
 
@@ -218,6 +222,7 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	// load the workspace
 	w, err := loadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
 	initData := control.NewInitData(ctx, w)
 
 	if !w.ModfileExists() {
@@ -227,13 +232,14 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	return initData
 }
 
-func handleCheckInitResult(ctx context.Context, initData *control.InitData) bool {
+func handleCheckInitResult(ctx context.Context, initData *control.InitData) (bool, error) {
 	// if there is an error or cancellation we bomb out
-	// check for the various kinds of failures
-	utils.FailOnError(initData.Result.Error)
+	if initData.Result.Error != nil {
+		return true, initData.Result.Error
+	}
 	// cancelled?
-	if ctx != nil {
-		utils.FailOnError(ctx.Err())
+	if ctx != nil && ctx.Err() != nil {
+		return true, ctx.Err()
 	}
 
 	// if there is a usage warning we display it
@@ -242,7 +248,7 @@ func handleCheckInitResult(ctx context.Context, initData *control.InitData) bool
 	// if there is are any warnings, exit politely
 	shouldExit := len(initData.Result.Warnings) > 0
 
-	return shouldExit
+	return shouldExit, nil
 }
 
 func printTiming(args []string, durations []time.Duration) {

@@ -37,11 +37,17 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *In
 	return i
 }
 
-func (i *InitData) Cleanup(ctx context.Context) {
+func (i *InitData) Cancel() {
 	// cancel any ongoing operation
 	if i.cancel != nil {
 		i.cancel()
 	}
+	i.cancel = nil
+}
+
+func (i *InitData) Cleanup(ctx context.Context) {
+	// cancel any ongoing operation
+	i.Cancel()
 
 	// ensure that the initialisation was completed
 	// and that we are not in a race condition where

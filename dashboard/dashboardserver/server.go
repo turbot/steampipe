@@ -214,11 +214,6 @@ func (s *Server) Start() {
 
 // Shutdown stops the API server
 func (s *Server) Shutdown(ctx context.Context) {
-	// Close the DB client
-	if s.dbClient != nil {
-		s.dbClient.Close(ctx)
-	}
-
 	if s.webSocket != nil {
 		s.webSocket.Close()
 	}
