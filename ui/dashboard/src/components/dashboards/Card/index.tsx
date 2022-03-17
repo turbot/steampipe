@@ -60,6 +60,7 @@ export type CardProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
       type?: CardType;
+      label?: string;
       value?: string;
       icon?: string;
       href?: string;
@@ -105,11 +106,11 @@ const getIconForType = (type, icon) => {
   }
 };
 
-const useCardState = ({ data, properties }: CardProps) => {
+const useCardState = ({ data, sql, properties }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
-    loading: true,
-    label: null,
-    value: null,
+    loading: !!sql,
+    label: properties.label || null,
+    value: properties.value || null,
     type: properties.type || null,
     icon: getIconForType(properties.type, properties.icon),
     href: properties.href || null,
@@ -128,8 +129,8 @@ const useCardState = ({ data, properties }: CardProps) => {
     ) {
       setCalculatedProperties({
         loading: false,
-        label: null,
-        value: null,
+        label: properties.label || null,
+        value: properties.value || null,
         type: properties.type || null,
         icon: getIconForType(properties.type, properties.icon),
         href: properties.href || null,
@@ -200,7 +201,7 @@ const Card = (props: CardProps) => {
   const [renderedHref, setRenderedHref] = useState<string | null>(
     state.href || null
   );
-  const [rendereError, setRenderError] = useState<string | null>(null);
+  const [, setRenderError] = useState<string | null>(null);
   const textClasses = getTextClasses(state.type);
   const { setZoomIconClassName } = usePanel();
   const { theme } = useTheme();
@@ -329,10 +330,12 @@ const Card = (props: CardProps) => {
     </div>
   );
 
-  // console.log(renderedHref);
-
   if (renderedHref) {
-    return <ExternalLink to={renderedHref}>{card}</ExternalLink>;
+    return (
+      <ExternalLink className="" to={renderedHref}>
+        {card}
+      </ExternalLink>
+    );
   }
 
   return card;

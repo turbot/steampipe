@@ -24,6 +24,8 @@ type DashboardCard struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Label   *string        `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
+	Value   *string        `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
 	Type    *string        `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
 	Icon    *string        `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
 	HREF    *string        `cty:"href" hcl:"href" json:"href,omitempty"`
@@ -158,6 +160,14 @@ func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
 		Name: c.Name(),
 	}
 
+	if !utils.SafeStringsEqual(c.Label, other.Label) {
+		res.AddPropertyDiff("Label")
+	}
+
+	if !utils.SafeStringsEqual(c.Value, other.Value) {
+		res.AddPropertyDiff("Value")
+	}
+
 	if !utils.SafeStringsEqual(c.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
@@ -253,6 +263,14 @@ func (c *DashboardCard) setBaseProperties(resourceMapProvider ModResourcesProvid
 
 	if c.Title == nil {
 		c.Title = c.Base.Title
+	}
+
+	if c.Label == nil {
+		c.Label = c.Base.Label
+	}
+
+	if c.Value == nil {
+		c.Value = c.Base.Value
 	}
 
 	if c.Type == nil {
