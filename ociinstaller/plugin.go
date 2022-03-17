@@ -177,6 +177,7 @@ func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
 		line := srcScanner.Text()
 		if regex.MatchString(line) {
 			line = regex.ReplaceAllString(line, substitution)
+			// remove the extra space we had to add to the substitution token
 			line = line[1:]
 		}
 		destBuffer.WriteString(fmt.Sprintf("%s\n", line))
