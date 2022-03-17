@@ -8,7 +8,7 @@ _What's new?_
 * Add feedback during workspace load in `dashboard` command. ([#1567](https://github.com/turbot/steampipe/issues/1567))
 
 _Bug fixes_
-* Fix excessive memory usage when starting with a high number of connections. ([#1656](https://github.com/turbot/steampipe/issues/1656))
+* Fix excessive memory usage intialising a high number of connections. ([#1656](https://github.com/turbot/steampipe/issues/1656))
 * Fix issue where service was not shut down if command is cancelled during initialisation. ([#1288](https://github.com/turbot/steampipe/issues/1288))
 * Fix issue where installing a plugin from any `stream` other than `latest` did not install the default `config` file. ([#1660](https://github.com/turbot/steampipe/issues/1660))
 * Fix query argument resolution not working correctly when some args are provided by HCL and some from runtime args. ([#1661](https://github.com/turbot/steampipe/issues/1661))
