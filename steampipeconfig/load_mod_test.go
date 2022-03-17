@@ -1396,7 +1396,7 @@ var testCasesLoadResourceNames = map[string]loadResourceNamesTest{
 		expected: &modconfig.WorkspaceResources{
 			Benchmark: map[string]bool{"benchmark.test_workspace": true},
 			Control:   map[string]bool{"control.test_workspace_1": true, "control.test_workspace_2": true, "control.test_workspace_3": true},
-			Query:     map[string]bool{"query.query_control_1": true, "query.query_control_2": true, "query.query_control_3": true},
+			Query:     map[string]bool{"local.query.query_control_1": true, "local.query.query_control_2": true, "local.query.query_control_3": true},
 		},
 	},
 }
@@ -1414,6 +1414,7 @@ func TestLoadModResourceNames(t *testing.T) {
 				Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
 				Flags:   filehelpers.Files,
 			})
+		LoadMod(modPath, runCtx)
 		names, err := LoadModResourceNames(modPath, runCtx)
 
 		if err != nil {
@@ -1430,21 +1431,21 @@ func TestLoadModResourceNames(t *testing.T) {
 
 		// to compare the benchmarks
 		benchmark_expected := test.expected.(*modconfig.WorkspaceResources).Benchmark
-		if reflect.DeepEqual(names.Benchmark, benchmark_expected) {
+		if !reflect.DeepEqual(names.Benchmark, benchmark_expected) {
 			t.Log(`"expected" is not equal to "output"`)
 			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", benchmark_expected, names.Benchmark)
 		}
 
 		// to compare the controls
 		control_expected := test.expected.(*modconfig.WorkspaceResources).Control
-		if reflect.DeepEqual(names.Control, control_expected) {
+		if !reflect.DeepEqual(names.Control, control_expected) {
 			t.Log(`"expected" is not equal to "output"`)
 			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", control_expected, names.Control)
 		}
 
 		// to compare the queries
 		query_expected := test.expected.(*modconfig.WorkspaceResources).Query
-		if reflect.DeepEqual(names.Query, query_expected) {
+		if !reflect.DeepEqual(names.Query, query_expected) {
 			t.Log(`"expected" is not equal to "output"`)
 			t.Errorf("FAILED \nexpected: %#v\noutput: %#v", query_expected, names.Query)
 		}

@@ -27,7 +27,7 @@ func testCasesCounter() map[string]counterTest {
 			maxFailedControls: 1,
 			maxTotalControls:  10,
 
-			expected: fmt.Sprintf("%d %s %d", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
+			expected: fmt.Sprintf("%d %s %d ", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
 		},
 		"1/10 max 10/10": {
 			/*
@@ -39,7 +39,7 @@ func testCasesCounter() map[string]counterTest {
 			maxFailedControls: 10,
 			maxTotalControls:  10,
 
-			expected: fmt.Sprintf("%2d %s %d", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
+			expected: fmt.Sprintf("%2d %s %d ", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
 		},
 		"1/10 max 10/100": {
 			/*
@@ -51,7 +51,7 @@ func testCasesCounter() map[string]counterTest {
 			maxFailedControls: 10,
 			maxTotalControls:  100,
 
-			expected: fmt.Sprintf("%2d %s %3d", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
+			expected: fmt.Sprintf("%2d %s %3d ", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
 		},
 		"1/10 max 100/1000": {
 			/*
@@ -63,7 +63,7 @@ func testCasesCounter() map[string]counterTest {
 			maxFailedControls: 100,
 			maxTotalControls:  1000,
 
-			expected: fmt.Sprintf("%3d %s %5d", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
+			expected: fmt.Sprintf("%3d %s %5d ", ControlColors.CountFail(1), ControlColors.CountDivider("/"), ControlColors.CountTotal(10)),
 		},
 		"10/500 max 100/1000": {
 			/*
@@ -75,7 +75,7 @@ func testCasesCounter() map[string]counterTest {
 			maxFailedControls: 100,
 			maxTotalControls:  1000,
 
-			expected: fmt.Sprintf("%3d %s %5d", ControlColors.CountFail(10), ControlColors.CountDivider("/"), ControlColors.CountTotal(500)),
+			expected: fmt.Sprintf("%3d %s %5d ", ControlColors.CountFail(10), ControlColors.CountDivider("/"), ControlColors.CountTotal(500)),
 		},
 		"10/1000 max 100/1000": {
 			/*
@@ -87,7 +87,7 @@ func testCasesCounter() map[string]counterTest {
 			maxFailedControls: 100,
 			maxTotalControls:  1000,
 
-			expected: fmt.Sprintf("%3d %s %s", ControlColors.CountFail(10), ControlColors.CountDivider("/"), ControlColors.CountTotal("1,000")),
+			expected: fmt.Sprintf("%3d %s %s ", ControlColors.CountFail(10), ControlColors.CountDivider("/"), ControlColors.CountTotal("1,000")),
 		},
 		"0/1000 max 100/1000": {
 			/*
@@ -99,13 +99,13 @@ func testCasesCounter() map[string]counterTest {
 			maxFailedControls: 100,
 			maxTotalControls:  1000,
 
-			expected: fmt.Sprintf("%3d %s %s", ControlColors.CountZeroFail(0), ControlColors.CountZeroFailDivider("/"), ControlColors.CountTotalAllPassed("1,000")),
+			expected: fmt.Sprintf("%3d %s %s ", ControlColors.CountZeroFail(0), ControlColors.CountZeroFailDivider("/"), ControlColors.CountTotalAllPassed("1,000")),
 		},
 	}
 }
 
 func TestCounter(t *testing.T) {
-	themeDef := ColorSchemes["dark"]
+	themeDef := ColorSchemes["plain"]
 	scheme, _ := NewControlColorScheme(themeDef)
 	ControlColors = scheme
 

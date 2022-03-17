@@ -416,44 +416,49 @@ connection "b" {
 	},
 }
 
-func TestGetConnectionsToUpdate(t *testing.T) {
-	// set steampipe dir
-	os.Chdir("./test_data/connections_to_update")
-	wd, _ := os.Getwd()
-	filepaths.SteampipeDir = wd
+// This test is disabled since the code this one tests also starts up the plugin manager
+// process. We need to find a lower denominator to test the functionalities that this one covers
+//
+// func TestGetConnectionsToUpdate(t *testing.T) {
+// 	// set steampipe dir
+// 	os.Chdir("./test_data/connections_to_update")
+// 	wd, _ := os.Getwd()
+// 	filepaths.SteampipeDir = wd
 
-	for name, test := range testCasesGetConnectionsToUpdate {
-		// setup connection config
-		setup(test)
+// 	for name, test := range testCasesGetConnectionsToUpdate {
+// 		// setup connection config
+// 		setup(test)
+// 		defer func(t getConnectionsToUpdateTest) {
+// 			teardown(t)
+// 		}(test)
 
-		config, err := LoadSteampipeConfig(wd, "")
-		if err != nil {
-			t.Fatalf("LoadSteampipeConfig failed with unexpected error: %v", err)
-		}
-		if config == nil {
-			t.Fatalf("Could not load config")
-		}
-		GlobalConfig = config
-		// all tests assume connections a, b
-		updates, res := NewConnectionUpdates([]string{"a", "b"})
+// 		config, err := LoadSteampipeConfig(wd, "")
+// 		if err != nil {
+// 			t.Fatalf("LoadSteampipeConfig failed with unexpected error: %v", err)
+// 		}
+// 		if config == nil {
+// 			t.Fatalf("Could not load config")
+// 		}
+// 		GlobalConfig = config
+// 		// all tests assume connections a, b
+// 		updates, res := NewConnectionUpdates([]string{"a", "b"})
 
-		if res.Error != nil && test.expected != "ERROR" {
-			t.Fatalf("NewConnectionUpdates failed with unexpected error: %v", err)
-			continue
-		}
+// 		if res.Error != nil && test.expected != "ERROR" {
+// 			t.Fatalf("NewConnectionUpdates failed with unexpected error for \"%s\": %v", name, res.Error)
+// 			continue
+// 		}
 
-		expectedUpdates := test.expected.(*ConnectionUpdates)
-		if !updates.RequiredConnectionState.Equals(expectedUpdates.RequiredConnectionState) ||
-			!updates.Update.Equals(expectedUpdates.Update) ||
-			!updates.Delete.Equals(expectedUpdates.Delete) {
-			t.Errorf(`Test: '%s'' FAILED`, name)
+// 		expectedUpdates := test.expected.(*ConnectionUpdates)
+// 		if !updates.RequiredConnectionState.Equals(expectedUpdates.RequiredConnectionState) ||
+// 			!updates.Update.Equals(expectedUpdates.Update) ||
+// 			!updates.Delete.Equals(expectedUpdates.Delete) {
+// 			t.Errorf(`Test: '%s'' FAILED`, name)
 
-		}
+// 		}
 
-		fmt.Printf("\n\n'Test: %s' PASSED\n\n", name)
-		resetConfig(test)
-	}
-}
+// 		fmt.Printf("\n\n'Test: %s' PASSED\n\n", name)
+// 	}
+// }
 
 type connectionDataEqual struct {
 	data1       *ConnectionData
@@ -463,12 +468,12 @@ type connectionDataEqual struct {
 
 var data1 = ConnectionData{
 	Plugin:     "plugin",
-	ModTime:    time.Now(),
+	ModTime:    time.Now().Round(time.Second),
 	Connection: &modconfig.Connection{Name: "a"},
 }
 var data1_duplicate = ConnectionData{
 	Plugin:     "plugin",
-	ModTime:    time.Now(),
+	ModTime:    time.Now().Round(time.Second),
 	Connection: &modconfig.Connection{Name: "a"},
 }
 var data2 = ConnectionData{
@@ -506,6 +511,16 @@ func setup(test getConnectionsToUpdateTest) {
 	}
 	setupTestConfig(test)
 }
+func teardown(test getConnectionsToUpdateTest) {
+	os.RemoveAll(filepaths.EnsurePluginDir())
+	os.RemoveAll(filepaths.EnsureConfigDir())
+	os.RemoveAll(filepaths.EnsureInternalDir())
+
+	for _, plugin := range test.current {
+		deletePlugin(plugin.Plugin)
+	}
+	resetConfig(test)
+}
 
 func setupTestConfig(test getConnectionsToUpdateTest) {
 	for i, config := range test.required {
@@ -533,7 +548,8 @@ func connectionConfigPath(i int) string {
 }
 
 func copyPlugin(plugin string) {
-	source, err := filepath.Abs(filepath.Join("plugins_src", plugin))
+	source, err := filepath.Abs(filepath.Join("testdata", "connections_to_update", "plugins_src", plugin))
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -546,6 +562,13 @@ func copyPlugin(plugin string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+func deletePlugin(plugin string) {
+	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
+	if err != nil {
+		log.Fatal(err)
+	}
+	os.RemoveAll(dest)
 }
 
 func getTestFileModTime(file string) time.Time {

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/pluginmanager"
 )
@@ -16,8 +17,7 @@ type findPluginFolderTest struct {
 
 var testCasesFindPluginFolderTest map[string]findPluginFolderTest
 
-func init() {
-	filepaths.SteampipeDir = "~/.steampipe"
+func setupTestData() {
 
 	testCasesFindPluginFolderTest = map[string]findPluginFolderTest{
 		"truncated 1": {
@@ -36,6 +36,10 @@ func init() {
 }
 
 func TestFindPluginFolderTest(t *testing.T) {
+
+	filepaths.SteampipeDir, _ = helpers.Tildefy("~/.steampipe")
+	setupTestData()
+
 	directories := []string{
 		"hub.steampipe.io/plugins/test/test@sha256-a5ec85d9332910f42a2a9dd44d646eba95f77a0236289a1a14a14abbbdea7a42",
 		"hub.steampipe.io/plugins/test/test@sha256-5f77a0236289a1a14a14abbbdea7a42a5ec85d9332910f42a2a9dd44d646eb00",
@@ -45,7 +49,6 @@ func TestFindPluginFolderTest(t *testing.T) {
 
 	setupFindPluginFolderTest(directories)
 	for name, test := range testCasesFindPluginFolderTest {
-
 		path, err := pluginmanager.FindPluginFolder(test.schema)
 		if err != nil {
 			if test.expected != "ERROR" {

@@ -14,17 +14,17 @@ func testCasesResultStatus() map[string]resultStatusTest {
 	return map[string]resultStatusTest{
 		"error": {
 			status:   "error",
-			expected: fmt.Sprintf("%-6s", ControlColors.StatusColors["error"]("error")),
+			expected: fmt.Sprintf("%-6s", ControlColors.StatusColors["error"]("ERROR: ")),
 		},
 		"ok": {
 			status:   "ok",
-			expected: fmt.Sprintf("%-6s", ControlColors.StatusColors["ok"]("ok")),
+			expected: fmt.Sprintf("%-6s", ControlColors.StatusColors["ok"]("OK   : ")),
 		},
 	}
 }
 
 func TestResultStatus(t *testing.T) {
-	themeDef := ColorSchemes["dark"]
+	themeDef := ColorSchemes["plain"]
 	scheme, _ := NewControlColorScheme(themeDef)
 	ControlColors = scheme
 	for name, test := range testCasesResultStatus() {

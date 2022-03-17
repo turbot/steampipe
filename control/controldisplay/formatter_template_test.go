@@ -1,7 +1,13 @@
 package controldisplay
 
 import (
+	"log"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/otiai10/copy"
+	"github.com/turbot/steampipe/filepaths"
 )
 
 type Testcase struct {
@@ -9,7 +15,30 @@ type Testcase struct {
 	expected interface{}
 }
 
+func setup() {
+	filepaths.SteampipeDir = "~/.steampipe"
+	source, err := filepath.Abs("templates")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dest, err := filepath.Abs("~/.steampipe/check/templates")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = copy.Copy(source, dest)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func teardown() {
+	os.RemoveAll("~/.steampipe/check/templates")
+}
+
 func TestExportFormat(t *testing.T) {
+	setup()
 	for name, test := range exportFormatTestCases {
 		fff, _, err := ResolveExportTemplate(test.input, true)
 		if err != nil {
@@ -27,6 +56,7 @@ func TestExportFormat(t *testing.T) {
 			t.Errorf("Test: '%s'' FAILED : expected:\n%s\n\ngot:\n%s", name, expectedFormat, fff)
 		}
 	}
+	teardown()
 }
 
 func FormatEqual(l, r *ExportTemplate) bool {
@@ -41,13 +71,6 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 			OutputExtension: ".html",
 		},
 	},
-	"brief": {
-		input: "brief",
-		expected: ExportTemplate{
-			FormatFullName:  "brief.html",
-			OutputExtension: ".html",
-		},
-	},
 	"nunit3": {
 		input: "nunit3",
 		expected: ExportTemplate{
@@ -56,30 +79,16 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 		},
 	},
 	"markdown": {
-		input: "markdown",
+		input: "md",
 		expected: ExportTemplate{
-			FormatFullName:  "markdown.md",
+			FormatFullName:  "md.md",
 			OutputExtension: ".md",
-		},
-	},
-	"txt": {
-		input: "txt",
-		expected: ExportTemplate{
-			FormatFullName:  "txt.dat",
-			OutputExtension: ".dat",
-		},
-	},
-	"foo": {
-		input: "foo",
-		expected: ExportTemplate{
-			FormatFullName:  "foo.xml",
-			OutputExtension: ".xml",
 		},
 	},
 	"brief.html": {
 		input: "brief.html",
 		expected: ExportTemplate{
-			FormatFullName:  "brief.html",
+			FormatFullName:  "html.html",
 			OutputExtension: ".html",
 		},
 	},
@@ -93,28 +102,28 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 	"markdown.md": {
 		input: "markdown.md",
 		expected: ExportTemplate{
-			FormatFullName:  "markdown.md",
+			FormatFullName:  "md.md",
 			OutputExtension: ".md",
 		},
 	},
-	"txt.dat": {
-		input: "txt.dat",
-		expected: ExportTemplate{
-			FormatFullName:  "txt.dat",
-			OutputExtension: ".dat",
-		},
-	},
-	"custom.txt": {
-		input: "custom.txt",
-		expected: ExportTemplate{
-			FormatFullName:  "custom.txt",
-			OutputExtension: ".txt",
-		},
-	},
+	// "txt.dat": {
+	// 	input: "txt.dat",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "txt.dat",
+	// 		OutputExtension: ".dat",
+	// 	},
+	// },
+	// "custom.txt": {
+	// 	input: "custom.txt",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "custom.txt",
+	// 		OutputExtension: ".txt",
+	// 	},
+	// },
 	"foo.xml": {
 		input: "foo.xml",
 		expected: ExportTemplate{
-			FormatFullName:  "foo.xml",
+			FormatFullName:  "nunit3.xml",
 			OutputExtension: ".xml",
 		},
 	},
@@ -128,32 +137,32 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 	"output.md": {
 		input: "output.md",
 		expected: ExportTemplate{
-			FormatFullName:  "markdown.md",
+			FormatFullName:  "md.md",
 			OutputExtension: ".md",
 		},
 	},
-	"output.txt": {
-		input: "output.txt",
-		expected: ExportTemplate{
-			FormatFullName:  "custom.txt",
-			OutputExtension: ".txt",
-		},
-	},
-	"output.dat": {
-		input: "output.dat",
-		expected: ExportTemplate{
-			FormatFullName:  "txt.dat",
-			OutputExtension: ".dat",
-		},
-	},
+	// "output.txt": {
+	// 	input: "output.txt",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "custom.txt",
+	// 		OutputExtension: ".txt",
+	// 	},
+	// },
+	// "output.dat": {
+	// 	input: "output.dat",
+	// 	expected: ExportTemplate{
+	// 		FormatFullName:  "txt.dat",
+	// 		OutputExtension: ".dat",
+	// 	},
+	// },
 	"output.brief.html": {
 		input: "output.brief.html",
 		expected: ExportTemplate{
-			FormatFullName:  "brief.html",
+			FormatFullName:  "html.html",
 			OutputExtension: ".html",
 		},
 	},
-	"output.nuni3.xml": {
+	"output.nunit3.xml": {
 		input: "output.nunit3.xml",
 		expected: ExportTemplate{
 			FormatFullName:  "nunit3.xml",
@@ -163,7 +172,7 @@ var exportFormatTestCases map[string]Testcase = map[string]Testcase{
 	"output.foo.xml": {
 		input: "output.foo.xml",
 		expected: ExportTemplate{
-			FormatFullName:  "foo.xml",
+			FormatFullName:  "nunit3.xml",
 			OutputExtension: ".xml",
 		},
 	},

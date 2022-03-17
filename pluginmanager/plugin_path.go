@@ -82,7 +82,7 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 	}
 
 	for _, match := range matches {
-		// // get the relative path to this mat fromn the plugin folder
+		// get the relative path to this match from the plugin folder
 		folderRelativePath, err := filepath.Rel(pluginDir, match)
 		if err != nil {
 			// do not fail on error here
@@ -90,7 +90,6 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 		}
 		hashedName := PluginFQNToSchemaName(folderRelativePath)
 		if hashedName == remoteSchema {
-			log.Printf("[TRACE] folder %s matches %s\n", folderRelativePath, remoteSchema)
 			return filepath.Join(pluginDir, folderRelativePath), nil
 		}
 	}
