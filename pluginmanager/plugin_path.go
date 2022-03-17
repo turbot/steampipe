@@ -71,7 +71,6 @@ func trimSchemaName(pluginFQN string) string {
 // FindPluginFolder searches for a folder which when hashed would match the schema
 func FindPluginFolder(remoteSchema string) (string, error) {
 	pluginDir := filepaths.EnsurePluginDir()
-	log.Printf("[TRACE] pluginDir %s\n", pluginDir)
 
 	// first try searching by prefix - trim the schema name
 	globPattern := filepath.Join(pluginDir, trimSchemaName(remoteSchema)) + "*"
@@ -91,7 +90,6 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 		}
 		hashedName := PluginFQNToSchemaName(folderRelativePath)
 		if hashedName == remoteSchema {
-			log.Printf("[TRACE] folder %s matches %s\n", folderRelativePath, remoteSchema)
 			return filepath.Join(pluginDir, folderRelativePath), nil
 		}
 	}

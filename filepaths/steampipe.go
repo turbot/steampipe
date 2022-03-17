@@ -2,10 +2,8 @@ package filepaths
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
-	"runtime/debug"
 
 	"github.com/turbot/steampipe/utils"
 )
@@ -29,7 +27,6 @@ func ensureSteampipeSubDir(dirName string) string {
 		err = os.MkdirAll(subDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create %s directory", dirName))
 	}
-	log.Printf("[TRACE] subDir %s\n", subDir)
 
 	return subDir
 }
@@ -38,8 +35,6 @@ func steampipeSubDir(dirName string) string {
 	if SteampipeDir == "" {
 		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
 	}
-	log.Printf("[TRACE] SteampipeDir: %s dirName: %s in steampipeSubDir\n", SteampipeDir, dirName)
-	log.Printf("[TRACE] %s", debug.Stack())
 	return filepath.Join(SteampipeDir, dirName)
 }
 
