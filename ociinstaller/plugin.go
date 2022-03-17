@@ -148,17 +148,21 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 	if err != nil {
 		return fmt.Errorf("couldn't read source file permissions: %s", err)
 	}
-	// transform
-	inputData = addPluginStreamToConfig(inputData, ref, "latest")
+	inputData = addPluginStreamToConfig(inputData, ref)
 	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
 	return nil
 }
 
-func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef, nopIfStream string) []byte {
+// The default config files have the plugin set to the latest stream
+// when installing non-latest plugins, that property needs to be adjusted to
+// the stream actually getting installed. Otherwise, during plugin resolution,
+// it will resolve to an incorrect plugin instance, or none at at all, if no the
+// 'latest' versions isn't installed
+func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
 	_, _, stream := ref.GetOrgNameAndStream()
-	if stream == nopIfStream {
+	if stream == "latest" {
 		return src
 	}
 
