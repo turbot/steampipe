@@ -48,7 +48,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	if count > 0 {
 		// there are other clients connected to the database
 		// we can't stop the DB.
-		log.Printf("[WARN] ShutdownService not closing database service - %d %s connected", count, utils.Pluralize("client", count))
+		log.Printf("[TRACE] ShutdownService not closing database service - %d %s connected", count, utils.Pluralize("client", count))
 		return
 	}
 
