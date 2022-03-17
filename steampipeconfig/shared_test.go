@@ -18,29 +18,32 @@ type findPluginFolderTest struct {
 
 var testCasesFindPluginFolderTest map[string]findPluginFolderTest
 
-func init() {
-	log.Printf("[TRACE] BEginning of init")
-	filepaths.SteampipeDir, _ = helpers.Tildefy("~/.steampipe")
+func setupTestData() {
+	log.Printf("[TRACE] Beginning of init")
 
 	testCasesFindPluginFolderTest = map[string]findPluginFolderTest{
 		"truncated 1": {
 			"hub.steampipe.io/plugins/test/test@sha256-a5ec85d93329-32c3ed1c",
 			filepath.Join(filepaths.EnsurePluginDir(), "hub.steampipe.io/plugins/test/test@sha256-a5ec85d9332910f42a2a9dd44d646eba95f77a0236289a1a14a14abbbdea7a42"),
 		},
-		// "truncated 2 - 2 folders with same prefix": {
-		// 	"hub.steampipe.io/plugins/test/test@sha256-5f77a0236289-94a0eea6",
-		// 	filepath.Join(filepaths.EnsurePluginDir(), "hub.steampipe.io/plugins/test/test@sha256-5f77a0236289a1a14a14abbbdea7a42a5ec85d9332910f42a2a9dd44d646eba9"),
-		// },
-		// "no truncation needed": {
-		// 	"hub.steampipe.io/plugins/test/test@latest",
-		// 	filepath.Join(filepaths.EnsurePluginDir(), "hub.steampipe.io/plugins/test/test@latest"),
-		// },
+		"truncated 2 - 2 folders with same prefix": {
+			"hub.steampipe.io/plugins/test/test@sha256-5f77a0236289-94a0eea6",
+			filepath.Join(filepaths.EnsurePluginDir(), "hub.steampipe.io/plugins/test/test@sha256-5f77a0236289a1a14a14abbbdea7a42a5ec85d9332910f42a2a9dd44d646eba9"),
+		},
+		"no truncation needed": {
+			"hub.steampipe.io/plugins/test/test@latest",
+			filepath.Join(filepaths.EnsurePluginDir(), "hub.steampipe.io/plugins/test/test@latest"),
+		},
 	}
+
 	log.Printf("[TRACE] End of init, SteampipeDir: %s", filepaths.SteampipeDir)
 }
 
 func TestFindPluginFolderTest(t *testing.T) {
 	log.Printf("[TRACE] BEginning of test, SteampipeDir: %s", filepaths.SteampipeDir)
+
+	filepaths.SteampipeDir, _ = helpers.Tildefy("~/.steampipe")
+	setupTestData()
 
 	directories := []string{
 		"hub.steampipe.io/plugins/test/test@sha256-a5ec85d9332910f42a2a9dd44d646eba95f77a0236289a1a14a14abbbdea7a42",
@@ -53,7 +56,6 @@ func TestFindPluginFolderTest(t *testing.T) {
 	setupFindPluginFolderTest(directories)
 	log.Printf("[TRACE] After setting up folders, SteampipeDir: %s", filepaths.SteampipeDir)
 	for name, test := range testCasesFindPluginFolderTest {
-
 		path, err := pluginmanager.FindPluginFolder(test.schema)
 		log.Printf("[TRACE] path: %s\n", path)
 		if err != nil {
