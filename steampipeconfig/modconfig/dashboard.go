@@ -37,7 +37,6 @@ type Dashboard struct {
 
 	Base *Dashboard `hcl:"base" json:"-"`
 
-	IsTopLevel bool                 `column:"is_top_level,bool" json:"-"`
 	References []*ResourceReference `json:"-"`
 	Mod        *Mod                 `cty:"mod" json:"-"`
 	DeclRange  hcl.Range            `json:"-"`
@@ -124,12 +123,6 @@ func (d *Dashboard) GetDeclRange() *hcl.Range {
 // AddParent implements ModTreeItem
 func (d *Dashboard) AddParent(parent ModTreeItem) error {
 	d.parents = append(d.parents, parent)
-
-	// if our parent is a mod, we are a top level dashboard
-	if _, ok := parent.(*Mod); ok {
-		d.IsTopLevel = true
-	}
-
 	return nil
 }
 

@@ -108,21 +108,22 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 }
 
 func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
+	// build a map of the dashboards provided by each mod
 	dashboardsByMod := make(map[string]map[string]ModAvailableDashboard)
-	for _, mod := range workspaceResources.Mods {
-		_, ok := dashboardsByMod[mod.FullName]
-		if !ok {
+
+	// iterate over the dashboards for the top level mod - this will include the dashboards from dependency mods
+	for _, dashboard := range workspaceResources.Mod.ResourceMaps.Dashboards {
+		mod := dashboard.Mod
+		// create a child map for this mod if needed
+		if _, ok := dashboardsByMod[mod.FullName]; !ok {
 			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
 		}
-		for _, dashboard := range mod.ResourceMaps.Dashboards {
-			if dashboard.IsTopLevel {
-				dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
-					Title:     typeHelpers.SafeString(dashboard.Title),
-					FullName:  dashboard.FullName,
-					ShortName: dashboard.ShortName,
-					Tags:      dashboard.Tags,
-				}
-			}
+		// add this dashboard
+		dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
+			Title:     typeHelpers.SafeString(dashboard.Title),
+			FullName:  dashboard.FullName,
+			ShortName: dashboard.ShortName,
+			Tags:      dashboard.Tags,
 		}
 	}
 	payload := AvailableDashboardsPayload{
