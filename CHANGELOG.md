@@ -1,11 +1,11 @@
 ## v0.13.1 [2022-03-17]
 _What's new?_
-* Improve recording of browser history. ([#1633](https://github.com/turbot/steampipe/issues/1633))
-* Improve template rendering performance. ([#1646](https://github.com/turbot/steampipe/issues/1646))
-* Add linking support to cards.  ([#1651](https://github.com/turbot/steampipe/issues/1651))
-* Add support for `--search-path`, `--search-path-prefix`, `--var` and `--var-file` flags to `dashboard`. ([#1674](https://github.com/turbot/steampipe/issues/1674))
+* Improve recording of browser history in dashboard UI. ([#1633](https://github.com/turbot/steampipe/issues/1633))
+* Improve template rendering performance in dashboard UI. ([#1646](https://github.com/turbot/steampipe/issues/1646))
+* Add linking support to cards in dashboard UI.  ([#1651](https://github.com/turbot/steampipe/issues/1651))
+* Add support for `--search-path`, `--search-path-prefix`, `--var` and `--var-file` flags to `dashboard` command. ([#1674](https://github.com/turbot/steampipe/issues/1674))
 * Add ability to define static card label and value in HCL. ([#1695](https://github.com/turbot/steampipe/issues/1695))
-* Add feedback during workspace load in `dashboard`. ([#1567](https://github.com/turbot/steampipe/issues/1567))
+* Add feedback during workspace load in `dashboard` command. ([#1567](https://github.com/turbot/steampipe/issues/1567))
 
 _Bug fixes_
 * Fix excessive memory usage when starting with a high number of connections. ([#1656](https://github.com/turbot/steampipe/issues/1656))
