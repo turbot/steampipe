@@ -9,6 +9,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -249,12 +250,15 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvid
 
 	// handle legacy requires block
 	if m.LegacyRequire != nil && !m.LegacyRequire.Empty() {
-		if m.Require != nil && !m.Require.Empty() {
-			return hcl.Diagnostics{&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Both 'require' and legacy 'requires' blocks are defined",
-				Subject:  &block.DefRange,
-			}}
+		// ensure that both 'require' and 'requires' were not set
+		for _, b := range block.Body.(*hclsyntax.Body).Blocks {
+			if b.Type == BlockTypeRequire {
+				return hcl.Diagnostics{&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Both 'require' and legacy 'requires' blocks are defined",
+					Subject:  &block.DefRange,
+				}}
+			}
 		}
 		m.Require = m.LegacyRequire
 	}
