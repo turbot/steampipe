@@ -19,10 +19,10 @@ var transformTests = map[string]transformTest{
 	},
 }
 
-func TestTransform(t *testing.T) {
+func TestAddPluginName(t *testing.T) {
 	for name, test := range transformTests {
 		sourcebytes := bytes.NewBufferString(test.sourceConfigContent).Bytes()
-		transformed := transform(sourcebytes, test.ref)
+		transformed := addPluginStreamToConfig(sourcebytes, test.ref)
 		expectedBytes := bytes.NewBufferString(test.expectedTransformedConfigContent).Bytes()
 
 		if !bytes.Equal(transformed, expectedBytes) {
