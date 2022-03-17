@@ -149,20 +149,18 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 		return fmt.Errorf("couldn't read source file permissions: %s", err)
 	}
 	// transform
-
-	_, _, stream := ref.GetOrgNameAndStream()
-	if stream != "latest" {
-		inputData = addPluginStreamToConfig(inputData, ref)
-	}
-
+	inputData = addPluginStreamToConfig(inputData, ref, "latest")
 	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
 	return nil
 }
 
-func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
+func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef, nopIfStream string) []byte {
 	_, _, stream := ref.GetOrgNameAndStream()
+	if stream == nopIfStream {
+		return src
+	}
 
 	regex := regexp.MustCompile(`^(\s*)plugin\s*=\s*"(.*)"\s*$`)
 	substitution := fmt.Sprintf(`$1 plugin = "$2@%s"`, stream)
