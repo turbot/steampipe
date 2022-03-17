@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
+
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/pluginmanager"
@@ -115,7 +116,6 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
 	idx := 0
 	numUpdates := len(updates)
-	updateComments := viper.GetBool(constants.ArgSchemaComments)
 
 	var builder strings.Builder
 
@@ -123,9 +123,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 		log.Printf("[TRACE] executing update query %d of %d for connection '%s'", idx, numUpdates, connectionName)
 		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
 		builder.WriteString(getUpdateConnectionQuery(connectionName, remoteSchema))
-		if updateComments {
-			builder.WriteString(getCommentsQueryForPlugin(validatedPlugins[connectionName]))
-		}
+
 		_, err := rootClient.ExecContext(ctx, builder.String())
 		builder.Reset()
 		if err != nil {
@@ -144,6 +142,21 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	if viper.GetBool(constants.ArgSchemaComments) {
+		idx = 0
+		builder.Reset()
+		numCommentsUpdates := len(validatedPlugins)
+		for _, connection := range validatedPlugins {
+			log.Printf("[TRACE] executing comment query %d of %d for plugin '%s'", idx, numCommentsUpdates, connection.ConnectionName)
+			builder.WriteString(getCommentsQueryForPlugin(connection))
+
+		}
+		_, err := rootClient.ExecContext(ctx, builder.String())
+		if err != nil {
+			return err
 		}
 	}
 
