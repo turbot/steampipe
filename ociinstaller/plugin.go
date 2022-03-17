@@ -148,6 +148,7 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 	if err != nil {
 		return fmt.Errorf("couldn't read source file permissions: %s", err)
 	}
+	// update the connection config with the correct plugin version
 	inputData = addPluginStreamToConfig(inputData, ref)
 	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
 		return fmt.Errorf("writing to output file failed: %s", err)
@@ -155,11 +156,10 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 	return nil
 }
 
-// The default config files have the plugin set to the latest stream
-// when installing non-latest plugins, that property needs to be adjusted to
-// the stream actually getting installed. Otherwise, during plugin resolution,
-// it will resolve to an incorrect plugin instance, or none at at all, if no the
-// 'latest' versions isn't installed
+// The default config files have the plugin set to the 'latest' stream (as this is what is installed by default)
+// When installing non-latest plugins, that property needs to be adjusted to the stream actually getting installed.
+// Otherwise, during plugin resolution, it will resolve to an incorrect plugin instance
+// (or none at at all, if  'latest' versions isn't installed)
 func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
 	_, _, stream := ref.GetOrgNameAndStream()
 	if stream == "latest" {
