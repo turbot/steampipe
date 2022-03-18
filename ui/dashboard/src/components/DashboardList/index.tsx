@@ -258,7 +258,7 @@ const DashboardList = () => {
   );
 
   return (
-    <div className="w-full grid grid-cols-12 p-4 gap-x-4">
+    <div className="w-full grid grid-cols-12 gap-x-4">
       <div className="col-span-12 lg:col-span-9 space-y-4">
         <div className="grid grid-cols-6">
           {(!availableDashboardsLoaded || !metadata) && (
