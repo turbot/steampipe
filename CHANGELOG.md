@@ -1,3 +1,7 @@
+## v0.13.2 [2022-03-18]
+_Bug fixes_
+* Fix dashboard shutdown sometimes stalling. ([#1708](https://github.com/turbot/steampipe/issues/1708))
+
 ## v0.13.1 [2022-03-17]
 _What's new?_
 * Improve recording of browser history in dashboard UI. ([#1633](https://github.com/turbot/steampipe/issues/1633))
