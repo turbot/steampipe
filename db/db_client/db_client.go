@@ -41,6 +41,8 @@ type DbClient struct {
 	// list of connection schemas
 	foreignSchemas []string
 	searchPath     []string
+	// is the client using a custom search path
+	customSearchPath bool
 }
 
 func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
@@ -176,7 +178,7 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampi
 	// base db client does not refresh connections, it just sets search path
 	// (only local db client refreshed connections)
 	res := &steampipeconfig.RefreshConnectionResult{}
-	if err := c.SetSessionSearchPath(ctx); err != nil {
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
 		res.Error = err
 	}
 	return res

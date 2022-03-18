@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"sort"
@@ -145,13 +146,17 @@ func (c *LocalDbClient) GetCurrentSearchPath(ctx context.Context) ([]string, err
 	return c.client.GetCurrentSearchPath(ctx)
 }
 
-// SetSessionSearchPath implements Client
-func (c *LocalDbClient) SetSessionSearchPath(ctx context.Context, currentUserPath ...string) error {
-	return c.client.SetSessionSearchPath(ctx, currentUserPath...)
+func (c *LocalDbClient) GetCurrentSearchPathForDbConnection(ctx context.Context, databaseConnection *sql.Conn) ([]string, error) {
+	return c.client.GetCurrentSearchPathForDbConnection(ctx, databaseConnection)
 }
 
-func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error) {
-	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix, currentSearchPath)
+// SetRequiredSessionSearchPath implements Client
+func (c *LocalDbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
+	return c.client.SetRequiredSessionSearchPath(ctx)
+}
+
+func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string) ([]string, error) {
+	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
 }
 
 // GetSchemaFromDB for LocalDBClient optimises the schema extraction by extracting schema
@@ -271,13 +276,13 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 	}
 	c.connectionMap = &connectionMap
 	// set user search path first - client may fall back to using it
-	currentSearchPath, err := c.setUserSearchPath(ctx)
+	err = c.setUserSearchPath(ctx)
 	if err != nil {
 		res.Error = err
 		return res
 	}
 
-	if err := c.SetSessionSearchPath(ctx, currentSearchPath...); err != nil {
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
 		res.Error = err
 		return res
 	}
@@ -286,8 +291,8 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 }
 
 // SetUserSearchPath sets the search path for the all steampipe users of the db service
-// do this wy finding all users assigned to the role steampipe_users and set their search path
-func (c *LocalDbClient) setUserSearchPath(ctx context.Context) ([]string, error) {
+// do this by finding all users assigned to the role steampipe_users and set their search path
+func (c *LocalDbClient) setUserSearchPath(ctx context.Context) error {
 	var searchPath []string
 
 	// is there a user search path in the config?
@@ -310,7 +315,7 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) ([]string, error)
 	query := fmt.Sprintf(`select usename from pg_user where pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
 	res, err := c.ExecuteSync(context.Background(), query)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// set the search path for all these roles
@@ -331,9 +336,9 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) ([]string, error)
 	log.Printf("[TRACE] user search path sql: %s", query)
 	_, err = executeSqlAsRoot(ctx, query)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return searchPath, nil
+	return nil
 }
 
 // build default search path from the connection schemas, bookended with public and internal

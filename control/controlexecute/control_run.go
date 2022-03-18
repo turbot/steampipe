@@ -148,12 +148,13 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 		searchPathPrefix = strings.Split(*r.Control.SearchPathPrefix, ",")
 	}
 
-	currentPath, err := r.getCurrentSearchPath(ctx, session)
-	if err != nil {
-		return err
-	}
+	// TODO is it ok to use user search path?
+	//currentPath, err := client.GetCurrentSearchPathForDbConnection(ctx, session)
+	//if err != nil {
+	//	return err
+	//}
 
-	newSearchPath, err := client.ContructSearchPath(ctx, searchPath, searchPathPrefix, currentPath)
+	newSearchPath, err := client.ContructSearchPath(ctx, searchPath, searchPathPrefix)
 	if err != nil {
 		return err
 	}
@@ -162,26 +163,6 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
 	_, err = session.Connection.ExecContext(ctx, q)
 	return err
-}
-
-func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DatabaseSession) ([]string, error) {
-	utils.LogTime("ControlRun.getCurrentSearchPath start")
-	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
-
-	row := session.Connection.QueryRowContext(ctx, "show search_path")
-	pathAsString := ""
-	err := row.Scan(&pathAsString)
-	if err != nil {
-		return nil, err
-	}
-	currentSearchPath := strings.Split(pathAsString, ",")
-	// unescape search path
-	for idx, p := range currentSearchPath {
-		p = strings.Join(strings.Split(p, "\""), "")
-		p = strings.TrimSpace(p)
-		currentSearchPath[idx] = p
-	}
-	return currentSearchPath, nil
 }
 
 func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {

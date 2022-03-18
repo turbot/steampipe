@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
@@ -51,13 +50,16 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	sessionResult.Session = session
 	c.sessionsMutex.Unlock()
 
+	// make sure that we close the acquired session, in case of error
 	defer func() {
-		// make sure that we close the acquired session, in case of error
 		if sessionResult.Error != nil && databaseConnection != nil {
 			databaseConnection.Close()
 		}
 	}()
 
+	// if there is no ensure session function, we are done
+	// TODO verify this is correct
+	// we are bypassing adding th esession to our map
 	if c.ensureSessionFunc == nil {
 		return sessionResult
 	}
@@ -88,13 +90,10 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	}
 
 	// update required session search path if needed
-	if strings.Join(session.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
-		err := c.setSessionSearchPathToRequired(ctx, databaseConnection)
-		if err != nil {
-			sessionResult.Error = err
-			return sessionResult
-		}
-		session.SearchPath = c.requiredSessionSearchPath
+	err = c.ensureSessionSearchPath(ctx, session)
+	if err != nil {
+		sessionResult.Error = err
+		return sessionResult
 	}
 
 	// now write back to the map

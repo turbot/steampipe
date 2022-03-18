@@ -2,6 +2,7 @@ package db_common
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
@@ -17,8 +18,9 @@ type Client interface {
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath(context.Context) ([]string, error)
-	SetSessionSearchPath(ctx context.Context, newSearchPath ...string) error
-	ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
+	GetCurrentSearchPathForDbConnection(context.Context, *sql.Conn) ([]string, error)
+	SetRequiredSessionSearchPath(ctx context.Context) error
+	ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string) ([]string, error)
 
 	AcquireSession(context.Context) *AcquireSessionResult
 
