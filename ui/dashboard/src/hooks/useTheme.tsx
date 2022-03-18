@@ -106,7 +106,7 @@ const ThemeWrapper = ({ children }) => {
   return (
     <div
       ref={setWrapperRef}
-      className={`theme-${theme.name} bg-background text-foreground`}
+      className={`theme-${theme.name} bg-dashboard text-foreground`}
     >
       {children}
     </div>
@@ -119,7 +119,7 @@ const FullHeightThemeWrapper = ({ children }) => {
     <div
       ref={setWrapperRef}
       className={classNames(
-        `min-h-screen flex flex-col theme-${theme.name} bg-background text-foreground`,
+        `min-h-screen flex flex-col theme-${theme.name} bg-dashboard text-foreground`,
         withFooterPadding ? "pb-8" : ""
       )}
     >

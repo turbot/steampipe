@@ -22,7 +22,7 @@ const SearchInput = forwardRef(
         <input
           className={classNames(
             className,
-            "flex-1 block w-full bg-background-panel rounded-md border border-table-divide px-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1"
+            "flex-1 block w-full bg-dashboard-panel rounded-md border border-table-divide px-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1"
           )}
           disabled={disabled}
           onChange={(e) => setValue(e.target.value)}

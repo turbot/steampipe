@@ -27,7 +27,7 @@ const getWrapperClasses = (type) => {
     case "ok":
       return "bg-ok";
     default:
-      return "bg-background-panel shadow-sm";
+      return "bg-dashboard-panel shadow-sm";
   }
 };
 

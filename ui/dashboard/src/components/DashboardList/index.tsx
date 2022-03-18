@@ -91,7 +91,7 @@ const Section = ({
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            <Link className="link-highlight" to={dashboard.full_name}>
+            <Link className="link-highlight" to={`../${dashboard.full_name}`}>
               {dashboard.title || dashboard.short_name}
             </Link>
           </div>

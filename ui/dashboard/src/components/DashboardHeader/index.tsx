@@ -5,7 +5,7 @@ import SteampipeLogo from "./SteampipeLogo";
 import ThemeToggle from "../ThemeToggle";
 
 const DashboardHeader = () => (
-  <div className="flex w-screen px-4 py-3 items-center justify-between space-x-2 md:space-x-4 bg-background-panel border-b border-table-divide print:hidden">
+  <div className="flex w-screen px-4 py-3 items-center justify-between space-x-2 md:space-x-4 bg-dashboard-panel border-b border-table-divide print:hidden">
     <SteampipeLogo />
     <div className="flex flex-grow space-x-2 md:space-x-4">
       <DashboardSearch />

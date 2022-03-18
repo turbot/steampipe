@@ -529,6 +529,7 @@ const DashboardProvider = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
   const { dashboardName } = useParams();
+  console.log(dashboardName);
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
     socketFactory
@@ -856,7 +857,7 @@ const DashboardProvider = ({
     }
     // If the dashboard we're viewing no longer exists, go back to the main page
     if (!state.dashboards.find((r) => r.full_name === dashboardName)) {
-      navigate("/", { replace: true });
+      navigate("../", { replace: true });
     }
   }, [
     navigate,
