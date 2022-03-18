@@ -588,7 +588,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 		for {
 			select {
 			case <-sigIntChannel:
-				log.Println("[TRACE] got SIGINT")
+				log.Println("[TRACE] interactive client cancel handler got SIGINT")
 				// if initialisation is not complete, just close the prompt
 				// this will cancel the context used for initialisation so cancel any initialisation queries
 				if !c.isInitialised() {
