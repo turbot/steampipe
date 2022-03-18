@@ -9,7 +9,7 @@ import { useParams } from "react-router-dom";
 const DashboardTagGroupSelect = () => {
   const { availableDashboardsLoaded, dashboardTags, dispatch, search } =
     useDashboard();
-  const { dashboardName } = useParams();
+  const { dashboard_name } = useParams();
 
   const options = useMemo(() => {
     const o = [
@@ -71,7 +71,7 @@ const DashboardTagGroupSelect = () => {
   if (
     !availableDashboardsLoaded ||
     !value ||
-    (dashboardName && !search.value)
+    (dashboard_name && !search.value)
   ) {
     return null;
   }

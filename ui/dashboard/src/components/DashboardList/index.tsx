@@ -315,11 +315,11 @@ const DashboardList = () => {
 };
 
 const DashboardListWrapper = () => {
-  const { dashboardName } = useParams();
+  const { dashboard_name } = useParams();
   const { search } = useDashboard();
 
   // If we have a dashboard selected and no search, we don't want to show the list
-  if (dashboardName && !search.value) {
+  if (dashboard_name && !search.value) {
     return null;
   }
 

@@ -40,7 +40,7 @@ const DashboardApp = ({
   return (
     <Routes>
       <Route path="/" element={dashboards} />
-      <Route path="/:dashboardName" element={dashboards} />
+      <Route path="/:dashboard_name" element={dashboards} />
     </Routes>
   );
 };

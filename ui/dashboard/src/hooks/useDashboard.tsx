@@ -118,7 +118,7 @@ export interface DashboardTags {
 }
 
 interface SelectedDashboardStates {
-  dashboardName: string | null;
+  dashboard_name: string | null;
   search: DashboardSearch;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
@@ -528,8 +528,8 @@ const DashboardProvider = ({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
-  const { dashboardName } = useParams();
-  console.log(dashboardName);
+  const { dashboard_name } = useParams();
+  console.log(dashboard_name);
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
     socketFactory
@@ -546,7 +546,7 @@ const DashboardProvider = ({
   const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
     usePrevious({
       searchParams,
-      dashboardName,
+      dashboard_name,
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
@@ -573,10 +573,10 @@ const DashboardProvider = ({
     // as that will show the dashboard list, but we want to see the dashboard that we came from / went to previously.
     const goneFromDashboardToDashboard =
       // @ts-ignore
-      previousSelectedDashboardStates?.dashboardName &&
-      dashboardName &&
+      previousSelectedDashboardStates?.dashboard_name &&
+      dashboard_name &&
       // @ts-ignore
-      previousSelectedDashboardStates.dashboardName !== dashboardName;
+      previousSelectedDashboardStates.dashboard_name !== dashboard_name;
 
     const search = searchParams.get("search") || "";
     const groupBy = searchParams.get("group_by") || "tag";
@@ -597,7 +597,7 @@ const DashboardProvider = ({
       recordInputsHistory: false,
     });
   }, [
-    dashboardName,
+    dashboard_name,
     dispatch,
     location,
     navigationType,
@@ -610,7 +610,7 @@ const DashboardProvider = ({
     if (
       previousSelectedDashboardStates &&
       // @ts-ignore
-      previousSelectedDashboardStates?.dashboardName === dashboardName &&
+      previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
       // @ts-ignore
       previousSelectedDashboardStates.search.value === state.search.value &&
       // @ts-ignore
@@ -631,7 +631,7 @@ const DashboardProvider = ({
       groupBy: { value: groupByValue, tag },
     } = state.search;
 
-    if (dashboardName) {
+    if (dashboard_name) {
       // Only set group_by and tag if we have a search
       if (searchValue) {
         searchParams.set("search", searchValue);
@@ -672,7 +672,7 @@ const DashboardProvider = ({
     setSearchParams(searchParams, { replace: true });
   }, [
     previousSelectedDashboardStates,
-    dashboardName,
+    dashboard_name,
     searchParams,
     setSearchParams,
     state.search,
@@ -681,7 +681,7 @@ const DashboardProvider = ({
   useEffect(() => {
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
     // then clear both the inputs and the selected dashboard in state
-    if (!dashboardName && state.selectedDashboard) {
+    if (!dashboard_name && state.selectedDashboard) {
       dispatch({
         type: DashboardActions.CLEAR_DASHBOARD_INPUTS,
         recordInputsHistory: false,
@@ -695,9 +695,9 @@ const DashboardProvider = ({
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
     // select that dashboard
-    if (dashboardName && !state.selectedDashboard) {
+    if (dashboard_name && !state.selectedDashboard) {
       const dashboard = state.dashboards.find(
-        (dashboard) => dashboard.full_name === dashboardName
+        (dashboard) => dashboard.full_name === dashboard_name
       );
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
       return;
@@ -705,12 +705,12 @@ const DashboardProvider = ({
     // Else if we've changed to a different report in the URL then clear the inputs and select the
     // dashboard in state
     if (
-      dashboardName &&
+      dashboard_name &&
       state.selectedDashboard &&
-      dashboardName !== state.selectedDashboard.full_name
+      dashboard_name !== state.selectedDashboard.full_name
     ) {
       const dashboard = state.dashboards.find(
-        (dashboard) => dashboard.full_name === dashboardName
+        (dashboard) => dashboard.full_name === dashboard_name
       );
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
       const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
@@ -720,7 +720,7 @@ const DashboardProvider = ({
         recordInputsHistory: false,
       });
     }
-  }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
+  }, [dashboard_name, searchParams, state.dashboards, state.selectedDashboard]);
 
   useEffect(() => {
     // This effect will send events over websockets and depends on there being a dashboard selected
@@ -852,16 +852,16 @@ const DashboardProvider = ({
   ]);
 
   useEffect(() => {
-    if (!state.availableDashboardsLoaded || !dashboardName) {
+    if (!state.availableDashboardsLoaded || !dashboard_name) {
       return;
     }
     // If the dashboard we're viewing no longer exists, go back to the main page
-    if (!state.dashboards.find((r) => r.full_name === dashboardName)) {
+    if (!state.dashboards.find((r) => r.full_name === dashboard_name)) {
       navigate("../", { replace: true });
     }
   }, [
     navigate,
-    dashboardName,
+    dashboard_name,
     state.availableDashboardsLoaded,
     state.dashboards,
   ]);
