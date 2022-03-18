@@ -96,27 +96,68 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	initData := dashboard.NewInitData(dashboardCtx, w)
-	// ensure we close the service
+	// shutdown the service on exit
 	defer initData.Cleanup(dashboardCtx)
 
-	if shouldExit := handleDashboardInitResult(dashboardCtx, initData); shouldExit {
-		// and return
+	if shouldExit, err := handleDashboardInitResult(dashboardCtx, initData); shouldExit {
+		// if there was an error, display it
+		utils.FailOnError(err)
 		return
 	}
+
 	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
 	if err != nil {
 		utils.FailOnError(err)
 	}
-	// cleanup init data
-	defer server.Shutdown(dashboardCtx)
+	// start the server asynchronously - this returns a chan which is signalled when the internal API server terminates
+	doneChan := server.Start()
 
-	server.Start()
+	// cleanup
+	defer server.Shutdown()
 
+	// server has started - update state file/start browser, as required
+	onServerStarted(serverPort, serverListen, err)
+
+	// wait for API server to terminate
+	<-doneChan
+
+	log.Println("[TRACE] runDashboardCmd exiting")
+}
+
+// inspect the init result ands
+func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) (bool, error) {
+	// if there is an error or cancellation we bomb out
+	if err := initData.Result.Error; err != nil {
+		setExitCodeForDashboardError(err)
+		return false, initData.Result.Error
+	}
+	// cancelled?
+	if ctx != nil && ctx.Err() != nil {
+		return true, ctx.Err()
+	}
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
+
+	// if there is are any warnings, exit politely
+	shouldExit := len(initData.Result.Warnings) > 0
+
+	return shouldExit, nil
+}
+
+func setExitCodeForDashboardError(err error) {
+	if err == workspace.ErrorNoModDefinition {
+		exitCode = constants.ExitCodeNoModFile
+	} else {
+		exitCode = 1
+	}
+}
+
+// execute any required actions after successfult server startup
+func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType, err error) {
 	if isRunningAsService() {
 		// for service mode only, save the state
 		saveDashboardState(serverPort, serverListen)
 	} else {
-
 		// start browser if required
 		if viper.GetBool(constants.ArgBrowser) {
 			if err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort)); err != nil {
@@ -124,15 +165,14 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 			}
 		}
 	}
-
-	// wait for the given context to cancel
-	<-dashboardCtx.Done()
 }
 
+// is this dashboard server running as a service?
 func isRunningAsService() bool {
 	return viper.GetBool(constants.ArgServiceMode)
 }
 
+// persist the error to the dashboard state file
 func saveErrorToDashboardState(err error) {
 	state, _ := dashboardserver.GetDashboardServiceState()
 	if state == nil {
@@ -146,6 +186,7 @@ func saveErrorToDashboardState(err error) {
 	}
 }
 
+// save the dashboard state file
 func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType) {
 	state := &dashboardserver.DashboardServiceState{
 		State:      dashboardserver.ServiceStateRunning,
@@ -161,25 +202,4 @@ func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dash
 		state.Listen = append(state.Listen, addrs...)
 	}
 	utils.FailOnError(dashboardserver.WriteServiceStateFile(state))
-}
-
-func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) bool {
-	if initData.Result.Error == workspace.ErrorNoModDefinition {
-		exitCode = constants.ExitCodeNoModFile
-	}
-	// if there is an error or cancellation we bomb out
-	// check for the various kinds of failures
-	utils.FailOnError(initData.Result.Error)
-	// cancelled?
-	if ctx != nil {
-		utils.FailOnError(ctx.Err())
-	}
-
-	// if there is a usage warning we display it
-	initData.Result.DisplayMessages()
-
-	// if there is are any warnings, exit politely
-	shouldExit := len(initData.Result.Warnings) > 0
-
-	return shouldExit
 }
