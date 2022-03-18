@@ -522,14 +522,17 @@ const DashboardProvider = ({
   analyticsContext,
   breakpointContext,
   children,
+  socketFactory,
   themeContext,
 }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
   const { dashboardName } = useParams();
-  const { ready: socketReady, send: sendSocketMessage } =
-    useDashboardWebSocket(dispatch);
+  const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
+    dispatch,
+    socketFactory
+  );
   const {
     setMetadata: setAnalyticsMetadata,
     setSelectedDashboard: setAnalyticsSelectedDashboard,

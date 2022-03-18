@@ -56,7 +56,14 @@ const getSocketServerUrl = () => {
   return `ws://${url.host}/ws`;
 };
 
-const useDashboardWebSocket = (dispatch): IWebSocket => {
+const createSocket = (socketFactory): WebSocket => {
+  if (socketFactory) {
+    return socketFactory();
+  }
+  return new WebSocket(getSocketServerUrl());
+};
+
+const useDashboardWebSocket = (dispatch, socketFactory): IWebSocket => {
   const webSocket = useRef<WebSocket | null>(null);
 
   const onSocketError = (evt: any) => {
@@ -72,7 +79,7 @@ const useDashboardWebSocket = (dispatch): IWebSocket => {
 
   useEffect(() => {
     let keepAliveTimerId: NodeJS.Timeout;
-    webSocket.current = new WebSocket(getSocketServerUrl());
+    webSocket.current = createSocket(socketFactory);
     webSocket.current.onerror = onSocketError;
     webSocket.current.onmessage = onSocketMessage;
     webSocket.current.onopen = () => {
@@ -83,7 +90,7 @@ const useDashboardWebSocket = (dispatch): IWebSocket => {
 
         const timeout = 30000;
         if (webSocket.current.readyState === webSocket.current.CLOSED) {
-          webSocket.current = new WebSocket(getSocketServerUrl());
+          webSocket.current = createSocket(socketFactory);
           webSocket.current.onerror = onSocketError;
           webSocket.current.onmessage = onSocketMessage;
         }
