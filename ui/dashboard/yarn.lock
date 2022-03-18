@@ -3519,6 +3519,23 @@
     global "^4.4.0"
     regenerator-runtime "^0.13.7"
 
+"@storybook/addons@6.5.0-alpha.49":
+  version "6.5.0-alpha.49"
+  resolved "https://registry.yarnpkg.com/@storybook/addons/-/addons-6.5.0-alpha.49.tgz#fc13af98f7446ada84a25e9b8cbe2e4b7fa34efc"
+  integrity sha512-kU9T7zskn2phBgvP3cfCaaOpOmp+nVl3BPqsA2MCYLdFxGewAIFnlPP0F8xGvlVdl4YF6kedt6Co8UklFDr0QA==
+  dependencies:
+    "@storybook/api" "6.5.0-alpha.49"
+    "@storybook/channels" "6.5.0-alpha.49"
+    "@storybook/client-logger" "6.5.0-alpha.49"
+    "@storybook/core-events" "6.5.0-alpha.49"
+    "@storybook/csf" "0.0.2--canary.87bc651.0"
+    "@storybook/router" "6.5.0-alpha.49"
+    "@storybook/theming" "6.5.0-alpha.49"
+    "@types/webpack-env" "^1.16.0"
+    core-js "^3.8.2"
+    global "^4.4.0"
+    regenerator-runtime "^0.13.7"
+
 "@storybook/api@6.5.0-alpha.4":
   version "6.5.0-alpha.4"
   resolved "https://registry.npmjs.org/@storybook/api/-/api-6.5.0-alpha.4.tgz"
@@ -3554,6 +3571,29 @@
     "@storybook/router" "6.5.0-alpha.48"
     "@storybook/semver" "^7.3.2"
     "@storybook/theming" "6.5.0-alpha.48"
+    core-js "^3.8.2"
+    fast-deep-equal "^3.1.3"
+    global "^4.4.0"
+    lodash "^4.17.21"
+    memoizerific "^1.11.3"
+    regenerator-runtime "^0.13.7"
+    store2 "^2.12.0"
+    telejson "^5.3.3"
+    ts-dedent "^2.0.0"
+    util-deprecate "^1.0.2"
+
+"@storybook/api@6.5.0-alpha.49":
+  version "6.5.0-alpha.49"
+  resolved "https://registry.yarnpkg.com/@storybook/api/-/api-6.5.0-alpha.49.tgz#c845a06dbaba99f9442d377f9b739592ed4d768f"
+  integrity sha512-0uVAG1vn3eGIfF2zKxVWads1tO92bYFC2+Vbw2m6RKEhHEIhzhPtg8Rr/ovmiGacOF2GB2PoNYmaSnVd6KD/gw==
+  dependencies:
+    "@storybook/channels" "6.5.0-alpha.49"
+    "@storybook/client-logger" "6.5.0-alpha.49"
+    "@storybook/core-events" "6.5.0-alpha.49"
+    "@storybook/csf" "0.0.2--canary.87bc651.0"
+    "@storybook/router" "6.5.0-alpha.49"
+    "@storybook/semver" "^7.3.2"
+    "@storybook/theming" "6.5.0-alpha.49"
     core-js "^3.8.2"
     fast-deep-equal "^3.1.3"
     global "^4.4.0"
@@ -3751,6 +3791,15 @@
     ts-dedent "^2.0.0"
     util-deprecate "^1.0.2"
 
+"@storybook/channels@6.5.0-alpha.49":
+  version "6.5.0-alpha.49"
+  resolved "https://registry.yarnpkg.com/@storybook/channels/-/channels-6.5.0-alpha.49.tgz#5b8cd4279605e4bb1070462d91a2aede2c587795"
+  integrity sha512-iTAfWU6AVPzyXmuimvcBvjxNgZOOPCGdTWXNRlKu9p4KLfXF+21Un5/IKHy23xxJgwqIWsp9zRxTx6tO4+S1eA==
+  dependencies:
+    core-js "^3.8.2"
+    ts-dedent "^2.0.0"
+    util-deprecate "^1.0.2"
+
 "@storybook/client-api@6.5.0-alpha.4":
   version "6.5.0-alpha.4"
   resolved "https://registry.npmjs.org/@storybook/client-api/-/client-api-6.5.0-alpha.4.tgz"
@@ -3815,6 +3864,14 @@
   version "6.5.0-alpha.48"
   resolved "https://registry.yarnpkg.com/@storybook/client-logger/-/client-logger-6.5.0-alpha.48.tgz#b080fe83786678cc59c4463c258465ea169a5381"
   integrity sha512-K9dQDOe5l7/zF9AvW668RjSHsNxQWthms8rNB2y5rqviLYCXB7Ynz34hOHSagtkS1aVWoco878FmqG2gF5rJHQ==
+  dependencies:
+    core-js "^3.8.2"
+    global "^4.4.0"
+
+"@storybook/client-logger@6.5.0-alpha.49":
+  version "6.5.0-alpha.49"
+  resolved "https://registry.yarnpkg.com/@storybook/client-logger/-/client-logger-6.5.0-alpha.49.tgz#972b764796d3641bc705c0ff93715403ed816b47"
+  integrity sha512-nryrITmCrhLkTDvoSyYFVHN9QgdxSSdu8jvs+VVcj8195ULNc14PBprr9WHj7gBkS1K1fWf57HcS6KeWCWTKZw==
   dependencies:
     core-js "^3.8.2"
     global "^4.4.0"
@@ -4034,6 +4091,13 @@
   version "6.5.0-alpha.48"
   resolved "https://registry.yarnpkg.com/@storybook/core-events/-/core-events-6.5.0-alpha.48.tgz#5b6cda700451c3090ed74b4d0d1e270839efb220"
   integrity sha512-aKOcZLm3Xi0hclRJ5EEdg0UsIw0iLQU4CESbRammqA+phdb15z1L0HaXYJuCYxSdhDf9/A2Y3LfuxEqSMBEKkA==
+  dependencies:
+    core-js "^3.8.2"
+
+"@storybook/core-events@6.5.0-alpha.49":
+  version "6.5.0-alpha.49"
+  resolved "https://registry.yarnpkg.com/@storybook/core-events/-/core-events-6.5.0-alpha.49.tgz#b0a568fab53cf61e1daf0536622a4cdbbcb773c4"
+  integrity sha512-m5BIJfYJhczhFlLODpfIx2Uw92GrRGH8uh5CuOKGEbYCb+xrLm6U2pdU+Ebsro88zgE8h/6sGWNR4DA64B6oMg==
   dependencies:
     core-js "^3.8.2"
 
@@ -4391,6 +4455,15 @@
     core-js "^3.8.2"
     regenerator-runtime "^0.13.7"
 
+"@storybook/router@6.5.0-alpha.49":
+  version "6.5.0-alpha.49"
+  resolved "https://registry.yarnpkg.com/@storybook/router/-/router-6.5.0-alpha.49.tgz#c3572e19398f7eacc2bf2cd629b58ce614972575"
+  integrity sha512-SIuEaYvET+vvZgOuB4TVw7ilFoIUNeGjBf8W5gFnjbV7kujTgbKZ7m9dUi8qIa0QUmK829RZ9uq0VTK59p1O/Q==
+  dependencies:
+    "@storybook/client-logger" "6.5.0-alpha.49"
+    core-js "^3.8.2"
+    regenerator-runtime "^0.13.7"
+
 "@storybook/semver@^7.3.2":
   version "7.3.2"
   resolved "https://registry.npmjs.org/@storybook/semver/-/semver-7.3.2.tgz"
@@ -4481,6 +4554,15 @@
   integrity sha512-9ITYtfJ/qgNTJayTdztn9QLVr0NJL8Npz700TgoPXxsfFBhGtOoCi3UkxBUHpDgsbGlEIB9Ccm38ngoAVDsN1Q==
   dependencies:
     "@storybook/client-logger" "6.5.0-alpha.48"
+    core-js "^3.8.2"
+    regenerator-runtime "^0.13.7"
+
+"@storybook/theming@6.5.0-alpha.49":
+  version "6.5.0-alpha.49"
+  resolved "https://registry.yarnpkg.com/@storybook/theming/-/theming-6.5.0-alpha.49.tgz#bff26b5087515c7ee0f3fde9e32f2cdd39107650"
+  integrity sha512-4YIJs7/xFdE3xJ3HGz4D7S+gdMnNwLyPc4q9yE0cFyXVdiUUCdw5x0EjDXiznDuWkBxlhTa6KYf3Qr2311Racg==
+  dependencies:
+    "@storybook/client-logger" "6.5.0-alpha.49"
     core-js "^3.8.2"
     regenerator-runtime "^0.13.7"
 
@@ -7525,25 +7607,10 @@ core-js-pure@^3.8.2:
   resolved "https://registry.npmjs.org/core-js-pure/-/core-js-pure-3.10.0.tgz"
   integrity sha512-CC582enhrFZStO4F8lGI7QL3SYx7/AIRc+IdSi3btrQGrVsTawo5K/crmKbRrQ+MOMhNX4v+PATn0k2NN6wI7A==
 
-core-js@^3.0.4:
-  version "3.9.1"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.9.1.tgz"
-  integrity sha512-gSjRvzkxQc1zjM/5paAmL4idJBFzuJoo+jDjF1tStYFMV2ERfD02HhahhCGXUyHxQRG4yFKVSdO6g62eoRMcDg==
-
-core-js@^3.19.2:
+core-js@^3.0.4, core-js@^3.19.2, core-js@^3.6.5, core-js@^3.8.2:
   version "3.20.0"
   resolved "https://registry.npmjs.org/core-js/-/core-js-3.20.0.tgz"
   integrity sha512-KjbKU7UEfg4YPpskMtMXPhUKn7m/1OdTHTVjy09ScR2LVaoUXe8Jh0UdvN2EKUR6iKTJph52SJP95mAB0MnVLQ==
-
-core-js@^3.6.5:
-  version "3.8.3"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.8.3.tgz"
-  integrity sha512-KPYXeVZYemC2TkNEkX/01I+7yd+nX3KddKwZ1Ww7SKWdI2wQprSgLmrTddT8nw92AjEklTsPBoSdQBhbI1bQ6Q==
-
-core-js@^3.8.2:
-  version "3.10.0"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.10.0.tgz"
-  integrity sha512-MQx/7TLgmmDVamSyfE+O+5BHvG1aUGj/gHhLn1wVtm2B5u1eVIPvh7vkfjwWKNCjrTJB8+He99IntSQ1qP+vYQ==
 
 core-util-is@~1.0.0:
   version "1.0.2"
@@ -15527,12 +15594,7 @@ regenerate@^1.4.0:
   resolved "https://registry.npmjs.org/regenerate/-/regenerate-1.4.2.tgz"
   integrity sha512-zrceR/XhGYU/d/opr2EKO7aRHUeiBI8qjtfHqADTwZd6Szfy16la6kqD0MIUs5z5hx6AaKa+PixpPrR289+I0A==
 
-regenerator-runtime@^0.13.4, regenerator-runtime@^0.13.7:
-  version "0.13.7"
-  resolved "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.7.tgz"
-  integrity sha512-a54FxoJDIr27pgf7IgeQGxmqUNYrcV338lf/6gH456HZ/PhX+5BcwHXG9ajESmwe6WRO0tAzRUrRmNONWgkrew==
-
-regenerator-runtime@^0.13.9:
+regenerator-runtime@^0.13.4, regenerator-runtime@^0.13.7, regenerator-runtime@^0.13.9:
   version "0.13.9"
   resolved "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.9.tgz"
   integrity sha512-p3VT+cOEgxFsRRA9X4lkI1E+k2/CtnKtU4gcxyaCUreilL/vqI6CdZ3wxVUx3UOUg+gnUOQQcRI7BmSI656MYA==
