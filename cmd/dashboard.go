@@ -129,7 +129,7 @@ func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData
 	// if there is an error or cancellation we bomb out
 	if err := initData.Result.Error; err != nil {
 		setExitCodeForDashboardError(err)
-		return false, initData.Result.Error
+		return true, initData.Result.Error
 	}
 	// cancelled?
 	if ctx != nil && ctx.Err() != nil {
