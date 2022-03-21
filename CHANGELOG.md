@@ -1,3 +1,7 @@
+## v0.13.3 [2022-03-21]
+_Bug fixes_
+* Fix issue where dashboard starts up even if there are initialization errors (for example unmet dependencies). ([#1711](https://github.com/turbot/steampipe/issues/1711))
+
 ## v0.13.2 [2022-03-18]
 _Bug fixes_
 * Fix dashboard shutdown sometimes stalling. ([#1708](https://github.com/turbot/steampipe/issues/1708))
