@@ -9,15 +9,12 @@ import (
 )
 
 // map of file extension to factory function to create
-type factoryFunc func(modPath, filePath string) (MappableResource, []byte, error)
+type factoryFunc func(modPath, filePath string, mod *Mod) (MappableResource, []byte, error)
 
 var ResourceTypeMap = map[string]factoryFunc{
-	constants.SqlExtension: func(modPath, filePath string) (MappableResource, []byte, error) {
-		return QueryFromFile(modPath, filePath)
+	constants.SqlExtension: func(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
+		return QueryFromFile(modPath, filePath, mod)
 	},
-	//constants.MarkdownExtension: func(modPath, filePath string) (MappableResource, []byte, error) {
-	//	return PanelFromFile(modPath, filePath)
-	//},
 }
 
 func RegisteredFileExtensions() []string {

@@ -1,13 +1,12 @@
 package steampipeconfig
 
 import (
-	"fmt"
 	"path/filepath"
+	"reflect"
 	"testing"
 
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
-	"github.com/turbot/steampipe/constants"
 
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
@@ -40,22 +39,22 @@ var workspaceSearchPathPrefix = "foobar"
 
 var testCasesLoadConfig = map[string]loadConfigTest{
 	"multiple_connections": {
-		steampipeDir: "test_data/connection_config/multiple_connections",
+		steampipeDir: "testdata/connection_config/multiple_connections",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"aws_dmi_001": {
 					Name:   "aws_dmi_001",
 					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
-					Config: `access_key            = "aws_dmi_001_access_key"
-regions               = "- us-east-1\n-us-west-"
-secret_key            = "aws_dmi_001_secret_key"`,
+					Config: `access_key = "aws_dmi_001_access_key"
+regions    = "- us-east-1\n-us-west-"
+secret_key = "aws_dmi_001_secret_key"`,
 				},
 				"aws_dmi_002": {
 					Name:   "aws_dmi_002",
 					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
-					Config: `access_key            = "aws_dmi_002_access_key"
-regions               = "- us-east-1\n-us-west-"
-secret_key            = "aws_dmi_002_secret_key"`,
+					Config: `access_key = "aws_dmi_002_access_key"
+regions    = "- us-east-1\n-us-west-"
+secret_key = "aws_dmi_002_secret_key"`,
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -64,12 +63,12 @@ secret_key            = "aws_dmi_002_secret_key"`,
 			}},
 	},
 	"single_connection": {
-		steampipeDir: "test_data/connection_config/single_connection",
+		steampipeDir: "testdata/connection_config/single_connection",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
 					//Config: map[string]string{},
 				},
 			},
@@ -79,12 +78,12 @@ secret_key            = "aws_dmi_002_secret_key"`,
 			}},
 	},
 	"single_connection_with_default_options": {
-		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -110,18 +109,18 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		},
 	},
 	"single_connection_with_default_options_and_workspace_invalid_options_block": {
-		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
-		workspaceDir: "test_data/workspaces/invalid_options_block",
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
+		workspaceDir: "testdata/workspaces/invalid_options_block",
 		expected:     "ERROR",
 	},
 	"single_connection_with_default_options_and_workspace_search_path_prefix": {
-		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
-		workspaceDir: "test_data/workspaces/search_path_prefix",
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
+		workspaceDir: "testdata/workspaces/search_path_prefix",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -148,13 +147,13 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		},
 	},
 	"single_connection_with_default_options_and_workspace_override_terminal_config": {
-		steampipeDir: "test_data/connection_config/single_connection_with_default_options",
-		workspaceDir: "test_data/workspaces/override_terminal_config",
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
+		workspaceDir: "testdata/workspaces/override_terminal_config",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -181,12 +180,12 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		},
 	},
 	"single_connection_with_default_and_connection_options": {
-		steampipeDir: "test_data/connection_config/single_connection_with_default_and_connection_options",
+		steampipeDir: "testdata/connection_config/single_connection_with_default_and_connection_options",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
 					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
 					Options: &options.Connection{
 						Cache:    &trueVal,
 						CacheTTL: &ttlVal,
@@ -216,7 +215,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		},
 	},
 	"options_only": {
-		steampipeDir: "test_data/connection_config/options_only",
+		steampipeDir: "testdata/connection_config/options_only",
 		expected: &SteampipeConfig{
 			DefaultConnectionOptions: &options.Connection{
 				Cache:    &trueVal,
@@ -241,7 +240,7 @@ secret_key            = "aws_dmi_002_secret_key"`,
 		},
 	},
 	"options_duplicate_block": {
-		steampipeDir: "test_data/connection_config/options_duplicate_block",
+		steampipeDir: "testdata/connection_config/options_duplicate_block",
 		expected:     "ERROR",
 	},
 }
@@ -251,17 +250,20 @@ func TestLoadConfig(t *testing.T) {
 		// default workspoace to empty dir
 		workspaceDir := test.workspaceDir
 		if workspaceDir == "" {
-			workspaceDir = "test_data/workspaces/empty"
+			workspaceDir = "testdata/workspaces/empty"
 		}
 		steampipeDir, err := filepath.Abs(test.steampipeDir)
-		workspaceDir, err = filepath.Abs(workspaceDir)
-
 		if err != nil {
 			t.Errorf("failed to build absolute config filepath from %s", test.steampipeDir)
 		}
 
+		workspaceDir, err = filepath.Abs(workspaceDir)
+		if err != nil {
+			t.Errorf("failed to build absolute config filepath from %s", workspaceDir)
+		}
+
 		// set SteampipeDir
-		constants.SteampipeDir = steampipeDir
+		filepaths.SteampipeDir = steampipeDir
 
 		// now load config
 		config, err := loadSteampipeConfig(workspaceDir, "")
@@ -279,35 +281,23 @@ func TestLoadConfig(t *testing.T) {
 
 		expectedConfig := test.expected.(*SteampipeConfig)
 		if !SteampipeConfigEquals(config, expectedConfig) {
-			fmt.Printf("")
 			t.Errorf("Test: '%s'' FAILED : expected:\n%s\n\ngot:\n%s", name, expectedConfig, config)
 		}
 	}
 }
 
 // helpers
-func SteampipeConfigEquals(l, r *SteampipeConfig) bool {
-	if l == nil || r == nil {
-		return l == nil && r == nil
+func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
 	}
 
-	for k, lConn := range l.Connections {
-		rConn, ok := r.Connections[k]
-		if !ok {
-			return false
-		}
-		if lConn.String() != rConn.String() {
-			fmt.Printf("Connections different: l:\n%s\nr:\n%s\n", lConn.String(), r.Connections[k].String())
-			return false
-		}
+	if reflect.DeepEqual(left.Connections, right.Connections) {
+		return false
 	}
-	for k := range r.Connections {
-		if _, ok := l.Connections[k]; !ok {
-			return false
-		}
-	}
-	return l.DefaultConnectionOptions.String() == r.DefaultConnectionOptions.String() &&
-		l.DatabaseOptions.String() == r.DatabaseOptions.String() &&
-		l.TerminalOptions.String() == r.TerminalOptions.String() &&
-		l.GeneralOptions.String() == r.GeneralOptions.String()
+
+	return reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) &&
+		reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) &&
+		reflect.DeepEqual(left.TerminalOptions, right.TerminalOptions) &&
+		reflect.DeepEqual(left.GeneralOptions, right.GeneralOptions)
 }

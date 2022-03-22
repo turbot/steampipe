@@ -18,6 +18,20 @@ if ! command -v install >/dev/null; then
 	exit 1
 fi
 
+if command -v steampipe >/dev/null; then
+	# steampipe already exists
+	status_out=$(steampipe service status --all | wc -l)
+	if [ $? -ne 0 ]; then
+		echo "Error: There was an issue fetching service status. Please re-run." 1>&2
+		exit 1
+	fi
+	if [ $status_out -gt 1 ]; then
+		echo "$(steampipe service status --all)"
+		echo "Error: The above service(s) are running. Please stop them before running installation." 1>&2
+		exit 1
+	fi
+fi
+
 if [ "$OS" = "Windows_NT" ]; then
 	echo "Error: Windows is not supported yet." 1>&2
 	exit 1

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -15,22 +14,21 @@ type tempDir struct {
 	Path string
 }
 
-// NewTempDir :: returns the temp directory, creating it if it does not exist
-func NewTempDir(path string) *tempDir {
+// NewTempDir creates a directory under the given parent directory.
+func NewTempDir(parent string) *tempDir {
 	return &tempDir{
-		Path: getOrCreateTempDir(path),
+		Path: getOrCreateTempDir(parent),
 	}
 }
 
-func getOrCreateTempDir(ref string) string {
-	pluginCacheDir := filepath.Join(constants.PluginDir(), safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
+func getOrCreateTempDir(parent string) string {
+	cacheDir := filepath.Join(parent, safeDirName(fmt.Sprintf("tmp-%s", generateTempDirName())))
 
-	if _, err := os.Stat(pluginCacheDir); os.IsNotExist(err) {
-		err = os.MkdirAll(pluginCacheDir, 0755)
+	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
+		err = os.MkdirAll(cacheDir, 0755)
 		utils.FailOnErrorWithMessage(err, "could not create cache directory")
 	}
-
-	return pluginCacheDir
+	return cacheDir
 }
 
 func (d *tempDir) Delete() error {

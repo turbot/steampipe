@@ -10,62 +10,66 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/controlhooks"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 	"golang.org/x/sync/semaphore"
 )
 
-// ExecutionTree is a structure representing the control hierarchy
+// ExecutionTree is a structure representing the control execution hierarchy
 type ExecutionTree struct {
-	Root      *ResultGroup
-	StartTime time.Time
-	EndTime   time.Time
+	Root *ResultGroup `json:"root"`
+	// flat list of all control runs
+	ControlRuns []*ControlRun                 `json:"control_runs"`
+	StartTime   time.Time                     `json:"start_time"`
+	EndTime     time.Time                     `json:"end_time"`
+	Progress    *controlhooks.ControlProgress `json:"progress"`
+	// map of dimension property name to property value to color map
+	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
 
 	workspace *workspace.Workspace
 	client    db_common.Client
 	// an optional map of control names used to filter the controls which are run
 	controlNameFilterMap map[string]bool
-	progress             *ControlProgressRenderer
-	// map of dimension property name to property value to color map
-	DimensionColorGenerator *DimensionColorGenerator
-	// flat list of all control runs
-	controlRuns []*ControlRun
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
+	// TODO [reports] FAIL IF any resources in the tree have runtime dependencies
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
 		workspace: workspace,
 		client:    client,
 	}
-	// if a "--where" or "--tag" parameter was passed, build a map of control manes used to filter the controls to run
-	// NOTE: not enabled yet
-	err := executionTree.populateControlFilterMap(ctx)
+	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
+	// create a context with status hooks disabled
+	noStatusCtx := statushooks.DisableStatusHooks(ctx)
+	err := executionTree.populateControlFilterMap(noStatusCtx)
 
 	if err != nil {
 		return nil, err
 	}
 
 	// now identify the root item of the control list
-	rootItems, err := executionTree.getExecutionRootFromArg(arg)
+	rootItem, err := executionTree.getExecutionRootFromArg(arg)
 	if err != nil {
 		return nil, err
 	}
 
 	// build tree of result groups, starting with a synthetic 'root' node
-	executionTree.Root = NewRootResultGroup(executionTree, rootItems...)
+	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
-	executionTree.progress = NewControlProgressRenderer(len(executionTree.controlRuns))
+	executionTree.Progress = controlhooks.NewControlProgress(len(executionTree.ControlRuns))
 
 	return executionTree, nil
 }
 
 // AddControl checks whether control should be included in the tree
 // if so, creates a ControlRun, which is added to the parent group
-func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGroup) {
+func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Control, group *ResultGroup) {
 	// note we use short name to determine whether to include a control
 	if e.ShouldIncludeControl(control.ShortName) {
 		// create new ControlRun with treeItem as the parent
@@ -73,37 +77,38 @@ func (e *ExecutionTree) AddControl(control *modconfig.Control, group *ResultGrou
 		// add it into the group
 		group.ControlRuns = append(group.ControlRuns, controlRun)
 		// also add it into the execution tree control run list
-		e.controlRuns = append(e.controlRuns, controlRun)
+		e.ControlRuns = append(e.ControlRuns, controlRun)
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context, client db_common.Client) int {
+func (e *ExecutionTree) Execute(ctx context.Context) int {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
-	e.progress.Start()
+	e.Progress.Start(ctx)
 
 	defer func() {
 		e.EndTime = time.Now()
-		e.progress.Finish()
+		e.Progress.Finish(ctx)
 	}()
 
 	// the number of goroutines parallel to start
-	// - we start goroutines as a multiplier of the number of parallel database connections
-	// so that go routines receive connections as soon as they are available
-	maxParallelGoRoutines := viper.GetInt64(constants.ArgMaxParallel) * constants.ParallelControlMultiplier
+	var maxParallelGoRoutines int64 = constants.DefaultMaxConnections
+	if viper.IsSet(constants.ArgMaxParallel) {
+		maxParallelGoRoutines = viper.GetInt64(constants.ArgMaxParallel)
+	}
 
 	// to limit the number of parallel controls go routines started
 	parallelismLock := semaphore.NewWeighted(maxParallelGoRoutines)
 
 	// just execute the root - it will traverse the tree
-	e.Root.Execute(ctx, client, parallelismLock)
+	e.Root.execute(ctx, e.client, parallelismLock)
 
 	executeFinishWaitCtx := ctx
 	if ctx.Err() != nil {
 		// use a Background context - since the original context has been cancelled
 		// this lets us wait for the active control queries to cancel
-		c, cancel := context.WithTimeout(context.Background(), constants.QueryCancellationTimeout*time.Second)
+		c, cancel := context.WithTimeout(context.Background(), constants.ControlQueryCancellationTimeoutSecs*time.Second)
 		executeFinishWaitCtx = c
 		defer cancel()
 	}
@@ -192,50 +197,41 @@ func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
 // - if the arg is a benchmark name, the root will be the Benchmark with that name
 // - if the arg is a mod name, the root will be the Mod with that name
 // - if the arg is 'all' the root will be a node with all Mods as children
-func (e *ExecutionTree) getExecutionRootFromArg(arg string) ([]modconfig.ModTreeItem, error) {
-	var res []modconfig.ModTreeItem
+func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeItem, error) {
 	// special case handling for the string "all"
 	if arg == "all" {
-		//
-		// build list of all workspace mods - these will act as root items
-		for _, m := range e.workspace.Mods {
-			res = append(res, m)
+		// return the workspace mod as root
+		return e.workspace.Mod, nil
+	}
+
+	// if the arg is the name of one of the workjspace dependen
+	for _, mod := range e.workspace.Mods {
+		if mod.ShortName == arg {
+			return mod, nil
 		}
-		return res, nil
 	}
 
 	// what resource type is arg?
-	name, err := modconfig.ParseResourceName(arg)
+	parsedName, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		// just log error
 		return nil, fmt.Errorf("failed to parse check argument '%s': %v", arg, err)
 	}
 
-	switch name.ItemType {
-	case modconfig.BlockTypeControl:
-		// check whether the arg is a control name
-		if control, ok := e.workspace.Controls[arg]; ok {
-			return []modconfig.ModTreeItem{control}, nil
-		}
-	case modconfig.BlockTypeBenchmark:
-		// look in the workspace control group map for this control group
-		if benchmark, ok := e.workspace.Benchmarks[arg]; ok {
-			return []modconfig.ModTreeItem{benchmark}, nil
-		}
-	case modconfig.BlockTypeMod:
-		// get all controls for the mod
-		if mod, ok := e.workspace.Mods[arg]; ok {
-			return []modconfig.ModTreeItem{mod}, nil
-		}
+	resource, found := modconfig.GetResource(e.workspace, parsedName)
+
+	root, ok := resource.(modconfig.ModTreeItem)
+	if !found || !ok {
+		return nil, fmt.Errorf("no resources found matching argument '%s'", arg)
 	}
-	return nil, fmt.Errorf("no controls found matching argument '%s'", arg)
+	return root, nil
 }
 
 // Get a map of control names from the introspection table steampipe_control
 // This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, _, err := e.workspace.ResolveQueryAndArgs(whereClause)
+	query, _, err := e.workspace.ResolveQueryAndArgsFromSQLString(whereClause)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +243,7 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 		query = fmt.Sprintf("select resource_name from %s where %s", constants.IntrospectionTableControl, whereClause)
 	}
 
-	res, err := e.client.ExecuteSync(ctx, query, false)
+	res, err := e.client.ExecuteSync(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +274,9 @@ func (e *ExecutionTree) GetAllTags() []string {
 	// map keep track which tags have been added as columns
 	tagColumnMap := make(map[string]bool)
 	var tagColumns []string
-	for _, r := range e.controlRuns {
+	for _, r := range e.ControlRuns {
 		if r.Control.Tags != nil {
-			for tag := range *r.Control.Tags {
+			for tag := range r.Control.Tags {
 				if !tagColumnMap[tag] {
 					tagColumns = append(tagColumns, tag)
 					tagColumnMap[tag] = true

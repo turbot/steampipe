@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -41,13 +42,12 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.C
 
 	client, err := NewLocalClient(ctx, invoker)
 	if err != nil {
-		ShutdownService(invoker)
+		ShutdownService(ctx, invoker)
 	}
 	return client, err
 }
 
-// NewLocalClient ensures that the database instance is running
-// and returns a `Client` to interact with it
+// NewLocalClient verifies that the local database instance is running and returns a Client to interact with it
 func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
@@ -69,16 +69,17 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbCli
 
 // Close implements Client
 // close the connection to the database and shuts down the backend
-func (c *LocalDbClient) Close() error {
+func (c *LocalDbClient) Close(ctx context.Context) error {
 	log.Printf("[TRACE] close local client %p", c)
 	if c.client != nil {
-		if err := c.client.Close(); err != nil {
+		log.Printf("[TRACE] local client not NIL")
+		if err := c.client.Close(ctx); err != nil {
 			return err
 		}
+		log.Printf("[TRACE] local client close complete")
 	}
-	// no context to pass on - use background
-	// we shouldn't do this in a context that can be cancelled anyway
-	ShutdownService(c.invoker)
+	log.Printf("[TRACE] shutdown local service %v", c.invoker)
+	ShutdownService(ctx, c.invoker)
 	return nil
 }
 
@@ -105,23 +106,23 @@ func (c *LocalDbClient) AcquireSession(ctx context.Context) *db_common.AcquireSe
 }
 
 // ExecuteSync implements Client
-func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
-	return c.client.ExecuteSync(ctx, query, disableSpinner)
+func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSync(ctx, query)
 }
 
 // ExecuteSyncInSession implements Client
-func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, disableSpinner bool) (*queryresult.SyncQueryResult, error) {
-	return c.client.ExecuteSyncInSession(ctx, session, query, disableSpinner)
+func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSyncInSession(ctx, session, query)
 }
 
 // ExecuteInSession implements Client
-func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func(), disableSpinner bool) (res *queryresult.Result, err error) {
-	return c.client.ExecuteInSession(ctx, session, query, onComplete, disableSpinner)
+func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
+	return c.client.ExecuteInSession(ctx, session, query, onComplete)
 }
 
 // Execute implements Client
-func (c *LocalDbClient) Execute(ctx context.Context, query string, disableSpinner bool) (res *queryresult.Result, err error) {
-	return c.client.Execute(ctx, query, disableSpinner)
+func (c *LocalDbClient) Execute(ctx context.Context, query string) (res *queryresult.Result, err error) {
+	return c.client.Execute(ctx, query)
 }
 
 // CacheOn implements Client
@@ -153,8 +154,94 @@ func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPa
 	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix, currentSearchPath)
 }
 
-func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas []string) (*schema.Metadata, error) {
-	return c.client.GetSchemaFromDB(ctx, schemas)
+// GetSchemaFromDB for LocalDBClient optimises the schema extraction by extracting schema
+// information for connections backed by distinct plugins and then fanning back out.
+func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
+	// build a ConnectionSchemaMap object to identify the schemas to load
+	// (pass nil for connection state - this forces NewConnectionSchemaMap to load it)
+	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap()
+	if err != nil {
+		return nil, err
+	}
+	// get the unique schema - we use this to limit the schemas we load from the database
+	schemas := connectionSchemaMap.UniqueSchemas()
+	query := c.buildSchemasQuery(schemas)
+
+	acquireSessionResult := c.AcquireSession(ctx)
+	if acquireSessionResult.Error != nil {
+		acquireSessionResult.Session.Close(false)
+		return nil, err
+	}
+
+	tablesResult, err := acquireSessionResult.Session.Connection.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
+	if err != nil {
+		acquireSessionResult.Session.Close(false)
+		return nil, err
+	}
+	acquireSessionResult.Session.Close(false)
+
+	c.populateSchemaMetadata(metadata, connectionSchemaMap)
+
+	searchPath, err := c.GetCurrentSearchPath(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metadata.SearchPath = searchPath
+
+	return metadata, nil
+}
+
+// update schemaMetadata to add in all other schemas which have the same schemas as those we have loaded
+// NOTE: this mutates schemaMetadata
+func (c *LocalDbClient) populateSchemaMetadata(schemaMetadata *schema.Metadata, connectionSchemaMap steampipeconfig.ConnectionSchemaMap) {
+	// we now need to add in all other schemas which have the same schemas as those we have loaded
+	for loadedSchema, otherSchemas := range connectionSchemaMap {
+		// all 'otherSchema's have the same schema as loadedSchema
+		exemplarSchema, ok := schemaMetadata.Schemas[loadedSchema]
+		if !ok {
+			// should can happen in the case of a dynamic plugin with no tables - use empty schema
+			exemplarSchema = make(map[string]schema.TableSchema)
+		}
+
+		for _, s := range otherSchemas {
+			schemaMetadata.Schemas[s] = exemplarSchema
+		}
+	}
+}
+
+func (c *LocalDbClient) buildSchemasQuery(schemas []string) string {
+	for idx, s := range schemas {
+		schemas[idx] = fmt.Sprintf("'%s'", s)
+	}
+	schemaClause := strings.Join(schemas, ",")
+	query := fmt.Sprintf(`
+SELECT
+    table_name,
+    column_name,
+    column_default,
+    is_nullable,
+    data_type,
+    table_schema,
+    (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+    (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+FROM
+    information_schema.columns cols
+LEFT JOIN
+    pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
+LEFT JOIN
+    pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
+WHERE
+	cols.table_schema in (%s)
+	OR
+    LEFT(cols.table_schema,8) = 'pg_temp_'
+
+`, schemaClause)
+	return query
 }
 
 func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {
@@ -164,6 +251,9 @@ func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {
 // local only functions
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+	// NOTE: disable any status updates - we do not want 'loading' output from any queries
+	ctx = statushooks.DisableStatusHooks(ctx)
+
 	res := c.refreshConnections(ctx)
 	if res.Error != nil {
 		return res
@@ -218,7 +308,7 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) ([]string, error)
 
 	// get all roles which are a member of steampipe_users
 	query := fmt.Sprintf(`select usename from pg_user where pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
-	res, err := c.ExecuteSync(context.Background(), query, true)
+	res, err := c.ExecuteSync(context.Background(), query)
 	if err != nil {
 		return nil, err
 	}

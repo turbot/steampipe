@@ -20,6 +20,10 @@ func TraversalAsString(traversal hcl.Traversal) string {
 	return name
 }
 
+func TraversalsEqual(t1, t2 hcl.Traversal) bool {
+	return TraversalAsString(t1) == TraversalAsString(t2)
+}
+
 // ResourceNameFromTraversal converts a traversal to the name of the referenced resource
 // We must take into account possible mod-name as first traversal element
 func ResourceNameFromTraversal(resource string, traversal hcl.Traversal) (string, bool) {
@@ -36,10 +40,10 @@ func ResourceNameFromTraversal(resource string, traversal hcl.Traversal) (string
 	if split[0] == "var" {
 		return strings.Join(split, "."), true
 	}
-	if split[0] == resource && len(split) >= 2 {
+	if len(split) >= 2 && split[0] == resource {
 		return strings.Join(split[:2], "."), true
 	}
-	if split[1] == resource && len(split) >= 3 {
+	if len(split) >= 3 && split[1] == resource {
 		return strings.Join(split[:3], "."), true
 	}
 	return "", false

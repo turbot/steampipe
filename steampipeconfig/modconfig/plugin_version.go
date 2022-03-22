@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	goVersion "github.com/hashicorp/go-version"
+	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/ociinstaller"
 )
@@ -14,7 +14,7 @@ type PluginVersion struct {
 	RawName string `cty:"name" hcl:"name,label"`
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
 	VersionString string `cty:"version" hcl:"version,optional"`
-	Version       *goVersion.Version
+	Version       *semver.Version
 	// the org and name which are parsed from the raw name
 	Org       string
 	Name      string
@@ -39,7 +39,7 @@ func (p *PluginVersion) String() string {
 // Initialise parses the version and name properties
 func (p *PluginVersion) Initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if version, err := goVersion.NewVersion(strings.TrimPrefix(p.VersionString, "v")); err != nil {
+	if version, err := semver.NewVersion(strings.TrimPrefix(p.VersionString, "v")); err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("invalid plugin version %s", p.VersionString),

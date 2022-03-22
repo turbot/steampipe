@@ -6,31 +6,33 @@ import (
 	"log"
 	"time"
 
-	"github.com/turbot/steampipe/db/db_common"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 var initTimeout = 40 * time.Second
 
-func (c *InteractiveClient) readInitDataStream() {
+func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			c.interactivePrompt.ClearScreen()
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 
 		}
 	}()
-	initData := <-*(c.initDataChan)
-	c.initData = initData
+	<-c.initData.Loaded
 
-	if initData.Result.Error != nil {
-		c.initResultChan <- initData.Result
+	if c.initData.Result.Error != nil {
+		c.initResultChan <- c.initData.Result
 		return
 	}
+
+	// asyncronously fetch the schema
+	go c.LoadSchema()
 
 	// now create prepared statements
 	log.Printf("[TRACE] readInitDataStream - data has arrived")
@@ -38,15 +40,15 @@ func (c *InteractiveClient) readInitDataStream() {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		// provide an explicit error handler which re-renders the prompt after displaying the error
-		initData.Result.Error = c.initData.Workspace.SetupWatcher(c.initData.Client, c.workspaceWatcherErrorHandler)
+		c.initData.Result.Error = c.initData.Workspace.SetupWatcher(ctx, c.initData.Client, c.workspaceWatcherErrorHandler)
 
 	}
-	c.initResultChan <- initData.Result
+	c.initResultChan <- c.initData.Result
 }
 
-func (c *InteractiveClient) workspaceWatcherErrorHandler(err error) {
+func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
 	fmt.Println()
-	utils.ShowError(err)
+	utils.ShowError(ctx, err)
 	c.interactivePrompt.Render()
 }
 
@@ -72,7 +74,7 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 }
 
 // return the workspace, or nil if not yet initialised
-func (c *InteractiveClient) workspace() db_common.WorkspaceResourceProvider {
+func (c *InteractiveClient) workspace() *workspace.Workspace {
 	if c.initData == nil {
 		return nil
 	}

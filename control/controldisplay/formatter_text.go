@@ -25,7 +25,7 @@ func (j *TextFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 }
 
 func (j *TextFormatter) FileExtension() string {
-	return "txt"
+	return ".txt"
 }
 
 func (j *TextFormatter) getMaxCols(constraint RangeConstraint) int {

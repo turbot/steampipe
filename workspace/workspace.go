@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,14 +11,16 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/report/reportevents"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
+	"github.com/turbot/steampipe/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -26,30 +29,26 @@ type Workspace struct {
 	ModInstallationPath string
 	Mod                 *modconfig.Mod
 
-	// maps of mod resources from this mod and ALL DEPENDENCIES, keyed by long and short names
-	Queries    map[string]*modconfig.Query
-	Controls   map[string]*modconfig.Control
-	Benchmarks map[string]*modconfig.Benchmark
-	Mods       map[string]*modconfig.Mod
-	Reports    map[string]*modconfig.Report
-	Panels     map[string]*modconfig.Panel
-	Variables  map[string]*modconfig.Variable
+	Mods          map[string]*modconfig.Mod
+	CloudMetadata *steampipeconfig.CloudMetadata
 
-	watcher    *utils.FileWatcher
-	loadLock   sync.Mutex
-	exclusions []string
+	watcher     *utils.FileWatcher
+	loadLock    sync.Mutex
+	exclusions  []string
+	modFilePath string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
-	fileWatcherErrorHandler func(error)
+	fileWatcherErrorHandler func(context.Context, error)
 	watcherError            error
 	// event handlers
-	reportEventHandlers []reportevents.ReportEventHandler
+	dashboardEventHandlers []dashboardevents.DashboardEventHandler
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
+	loadPseudoResources        bool
 }
 
 // Load creates a Workspace and loads the workspace mod
-func Load(workspacePath string) (*Workspace, error) {
+func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
@@ -58,8 +57,9 @@ func Load(workspacePath string) (*Workspace, error) {
 		Path: workspacePath,
 	}
 
-	// determine whether to load files recursively or just from the top level folder
-	workspace.setListFlag()
+	// check whether the workspace contains a modfile
+	// this will determine whether we load files recursively, and create pseudo resources for sql files
+	workspace.setModfileExists()
 
 	// load the .steampipe ignore file
 	if err := workspace.loadExclusions(); err != nil {
@@ -67,7 +67,7 @@ func Load(workspacePath string) (*Workspace, error) {
 	}
 
 	// load the workspace mod
-	if err := workspace.loadWorkspaceMod(); err != nil {
+	if err := workspace.loadWorkspaceMod(ctx); err != nil {
 		return nil, err
 	}
 
@@ -75,7 +75,7 @@ func Load(workspacePath string) (*Workspace, error) {
 	return workspace, nil
 }
 
-// LoadResourceNames builds lists of all workspace respurce names
+// LoadResourceNames builds lists of all workspace resource names
 func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, error) {
 	utils.LogTime("workspace.LoadResourceNames start")
 	defer utils.LogTime("workspace.LoadResourceNames end")
@@ -86,7 +86,7 @@ func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, err
 	}
 
 	// determine whether to load files recursively or just from the top level folder
-	workspace.setListFlag()
+	workspace.setModfileExists()
 
 	// load the .steampipe ignore file
 	if err := workspace.loadExclusions(); err != nil {
@@ -96,7 +96,7 @@ func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, err
 	return workspace.loadWorkspaceResourceName()
 }
 
-func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(error)) error {
+func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, errorHandler func(context.Context, error)) error {
 	watcherOptions := &utils.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
@@ -107,7 +107,7 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 		// decide how to handle them
 		// OnError: errCallback,
 		OnChange: func(events []fsnotify.Event) {
-			w.handleFileWatcherEvent(client, events)
+			w.handleFileWatcherEvent(ctx, client, events)
 		},
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
@@ -122,9 +122,9 @@ func (w *Workspace) SetupWatcher(client db_common.Client, errorHandler func(erro
 	// after a file watcher event
 	w.fileWatcherErrorHandler = errorHandler
 	if w.fileWatcherErrorHandler == nil {
-		w.fileWatcherErrorHandler = func(err error) {
+		w.fileWatcherErrorHandler = func(ctx context.Context, err error) {
 			fmt.Println()
-			utils.ShowErrorWithMessage(err, "Failed to reload mod from file watcher")
+			utils.ShowErrorWithMessage(ctx, err, "Failed to reload mod from file watcher")
 		}
 	}
 
@@ -135,148 +135,78 @@ func (w *Workspace) SetOnFileWatcherEventMessages(f func()) {
 	w.onFileWatcherEventMessages = f
 }
 
+// access functions
+// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with the file watcher
+
 func (w *Workspace) Close() {
 	if w.watcher != nil {
 		w.watcher.Close()
 	}
 }
 
-// access functions
-// NOTE: all access functions lock 'loadLock' - this is to avoid conflicts with th efile watcher
-
-func (w *Workspace) GetQueryMap() map[string]*modconfig.Query {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.Queries
+func (w *Workspace) ModfileExists() bool {
+	return len(w.modFilePath) > 0
 }
 
-func (w *Workspace) GetQuery(queryName string) (*modconfig.Query, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
+// check  whether the workspace contains a modfile
+// this will determine whether we load files recursively, and create pseudo resources for sql files
+func (w *Workspace) setModfileExists() {
+	modFile, err := w.findModFilePath(w.Path)
+	modFileExists := err != ErrorNoModDefinition
 
-	if query, ok := w.Queries[queryName]; ok {
-		return query, true
-	}
-	return nil, false
-}
-
-func (w *Workspace) GetControlMap() map[string]*modconfig.Control {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	return w.Controls
-}
-
-func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	if control, ok := w.Controls[controlName]; ok {
-		return control, true
-	}
-	return nil, false
-}
-
-// GetChildControls builds a flat list of all controls in the worlspace, including dependencies
-func (w *Workspace) GetChildControls() []*modconfig.Control {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-	var result []*modconfig.Control
-	// the workspace resource maps have duplicate entries, keyed by long and short name.
-	// keep track of which controls we have identified in order to avoid dupes
-	controlsMatched := make(map[string]bool)
-	for _, c := range w.Controls {
-		if _, alreadyMatched := controlsMatched[c.Name()]; !alreadyMatched {
-			controlsMatched[c.Name()] = true
-			result = append(result, c)
-		}
-	}
-	return result
-}
-
-// GetResourceMaps returns all resource maps
-// NOTE: this function DOES NOT LOCK the load lock so should only be called in a context where the file watcher is not running
-func (w *Workspace) GetResourceMaps() *modconfig.WorkspaceResourceMaps {
-	workspaceMap := &modconfig.WorkspaceResourceMaps{
-		Mods:       make(map[string]*modconfig.Mod),
-		Queries:    w.Queries,
-		Controls:   w.Controls,
-		Benchmarks: w.Benchmarks,
-		Variables:  w.Variables,
-	}
-	workspaceMap.PopulateReferences()
-
-	// TODO add in all mod dependencies
-	if !w.Mod.IsDefaultMod() {
-		workspaceMap.Mods[w.Mod.Name()] = w.Mod
-	}
-
-	return workspaceMap
-}
-
-// GetMod attempts to return the mod with a name matching 'modName'
-// It first checks the workspace mod, then checks all mod dependencies
-func (w *Workspace) GetMod(modName string) *modconfig.Mod {
-	// is it the workspace mod?
-	if modName == w.Mod.Name() {
-		return w.Mod
-	}
-	// try workspace mod dependencies
-	return w.Mods[modName]
-}
-
-// ModList returns a flat list of all mods - the workspace mod and depenfency mods
-func (w *Workspace) ModList() []*modconfig.Mod {
-	var res = []*modconfig.Mod{w.Mod}
-	for _, m := range w.Mods {
-		res = append(res, m)
-	}
-	return res
-}
-
-// SaveWorkspaceMod searialises the workspace mode to <workspace path?.mod.sp
-func (w *Workspace) SaveWorkspaceMod() error {
-	// TODO
-
-	return nil
-}
-
-// clear all resource maps
-func (w *Workspace) reset() {
-	w.Queries = make(map[string]*modconfig.Query)
-	w.Controls = make(map[string]*modconfig.Control)
-	w.Benchmarks = make(map[string]*modconfig.Benchmark)
-	w.Mods = make(map[string]*modconfig.Mod)
-	w.Reports = make(map[string]*modconfig.Report)
-	w.Panels = make(map[string]*modconfig.Panel)
-}
-
-// determine whether to load files recursively or just from the top level folder
-// if there is a mod file in the workspace folder, load recursively
-func (w *Workspace) setListFlag() {
-	modFilePath := filepath.Join(w.Path, constants.WorkspaceModFileName)
-	_, err := os.Stat(modFilePath)
-	modFileExists := err == nil
 	if modFileExists {
+		log.Printf("[TRACE] modfile exists in workspace folder - creating pseudo-resources and loading files recursively ")
 		// only load/watch recursively if a mod sp file exists in the workspace folder
 		w.listFlag = filehelpers.FilesRecursive
+		w.loadPseudoResources = true
+		w.modFilePath = modFile
+
+		// also set it in the viper config, so that it is available to whoever is using it
+		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
+		w.Path = filepath.Dir(modFile)
 	} else {
+		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and only loading resource files from top level folder")
 		w.listFlag = filehelpers.Files
+		w.loadPseudoResources = false
 	}
 }
 
-func (w *Workspace) loadWorkspaceMod() error {
-	// clear all resource maps
-	w.reset()
+func (w *Workspace) findModFilePath(folder string) (string, error) {
+	folder, err := filepath.Abs(folder)
+	if err != nil {
+		return "", err
+	}
+	modFilePath := filepaths.ModFilePath(folder)
+	_, err = os.Stat(modFilePath)
+	if err == nil {
+		// found the modfile
+		return modFilePath, nil
+	}
+
+	if os.IsNotExist(err) {
+		// if the file wasn't found, search in the parent directory
+		parent := filepath.Dir(folder)
+		if folder == parent {
+			// this typically means that we are already in the root directory
+			return "", ErrorNoModDefinition
+		}
+		return w.findModFilePath(filepath.Dir(folder))
+	}
+	return modFilePath, nil
+}
+
+func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	// load and evaluate all variables
-	inputVariables, err := w.getAllVariables()
+	inputVariables, err := w.getAllVariables(ctx)
 	if err != nil {
 		return err
 	}
 
 	// build run context which we use to load the workspace
-	runCtx := w.getRunContext()
+	runCtx, err := w.getRunContext()
+	if err != nil {
+		return err
+	}
 	// add variables to runContext
 	runCtx.AddVariables(inputVariables)
 
@@ -286,29 +216,38 @@ func (w *Workspace) loadWorkspaceMod() error {
 		return err
 	}
 
+	// populate the mod references map references
+	m.ResourceMaps.PopulateReferences()
+
 	// now set workspace properties
 	w.Mod = m
-	w.Queries = w.buildQueryMap(runCtx.LoadedDependencyMods)
-	w.Controls = w.buildControlMap(runCtx.LoadedDependencyMods)
-	w.Benchmarks = w.buildBenchmarkMap(runCtx.LoadedDependencyMods)
-	w.Reports = w.buildReportMap(runCtx.LoadedDependencyMods)
-	w.Panels = w.buildPanelMap(runCtx.LoadedDependencyMods)
+
 	// set variables on workspace
-	w.Variables = m.Variables
-	// todo what to key mod map with
 	w.Mods = runCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod
 
-	return nil
+	// verify all runtime dependencies can be resolved
+	return w.verifyResourceRuntimeDependencies()
 }
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getRunContext() *parse.RunContext {
-	return parse.NewRunContext(
+func (w *Workspace) getRunContext() (*parse.RunContext, error) {
+	parseFlag := parse.CreateDefaultMod
+	if w.loadPseudoResources {
+		parseFlag |= parse.CreatePseudoResources
+	}
+	// load the workspace lock
+	workspaceLock, err := versionmap.LoadWorkspaceLock(w.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
+	}
+
+	runCtx := parse.NewRunContext(
+		workspaceLock,
 		w.Path,
-		parse.CreatePseudoResources|parse.CreateDefaultMod,
+		parseFlag,
 		&filehelpers.ListOptions{
 			// listFlag specifies whether to load files recursively
 			Flags:   w.listFlag,
@@ -316,123 +255,8 @@ func (w *Workspace) getRunContext() *parse.RunContext {
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
-}
 
-func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
-	// build options used to load workspace
-	opts := w.getRunContext()
-
-	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO load resource names for dependency mods
-	//modsPath := constants.WorkspaceModPath(w.Path)
-	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	return workspaceResourceNames, nil
-}
-
-func (w *Workspace) buildQueryMap(modMap modconfig.ModMap) map[string]*modconfig.Query {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Query)
-
-	// for LOCAL resources, add map entries keyed by both short name: query.<shortName> and  long name: <modName>.query.<shortName?
-	for _, q := range w.Mod.Queries {
-		// add 'local' alias
-		res[q.Name()] = q
-		longName := fmt.Sprintf("%s.query.%s", types.SafeString(w.Mod.ShortName), q.ShortName)
-		res[longName] = q
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, q := range mod.Queries {
-			res[q.QualifiedName()] = q
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildControlMap(modMap modconfig.ModMap) map[string]*modconfig.Control {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Control)
-
-	// for LOCAL resources, add map entries keyed by both short name: control.<shortName> and  long name: <modName>.control.<shortName?
-	for _, c := range w.Mod.Controls {
-		res[c.Name()] = c
-		res[c.QualifiedName()] = c
-	}
-
-	// for mode dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, c := range mod.Controls {
-			res[c.QualifiedName()] = c
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildBenchmarkMap(modMap modconfig.ModMap) map[string]*modconfig.Benchmark {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Benchmark)
-
-	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
-	for _, b := range w.Mod.Benchmarks {
-		res[b.Name()] = b
-		res[b.QualifiedName()] = b
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, c := range mod.Benchmarks {
-			res[c.QualifiedName()] = c
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildReportMap(modMap modconfig.ModMap) map[string]*modconfig.Report {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Report)
-
-	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
-	for _, r := range w.Mod.Reports {
-		res[r.Name()] = r
-		res[r.QualifiedName()] = r
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, r := range mod.Reports {
-			res[r.QualifiedName()] = r
-		}
-	}
-	return res
-}
-
-func (w *Workspace) buildPanelMap(modMap modconfig.ModMap) map[string]*modconfig.Panel {
-	//  build a list of long and short names for these queries
-	var res = make(map[string]*modconfig.Panel)
-
-	// for LOCAL resources, add map entries keyed by both short name: benchmark.<shortName> and  long name: <modName>.benchmark.<shortName?
-	for _, p := range w.Mod.Panels {
-		res[fmt.Sprintf("local.%s", p.Name())] = p
-		res[p.Name()] = p
-		res[p.QualifiedName()] = p
-	}
-
-	// for mod dependencies, add resources keyed by long name only
-	for _, mod := range modMap {
-		for _, p := range mod.Panels {
-			res[p.QualifiedName()] = p
-		}
-	}
-	return res
+	return runCtx, nil
 }
 
 func (w *Workspace) loadExclusions() error {
@@ -442,7 +266,7 @@ func (w *Workspace) loadExclusions() error {
 		fmt.Sprintf("%s/.*", w.Path),
 	}
 
-	ignorePath := filepath.Join(w.Path, constants.WorkspaceIgnoreFile)
+	ignorePath := filepath.Join(w.Path, filepaths.WorkspaceIgnoreFile)
 	file, err := os.Open(ignorePath)
 	if err != nil {
 		// if file does not exist, just return
@@ -470,190 +294,33 @@ func (w *Workspace) loadExclusions() error {
 	return nil
 }
 
-// return a map of all unique panels, keyed by name
-// not we cannot just use PanelMap as this contains duplicates (qualified and unqualified version)
-func (w *Workspace) getPanelMap() map[string]*modconfig.Panel {
-	panels := make(map[string]*modconfig.Panel, len(w.Panels))
-	for _, p := range w.Panels {
-		// refetch the name property to avoid duplicates
-		// (as we save resources with qualified and unqualified name)
-		panels[p.Name()] = p
-	}
-	return panels
-}
-
-// return a map of all unique reports, keyed by name
-// not we cannot just use Reports as this contains duplicates (qualified and unqualified version)
-func (w *Workspace) getReportMap() map[string]*modconfig.Report {
-	reports := make(map[string]*modconfig.Report, len(w.Reports))
-	for _, p := range w.Reports {
-		// refetch the name property to avoid duplicates
-		// (as we save resources with qualified and unqualified name)
-		reports[p.Name()] = p
-	}
-	return reports
-}
-
-// GetQueriesFromArgs retrieves queries from args
-//
-// For each arg check if it is a named query or a file, before falling back to treating it as sql
-func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.WorkspaceResourceMaps, error) {
-	utils.LogTime("execute.GetQueriesFromArgs start")
-	defer utils.LogTime("execute.GetQueriesFromArgs end")
-
-	var queries []string
-	// build map of prepared statement providers
-	var resourceMap = modconfig.NewWorkspaceResourceMaps()
-	for _, arg := range args {
-		query, preparedStatementProvider, err := w.ResolveQueryAndArgs(arg)
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(query) > 0 {
-			queries = append(queries, query)
-			resourceMap.AddPreparedStatementProvider(preparedStatementProvider)
-		}
-	}
-	return queries, resourceMap, nil
-}
-
-// ResolveQueryAndArgs attempts to resolve 'arg' to a query and query args
-func (w *Workspace) ResolveQueryAndArgs(sqlString string) (string, modconfig.PreparedStatementProvider, error) {
-	var args *modconfig.QueryArgs
-	var err error
-
-	// if this looks like a named query or named control invocation, parse the sql string for arguments
-	if isNamedQueryOrControl(sqlString) {
-		sqlString, args, err = parse.ParsePreparedStatementInvocation(sqlString)
-		if err != nil {
-			return "", nil, err
-		}
-	}
-
-	return w.ResolveQuery(sqlString, args)
-}
-
-func (w *Workspace) ResolveQuery(sqlString string, args *modconfig.QueryArgs) (string, modconfig.PreparedStatementProvider, error) {
-	// query or control providing the named query
-	var preparedStatementProvider modconfig.PreparedStatementProvider
-
-	log.Printf("[TRACE] ResolveQuery %s args %s", sqlString, args)
-	// 1) check if this is a control
-	if control, ok := w.GetControl(sqlString); ok {
-		preparedStatementProvider = control
-		log.Printf("[TRACE] query string is a control: %s", control.FullName)
-
-		if args == nil || args.Empty() {
-			// set args to control args (which may also be nil!)
-			args = control.Args
-			log.Printf("[TRACE] using control args: %s", args)
-		} else {
-			// so command line args were provided
-			// check if the control supports them (it will NOT is it specifies a 'query' property)
-			if control.Query != nil {
-				return "", nil, fmt.Errorf("%s defines a query property and so does not support command line arguments", control.FullName)
-			}
-			log.Printf("[TRACE] using command line args: %s", args)
-		}
-
-		// copy control SQL into query and continue resolution
-		var err error
-		sqlString, err = w.ResolveControlQuery(control)
-		if err != nil {
-			return "", nil, err
-		}
-		log.Printf("[TRACE] resolved control query: %s", sqlString)
-	}
-
-	// 2) is this a named query
-	if namedQuery, ok := w.GetQuery(sqlString); ok {
-		preparedStatementProvider = namedQuery
-		sql, err := modconfig.GetPreparedStatementExecuteSQL(namedQuery, args)
-		if err != nil {
-			return "", nil, err
-		}
-		return sql, preparedStatementProvider, nil
-	}
-
-	// 	3) is this a file
-	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
-	if fileExists {
-		if err != nil {
-			return "", nil, fmt.Errorf("ResolveQueryAndArgs failed: error opening file '%s': %v", sqlString, err)
-		}
-		if len(fileQuery) == 0 {
-			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
-			// (just return the empty string - it will be filtered above)
-		}
-		return fileQuery, preparedStatementProvider, nil
-	}
-
-	// 4) so we have not managed to resolve this - if it looks like a named query or control, return an error
-	if isNamedQueryOrControl(sqlString) {
-		return "", nil, fmt.Errorf("'%s' not found in workspace", sqlString)
-	}
-
-	// 5) just use the query string as is and assume it is valid SQL
-	return sqlString, preparedStatementProvider, nil
-}
-
-// ResolveControlQuery resolves the query for the given Control
-func (w *Workspace) ResolveControlQuery(control *modconfig.Control) (string, error) {
-	log.Printf("[TRACE] ResolveControlQuery for %s", control.FullName)
-
-	// verify we have either SQL or a Query defined
-	if control.SQL == nil && control.Query == nil {
-		// this should never happen as we should catch it in the parsing stage
-		return "", fmt.Errorf("%s must define either a 'sql' property or a 'query' property", control.FullName)
-	}
-
-	// set the source for the query - this will either be the control itself or any named query the control refers to
-	// either via its SQL property (passing a query name) or Query property (using a reference to a query object)
-	// default to using the 'Query' property
-	var source modconfig.PreparedStatementProvider = control.Query
-
-	// if the control has SQL set, use that
-	if control.SQL != nil {
-		log.Printf("[TRACE] control defines inline SQL")
-		// if the control SQL refers to a named query, this is the same as if the control 'Query' property is set
-		if namedQuery, ok := w.GetQuery(*control.SQL); ok {
-			// in this case, it is NOT valid for the control to define its own Param definitions
-			if control.Params != nil {
-				return "", fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", control.FullName, namedQuery.FullName)
-			}
-			source = namedQuery
-		} else {
-			// so the control sql is NOT a named query - set the source to be the control
-			source = control
-		}
-	}
-
-	return modconfig.GetPreparedStatementExecuteSQL(source, control.Args)
-}
-
-func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
-	// get absolute filename
-	path, err := filepath.Abs(filename)
+func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
+	// build options used to load workspace
+	runCtx, err := w.getRunContext()
 	if err != nil {
-		return "", false, nil
-	}
-	// does it exist?
-	if _, err := os.Stat(path); err != nil {
-		// if this gives any error, return not exist. we may get a not found or a path too long for example
-		return "", false, nil
+		return nil, err
 	}
 
-	// read file
-	fileBytes, err := os.ReadFile(path)
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, runCtx)
 	if err != nil {
-		return "", true, err
+		return nil, err
 	}
 
-	return string(fileBytes), true, nil
+	// TODO load resource names for dependency mods
+	//modsPath := file_paths.WorkspaceModPath(w.Path)
+	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	return workspaceResourceNames, nil
 }
 
-// does this resource name look like a control or query
-func isNamedQueryOrControl(name string) bool {
-	parsedResourceName, err := modconfig.ParseResourceName(name)
-	return err == nil && parsedResourceName.ItemType == "query" || parsedResourceName.ItemType == "control"
+func (w *Workspace) verifyResourceRuntimeDependencies() error {
+	for _, d := range w.Mod.ResourceMaps.Dashboards {
+		if err := d.BuildRuntimeDependencyTree(w); err != nil {
+			return err
+		}
+	}
+	return nil
 }

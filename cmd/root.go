@@ -1,18 +1,23 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/task"
 	"github.com/turbot/steampipe/utils"
@@ -24,7 +29,7 @@ var exitCode int
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
-	Version: version.String(),
+	Version: version.SteampipeVersion.String(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")
@@ -68,7 +73,7 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", constants.DefaultInstallDir))
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", filepaths.DefaultInstallDir))
 	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
@@ -101,8 +106,8 @@ func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
-	// setup viper without the settings in the config files
-	cmdconfig.SetViperDefaults(nil)
+	// setup viper with the essential path config (workspace-chdir and install-dir)
+	cmdconfig.BootstrapViper()
 
 	// set the working folder
 	workspaceChdir := setWorkspaceChDir()
@@ -119,6 +124,20 @@ func initGlobalConfig() {
 
 	// set viper config defaults from config and env vars
 	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
+
+	// now validate all config values have appropriate values
+	if err := validateConfig(); err != nil {
+		panic(err)
+	}
+}
+
+// now validate  config values have appropriate values
+func validateConfig() error {
+	telemetry := viper.GetString(constants.ArgTelemetry)
+	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
+		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+	}
+	return nil
 }
 
 func setWorkspaceChDir() string {
@@ -137,11 +156,16 @@ func setWorkspaceChDir() string {
 	return workspaceChdir
 }
 
-// CreateLogger :: create a hclog logger with the level specified by the SP_LOG env var
+// create a hclog logger with the level specified by the SP_LOG env var
 func createLogger() {
 	level := logging.LogLevel()
 
-	options := &hclog.LoggerOptions{Name: "steampipe", Level: hclog.LevelFromString(level)}
+	options := &hclog.LoggerOptions{
+		Name:       "steampipe",
+		Level:      hclog.LevelFromString(level),
+		TimeFn:     func() time.Time { return time.Now().UTC() },
+		TimeFormat: "2006-01-02 15:04:05.000 UTC",
+	}
 	if options.Output == nil {
 		options.Output = os.Stderr
 	}
@@ -151,7 +175,7 @@ func createLogger() {
 	log.SetFlags(0)
 }
 
-// SteampipeDir :: set the top level ~/.steampipe folder (creates if it doesnt exist)
+// set the top level ~/.steampipe folder (creates if it doesnt exist)
 func setInstallDir() {
 	utils.LogTime("cmd.root.setInstallDir start")
 	defer utils.LogTime("cmd.root.setInstallDir end")
@@ -162,7 +186,7 @@ func setInstallDir() {
 		err = os.MkdirAll(installDir, 0755)
 		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
-	constants.SteampipeDir = installDir
+	filepaths.SteampipeDir = installDir
 }
 
 func AddCommands() {
@@ -172,8 +196,10 @@ func AddCommands() {
 		queryCmd(),
 		checkCmd(),
 		serviceCmd(),
+		modCmd(),
 		generateCompletionScriptsCmd(),
 		pluginManagerCmd(),
+		dashboardCmd(),
 	)
 }
 
@@ -181,6 +207,20 @@ func Execute() int {
 	utils.LogTime("cmd.root.Execute start")
 	defer utils.LogTime("cmd.root.Execute end")
 
-	rootCmd.Execute()
+	ctx := createRootContext()
+
+	rootCmd.ExecuteContext(ctx)
 	return exitCode
+}
+
+// create the root context - add a status renderer
+func createRootContext() context.Context {
+	var statusRenderer statushooks.StatusHooks = statushooks.NullHooks
+	// if the client is a TTY, inject a status spinner
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		statusRenderer = statushooks.NewStatusSpinner()
+	}
+
+	ctx := statushooks.AddStatusHooksToContext(context.Background(), statusRenderer)
+	return ctx
 }

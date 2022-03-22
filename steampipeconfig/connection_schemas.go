@@ -1,7 +1,7 @@
 package steampipeconfig
 
 import (
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v3/plugin"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 

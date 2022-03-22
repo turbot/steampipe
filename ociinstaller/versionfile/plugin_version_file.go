@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 )
 
 type PluginVersionFile struct {
@@ -37,7 +37,7 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 		return migratedVersionFile, nil
 	}
 
-	versionFilePath := constants.PluginVersionFilePath()
+	versionFilePath := filepaths.PluginVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readPluginVersionFile(versionFilePath)
 	}
@@ -68,7 +68,7 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 
 // Save writes the config file to disk
 func (f *PluginVersionFile) Save() error {
-	versionFilePath := constants.PluginVersionFilePath()
+	versionFilePath := filepaths.PluginVersionFilePath()
 	return f.write(versionFilePath)
 }
 
@@ -83,7 +83,7 @@ func (f *PluginVersionFile) write(path string) error {
 
 // delete the file on disk if it exists
 func (f *PluginVersionFile) delete() {
-	versionFilePath := constants.PluginVersionFilePath()
+	versionFilePath := filepaths.PluginVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		os.Remove(versionFilePath)
 	}

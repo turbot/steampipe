@@ -1,0 +1,44 @@
+{{ define "output" }}
+{{- if render_context.Config.RenderHeader -}}
+group_id,title,description,control_id,control_title,control_description,reason,resource,status{{ range .Data.Root.DimensionKeys }},{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }},{{ . }}{{ end }}
+{{ end -}}
+{{ template "result_group_template" .Data.Root }}
+{{ end }}
+
+{{ define "result_group_template" -}}
+  {{- range .ControlRuns -}}
+    {{- template "control_run_template" . }}
+  {{- end -}}
+  {{- range .Groups -}}
+    {{- template "result_group_template" . -}}
+  {{- end -}}
+{{- end }}
+
+{{ define "control_run_template" }}{{ range .Rows }}{{ template "control_row_template" . }}
+{{ end }}{{ end }}
+
+{{ define "control_row_template" -}}
+  {{- template "group_details" . }},{{ template "control_details" . }},{{ template "reason_resource_status" . }}{{ template "dimensions" . }}{{ template "tags" . -}}
+{{- end }}
+
+{{ define "group_details" -}}
+  {{ toCsvCell .Run.Group.GroupId }},{{ toCsvCell .Run.Group.Title }},{{ toCsvCell .Run.Group.Description -}}
+{{- end }}
+
+{{ define "control_details" -}}
+  {{ toCsvCell .Run.ControlId }},{{ toCsvCell .Run.Title }},{{ toCsvCell .Run.Description -}}
+{{- end }}
+
+{{ define "reason_resource_status" -}}
+  {{ toCsvCell .Reason }},{{ toCsvCell .Resource }},{{ toCsvCell .Status -}}
+{{- end }}
+
+{{ define "dimensions" -}}
+  {{- $row := . -}}
+  {{- range .Run.Tree.Root.DimensionKeys }},{{ toCsvCell ($row.GetDimensionValue .) }}{{ end -}}
+{{- end }}
+
+{{ define "tags" -}}
+  {{- $row := . -}}
+  {{- range .Run.Tree.Root.AllTagKeys }},{{ toCsvCell (index $row.Run.Tags .) }}{{ end -}}
+{{- end }}

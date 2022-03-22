@@ -1,0 +1,71 @@
+{{ define "output" }}
+{{- $first_row_rendered := false -}}
+[  {{- range $runIdx,$run := .Data.ControlRuns -}} 
+        {{- range $rowIdx,$row := $run.Rows -}} 
+            {{- if gt (add $runIdx $rowIdx) 0 -}} 
+                {{/* check if the control is related to aws */}}
+                {{- if $row.Run.MatchTag "plugin" "aws" -}} 
+                    {{ if $first_row_rendered -}},{{ end }}
+                    {{- template "control_row_template" $row -}} 
+                    {{ $first_row_rendered = true }}
+                {{- end -}} 
+            {{- end -}} 
+    {{- end -}} 
+    {{- end }}
+]
+{{ end }}
+
+{{/* sub template for control rows */}}
+{{ define "control_row_template" }} 
+{
+    "SchemaVersion": "2018-10-08",
+    "Id": "{{ .Run.Control.FullName }}",
+    "ProductArn": "arn:aws:securityhub:{{ .GetDimensionValue "region" }}:{{ .GetDimensionValue "account_id" }}:product/{{ .GetDimensionValue "account_id" }}/default",
+    "ProductFields": {
+        "ProviderName": "Steampipe",
+        "ProviderVersion": "{{ render_context.Constants.SteampipeVersion }}"
+    },
+    "GeneratorId": "steampipe-{{ .Run.Control.ShortName }}",
+    "AwsAccountId": "{{ .GetDimensionValue "account_id" }}",
+    "Types": [
+        "automated"
+    ],
+    "UpdatedAt": "{{ now.Format "2006-01-02T15:04:05Z07:00" }}",
+    "CreatedAt": "{{ now.Format "2006-01-02T15:04:05Z07:00" }}",
+    "Title": {{ toJson .Run.Control.Title }},
+    "Description": {{ toJson .Run.Control.Description }},{{ with .Run.Control.Severity }}
+    "Severity": {
+        "Label": "{{ upper . }}"
+    },{{ else }}
+    "Severity": {
+        "Label": "INFORMATIONAL"
+    },{{ end }}
+    "Resources": [
+        { 
+            "Type": "Other",
+            "Id": "{{ .Resource }}"
+        }
+    ],
+    "Compliance": {
+        "Status": "{{ template "statusmap" .Status -}}"
+    }
+} {{ end -}}
+
+{{/* mapping steampipe statuses with ASFF status values */}}
+{{ define "statusmap" }}
+    {{- if eq . "ok" -}}
+        PASSED
+    {{- end -}}
+    {{- if eq . "error" -}}
+        WARNING
+    {{- end -}}
+    {{- if eq . "alarm" -}}
+        FAILED
+    {{- end -}}
+    {{- if eq . "skip" -}}
+        NOT_AVAILABLE
+    {{- end -}}
+    {{- if eq . "info" -}}
+        NOT_AVAILABLE
+    {{- end -}}
+{{- end -}}

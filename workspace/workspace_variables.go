@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -9,14 +10,17 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig"
-	"github.com/turbot/steampipe/steampipeconfig/input_vars"
+	"github.com/turbot/steampipe/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
+func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.Variable, error) {
 	// build options used to load workspace
-	runCtx := w.getRunContext()
+	runCtx, err := w.getRunContext()
+	if err != nil {
+		return nil, err
+	}
 	// only load variables blocks
 	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
 	mod, err := steampipeconfig.LoadMod(w.Path, runCtx)
@@ -26,7 +30,7 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 
 	// TACTICAL - as the tf derived code builds a map keyed by the short variable name, do the same
 	variableMap := make(map[string]*modconfig.Variable)
-	for k, v := range mod.Variables {
+	for k, v := range mod.ResourceMaps.Variables {
 		name := strings.Split(k, ".")[1]
 		variableMap[name] = v
 	}
@@ -37,7 +41,7 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 		return nil, err
 	}
 
-	if err := validateVariables(variableMap, inputVariables); err != nil {
+	if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
 		return nil, err
 	}
 
@@ -53,11 +57,11 @@ func (w *Workspace) getAllVariables() (map[string]*modconfig.Variable, error) {
 	return variableMap, nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (input_vars.InputValues, error) {
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
-	inputValuesUnparsed, diags := input_vars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
+	inputValuesUnparsed, diags := inputvars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
 	if diags.HasErrors() {
 		return nil, diags.Err()
 	}
@@ -65,26 +69,26 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 	if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
 		return nil, err
 	}
-	parsedValues, diags := input_vars.ParseVariableValues(inputValuesUnparsed, variableMap)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap)
 
 	return parsedValues, diags.Err()
 }
 
-func validateVariables(variableMap map[string]*modconfig.Variable, variables input_vars.InputValues) error {
-	diags := input_vars.CheckInputVariables(variableMap, variables)
+func validateVariables(ctx context.Context, variableMap map[string]*modconfig.Variable, variables inputvars.InputValues) error {
+	diags := inputvars.CheckInputVariables(variableMap, variables)
 	if diags.HasErrors() {
-		displayValidationErrors(diags)
+		displayValidationErrors(ctx, diags)
 		// return empty error
 		return modconfig.VariableValidationFailedError{}
 	}
 	return nil
 }
 
-func displayValidationErrors(diags tfdiags.Diagnostics) {
+func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 	fmt.Println()
 	for i, diag := range diags {
 
-		utils.ShowError(fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
+		utils.ShowError(ctx, fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
 		fmt.Println(diag.Description().Detail)
 		if i < len(diags)-1 {
 			fmt.Println()
@@ -93,7 +97,7 @@ func displayValidationErrors(diags tfdiags.Diagnostics) {
 	}
 }
 
-func identifyMissingVariables(existing map[string]input_vars.UnparsedVariableValue, vcs map[string]*modconfig.Variable) error {
+func identifyMissingVariables(existing map[string]inputvars.UnparsedVariableValue, vcs map[string]*modconfig.Variable) error {
 	var needed []*modconfig.Variable
 
 	for name, vc := range vcs {

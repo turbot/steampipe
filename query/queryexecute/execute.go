@@ -4,43 +4,45 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/db/db_common"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/contexthelpers"
+	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/interactive"
+	"github.com/turbot/steampipe/query"
 	"github.com/turbot/steampipe/utils"
 )
 
-func RunInteractiveSession(initChan *chan *db_common.QueryInitData) {
+func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := interactive.RunInteractivePrompt(initChan)
+	resultsStreamer, err := interactive.RunInteractivePrompt(ctx, initData)
 	utils.FailOnError(err)
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
+		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.AllResultsRead()
 	}
 }
 
-func RunBatchSession(ctx context.Context, initDataChan chan *db_common.QueryInitData) int {
+func RunBatchSession(ctx context.Context, initData *query.InitData) int {
+	// ensure we close client
+	defer initData.Cleanup(ctx)
+
+	// start cancel handler to intercept interrupts and cancel the context
+	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
+	contexthelpers.StartCancelHandler(initData.Cancel)
+
 	// wait for init
-	initData := <-initDataChan
+	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
 		utils.FailOnError(err)
 	}
-	// ensure we close client
-	defer func() {
-		if initData.Client != nil {
-			initData.Client.Close()
-		}
-	}()
 
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
@@ -86,7 +88,7 @@ func executeQuery(ctx context.Context, queryString string, client db_common.Clie
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(r)
+		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}

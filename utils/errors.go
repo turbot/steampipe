@@ -9,12 +9,12 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
+	"github.com/turbot/steampipe/statushooks"
 )
 
 var (
-	colorErr    = color.RedString("Error")
-	colorWarn   = color.YellowString("Warning")
-	colorNotice = color.GreenString("Notice")
+	colorErr  = color.RedString("Error")
+	colorWarn = color.YellowString("Warning")
 )
 
 func init() {
@@ -35,20 +35,22 @@ func FailOnErrorWithMessage(err error, message string) {
 	}
 }
 
-func ShowError(err error) {
+func ShowError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
 	err = HandleCancelError(err)
+	statushooks.Done(ctx)
 	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
-func ShowErrorWithMessage(err error, message string) {
+func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 	if err == nil {
 		return
 	}
 	err = HandleCancelError(err)
+	statushooks.Done(ctx)
 	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TransformErrorToSteampipe(err))
 }
 
@@ -64,9 +66,9 @@ func TransformErrorToSteampipe(err error) error {
 
 	errString := strings.TrimSpace(err.Error())
 
-	// an error that originated from our database/sql driver (always prefixed with "pq:")
-	if strings.HasPrefix(errString, "pq:") {
-		errString = strings.TrimSpace(strings.TrimPrefix(errString, "pq:"))
+	// an error that originated from our database/sql driver (always prefixed with "ERROR:")
+	if strings.HasPrefix(errString, "ERROR:") {
+		errString = strings.TrimSpace(strings.TrimPrefix(errString, "ERROR:"))
 
 		// if this is an RPC Error while talking with the plugin
 		if strings.HasPrefix(errString, "rpc error") {

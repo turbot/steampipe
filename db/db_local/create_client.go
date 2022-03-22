@@ -14,7 +14,6 @@ import (
 func getLocalSteampipeConnectionString() (string, error) {
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
-	log.Println("[TRACE] createDbClient")
 
 	info, err := GetState()
 	if err != nil {
@@ -39,8 +38,8 @@ type CreateDbOptions struct {
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
 func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*sql.DB, error) {
-	utils.LogTime("db.createDbClient start")
-	defer utils.LogTime("db.createDbClient end")
+	utils.LogTime("db.createLocalDbClient start")
+	defer utils.LogTime("db.createLocalDbClient end")
 
 	// load the db status
 	info, err := GetState()
@@ -67,10 +66,10 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*sql.DB, e
 	log.Println("[TRACE] Connection string: ", psqlInfo)
 
 	// connect to the database using the postgres driver
-	utils.LogTime("db.createDbClient connection open start")
+	utils.LogTime("db.createLocalDbClient connection open start")
 	db, err := sql.Open("pgx", psqlInfo)
 	db.SetMaxOpenConns(1)
-	utils.LogTime("db.createDbClient connection open end")
+	utils.LogTime("db.createLocalDbClient connection open end")
 
 	if err != nil {
 		return nil, err

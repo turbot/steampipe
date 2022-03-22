@@ -1,5 +1,6 @@
 
 
+
 ## Sample control with all possible statuses(severity=high)
  
 *Sample control that returns 10 OK, 5 ALARM, 2 ERROR, 1 SKIP and 3 INFO*
@@ -38,6 +39,3 @@
 
 
 \
-
-
-

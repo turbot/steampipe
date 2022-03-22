@@ -6,15 +6,18 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/hashicorp/hcl/v2/gohcl"
+	"sort"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/json"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v3/plugin"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 	"sigs.k8s.io/yaml"
 )
 
@@ -43,16 +46,21 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	var parsedConfigFiles []*hcl.File
 	var diags hcl.Diagnostics
 	parser := hclparse.NewParser()
-	for configPath, data := range fileData {
+
+	// build ordered list of files so that we parse in a repeatable order
+	filePaths := buildOrderedFileNameList(fileData)
+
+	for _, filePath := range filePaths {
 		var file *hcl.File
 		var moreDiags hcl.Diagnostics
-		ext := filepath.Ext(configPath)
+		ext := filepath.Ext(filePath)
 		if ext == constants.JsonExtension {
-			file, moreDiags = json.ParseFile(configPath)
+			file, moreDiags = json.ParseFile(filePath)
 		} else if constants.IsYamlExtension(ext) {
-			file, moreDiags = parseYamlFile(configPath)
+			file, moreDiags = parseYamlFile(filePath)
 		} else {
-			file, moreDiags = parser.ParseHCL(data, configPath)
+			data := fileData[filePath]
+			file, moreDiags = parser.ParseHCL(data, filePath)
 		}
 
 		if moreDiags.HasErrors() {
@@ -65,6 +73,17 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 	return hcl.MergeFiles(parsedConfigFiles), diags
 }
 
+func buildOrderedFileNameList(fileData map[string][]byte) []string {
+	filePaths := make([]string, len(fileData))
+	idx := 0
+	for filePath := range fileData {
+		filePaths[idx] = filePath
+		idx++
+	}
+	sort.Strings(filePaths)
+	return filePaths
+}
+
 // ModfileExists returns whether a mod file exists at the specified path
 func ModfileExists(modPath string) bool {
 	modFilePath := filepath.Join(modPath, "mod.sp")
@@ -75,12 +94,10 @@ func ModfileExists(modPath string) bool {
 }
 
 // ParseModDefinition parses the modfile only
-// it is expected the callign code wil lhave verified the existence of the modfile by calling ModfileExists
+// it is expected the calling code will have verified the existence of the modfile by calling ModfileExists
 func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
-	// TODO think about variables
-
 	// if there is no mod at this location, return error
-	modFilePath := filepath.Join(modPath, "mod.sp")
+	modFilePath := filepaths.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("no mod file found in %s", modPath)
 	}
@@ -94,9 +111,8 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
 	}
 
-	content, moreDiags := body.Content(ModBlockSchema)
-	if moreDiags.HasErrors() {
-		diags = append(diags, moreDiags...)
+	content, diags := body.Content(ModBlockSchema)
+	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
@@ -107,15 +123,24 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 
 	for _, block := range content.Blocks {
 		if block.Type == modconfig.BlockTypeMod {
-			mod := modconfig.NewMod(block.Labels[0], modPath, block.DefRange)
-			diags := gohcl.DecodeBody(block.Body, evalCtx, mod)
+			var defRange = block.DefRange
+			if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
+				defRange = hclBody.SrcRange
+			}
+			mod, err := modconfig.NewMod(block.Labels[0], modPath, defRange)
+			if err != nil {
+				return nil, err
+			}
+			diags = gohcl.DecodeBody(block.Body, evalCtx, mod)
 			if diags.HasErrors() {
 				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
 			}
 			// call decode callback
-			if err := mod.OnDecoded(block); err != nil {
+			if err := mod.OnDecoded(block, nil); err != nil {
 				return nil, err
 			}
+			// set modfilename
+			mod.SetFilePath(modFilePath)
 			return mod, nil
 		}
 	}
@@ -149,38 +174,42 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 
 	// if variables were passed in runcontext, add to the mod
 	for _, v := range runCtx.Variables {
-		mod.AddResource(v)
+		if diags = mod.AddResource(v); diags.HasErrors() {
+			return nil, plugin.DiagsToError("Failed to add resource to mod", diags)
+		}
 	}
 
 	// add pseudo resources to the mod
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
 	// add this mod to run context - this it to ensure all pseudo resources get added
-	runCtx.AddMod(mod, content, fileData)
-
-	// perform initial decode to get dependencies
-	// (if there are no dependencies, this is all that is needed)
-	diags = decode(runCtx)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+	runCtx.SetDecodeContent(content, fileData)
+	if diags = runCtx.AddMod(mod); diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to add mod to run context", diags)
 	}
 
-	// if eval is not complete, there must be dependencies - run again in dependency order
-	if !runCtx.EvalComplete() {
+	// we may need to decode more than once as we gather dependencies as we go
+	const maxDecodes = 2
+	for attempt := 0; attempt < maxDecodes; attempt++ {
 		diags = decode(runCtx)
 		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to parse all mod hcl files", diags)
+			return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
 		}
 
-		// we failed to resolve dependencies
-		if !runCtx.EvalComplete() {
-			return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", runCtx.FormatDependencies())
+		// if eval is complete, we're done
+		if runCtx.EvalComplete() {
+			break
 		}
+	}
+
+	// we failed to resolve dependencies
+	if !runCtx.EvalComplete() {
+		str := runCtx.FormatDependencies()
+		return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", str)
 	}
 
 	// now tell mod to build tree of controls.
-	// NOTE: this also builds the sorted benchmark list
-	if err := mod.BuildResourceTree(); err != nil {
+	if err := mod.BuildResourceTree(runCtx.LoadedDependencyMods); err != nil {
 		return nil, err
 	}
 
@@ -228,18 +257,19 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 	var duplicates []string
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedence
-		// TODO check for pseudo resource dupes and warn
-		if _, ok := hclResources[r.Name()]; ok {
-			duplicates = append(duplicates, r.Name())
+		name := r.GetUnqualifiedName()
+		if _, ok := hclResources[name]; ok {
+			duplicates = append(duplicates, r.GetDeclRange().Filename)
 			continue
 		}
-		// set mod pointer on pseudo resource
-		r.SetMod(mod)
 		// add pseudo resource to mod
-		mod.AddPseudoResource(r)
+		mod.AddResource(r.(modconfig.HclResource))
+		// add to map of existing resources
+		hclResources[name] = true
 	}
-	if len(duplicates) > 0 {
-		log.Printf("[TRACE] %d files were not converted into resources as hcl resources of same name are defined: %v", len(duplicates), duplicates)
+	numDupes := len(duplicates)
+	if numDupes > 0 {
+		log.Printf("[TRACE] %d %s  not converted into resources as hcl resources of same name are defined: %v", numDupes, utils.Pluralize("file", numDupes), duplicates)
 	}
 }
 
@@ -257,7 +287,6 @@ func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[st
 			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
 			hclResources[name] = true
 		}
-		// TODO Panel
 	}
 	return hclResources, nil
 }
@@ -293,10 +322,6 @@ func ParseModResourceNames(fileData map[string][]byte) (*modconfig.WorkspaceReso
 			// for any mappable resource, store the resource name
 			name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
 			resources.Benchmark[name] = true
-			//case modconfig.BlockTypePanel:
-			//	// for any mappable resource, store the resource name
-			//	name := modconfig.BuildModResourceName(block.Type, block.Labels[0])
-			//	resources.Panel[name]=true
 		}
 	}
 	return resources, nil

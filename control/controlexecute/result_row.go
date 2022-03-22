@@ -15,11 +15,28 @@ import (
 
 // ResultRow is the result of a control execution for a single resource
 type ResultRow struct {
-	Reason     string             `json:"reason" csv:"reason"`
-	Resource   string             `json:"resource" csv:"resource"`
-	Status     string             `json:"status" csv:"status"`
-	Dimensions []Dimension        `json:"dimensions"`
-	Control    *modconfig.Control `json:"-" csv:"control_id:FullName,control_title:Title,control_description:Description"`
+	// reason for the status
+	Reason string `json:"reason" csv:"reason"`
+	// resource name
+	Resource string `json:"resource" csv:"resource"`
+	// status of the row (ok, info, alarm, error, skip)
+	Status string `json:"status" csv:"status"`
+	// dimensions for this row
+	Dimensions []Dimension `json:"dimensions"`
+	// parent control run
+	Run *ControlRun `json:"-"`
+	// source control
+	Control *modconfig.Control `json:"-" csv:"control_id:UnqualifiedName,control_title:Title,control_description:Description"`
+}
+
+// GetDimensionValue returns the value for a dimension key. Returns an empty string with 'false' if not found
+func (r *ResultRow) GetDimensionValue(key string) string {
+	for _, dim := range r.Dimensions {
+		if dim.Key == key {
+			return dim.Value
+		}
+	}
+	return ""
 }
 
 // AddDimension checks whether a column value is a scalar type, and if so adds it to the Dimensions map
@@ -32,13 +49,14 @@ func (r *ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
 	}
 }
 
-func NewResultRow(control *modconfig.Control, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
+func NewResultRow(run *ControlRun, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
 	// validate the required columns exist in the result
 	if err := validateColumns(colTypes); err != nil {
 		return nil, err
 	}
 	res := &ResultRow{
-		Control: control,
+		Run:     run,
+		Control: run.Control,
 	}
 
 	// was there a SQL error _executing the control

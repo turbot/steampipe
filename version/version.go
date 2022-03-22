@@ -8,7 +8,7 @@ package version
 import (
 	"fmt"
 
-	goVersion "github.com/hashicorp/go-version"
+	"github.com/Masterminds/semver"
 )
 
 /**
@@ -19,27 +19,24 @@ Also https://www.digitalocean.com/community/tutorials/using-ldflags-to-set-versi
 **/
 
 // The main version number that is being run at the moment.
-var steampipeVersion = "0.11.0"
+var steampipeVersion = "0.13.3"
 
 // A pre-release marker for the version. If this is "" (empty string)
 // then it means that it is a final release. Otherwise, this is a pre-release
 // such as "dev" (in development), "beta", "rc1", etc.
-var prerelease = "dev.0"
+var prerelease = ""
 
-// Version is an instance of version.Version. This has the secondary
+// SteampipeVersion is an instance of semver.Version. This has the secondary
 // benefit of verifying during tests and init time that our version is a
 // proper semantic version, which should always be the case.
-var Version *goVersion.Version
+var SteampipeVersion *semver.Version
+
+var VersionString string
 
 func init() {
-	versionString := steampipeVersion
+	VersionString = steampipeVersion
 	if prerelease != "" {
-		versionString = fmt.Sprintf("%s-%s", steampipeVersion, prerelease)
+		VersionString = fmt.Sprintf("%s-%s", steampipeVersion, prerelease)
 	}
-	Version = goVersion.Must(goVersion.NewVersion(versionString))
-}
-
-// String returns the complete version string, including prerelease
-func String() string {
-	return Version.String()
+	SteampipeVersion = semver.MustParse(VersionString)
 }

@@ -6,18 +6,19 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/steampipe/constants"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
 )
 
-// InstallFdw :: Install the Steampipe Hub Extension files from an OCI image
-func InstallFdw(ctx context.Context, imageRef string, dbLocation string) (string, error) {
-	tempDir := NewTempDir(imageRef)
+// InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
+func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
+	tempDir := NewTempDir(dbLocation)
 	defer tempDir.Delete()
 
 	imageDownloader := NewOciDownloader()
 
 	// download the blobs.
-	image, err := imageDownloader.Download(ctx, imageRef, "fdw", tempDir.Path)
+	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.FdwImageRef), ImageTypeFdw, tempDir.Path)
 	if err != nil {
 		return "", err
 	}
@@ -43,7 +44,7 @@ func updateVersionFileFdw(image *SteampipeImage) error {
 	v.FdwExtension.Version = image.Config.Fdw.Version
 	v.FdwExtension.Name = "fdwExtension"
 	v.FdwExtension.ImageDigest = string(image.OCIDescriptor.Digest)
-	v.FdwExtension.InstalledFrom = image.ImageRef
+	v.FdwExtension.InstalledFrom = image.ImageRef.requestedRef
 	v.FdwExtension.LastCheckedDate = timeNow
 	v.FdwExtension.InstallDate = timeNow
 	return v.Save()

@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.WorkspaceResourceMaps, session *DatabaseSession) (err error, warnings []string) {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ModResources, session *DatabaseSession) (err error, warnings []string) {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -33,37 +33,33 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Works
 	return ctx.Err(), warnings
 }
 
-func GetPreparedStatementsSQL(resourceMaps *modconfig.WorkspaceResourceMaps) map[string]string {
+func GetPreparedStatementsSQL(resourceMaps *modconfig.ModResources) map[string]string {
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
-	for _, query := range resourceMaps.Queries {
-		// query map contains long and short names for queries - have we already created this query
-		if _, ok := sqlMap[query.FullName]; ok {
-			continue
+	for _, queryProvider := range resourceMaps.QueryProviders() {
+		if createSQL := getPreparedStatementCreateSql(queryProvider); createSQL != nil {
+			sqlMap[queryProvider.Name()] = *createSQL
 		}
-
-		// remove trailing semicolons from sql as this breaks the prepare statement
-		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(query.SQL)), ";")
-		preparedStatementName := query.GetPreparedStatementName()
-		sqlMap[query.FullName] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
 	}
-
-	for _, control := range resourceMaps.Controls {
-		// query map contains long and short names for queries - have we already created this query
-		if _, ok := sqlMap[control.FullName]; ok {
-			continue
-		}
-		// only create prepared statements for controls with inline SQL
-		if control.SQL == nil {
-			continue
-		}
-
-		// remove trailing semicolons from sql as this breaks the prepare statement
-		rawSql := strings.TrimRight(strings.TrimSpace(typehelpers.SafeString(control.SQL)), ";")
-		preparedStatementName := control.GetPreparedStatementName()
-		sqlMap[control.FullName] = fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
-	}
-
 	return sqlMap
+}
 
+func getPreparedStatementCreateSql(queryProvider modconfig.QueryProvider) *string {
+	// the query is a prepared statement if it defines its own sql and has parameters or (positional) arguments
+	if !modconfig.QueryProviderIsParameterised(queryProvider) {
+		return nil
+	}
+
+	// if the query provider has params, is MUST define SQL
+
+	// remove trailing semicolons from sql as this breaks the prepare statement
+	rawSql := cleanPreparedStatementCreateSQL(typehelpers.SafeString(queryProvider.GetSQL()))
+	preparedStatementName := queryProvider.GetPreparedStatementName()
+	createSQL := fmt.Sprintf("PREPARE %s AS (\n%s\n)", preparedStatementName, rawSql)
+	return &createSQL
+}
+
+func cleanPreparedStatementCreateSQL(query string) string {
+	rawSql := strings.TrimRight(strings.TrimSpace(query), ";")
+	return rawSql
 }

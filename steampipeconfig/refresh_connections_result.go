@@ -29,5 +29,5 @@ func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {
 	if other.Error != nil {
 		r.Error = other.Error
 	}
-	r.Warnings = append(other.Warnings)
+	r.Warnings = append(r.Warnings, other.Warnings...)
 }

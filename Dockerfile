@@ -5,12 +5,13 @@ ARG TARGETVERSION
 ARG TARGETOS
 ARG TARGETARCH
 
-#  'wget' for downloading steampipe, 'less' for paging in the UI
-RUN apt-get update -y \
- && apt-get install -y wget less \
- && adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
+# add a non-root 'steampipe' user
+RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
 
-# downlaod the published image
+# updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' interactive mode
+RUN apt-get update -y && apt-get install -y wget less
+
+# download the release as given in TARGETVERSION, TARGETOS and TARGETARCH
 RUN echo \
  && cd /tmp \
  && wget -nv https://github.com/turbot/steampipe/releases/download/${TARGETVERSION}/steampipe_${TARGETOS}_${TARGETARCH}.tar.gz \
@@ -27,15 +28,20 @@ WORKDIR /workspace
 # disable auto-update
 ENV STEAMPIPE_UPDATE_CHECK=false
 
-# Run --version
-RUN steampipe --version
+# Run steampipe service once
+RUN steampipe service start --dashboard
+# and stop it
+RUN steampipe service stop
 
-# Run steampipe query to install db and fdw (they are installed on the first run)
-RUN steampipe query "select * from steampipe_mod"
-
+# remove the generated service .passwd file from this image, so that it gets regenerated in the container
 RUN rm -f /home/steampipe/.steampipe/internal/.passwd
 
+# expose postgres service default port
 EXPOSE 9193
+
+# expose dashboard service default port
+EXPOSE 9194
+
 COPY docker-entrypoint.sh /usr/local/bin
 ENTRYPOINT [ "docker-entrypoint.sh" ]
 CMD [ "steampipe"]

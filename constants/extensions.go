@@ -11,6 +11,7 @@ const (
 	VariablesExtension     = ".spvars"
 	AutoVariablesExtension = ".auto.spvars"
 	JsonExtension          = ".json"
+	CsvExtension           = ".csv"
 )
 
 var YamlExtensions = []string{".yml", ".yaml"}

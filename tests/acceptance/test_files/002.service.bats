@@ -44,9 +44,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Extract password from the state file
   db_name=$(cat $target_install_directory/internal/steampipe.json | jq .Database)
   echo $db_name
+  echo $output
   
   # Both should be equal
   assert_equal "$db_name" "\"custom_db_name\""
+  # Check if database name in the output is the same
+  assert_output --partial 'Database:           custom_db_name'
   
   run steampipe service stop --install-dir $target_install_directory
   
@@ -82,4 +85,25 @@ load "$LIB_BATS_SUPPORT/load.bash"
     newCheckFileContent=$(cat $STEAMPIPE_INSTALL_DIR/internal/update-check.json)
 
     assert_equal "$(echo $newCheckFileContent | jq '.lastChecked')" '"2021-04-10T17:53:40+05:30"'
+}
+
+@test "start service, install plugin and query" {
+  # start service
+  steampipe service start
+
+  # install plugin
+  steampipe plugin install chaos
+
+  # query the plugin
+  run steampipe query "select time_col from chaos_cache_check limit 1"
+  # check if the query passes
+  assert_success
+
+  # stop service
+  steampipe service stop
+
+  # check service status
+  run steampipe service status
+
+  assert_output "$output" "Service is not running"
 }

@@ -14,19 +14,19 @@ func testCasesSpacer() map[string]spacerTest {
 	return map[string]spacerTest{
 
 		"2": {
-			2, fmt.Sprintf("%s", ControlColors.Spacer("..")),
+			2, fmt.Sprintf("%s", ControlColors.Spacer(". ")),
 		},
 		"3": {
-			3, fmt.Sprintf("%s", ControlColors.Spacer("...")),
+			3, fmt.Sprintf("%s", ControlColors.Spacer(".. ")),
 		},
 		"10": {
-			10, fmt.Sprintf("%s", ControlColors.Spacer("..........")),
+			10, fmt.Sprintf("%s", ControlColors.Spacer("......... ")),
 		},
 	}
 }
 
 func TestSpacer(t *testing.T) {
-	themeDef := ColorSchemes["dark"]
+	themeDef := ColorSchemes["plain"]
 	scheme, _ := NewControlColorScheme(themeDef)
 	ControlColors = scheme
 

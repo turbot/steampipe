@@ -21,8 +21,14 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# Report server
-/report/reportserver/static/
+# Dashboard UI
+/ui/dashboard/.idea
+/ui/dashboard/.vscode
+/ui/dashboard/build
+/ui/dashboard/node_modules
+/ui/dashboard/output
+/ui/dashboard/yarn-debug.log*
+/ui/dashboard/yarn-error.log*
 
 # Dist directory is created by goreleaser
 /dist

@@ -10,12 +10,16 @@ const (
 	ArgOn                = "on"
 	ArgOff               = "off"
 	ArgClear             = "clear"
-	ArgPort              = "database-port"
+	ArgDatabasePort      = "database-port"
 	ArgListenAddress     = "database-listen"
 	ArgServicePassword   = "database-password"
+	ArgDashboard         = "dashboard"
+	ArgDashboardListen   = "dashboard-listen"
+	ArgDashboardPort     = "dashboard-port"
 	ArgForeground        = "foreground"
 	ArgInvoker           = "invoker"
 	ArgUpdateCheck       = "update-check"
+	ArgTelemetry         = "telemetry"
 	ArgInstallDir        = "install-dir"
 	ArgWorkspace         = "workspace"
 	ArgWorkspaceChDir    = "workspace-chdir"
@@ -37,6 +41,10 @@ const (
 	ArgVarFile           = "var-file"
 	ArgConnectionString  = "connection-string"
 	ArgCheckDisplayWidth = "check-display-width"
+	ArgPrune             = "prune"
+	ArgModInstall        = "mod-install"
+	ArgServiceMode       = "service-mode"
+	ArgBrowser           = "browser"
 )
 
 /// metaquery mode arguments

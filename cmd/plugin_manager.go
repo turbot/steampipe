@@ -5,17 +5,19 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/turbot/go-kit/types"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
 	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/connection_watcher"
+	"github.com/turbot/steampipe/connectionwatcher"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -32,6 +34,7 @@ func pluginManagerCmd() *cobra.Command {
 }
 
 func runPluginManagerCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	logger := createPluginManagerLog()
 
 	log.Printf("[INFO] starting plugin manager")
@@ -41,16 +44,18 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		log.Printf("[WARN] failed to load connection config: %s", err.Error())
 		os.Exit(1)
 	}
-	configMap := connection_watcher.NewConnectionConfigMap(steampipeConfig.Connections)
-	log.Printf("[TRACE] loaded config map")
+	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
+	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
-	pluginManager := plugin_manager.NewPluginManager(configMap, logger)
+	pluginManager := pluginmanager.NewPluginManager(configMap, logger)
 
 	if shouldRunConnectionWatcher() {
-		connectionWatcher, err := connection_watcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
+		log.Printf("[INFO] starting connection watcher")
+
+		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
-			utils.ShowError(err)
+			utils.ShowError(ctx, err)
 			os.Exit(1)
 		}
 
@@ -63,7 +68,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 }
 
 func shouldRunConnectionWatcher() bool {
-	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
+	// if EnvConnectionWatcher is set, overwrite the value in DefaultConnectionOptions
 	if envStr, ok := os.LookupEnv(constants.EnvConnectionWatcher); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			return parsedEnv
@@ -74,13 +79,17 @@ func shouldRunConnectionWatcher() bool {
 
 func createPluginManagerLog() hclog.Logger {
 	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
-	logPath := filepath.Join(constants.LogDir(), logName)
+	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
 		os.Exit(3)
 	}
-	logger := logging.NewLogger(&hclog.LoggerOptions{Output: f})
+	logger := logging.NewLogger(&hclog.LoggerOptions{
+		Output:     f,
+		TimeFn:     func() time.Time { return time.Now().UTC() },
+		TimeFormat: "2006-01-02 15:04:05.000 UTC",
+	})
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)

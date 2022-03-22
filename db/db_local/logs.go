@@ -26,7 +26,7 @@ func TrimLogs() {
 			continue
 		}
 
-		age := time.Now().Sub(fi.ModTime()).Hours()
+		age := time.Since(fi.ModTime()).Hours()
 		if age > logRetentionDays*24 {
 			logPath := filepath.Join(fileLocation, fileName)
 			err := os.Remove(logPath)

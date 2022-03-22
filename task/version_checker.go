@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"os"
 
+	SemVer "github.com/Masterminds/semver"
 	"github.com/fatih/color"
-	SemVer "github.com/hashicorp/go-version"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -18,7 +18,7 @@ import (
 )
 
 // the current version of the Steampipe CLI application
-var currentVersion = version.String()
+var currentVersion = version.SteampipeVersion.String()
 
 type versionCheckResponse struct {
 	NewVersion   string    `json:"latest_version,omitempty"` // `json:"current_version"`

@@ -1,53 +1,67 @@
 package modconfig
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ShortName        string
-	FullName         string             `cty:"name"`
-	Description      *string            `cty:"description" column:"description,text"`
-	Documentation    *string            `cty:"documentation"  column:"documentation,text"`
-	SearchPath       *string            `cty:"search_path"  column:"search_path,text"`
-	SearchPathPrefix *string            `cty:"search_path_prefix"  column:"search_path_prefix,text"`
-	Severity         *string            `cty:"severity"  column:"severity,text"`
-	SQL              *string            `cty:"sql"  column:"sql,text"`
-	Tags             *map[string]string `cty:"tags"  column:"tags,jsonb"`
-	Title            *string            `cty:"title"  column:"title,text"`
-	Query            *Query
-	// args
-	// arguments may be specified by either a map of named args or as a list of positional args
-	// we apply special decode logic to convert the params block into a QueryArgs object
-	// with either an args map or list assigned
-	Args   *QueryArgs  `cty:"args" column:"args,jsonb"`
-	Params []*ParamDef `cty:"params" column:"params,jsonb"`
+	ResourceWithMetadataBase
+	QueryProviderBase
 
-	// list of all blocks referenced by the resource
-	References []*ResourceReference
-	Mod        *Mod `cty:"mod"`
-	DeclRange  hcl.Range
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	parents               []ModTreeItem
-	metadata              *ResourceMetadata
-	PreparedStatementName string `column:"prepared_statement_name,text"`
+	ShortName        string            `json:"-"`
+	FullName         string            `cty:"name"  json:"-"`
+	Description      *string           `cty:"description" hcl:"description" column:"description,text"  json:"description,omitempty"`
+	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"  json:"documentation,omitempty"`
+	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"  json:"search_path,omitempty"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"  json:"search_path_prefix,omitempty"`
+	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"  json:"search_path_prefix,omitempty"`
+	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
+	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"-"`
+
+	// QueryProvider
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"json:"-"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+
+	References      []*ResourceReference ` json:"-"`
+	Mod             *Mod                 `cty:"mod"  json:"-"`
+	DeclRange       hcl.Range            `json:"-"`
+	UnqualifiedName string               `json:"-"`
+	Paths           []NodePath           `json:"-"`
+
+	// dashboard specific properties
+	Base  *Control `hcl:"base" json:"-"`
+	Width *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
+
+	parents []ModTreeItem
 }
 
-func NewControl(block *hcl.Block) *Control {
+func NewControl(block *hcl.Block, mod *Mod, shortName string) *Control {
+
 	control := &Control{
-		ShortName: block.Labels[0],
-		FullName:  fmt.Sprintf("control.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
-		Args:      NewQueryArgs(),
+		ShortName:       shortName,
+		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
+		UnqualifiedName: fmt.Sprintf("control.%s", shortName),
+		Mod:             mod,
+		DeclRange:       block.DefRange,
+		Args:            NewQueryArgs(),
 	}
+
+	control.SetAnonymous(block)
 	return control
 }
 
@@ -64,20 +78,12 @@ func (c *Control) Equals(other *Control) bool {
 	if !res {
 		return res
 	}
-	// tags
-	if c.Tags == nil {
-		if other.Tags != nil {
+	if len(c.Tags) != len(other.Tags) {
+		return false
+	}
+	for k, v := range c.Tags {
+		if otherVal := other.Tags[k]; v != otherVal {
 			return false
-		}
-	} else {
-		// we have tags
-		if other.Tags == nil {
-			return false
-		}
-		for k, v := range *c.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
-				return false
-			}
 		}
 	}
 
@@ -165,11 +171,6 @@ func (c *Control) GetParentNames() []string {
 	return parents
 }
 
-// AddChild implements ModTreeItem - controls cannot have children so just return error
-func (c *Control) AddChild(child ModTreeItem) error {
-	return errors.New("cannot add child to a control")
-}
-
 // AddParent implements ModTreeItem
 func (c *Control) AddParent(parent ModTreeItem) error {
 	c.parents = append(c.parents, parent)
@@ -194,14 +195,14 @@ func (c *Control) GetDescription() string {
 // GetTags implements ModTreeItem
 func (c *Control) GetTags() map[string]string {
 	if c.Tags != nil {
-		return *c.Tags
+		return c.Tags
 	}
 	return map[string]string{}
 }
 
 // GetChildren implements ModTreeItem
 func (c *Control) GetChildren() []ModTreeItem {
-	return []ModTreeItem{}
+	return nil
 }
 
 // Name implements ModTreeItem, HclResource
@@ -210,20 +211,28 @@ func (c *Control) Name() string {
 	return c.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.control.<shortName>'
-func (c *Control) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", c.metadata.ModName, c.FullName)
+// QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
+func (c *Control) QualifiedNameWithVersion() string {
+	return fmt.Sprintf("%s.%s", c.Mod.NameWithVersion(), c.FullName)
 }
 
 // GetPaths implements ModTreeItem
 func (c *Control) GetPaths() []NodePath {
-	var res []NodePath
+	// lazy load
+	if len(c.Paths) == 0 {
+		c.SetPaths()
+	}
+
+	return c.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (c *Control) SetPaths() {
 	for _, parent := range c.parents {
 		for _, parentPath := range parent.GetPaths() {
-			res = append(res, append(parentPath, c.Name()))
+			c.Paths = append(c.Paths, append(parentPath, c.Name()))
 		}
 	}
-	return res
 }
 
 // CtyValue implements HclResource
@@ -232,16 +241,28 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (c *Control) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+	c.setBaseProperties(resourceMapProvider)
+	// verify the control has either a query or a sql attribute
+	if c.Query == nil && c.SQL == nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
+			Subject:  &c.DeclRange,
+		}}
+	}
+
+	return nil
+}
 
 // AddReference implements HclResource
 func (c *Control) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)
 }
 
-// SetMod implements HclResource
-func (c *Control) SetMod(mod *Mod) {
-	c.Mod = mod
+// GetReferences implements HclResource
+func (b *Control) GetReferences() []*ResourceReference {
+	return b.References
 }
 
 // GetMod implements HclResource
@@ -254,31 +275,141 @@ func (c *Control) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (c *Control) GetMetadata() *ResourceMetadata {
-	return c.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (c *Control) SetMetadata(metadata *ResourceMetadata) {
-	c.metadata = metadata
-}
-
-// GetParams implements PreparedStatementProvider
+// GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params
 }
 
-// GetPreparedStatementName implements PreparedStatementProvider
+// GetQuery implements QueryProvider
+func (c *Control) GetQuery() *Query {
+	return c.Query
+}
+
+// GetArgs implements QueryProvider
+func (c *Control) GetArgs() *QueryArgs {
+	return c.Args
+}
+
+// GetSQL implements QueryProvider
+func (c *Control) GetSQL() *string {
+	return c.SQL
+}
+
+// SetArgs implements QueryProvider
+func (c *Control) SetArgs(args *QueryArgs) {
+	c.Args = args
+}
+
+// SetParams implements QueryProvider
+func (c *Control) SetParams(params []*ParamDef) {
+	c.Params = params
+}
+
+// GetPreparedStatementName implements QueryProvider
 func (c *Control) GetPreparedStatementName() string {
-	// lazy load
-	if c.PreparedStatementName == "" {
-		c.PreparedStatementName = preparedStatementName(c)
+	if c.PreparedStatementName != "" {
+		return c.PreparedStatementName
 	}
+	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
 	return c.PreparedStatementName
 }
 
-// ModName implements PreparedStatementProvider
-func (c *Control) ModName() string {
-	return c.Mod.ShortName
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (c *Control) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+	// defer to base
+	return c.getPreparedStatementExecuteSQL(c, runtimeArgs)
+}
+
+// GetWidth implements DashboardLeafNode
+func (c *Control) GetWidth() int {
+	if c.Width == nil {
+		return 0
+	}
+	return *c.Width
+}
+
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (c *Control) GetUnqualifiedName() string {
+	return c.UnqualifiedName
+}
+
+func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
+		Item: c,
+		Name: c.Name(),
+	}
+
+	if !utils.SafeStringsEqual(c.Description, other.Description) {
+		res.AddPropertyDiff("Description")
+	}
+	if !utils.SafeStringsEqual(c.Documentation, other.Documentation) {
+		res.AddPropertyDiff("Documentation")
+	}
+	if !utils.SafeStringsEqual(c.SearchPath, other.SearchPath) {
+		res.AddPropertyDiff("SearchPath")
+	}
+	if !utils.SafeStringsEqual(c.SearchPathPrefix, other.SearchPathPrefix) {
+		res.AddPropertyDiff("SearchPathPrefix")
+	}
+	if !utils.SafeStringsEqual(c.Severity, other.Severity) {
+		res.AddPropertyDiff("Severity")
+	}
+	if len(c.Tags) != len(other.Tags) {
+		res.AddPropertyDiff("Tags")
+	} else {
+		for k, v := range c.Tags {
+			if otherVal := other.Tags[k]; v != otherVal {
+				res.AddPropertyDiff("Tags")
+			}
+		}
+	}
+
+	res.dashboardLeafNodeDiff(c, other)
+	res.queryProviderDiff(c, other)
+
+	return res
+}
+
+func (c *Control) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+	// not all base properties are stored in the evalContext
+	// (e.g. resource metadata and runtime dependencies are not stores)
+	//  so resolve base from the resource map provider (which is the RunContext)
+	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+		return
+	} else {
+		c.Base = base.(*Control)
+	}
+
+	if c.Description == nil {
+		c.Description = c.Base.Description
+	}
+	if c.Documentation == nil {
+		c.Documentation = c.Base.Documentation
+	}
+	if c.SearchPath == nil {
+		c.SearchPath = c.Base.SearchPath
+	}
+	if c.SearchPathPrefix == nil {
+		c.SearchPathPrefix = c.Base.SearchPathPrefix
+	}
+	if c.Severity == nil {
+		c.Severity = c.Base.Severity
+	}
+	if c.SQL == nil {
+		c.SQL = c.Base.SQL
+	}
+	c.Tags = utils.MergeStringMaps(c.Tags, c.Base.Tags)
+	if c.Title == nil {
+		c.Title = c.Base.Title
+	}
+	if c.Query == nil {
+		c.Query = c.Base.Query
+	}
+	if c.Args == nil {
+		c.Args = c.Base.Args
+	}
+	if c.Params == nil {
+		c.Params = c.Base.Params
+	}
+	c.MergeRuntimeDependencies(c.Base)
 }

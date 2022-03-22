@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -22,16 +22,16 @@ const (
 )
 
 // Remove removes an installed plugin
-func Remove(image string, pluginConnections map[string][]modconfig.Connection) error {
-	spinner := display.ShowSpinner(fmt.Sprintf("Removing plugin %s", image))
-	defer display.StopSpinner(spinner)
+func Remove(ctx context.Context, image string, pluginConnections map[string][]modconfig.Connection) error {
+	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
+	defer statushooks.Done(ctx)
 
 	fullPluginName := ociinstaller.NewSteampipeImageRef(image).DisplayImageRef()
 
 	// are any connections using this plugin???
 	conns := pluginConnections[fullPluginName]
 
-	installedTo := filepath.Join(constants.PluginDir(), filepath.FromSlash(fullPluginName))
+	installedTo := filepath.Join(filepaths.EnsurePluginDir(), filepath.FromSlash(fullPluginName))
 	_, err := os.Stat(installedTo)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("plugin '%s' not found", image)
@@ -60,7 +60,7 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 	connFiles := Unique(files)
 
 	if len(connFiles) > 0 {
-		display.StopSpinner(spinner)
+
 		str := []string{fmt.Sprintf("\nUninstalled plugin %s\n\nNote: the following %s %s %s steampipe %s using the '%s' plugin:", image, utils.Pluralize("file", len(connFiles)), utils.Pluralize("has", len(connFiles)), utils.Pluralize("a", len(conns)), utils.Pluralize("connection", len(conns)), image)}
 		for _, file := range connFiles {
 			str = append(str, fmt.Sprintf("\n \t* file: %s", file))
@@ -78,7 +78,7 @@ func Remove(image string, pluginConnections map[string][]modconfig.Connection) e
 			}
 		}
 		str = append(str, fmt.Sprintf("\nPlease remove %s to continue using steampipe", utils.Pluralize("it", len(connFiles))))
-		fmt.Println(strings.Join(str, "\n"))
+		statushooks.Message(ctx, str...)
 		fmt.Println()
 	}
 	return err
@@ -117,9 +117,9 @@ func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListIt
 
 	var installedPlugins []string
 
-	filepath.Walk(constants.PluginDir(), func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(filepaths.EnsurePluginDir(), func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".plugin") {
-			rel, err := filepath.Rel(constants.PluginDir(), filepath.Dir(path))
+			rel, err := filepath.Rel(filepaths.EnsurePluginDir(), filepath.Dir(path))
 			if err != nil {
 				return err
 			}

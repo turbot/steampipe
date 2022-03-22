@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/plugin"
 	"github.com/turbot/steampipe/statefile"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -23,7 +24,6 @@ import (
 
 //  Plugin management commands
 func pluginCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "plugin [command]",
 		Args:  cobra.NoArgs,
@@ -88,7 +88,6 @@ Examples:
 
 // Update plugins
 func pluginUpdateCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "update [flags] [registry/org/]name[@version]",
 		Args:  cobra.ArbitraryArgs,
@@ -112,7 +111,7 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("all", "", false, "Update all plugins to its latest available version").
+		AddBoolFlag(constants.ArgAll, "", false, "Update all plugins to its latest available version").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for plugin update")
 
 	return cmd
@@ -120,7 +119,6 @@ Examples:
 
 // List plugins
 func pluginListCmd() *cobra.Command {
-
 	var cmd = &cobra.Command{
 		Use:   "list",
 		Args:  cobra.NoArgs,
@@ -176,16 +174,15 @@ Example:
 
 // exitCode=1 For unknown errors resulting in panics
 // exitCode=2 For insufficient/wrong arguments passed in the command
-// exitCode=3 For errors related to loading state, loading version data or an issue contacting
-// the update server.
+// exitCode=3 For errors related to loading state, loading version data or an issue contacting the update server.
 // exitCode=4 For plugin listing failures
-
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginInstallCmd install")
 	defer func() {
 		utils.LogTime("runPluginInstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
@@ -198,7 +195,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(plugins) == 0 {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to install"))
+		utils.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -209,7 +206,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	spinner := display.ShowSpinner("")
+	statusSpinner := statushooks.NewStatusSpinner()
 
 	for _, p := range plugins {
 		isPluginExists, _ := plugin.Exists(p)
@@ -217,12 +214,12 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			installReports = append(installReports, display.InstallReport{
 				Plugin:         p,
 				Skipped:        true,
-				SkipReason:     display.ALREADY_INSTALLED,
+				SkipReason:     constants.PluginAlreadyInstalled,
 				IsUpdateReport: false,
 			})
 			continue
 		}
-		display.UpdateSpinnerMessage(spinner, fmt.Sprintf("Installing plugin: %s", p))
+		statusSpinner.SetStatus(fmt.Sprintf("Installing plugin: %s", p))
 		image, err := plugin.Install(cmd.Context(), p)
 		if err != nil {
 			msg := ""
@@ -255,9 +252,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	display.StopSpinner(spinner)
+	statusSpinner.Done()
 
-	refreshConnectionsIfNecessary(cmd.Context(), installReports, false)
+	refreshConnectionsIfNecessary(cmd.Context(), installReports, true)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -265,33 +262,23 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginUpdateCmd install")
 	defer func() {
 		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
-	// args to 'plugin update' -- one or more plugins to install
-	// These can be simple names ('aws') for "standard" plugins, or
-	// full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
-	plugins := append([]string{}, args...)
 
-	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
+	// args to 'plugin update' -- one or more plugins to update
+	// These can be simple names ('aws') for "standard" plugins,
+	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
+	plugins, err := resolveUpdatePluginsFromArgs(args)
+	if err != nil {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all")))
-		fmt.Println()
-		cmd.Help()
-		fmt.Println()
-		exitCode = 2
-		return
-	}
-
-	if len(plugins) > 0 && cmdconfig.Viper().GetBool("all") {
-		// we can't allow update and install at the same time
-		fmt.Println()
-		utils.ShowError(fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`")))
+		utils.ShowError(ctx, err)
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -301,7 +288,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	state, err := statefile.LoadState()
 	if err != nil {
-		utils.ShowError(fmt.Errorf("could not load state"))
+		utils.ShowError(ctx, fmt.Errorf("could not load state"))
 		exitCode = 3
 		return
 	}
@@ -309,7 +296,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// load up the version file data
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
-		utils.ShowError(fmt.Errorf("error loading current plugin data"))
+		utils.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
 		exitCode = 3
 		return
 	}
@@ -320,7 +307,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	if cmdconfig.Viper().GetBool("all") {
+	if cmdconfig.Viper().GetBool(constants.ArgAll) {
 		for k, v := range versionData.Plugins {
 			ref := ociinstaller.NewSteampipeImageRef(k)
 			org, name, stream := ref.GetOrgNameAndStream()
@@ -340,7 +327,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				updateReports = append(updateReports, display.InstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     display.NOT_INSTALLED,
+					SkipReason:     constants.PluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -356,14 +343,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	spinner := display.ShowSpinner("Checking for available updates")
+	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
-	display.StopSpinner(spinner)
+	statusSpinner.Done()
 
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
-		utils.ShowError(fmt.Errorf("there was an issue contacting the update server. Please try later"))
+		utils.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later"))
 		exitCode = 3
 		return
 	}
@@ -373,15 +360,15 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			updateReports = append(updateReports, display.InstallReport{
 				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 				Skipped:        true,
-				SkipReason:     display.LATEST_ALREADY_INSTALLED,
+				SkipReason:     constants.PluginLatestAlreadyInstalled,
 				IsUpdateReport: true,
 			})
 			continue
 		}
 
-		spinner := display.ShowSpinner(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
+		statusSpinner.SetStatus(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
 		image, err := plugin.Install(cmd.Context(), report.Plugin.Name)
-		display.StopSpinner(spinner)
+		statusSpinner.Done()
 		if err != nil {
 			msg := ""
 			if strings.HasSuffix(err.Error(), "not found") {
@@ -414,15 +401,30 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		})
 	}
 
-	refreshConnectionsIfNecessary(cmd.Context(), updateReports, true)
+	refreshConnectionsIfNecessary(cmd.Context(), updateReports, false)
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
 }
 
+func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
+	plugins := append([]string{}, args...)
+
+	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
+		// either plugin name(s) or "all" must be provided
+		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
+	}
+
+	if len(plugins) > 0 && cmdconfig.Viper().GetBool(constants.ArgAll) {
+		// we can't allow update and install at the same time
+		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
+	}
+	return plugins, nil
+}
+
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, isUpdate bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, shouldReload bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -437,7 +439,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 	}
 
 	// reload the config, since an installation MUST have created a new config file
-	if !isUpdate {
+	if shouldReload {
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspaceChDir), cmd.Name())
 		if err != nil {
@@ -450,7 +452,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer client.Close(ctx)
 	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		return res.Error
@@ -461,24 +463,26 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports []display.Instal
 }
 
 func runPluginListCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
 		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
+
 	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
-		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
+		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
 		exitCode = 4
 		return
 	}
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		utils.ShowErrorWithMessage(err, "Plugin Listing failed")
+		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
 		exitCode = 4
 	}
 	headers := []string{"Name", "Version", "Connections"}
@@ -490,35 +494,37 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
+	ctx := cmd.Context()
 	utils.LogTime("runPluginUninstallCmd uninstall")
 
 	defer func() {
 		utils.LogTime("runPluginUninstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 	}()
 
 	if len(args) == 0 {
 		fmt.Println()
-		utils.ShowError(fmt.Errorf("you need to provide at least one plugin to uninstall"))
+		utils.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
 		exitCode = 2
 		return
 	}
-	connectionMap, err := getPluginConnectionMap(cmd.Context())
+
+	connectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		utils.ShowError(err)
+		utils.ShowError(ctx, err)
 		exitCode = 4
 		return
 	}
 
 	for _, p := range args {
-		if err := plugin.Remove(p, connectionMap); err != nil {
-			utils.ShowErrorWithMessage(err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
+		if err := plugin.Remove(ctx, p, connectionMap); err != nil {
+			utils.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		}
 	}
 }
@@ -529,7 +535,7 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 	if err != nil {
 		return nil, err
 	}
-	defer client.Close()
+	defer client.Close(ctx)
 	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
 		return nil, res.Error

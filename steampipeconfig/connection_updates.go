@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v3/plugin"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -94,8 +94,9 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	}
 
 	//  instantiate connection plugins for all updates
-	if err := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema); err != nil {
-		res.Error = err
+	otherRes := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
+	res.Merge(otherRes)
+	if res.Error != nil {
 		return nil, res
 	}
 
@@ -134,15 +135,15 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 	}
 }
 
-func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) error {
-	updateConnections := u.Update.Connections()
-	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
-	// - remove these from list of plugins to create
-	connectionsToCreate := removeConnectionsFromList(updateConnections, alreadyCreatedConnectionPlugins)
-	// now crerate them
-	connectionPlugins, err := CreateConnectionPlugins(connectionsToCreate)
-	if err != nil {
-		return err
+func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) *RefreshConnectionResult {
+	// get list of connections to update:
+	// - exclude connections already created
+	// - for any aggregator connections, instantiate the first child connection instead
+	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
+	// now create them
+	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate, &CreateConnectionPluginOptions{SetConnectionConfig: true})
+	if res.Error != nil {
+		return res
 	}
 	// add back in the already created plugins
 	for name, connectionPlugin := range alreadyCreatedConnectionPlugins {
@@ -150,21 +151,40 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	}
 	// and set our ConnectionPlugins property
 	u.ConnectionPlugins = connectionPlugins
-	return nil
+	return res
 }
-func removeConnectionsFromList(sourceConnections []*modconfig.Connection, connectionsToRemove map[string]*ConnectionPlugin) []*modconfig.Connection {
-	if connectionsToRemove == nil {
-		return sourceConnections
+
+func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []*modconfig.Connection {
+	updateConnections := u.Update.Connections()
+	// put connections into a map to avoid dupes
+	var connectionMap = make(map[string]*modconfig.Connection, len(updateConnections))
+	for _, connection := range updateConnections {
+		// if this connection is an aggregator, instantiate its first child connection instead
+		if connection.Type == modconfig.ConnectionTypeAggregator {
+			connection = connection.FirstChild()
+		}
+
+		connectionMap[connection.Name] = connection
+	}
+	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
+	// - remove these from list of plugins to create
+	for name := range alreadyCreatedConnectionPlugins {
+		delete(connectionMap, name)
 	}
 
-	// build list of required connections
-	var res []*modconfig.Connection
-	for _, c := range sourceConnections {
-		if _, ok := connectionsToRemove[c.Name]; !ok {
-			res = append(res, c)
-		}
+	// now copy result into array
+	res := make([]*modconfig.Connection, len(connectionMap))
+	idx := 0
+	for _, c := range connectionMap {
+		res[idx] = c
+		idx++
 	}
+
 	return res
+}
+
+func (u *ConnectionUpdates) HasUpdates() bool {
+	return len(u.Update)+len(u.Delete) > 0
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {
@@ -186,9 +206,9 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		}
 	}
 
-	connectionsPluginsWithDynamicSchema, err := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
-	if err != nil {
-		return nil, nil, err
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections(), &CreateConnectionPluginOptions{SetConnectionConfig: true})
+	if res.Error != nil {
+		return nil, nil, res.Error
 	}
 	log.Printf("[TRACE] fetched schema for %d dynamic %s", len(connectionsPluginsWithDynamicSchema), utils.Pluralize("plugin", len(connectionsPluginsWithDynamicSchema)))
 
@@ -198,7 +218,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 		schemaHash := pluginSchemaHash(c.Schema)
 		hashMap[name] = schemaHash
 	}
-	return hashMap, connectionsPluginsWithDynamicSchema, err
+	return hashMap, connectionsPluginsWithDynamicSchema, nil
 }
 
 func pluginSchemaHash(s *proto.Schema) string {

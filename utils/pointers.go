@@ -4,3 +4,8 @@ package utils
 func ToStringPointer(s string) *string {
 	return &s
 }
+
+// ToIntegerPointer converts an integer into its pointer
+func ToIntegerPointer(i int) *int {
+	return &i
+}

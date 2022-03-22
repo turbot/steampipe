@@ -3,15 +3,17 @@ package modconfig
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
-	goVersion "github.com/hashicorp/go-version"
-
+	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/types"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -20,6 +22,8 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
+	ResourceWithMetadataBase
+
 	// ShortName is the mod name, e.g. azure_thrifty
 	ShortName string `cty:"short_name" hcl:"name,label"`
 	// FullName is the mod name prefixed with 'mod', e.g. mod.azure_thrifty
@@ -30,59 +34,66 @@ type Mod struct {
 	ModDependencyPath string `cty:"mod_dependency_path"`
 
 	// attributes
-	Categories    *[]string          `cty:"categories" hcl:"categories" column:"categories,jsonb"`
-	Color         *string            `cty:"color" hcl:"color" column:"color,text"`
-	Description   *string            `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string            `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Icon          *string            `cty:"icon" hcl:"icon" column:"icon,text"`
-	Tags          *map[string]string `cty:"tags" hcl:"tags" column:"tags,jsonb"`
-	Title         *string            `cty:"title" hcl:"title" column:"title,text"`
-
-	// list of all blocks referenced by the resource
-	References []*ResourceReference
+	Categories    []string          `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
+	Color         *string           `cty:"color" hcl:"color" column:"color,text"`
+	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Icon          *string           `cty:"icon" hcl:"icon" column:"icon,text"`
+	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
+	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// blocks
-	Requires  *Requires  `hcl:"requires,block"`
-	OpenGraph *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
+	Require       *Require   `hcl:"require,block"`
+	LegacyRequire *Require   `hcl:"requires,block"`
+	OpenGraph     *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
-	Version *goVersion.Version
-
-	Queries    map[string]*Query
-	Controls   map[string]*Control
-	Benchmarks map[string]*Benchmark
-	Reports    map[string]*Report
-	Panels     map[string]*Panel
-	Variables  map[string]*Variable
-	Locals     map[string]*Local
-
-	// flat list of all resources
-	AllResources map[string]HclResource
-
-	// list of benchmark names, sorted alphabetically
-	benchmarksOrdered []string
+	VersionString string `cty:"version"`
+	Version       *semver.Version
 
 	// ModPath is the installation location of the mod
 	ModPath   string
 	DeclRange hcl.Range
 
+	// the filepath of the mod.sp file (will be empty for default mod)
+	modFilePath string
+	// array of direct mod children - excludes resources which are children of other resources
 	children []ModTreeItem
-	metadata *ResourceMetadata
+	// convenient aggregation of all resources
+	// NOTE: this resource map object references the same set of resources
+	ResourceMaps *ModResources
 }
 
-func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
-	return &Mod{
-		ShortName:    shortName,
-		FullName:     fmt.Sprintf("mod.%s", shortName),
-		Queries:      make(map[string]*Query),
-		Controls:     make(map[string]*Control),
-		Benchmarks:   make(map[string]*Benchmark),
-		Reports:      make(map[string]*Report),
-		Panels:       make(map[string]*Panel),
-		Variables:    make(map[string]*Variable),
-		Locals:       make(map[string]*Local),
-		ModPath:      modPath,
-		DeclRange:    defRange,
-		AllResources: make(map[string]HclResource),
+func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
+	require, err := NewRequire()
+	if err != nil {
+		return nil, err
+	}
+	mod := &Mod{
+		ShortName: shortName,
+		FullName:  fmt.Sprintf("mod.%s", shortName),
+		ModPath:   modPath,
+		DeclRange: defRange,
+		Require:   require,
+	}
+	mod.ResourceMaps = NewWorkspaceResourceMaps(mod)
+
+	// try to derive mod version from the path
+	mod.setVersion()
+
+	return mod, nil
+}
+
+func (m *Mod) setVersion() {
+	segments := strings.Split(m.ModPath, "@")
+	if len(segments) == 1 {
+		return
+	}
+	versionString := segments[len(segments)-1]
+	// try to set version, ignoring error
+	version, err := semver.NewVersion(versionString)
+	if err == nil {
+		m.Version = version
+		m.VersionString = fmt.Sprintf("%d.%d", version.Major(), version.Minor())
 	}
 }
 
@@ -108,344 +119,59 @@ func (m *Mod) Equals(other *Mod) bool {
 			return false
 		}
 
-		if len(*m.Categories) != len(*other.Categories) {
+		if len(m.Categories) != len(other.Categories) {
 			return false
 		}
-		for i, c := range *m.Categories {
-			if (*other.Categories)[i] != c {
-				return false
-			}
-		}
-	}
-	// tags
-	if m.Tags == nil {
-		if other.Tags != nil {
-			return false
-		}
-	} else {
-		// we have tags
-		if other.Tags == nil {
-			return false
-		}
-		for k, v := range *m.Tags {
-			if otherVal, ok := (*other.Tags)[k]; !ok && v != otherVal {
+		for i, c := range m.Categories {
+			if (other.Categories)[i] != c {
 				return false
 			}
 		}
 	}
 
-	// controls
-	for k := range m.Controls {
-		if _, ok := other.Controls[k]; !ok {
+	// tags
+	if len(m.Tags) != len(other.Tags) {
+		return false
+	}
+	for k, v := range m.Tags {
+		if otherVal := other.Tags[k]; v != otherVal {
 			return false
 		}
 	}
-	for k := range m.Queries {
-		if _, ok := other.Queries[k]; !ok {
-			return false
-		}
+
+	// now check the child resources
+	if !m.ResourceMaps.Equals(other.ResourceMaps) {
+		return false
 	}
-	for k := range other.Queries {
-		if _, ok := m.Queries[k]; !ok {
-			return false
-		}
-	}
-	// queries
-	for k := range other.Controls {
-		if _, ok := m.Controls[k]; !ok {
-			return false
-		}
-	}
-	// benchmarks
-	for k := range m.Benchmarks {
-		if _, ok := other.Benchmarks[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Benchmarks {
-		if _, ok := m.Benchmarks[k]; !ok {
-			return false
-		}
-	}
-	// reports
-	for k := range m.Reports {
-		if _, ok := other.Reports[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Reports {
-		if _, ok := m.Reports[k]; !ok {
-			return false
-		}
-	}
-	// panels
-	for k := range m.Panels {
-		if _, ok := other.Panels[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Panels {
-		if _, ok := m.Panels[k]; !ok {
-			return false
-		}
-	}
-	// variables
-	for k := range m.Variables {
-		if _, ok := other.Variables[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Variables {
-		if _, ok := m.Variables[k]; !ok {
-			return false
-		}
-	}
-	// locals
-	for k := range m.Locals {
-		if _, ok := other.Locals[k]; !ok {
-			return false
-		}
-	}
-	for k := range other.Locals {
-		if _, ok := m.Locals[k]; !ok {
-			return false
-		}
-	}
+
 	return true
 
 }
 
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
-func CreateDefaultMod(modPath string) *Mod {
-	m := NewMod(defaultModName, modPath, hcl.Range{})
+func CreateDefaultMod(modPath string) (*Mod, error) {
+	m, err := NewMod(defaultModName, modPath, hcl.Range{})
+	if err != nil {
+		return nil, err
+	}
 	folderName := filepath.Base(modPath)
 	m.Title = &folderName
-	return m
+	return m, nil
 }
 
 // IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition
 func (m *Mod) IsDefaultMod() bool {
-	return m.ShortName == defaultModName
+	return m.modFilePath == ""
 }
 
-func (m *Mod) String() string {
-	if m == nil {
-		return ""
+func (m *Mod) NameWithVersion() string {
+	if m.VersionString == "" {
+		return m.ShortName
 	}
-	// build ordered list of query names
-	var queryNames []string
-	for name := range m.Queries {
-		queryNames = append(queryNames, name)
-	}
-	sort.Strings(queryNames)
-	var queryStrings []string
-	for _, name := range queryNames {
-		queryStrings = append(queryStrings, m.Queries[name].String())
-	}
-	// build ordered list of control names
-	var controlNames []string
-	for name := range m.Controls {
-		controlNames = append(controlNames, name)
-	}
-	sort.Strings(controlNames)
-
-	var controlStrings []string
-	for _, name := range controlNames {
-		controlStrings = append(controlStrings, m.Controls[name].String())
-	}
-	// build ordered list of control group names
-	var benchmarkNames []string
-	for name := range m.Benchmarks {
-		benchmarkNames = append(benchmarkNames, name)
-	}
-	sort.Strings(benchmarkNames)
-
-	var benchmarkStrings []string
-	for _, name := range benchmarkNames {
-		benchmarkStrings = append(benchmarkStrings, m.Benchmarks[name].String())
-	}
-
-	versionString := ""
-	if m.Version != nil {
-		versionString = fmt.Sprintf("\nVersion: %s", types.SafeString(m.Version))
-	}
-	var requiresStrings []string
-	var requiresString string
-	if m.Requires != nil {
-		if m.Requires.SteampipeVersionString != "" {
-			requiresStrings = append(requiresStrings, fmt.Sprintf("Steampipe %s", m.Requires.SteampipeVersionString))
-		}
-		for _, m := range m.Requires.Mods {
-			requiresStrings = append(requiresStrings, m.String())
-		}
-		for _, p := range m.Requires.Plugins {
-			requiresStrings = append(requiresStrings, p.String())
-		}
-		requiresString = fmt.Sprintf("Requires: \n%s", strings.Join(requiresStrings, "\n"))
-	}
-
-	return fmt.Sprintf(`Name: %s
-Title: %s
-Description: %s 
-Version: %s
-Queries: 
-%s
-Controls: 
-%s
-Benchmarks: 
-%s
-%s`,
-		m.FullName,
-		types.SafeString(m.Title),
-		types.SafeString(m.Description),
-		versionString,
-		strings.Join(queryStrings, "\n"),
-		strings.Join(controlStrings, "\n"),
-		strings.Join(benchmarkStrings, "\n"),
-		requiresString,
-	)
+	return fmt.Sprintf("%s@%s", m.ShortName, m.VersionString)
 }
 
-// BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmar
-// NOTE: this also builds the sorted benchmark list
-func (m *Mod) BuildResourceTree() error {
-	// build sorted list of benchmarks
-	m.benchmarksOrdered = make([]string, len(m.Benchmarks))
-	idx := 0
-	for name, benchmark := range m.Benchmarks {
-		// save this benchmark name
-		m.benchmarksOrdered[idx] = name
-		idx++
-
-		// add benchmark into control tree
-		if err := m.addItemIntoResourceTree(benchmark); err != nil {
-			return err
-		}
-	}
-	// now sort the benchmark names
-	sort.Strings(m.benchmarksOrdered)
-
-	for _, control := range m.Controls {
-		if err := m.addItemIntoResourceTree(control); err != nil {
-			return err
-		}
-	}
-	for _, panel := range m.Panels {
-		if err := m.addItemIntoResourceTree(panel); err != nil {
-			return err
-		}
-	}
-	for _, report := range m.Reports {
-		if err := m.addItemIntoResourceTree(report); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *Mod) addItemIntoResourceTree(item ModTreeItem) error {
-	parents := m.getParents(item)
-
-	// so we have a result - add into tree
-	for _, p := range parents {
-		// TODO validity checking
-		//for _, parentPath := range p.GetPaths() {
-		//	// check this item does not exist in the parent path
-		//	if helpers.StringSliceContains(parentPath, item.Name()) {
-		//		return fmt.Errorf("cyclical dependency adding '%s' into control tree - parent '%s'", item.Name(), p.Name())
-		//	}
-		item.AddParent(p)
-		p.AddChild(item)
-		//}
-	}
-
-	return nil
-}
-
-func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	switch r := item.(type) {
-	case *Query:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Queries[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		}
-		m.Queries[name] = r
-
-	case *Control:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Controls[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		}
-		m.Controls[name] = r
-
-	case *Benchmark:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Benchmarks[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Benchmarks[name] = r
-		}
-
-	case *Panel:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Panels[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Panels[name] = r
-		}
-
-	case *Report:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Reports[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Reports[name] = r
-		}
-
-	case *Variable:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Variables[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Variables[name] = r
-		}
-
-	case *Local:
-		name := r.Name()
-		// check for dupes
-		if _, ok := m.Locals[name]; ok {
-			diags = append(diags, duplicateResourceDiagnostics(item))
-			break
-		} else {
-			m.Locals[name] = r
-		}
-	}
-	m.AllResources[item.Name()] = item
-	return diags
-}
-
-func duplicateResourceDiagnostics(item HclResource) *hcl.Diagnostic {
-	return &hcl.Diagnostic{
-		Severity: hcl.DiagError,
-		Summary:  fmt.Sprintf("mod defines more than one resource named %s", item.Name()),
-		Subject:  item.GetDeclRange(),
-	}
-}
-
-// AddChild  implements ModTreeItem
+// AddChild implements ModTreeItem
 func (m *Mod) AddChild(child ModTreeItem) error {
 	m.children = append(m.children, child)
 	return nil
@@ -463,10 +189,20 @@ func (m *Mod) GetParents() []ModTreeItem {
 
 // Name implements ModTreeItem, HclResource
 func (m *Mod) Name() string {
-	if m.Version == nil {
-		return m.FullName
+	return m.FullName
+}
+
+// GetUnqualifiedName implements ModTreeItem
+func (m *Mod) GetUnqualifiedName() string {
+	return m.Name()
+}
+
+// GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
+func (m *Mod) GetModDependencyPath() string {
+	if m.ModDependencyPath != "" {
+		return m.ModDependencyPath
 	}
-	return fmt.Sprintf("%s@%s", m.FullName, types.SafeString(m.Version))
+	return m.NameWithVersion()
 }
 
 // GetTitle implements ModTreeItem
@@ -482,7 +218,7 @@ func (m *Mod) GetDescription() string {
 // GetTags implements ModTreeItem
 func (m *Mod) GetTags() map[string]string {
 	if m.Tags != nil {
-		return *m.Tags
+		return m.Tags
 	}
 	return map[string]string{}
 }
@@ -497,22 +233,8 @@ func (m *Mod) GetPaths() []NodePath {
 	return []NodePath{{m.Name()}}
 }
 
-// AddPseudoResource adds the pseudo resource to the mod,
-// as long as there is no existing resource of same name
-//
-// A pseudo resource ids a resource created by loading a content file (e.g. a SQL file),
-// rather than parsing a HCL definition
-func (m *Mod) AddPseudoResource(resource MappableResource) {
-	switch r := resource.(type) {
-	case *Query:
-		// check there is not already a query with the same name
-		if _, ok := m.Queries[r.Name()]; !ok {
-			m.Queries[r.Name()] = r
-			// set the mod on the query metadata
-			r.GetMetadata().SetMod(m)
-		}
-	}
-}
+// SetPaths implements ModTreeItem
+func (m *Mod) SetPaths() {}
 
 // CtyValue implements HclResource
 func (m *Mod) CtyValue() (cty.Value, error) {
@@ -520,22 +242,59 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(*hcl.Block) hcl.Diagnostics {
+func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+	// if VersionString is set, set Version
+	if m.VersionString != "" && m.Version == nil {
+		m.Version, _ = semver.NewVersion(m.VersionString)
+	}
 
-	// initialise our Requires
-	if m.Requires == nil {
+	// handle legacy requires block
+	if m.LegacyRequire != nil && !m.LegacyRequire.Empty() {
+		// ensure that both 'require' and 'requires' were not set
+		for _, b := range block.Body.(*hclsyntax.Body).Blocks {
+			if b.Type == BlockTypeRequire {
+				return hcl.Diagnostics{&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Both 'require' and legacy 'requires' blocks are defined",
+					Subject:  &block.DefRange,
+				}}
+			}
+		}
+		m.Require = m.LegacyRequire
+	}
+
+	// initialise our Require
+	if m.Require == nil {
 		return nil
 	}
-	return m.Requires.Initialise()
+	err := m.Require.initialise()
+	if err != nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  err.Error(),
+			Subject:  &block.DefRange,
+		}}
+	}
+	return nil
+
 }
 
 // AddReference implements HclResource
 func (m *Mod) AddReference(ref *ResourceReference) {
-	m.References = append(m.References, ref)
+	m.ResourceMaps.References[ref.Name()] = ref
 }
 
-// SetMod implements HclResource
-func (m *Mod) SetMod(*Mod) {}
+// GetReferences implements HclResource
+func (m *Mod) GetReferences() []*ResourceReference {
+	var res = make([]*ResourceReference, len(m.ResourceMaps.References))
+	// convert from map to array
+	idx := 0
+	for _, ref := range m.ResourceMaps.References {
+		res[idx] = ref
+		idx++
+	}
+	return res
+}
 
 // GetMod implements HclResource
 func (m *Mod) GetMod() *Mod {
@@ -547,59 +306,145 @@ func (m *Mod) GetDeclRange() *hcl.Range {
 	return &m.DeclRange
 }
 
-// GetMetadata implements ResourceWithMetadata
-func (m *Mod) GetMetadata() *ResourceMetadata {
-	return m.metadata
+// GetResourceMaps implements ModResourcesProvider
+func (m *Mod) GetResourceMaps() *ModResources {
+	return m.ResourceMaps
 }
 
-// SetMetadata implements ResourceWithMetadata
-func (m *Mod) SetMetadata(metadata *ResourceMetadata) {
-	m.metadata = metadata
+func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
+	m.Require.AddModDependencies(modVersions)
 }
 
-// get the parent item for this ModTreeItem
-// first check all benchmarks - if they do not have this as child, default to the mod
-func (m *Mod) getParents(item ModTreeItem) []ModTreeItem {
-	var parents []ModTreeItem
-	for _, benchmark := range m.Benchmarks {
-		if benchmark.ChildNames == nil {
-			continue
+func (m *Mod) RemoveModDependencies(modVersions map[string]*ModVersionConstraint) {
+	m.Require.RemoveModDependencies(modVersions)
+}
+
+func (m *Mod) RemoveAllModDependencies() {
+	m.Require.RemoveAllModDependencies()
+}
+
+func (m *Mod) Save() error {
+	f := hclwrite.NewEmptyFile()
+	rootBody := f.Body()
+
+	modBody := rootBody.AppendNewBlock("mod", []string{m.ShortName}).Body()
+	if m.Title != nil {
+		modBody.SetAttributeValue("title", cty.StringVal(*m.Title))
+	}
+	if m.Description != nil {
+		modBody.SetAttributeValue("description", cty.StringVal(*m.Description))
+	}
+	if m.Color != nil {
+		modBody.SetAttributeValue("color", cty.StringVal(*m.Color))
+	}
+	if m.Documentation != nil {
+		modBody.SetAttributeValue("documentation", cty.StringVal(*m.Documentation))
+	}
+	if m.Icon != nil {
+		modBody.SetAttributeValue("icon", cty.StringVal(*m.Icon))
+	}
+	if len(m.Categories) > 0 {
+		categoryValues := make([]cty.Value, len(m.Categories))
+		for i, c := range m.Categories {
+			categoryValues[i] = cty.StringVal(typehelpers.SafeString(c))
 		}
-		// check all child names of this benchmark for a matching name
-		for _, childName := range *benchmark.ChildNames {
-			if childName.Name == item.Name() {
-				parents = append(parents, benchmark)
+		modBody.SetAttributeValue("categories", cty.ListVal(categoryValues))
+	}
+
+	if len(m.Tags) > 0 {
+		tagMap := make(map[string]cty.Value, len(m.Tags))
+		for k, v := range m.Tags {
+			tagMap[k] = cty.StringVal(v)
+		}
+		modBody.SetAttributeValue("tags", cty.MapVal(tagMap))
+	}
+
+	// opengraph
+	if opengraph := m.OpenGraph; opengraph != nil {
+		opengraphBody := modBody.AppendNewBlock("opengraph", nil).Body()
+		if opengraph.Title != nil {
+			opengraphBody.SetAttributeValue("title", cty.StringVal(*opengraph.Title))
+		}
+		if opengraph.Description != nil {
+			opengraphBody.SetAttributeValue("description", cty.StringVal(*opengraph.Description))
+		}
+		if opengraph.Image != nil {
+			opengraphBody.SetAttributeValue("image", cty.StringVal(*opengraph.Image))
+		}
+
+	}
+
+	// require
+	if require := m.Require; require != nil && !m.Require.Empty() {
+		requiresBody := modBody.AppendNewBlock("require", nil).Body()
+		if require.SteampipeVersionString != "" {
+			requiresBody.SetAttributeValue("steampipe", cty.StringVal(require.SteampipeVersionString))
+		}
+		if len(require.Plugins) > 0 {
+			pluginValues := make([]cty.Value, len(require.Plugins))
+			for i, p := range require.Plugins {
+				pluginValues[i] = cty.StringVal(typehelpers.SafeString(p))
+			}
+			requiresBody.SetAttributeValue("plugins", cty.ListVal(pluginValues))
+		}
+		if len(require.Mods) > 0 {
+			for _, m := range require.Mods {
+				modBody := requiresBody.AppendNewBlock("mod", []string{m.Name}).Body()
+				modBody.SetAttributeValue("version", cty.StringVal(m.VersionString))
 			}
 		}
 	}
-	for _, report := range m.Reports {
-		// check all child names of this benchmark for a matching name
-		for _, child := range report.GetChildren() {
-			if child.Name() == item.Name() {
-				parents = append(parents, report)
-			}
-		}
+
+	// load existing mod data and remove the mod definitions from it
+	nonModData, err := m.loadNonModDataInModFile()
+	if err != nil {
+		return err
 	}
-	for _, panel := range m.Panels {
-		// check all child names of this benchmark for a matching name
-		for _, child := range panel.GetChildren() {
-			if child.Name() == item.Name() {
-				parents = append(parents, panel)
-			}
-		}
-	}
-	if len(parents) == 0 {
-		// fall back on mod
-		parents = []ModTreeItem{m}
-	}
-	return parents
+	modData := append(f.Bytes(), nonModData...)
+	return os.WriteFile(filepaths.ModFilePath(m.ModPath), modData, 0644)
 }
 
-// GetChildControls return a flat list of controls underneath the mod
-func (m *Mod) GetChildControls() []*Control {
-	var res []*Control
-	for _, control := range m.Controls {
-		res = append(res, control)
+func (m *Mod) HasDependentMods() bool {
+	return m.Require != nil && len(m.Require.Mods) > 0
+}
+
+func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
+	if m.Require == nil {
+		return nil
 	}
-	return res
+	return m.Require.GetModDependency(modName)
+}
+
+func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
+	modFilePath := filepaths.ModFilePath(m.ModPath)
+	if !helpers.FileExists(modFilePath) {
+		return nil, nil
+	}
+
+	fileData, err := os.ReadFile(modFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	fileLines := strings.Split(string(fileData), "\n")
+	decl := m.DeclRange
+	// just use line positions
+	start := decl.Start.Line - 1
+	end := decl.End.Line - 1
+
+	var resLines []string
+	for i, line := range fileLines {
+		if (i < start || i > end) && line != "" {
+			resLines = append(resLines, line)
+		}
+	}
+	return []byte(strings.Join(resLines, "\n")), nil
+}
+
+func (m *Mod) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
+	return m.ResourceMaps.WalkResources(resourceFunc)
+}
+
+func (m *Mod) SetFilePath(modFilePath string) {
+	m.modFilePath = modFilePath
 }

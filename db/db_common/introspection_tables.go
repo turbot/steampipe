@@ -19,26 +19,7 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func UpdateIntrospectionTables(workspaceResources *modconfig.WorkspaceResourceMaps, client Client) error {
-	utils.LogTime("db.UpdateIntrospectionTables start")
-	defer utils.LogTime("db.UpdateIntrospectionTables end")
-
-	// get the create sql for each table type
-	clearSql := getClearTablesSql()
-
-	// now get sql to populate the tables
-	insertSql := getTableInsertSql(workspaceResources)
-
-	sql := []string{clearSql, insertSql}
-	// execute the query, passing 'true' to disable the spinner
-	_, err := client.ExecuteSync(context.Background(), strings.Join(sql, "\n"), true)
-	if err != nil {
-		return fmt.Errorf("failed to update introspection tables: %v", err)
-	}
-	return nil
-}
-
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.WorkspaceResourceMaps, session *DatabaseSession) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -52,7 +33,7 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	insertSql := getTableInsertSql(workspaceResources)
 
 	sql := []string{createSql, insertSql}
-	// execute the query, passing 'true' to disable the spinner
+
 	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
@@ -69,59 +50,77 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
 	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
-func getClearTablesSql() string {
-	var clearSql []string
-	for _, t := range constants.IntrospectionTableNames() {
-		clearSql = append(clearSql, fmt.Sprintf("delete from %s;", t))
-	}
-	return strings.Join(clearSql, "\n")
-}
-
-func getTableInsertSql(workspaceResources *modconfig.WorkspaceResourceMaps) string {
+func getTableInsertSql(workspaceResources *modconfig.ModResources) string {
 	var insertSql []string
 
-	// the maps will have the same resource keyed by long and short name - avoid dupes
-	resourcesAdded := make(map[string]bool)
-
 	for _, control := range workspaceResources.Controls {
-		if _, added := resourcesAdded[control.Name()]; !added {
-			resourcesAdded[control.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 	}
 	for _, query := range workspaceResources.Queries {
-		if _, added := resourcesAdded[query.Name()]; !added {
-			resourcesAdded[query.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
 	}
 	for _, benchmark := range workspaceResources.Benchmarks {
-		if _, added := resourcesAdded[benchmark.Name()]; !added {
-			resourcesAdded[benchmark.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 	}
 	for _, mod := range workspaceResources.Mods {
-		if _, added := resourcesAdded[mod.Name()]; !added {
-			resourcesAdded[mod.Name()] = true
+		if !mod.IsDefaultMod() {
 			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
 		}
 	}
 	for _, variable := range workspaceResources.Variables {
-		if _, added := resourcesAdded[variable.Name()]; !added {
-			resourcesAdded[variable.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
+		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
+	}
+	for _, dashboard := range workspaceResources.Dashboards {
+		insertSql = append(insertSql, getTableInsertSqlForResource(dashboard, constants.IntrospectionTableDashboard))
+	}
+	for _, container := range workspaceResources.DashboardContainers {
+		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableDashboardContainer))
+	}
+	for _, card := range workspaceResources.DashboardCards {
+		insertSql = append(insertSql, getTableInsertSqlForResource(card, constants.IntrospectionTableDashboardCard))
+	}
+	for _, chart := range workspaceResources.DashboardCharts {
+		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableDashboardChart))
+	}
+	for _, flow := range workspaceResources.DashboardFlows {
+		insertSql = append(insertSql, getTableInsertSqlForResource(flow, constants.IntrospectionTableDashboardFlow))
+	}
+	for _, hierarchy := range workspaceResources.DashboardHierarchies {
+		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableDashboardHierarchy))
+	}
+	for _, image := range workspaceResources.DashboardImages {
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableDashboardImage))
+	}
+	for _, dashboardInputs := range workspaceResources.DashboardInputs {
+		for _, input := range dashboardInputs {
+			insertSql = append(insertSql, getTableInsertSqlForResource(input, constants.IntrospectionTableDashboardInput))
 		}
 	}
+	for _, input := range workspaceResources.GlobalDashboardInputs {
+		insertSql = append(insertSql, getTableInsertSqlForResource(input, constants.IntrospectionTableDashboardInput))
+	}
+	for _, table := range workspaceResources.DashboardTables {
+		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableDashboardTable))
+	}
+	for _, text := range workspaceResources.DashboardTexts {
+		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableDashboardText))
+	}
 	for _, reference := range workspaceResources.References {
-		if _, added := resourcesAdded[reference.Name()]; !added {
-			resourcesAdded[reference.Name()] = true
-			insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
-		}
+		insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
 	}
 
 	return strings.Join(insertSql, "\n")
@@ -235,7 +234,7 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 			return "", err
 		}
 
-		res := PgEscapeString(fmt.Sprintf(`%s`, string(jsonBytes)))
+		res := PgEscapeString(string(jsonBytes))
 		return res, nil
 	case "integer", "numeric", "decimal", "boolean":
 		return typeHelpers.ToString(item), nil

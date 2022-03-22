@@ -5,12 +5,16 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // Variable is a struct representing a Variable resource
 type Variable struct {
+	ResourceWithMetadataBase
+
 	ShortName string
 	FullName  string `column:"name,text"`
 
@@ -29,17 +33,22 @@ type Variable struct {
 	ParsingMode                var_config.VariableParsingMode
 	Mod                        *Mod
 
-	metadata *ResourceMetadata
+	metadata        *ResourceMetadata
+	parents         []ModTreeItem
+	Paths           []NodePath `column:"path,jsonb"`
+	UnqualifiedName string
 }
 
-func NewVariable(v *var_config.Variable) *Variable {
+func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	return &Variable{
-		ShortName:   v.Name,
-		Description: v.Description,
-		FullName:    fmt.Sprintf("var.%s", v.Name),
-		Default:     v.Default,
-		Type:        v.Type,
-		ParsingMode: v.ParsingMode,
+		ShortName:       v.Name,
+		Description:     v.Description,
+		FullName:        fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name),
+		UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
+		Default:         v.Default,
+		Type:            v.Type,
+		ParsingMode:     v.ParsingMode,
+		Mod:             mod,
 
 		DeclRange: v.DeclRange,
 	}
@@ -58,30 +67,22 @@ func (v *Variable) Name() string {
 	return v.FullName
 }
 
-// QualifiedName returns the name in format: '<modName>.var.<shortName>'
-func (v *Variable) QualifiedName() string {
-	return fmt.Sprintf("%s.%s", v.metadata.ModName, v.FullName)
-}
-
-// GetMetadata implements ResourceWithMetadata
-func (v *Variable) GetMetadata() *ResourceMetadata {
-	return v.metadata
-}
-
-// SetMetadata implements ResourceWithMetadata
-func (v *Variable) SetMetadata(metadata *ResourceMetadata) {
-	v.metadata = metadata
+// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
+func (v *Variable) GetUnqualifiedName() string {
+	return v.UnqualifiedName
 }
 
 // OnDecoded implements HclResource
-func (v *Variable) OnDecoded(*hcl.Block) hcl.Diagnostics { return nil }
+func (v *Variable) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+	return nil
+}
 
 // AddReference implements HclResource
 func (v *Variable) AddReference(*ResourceReference) {}
 
-// SetMod implements HclResource
-func (v *Variable) SetMod(mod *Mod) {
-	v.Mod = mod
+// GetReferences implements HclResource
+func (v *Variable) GetReferences() []*ResourceReference {
+	return nil
 }
 
 // GetMod implements HclResource
@@ -111,4 +112,72 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
+}
+
+// AddParent implements ModTreeItem
+func (v *Variable) AddParent(parent ModTreeItem) error {
+	v.parents = append(v.parents, parent)
+
+	return nil
+}
+
+// GetParents implements ModTreeItem
+func (v *Variable) GetParents() []ModTreeItem {
+	return v.parents
+}
+
+// GetChildren implements ModTreeItem
+func (v *Variable) GetChildren() []ModTreeItem {
+	return nil
+}
+
+// GetDescription implements ModTreeItem
+func (v *Variable) GetDescription() string {
+	return ""
+}
+
+// GetTitle implements ModTreeItem
+func (v *Variable) GetTitle() string {
+	return typehelpers.SafeString(v.ShortName)
+}
+
+// GetTags implements ModTreeItem
+func (v *Variable) GetTags() map[string]string {
+	return nil
+}
+
+// GetPaths implements ModTreeItem
+func (v *Variable) GetPaths() []NodePath {
+	// lazy load
+	if len(v.Paths) == 0 {
+		v.SetPaths()
+	}
+	return v.Paths
+}
+
+// SetPaths implements ModTreeItem
+func (v *Variable) SetPaths() {
+	for _, parent := range v.parents {
+		for _, parentPath := range parent.GetPaths() {
+			v.Paths = append(v.Paths, append(parentPath, v.Name()))
+		}
+	}
+}
+
+func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {
+	res := &DashboardTreeItemDiffs{
+		Item: v,
+		Name: v.Name(),
+	}
+
+	if !utils.SafeStringsEqual(v.FullName, other.FullName) {
+		res.AddPropertyDiff("Name")
+	}
+
+	if !utils.SafeStringsEqual(v.Value, other.Value) {
+		res.AddPropertyDiff("Value")
+	}
+
+	res.populateChildDiffs(v, other)
+	return res
 }

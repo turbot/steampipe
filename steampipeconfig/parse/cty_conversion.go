@@ -94,25 +94,3 @@ func ctyTupleToArrayOfPgStrings(val cty.Value) ([]string, error) {
 	}
 	return res, nil
 }
-
-func ctyObjectToMapOfPgStrings(val cty.Value) (map[string]string, error) {
-	res := make(map[string]string)
-	it := val.ElementIterator()
-	for it.Next() {
-		k, v := it.Element()
-
-		// decode key
-		var key string
-		gocty.FromCtyValue(k, &key)
-
-		// decode the value into a postgres compatible
-		valStr, err := ctyToPostgresString(v)
-		if err != nil {
-			err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
-			return nil, err
-		}
-
-		res[key] = valStr
-	}
-	return res, nil
-}

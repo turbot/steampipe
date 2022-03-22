@@ -1,0 +1,250 @@
+{{ define "output" }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Steampipe Report</title>
+  <style>
+    /**
+       {{- template "normalize_css" -}}
+    **/
+    /**
+       {{- template "style_css" -}}
+    **/
+  </style>
+  <meta charset="UTF-8">
+  <link rel="icon" href='{{ template "favicon" }}' type="image/svg+xml" sizes="any">
+</head>
+
+<body>
+  <div class="container">
+    {{/* we expect 0 or 1 root control runs */}}
+    {{ range .Data.Root.ControlRuns -}}
+    {{ template "control_run_template" . -}}
+    {{ end }}
+    {{/* we expect 0 or 1 root groups */}}
+    {{ range .Data.Root.Groups -}}
+    {{ template "root_group_template" . -}}
+    {{ end }}
+    <footer><em>Report run at <code>{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}</code> using <a href="https://steampipe.io"
+          rel="nofollow"><code>Steampipe {{ .Constants.SteampipeVersion }}</code></a> in dir
+        <code>{{ .Constants.WorkingDir }}</code>.</em></footer>
+  </div>
+</body>
+
+</html>
+{{ end }}
+
+{{ define "root_summary" }}
+<table role="table">
+  <thead>
+    <tr>
+      <th></th>
+      <th>TOTAL</th>
+      <th>{{ .TotalCount }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="align-center">✅</td>
+      <td>OK</td>
+      <td class="{{ template "summaryokclass" .Ok }}">{{ .Ok }}</td>
+    </tr>
+    <tr>
+      <td class="align-center">⇨</td>
+      <td>Skip</td>
+      <td class="{{ template "summaryskipclass" .Skip}}">{{ .Skip }}</td>
+    </tr>
+    <tr>
+      <td class="align-center">ℹ</td>
+      <td>Info</td>
+      <td class="{{ template "summaryinfoclass" .Info}}">{{ .Info }}</td>
+    </tr>
+    <tr>
+      <td class="align-center">❌</td>
+      <td>Alarm</td>
+      <td class="{{ template "summaryalarmclass" .Alarm}}">{{ .Alarm }}</td>
+    </tr>
+    <tr>
+      <td class="align-center">❗</td>
+      <td>Error</td>
+      <td class="{{ template "summaryerrorclass" .Error}}">{{ .Error }}</td>
+    </tr>
+  </tbody>
+</table>
+{{ end }}
+
+{{ define "summary" }}
+<table role="table">
+  <thead>
+    <tr>
+      <th>OK</th>
+      <th>Skip</th>
+      <th>Info</th>
+      <th>Alarm</th>
+      <th>Error</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="{{ template "summaryokclass" .Ok }}">{{ .Ok }}</td>
+      <td class="{{ template "summaryskipclass" .Skip }}">{{ .Skip }}</td>
+      <td class="{{ template "summaryinfoclass" .Info }}">{{ .Info }}</td>
+      <td class="{{ template "summaryalarmclass" .Alarm }}">{{ .Alarm }}</td>
+      <td class="{{ template "summaryerrorclass" .Error }}">{{ .Error }}</td>
+      <td>{{ .TotalCount }}</td>
+    </tr>
+  </tbody>
+</table>
+{{ end }}
+
+{{ define "root_group_template"}}
+<section class="group">
+  <div class="header">
+    <h1 class="title">{{ .Title }}</h1>
+    <a href="https://steampipe.io" rel="noopener noreferrer" target="_blank"><img class="logo" src="{{ template "logo"}}" alt="Steampipe Report" /></a>
+  </div>
+  {{ template "root_summary" .Summary.Status }}
+
+  {{ if .ControlRuns }}
+  {{ range .ControlRuns}}
+  {{ template "control_run_template" . }}
+  {{ end }}
+  {{ end }}
+
+  {{ range .Groups }}
+  {{ template "group_template" . }}
+  {{ end }}
+</section>
+{{ end }}
+
+{{ define "group_template"}}
+<section class="group">
+  <h2>{{ .Title }}</h2>
+  {{ template "summary" .Summary.Status }}
+
+  {{ if .ControlRuns }}
+  {{ range .ControlRuns}}
+  {{ template "control_run_template" . }}
+  {{ end }}
+  {{ end }}
+
+  {{ range .Groups }}
+  {{ template "group_template" . }}
+  {{ end }}
+</section>
+{{ end }}
+
+{{ define "control_run_template"}}
+<section class="control">
+  <h3>{{ .Title }}</h3>
+
+  {{ if .Description }}
+  <p><em>{{ .Description }}</em></p>
+  {{ end }}
+
+  {{ template "summary" .Summary }}
+
+  {{ if .GetError }}
+  <blockquote>{{ .GetError }}</blockquote>
+  {{ else }}
+  {{ $length := len .Rows }}
+  {{ if gt $length 0 }}
+  {{ template "control_run_table_template" . }}
+  {{ end }}
+  {{ end }}
+</section>
+{{ end }}
+
+{{ define "control_run_table_template" }}
+<table role="table">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Reason</th>
+      <th>Dimensions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{ range .Rows }}
+    {{ template "control_run_table_row_template" . }}
+    {{ end }}
+  </tbody>
+</table>
+{{ end }}
+
+{{ define "control_run_table_row_template" }}
+<tr>
+  <td class="align-center" title="Resource: {{ .Resource }}">{{ template "statusicon" .Status }}</td>
+  <td title="Resource: {{ .Resource }}">{{ .Reason }}</td>
+  <td>
+    {{ range .Dimensions }}
+    <code>{{ .Value }}</code>
+    {{ end }}
+  </td>
+</tr>
+{{ end }}
+
+{{ define "statusicon" }}
+  {{- if eq . "ok" -}}
+    ✅
+  {{- end -}}
+  {{- if eq . "skip" -}}
+    ⇨
+  {{- end -}}
+  {{- if eq . "info" -}}
+    ℹ
+  {{- end -}}
+  {{- if eq . "alarm" -}}
+    ❌
+  {{- end -}}
+  {{- if eq . "error" -}}
+    ❗
+  {{- end -}}
+{{- end -}}
+
+{{ define "summaryokclass" }}
+  {{- if gt . 0 -}}
+    summary-total-ok highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-ok
+  {{- end -}}
+{{- end -}}
+
+{{ define "summaryskipclass" }}
+  {{- if gt . 0 -}}
+    summary-total-skip highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-skip
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryinfoclass" }}
+  {{- if gt . 0 -}}
+    summary-total-info highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-info
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryalarmclass" }}
+  {{- if gt . 0 -}}
+    summary-total-alarm highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-alarm
+  {{- end -}}
+{{- end -}}
+
+{{- define "summaryerrorclass" }}
+  {{- if gt . 0 -}}
+    summary-total-error highlight
+  {{- end -}}
+  {{- if eq . 0 -}}
+    summary-total-error
+  {{- end -}}
+{{- end -}}

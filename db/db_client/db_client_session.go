@@ -3,24 +3,38 @@ package db_client
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
+
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/utils"
 )
 
-func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSessionResult {
-	sessionResult := &db_common.AcquireSessionResult{}
+func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
+	sessionResult = &db_common.AcquireSessionResult{}
 	c.sessionInitWaitGroup.Add(1)
 	defer c.sessionInitWaitGroup.Done()
 
+	defer func() {
+		if sessionResult != nil && sessionResult.Session != nil {
+			sessionResult.Session.UpdateUsage()
+
+			// fail safe - if there is no database connection, ensure we return an error
+			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connectio
+			if sessionResult.Session.Connection == nil && sessionResult.Error == nil {
+				sessionResult.Error = fmt.Errorf("nil database connection being returned from AcquireSession but no error was raised")
+			}
+		}
+	}()
+
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, backendPid, err := c.getSessionWithRetries(ctx)
+	databaseConnection, backendPid, err := c.getDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
@@ -37,8 +51,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	sessionResult.Session = session
 	c.sessionsMutex.Unlock()
 
-	log.Printf("[TRACE] Got Session with PID: %d", backendPid)
-
 	defer func() {
 		// make sure that we close the acquired session, in case of error
 		if sessionResult.Error != nil && databaseConnection != nil {
@@ -51,7 +63,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 	}
 
 	if !session.Initialized {
-		log.Printf("[TRACE] Session with PID: %d - waiting for init lock", backendPid)
 		session.LifeCycle.Add("queued_for_init")
 
 		err := c.parallelSessionInitLock.Acquire(ctx, 1)
@@ -61,7 +72,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		}
 		c.sessionInitWaitGroup.Add(1)
 
-		log.Printf("[TRACE] Session with PID: %d - waiting for init start", backendPid)
 		session.LifeCycle.Add("init_start")
 		err, warnings := c.ensureSessionFunc(ctx, session)
 		session.LifeCycle.Add("init_finish")
@@ -75,8 +85,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 
 		// if there is no error, mark session as initialized
 		session.Initialized = true
-
-		log.Printf("[TRACE] Session with PID: %d - init DONE", backendPid)
 	}
 
 	// update required session search path if needed
@@ -89,25 +97,21 @@ func (c *DbClient) AcquireSession(ctx context.Context) *db_common.AcquireSession
 		session.SearchPath = c.requiredSessionSearchPath
 	}
 
-	session.UpdateUsage()
-
 	// now write back to the map
 	c.sessionsMutex.Lock()
 	c.sessions[backendPid] = session
 	c.sessionsMutex.Unlock()
 
-	log.Printf("[TRACE] Session with PID: %d - returning", backendPid)
-
 	return sessionResult
 }
 
-func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, uint32, error) {
+func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*sql.Conn, uint32, error) {
 	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var session *sql.Conn
+	var databaseConnection *sql.Conn
 	var backendPid uint32
 
 	retries := 0
@@ -117,13 +121,11 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, uint32
 			return retryLocalCtx.Err()
 		}
 		// get a database connection from the pool
-		session, err = c.dbClient.Conn(retryLocalCtx)
+		databaseConnection, err = c.dbClient.Conn(retryLocalCtx)
 		if err != nil {
-			retries++
-			return retry.RetryableError(err)
-		}
-		if err != nil {
-			session.Close()
+			if databaseConnection != nil {
+				databaseConnection.Close()
+			}
 			retries++
 			return retry.RetryableError(err)
 		}
@@ -131,18 +133,18 @@ func (c *DbClient) getSessionWithRetries(ctx context.Context) (*sql.Conn, uint32
 	})
 
 	if err != nil {
-		log.Printf("[TRACE] getSessionWithRetries failed after 10 retries: %s", err)
+		log.Printf("[TRACE] getDatabaseConnectionWithRetries failed after %d retries: %s", retries, err)
 		return nil, 0, err
 	}
 
 	if retries > 0 {
-		log.Printf("[TRACE] getSessionWithRetries succeeded after %d retries", retries)
+		log.Printf("[TRACE] getDatabaseConnectionWithRetries succeeded after %d retries", retries)
 	}
 
-	session.Raw(func(driverConn interface{}) error {
+	databaseConnection.Raw(func(driverConn interface{}) error {
 		backendPid = driverConn.(*stdlib.Conn).Conn().PgConn().PID()
 		return nil
 	})
 
-	return session, backendPid, nil
+	return databaseConnection, uint32(backendPid), nil
 }

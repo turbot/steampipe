@@ -1,27 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	filehelpers "github.com/turbot/go-kit/files"
-
-	"github.com/hashicorp/go-hclog"
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/go-kit/helpers"
+
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/utils"
 )
 
-var Logger hclog.Logger
 var exitCode int
 
 func main() {
+	ctx := context.Background()
 	utils.LogTime("main start")
 	exitCode := 0
 	defer func() {
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 		}
 		utils.LogTime("main end")
 		utils.DisplayProfileData()
@@ -29,7 +29,7 @@ func main() {
 	}()
 
 	// ensure steampipe is not being run as root
-	checkRoot()
+	checkRoot(ctx)
 
 	// increase the soft ULIMIT to match the hard limit
 	err := setULimit()
@@ -60,10 +60,10 @@ func setULimit() error {
 
 // this is to replicate the user security mechanism of out underlying
 // postgresql engine.
-func checkRoot() {
+func checkRoot(ctx context.Context) {
 	if os.Geteuid() == 0 {
 		exitCode = 1
-		utils.ShowError(fmt.Errorf(`Steampipe cannot be run as the "root" user.
+		utils.ShowError(ctx, fmt.Errorf(`Steampipe cannot be run as the "root" user.
 To reduce security risk, use an unprivileged user account instead.`))
 		os.Exit(exitCode)
 	}
@@ -79,7 +79,7 @@ To reduce security risk, use an unprivileged user account instead.`))
 
 	if os.Geteuid() != os.Getuid() {
 		exitCode = 1
-		utils.ShowError(fmt.Errorf("real and effective user IDs must match."))
+		utils.ShowError(ctx, fmt.Errorf("real and effective user IDs must match."))
 		os.Exit(exitCode)
 	}
 }

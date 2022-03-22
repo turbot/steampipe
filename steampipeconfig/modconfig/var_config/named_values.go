@@ -8,8 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/hashicorp/terraform/addrs"
-	"github.com/turbot/steampipe/steampipeconfig/input_vars/typeexpr"
+	"github.com/turbot/steampipe/steampipeconfig/inputvars/typeexpr"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 	//"github.com/hashicorp/terraform/internal/typeexpr"
@@ -34,11 +33,12 @@ type Variable struct {
 	DeclRange hcl.Range
 }
 
-func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagnostics) {
+func DecodeVariableBlock(block *hcl.Block, content *hcl.BodyContent, override bool) (*Variable, hcl.Diagnostics) {
 	v := &Variable{
 		Name:      block.Labels[0],
 		DeclRange: block.DefRange,
 	}
+	var diags hcl.Diagnostics
 
 	// Unless we're building an override, we'll set some defaults
 	// which we might override with attributes below. We leave these
@@ -49,8 +49,6 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 		v.ParsingMode = VariableParseLiteral
 	}
 
-	content, diags := block.Body.Content(variableBlockSchema)
-
 	if !hclsyntax.ValidIdentifier(v.Name) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -59,30 +57,6 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 			Subject:  &block.LabelRanges[0],
 		})
 	}
-
-	//// Don't allow declaration of variables that would conflict with the
-	//// reserved attribute and block type names in a "module" block, since
-	//// these won't be usable for child modules.
-	//for _, attr := range moduleBlockSchema.Attributes {
-	//	if attr.Name == v.Name {
-	//		diags = append(diags, &hcl.Diagnostic{
-	//			Severity: hcl.DiagError,
-	//			Summary:  "Invalid variable name",
-	//			Detail:   fmt.Sprintf("The variable name %q is reserved due to its special meaning inside module blocks.", attr.Name),
-	//			Subject:  &block.LabelRanges[0],
-	//		})
-	//	}
-	//}
-	//for _, blockS := range moduleBlockSchema.Blocks {
-	//	if blockS.Type == v.Name {
-	//		diags = append(diags, &hcl.Diagnostic{
-	//			Severity: hcl.DiagError,
-	//			Summary:  "Invalid variable name",
-	//			Detail:   fmt.Sprintf("The variable name %q is reserved due to its special meaning inside module blocks.", blockS.Type),
-	//			Subject:  &block.LabelRanges[0],
-	//		})
-	//	}
-	//}
 
 	if attr, exists := content.Attributes["description"]; exists {
 		valDiags := gohcl.DecodeExpression(attr.Expr, nil, &v.Description)
@@ -96,13 +70,6 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 		v.Type = ty
 		v.ParsingMode = parseMode
 	}
-
-	//if attr, exists := content.Attributes["sensitive"]; exists {
-	//	valDiags := gohcl.DecodeExpression(attr.Expr, nil, &v.Sensitive)
-	//	diags = append(diags, valDiags...)
-	//	v.SensitiveSet = true
-	//}
-
 	if attr, exists := content.Attributes["default"]; exists {
 		val, valDiags := attr.Expr.Value(nil)
 		diags = append(diags, valDiags...)
@@ -133,11 +100,6 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 	for _, block := range content.Blocks {
 		switch block.Type {
 
-		//case "validation":
-		//	vv, moreDiags := decodeVariableValidationBlock(v.Name, block, override)
-		//	diags = append(diags, moreDiags...)
-		//	v.Validations = append(v.Validations, vv)
-
 		default:
 			// The above cases should be exhaustive for all block types
 			// defined in variableBlockSchema
@@ -150,13 +112,6 @@ func DecodeVariableBlock(block *hcl.Block, override bool) (*Variable, hcl.Diagno
 
 func decodeVariableType(expr hcl.Expression) (cty.Type, VariableParsingMode, hcl.Diagnostics) {
 	if exprIsNativeQuotedString(expr) {
-		// If a user provides the pre-0.12 form of variable type argument where
-		// the string values "string", "list" and "map" are accepted, we
-		// provide an error to point the user towards using the type system
-		// correctly has a hint.
-		// Only the native syntax ends up in this codepath; we handle the
-		// JSON syntax (which is, of course, quoted within the type system)
-		// in the normal codepath below.
 		val, diags := expr.Value(nil)
 		if diags.HasErrors() {
 			return cty.DynamicPseudoType, VariableParseHCL, diags
@@ -167,7 +122,6 @@ func decodeVariableType(expr hcl.Expression) (cty.Type, VariableParsingMode, hcl
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Invalid quoted type constraints",
-				Detail:   "Terraform 0.11 and earlier required type constraints to be given in quotes, but that form is now deprecated and will be removed in a future version of Terraform. Remove the quotes around \"string\".",
 				Subject:  expr.Range().Ptr(),
 			})
 			return cty.DynamicPseudoType, VariableParseLiteral, diags
@@ -175,7 +129,6 @@ func decodeVariableType(expr hcl.Expression) (cty.Type, VariableParsingMode, hcl
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Invalid quoted type constraints",
-				Detail:   "Terraform 0.11 and earlier required type constraints to be given in quotes, but that form is now deprecated and will be removed in a future version of Terraform. Remove the quotes around \"list\" and write list(string) instead to explicitly indicate that the list elements are strings.",
 				Subject:  expr.Range().Ptr(),
 			})
 			return cty.DynamicPseudoType, VariableParseHCL, diags
@@ -183,7 +136,6 @@ func decodeVariableType(expr hcl.Expression) (cty.Type, VariableParsingMode, hcl
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Invalid quoted type constraints",
-				Detail:   "Terraform 0.11 and earlier required type constraints to be given in quotes, but that form is now deprecated and will be removed in a future version of Terraform. Remove the quotes around \"map\" and write map(string) instead to explicitly indicate that the map elements are strings.",
 				Subject:  expr.Range().Ptr(),
 			})
 			return cty.DynamicPseudoType, VariableParseHCL, diags
@@ -191,7 +143,6 @@ func decodeVariableType(expr hcl.Expression) (cty.Type, VariableParsingMode, hcl
 			return cty.DynamicPseudoType, VariableParseHCL, hcl.Diagnostics{{
 				Severity: hcl.DiagError,
 				Summary:  "Invalid legacy variable type hint",
-				Detail:   `To provide a full type expression, remove the surrounding quotes and give the type expression directly.`,
 				Subject:  expr.Range().Ptr(),
 			}}
 		}
@@ -297,111 +248,8 @@ type VariableValidation struct {
 	DeclRange hcl.Range
 }
 
-func decodeVariableValidationBlock(varName string, block *hcl.Block, override bool) (*VariableValidation, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	vv := &VariableValidation{
-		DeclRange: block.DefRange,
-	}
-
-	if override {
-		// For now we'll just forbid overriding validation blocks, to simplify
-		// the initial design. If we can find a clear use-case for overriding
-		// validations in override files and there's a way to define it that
-		// isn't confusing then we could relax this.
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Can't override variable validation rules",
-			Detail:   "Variable \"validation\" blocks cannot be used in override files.",
-			Subject:  vv.DeclRange.Ptr(),
-		})
-		return vv, diags
-	}
-
-	content, moreDiags := block.Body.Content(variableValidationBlockSchema)
-	diags = append(diags, moreDiags...)
-
-	if attr, exists := content.Attributes["condition"]; exists {
-		vv.Condition = attr.Expr
-
-		// The validation condition can only refer to the variable itself,
-		// to ensure that the variable declaration can't create additional
-		// edges in the dependency graph.
-		goodRefs := 0
-		for _, traversal := range vv.Condition.Variables() {
-			ref, moreDiags := addrs.ParseRef(traversal)
-			if !moreDiags.HasErrors() {
-				if addr, ok := ref.Subject.(addrs.InputVariable); ok {
-					if addr.Name == varName {
-						goodRefs++
-						continue // Reference is valid
-					}
-				}
-			}
-			// If we fall out here then the reference is invalid.
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid reference in variable validation",
-				Detail:   fmt.Sprintf("The condition for variable %q can only refer to the variable itself, using var.%s.", varName, varName),
-				Subject:  traversal.SourceRange().Ptr(),
-			})
-		}
-		if goodRefs < 1 {
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid variable validation condition",
-				Detail:   fmt.Sprintf("The condition for variable %q must refer to var.%s in order to test incoming values.", varName, varName),
-				Subject:  attr.Expr.Range().Ptr(),
-			})
-		}
-	}
-
-	if attr, exists := content.Attributes["error_message"]; exists {
-		moreDiags := gohcl.DecodeExpression(attr.Expr, nil, &vv.ErrorMessage)
-		diags = append(diags, moreDiags...)
-		if !moreDiags.HasErrors() {
-			const errSummary = "Invalid validation error message"
-			switch {
-			case vv.ErrorMessage == "":
-				diags = diags.Append(&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  errSummary,
-					Detail:   "An empty string is not a valid nor useful error message.",
-					Subject:  attr.Expr.Range().Ptr(),
-				})
-			case !looksLikeSentences(vv.ErrorMessage):
-				// Because we're going to include this string verbatim as part
-				// of a bigger error message written in our usual style in
-				// English, we'll require the given error message to conform
-				// to that. We might relax this in future if e.g. we start
-				// presenting these error messages in a different way, or if
-				// Terraform starts supporting producing error messages in
-				// other human languages, etc.
-				// For pragmatism we also allow sentences ending with
-				// exclamation points, but we don't mention it explicitly here
-				// because that's not really consistent with the Terraform UI
-				// writing style.
-				diags = diags.Append(&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  errSummary,
-					Detail:   "The validation error message must be at least one full sentence starting with an uppercase letter and ending with a period or question mark.\n\nYour given message will be included as part of a larger Terraform error message, written as English prose. For broadly-shared modules we suggest using a similar writing style so that the overall result will be consistent.",
-					Subject:  attr.Expr.Range().Ptr(),
-				})
-			}
-		}
-	}
-
-	return vv, diags
-}
-
 // looksLikeSentence is a simple heuristic that encourages writing error
-// messages that will be presentable when included as part of a larger
-// Terraform error diagnostic whose other text is written in the Terraform
-// UI writing style.
-//
-// This is intentionally not a very strong validation since we're assuming
-// that module authors want to write good messages and might just need a nudge
-// about Terraform's specific style, rather than that they are going to try
-// to work around these rules to write a lower-quality message.
+// messages that will be presentable when included as part of a larger error diagnostic
 func looksLikeSentences(s string) bool {
 	if len(s) < 1 {
 		return false
@@ -414,50 +262,12 @@ func looksLikeSentences(s string) bool {
 	// (This will only see the first rune in a multi-rune combining sequence,
 	// but the first rune is generally the letter if any are, and if not then
 	// we'll just ignore it because we're primarily expecting English messages
-	// right now anyway, for consistency with all of Terraform's other output.)
+	// right now anyway)
 	if unicode.IsLetter(first) && !unicode.IsUpper(first) {
 		return false
 	}
 
 	// The string must be at least one full sentence, which implies having
 	// sentence-ending punctuation.
-	// (This assumes that if a sentence ends with quotes then the period
-	// will be outside the quotes, which is consistent with Terraform's UI
-	// writing style.)
 	return last == '.' || last == '?' || last == '!'
-}
-
-var variableBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "description",
-		},
-		{
-			Name: "default",
-		},
-		{
-			Name: "type",
-		},
-		{
-			Name: "sensitive",
-		},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type: "validation",
-		},
-	},
-}
-
-var variableValidationBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name:     "condition",
-			Required: true,
-		},
-		{
-			Name:     "error_message",
-			Required: true,
-		},
-	},
 }

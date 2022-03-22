@@ -3,11 +3,13 @@ package db_client
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
+	"log"
 	"sync"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/constants/runtime"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/schema"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -64,7 +66,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	client.connectionString = connectionString
 
 	if err := client.LoadForeignSchemaNames(ctx); err != nil {
-		client.Close()
+		client.Close(ctx)
 		return nil, err
 	}
 	return client, nil
@@ -73,6 +75,13 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
+
+	connConfig, _ := pgx.ParseConfig(connStr)
+	connConfig.RuntimeParams = map[string]string{
+		// set an app name so that we can track connections from this execution
+		"application_name": runtime.PgClientAppName,
+	}
+	connStr = stdlib.RegisterConnConfig(connConfig)
 
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
@@ -103,9 +112,11 @@ func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallba
 
 // Close implements Client
 // closes the connection to the database and shuts down the backend
-func (c *DbClient) Close() error {
+func (c *DbClient) Close(context.Context) error {
+	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
 	if c.dbClient != nil {
 		c.sessionInitWaitGroup.Wait()
+
 		// clear the map - so that we can't reuse it
 		c.sessions = nil
 		return c.dbClient.Close()
@@ -133,7 +144,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessio
 	}
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Session != nil {
-		sessionResult.Session.Close()
+		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	}
 	return sessionResult
 }
@@ -171,30 +182,45 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampi
 	return res
 }
 
-func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas []string) (*schema.Metadata, error) {
+// GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
+// and creates golang struct representations from the result
+func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
 	connection, err := c.dbClient.Conn(ctx)
 	utils.FailOnError(err)
-	defer connection.Close()
 
-	query := c.buildSchemasQuery(schemas)
+	query := c.buildSchemasQuery()
 
 	tablesResult, err := connection.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	return db_common.BuildSchemaMetadata(tablesResult)
+
+	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
+	if err != nil {
+		return nil, err
+	}
+	connection.Close()
+
+	searchPath, err := c.GetCurrentSearchPath(ctx)
+	if err != nil {
+		return nil, err
+	}
+	metadata.SearchPath = searchPath
+
+	return metadata, nil
 }
 
-func (c *DbClient) buildSchemasQuery(schemas []string) string {
-	schemasClause := ""
-	if len(schemas) > 0 {
-		schemasClause = fmt.Sprintf(`
-    cols.table_schema in ('%s')
-OR`, strings.Join(schemas, "','"))
-	}
-	query := fmt.Sprintf(`
+func (c *DbClient) buildSchemasQuery() string {
+	query := `
+WITH distinct_schema AS (
+	SELECT DISTINCT(foreign_table_schema) 
+	FROM 
+		information_schema.foreign_tables 
+	WHERE 
+		foreign_table_schema <> 'steampipe_command'
+)
 SELECT
     table_name,
     column_name,
@@ -210,12 +236,12 @@ LEFT JOIN
     pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
 LEFT JOIN
     pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
-WHERE %s
+WHERE
+	cols.table_schema in (select * from distinct_schema)
+	OR
     LEFT(cols.table_schema,8) = 'pg_temp_'
-ORDER BY
-    cols.table_schema, cols.table_name, cols.column_name;
 
-`, schemasClause)
+`
 	return query
 }
 

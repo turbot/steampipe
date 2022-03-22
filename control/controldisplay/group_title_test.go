@@ -16,29 +16,29 @@ func testCasesId() map[string]idTest {
 		"shorter": {
 			id:       "group title",
 			width:    100,
-			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("group title")),
+			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("group title ")),
 		},
 
 		"equal": {
 			id:       "group title",
 			width:    8,
-			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("group title")),
+			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("group … ")),
 		},
 		"longer trim on space": {
 			id:       "group title",
 			width:    7,
-			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("group …")),
+			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("group… ")),
 		},
 		"longer trim on char": {
 			id:       "group title",
 			width:    5,
-			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("grou…")),
+			expected: fmt.Sprintf("%s", ControlColors.GroupTitle("gro… ")),
 		},
 	}
 }
 
 func TestId(t *testing.T) {
-	themeDef := ColorSchemes["dark"]
+	themeDef := ColorSchemes["plain"]
 	scheme, _ := NewControlColorScheme(themeDef)
 	ControlColors = scheme
 

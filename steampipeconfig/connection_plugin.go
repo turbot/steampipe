@@ -9,16 +9,20 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/logging"
-	"github.com/turbot/steampipe/plugin_manager"
-	"github.com/turbot/steampipe/plugin_manager/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/plugin_manager/grpc/shared"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
+	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/options"
 	"github.com/turbot/steampipe/utils"
 )
+
+type CreateConnectionPluginOptions struct {
+	SetConnectionConfig bool
+}
 
 // ConnectionPlugin is a structure representing an instance of a plugin
 // NOTE: this corresponds to a single steampipe connection,
@@ -34,7 +38,8 @@ type ConnectionPlugin struct {
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, fetches schemas and sends connection config
-func CreateConnectionPlugins(connections []*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, err error) {
+func CreateConnectionPlugins(connections []*modconfig.Connection, opts *CreateConnectionPluginOptions) (connectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+	res = &RefreshConnectionResult{}
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connections))
 
 	// build result map
@@ -48,38 +53,35 @@ func CreateConnectionPlugins(connections []*modconfig.Connection) (connectionPlu
 	// get plugin manager
 	pluginManager, err := getPluginManager()
 	if err != nil {
-		return nil, err
+		res.Error = err
+		return nil, res
 	}
 
 	// ask the plugin manager for the reattach config for all required plugins
 	getResponse, err := pluginManager.Get(&proto.GetRequest{Connections: connectionNames})
 	if err != nil {
-		return nil, err
+		res.Error = err
+		return nil, res
 	}
-
-	var errors []error
 
 	// now create a connection plugin for each connection
 	for _, connection := range connections {
-		connectionPlugin, err := createConnectionPlugin(connection, getResponse)
+		connectionPlugin, err := createConnectionPlugin(connection, getResponse, opts)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("failed to start plugin '%s': %s", connection.PluginShortName, err))
+			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginShortName, err))
 			continue
+		} else {
+			connectionPluginMap[connection.Name] = connectionPlugin
 		}
-
-		connectionPluginMap[connection.Name] = connectionPlugin
 	}
-	if len(errors) > 0 {
-		return nil, utils.CombineErrors(errors...)
-	}
-
 	// now get populate schemas for all these connection plugins
 	// - minimising the GetSchema calls we make to the unique schemas
 	if err := populateConnectionPluginSchemas(connections, connectionPluginMap); err != nil {
-		return nil, err
+		res.Error = err
+		return nil, res
 	}
 
-	return connectionPluginMap, nil
+	return connectionPluginMap, res
 }
 
 func populateConnectionPluginSchemas(connections []*modconfig.Connection, connectionPluginMap map[string]*ConnectionPlugin) error {
@@ -100,8 +102,13 @@ func populateConnectionPluginSchemas(connections []*modconfig.Connection, connec
 
 	// for every connection with unique schema, fetch the schema and then set in all connections which share this schema
 	for _, c := range connectionSchemaMap.UniqueSchemas() {
+		connectionPlugin, ok := connectionPluginMap[c]
+		if !ok {
+			// we must have had issues loading this plugin
+			continue
+		}
 		// retrieve the plugin schema from the schema map
-		pluginName := connectionPluginMap[c].PluginName
+		pluginName := connectionPlugin.PluginName
 		schema := pluginSchemaMap[pluginName]
 		// now set this schema for all connections which share it
 		for _, connectionUsingSchema := range connectionSchemaMap[c] {
@@ -142,7 +149,11 @@ func buildSchemaModeMap(connectionPluginMap map[string]*ConnectionPlugin, plugin
 	return schemaModeMap
 }
 
-func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto.GetResponse) (*ConnectionPlugin, error) {
+func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto.GetResponse, opts *CreateConnectionPluginOptions) (*ConnectionPlugin, error) {
+	// we should never instantiate an aggregator connection
+	if connection.Type == modconfig.ConnectionTypeAggregator {
+		return nil, fmt.Errorf("we should never instantiate an aggregator connection plugin")
+	}
 	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config
@@ -164,16 +175,18 @@ func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto
 		return nil, err
 	}
 
-	// set the connection config
-	req := &sdkproto.SetConnectionConfigRequest{
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig,
-	}
+	if opts.SetConnectionConfig {
+		// set the connection config
+		req := &sdkproto.SetConnectionConfigRequest{
+			ConnectionName:   connectionName,
+			ConnectionConfig: connectionConfig,
+		}
 
-	if err = pluginClient.SetConnectionConfig(req); err != nil {
-		log.Printf("[TRACE] failed to set connection config for connection '%s' - pid %d: %s",
-			connectionName, reattach.Pid, err)
-		return nil, err
+		if err = pluginClient.SetConnectionConfig(req); err != nil {
+			log.Printf("[TRACE] failed to set connection config for connection '%s' - pid %d: %s",
+				connectionName, reattach.Pid, err)
+			return nil, err
+		}
 	}
 	// fetch the supported operations
 	supportedOperations, err := pluginClient.GetSupportedOperations()
@@ -205,7 +218,7 @@ func getPluginManager() (pluginshared.PluginManager, error) {
 		log.Printf("[WARN] running plugin manager in-process for debugging")
 		pluginManager, err = runPluginManagerInProcess()
 	} else {
-		pluginManager, err = plugin_manager.GetPluginManager()
+		pluginManager, err = pluginmanager.GetPluginManager()
 	}
 	// check the error from the plugin manager startup
 	if err != nil {
@@ -221,7 +234,7 @@ func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string) (*sdkgrp
 }
 
 // function used for debugging the plugin manager
-func runPluginManagerInProcess() (*plugin_manager.PluginManager, error) {
+func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
 	steampipeConfig, err := LoadConnectionConfig()
 	if err != nil {
 		return nil, err
@@ -240,5 +253,5 @@ func runPluginManagerInProcess() (*plugin_manager.PluginManager, error) {
 			Config:          v.Config,
 		}
 	}
-	return plugin_manager.NewPluginManager(configMap, logger), nil
+	return pluginmanager.NewPluginManager(configMap, logger), nil
 }

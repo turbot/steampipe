@@ -5,25 +5,43 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    commit-message:
+      prefix: "[dep][actions]"
+      include: "scope"
 
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      # check every week
-      interval: "weekly"
-      # on monday
-      day: "monday"
+      interval: "daily"
       # at 2:01 am
       time: "02:01"
     commit-message:
-      prefix: "[Dependabot]"
+      prefix: "[dep][go]"
       include: "scope"
     pull-request-branch-name:
       separator: "-"
     assignees:
-      - "binaek89"
+      - "binaek"
       - "kaidaguerre"
     labels:
       - "dependencies"
+      - "house-keeping"
+
+  - package-ecosystem: "npm"
+    directory: "/ui/dashboard"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[dep][dash]"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "-"
+    assignees:
+      - "MichaelBurgess"
+      - "binaek"
+      - "kaidaguerre"
+    labels:
+      - "dependencies"
+      - "dashboards"
       - "house-keeping"

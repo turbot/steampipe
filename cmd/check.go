@@ -4,47 +4,28 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/briandowns/spinner"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/contexthelpers"
+	"github.com/turbot/steampipe/control"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/db/db_client"
-	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/db/db_local"
+	"github.com/turbot/steampipe/control/controlhooks"
 	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/workspace"
 )
-
-type checkInitData struct {
-	ctx       context.Context
-	workspace *workspace.Workspace
-	client    db_common.Client
-	result    *db_common.InitResult
-}
-
-type exportData struct {
-	executionTree *controlexecute.ExecutionTree
-	exportFormats []controldisplay.CheckExportTarget
-	errorsLock    *sync.Mutex
-	errors        []error
-	waitGroup     *sync.WaitGroup
-}
-
-func (e *exportData) addErrors(err []error) {
-	e.errorsLock.Lock()
-	e.errors = append(e.errors, err...)
-	e.errorsLock.Unlock()
-}
 
 func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -79,12 +60,12 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", "text", "Select a console output format: brief, csv, html, json, md, text or none").
+		AddStringFlag(constants.ArgOutput, "", constants.CheckOutputFormatText, "Select a console output format: brief, csv, html, json, md, text or none").
 		AddBoolFlag(constants.ArgTimer, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme for 'text' output: light, dark or plain").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files in various output formats: csv, html, json or md").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to files in various output formats: csv, html, json, md, nunit3 or asff(json)").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
 		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
 		AddStringSliceFlag(constants.ArgTag, "", nil, "Filter controls based on their tag values ('--tag key=value')").
@@ -94,7 +75,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
-		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden())
+		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
+		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check")
 
 	return cmd
 }
@@ -104,43 +86,54 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
-	initData := &checkInitData{}
+	initData := &control.InitData{}
+
+	// setup a cancel context and start cancel handler
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+	// create a context with check status hooks
+	ctx = createCheckContext(ctx)
+
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(helpers.ToError(r))
+			utils.ShowError(ctx, helpers.ToError(r))
 			exitCode = 1
 		}
 
-		if initData.client != nil {
-			initData.client.Close()
+		if initData.Client != nil {
+			log.Printf("[TRACE] close client")
+			initData.Client.Close(ctx)
 		}
-		if initData.workspace != nil {
-			initData.workspace.Close()
+		if initData.Workspace != nil {
+			initData.Workspace.Close()
 		}
 	}()
 
 	// verify we have an argument
-	if !validateArgs(cmd, args) {
+	if !validateArgs(ctx, cmd, args) {
 		return
 	}
 
-	var spinner *spinner.Spinner
-	if viper.GetBool(constants.ArgProgress) {
-		spinner = display.ShowSpinner("Initializing...")
+	// if progress is disabled, update context to contain a null status hooks object
+	if !viper.GetBool(constants.ArgProgress) {
+		statushooks.DisableStatusHooks(ctx)
 	}
 
 	// initialise
-	initData = initialiseCheck(cmd.Context(), spinner)
-	if shouldExit := handleCheckInitResult(initData); shouldExit {
+	initData = initialiseCheck(ctx)
+
+	// check the init result - should we quit?
+	if shouldExit, err := handleCheckInitResult(ctx, initData); shouldExit {
+		initData.Cleanup(ctx)
+		// if there was an error, display it
+		utils.FailOnError(err)
 		return
 	}
-	display.StopSpinner(spinner)
 
 	// pull out useful properties
-	ctx := initData.ctx
-	workspace := initData.workspace
-	client := initData.client
+	workspace := initData.Workspace
+	client := initData.Client
 	failures := 0
 	var exportErrors []error
 	exportErrorsLock := sync.Mutex{}
@@ -157,7 +150,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// get the export formats for this argument
-		exportFormats, err := getExportTargets(arg)
+		exportTargets, err := getExportTargets(arg)
 		utils.FailOnError(err)
 
 		// create the execution tree
@@ -165,12 +158,18 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
 
 		// execute controls synchronously (execute returns the number of failures)
-		failures += executionTree.Execute(ctx, client)
+		failures += executionTree.Execute(ctx)
 		err = displayControlResults(ctx, executionTree)
 		utils.FailOnError(err)
 
-		if len(exportFormats) > 0 {
-			d := exportData{executionTree: executionTree, exportFormats: exportFormats, errorsLock: &exportErrorsLock, errors: exportErrors, waitGroup: &exportWaitGroup}
+		if len(exportTargets) > 0 {
+			d := control.ExportData{
+				ExecutionTree: executionTree,
+				Targets:       exportTargets,
+				ErrorsLock:    &exportErrorsLock,
+				Errors:        exportErrors,
+				WaitGroup:     &exportWaitGroup,
+			}
 			exportCheckResult(ctx, &d)
 		}
 
@@ -179,8 +178,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// wait for exports to complete
 	exportWaitGroup.Wait()
+
 	if len(exportErrors) > 0 {
-		utils.ShowError(utils.CombineErrors(exportErrors...))
+		utils.ShowError(ctx, utils.CombineErrors(exportErrors...))
 	}
 
 	if shouldPrintTiming() {
@@ -191,126 +191,64 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = failures
 }
 
-func initialiseCheck(ctx context.Context, spinner *spinner.Spinner) *checkInitData {
-	initData := &checkInitData{
-		result: &db_common.InitResult{},
+// create the context for the check run - add a control status renderer
+func createCheckContext(ctx context.Context) context.Context {
+	var controlHooks controlhooks.ControlHooks = controlhooks.NullHooks
+	// if the client is a TTY, inject a status spinner
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		controlHooks = controlhooks.NewControlStatusHooks()
 	}
 
-	cmdconfig.Viper().Set(constants.ConfigKeyShowInteractiveOutput, false)
+	return controlhooks.AddControlHooksToContext(ctx, controlHooks)
+}
 
-	err := validateOutputFormat()
-	if err != nil {
-		initData.result.Error = err
-		return initData
+func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
+	if len(args) == 0 {
+		fmt.Println()
+		utils.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
+		fmt.Println()
+		cmd.Help()
+		fmt.Println()
+		exitCode = 2
+		return false
 	}
+	return true
+}
 
-	err = cmdconfig.ValidateConnectionStringArgs()
-	if err != nil {
-		initData.result.Error = err
-		return initData
+func initialiseCheck(ctx context.Context) *control.InitData {
+	statushooks.SetStatus(ctx, "Initializing...")
+	defer statushooks.Done(ctx)
+
+	// load the workspace
+	w, err := loadWorkspacePromptingForVariables(ctx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	initData := control.NewInitData(ctx, w)
+
+	if !w.ModfileExists() {
+		initData.Result.Error = workspace.ErrorNoModDefinition
 	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	startCancelHandler(cancel)
-	initData.ctx = ctx
-
-	// set color schema
-	err = initialiseColorScheme()
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
-	// load workspace
-	initData.workspace, err = loadWorkspacePromptingForVariables(ctx, spinner)
-	if err != nil {
-		if !utils.IsCancelledError(err) {
-			err = utils.PrefixError(err, "failed to load workspace")
-		}
-		initData.result.Error = err
-		return initData
-	}
-
-	// check if the required plugins are installed
-	err = initData.workspace.CheckRequiredPluginsInstalled()
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
-
-	if len(initData.workspace.Controls) == 0 {
-		initData.result.AddWarnings("no controls found in current workspace")
-	}
-
-	display.UpdateSpinnerMessage(spinner, "Connecting to service...")
-	// get a client
-	var client db_common.Client
-	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(initData.ctx, connectionString)
-	} else {
-		// stop the spinner
-		display.StopSpinner(spinner)
-		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(initData.ctx, constants.InvokerCheck)
-		// resume the spinner
-		display.ResumeSpinner(spinner)
-	}
-
-	if err != nil {
-		initData.result.Error = err
-		return initData
-	}
-	initData.client = client
-
-	refreshResult := initData.client.RefreshConnectionAndSearchPaths(initData.ctx)
-	if refreshResult.Error != nil {
-		initData.result.Error = refreshResult.Error
-		return initData
-	}
-	initData.result.AddWarnings(refreshResult.Warnings...)
-
-	// setup the session data - prepared statements and introspection tables
-	sessionDataSource := workspace.NewSessionDataSource(initData.workspace, nil)
-
-	// register EnsureSessionData as a callback on the client.
-	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
-	// so our client object calls this callback to restore the session data
-	initData.client.SetEnsureSessionDataFunc(func(ctx context.Context, conn *db_common.DatabaseSession) (error, []string) {
-		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
-	})
 
 	return initData
 }
 
-func handleCheckInitResult(initData *checkInitData) bool {
+func handleCheckInitResult(ctx context.Context, initData *control.InitData) (bool, error) {
 	// if there is an error or cancellation we bomb out
-	// check for the various kinds of failures
-	utils.FailOnError(initData.result.Error)
+	if initData.Result.Error != nil {
+		return true, initData.Result.Error
+	}
 	// cancelled?
-	if initData.ctx != nil {
-		utils.FailOnError(initData.ctx.Err())
+	if ctx != nil && ctx.Err() != nil {
+		return true, ctx.Err()
 	}
 
 	// if there is a usage warning we display it
-	initData.result.DisplayMessages()
+	initData.Result.DisplayMessages()
 
 	// if there is are any warnings, exit politely
-	shouldExit := len(initData.result.Warnings) > 0
+	shouldExit := len(initData.Result.Warnings) > 0
 
-	// alternative approach - only stop the control run if there are no controls
-	//shouldExit := initData.workspace == nil || len(initData.workspace.Controls) == 0
-
-	return shouldExit
-}
-
-func exportCheckResult(ctx context.Context, d *exportData) {
-	d.waitGroup.Add(1)
-	go func() {
-		err := exportControlResults(ctx, d.executionTree, d.exportFormats)
-		if len(err) > 0 {
-			d.addErrors(err)
-		}
-		d.waitGroup.Done()
-	}()
+	return shouldExit, nil
 }
 
 func printTiming(args []string, durations []time.Duration) {
@@ -325,108 +263,64 @@ func printTiming(args []string, durations []time.Duration) {
 	display.ShowWrappedTable(headers, rows, false)
 }
 
-func validateArgs(cmd *cobra.Command, args []string) bool {
-	if len(args) == 0 {
-		fmt.Println()
-		utils.ShowError(fmt.Errorf("you must provide at least one argument"))
-		fmt.Println()
-		cmd.Help()
-		fmt.Println()
-		exitCode = 2
-		return false
-	}
-	return true
-}
-
 func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
 	return (viper.GetBool(constants.ArgTimer) && !viper.GetBool(constants.ArgDryRun)) &&
-		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
+		(outputFormat == constants.CheckOutputFormatText || outputFormat == constants.CheckOutputFormatBrief)
 }
 
-func validateOutputFormat() error {
-	outputFormat := viper.GetString(constants.ArgOutput)
-	// try to get a formatter for the desired output.
-	if _, err := controldisplay.GetOutputFormatter(outputFormat); err != nil {
-		// could not get a formatter
-		return err
-	}
-	if outputFormat == constants.OutputFormatNone {
-		// set progress to false
-		viper.Set(constants.ArgProgress, false)
-	}
-	return nil
-}
-
-func validateExportTargets(exportTargets []controldisplay.CheckExportTarget) error {
-	var targetErrors []error
-
-	for _, exportTarget := range exportTargets {
-		if exportTarget.Error != nil {
-			targetErrors = append(targetErrors, exportTarget.Error)
-		} else if _, err := controldisplay.GetExportFormatter(exportTarget.Format); err != nil {
-			targetErrors = append(targetErrors, err)
+func exportCheckResult(ctx context.Context, d *control.ExportData) {
+	d.WaitGroup.Add(1)
+	go func() {
+		err := exportControlResults(ctx, d.ExecutionTree, d.Targets)
+		if len(err) > 0 {
+			d.AddErrors(err)
 		}
-	}
-	if len(targetErrors) > 0 {
-		message := fmt.Sprintf("%d export %s failed validation", len(targetErrors), utils.Pluralize("target", len(targetErrors)))
-		return utils.CombineErrorsWithPrefix(message, targetErrors...)
-	}
-	return nil
-
-}
-
-func initialiseColorScheme() error {
-	theme := viper.GetString(constants.ArgTheme)
-	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
-		// enforce plain output for non-terminals
-		theme = "plain"
-	}
-	themeDef, ok := controldisplay.ColorSchemes[theme]
-	if !ok {
-		return fmt.Errorf("invalid theme '%s'", theme)
-	}
-	scheme, err := controldisplay.NewControlColorScheme(themeDef)
-	if err != nil {
-		return err
-	}
-	controldisplay.ControlColors = scheme
-	return nil
+		d.WaitGroup.Done()
+	}()
 }
 
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
-	outputFormat := viper.GetString(constants.ArgOutput)
-	formatter, _ := controldisplay.GetOutputFormatter(outputFormat)
-	formattedReader, err := formatter.Format(ctx, executionTree)
+	formatter, _, err := parseOutputArg(viper.GetString(constants.ArgOutput))
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	reader, err := formatter.Format(ctx, executionTree)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(os.Stdout, formattedReader)
-
+	_, err = io.Copy(os.Stdout, reader)
 	return err
 }
 
-func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formats []controldisplay.CheckExportTarget) []error {
+func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []controldisplay.CheckExportTarget) []error {
 	errors := []error{}
-	for _, format := range formats {
-		formatter, err := controldisplay.GetExportFormatter(format.Format)
+	for _, target := range targets {
+		if utils.IsContextCancelled(ctx) {
+			// set the error
+			errors = append(errors, ctx.Err())
+			// and skip forward
+			continue
+		}
+
+		dataToExport, err := target.Formatter.Format(ctx, executionTree)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		formattedReader, err := formatter.Format(ctx, executionTree)
-		if err != nil {
-			errors = append(errors, err)
+		if utils.IsContextCancelled(ctx) {
+			errors = append(errors, ctx.Err())
 			continue
 		}
 		// create the output file
-		destination, err := os.Create(format.File)
+		destination, err := os.Create(target.File)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		_, err = io.Copy(destination, formattedReader)
+		_, err = io.Copy(destination, dataToExport)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -438,48 +332,68 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 }
 
 func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, error) {
-	formats := []controldisplay.CheckExportTarget{}
+	targets := []controldisplay.CheckExportTarget{}
+	targetErrors := []error{}
+
 	exports := viper.GetStringSlice(constants.ArgExport)
 	for _, export := range exports {
-		var targetError error
+		export = strings.TrimSpace(export)
 
-		if len(strings.TrimSpace(export)) == 0 {
+		if len(export) == 0 {
 			// if this is an empty string, ignore
 			continue
 		}
 
-		parts := strings.SplitN(export, ":", 2)
+		var fileName string
+		var formatter controldisplay.Formatter
 
-		var format, fileName string
+		formatter, fileName, err := parseExportArg(export)
+		if err != nil {
+			targetErrors = append(targetErrors, err)
+			continue
+		}
+		if formatter == nil {
+			targetErrors = append(targetErrors, controldisplay.ErrFormatterNotFound)
+			continue
+		}
 
-		if len(parts) == 2 {
-			// we have two distinct parts - life is good
-			format = parts[0]
-			fileName = parts[1]
-			fileName, targetError = helpers.Tildefy(fileName)
-		} else {
-			format = parts[0]
+		if len(fileName) == 0 {
+			fileName = generateDefaultExportFileName(formatter, executing)
+		}
 
-			// try to get an export formatter
-			if formatter, fmtError := controldisplay.GetExportFormatter(format); fmtError != nil {
-				// this is not a valid format. assume it is a file name
-				fileName = format
-				// now infer the format from the file name
-				format, targetError = controldisplay.InferFormatFromExportFileName(fileName)
-			} else {
-				// the format was valid, generate default filename
-				fileName = generateDefaultExportFileName(formatter, executing)
+		newTarget := controldisplay.NewCheckExportTarget(formatter, fileName)
+		isAlreadyAdded := false
+		for _, t := range targets {
+			if t.File == newTarget.File {
+				isAlreadyAdded = true
+				break
 			}
 		}
-		formats = append(formats, controldisplay.NewCheckExportTarget(format, fileName, targetError))
-	}
-	err := validateExportTargets(formats)
 
-	return formats, err
+		if !isAlreadyAdded {
+			targets = append(targets, newTarget)
+		}
+	}
+
+	return targets, utils.CombineErrors(targetErrors...)
+}
+
+// parseExportArg parses the flag value and returns a Formatter based on the value
+func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
+	return controldisplay.GetTemplateExportFormatter(arg, true)
+}
+
+// parseOutputArg parses the --output flag value and returns the Formatter that can format the data
+func parseOutputArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
+	var found bool
+	if formatter, found = controldisplay.GetDefinedOutputFormatter(arg); found {
+		return
+	}
+	return controldisplay.GetTemplateExportFormatter(arg, false)
 }
 
 func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
 	now := time.Now()
 	timeFormatted := fmt.Sprintf("%d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	return fmt.Sprintf("%s-%s.%s", executing, timeFormatted, formatter.FileExtension())
+	return fmt.Sprintf("%s-%s%s", executing, timeFormatted, formatter.FileExtension())
 }

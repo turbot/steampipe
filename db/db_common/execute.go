@@ -13,7 +13,7 @@ func ExecuteQuery(ctx context.Context, queryString string, client Client) (*quer
 	defer utils.LogTime("db.ExecuteQuery end")
 
 	resultsStreamer := queryresult.NewResultStreamer()
-	result, err := client.Execute(ctx, queryString, false)
+	result, err := client.Execute(ctx, queryString)
 	if err != nil {
 		return nil, err
 	}

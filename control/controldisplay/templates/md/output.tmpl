@@ -1,0 +1,92 @@
+{{ define "output" }}
+{{/* we expect 0 or 1 root control runs */}}
+{{ range .Data.Root.ControlRuns -}}
+{{ template "control_run_template" . -}}
+{{ end }}
+{{/* we expect 0 or 1 root groups */}}
+{{ range .Data.Root.Groups -}}
+{{ template "root_group_template" . -}}
+{{ end }}
+
+\
+_Report run at `{{ .Data.StartTime.Format "2006-01-02 15:04:05" }}` using [`Steampipe {{ .Constants.SteampipeVersion }}`](https://steampipe.io) in dir `{{ .Constants.WorkingDir }}`._
+{{ end }}
+
+{{/* templates */}}
+{{ define "root_group_template"}}
+# {{ .Title }}
+{{ template "root_summary" .Summary.Status -}}
+{{ if .ControlRuns }}
+{{ range .ControlRuns -}}
+{{ template "control_run_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ range .Groups -}}
+{{ template "group_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ define "group_template"}}
+# {{ .Title }}
+{{ template "summary" .Summary.Status -}}
+{{ if .ControlRuns }}
+{{ range .ControlRuns -}}
+{{ template "control_run_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ range .Groups -}}
+{{ template "group_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ define "root_summary" }}
+| | TOTAL | {{ .TotalCount }} |
+|-|-|-|
+| ✅ | OK | {{ .Ok }} |
+| ⇨ | Skip | {{ .Skip }} |
+| ℹ | Info | {{ .Info }} |
+| ❌ | Alarm | {{ .Alarm }} |
+| ❗ | Error | {{ .Error }} |
+{{ end -}}
+{{ define "summary" }}
+| OK | Skip | Info | Alarm | Error | Total |
+|-|-|-|-|-|-|
+| {{ .Ok }} | {{ .Skip }} | {{ .Info }} | {{ .Alarm }} | {{ .Error }} | {{ .TotalCount }} |
+{{ end -}}
+{{ define "control_row_template" }}
+| {{ template "statusicon" .Status }} | {{ .Reason }}| {{range .Dimensions}}`{{.Value}}` {{ end }} |
+{{- end }}
+{{ define "control_run_template"}}
+## {{ .Title }}
+{{ if .Description }} 
+*{{ .Description }}*{{ end }}
+{{ template "summary" .Summary -}}
+{{ if .GetError }}
+> Error: _{{ .GetError }}_
+{{ else }}
+{{ $length := len .Rows }}
+{{ if gt $length 0 }}
+| | Reason | Dimensions |
+|-|--------|------------|
+{{- range .Rows }}
+{{- template "control_row_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ end }}
+{{ end }}
+
+{{ define "statusicon" }}
+  {{- if eq . "ok" -}}
+    ✅
+  {{- end -}}
+  {{- if eq . "skip" -}}
+    ⇨
+  {{- end -}}
+  {{- if eq . "info" -}}
+    ℹ
+  {{- end -}}
+  {{- if eq . "alarm" -}}
+    ❌
+  {{- end -}}
+  {{- if eq . "error" -}}
+    ❗
+  {{- end -}}
+{{- end -}}

@@ -40,7 +40,7 @@ var ConnectionBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// ModBlockSchema :: top level schema for all mod resources
+// ModBlockSchema is the top level schema for all mod resources
 var ModBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
@@ -65,11 +65,39 @@ var ModBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypeReport,
+			Type:       modconfig.BlockTypeDashboard,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       modconfig.BlockTypePanel,
+			Type:       modconfig.BlockTypeCard,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeChart,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeFlow,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeHierarchy,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeImage,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeInput,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeTable,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeText,
 			LabelNames: []string{"name"},
 		},
 		{
@@ -78,55 +106,104 @@ var ModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var PanelBlockSchema = &hcl.BodySchema{
+// DashboardBlockSchema contains the Dashboard attributes which cannot be automatically decoded
+var DashboardBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{Name: "title"},
-		{Name: "text"},
-		{Name: "type"},
-		{Name: "width"},
-		{Name: "height"},
-		{Name: "source"},
-		{Name: "sql"},
+		{Name: "args"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "panel",
+			Type:       modconfig.BlockTypeInput,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       "report",
-			LabelNames: []string{"type"},
+			Type:       modconfig.BlockTypeParam,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type: modconfig.BlockTypeContainer,
+		},
+		{
+			Type: modconfig.BlockTypeCard,
+		},
+		{
+			Type: modconfig.BlockTypeChart,
+		},
+		{
+			Type: modconfig.BlockTypeFlow,
+		},
+		{
+			Type: modconfig.BlockTypeHierarchy,
+		},
+		{
+			Type: modconfig.BlockTypeImage,
+		},
+		{
+			Type: modconfig.BlockTypeTable,
+		},
+		{
+			Type: modconfig.BlockTypeText,
 		},
 	},
 }
 
-var ReportBlockSchema = &hcl.BodySchema{
+// DashboardContainerBlockSchema contains the DashboardContainer attributes which cannot be automatically decoded
+var DashboardContainerBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
-		{Name: "title"},
+		{Name: "args"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "panel",
+			Type:       modconfig.BlockTypeInput,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       "report",
-			LabelNames: []string{"type"},
+			Type:       modconfig.BlockTypeParam,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type: modconfig.BlockTypeContainer,
+		},
+		{
+			Type: modconfig.BlockTypeCard,
+		},
+		{
+			Type: modconfig.BlockTypeChart,
+		},
+		{
+			Type: modconfig.BlockTypeFlow,
+		},
+		{
+			Type: modconfig.BlockTypeHierarchy,
+		},
+		{
+			Type: modconfig.BlockTypeImage,
+		},
+		{
+			Type: modconfig.BlockTypeTable,
+		},
+		{
+			Type: modconfig.BlockTypeText,
 		},
 	},
 }
 
-var ControlBlockSchema = &hcl.BodySchema{
+var BenchmarkBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
+		{Name: "children"},
 		{Name: "description"},
 		{Name: "documentation"},
-		{Name: "search_path"},
-		{Name: "search_path_prefix"},
-		{Name: "severity"},
-		{Name: "sql"},
-		{Name: "query"},
 		{Name: "tags"},
 		{Name: "title"},
+		// for report benchmark blocks
+		{Name: "width"},
+		{Name: "base"},
+	},
+}
+
+// QueryProviderBlockSchema schema for all blocks satisfying QueryProvider interface
+var QueryProviderBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
@@ -137,26 +214,31 @@ var ControlBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var QueryBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "description"},
-		{Name: "documentation"},
-		{Name: "search_path"},
-		{Name: "search_path_prefix"},
-		{Name: "sql"},
-		{Name: "tags"},
-		{Name: "title"},
-	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "param",
-			LabelNames: []string{"name"},
-		},
-	},
-}
 var ParamDefBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "description"},
 		{Name: "default"},
+	},
+}
+
+var VariableBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "description",
+		},
+		{
+			Name: "default",
+		},
+		{
+			Name: "type",
+		},
+		{
+			Name: "sensitive",
+		},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type: "validation",
+		},
 	},
 }

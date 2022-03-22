@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -14,8 +15,8 @@ func WaitForConnection(ctx context.Context, db *sql.DB) (err error) {
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
-	pingTimer := time.NewTicker(10 * time.Millisecond)
-	timeoutAt := time.After(5 * time.Second)
+	pingTimer := time.NewTicker(constants.ServicePingInterval)
+	timeoutAt := time.After(constants.ServiceStartTimeout)
 	defer pingTimer.Stop()
 
 	for {

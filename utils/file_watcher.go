@@ -106,7 +106,12 @@ func (w *FileWatcher) Start() {
 				w.addWatches()
 
 			case ev := <-w.watch.Events:
-				w.handleEvent(ev)
+				err := w.handleEvent(ev)
+				log.Printf("[TRACE] handleEvent error %v", err)
+				if w.onError != nil {
+					// leave it to the client to decide what to do after an error - it can close us if it wants
+					w.onError(err)
+				}
 
 			case err := <-w.watch.Errors:
 				if err == nil {

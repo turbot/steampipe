@@ -8,9 +8,9 @@ import (
 	"github.com/stevenle/topsort"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -35,7 +35,9 @@ type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
 	// the mod which is currently being parsed
-	CurrentMod       *modconfig.Mod
+	CurrentMod *modconfig.Mod
+	// the workspace lock data
+	WorkspaceLock    *versionmap.WorkspaceLock
 	UnresolvedBlocks map[string]*unresolvedBlock
 	FileData         map[string][]byte
 	// the eval context used to decode references in HCL
@@ -44,40 +46,75 @@ type RunContext struct {
 	Flags                ParseModFlag
 	ListOptions          *filehelpers.ListOptions
 	LoadedDependencyMods modconfig.ModMap
-	WorkspacePath        string
-	ModInstallationPath  string
+	RootEvalPath         string
 	// if set, only decode these blocks
 	BlockTypes []string
 	// if set, exclude these block types
 	BlockTypeExclusions []string
+	Variables           map[string]*modconfig.Variable
+
+	// stack of parent resources for the currently parsed block
+	// (unqualified name)
+	parents []string
+	// map of resource children, keyed by parent unqualified name
+	blockChildMap map[string][]string
 
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
-	Variables       map[string]*modconfig.Variable
+	// map of block names, keyed by a hash of the blopck
+	blockNameMap map[string]string
 }
 
-func NewRunContext(workspacePath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
+func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
 	c := &RunContext{
 		Flags:                flags,
-		ModInstallationPath:  constants.WorkspaceModPath(workspacePath),
-		WorkspacePath:        workspacePath,
+		RootEvalPath:         rootEvalPath,
+		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
 		UnresolvedBlocks:     make(map[string]*unresolvedBlock),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
+		blockChildMap: make(map[string][]string),
+		blockNameMap:  make(map[string]string),
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
-
-	// add enums to the variables which may be referenced from within the hcl
-	c.addSteampipeEnums()
 	c.buildEvalContext()
+
 	return c
+}
+
+func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
+	// if the mod has dependencies, there must a workspace lock object in the run context
+	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
+	if mod.HasDependentMods() && (r.WorkspaceLock.Empty() || r.WorkspaceLock.Incomplete()) {
+		return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
+	}
+
+	return nil
+}
+
+func (r *RunContext) PushParent(parent modconfig.ModTreeItem) {
+	r.parents = append(r.parents, parent.GetUnqualifiedName())
+}
+
+func (r *RunContext) PopParent() string {
+	n := len(r.parents) - 1
+	res := r.parents[n]
+	r.parents = r.parents[:n]
+	return res
+}
+
+func (r *RunContext) PeekParent() string {
+	if len(r.parents) == 0 {
+		return r.CurrentMod.Name()
+	}
+	return r.parents[len(r.parents)-1]
 }
 
 // VariableValueMap converts a map of variables to a map of the underlying cty value
@@ -101,44 +138,36 @@ func (r *RunContext) AddVariables(inputVariables map[string]*modconfig.Variable)
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
 // - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
-func (r *RunContext) AddMod(mod *modconfig.Mod, content *hcl.BodyContent, fileData map[string][]byte) hcl.Diagnostics {
+func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(r.UnresolvedBlocks) > 0 {
 		// should never happen
 		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
 	}
 
-	r.FileData = fileData
-	r.blocks = content.Blocks
-
 	var diags hcl.Diagnostics
 
 	moreDiags := r.storeResourceInCtyMap(mod)
 	diags = append(diags, moreDiags...)
-	// add mod resources
-	for _, q := range mod.Queries {
-		moreDiags := r.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
+
+	resourceFunc := func(item modconfig.HclResource) (bool, error) {
+		// add all mod resources except variables into cty map
+		if _, ok := item.(*modconfig.Variable); !ok {
+			moreDiags := r.storeResourceInCtyMap(item)
+			diags = append(diags, moreDiags...)
+		}
+		// continue walking
+		return true, nil
 	}
-	for _, q := range mod.Controls {
-		moreDiags := r.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-	for _, q := range mod.Locals {
-		moreDiags := r.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-	for _, q := range mod.Reports {
-		moreDiags := r.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
-	for _, q := range mod.Panels {
-		moreDiags := r.storeResourceInCtyMap(q)
-		diags = append(diags, moreDiags...)
-	}
+	mod.WalkResources(resourceFunc)
 
 	// rebuild the eval context
 	r.buildEvalContext()
 	return diags
+}
+
+func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
+	r.blocks = content.Blocks
+	r.FileData = fileData
 }
 
 func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
@@ -159,7 +188,7 @@ func (r *RunContext) ClearDependencies() {
 // AddDependencies :: the block could not be resolved as it has dependencies
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
-func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies []*dependency) hcl.Diagnostics {
+func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
 	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
@@ -169,30 +198,41 @@ func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 		r.dependencyGraph.AddNode(name)
 	}
 	// add root dependency
-	r.dependencyGraph.AddEdge(rootDependencyNode, name)
+	if err := r.dependencyGraph.AddEdge(rootDependencyNode, name); err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "failed to add root dependency to graph",
+			Detail:   err.Error()})
+	}
 
 	for _, dep := range dependencies {
 		// each dependency object may have multiple traversals
 		for _, t := range dep.Traversals {
-			d := hclhelpers.TraversalAsString(t)
+			parsedPropertyPath, err := modconfig.ParseResourcePropertyPath(hclhelpers.TraversalAsString(t))
 
-			// 'd' may be a property path - when storing dependencies we only care about the resource names
-			dependencyResource, err := modconfig.PropertyPathToResourceName(d)
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary:  "failed to convert cty value - asJson failed",
+					Summary:  "failed to parse dependency",
 					Detail:   err.Error()})
 				continue
 
 			}
-			if !r.dependencyGraph.ContainsNode(dependencyResource) {
-				r.dependencyGraph.AddNode(dependencyResource)
+
+			// 'd' may be a property path - when storing dependencies we only care about the resource names
+			dependencyResourceName := parsedPropertyPath.ToResourceName()
+			if !r.dependencyGraph.ContainsNode(dependencyResourceName) {
+				r.dependencyGraph.AddNode(dependencyResourceName)
 			}
-			r.dependencyGraph.AddEdge(name, dependencyResource)
+			if err := r.dependencyGraph.AddEdge(name, dependencyResourceName); err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "failed to add dependency to graph",
+					Detail:   err.Error()})
+			}
 		}
 	}
-	return nil
+	return diags
 }
 
 // BlocksToDecode builds a list of blocks to decode, the order of which is determined by the depdnency order
@@ -206,7 +246,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	}
 
 	// NOTE: a block may appear more than once in unresolved blocks
-	// if it defines muleiple unresolved resources, e.g a locals block
+	// if it defines multiple unresolved resources, e.g a locals block
 
 	// make a map of blocks we have already included, keyed by the block def range
 	blocksMap := make(map[string]bool)
@@ -224,7 +264,7 @@ func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
 	return blocksToDecode, nil
 }
 
-// EvalComplete returns whether  all elements in the dependency tree fully evaluated
+// EvalComplete returns whether all elements in the dependency tree fully evaluated
 func (r *RunContext) EvalComplete() bool {
 	return len(r.UnresolvedBlocks) == 0
 }
@@ -278,29 +318,33 @@ func (r *RunContext) FormatDependencies() string {
 	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }
 
-// add enums to the referenceValues which may be referenced from within the hcl
-func (r *RunContext) addSteampipeEnums() {
-	r.referenceValues["local"]["steampipe"] = map[string]cty.Value{
-		"panel": cty.ObjectVal(map[string]cty.Value{
-			"markdown":         cty.StringVal("steampipe.panel.markdown"),
-			"barchart":         cty.StringVal("steampipe.panel.barchart"),
-			"stackedbarchart":  cty.StringVal("steampipe.panel.stackedbarchart"),
-			"counter":          cty.StringVal("steampipe.panel.counter"),
-			"linechart":        cty.StringVal("steampipe.panel.linechart"),
-			"multilinechart":   cty.StringVal("steampipe.panel.multilinechart"),
-			"piechart":         cty.StringVal("steampipe.panel.piechart"),
-			"placeholder":      cty.StringVal("steampipe.panel.placeholder"),
-			"control_list":     cty.StringVal("steampipe.panel.control_list"),
-			"control_progress": cty.StringVal("steampipe.panel.control_progress"),
-			"control_table":    cty.StringVal("steampipe.panel.control_table"),
-			"graph":            cty.StringVal("steampipe.panel.graph"),
-			"sankey_diagram":   cty.StringVal("steampipe.panel.sankey_diagram"),
-			"status":           cty.StringVal("steampipe.panel.status"),
-			"table":            cty.StringVal("steampipe.panel.table"),
-			"resource_detail":  cty.StringVal("steampipe.panel.resource_detail"),
-			"resource_tags":    cty.StringVal("steampipe.panel.resource_tags"),
-		}),
+func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
+	if modShortName == r.CurrentMod.ShortName {
+		return r.CurrentMod
 	}
+	// we need to iterate through dependency mods - we cannot use modShortNameas key as it is short name
+	for _, dep := range r.LoadedDependencyMods {
+		if dep.ShortName == modShortName {
+			return dep
+		}
+	}
+	return nil
+}
+
+func (r *RunContext) GetResourceMaps() *modconfig.ModResources {
+	dependencyResourceMaps := make([]*modconfig.ModResources, len(r.LoadedDependencyMods))
+	idx := 0
+	// use the current mod as the base resource map
+	resourceMap := r.CurrentMod.GetResourceMaps()
+
+	// merge in the dependency mods
+	for _, m := range r.LoadedDependencyMods {
+		dependencyResourceMaps[idx] = m.GetResourceMaps()
+		idx++
+	}
+
+	resourceMap = resourceMap.Merge(dependencyResourceMaps)
+	return resourceMap
 }
 
 func (r *RunContext) newDependencyGraph() *topsort.Graph {
@@ -360,10 +404,11 @@ func (r *RunContext) buildEvalContext() {
 		variables[mod] = cty.ObjectVal(refTypeMap)
 	}
 
-	//create evaluation context
+	// create evaluation context
 	r.EvalCtx = &hcl.EvalContext{
 		Variables: variables,
-		Functions: ContextFunctions(r.WorkspacePath),
+		// use the mod path as the file root for functions
+		Functions: ContextFunctions(r.RootEvalPath),
 	}
 }
 
@@ -386,9 +431,8 @@ func (r *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 	}
 
 	// remove this resource from unparsed blocks
-	if _, ok := r.UnresolvedBlocks[resource.Name()]; ok {
-		delete(r.UnresolvedBlocks, resource.Name())
-	}
+	delete(r.UnresolvedBlocks, resource.Name())
+
 	return nil
 }
 
@@ -411,11 +455,9 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	typeString := parsedName.ItemType
 
 	// the resource name will not have a mod - but the run context knows which mod we are parsing
-
 	mod := r.CurrentMod
-
 	modName := mod.ShortName
-	if mod.ModPath == r.WorkspacePath {
+	if mod.ModPath == r.RootEvalPath {
 		modName = "local"
 	}
 	variablesForMod, ok := r.referenceValues[modName]

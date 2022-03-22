@@ -12,7 +12,7 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, invoker constants.Invo
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer client.Close(ctx)
 	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
 	// display any initialisation warnings
 	refreshResult.ShowWarnings()

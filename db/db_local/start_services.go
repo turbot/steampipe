@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -14,7 +13,8 @@ import (
 	"syscall"
 
 	"github.com/turbot/steampipe/db/db_common"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/pluginmanager"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
@@ -28,7 +28,7 @@ type StartResult struct {
 	Error              error
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
-	PluginManagerState *plugin_manager.PluginManagerState
+	PluginManagerState *pluginmanager.PluginManagerState
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -92,7 +92,11 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		res.Status = ServiceAlreadyRunning
 	}
 
-	res.PluginManagerState, res.Error = plugin_manager.LoadPluginManagerState()
+	if res.Error != nil {
+		return res
+	}
+
+	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
 		res.Status = ServiceFailedToStart
 		return res
@@ -106,7 +110,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
 			return res.SetError(err)
 		}
-		if err := plugin_manager.StartNewInstance(executable); err != nil {
+		if err := pluginmanager.StartNewInstance(executable); err != nil {
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
@@ -131,7 +135,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		// if there was an error and we started the service, stop it again
 		if res.Error != nil {
 			if res.Status == ServiceStarted {
-				StopServices(false, invoker, nil)
+				StopServices(ctx, false, invoker)
 			}
 			// remove the state file if we are going back with an error
 			removeRunningInstanceInfo()
@@ -158,7 +162,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := isPortBindable(port); err != nil {
+	if err := utils.IsPortBindable(port); err != nil {
 		return res.SetError(fmt.Errorf("cannot listen on port %d", constants.Bold(port)))
 	}
 
@@ -186,7 +190,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	err = updateDatabaseNameInRunningInfo(ctx, databaseName)
+	res.DbState, err = updateDatabaseNameInRunningInfo(ctx, databaseName)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -275,6 +279,10 @@ func resolvePassword() (string, error) {
 }
 
 func startPostgresProcess(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (*exec.Cmd, error) {
+	if utils.IsContextCancelled(ctx) {
+		return nil, ctx.Err()
+	}
+
 	listenAddresses := "localhost"
 
 	if listen == ListenTypeNetwork {
@@ -333,13 +341,13 @@ func writePGConf(ctx context.Context) error {
 	return nil
 }
 
-func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) error {
+func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (*RunningDBInstanceInfo, error) {
 	runningInfo, err := loadRunningInstanceInfo()
 	if err != nil {
-		return err
+		return runningInfo, err
 	}
 	runningInfo.Database = databaseName
-	return runningInfo.Save()
+	return runningInfo, runningInfo.Save()
 }
 
 func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd {
@@ -355,7 +363,7 @@ func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd 
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
-		"-c", fmt.Sprintf("log_directory=%s", constants.LogDir()),
+		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
 
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if the ssl is on
@@ -366,7 +374,7 @@ func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd 
 		// Data Directory
 		"-D", getDataLocation())
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", constants.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(constants.SslConfDir)
@@ -476,6 +484,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 	extensions := []string{
 		"tablefunc",
+		"ltree",
 	}
 
 	errors := []error{}
@@ -503,11 +512,11 @@ func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
 
 // create the command schema and grant insert permission
 func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
-	commandSchemaStatements := updateConnectionQuery(constants.CommandSchema, constants.CommandSchema)
-	commandSchemaStatements = append(
-		commandSchemaStatements,
+	commandSchemaStatements := []string{
+		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
-	)
+	}
+
 	for _, statement := range commandSchemaStatements {
 		if _, err := rootClient.ExecContext(ctx, statement); err != nil {
 			return err
@@ -526,15 +535,6 @@ func ensureTempTablePermissions(ctx context.Context, databaseName string, rootCl
 	return nil
 }
 
-func isPortBindable(port int) error {
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
-	if err != nil {
-		return err
-	}
-	defer l.Close()
-	return nil
-}
-
 // kill all postgres processes that were started as part of steampipe (if any)
 func killInstanceIfAny(ctx context.Context) bool {
 	processes, err := FindAllSteampipePostgresInstances(ctx)
@@ -545,7 +545,7 @@ func killInstanceIfAny(ctx context.Context) bool {
 	for _, process := range processes {
 		wg.Add(1)
 		go func(p *psutils.Process) {
-			doThreeStepPostgresExit(p)
+			doThreeStepPostgresExit(ctx, p)
 			wg.Done()
 		}(process)
 	}
@@ -580,30 +580,4 @@ func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
 		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
 	}
 	return false
-}
-
-func localAddresses() ([]string, error) {
-	addresses := []string{}
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return nil, err
-	}
-	for _, i := range ifaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			continue
-		}
-		for _, a := range addrs {
-			switch v := a.(type) {
-			case *net.IPNet:
-				isToInclude := v.IP.IsGlobalUnicast() && (v.IP.To4() != nil)
-				if isToInclude {
-					addresses = append(addresses, v.IP.String())
-				}
-			}
-
-		}
-	}
-
-	return addresses, nil
 }

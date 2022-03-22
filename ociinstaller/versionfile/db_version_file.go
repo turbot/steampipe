@@ -7,11 +7,7 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
-)
-
-const (
-	dbVersionFileName = "versions.json"
+	"github.com/turbot/steampipe/filepaths"
 )
 
 type DatabaseVersionFile struct {
@@ -54,7 +50,7 @@ func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 		return migratedVersionFile, nil
 	}
 
-	versionFilePath := constants.DatabaseVersionFilePath()
+	versionFilePath := filepaths.DatabaseVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readDatabaseVersionFile(versionFilePath)
 	}
@@ -64,7 +60,7 @@ func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 	file, _ := os.ReadFile(path)
 	var data DatabaseVersionFile
-	if err := json.Unmarshal([]byte(file), &data); err != nil {
+	if err := json.Unmarshal(file, &data); err != nil {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
 		return nil, err
 	}
@@ -81,7 +77,7 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 
 // Save writes the config
 func (f *DatabaseVersionFile) Save() error {
-	versionFilePath := constants.DatabaseVersionFilePath()
+	versionFilePath := filepaths.DatabaseVersionFilePath()
 	return f.write(versionFilePath)
 }
 
@@ -92,14 +88,6 @@ func (f *DatabaseVersionFile) write(path string) error {
 		return err
 	}
 	return os.WriteFile(path, versionFileJSON, 0644)
-}
-
-// delete the file on disk if it exists
-func (f *DatabaseVersionFile) delete() {
-	versionFilePath := constants.DatabaseVersionFilePath()
-	if helpers.FileExists(versionFilePath) {
-		os.Remove(versionFilePath)
-	}
 }
 
 // FormatTime :: format time as RFC3339 in UTC

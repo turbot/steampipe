@@ -62,7 +62,10 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, moreDiags...)
 				break
 			}
-			connection.SetOptions(opts, connectionBlock)
+			moreDiags = connection.SetOptions(opts, connectionBlock)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
 
 		default:
 			// this can probably never happen

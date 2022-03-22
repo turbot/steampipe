@@ -5,8 +5,9 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
-	sdkversion "github.com/turbot/steampipe-plugin-sdk/version"
+	sdkversion "github.com/turbot/steampipe-plugin-sdk/v3/version"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -26,8 +27,8 @@ func (v ValidationFailure) String() string {
 	)
 }
 
-func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPlugin) ([]*ValidationFailure, ConnectionDataMap, []*ConnectionPlugin) {
-	var validatedPlugins []*ConnectionPlugin
+func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPlugin) ([]*ValidationFailure, ConnectionDataMap, map[string]*ConnectionPlugin) {
+	var validatedPlugins = make(map[string]*ConnectionPlugin)
 	var validatedUpdates = ConnectionDataMap{}
 
 	var validationFailures []*ValidationFailure
@@ -40,11 +41,26 @@ func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPl
 			validationFailures = append(validationFailures, validationFailure)
 		} else {
 			// validation passed - add to list of validated plugins
-			validatedPlugins = append(validatedPlugins, p)
+			validatedPlugins[p.ConnectionName] = p
 			// if this connection has updates, add them
 			if _, ok := updates[p.ConnectionName]; ok {
 				validatedUpdates[p.ConnectionName] = updates[p.ConnectionName]
 			}
+		}
+	}
+
+	// we need to separately validate aggregator connections as there will not be a connection plugin for them
+	for updateConnectionName, connectionData := range updates {
+		if connectionData.Connection.Type == modconfig.ConnectionTypeAggregator {
+			// get the first child connection
+			childConnection := connectionData.Connection.FirstChild()
+			// check whether the plugin for this connection is validated
+			for _, p := range validatedPlugins {
+				if p.ConnectionName == childConnection.Name {
+					validatedUpdates[updateConnectionName] = connectionData
+				}
+			}
+
 		}
 	}
 	return validationFailures, validatedUpdates, validatedPlugins

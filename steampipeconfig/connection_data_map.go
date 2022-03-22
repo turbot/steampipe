@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/plugin_manager"
+	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
@@ -55,7 +55,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 	// populate checksum for each referenced plugin
 	for name, connection := range connectionMap {
 		remoteSchema := connection.Plugin
-		pluginPath, err := plugin_manager.GetPluginPath(connection.Plugin, connection.PluginShortName)
+		pluginPath, err := pluginmanager.GetPluginPath(connection.Plugin, connection.PluginShortName)
 		if err != nil {
 			err := fmt.Errorf("failed to load connection '%s': %v\n%s", connection.Name, err, connection.DeclRange)
 			return nil, nil, err

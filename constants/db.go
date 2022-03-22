@@ -8,7 +8,7 @@ import (
 
 // dbClient constants
 const (
-	// the number of clients to initialize in parallel
+	// MaxParallelClientInits is the number of clients to initialize in parallel
 	// if we start initializing all clients together, it leads to bad performance on all
 	MaxParallelClientInits = 3
 )
@@ -28,20 +28,20 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "12.1.0"
-	FdwVersion      = "0.3.1-dev.0"
+	FdwVersion      = "0.4.0"
 
-	// DefaultEmbeddedPostgresImage :: The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
+	// PostgresImageRef is the OCI Image ref for the databse binaries
+	// The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
 	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is
 	// on a newer build, we can delete the old image move the 12.1.0 tag to the new image, and
 	// change this back for consistency
-	//DefaultEmbeddedPostgresImage = "us-docker.pkg.dev/steampipe/steampipe/db:" + DatabaseVersion
-	DefaultEmbeddedPostgresImage = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
-	DefaultFdwImage              = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
+	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
+	FdwImageRef      = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
 
 // schema names
 const (
-	// FunctionSchema :: schema container for all steampipe helper functions
+	// FunctionSchema is the schema container for all steampipe helper functions
 	FunctionSchema = "internal"
 
 	// CommandSchema is the schema which is used to send commands to the FDW
@@ -79,17 +79,23 @@ var ReservedConnectionNames = []string{
 
 // introspection table names
 const (
-	IntrospectionTableQuery     = "steampipe_query"
-	IntrospectionTableControl   = "steampipe_control"
-	IntrospectionTableBenchmark = "steampipe_benchmark"
-	IntrospectionTableMod       = "steampipe_mod"
-	IntrospectionTableVariable  = "steampipe_variable"
-	IntrospectionTableReference = "steampipe_reference"
+	IntrospectionTableQuery              = "steampipe_query"
+	IntrospectionTableControl            = "steampipe_control"
+	IntrospectionTableBenchmark          = "steampipe_benchmark"
+	IntrospectionTableMod                = "steampipe_mod"
+	IntrospectionTableDashboard          = "steampipe_dashboard"
+	IntrospectionTableDashboardContainer = "steampipe_dashboard_container"
+	IntrospectionTableDashboardCard      = "steampipe_dashboard_card"
+	IntrospectionTableDashboardChart     = "steampipe_dashboard_chart"
+	IntrospectionTableDashboardFlow      = "steampipe_dashboard_flow"
+	IntrospectionTableDashboardHierarchy = "steampipe_dashboard_hierarchy"
+	IntrospectionTableDashboardImage     = "steampipe_dashboard_image"
+	IntrospectionTableDashboardInput     = "steampipe_dashboard_input"
+	IntrospectionTableDashboardTable     = "steampipe_dashboard_table"
+	IntrospectionTableDashboardText      = "steampipe_dashboard_text"
+	IntrospectionTableVariable           = "steampipe_variable"
+	IntrospectionTableReference          = "steampipe_reference"
 )
-
-func IntrospectionTableNames() []string {
-	return []string{IntrospectionTableControl, IntrospectionTableBenchmark, IntrospectionTableQuery, IntrospectionTableMod, IntrospectionTableVariable, IntrospectionTableReference}
-}
 
 // Invoker is a pseudoEnum for the command/operation which starts the service
 type Invoker string
@@ -103,8 +109,8 @@ const (
 	InvokerCheck = "check"
 	// InvokerPlugin is set when invoked by a plugin command
 	InvokerPlugin = "plugin"
-	// InvokerReport is set when invoked by report command
-	InvokerReport = "report"
+	// InvokerDashboard is set when invoked by dashboard command
+	InvokerDashboard = "dashboard"
 	// InvokerConnectionWatcher is set when invoked by the connection watcher process
 	InvokerConnectionWatcher = "connection-watcher"
 )
@@ -112,8 +118,8 @@ const (
 // IsValid is a validator for Invoker known values
 func (i Invoker) IsValid() error {
 	switch i {
-	case InvokerService, InvokerQuery, InvokerCheck, InvokerPlugin, InvokerReport:
+	case InvokerService, InvokerQuery, InvokerCheck, InvokerPlugin, InvokerDashboard:
 		return nil
 	}
-	return fmt.Errorf("invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerPlugin, InvokerCheck, InvokerReport)
+	return fmt.Errorf("invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerPlugin, InvokerCheck, InvokerDashboard)
 }

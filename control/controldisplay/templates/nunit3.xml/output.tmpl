@@ -1,0 +1,77 @@
+{{ define "output" }}
+<test-run testcasecount="{{ .Data.Root.Summary.Status.TotalCount }}" total="{{ .Data.Root.Summary.Status.TotalCount }}" passed="{{ .Data.Root.Summary.Status.PassedCount }}" failed="{{ .Data.Root.Summary.Status.FailedCount }}" skipped="{{ .Data.Root.Summary.Status.Skip }}">
+    {{ range .Data.Root.Groups  }}
+        {{ template "group_template" . }}
+    {{ end }}
+    
+    {{ range .Data.Root.ControlRuns -}}
+        {{ template "control_run_template" . -}}
+    {{ end -}}
+</test-run>
+{{ end }}
+
+{{/* sub template for result groups */}}
+{{ define "group_template" }}
+<test-suite id="{{ .GroupId }}" name="{{ .Title }}" duration="{{ .Duration | durationInSeconds }}" testcasecount="{{ .Summary.Status.TotalCount }}" total="{{ .Summary.Status.TotalCount }}" passed="{{ .Summary.Status.PassedCount }}" failed="{{ .Summary.Status.FailedCount }}" skipped="{{ .Summary.Status.Skip }}">
+    {{ range .Groups }}
+        {{ template "group_template" . }}
+    {{ end }}
+    
+    {{ range .ControlRuns -}}
+        {{ template "control_run_template" . -}}
+    {{ end -}}
+</test-suite>
+{{ end }}
+
+{{/* sub template for control runs */}}
+{{ define "control_run_template" }}
+<test-suite id="{{ .ControlId }}" name="{{ .Control.FullName }}" duration="{{ .Duration | durationInSeconds }}" testcasecount="{{ .Summary.TotalCount }}" total="{{ .Summary.TotalCount }}" passed="{{ .Summary.PassedCount }}" failed="{{ .Summary.FailedCount }}" skipped="{{ .Summary.Skip }}">
+    {{ range $index,$row := .Rows }}
+        {{ template "control_row_template" dict "idx" $index "row" $row }}
+    {{ end }}
+</test-suite>
+{{ end }}
+
+{{/* sub template for control rows */}}
+{{ define "control_row_template" }}
+<test-case id="{{ .row.Control.ShortName }}::{{ .idx }}" name="{{ .row.Control.FullName }}::{{ .idx }}" result="{{ template "statusmap" .row.Status }}">
+<properties>
+    <property>
+     <key>steampipe:status</key>
+     <value>{{ .row.Status }}</value>
+    </property>
+    <property>
+     <key>steampipe:reason</key>
+     <value>{{ .row.Reason }}</value>
+    </property>
+    {{ range .row.Dimensions }}
+    <property>
+    <key>steampipe:dimension:{{ .Key }}</key>
+    <value>{{ .Value }}</value>
+    </property>
+    {{ end }}
+</properties>
+<reason>
+<message><![CDATA[{{ .row.Reason }}]]></message>
+</reason>
+</test-case>
+{{ end }}
+
+{{/* mapping steampipe statuses with NUnit3 status values */}}
+{{ define "statusmap" }}
+    {{- if eq . "ok" -}}
+        Passed
+    {{- end -}}
+    {{- if eq . "info" -}}
+        Passed
+    {{- end -}}
+    {{- if eq . "error" -}}
+        Failed
+    {{- end -}}
+    {{- if eq . "alarm" -}}
+        Failed
+    {{- end -}}
+    {{- if eq . "skip" -}}
+        Skipped
+    {{- end -}}
+{{- end -}}

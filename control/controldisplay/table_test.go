@@ -1,9 +1,6 @@
 package controldisplay
 
 import (
-	"fmt"
-	"testing"
-
 	"github.com/turbot/steampipe/control/controlexecute"
 )
 
@@ -34,13 +31,13 @@ var testCasesTable = map[string]tableTest{
 	},
 }
 
-func TestTable(t *testing.T) {
-	for _, test := range testCasesTable {
-		table := NewTableRenderer(test.resultTree)
-		output := table.Render(test.width)
-		fmt.Println(output)
-		//if output != test.expected {
-		//	t.Errorf("Test: '%s'' FAILED : \nexpected:\n%s \ngot:\n%s\n", name, test.expected, output)
-		//}
-	}
-}
+// func TestTable(t *testing.T) {
+// 	for _, test := range testCasesTable {
+// 		table := NewTableRenderer(test.resultTree)
+// 		output := table.Render(test.width)
+// 		fmt.Println(output)
+// 		if output != test.expected {
+// 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n%s \ngot:\n%s\n", name, test.expected, output)
+// 		}
+// 	}
+// }
