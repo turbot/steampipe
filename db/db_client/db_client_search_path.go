@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/query/queryresult"
 )
 
-// query the database to get the current search path for the steampipe user
+// GetSteampipeUserSearchPath queries the database to get the current search path for the steampipe user
 func (c *DbClient) GetSteampipeUserSearchPath(ctx context.Context) ([]string, error) {
 	// get a database connection directly
 	// NOTE: we cannot simply call ExecSync as that would call AcquireSession which calls this function
@@ -23,11 +23,12 @@ func (c *DbClient) GetSteampipeUserSearchPath(ctx context.Context) ([]string, er
 		return nil, err
 	}
 	defer databaseConnection.Close()
-	return c.GetSteampipeUserSearchPathForSession(ctx, databaseConnection)
+	return c.GetSteampipeUserSearchPathDbConnection(ctx, databaseConnection)
 }
 
-// query the database to get the current search path for the steampipe user
-func (c *DbClient) GetSteampipeUserSearchPathForSession(ctx context.Context, databaseConnection *sql.Conn) ([]string, error) {
+//  GetSteampipeUserSearchPathDbConnection queries the database to get the current search path for the steampipe user,
+// using the given database connection
+func (c *DbClient) GetSteampipeUserSearchPathDbConnection(ctx context.Context, databaseConnection *sql.Conn) ([]string, error) {
 	res := databaseConnection.QueryRowContext(ctx, fmt.Sprintf("select useconfig[1] from pg_user where usename='%s'", constants.DatabaseUser))
 	if res.Err() != nil {
 		return nil, res.Err()
@@ -53,6 +54,8 @@ func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
 	return c.buildSearchPathResult(pathAsString)
 }
 
+// GetCurrentSearchPathForDbConnection queries the database to get the current session search path
+// using the given connection
 func (c *DbClient) GetCurrentSearchPathForDbConnection(ctx context.Context, databaseConnection *sql.Conn) ([]string, error) {
 	res := databaseConnection.QueryRowContext(ctx, "show search_path")
 	if res.Err() != nil {
@@ -106,25 +109,27 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	return err
 }
 
-func (c *DbClient) ContructSearchPath(ctx context.Context, requiredSearchPath, searchPathPrefix []string) ([]string, error) {
+func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPathSearchPath, searchPathPrefix []string) ([]string, error) {
+	// store custom search path and search path prefix
+	c.customSearchPath = customSearchPathSearchPath
+	c.searchPathPrefix = searchPathPrefix
+
+	var requiredSearchPath []string
 	// if a search path was passed, add 'internal' to the end
-	if len(requiredSearchPath) > 0 {
+	if len(customSearchPathSearchPath) > 0 {
 		// add 'internal' schema as last schema in the search path
-		requiredSearchPath = append(requiredSearchPath, constants.FunctionSchema)
-		c.customSearchPath = true
+		requiredSearchPath = append(customSearchPathSearchPath, constants.FunctionSchema)
 	} else {
 		// so no search path was set in config - use the user search path
 		steampipeUserSearchPath, err := c.GetSteampipeUserSearchPath(ctx)
 		if err != nil {
 			return nil, err
 		}
-		// cache the current user search path in the client
-		c.customSearchPath = false
-		requiredSearchPath = steampipeUserSearchPath
+		customSearchPathSearchPath = steampipeUserSearchPath
 	}
 
 	// add in the prefix if present
-	requiredSearchPath = c.addSearchPathPrefix(searchPathPrefix, requiredSearchPath)
+	requiredSearchPath = c.addSearchPathPrefix(searchPathPrefix, customSearchPathSearchPath)
 
 	return requiredSearchPath, nil
 }
@@ -132,18 +137,19 @@ func (c *DbClient) ContructSearchPath(ctx context.Context, requiredSearchPath, s
 // ensure the search path for the database session is as required
 func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_common.DatabaseSession) error {
 	log.Printf("[TRACE] ensureSessionSearchPath")
-	// first, if we are NOT using a custom search path, reload the user search path
-	if !c.customSearchPath {
+	// first, if we are NOT using a custom search path, reload the steampipe user search path
+	if len(c.customSearchPath) == 0 {
 		log.Printf("[TRACE] not using a custom search path - reload the steampipe user search path")
-		userSearchPath, err := c.GetSteampipeUserSearchPathForSession(ctx, session.Connection)
+		userSearchPath, err := c.GetSteampipeUserSearchPathDbConnection(ctx, session.Connection)
 		if err != nil {
 			return err
 		}
-		c.requiredSessionSearchPath = userSearchPath
+		// rebuild required search path usinmg the prefix, if any
+		c.requiredSessionSearchPath = c.addSearchPathPrefix(c.searchPathPrefix, userSearchPath)
 		log.Printf("[TRACE] updated the required search path to %s", strings.Join(userSearchPath, ","))
 	}
 
-	// now determine whethe rthe session search path is the same as the required search path
+	// now determine whether the session search path is the same as the required search path
 	// if so, return
 	if strings.Join(session.SearchPath, ",") == strings.Join(c.requiredSessionSearchPath, ",") {
 		log.Printf("[TRACE] session search path is already correct - nothing to do")

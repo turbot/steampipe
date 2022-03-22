@@ -41,8 +41,9 @@ type DbClient struct {
 	// list of connection schemas
 	foreignSchemas []string
 	searchPath     []string
-	// is the client using a custom search path
-	customSearchPath bool
+	// if a custom search path or a prefix is used, store it here
+	customSearchPath []string
+	searchPathPrefix []string
 }
 
 func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
