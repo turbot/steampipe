@@ -2,10 +2,9 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "running steampipe query with mod plugin requirement not met" {
-  skip
   cd $FILE_PATH/test_data/bad_mod_with_plugin_require_not_met
 
-  run steampipe query
+  run steampipe query "select 1"
   assert_output --partial 'Error: 1 mod plugin requirement not satisfied.'
   cd -
 }
@@ -29,7 +28,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # @test "running steampipe query with steampipe CLI version requirement not met" {
 #   cd $FILE_PATH/test_data/bad_mod_with_sp_version_require_not_met
 
-#   run steampipe query
+#   run steampipe query "select 1"
 #   assert_output --partial 'Error: 1 mod plugin requirement not satisfied.'
 #   cd -
 # }
@@ -53,7 +52,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "running steampipe query with dependant mod version requirement not met(not installed)" {
   cd $FILE_PATH/test_data/bad_mod_with_dep_mod_version_require_not_met
 
-  run steampipe query
+  run steampipe query "select 1"
   assert_output --partial 'Error: failed to load workspace: not all dependencies are installed'
 
   run steampipe mod install
