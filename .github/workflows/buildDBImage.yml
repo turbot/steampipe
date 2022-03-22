@@ -74,14 +74,12 @@ jobs:
           gcloud config list
           gcloud components install beta
           gcloud components install alpha --quiet
-
-
-      # Configure Docker to use the gcloud command-line tool as a credential
-      # helper for authentication
-      - run: |-
           gcloud beta auth configure-docker us-docker.pkg.dev
-        
-      - run: oras version   # oras is pre-installed on the image...
+
+      - name: Verify ORAS
+        run: |- 
+          gcloud beta auth configure-docker us-docker.pkg.dev
+          oras version
 
       - name: Pull & Extract - darwin amd64
         env:
@@ -126,7 +124,6 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-
       - name: Pull & Extract - windows amd64
         env:
           OS: windows
@@ -140,8 +137,6 @@ jobs:
           unzip -o ${JAR_FILE}
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
-
-
 
       # create the config file
       - name: Build Config JSON
@@ -177,10 +172,9 @@ jobs:
 
             echo $JSON_STRING > annotations.json
 
-      - run: cat annotations.json 
-
     # push to the registry
-      - run: |-
+      - name: Push to Registry
+        run: |-
           REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
 
           oras push $REF \
