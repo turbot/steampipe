@@ -96,22 +96,6 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-
-      - name: Pull & Extract - darwin arm64v8
-        env:
-          OS: darwin
-          ARCH: arm64v8
-          TGZ_FILE: postgres-darwin-arm_64.txz #(name of the file once unzipped.  per platform but not same as in the jar name)
-        run: |-
-          JAR_FILE=${NAME_PREFIX}-${OS}-${ARCH}-${PG_VERSION}.jar
-          EXTRACT_DIR=extracted-${OS}-${ARCH}-${PG_VERSION}
-
-          curl -L  -O -J -L ${PATH_BASE}/${NAME_PREFIX}-${OS}-${ARCH}/${PG_VERSION}/${JAR_FILE}
-          unzip -o ${JAR_FILE}
-          mkdir $EXTRACT_DIR
-          tar -xf $TGZ_FILE --directory $EXTRACT_DIR
-
-
       - name: Pull & Extract - linux amd64
         env:
           OS: linux
@@ -159,7 +143,8 @@ jobs:
 
 
       # create the config file
-      - run: |-
+      - name: Build Config JSON
+        run: |-
           JSON_STRING=$( jq -n \
             --arg name "$IMAGE_NAME" \
             --arg organization "$ORG" \
@@ -170,10 +155,9 @@ jobs:
 
           echo $JSON_STRING > config.json
 
-      - run: cat config.json
-
       # create the annotations file
-      - run: |-
+      - name: Build Annotations JSON
+        run: |-
           JSON_STRING=$( jq -n \
               --arg title "$IMAGE_NAME" \
               --arg desc "$ORG" \
@@ -202,7 +186,6 @@ jobs:
               --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
               --manifest-annotations annotations.json \
               extracted-darwin-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-amd64.layer.v1+tar \
-              extracted-darwin-arm64-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
               extracted-windows-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.windows-amd64.layer.v1+tar \
               extracted-linux-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
               extracted-linux-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
