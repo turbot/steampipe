@@ -61,18 +61,19 @@ jobs:
             exit 1
           fi
 
+    - name: Get GCloud CLI
+      uses: google-github-actions/setup-gcloud@v0.6.0
+      with:
+        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+        project_id: ${{ env.PROJECT_ID }}
+        export_default_credentials: true
 
-      # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@v0.6.0
-        with:
-          service_account_key: ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
-          project_id: ${{ env.PROJECT_ID }}
-
-      - run: gcloud config list
-
-      - run: gcloud components install beta
-
-      - run: gcloud components install alpha --quiet
+    - name: Setup GCloud CLI
+      run: |- 
+        echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
+        gcloud config list
+        gcloud components install beta
+        gcloud components install alpha --quiet
 
 
       # Configure Docker to use the gcloud command-line tool as a credential
