@@ -24,12 +24,18 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 			sessionResult.Session.UpdateUsage()
 
 			// fail safe - if there is no database connection, ensure we return an error
-			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connectio
+			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connection
 			if sessionResult.Session.Connection == nil && sessionResult.Error == nil {
 				sessionResult.Error = fmt.Errorf("nil database connection being returned from AcquireSession but no error was raised")
 			}
 		}
 	}()
+
+	// reload foreign schema names in case they changed based on a connection watcher event
+	if err := c.LoadForeignSchemaNames(ctx); err != nil {
+		sessionResult.Error = err
+		return
+	}
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
@@ -58,8 +64,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	}()
 
 	// if there is no ensure session function, we are done
-	// TODO verify this is correct
-	// we are bypassing adding th esession to our map
 	if c.ensureSessionFunc == nil {
 		return sessionResult
 	}

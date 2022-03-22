@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sort"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -89,9 +88,14 @@ func (c *LocalDbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateC
 	c.client.SetEnsureSessionDataFunc(f)
 }
 
-// ForeignSchemas implements Client
-func (c *LocalDbClient) ForeignSchemas() []string {
-	return c.client.ForeignSchemas()
+// ForeignSchemaNames implements Client
+func (c *LocalDbClient) ForeignSchemaNames() []string {
+	return c.client.ForeignSchemaNames()
+}
+
+// LoadForeignSchemaNames implements Client
+func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {
+	return c.client.LoadForeignSchemaNames(ctx)
 }
 
 func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
@@ -155,7 +159,7 @@ func (c *LocalDbClient) SetRequiredSessionSearchPath(ctx context.Context) error 
 	return c.client.SetRequiredSessionSearchPath(ctx)
 }
 
-func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string) ([]string, error) {
+func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPath, searchPathPrefix []string) ([]string, error) {
 	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
 }
 
@@ -249,13 +253,10 @@ WHERE
 	return query
 }
 
-func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {
-	return c.client.LoadForeignSchemaNames(ctx)
-}
-
 // local only functions
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+
 	// NOTE: disable any status updates - we do not want 'loading' output from any queries
 	ctx = statushooks.DisableStatusHooks(ctx)
 
@@ -263,13 +264,19 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 	if res.Error != nil {
 		return res
 	}
+
 	if err := refreshFunctions(ctx); err != nil {
 		res.Error = err
 		return res
 	}
 
+	// reload the foreign schemas, in case they have changed
+	if err := c.LoadForeignSchemaNames(ctx); err != nil {
+		return &steampipeconfig.RefreshConnectionResult{Error: err}
+	}
+
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemas())
+	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
 	if err != nil {
 		res.Error = err
 		return res
@@ -303,7 +310,8 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) error {
 		searchPath = append(searchPath, constants.FunctionSchema)
 	} else {
 		// no config set - set user search path to default
-		searchPath = c.getDefaultSearchPath()
+		// - which is all the connection names, book-ended with public and internal
+		searchPath = c.GetDefaultSearchPath(ctx)
 	}
 
 	// escape the schema names
@@ -341,16 +349,7 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) error {
 	return nil
 }
 
-// build default search path from the connection schemas, bookended with public and internal
-func (c *LocalDbClient) getDefaultSearchPath() []string {
-	searchPath := c.ForeignSchemas()
-	sort.Strings(searchPath)
-	// add the 'public' schema as the first schema in the search_path. This makes it
-	// easier for users to build and work with their own tables, and since it's normally
-	// empty, doesn't make using steampipe tables any more difficult.
-	searchPath = append([]string{"public"}, searchPath...)
-	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants.FunctionSchema)
-
-	return searchPath
+// GetDefaultSearchPath builds default search path from the connection schemas, book-ended with public and internal
+func (c *LocalDbClient) GetDefaultSearchPath(ctx context.Context) []string {
+	return c.client.GetDefaultSearchPath(ctx)
 }

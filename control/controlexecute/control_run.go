@@ -148,12 +148,6 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 		searchPathPrefix = strings.Split(*r.Control.SearchPathPrefix, ",")
 	}
 
-	// TODO is it ok to use user search path?
-	//currentPath, err := client.GetCurrentSearchPathForDbConnection(ctx, session)
-	//if err != nil {
-	//	return err
-	//}
-
 	newSearchPath, err := client.ContructSearchPath(ctx, searchPath, searchPathPrefix)
 	if err != nil {
 		return err
