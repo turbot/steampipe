@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
@@ -25,12 +24,18 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 			sessionResult.Session.UpdateUsage()
 
 			// fail safe - if there is no database connection, ensure we return an error
-			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connectio
+			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connection
 			if sessionResult.Session.Connection == nil && sessionResult.Error == nil {
 				sessionResult.Error = fmt.Errorf("nil database connection being returned from AcquireSession but no error was raised")
 			}
 		}
 	}()
+
+	// reload foreign schema names in case they changed based on a connection watcher event
+	if err := c.LoadForeignSchemaNames(ctx); err != nil {
+		sessionResult.Error = err
+		return
+	}
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
@@ -51,13 +56,14 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	sessionResult.Session = session
 	c.sessionsMutex.Unlock()
 
+	// make sure that we close the acquired session, in case of error
 	defer func() {
-		// make sure that we close the acquired session, in case of error
 		if sessionResult.Error != nil && databaseConnection != nil {
 			databaseConnection.Close()
 		}
 	}()
 
+	// if there is no ensure session function, we are done
 	if c.ensureSessionFunc == nil {
 		return sessionResult
 	}
@@ -88,13 +94,10 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	}
 
 	// update required session search path if needed
-	if strings.Join(session.SearchPath, ",") != strings.Join(c.requiredSessionSearchPath, ",") {
-		err := c.setSessionSearchPathToRequired(ctx, databaseConnection)
-		if err != nil {
-			sessionResult.Error = err
-			return sessionResult
-		}
-		session.SearchPath = c.requiredSessionSearchPath
+	err = c.ensureSessionSearchPath(ctx, session)
+	if err != nil {
+		sessionResult.Error = err
+		return sessionResult
 	}
 
 	// now write back to the map

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"sort"
 	"sync"
 
 	"github.com/jackc/pgx/v4"
@@ -39,8 +40,10 @@ type DbClient struct {
 	sessionsMutex *sync.Mutex
 
 	// list of connection schemas
-	foreignSchemas []string
-	searchPath     []string
+	foreignSchemaNames []string
+	// if a custom search path or a prefix is used, store it here
+	customSearchPath []string
+	searchPathPrefix []string
 }
 
 func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
@@ -65,6 +68,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	}
 	client.connectionString = connectionString
 
+	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
 	if err := client.LoadForeignSchemaNames(ctx); err != nil {
 		client.Close(ctx)
 		return nil, err
@@ -129,9 +133,31 @@ func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
 	return &steampipeconfig.ConnectionDataMap{}
 }
 
-// ForeignSchemas implements Client
-func (c *DbClient) ForeignSchemas() []string {
-	return c.foreignSchemas
+// ForeignSchemaNames implements Client
+func (c *DbClient) ForeignSchemaNames() []string {
+	return c.foreignSchemaNames
+}
+
+// LoadForeignSchemaNames implements Client
+func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
+	res, err := c.dbClient.QueryContext(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	if err != nil {
+		return err
+	}
+	// clear foreign schemas
+	c.foreignSchemaNames = nil
+	var schema string
+	for res.Next() {
+		if err := res.Scan(&schema); err != nil {
+			return err
+		}
+		// ignore command schema
+		if schema != constants.CommandSchema {
+			c.foreignSchemaNames = append(c.foreignSchemaNames, schema)
+		}
+	}
+
+	return nil
 }
 
 // RefreshSessions terminates the current connections and creates a new one - repopulating session data
@@ -176,7 +202,7 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampi
 	// base db client does not refresh connections, it just sets search path
 	// (only local db client refreshed connections)
 	res := &steampipeconfig.RefreshConnectionResult{}
-	if err := c.SetSessionSearchPath(ctx); err != nil {
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
 		res.Error = err
 	}
 	return res
@@ -212,6 +238,22 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error
 	return metadata, nil
 }
 
+// GetDefaultSearchPath builds default search path from the connection schemas, book-ended with public and internal
+func (c *DbClient) GetDefaultSearchPath(ctx context.Context) []string {
+	// get foreign schema names
+	searchPath := c.foreignSchemaNames
+
+	sort.Strings(searchPath)
+	// add the 'public' schema as the first schema in the search_path. This makes it
+	// easier for users to build and work with their own tables, and since it's normally
+	// empty, doesn't make using steampipe tables any more difficult.
+	searchPath = append([]string{"public"}, searchPath...)
+	// add 'internal' schema as last schema in the search path
+	searchPath = append(searchPath, constants.FunctionSchema)
+
+	return searchPath
+}
+
 func (c *DbClient) buildSchemasQuery() string {
 	query := `
 WITH distinct_schema AS (
@@ -243,24 +285,4 @@ WHERE
 
 `
 	return query
-}
-
-func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
-	res, err := c.dbClient.QueryContext(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
-	if err != nil {
-		return err
-	}
-	// clear foreign schemas
-	c.foreignSchemas = nil
-	var schema string
-	for res.Next() {
-		if err := res.Scan(&schema); err != nil {
-			return err
-		}
-		// ignore command schema
-		if schema != constants.CommandSchema {
-			c.foreignSchemas = append(c.foreignSchemas, schema)
-		}
-	}
-	return nil
 }

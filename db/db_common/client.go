@@ -2,6 +2,7 @@ package db_common
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/schema"
@@ -13,20 +14,22 @@ type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err e
 type Client interface {
 	Close(ctx context.Context) error
 
-	ForeignSchemas() []string
+	ForeignSchemaNames() []string
+	LoadForeignSchemaNames(ctx context.Context) error
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath(context.Context) ([]string, error)
-	SetSessionSearchPath(ctx context.Context, newSearchPath ...string) error
-	ContructSearchPath(ctx context.Context, requiredSearchPath []string, searchPathPrefix []string, currentSearchPath []string) ([]string, error)
+	GetCurrentSearchPathForDbConnection(context.Context, *sql.Conn) ([]string, error)
+	SetRequiredSessionSearchPath(context.Context) error
+	ContructSearchPath(context.Context, []string, []string) ([]string, error)
 
 	AcquireSession(context.Context) *AcquireSessionResult
 
-	ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error)
-	Execute(ctx context.Context, query string) (res *queryresult.Result, err error)
+	ExecuteSync(context.Context, string) (*queryresult.SyncQueryResult, error)
+	Execute(context.Context, string) (*queryresult.Result, error)
 
-	ExecuteSyncInSession(ctx context.Context, session *DatabaseSession, query string) (*queryresult.SyncQueryResult, error)
-	ExecuteInSession(ctx context.Context, session *DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error)
+	ExecuteSyncInSession(context.Context, *DatabaseSession, string) (*queryresult.SyncQueryResult, error)
+	ExecuteInSession(context.Context, *DatabaseSession, string, func()) (*queryresult.Result, error)
 
 	CacheOn(context.Context) error
 	CacheOff(context.Context) error
@@ -37,5 +40,4 @@ type Client interface {
 	GetSchemaFromDB(context.Context) (*schema.Metadata, error)
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths(context.Context) *steampipeconfig.RefreshConnectionResult
-	LoadForeignSchemaNames(context.Context) error
 }
