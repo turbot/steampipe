@@ -2,6 +2,7 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "running steampipe query with mod plugin requirement not met" {
+  skip
   cd $FILE_PATH/test_data/bad_mod_with_plugin_require_not_met
 
   run steampipe query
