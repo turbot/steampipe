@@ -109,27 +109,31 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	return err
 }
 
-func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPathSearchPath, searchPathPrefix []string) ([]string, error) {
+func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPath, searchPathPrefix []string) ([]string, error) {
 	// store custom search path and search path prefix
-	c.customSearchPath = customSearchPathSearchPath
 	c.searchPathPrefix = searchPathPrefix
 
 	var requiredSearchPath []string
 	// if a search path was passed, add 'internal' to the end
-	if len(customSearchPathSearchPath) > 0 {
+	if len(customSearchPath) > 0 {
 		// add 'internal' schema as last schema in the search path
-		requiredSearchPath = append(customSearchPathSearchPath, constants.FunctionSchema)
+		customSearchPath = append(customSearchPath, constants.FunctionSchema)
+		// store the modified custom search path on the client
+		c.customSearchPath = customSearchPath
+		requiredSearchPath = c.customSearchPath
 	} else {
-		// so no search path was set in config - use the user search path
+		// so no search path was set in config
+		c.customSearchPath = nil
+		// use the user search path
 		steampipeUserSearchPath, err := c.GetSteampipeUserSearchPath(ctx)
 		if err != nil {
 			return nil, err
 		}
-		customSearchPathSearchPath = steampipeUserSearchPath
+		requiredSearchPath = steampipeUserSearchPath
 	}
 
 	// add in the prefix if present
-	requiredSearchPath = c.addSearchPathPrefix(searchPathPrefix, customSearchPathSearchPath)
+	requiredSearchPath = c.addSearchPathPrefix(searchPathPrefix, requiredSearchPath)
 
 	return requiredSearchPath, nil
 }
@@ -144,8 +148,10 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 		if err != nil {
 			return err
 		}
-		// rebuild required search path usinmg the prefix, if any
+		// rebuild required search path using the prefix, if any
 		c.requiredSessionSearchPath = c.addSearchPathPrefix(c.searchPathPrefix, userSearchPath)
+		// add 'internal' schema as last schema in the search path
+		c.requiredSessionSearchPath = append(c.requiredSessionSearchPath, constants.FunctionSchema)
 		log.Printf("[TRACE] updated the required search path to %s", strings.Join(userSearchPath, ","))
 	}
 
