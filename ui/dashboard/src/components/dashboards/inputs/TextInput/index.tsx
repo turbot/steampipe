@@ -5,7 +5,7 @@ import { IInput, InputProps } from "../index";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const TextInput = (props: InputProps) => {
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const stateValue = selectedDashboardInputs[props.name];
   const [value, setValue] = useState<string>(() => {
@@ -39,6 +39,9 @@ const TextInput = (props: InputProps) => {
   useEffect(() => {
     if (!stateValue) {
       setValue("");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
     }
   }, [stateValue]);
 
