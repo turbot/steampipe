@@ -27,7 +27,7 @@ const (
 
 // constants for installing db and fdw images
 const (
-	DatabaseVersion = "12.1.0"
+	DatabaseVersion = "14.2.0"
 	FdwVersion      = "0.4.0"
 
 	// PostgresImageRef is the OCI Image ref for the databse binaries
@@ -35,7 +35,7 @@ const (
 	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is
 	// on a newer build, we can delete the old image move the 12.1.0 tag to the new image, and
 	// change this back for consistency
-	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
+	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
 	FdwImageRef      = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
 

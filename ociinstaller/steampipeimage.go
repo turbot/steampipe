@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/containerd/containerd/remotes"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -66,6 +67,8 @@ func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, im
 	mediaTypes = append(mediaTypes, MediaTypeForPlatform(imageType))
 	mediaTypes = append(mediaTypes, SharedMediaTypes(imageType)...)
 	mediaTypes = append(mediaTypes, ConfigMediaTypes()...)
+
+	log.Println("[TRACE] ociDownloader.Download:", "downloading", ref.ActualImageRef())
 
 	// Download the files
 	imageDesc, _, configBytes, layers, err := o.Pull(ctx, ref.ActualImageRef(), mediaTypes, destDir)
