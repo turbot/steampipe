@@ -94,6 +94,12 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	}
 	i.Workspace = w
 
+	//validate steampipe version
+	if err = w.ValidateSteampipeVersion(); err != nil {
+		i.Result.Error = err
+		return
+	}
+
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
 	if err != nil {

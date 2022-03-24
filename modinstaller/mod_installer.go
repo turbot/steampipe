@@ -248,6 +248,9 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		if err != nil {
 			return err
 		}
+		if err = dependencyMod.ValidateSteampipeVersion(); err != nil {
+			return err
+		}
 	} else {
 		// so we found an existing mod which will satisfy this requirement
 
