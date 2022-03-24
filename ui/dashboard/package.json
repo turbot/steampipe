@@ -46,7 +46,7 @@
     "@storybook/addon-actions": "6.5.0-alpha.48",
     "@storybook/addon-essentials": "6.5.0-alpha.48",
     "@storybook/addon-links": "6.5.0-alpha.48",
-    "@storybook/addons": "6.5.0-alpha.48",
+    "@storybook/addons": "6.5.0-alpha.50",
     "@storybook/builder-webpack5": "6.5.0-alpha.48",
     "@storybook/manager-webpack5": "6.5.0-alpha.48",
     "@storybook/node-logger": "6.5.0-alpha.48",
