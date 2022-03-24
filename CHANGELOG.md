@@ -1,7 +1,9 @@
 ## v0.14.0 [tbd]
+_What's new?_
+* Add ShortName property to the dependencies listed in .mod.cache.json. ([#1731](https://github.com/turbot/steampipe/issues/1731))
 _Bug fixes_
 * Fix issue search path was not being set after a connection config changed event. ([#1700](https://github.com/turbot/steampipe/issues/1700))
-* 
+
 ## v0.13.3 [2022-03-21]
 _Bug fixes_
 * Fix issue where dashboard starts up even if there are initialization errors (for example unmet dependencies). ([#1711](https://github.com/turbot/steampipe/issues/1711))
