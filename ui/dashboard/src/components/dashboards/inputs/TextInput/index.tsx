@@ -1,48 +1,58 @@
-import { classNames } from "../../../../utils/styles";
+import { ClearIcon, SubmitIcon } from "../../../../constants/icons";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
-import { debounce } from "lodash";
 import { IInput, InputProps } from "../index";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const TextInput = (props: InputProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const stateValue = selectedDashboardInputs[props.name];
+  const [recordLastChangeToHistory, setRecordLastChangeToHistory] =
+    useState<boolean>(true);
   const [value, setValue] = useState<string>(() => {
     return stateValue || "";
   });
+  const [isDirty, setIsDirty] = useState<boolean>(false);
 
-  const changeHandler = (e) => {
+  const updateValue = (e) => {
     setValue(e.target.value);
+    setIsDirty(true);
   };
 
-  const debouncedChangeHandler = useMemo(
-    () => debounce(changeHandler, 400),
-    []
-  );
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      debouncedChangeHandler.cancel();
-    };
-  }, []);
-
-  useEffect(() => {
-    dispatch({
-      type: DashboardActions.SET_DASHBOARD_INPUT,
-      name: props.name,
-      value,
-    });
-  }, [dispatch, props.name, value]);
-
-  useEffect(() => {
-    if (!stateValue) {
-      setValue("");
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
+  const submit = () => {
+    setIsDirty(false);
+    setRecordLastChangeToHistory(true);
+    if (value) {
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_INPUT,
+        name: props.name,
+        value,
+        recordInputsHistory: !!stateValue,
+      });
+    } else {
+      dispatch({
+        type: DashboardActions.DELETE_DASHBOARD_INPUT,
+        name: props.name,
+        recordInputsHistory: !!stateValue,
+      });
     }
+  };
+
+  const clear = () => {
+    setValue("");
+    setIsDirty(false);
+    dispatch({
+      type: DashboardActions.DELETE_DASHBOARD_INPUT,
+      name: props.name,
+      recordInputsHistory: recordLastChangeToHistory,
+    });
+  };
+
+  console.log(stateValue);
+
+  useEffect(() => {
+    setRecordLastChangeToHistory(false);
+    setValue(stateValue || "");
+    setIsDirty(false);
   }, [stateValue]);
 
   return (
@@ -52,17 +62,41 @@ const TextInput = (props: InputProps) => {
           {props.properties.label}
         </label>
       )}
-      <div>
+      <div className="relative">
         <input
-          ref={inputRef}
           type="text"
           name={props.name}
           id={props.name}
-          className="block w-full sm:text-sm rounded-md border-black-scale-3"
+          className="flex-1 block w-full bg-background-panel rounded-md border border-black-scale-3 pr-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1"
           defaultValue={value}
-          onChange={debouncedChangeHandler}
+          onChange={updateValue}
+          onKeyPress={(e) => {
+            if (e.key !== "Enter") {
+              return;
+            }
+            submit();
+          }}
           placeholder={props.properties.placeholder}
+          value={value}
         />
+        {value && isDirty && (
+          <div
+            className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-foreground-light"
+            onClick={submit}
+            title="Submit"
+          >
+            <SubmitIcon className="h-4 w-4" />
+          </div>
+        )}
+        {value && !isDirty && (
+          <div
+            className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-foreground-light"
+            onClick={clear}
+            title="Clear"
+          >
+            <ClearIcon className="h-4 w-4" />
+          </div>
+        )}
       </div>
     </div>
   );

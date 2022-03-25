@@ -1,11 +1,9 @@
 import {
-  // ArrowCircleDownIcon as ArrowCircleDownIconOutline,
   ArrowsExpandIcon as ArrowsExpandIconOutline,
-  // ChatAltIcon as ChatAltIconOutline,
   ClipboardListIcon as ClipboardListIconOutline,
   ExclamationCircleIcon as ExclamationCircleIconOutline,
   SearchIcon as SearchIconOutline,
-  // TerminalIcon as TerminalIconOutline,
+  SaveIcon as SaveIconOutline,
   XIcon as XIconOutline,
 } from "@heroicons/react/outline";
 import {
@@ -24,12 +22,8 @@ export const CopyToClipboardIcon = ClipboardListIconOutline;
 export const CopyToClipboardSuccessIcon = ClipboardCheckIconSolid;
 export const ErrorIcon = ExclamationCircleIconOutline;
 export const SearchIcon = SearchIconOutline;
+export const SubmitIcon = SaveIconOutline;
 export const ZoomIcon = ArrowsExpandIconOutline;
-
-// Call to Action
-// export const BuildDashboardIcon = TerminalIconOutline;
-// export const CommunityIcon = ChatAltIconOutline;
-// export const InstallDashboardIcon = ArrowCircleDownIconOutline;
 
 // Control
 export const AlarmIcon = XIconSolid;
