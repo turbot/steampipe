@@ -3,17 +3,9 @@ import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { IInput, InputProps } from "../index";
 import { useEffect, useState } from "react";
 
-/*
- * User submits value - RECORD
- * User clears value - RECORD
- * Any history events - DO NOT RECORD
- * */
-
 const TextInput = (props: InputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const stateValue = selectedDashboardInputs[props.name];
-  const [recordLastChangeToHistory, setRecordLastChangeToHistory] =
-    useState<boolean>(true);
   const [value, setValue] = useState<string>(() => {
     return stateValue || "";
   });
@@ -26,7 +18,6 @@ const TextInput = (props: InputProps) => {
 
   const submit = () => {
     setIsDirty(false);
-    setRecordLastChangeToHistory(true);
     if (value) {
       dispatch({
         type: DashboardActions.SET_DASHBOARD_INPUT,
@@ -49,12 +40,11 @@ const TextInput = (props: InputProps) => {
     dispatch({
       type: DashboardActions.DELETE_DASHBOARD_INPUT,
       name: props.name,
-      recordInputsHistory: recordLastChangeToHistory,
+      recordInputsHistory: true,
     });
   };
 
   useEffect(() => {
-    setRecordLastChangeToHistory(false);
     setValue(stateValue || "");
     setIsDirty(false);
   }, [stateValue]);
