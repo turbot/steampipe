@@ -3,6 +3,12 @@ import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { IInput, InputProps } from "../index";
 import { useEffect, useState } from "react";
 
+/*
+ * User submits value - RECORD
+ * User clears value - RECORD
+ * Any history events - DO NOT RECORD
+ * */
+
 const TextInput = (props: InputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const stateValue = selectedDashboardInputs[props.name];
@@ -47,8 +53,6 @@ const TextInput = (props: InputProps) => {
     });
   };
 
-  console.log(stateValue);
-
   useEffect(() => {
     setRecordLastChangeToHistory(false);
     setValue(stateValue || "");
@@ -68,7 +72,6 @@ const TextInput = (props: InputProps) => {
           name={props.name}
           id={props.name}
           className="flex-1 block w-full bg-background-panel rounded-md border border-black-scale-3 pr-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1"
-          defaultValue={value}
           onChange={updateValue}
           onKeyPress={(e) => {
             if (e.key !== "Enter") {
