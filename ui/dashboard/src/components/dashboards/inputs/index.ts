@@ -2,6 +2,7 @@ import React from "react";
 import MultiSelectInput from "./MultiSelectInput";
 import SingleSelectInput from "./SingleSelectInput";
 import Table from "../Table";
+import TextInput from "./TextInput";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 
 export type BaseInputProps = BasePrimitiveProps & ExecutablePrimitiveProps;
@@ -22,7 +23,7 @@ export type InputProps = BaseInputProps & {
   properties: InputProperties;
 };
 
-export type InputType = "hidden" | "multiselect" | "select" | "table";
+export type InputType = "hidden" | "multiselect" | "select" | "table" | "text";
 
 export interface IInput {
   type: InputType;
@@ -35,9 +36,10 @@ const TableWrapper: IInput = {
 };
 
 const inputs = {
-  [SingleSelectInput.type]: SingleSelectInput,
   [MultiSelectInput.type]: MultiSelectInput,
+  [SingleSelectInput.type]: SingleSelectInput,
   [TableWrapper.type]: TableWrapper,
+  [TextInput.type]: TextInput,
 };
 
 export default inputs;
