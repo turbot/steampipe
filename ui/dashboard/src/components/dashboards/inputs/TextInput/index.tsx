@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 const TextInput = (props: InputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const stateValue = selectedDashboardInputs[props.name];
+  const [hasInitialised, setHasInitialised] = useState<boolean>(false);
   const [value, setValue] = useState<string>(() => {
-    return stateValue || "";
+    return stateValue || props.properties.default || "";
   });
   const [isDirty, setIsDirty] = useState<boolean>(false);
 
@@ -45,9 +46,26 @@ const TextInput = (props: InputProps) => {
   };
 
   useEffect(() => {
+    if (!hasInitialised) {
+      return;
+    }
     setValue(stateValue || "");
     setIsDirty(false);
-  }, [stateValue]);
+  }, [hasInitialised, stateValue]);
+
+  useEffect(() => {
+    if (hasInitialised || !props.properties.default) {
+      return;
+    }
+    dispatch({
+      type: DashboardActions.SET_DASHBOARD_INPUT,
+      name: props.name,
+      value: props.properties.default,
+      recordInputsHistory: false,
+    });
+    setValue(props.properties.default);
+    setHasInitialised(true);
+  }, [dispatch, hasInitialised, props.properties.default]);
 
   return (
     <div>

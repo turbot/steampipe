@@ -25,7 +25,7 @@ type DashboardInput struct {
 	Width       *int                    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Type        *string                 `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	Label       *string                 `cty:"label" hcl:"label" column:"label,text"  json:"label,omitempty"`
-	Default     *string                 `cty:"default" hcl:"default" column:"default,text" json:"default,omitempty"`
+	Default     *string                 `cty:"default" hcl:"default" column:"defaults,text" json:"default,omitempty"`
 	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
 	Display     *string                 `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks     []*DashboardOn          `cty:"on" hcl:"on,block" json:"on,omitempty"`

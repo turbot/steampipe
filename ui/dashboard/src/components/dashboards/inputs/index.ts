@@ -16,6 +16,7 @@ export type InputProperties = {
   type: InputType;
   label?: string;
   options?: SelectInputOption[];
+  default?: string;
   placeholder?: string;
 };
 
