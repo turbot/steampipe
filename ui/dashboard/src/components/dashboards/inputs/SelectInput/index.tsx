@@ -1,5 +1,6 @@
 import Select, {
   components,
+  MultiValueProps,
   OptionProps,
   SingleValueProps,
 } from "react-select";
@@ -7,17 +8,26 @@ import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getColumnIndex } from "../../../../utils/data";
-import { InputProps } from "../index";
+import { InputProperties, InputProps } from "../index";
 import { useEffect, useMemo, useState } from "react";
+
+interface SelectOptionTags {
+  [key: string]: string;
+}
 
 export interface SelectOption {
   label: string;
   value: string;
+  tags?: SelectOptionTags;
+  artificial?: boolean;
 }
 
-type SelectInputProps = InputProps & {
+type SelectInputProperties = InputProperties & {
   multi?: boolean;
-  name: string;
+};
+
+type SelectInputProps = InputProps & {
+  properties: SelectInputProperties;
 };
 
 const stringColorMap = {};
@@ -69,7 +79,7 @@ const SingleValueWithTags = ({ children, ...props }: SingleValueProps) => {
   );
 };
 
-const MultiValueLabelWithTags = ({ children, ...props }: SingleValueProps) => {
+const MultiValueLabelWithTags = ({ children, ...props }: MultiValueProps) => {
   return (
     <components.MultiValueLabel {...props}>
       {/*@ts-ignore*/}
@@ -97,7 +107,7 @@ const findOptions = (options, multi, value) => {
       );
 };
 
-const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
+const SelectInput = ({ data, name, properties }: SelectInputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
@@ -150,8 +160,14 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
 
     // If this is first load and we have a value from state, initialise it
     if (!initialisedFromState && stateValue) {
-      const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-      const foundOptions = findOptions(options, multi, parsedUrlValue);
+      const parsedUrlValue = properties.multi
+        ? stateValue.split(",")
+        : stateValue;
+      const foundOptions = findOptions(
+        options,
+        properties.multi,
+        parsedUrlValue
+      );
       setValue(foundOptions || null);
       setInitialisedFromState(true);
     } else if (!initialisedFromState && !stateValue && properties.placeholder) {
@@ -166,7 +182,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       dispatch({
         type: DashboardActions.SET_DASHBOARD_INPUT,
         name,
-        value: getValueForState(multi, options[0]),
+        value: getValueForState(properties.multi, options[0]),
         recordInputsHistory: false,
       });
     } else {
@@ -177,8 +193,14 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         // @ts-ignore
         stateValue !== value.value
       ) {
-        const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-        const foundOptions = findOptions(options, multi, parsedUrlValue);
+        const parsedUrlValue = properties.multi
+          ? stateValue.split(",")
+          : stateValue;
+        const foundOptions = findOptions(
+          options,
+          properties.multi,
+          parsedUrlValue
+        );
         setValue(foundOptions || null);
       } else if (initialisedFromState && !stateValue) {
         setValue(null);
@@ -187,9 +209,9 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   }, [
     dispatch,
     initialisedFromState,
-    multi,
     name,
     options,
+    properties.multi,
     properties.placeholder,
     stateValue,
   ]);
@@ -212,10 +234,10 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     dispatch({
       type: DashboardActions.SET_DASHBOARD_INPUT,
       name,
-      value: getValueForState(multi, value),
+      value: getValueForState(properties.multi, value),
       recordInputsHistory: true,
     });
-  }, [dispatch, initialisedFromState, multi, name, value]);
+  }, [dispatch, initialisedFromState, properties.multi, name, value]);
 
   const styles = useSelectInputStyles();
 
@@ -253,7 +275,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         isClearable={!!properties.placeholder}
         isRtl={false}
         isSearchable
-        isMulti={multi}
+        isMulti={properties.multi}
         // menuIsOpen
         name={name}
         // @ts-ignore
