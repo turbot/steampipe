@@ -10,6 +10,7 @@ import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getColumnIndex } from "../../../../utils/data";
 import { InputProperties, InputProps } from "../index";
 import { useEffect, useMemo, useState } from "react";
+import { WarningIcon } from "../../../../constants/icons";
 
 interface SelectOptionTags {
   [key: string]: string;
@@ -52,10 +53,18 @@ const OptionTag = ({ tagKey, tagValue }) => (
   </span>
 );
 
-const LabelTagWrapper = ({ label, tags }) => (
+const LabelTagWrapper = ({ artificial, label, tags }) => (
   <div className="space-x-2">
     {/*@ts-ignore*/}
     <span>{label}</span>
+    {artificial && (
+      <span
+        className="text-yellow"
+        title="Value is not in the defined options list"
+      >
+        <WarningIcon className="inline w-4 h-4 fill-yellow" />
+      </span>
+    )}
     {/*@ts-ignore*/}
     {Object.entries(tags || {}).map(([tagKey, tagValue]) => (
       <OptionTag key={tagKey} tagKey={tagKey} tagValue={tagValue} />
@@ -65,16 +74,28 @@ const LabelTagWrapper = ({ label, tags }) => (
 
 const OptionWithTags = (props: OptionProps) => (
   <components.Option {...props}>
-    {/*@ts-ignore*/}
-    <LabelTagWrapper label={props.data.label} tags={props.data.tags} />
+    <LabelTagWrapper
+      /*@ts-ignore*/
+      artificial={props.data.artificial}
+      /*@ts-ignore*/
+      label={props.data.label}
+      /*@ts-ignore*/
+      tags={props.data.tags}
+    />
   </components.Option>
 );
 
 const SingleValueWithTags = ({ children, ...props }: SingleValueProps) => {
   return (
     <components.SingleValue {...props}>
-      {/*@ts-ignore*/}
-      <LabelTagWrapper label={props.data.label} tags={props.data.tags} />
+      <LabelTagWrapper
+        /*@ts-ignore*/
+        artificial={props.data.artificial}
+        /*@ts-ignore*/
+        label={props.data.label}
+        /*@ts-ignore*/
+        tags={props.data.tags}
+      />
     </components.SingleValue>
   );
 };
@@ -82,8 +103,14 @@ const SingleValueWithTags = ({ children, ...props }: SingleValueProps) => {
 const MultiValueLabelWithTags = ({ children, ...props }: MultiValueProps) => {
   return (
     <components.MultiValueLabel {...props}>
-      {/*@ts-ignore*/}
-      <LabelTagWrapper label={props.data.label} tags={props.data.tags} />
+      <LabelTagWrapper
+        /*@ts-ignore*/
+        artificial={props.data.artificial}
+        /*@ts-ignore*/
+        label={props.data.label}
+        /*@ts-ignore*/
+        tags={props.data.tags}
+      />
     </components.MultiValueLabel>
   );
 };
@@ -107,9 +134,69 @@ const findOptions = (options, multi, value) => {
       );
 };
 
+// const getInitialValue = (
+//   stateValue: string | undefined,
+//   inputDefault: string | undefined,
+//   multi: boolean | undefined
+// ): SelectOption | SelectOption[] | null => {
+//   if (!inputDefault) {
+//     return null;
+//   }
+//   if (multi) {
+//     return inputDefault.split(",").map((value) => ({
+//       label: value,
+//       value,
+//     }));
+//   }
+//   return {
+//     label: inputDefault,
+//     value: inputDefault,
+//   };
+// };
+
+const addOptionIfNotExists = (
+  options: SelectOption[],
+  inputDefault: string | undefined,
+  multi: boolean | undefined
+): SelectOption[] => {
+  if (!inputDefault) {
+    return options;
+  }
+
+  const newOptions = [...options];
+
+  if (multi) {
+    const parts = inputDefault.split(",");
+    for (const part of parts) {
+      const matching = findOptions(options, false, part);
+      if (!matching) {
+        newOptions.push({
+          label: part,
+          value: part,
+          artificial: true,
+        });
+      }
+    }
+  } else {
+    const matching = findOptions(options, false, inputDefault);
+    if (!matching) {
+      newOptions.push({
+        label: inputDefault,
+        value: inputDefault,
+        artificial: true,
+      });
+    }
+  }
+  return newOptions;
+};
+
 const SelectInput = ({ data, name, properties }: SelectInputProps) => {
   const { dispatch, selectedDashboardInputs } = useDashboard();
+  const stateValue = selectedDashboardInputs[name];
   const [initialisedFromState, setInitialisedFromState] = useState(false);
+  // const [value, setValue] = useState<SelectOption | SelectOption[] | null>(() =>
+  //   getInitialValue(stateValue, properties.default, properties.multi)
+  // );
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
@@ -119,10 +206,13 @@ const SelectInput = ({ data, name, properties }: SelectInputProps) => {
     // If no options defined at all
     if (
       (!properties?.options || properties?.options.length === 0) &&
+      !properties.default &&
       (!data || !data.columns || !data.rows)
     ) {
       return [];
     }
+
+    let newOptions: SelectOption[] = [];
 
     if (data) {
       const labelColIndex = getColumnIndex(data.columns, "label");
@@ -132,29 +222,30 @@ const SelectInput = ({ data, name, properties }: SelectInputProps) => {
       if (labelColIndex === -1 || valueColIndex === -1) {
         return [];
       }
-
-      return data.rows.map((row) => ({
+      newOptions = data.rows.map((row) => ({
         label: row[labelColIndex],
         value: row[valueColIndex],
         tags: tagsColIndex > -1 ? row[tagsColIndex] : {},
       }));
     } else if (properties.options) {
-      return properties.options.map((option) => ({
+      newOptions = properties.options.map((option) => ({
         label: option.label || option.name,
         value: option.name,
         tags: {},
       }));
-    } else {
-      return [];
     }
-  }, [properties.options, data]);
-
-  const stateValue = selectedDashboardInputs[name];
+    newOptions = addOptionIfNotExists(newOptions, stateValue, properties.multi);
+    return addOptionIfNotExists(
+      newOptions,
+      properties.default,
+      properties.multi
+    );
+  }, [properties.default, properties.options, data, stateValue]);
 
   // Bind the selected option to the reducer state
   useEffect(() => {
     // If we haven't got the data we need yet...
-    if (!options || options.length === 0) {
+    if (!options) {
       return;
     }
 
@@ -170,11 +261,28 @@ const SelectInput = ({ data, name, properties }: SelectInputProps) => {
       );
       setValue(foundOptions || null);
       setInitialisedFromState(true);
-    } else if (!initialisedFromState && !stateValue && properties.placeholder) {
+    } else if (!initialisedFromState && properties.default) {
+      const parsedUrlValue = properties.multi
+        ? properties.default.split(",")
+        : properties.default;
+      const foundOptions = findOptions(
+        options,
+        properties.multi,
+        parsedUrlValue
+      );
+      setValue(foundOptions || null);
       setInitialisedFromState(true);
     } else if (
       !initialisedFromState &&
       !stateValue &&
+      !properties.default &&
+      properties.placeholder
+    ) {
+      setInitialisedFromState(true);
+    } else if (
+      !initialisedFromState &&
+      !stateValue &&
+      !properties.default &&
       !properties.placeholder
     ) {
       setInitialisedFromState(true);
@@ -202,7 +310,7 @@ const SelectInput = ({ data, name, properties }: SelectInputProps) => {
           parsedUrlValue
         );
         setValue(foundOptions || null);
-      } else if (initialisedFromState && !stateValue) {
+      } else if (initialisedFromState && !stateValue && !properties.default) {
         setValue(null);
       }
     }
@@ -211,9 +319,11 @@ const SelectInput = ({ data, name, properties }: SelectInputProps) => {
     initialisedFromState,
     name,
     options,
+    properties.default,
     properties.multi,
     properties.placeholder,
     stateValue,
+    value,
   ]);
 
   useEffect(() => {
@@ -273,6 +383,7 @@ const SelectInput = ({ data, name, properties }: SelectInputProps) => {
         isDisabled={!properties.options && !data}
         isLoading={!properties.options && !data}
         isClearable={!!properties.placeholder}
+        menuIsOpen={true}
         isRtl={false}
         isSearchable
         isMulti={properties.multi}

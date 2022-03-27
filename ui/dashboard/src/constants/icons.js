@@ -11,6 +11,7 @@ import {
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
   ClipboardCheckIcon as ClipboardCheckIconSolid,
+  ExclamationIcon as ExclamationIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
   XIcon as XIconSolid,
 } from "@heroicons/react/solid";
@@ -23,6 +24,7 @@ export const CopyToClipboardSuccessIcon = ClipboardCheckIconSolid;
 export const ErrorIcon = ExclamationCircleIconOutline;
 export const SearchIcon = SearchIconOutline;
 export const SubmitIcon = SaveIconOutline;
+export const WarningIcon = ExclamationIconSolid;
 export const ZoomIcon = ArrowsExpandIconOutline;
 
 // Control
