@@ -19,7 +19,7 @@ import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
-const { useSortBy, useTable } = require("react-table");
+import { useSortBy, useTable } from "react-table";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";

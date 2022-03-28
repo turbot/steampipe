@@ -15,7 +15,7 @@ import {
   CheckProps,
 } from "../common";
 import { classNames } from "../../../../utils/styles";
-const { useSortBy, useTable } = require("react-table");
+import { useSortBy, useTable } from "react-table";
 
 interface ControlsTableProps {
   loading: boolean;
