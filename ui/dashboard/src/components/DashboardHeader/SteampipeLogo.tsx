@@ -5,10 +5,14 @@ import { ReactComponent as Logo } from "./logos/steampipe-logo.svg";
 import { ReactComponent as LogoWordmarkColor } from "./logos/steampipe-logo-wordmark-color.svg";
 // @ts-ignore
 import { ReactComponent as LogoWordmarkDark } from "./logos/steampipe-logo-wordmark-darkmode.svg";
-import { ThemeNames, useTheme } from "../../hooks/useTheme";
+import { ThemeNames } from "../../hooks/useTheme";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const SteampipeLogo = () => {
-  const { theme } = useTheme();
+  const {
+    themeContext: { theme },
+  } = useDashboard();
+
   return (
     <div className="mr-1 md:mr-4">
       <Link to="/">

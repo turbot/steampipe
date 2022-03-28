@@ -12,7 +12,7 @@ const NeutralButton = ({
 }: ButtonProps) => (
   <Button
     className={classNames(
-      "bg-background-panel border border-black-scale-2 text-light hover:bg-black-scale-2 hover:border-black-scale-2 disabled:bg-background disabled:text-light",
+      "bg-dashboard-panel border border-black-scale-2 text-light hover:bg-black-scale-2 hover:border-black-scale-2 disabled:bg-dashboard disabled:text-light",
       className
     )}
     disabled={disabled}

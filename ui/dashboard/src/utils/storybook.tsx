@@ -75,6 +75,22 @@ export const PanelStoryDecorator = ({
         },
 
         search: stubDashboardSearch,
+
+        breakpointContext: {
+          currentBreakpoint: "xl",
+          maxBreakpoint: () => true,
+          minBreakpoint: () => true,
+          width: 0,
+        },
+
+        themeContext: {
+          theme: {
+            label: "Steampipe Default",
+            name: "steampipe-default",
+          },
+          setTheme: noop,
+          wrapperRef: null,
+        },
       }}
     >
       <Dashboard />

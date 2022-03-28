@@ -22,8 +22,8 @@
   --color-success: #0070f3;
   --color-error: #e00;
   --color-warning: #f9a825;
-  --color-background: rgb(243 244 246);
-  --color-background-panel: #fff;
+  --color-dashboard: rgb(243 244 246);
+  --color-dashboard-panel: #fff;
   --color-foreground: #000;
   --color-foreground-light: #515151;
   --color-foreground-lighter: #666;
@@ -74,8 +74,8 @@
   --color-success: #0070f3;
   --color-error: red;
   --color-warning: #f9a825;
-  --color-background: #1e2329;
-  --color-background-panel: #2d333b; /*var(--color-black-scale-1);*/
+  --color-dashboard: #1e2329;
+  --color-dashboard-panel: #2d333b; /*var(--color-black-scale-1);*/
   --color-foreground: #fff;
   --color-foreground-light: #ccc;
   --color-foreground-lighter: #888;
@@ -93,7 +93,7 @@
 
   /* General colors */
   --color-divider: theme("colors.gray.300");
-  --color-nav: var(--color-background);
+  --color-nav: var(--color-dashboard);
   --color-nav-border: #333;
 
   /* Visual colors */

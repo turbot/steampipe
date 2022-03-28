@@ -20,8 +20,8 @@ module.exports = {
         "table-head": "var(--color-table-head)",
       },
       colors: {
-        background: "var(--color-background)",
-        "background-panel": "var(--color-background-panel)",
+        dashboard: "var(--color-dashboard)",
+        "dashboard-panel": "var(--color-dashboard-panel)",
         foreground: "var(--color-foreground)",
         "foreground-light": "var(--color-foreground-light)",
         "foreground-lighter": "var(--color-foreground-lighter)",

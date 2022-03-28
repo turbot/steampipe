@@ -1,8 +1,11 @@
 import Icon from "../Icon";
-import { ThemeNames, useTheme } from "../../hooks/useTheme";
+import { ThemeNames } from "../../hooks/useTheme";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const ThemeToggle = () => {
-  const { setTheme, theme } = useTheme();
+  const {
+    themeContext: { setTheme, theme },
+  } = useDashboard();
   return (
     <button
       type="button"
@@ -27,7 +30,7 @@ const ThemeToggle = () => {
           (theme.name === ThemeNames.STEAMPIPE_DEFAULT
             ? "translate-x-0"
             : "translate-x-5") +
-          " pointer-events-none relative inline-block h-5 w-5 rounded-full bg-background-panel shadow transform ring-0 transition ease-in-out duration-200"
+          " pointer-events-none relative inline-block h-5 w-5 rounded-full bg-dashboard-panel shadow transform ring-0 transition ease-in-out duration-200"
         }
       >
         <span

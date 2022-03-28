@@ -91,7 +91,7 @@ const Section = ({
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            <Link className="link-highlight" to={`/${dashboard.full_name}`}>
+            <Link className="link-highlight" to={`../${dashboard.full_name}`}>
               {dashboard.title || dashboard.short_name}
             </Link>
           </div>
@@ -258,7 +258,7 @@ const DashboardList = () => {
   );
 
   return (
-    <div className="w-full grid grid-cols-12 p-4 gap-x-4">
+    <div className="w-full grid grid-cols-12 gap-x-4">
       <div className="col-span-12 lg:col-span-9 space-y-4">
         <div className="grid grid-cols-6">
           {(!availableDashboardsLoaded || !metadata) && (
@@ -315,11 +315,11 @@ const DashboardList = () => {
 };
 
 const DashboardListWrapper = () => {
-  const { dashboardName } = useParams();
+  const { dashboard_name } = useParams();
   const { search } = useDashboard();
 
   // If we have a dashboard selected and no search, we don't want to show the list
-  if (dashboardName && !search.value) {
+  if (dashboard_name && !search.value) {
     return null;
   }
 
