@@ -186,6 +186,7 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 		r.Parent.addDimensionKeys(keys...)
 	}
 	r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
+	sort.Strings(r.DimensionKeys)
 }
 
 func (r *ResultGroup) addDuration(d time.Duration) {
