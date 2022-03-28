@@ -1,0 +1,12 @@
+group_id,title,description,control_id,control_title,control_description,reason,resource,status,id,abc,foo,purpose
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource does not satisfy condition,steampipe,alarm,6,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource does not satisfy condition,steampipe,alarm,7,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource does not satisfy condition,steampipe,alarm,8,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource does not satisfy condition,steampipe,alarm,9,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource does not satisfy condition,steampipe,alarm,10,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource satisfies condition,steampipe,ok,1,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource satisfies condition,steampipe,ok,2,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource satisfies condition,steampipe,ok,3,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource satisfies condition,steampipe,ok,4,def,bar,testing
+root_result_group,,,control.sample_control_sorted_tags,Sample control with tags,Sample control to check tags sorting,Resource satisfies condition,steampipe,ok,5,def,bar,testing
+

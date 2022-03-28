@@ -48,3 +48,19 @@ control "sample_control_no_results" {
   sql           = "select 1 as reason, 'ok' as status, 3 as resource"
   severity      = "critical"
 }
+
+control "sample_control_sorted_tags" {
+  title         = "Sample control with tags"
+  description   = "Sample control to check tags sorting"
+  query         = query.generic_query
+  severity      = "critical"
+  args = {
+    "number_of_ok" = 5
+    "number_of_alarm" = 5
+  }
+  tags = {
+    "purpose" = "testing"
+    "foo"    = "bar"
+    "abc" = "def"
+  }
+}
