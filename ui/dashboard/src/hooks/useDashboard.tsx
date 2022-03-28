@@ -529,7 +529,6 @@ const DashboardProvider = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
   const { dashboard_name } = useParams();
-  console.log(dashboard_name);
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
     socketFactory
