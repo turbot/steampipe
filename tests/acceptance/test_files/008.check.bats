@@ -63,9 +63,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check - output csv(check tags sorting)" {
+@test "steampipe check - output csv(check tags and dimensions sorting)" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_sorted_tags --output=csv --progress=false
+  run steampipe check control.sample_control_sorted_tags_and_dimensions --output=csv --progress=false
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_csv_sorted_tags.csv)"
   cd -
 }
@@ -85,9 +85,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check - export csv(check tags sorting)" {
+@test "steampipe check - export csv(check tags and dimensions sorting)" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_sorted_tags --export test.csv --progress=false
+  run steampipe check control.sample_control_sorted_tags_and_dimensions --export test.csv --progress=false
   assert_equal "$(cat test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv_sorted_tags.csv)"
   rm -f test.csv
   cd -

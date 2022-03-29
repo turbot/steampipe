@@ -49,18 +49,18 @@ control "sample_control_no_results" {
   severity      = "critical"
 }
 
-control "sample_control_sorted_tags" {
-  title         = "Sample control with tags"
-  description   = "Sample control to check tags sorting"
-  query         = query.generic_query
+control "sample_control_sorted_tags_and_dimensions" {
+  title         = "Sample control with tags and dimensions"
+  description   = "Sample control to check tags and dimensions sorting"
+  query         = query.generic_query_with_dimensions
   severity      = "critical"
   args = {
     "number_of_ok" = 5
     "number_of_alarm" = 5
   }
   tags = {
-    "purpose" = "testing"
     "foo"    = "bar"
+    "purpose" = "testing"
     "abc" = "def"
   }
 }
