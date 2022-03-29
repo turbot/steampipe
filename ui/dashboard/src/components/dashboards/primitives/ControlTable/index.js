@@ -1,7 +1,7 @@
 import Icon from "../../../Icon";
+import isObject from "lodash/isObject";
 import Primitive from "../../Primitive";
 import { alarmIcon, okIcon, tbdIcon } from "../../../../constants/icons";
-import { isObject } from "lodash";
 
 const renderCell = (cell) => {
   if (isObject(cell)) {

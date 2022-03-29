@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "craco start",
-    "build": "GENERATE_SOURCEMAP=false craco build",
+    "build": "craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
     "prettify": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
     "storybook": "start-storybook -p 6006 -s public",
     "build-storybook": "build-storybook -s public"
   },
@@ -72,6 +73,7 @@
     "prop-types": "15.8.1",
     "react-refresh": "0.11.0",
     "react-scripts": "5.0.0",
+    "source-map-explorer": "2.5.2",
     "storybook-dark-mode": "1.0.9",
     "tailwindcss": "3.0.23",
     "typescript": "4.5.5",

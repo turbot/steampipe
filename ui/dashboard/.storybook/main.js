@@ -1,4 +1,4 @@
-const { set } = require("lodash");
+const set = require("lodash/set");
 
 module.exports = {
   stories: ["../src/**/*.stories.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],

@@ -1,5 +1,5 @@
 import { BreakpointProvider } from "../src/hooks/useBreakpoint";
-import { ThemeWrapper } from "../src/hooks/useTheme";
+import { ThemeWrapper } from "../src/hooks/useStorybookTheme";
 
 const StoryWrapper = ({ children }) => {
   return (

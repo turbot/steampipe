@@ -1,5 +1,5 @@
 import StoryWrapper from "./StoryWrapper";
-import { ThemeProvider } from "../src/hooks/useTheme";
+import { ThemeProvider } from "../src/hooks/useStorybookTheme";
 import { themes } from "@storybook/theming";
 import "../src/styles/index.css";
 
@@ -56,7 +56,7 @@ const viewports = {
 
 export const decorators = [
   (Story) => (
-    <ThemeProvider storyMode>
+    <ThemeProvider>
       <StoryWrapper>
         <Story />
       </StoryWrapper>

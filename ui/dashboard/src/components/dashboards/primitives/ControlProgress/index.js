@@ -1,5 +1,5 @@
+import isArray from "lodash/isArray";
 import Primitive from "../../Primitive";
-import { isArray } from "lodash";
 
 const findColumnIndices = (data) => {
   const headerRow = data[0];

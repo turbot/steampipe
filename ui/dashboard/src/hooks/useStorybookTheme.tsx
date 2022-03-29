@@ -1,7 +1,12 @@
+import addons, { mockChannel } from "@storybook/addons";
 import React, { createContext, useContext, useState } from "react";
 import useLocalStorage from "./useLocalStorage";
 import useMediaQuery from "./useMediaQuery";
-import { classNames } from "../utils/styles";
+import { useDarkMode } from "storybook-dark-mode";
+
+if (!addons.hasChannel()) {
+  addons.setChannel(mockChannel());
+}
 
 export interface Theme {
   name: string;
@@ -29,34 +34,23 @@ const Themes: IThemes = {
 };
 
 interface IThemeContext {
-  localStorageTheme: string | null;
   theme: Theme;
-  withFooterPadding: boolean;
-  wrapperRef: React.Ref<null>;
-  setTheme(theme: string): void;
   setWithFooterPadding(newValue: boolean): void;
   setWrapperRef(element: any): void;
+  withFooterPadding: boolean;
+  wrapperRef: React.Ref<null>;
 }
 
 const ThemeContext = createContext<IThemeContext | undefined>(undefined);
 
 const ThemeProvider = ({ children }) => {
   const [withFooterPadding, setWithFooterPadding] = useState(true);
-  const [localStorageTheme, setLocalStorageTheme] =
-    useLocalStorage("steampipe.ui.theme");
-  const prefersDarkTheme = useMediaQuery("(prefers-color-scheme: dark)");
   const [wrapperRef, setWrapperRef] = useState(null);
   const doSetWrapperRef = (element) => setWrapperRef(() => element);
 
   let theme;
 
-  if (
-    localStorageTheme &&
-    (localStorageTheme === ThemeNames.STEAMPIPE_DEFAULT ||
-      localStorageTheme === ThemeNames.STEAMPIPE_DARK)
-  ) {
-    theme = Themes[localStorageTheme];
-  } else if (prefersDarkTheme) {
+  if (useDarkMode()) {
     theme = Themes[ThemeNames.STEAMPIPE_DARK];
   } else {
     theme = Themes[ThemeNames.STEAMPIPE_DEFAULT];
@@ -65,13 +59,11 @@ const ThemeProvider = ({ children }) => {
   return (
     <ThemeContext.Provider
       value={{
-        localStorageTheme,
         theme,
-        setTheme: setLocalStorageTheme,
+        setWithFooterPadding,
         setWrapperRef: doSetWrapperRef,
         withFooterPadding,
         wrapperRef,
-        setWithFooterPadding,
       }}
     >
       {children}
@@ -79,22 +71,19 @@ const ThemeProvider = ({ children }) => {
   );
 };
 
-const FullHeightThemeWrapper = ({ children }) => {
-  const { setWrapperRef, theme, withFooterPadding } = useTheme();
+const ThemeWrapper = ({ children }) => {
+  const { setWrapperRef, theme } = useStorybookTheme();
   return (
     <div
       ref={setWrapperRef}
-      className={classNames(
-        `min-h-screen flex flex-col theme-${theme.name} bg-dashboard text-foreground`,
-        withFooterPadding ? "pb-8" : ""
-      )}
+      className={`theme-${theme.name} bg-dashboard text-foreground`}
     >
       {children}
     </div>
   );
 };
 
-const useTheme = () => {
+const useStorybookTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
     throw new Error("useTheme must be used within a ThemeContext");
@@ -102,4 +91,4 @@ const useTheme = () => {
   return context;
 };
 
-export { FullHeightThemeWrapper, Themes, ThemeNames, ThemeProvider, useTheme };
+export { Themes, ThemeNames, ThemeProvider, ThemeWrapper, useStorybookTheme };
