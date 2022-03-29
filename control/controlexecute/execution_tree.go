@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -284,5 +285,6 @@ func (e *ExecutionTree) GetAllTags() []string {
 			}
 		}
 	}
+	sort.Strings(tagColumns)
 	return tagColumns
 }
