@@ -1,4 +1,3 @@
-import ExternalLink from "../../ExternalLink";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import {
   BasePrimitiveProps,
@@ -20,6 +19,7 @@ import {
   SortDescendingIcon,
 } from "../../../constants/icons";
 import { useSortBy, useTable } from "react-table";
+import { useDashboard } from "../../../hooks/useDashboard";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
@@ -99,55 +99,6 @@ interface CellValueProps {
   showTitle?: boolean;
 }
 
-// // create a worker pool using an external worker script
-// const jqRenderPool = createPool("../../../workers/renderJqTemplate", {
-//   maxWorkers: 3,
-// });
-
-// const workers = [];
-// function getWorker(url, metaUrl) {
-//   var w;
-//   if (workers.length > 0) {
-//     w = workers.pop();
-//   } else {
-//     // @ts-ignore
-//     // w = new Worker(
-//     //   new URL("../../../workers/renderJqTemplate", import.meta.url)
-//     // );
-//     w = new Worker(url);
-//   }
-//   return w;
-// }
-//
-// const releaseWorker = (worker) => {
-//   // @ts-ignore
-//   workers.push(worker);
-// };
-//
-// function WorkerPool(url, metaUrl) {
-//   // @ts-ignore
-//   this.url = url;
-//   // @ts-ignore
-//   this.metaUrl = metaUrl;
-//   // @ts-ignore
-//   this.pool = [];
-// }
-// WorkerPool.prototype.getWorker = function () {
-//   var w;
-//   if (this.pool.length > 0) {
-//     w = this.pool.pop();
-//   } else {
-//     // @ts-ignore
-//     w = new Worker(new URL(this.url, this.metaUrl));
-//   }
-//   return w;
-// };
-// WorkerPool.prototype.releaseWorker = function (w) {
-//   this.pool.push(w);
-// };
-
-// var pool = new WorkerPool("../../../workers/renderJqTemplate", import.meta.url);
-
 const CellValue = ({
   column,
   rowIndex,
@@ -155,6 +106,9 @@ const CellValue = ({
   value,
   showTitle = false,
 }: CellValueProps) => {
+  const {
+    components: { ExternalLink },
+  } = useDashboard();
   const [href, setHref] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

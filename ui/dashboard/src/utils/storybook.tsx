@@ -1,4 +1,5 @@
 import Dashboard from "../components/dashboards/layout/Dashboard";
+import { buildComponentsMap } from "../components";
 import { DashboardContext, DashboardSearch } from "../hooks/useDashboard";
 import { noop } from "./func";
 
@@ -91,6 +92,8 @@ export const PanelStoryDecorator = ({
           setTheme: noop,
           wrapperRef: null,
         },
+
+        components: buildComponentsMap(),
       }}
     >
       <Dashboard />

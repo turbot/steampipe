@@ -17,9 +17,7 @@ const Dashboards = ({ analyticsContext, breakpointContext, themeContext }) => (
   >
     <DashboardHeader />
     <DashboardErrorModal />
-    <div className="p-4">
-      <DashboardList />
-    </div>
+    <DashboardList wrapperClassName="p-4" />
     <Dashboard />
   </DashboardProvider>
 );

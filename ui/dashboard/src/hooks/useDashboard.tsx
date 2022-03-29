@@ -1,8 +1,5 @@
 import findPathDeep from "deepdash/findPathDeep";
 import paths from "deepdash/paths";
-import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
-import usePrevious from "./usePrevious";
-import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
 import React, {
   createContext,
   useCallback,
@@ -11,6 +8,10 @@ import React, {
   useReducer,
   useState,
 } from "react";
+import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
+import usePrevious from "./usePrevious";
+import { buildComponentsMap } from "../components";
+import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
 import { Theme } from "./useTheme";
 import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
@@ -35,6 +36,10 @@ interface IThemeContext {
   theme: Theme;
   setTheme(theme: string): void;
   wrapperRef: React.Ref<null>;
+}
+
+export interface ComponentsMap {
+  [name: string]: any;
 }
 
 interface IDashboardContext {
@@ -62,6 +67,8 @@ interface IDashboardContext {
 
   breakpointContext: IBreakpointContext;
   themeContext: IThemeContext;
+
+  components: ComponentsMap;
 }
 
 export interface IActions {
@@ -522,9 +529,11 @@ const DashboardProvider = ({
   analyticsContext,
   breakpointContext,
   children,
+  componentOverrides = {},
   socketFactory,
   themeContext,
 }) => {
+  const components = buildComponentsMap(componentOverrides);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
@@ -902,6 +911,7 @@ const DashboardProvider = ({
         ...state,
         analyticsContext,
         breakpointContext,
+        components,
         dispatch,
         closePanelDetail,
         themeContext,

@@ -9,8 +9,8 @@ import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
 import { ColorGenerator } from "../../utils/color";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
-import { Link, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 
 interface DashboardListSection {
   title: string;
@@ -85,15 +85,21 @@ const Section = ({
   dispatch,
   searchValue,
 }: SectionProps) => {
+  const {
+    components: { ExternalLink },
+  } = useDashboard();
   return (
     <div className="space-y-2">
       <h3 className="truncate">{title}</h3>
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            <Link className="link-highlight" to={`../${dashboard.full_name}`}>
+            <ExternalLink
+              className="link-highlight"
+              to={`/${dashboard.full_name}`}
+            >
               {dashboard.title || dashboard.short_name}
-            </Link>
+            </ExternalLink>
           </div>
           <div className="hidden md:block col-span-6 space-x-2">
             {Object.entries(dashboard.tags || {}).map(([key, value]) => (
@@ -314,7 +320,7 @@ const DashboardList = () => {
   );
 };
 
-const DashboardListWrapper = () => {
+const DashboardListWrapper = ({ wrapperClassName = "" }) => {
   const { dashboard_name } = useParams();
   const { search } = useDashboard();
 
@@ -323,7 +329,11 @@ const DashboardListWrapper = () => {
     return null;
   }
 
-  return <DashboardList />;
+  return (
+    <div className={wrapperClassName}>
+      <DashboardList />
+    </div>
+  );
 };
 
 export default DashboardListWrapper;

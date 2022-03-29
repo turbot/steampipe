@@ -1,4 +1,3 @@
-import ExternalLink from "../../ExternalLink";
 import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
 import LoadingIndicator from "../LoadingIndicator";
@@ -198,6 +197,9 @@ const Label = ({ value }) => {
 };
 
 const Card = (props: CardProps) => {
+  const {
+    components: { ExternalLink },
+  } = useDashboard();
   const state = useCardState(props);
   const [renderedHref, setRenderedHref] = useState<string | null>(
     state.href || null
