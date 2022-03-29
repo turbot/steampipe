@@ -56,9 +56,9 @@ const getSocketServerUrl = () => {
   return `ws://${url.host}/ws`;
 };
 
-const createSocket = (socketFactory): WebSocket => {
+const createSocket = async (socketFactory): Promise<WebSocket> => {
   if (socketFactory) {
-    return socketFactory();
+    return await socketFactory();
   }
   return new WebSocket(getSocketServerUrl());
 };
@@ -78,51 +78,54 @@ const useDashboardWebSocket = (dispatch, socketFactory): IWebSocket => {
   };
 
   useEffect(() => {
-    let keepAliveTimerId: NodeJS.Timeout;
-    webSocket.current = createSocket(socketFactory);
-    webSocket.current.onerror = onSocketError;
-    webSocket.current.onmessage = onSocketMessage;
-    webSocket.current.onopen = () => {
-      const keepAlive = () => {
+    const doConnect = async () => {
+      let keepAliveTimerId: NodeJS.Timeout;
+      webSocket.current = await createSocket(socketFactory);
+      webSocket.current.onerror = onSocketError;
+      webSocket.current.onmessage = onSocketMessage;
+      webSocket.current.onopen = () => {
+        const keepAlive = async () => {
+          if (!webSocket.current) {
+            return;
+          }
+
+          const timeout = 30000;
+          if (webSocket.current.readyState === webSocket.current.CLOSED) {
+            webSocket.current = await createSocket(socketFactory);
+            webSocket.current.onerror = onSocketError;
+            webSocket.current.onmessage = onSocketMessage;
+          }
+          if (webSocket.current.readyState === webSocket.current.OPEN) {
+            webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
+          }
+          keepAliveTimerId = setTimeout(keepAlive, timeout);
+        };
+
         if (!webSocket.current) {
           return;
         }
 
-        const timeout = 30000;
-        if (webSocket.current.readyState === webSocket.current.CLOSED) {
-          webSocket.current = createSocket(socketFactory);
-          webSocket.current.onerror = onSocketError;
-          webSocket.current.onmessage = onSocketMessage;
-        }
-        if (webSocket.current.readyState === webSocket.current.OPEN) {
-          webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
-        }
-        keepAliveTimerId = setTimeout(keepAlive, timeout);
+        // Send message to ask for dashboard metadata
+        webSocket.current.send(
+          JSON.stringify({
+            action: "get_dashboard_metadata",
+          })
+        );
+
+        // Send message to ask for available dashboards
+        webSocket.current.send(
+          JSON.stringify({
+            action: "get_available_dashboards",
+          })
+        );
+        keepAlive();
       };
-
-      if (!webSocket.current) {
-        return;
-      }
-
-      // Send message to ask for dashboard metadata
-      webSocket.current.send(
-        JSON.stringify({
-          action: "get_dashboard_metadata",
-        })
-      );
-
-      // Send message to ask for available dashboards
-      webSocket.current.send(
-        JSON.stringify({
-          action: "get_available_dashboards",
-        })
-      );
-      keepAlive();
+      return () => {
+        clearTimeout(keepAliveTimerId);
+        webSocket.current && webSocket.current.close();
+      };
     };
-    return () => {
-      clearTimeout(keepAliveTimerId);
-      webSocket.current && webSocket.current.close();
-    };
+    doConnect();
   }, []);
 
   const send = useCallback((message) => {
