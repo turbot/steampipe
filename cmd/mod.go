@@ -81,7 +81,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -117,7 +117,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -152,7 +152,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModUpdateCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -184,7 +184,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 		utils.LogTime("cmd.runModListCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 	opts := newInstallOpts(cmd)
@@ -218,7 +218,7 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInitCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)

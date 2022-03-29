@@ -183,7 +183,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginInstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -199,7 +199,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 
@@ -268,7 +268,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -282,14 +282,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 
 	state, err := statefile.LoadState()
 	if err != nil {
 		utils.ShowError(ctx, fmt.Errorf("could not load state"))
-		exitCode = 3
+		exitCode = constants.ExitCodeLoadingError
 		return
 	}
 
@@ -297,7 +297,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		utils.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
-		exitCode = 3
+		exitCode = constants.ExitCodeLoadingError
 		return
 	}
 
@@ -351,7 +351,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
 		utils.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later"))
-		exitCode = 3
+		exitCode = constants.ExitCodeLoadingError
 		return
 	}
 
@@ -469,21 +469,21 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
 		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
-		exitCode = 4
+		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
 		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
-		exitCode = 4
+		exitCode = constants.ExitCodePluginListFailure
 	}
 	headers := []string{"Name", "Version", "Connections"}
 	rows := [][]string{}
@@ -501,7 +501,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginUninstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -511,14 +511,14 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 
 	connectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		utils.ShowError(ctx, err)
-		exitCode = 4
+		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 

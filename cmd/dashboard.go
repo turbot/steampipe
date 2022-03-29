@@ -148,7 +148,7 @@ func setExitCodeForDashboardError(err error) {
 	if err == workspace.ErrorNoModDefinition {
 		exitCode = constants.ExitCodeNoModFile
 	} else {
-		exitCode = 1
+		exitCode = constants.ExitCodeUnknownErrorPanic
 	}
 }
 
