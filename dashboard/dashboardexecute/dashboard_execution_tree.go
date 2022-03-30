@@ -29,6 +29,7 @@ type DashboardExecutionTree struct {
 	inputDataSubscriptions map[string]map[*chan bool]struct{}
 	cancel                 context.CancelFunc
 	inputValues            map[string]interface{}
+	id                     string
 }
 
 // NewDashboardExecutionTree creates a result group from a ModTreeItem
@@ -44,6 +45,7 @@ func NewDashboardExecutionTree(reportName string, sessionId string, client db_co
 		inputDataSubscriptions: make(map[string]map[*chan bool]struct{}),
 		inputValues:            make(map[string]interface{}),
 	}
+	executionTree.id = fmt.Sprintf("%p", executionTree)
 
 	// create the root run node (either a report run or a counter run)
 	root, err := executionTree.createRootItem(reportName)
@@ -78,12 +80,14 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	e.cancel = cancel
 	workspace := e.workspace
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
-		Dashboard: e.Root,
-		Session:   e.sessionId,
+		Dashboard:   e.Root,
+		Session:     e.sessionId,
+		ExecutionId: e.id,
 	})
 	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{
-		Dashboard: e.Root,
-		Session:   e.sessionId,
+		Dashboard:   e.Root,
+		Session:     e.sessionId,
+		ExecutionId: e.id,
 	})
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")

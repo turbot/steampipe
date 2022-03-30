@@ -106,9 +106,10 @@ func (r *CheckRun) SetError(err error) {
 	r.runStatus = dashboardinterfaces.DashboardRunError
 	// raise dashboard error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
-		LeafNode: r,
-		Session:  r.executionTree.sessionId,
-		Error:    err,
+		LeafNode:    r,
+		Session:     r.executionTree.sessionId,
+		Error:       err,
+		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
@@ -124,8 +125,9 @@ func (r *CheckRun) SetComplete() {
 	r.runStatus = dashboardinterfaces.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
-		LeafNode: r,
-		Session:  r.executionTree.sessionId,
+		LeafNode:    r,
+		Session:     r.executionTree.sessionId,
+		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r

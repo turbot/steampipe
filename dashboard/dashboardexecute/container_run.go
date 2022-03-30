@@ -159,8 +159,9 @@ func (r *DashboardContainerRun) SetError(err error) {
 	r.Status = dashboardinterfaces.DashboardRunError
 	// raise container error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{
-		Container: r,
-		Session:   r.executionTree.sessionId,
+		Container:   r,
+		Session:     r.executionTree.sessionId,
+		ExecutionId: r.executionTree.id,
 	})
 	r.parent.ChildCompleteChan() <- r
 }
@@ -180,8 +181,9 @@ func (r *DashboardContainerRun) SetComplete() {
 	r.Status = dashboardinterfaces.DashboardRunComplete
 	// raise container complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{
-		Container: r,
-		Session:   r.executionTree.sessionId,
+		Container:   r,
+		Session:     r.executionTree.sessionId,
+		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
