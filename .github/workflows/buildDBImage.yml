@@ -9,12 +9,12 @@ on:
           Version number for the OCI image for this release - usually the same as the
           postgres version
         required: true
-        default: 12.1.0
+        default: 14.2.0
 
       postgres_version:
-        description: 'Postgres Version to package (eg 12.1.0)'
+        description: 'Postgres Version to package (eg 14.2.0)'
         required: true
-        default: 12.1.0-1
+        default: 14.2.0
 
 env:
   PROJECT_ID: steampipe
@@ -93,7 +93,6 @@ jobs:
           unzip -o ${JAR_FILE}
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
-
 
       - name: Pull & Extract - linux arm64v8
         env:
