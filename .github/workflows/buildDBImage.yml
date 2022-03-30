@@ -184,8 +184,8 @@ jobs:
               extracted-darwin-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-amd64.layer.v1+tar \
               extracted-darwin-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
               extracted-linux-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
-              extracted-linux-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
-              extracted-windows-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.windows-amd64.layer.v1+tar \
+              extracted-linux-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar \
+              extracted-windows-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.windows-amd64.layer.v1+tar
 
       - name: Set version tags
         uses: ./.github/actions/semver-tags 
