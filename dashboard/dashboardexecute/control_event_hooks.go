@@ -23,7 +23,10 @@ func (c *ControlEventHooks) OnStart(ctx context.Context, _ *controlhooks.Control
 }
 
 func (c *ControlEventHooks) OnControlEvent(ctx context.Context, _ *controlhooks.ControlProgress) {
-	event := &dashboardevents.LeafNodeProgress{LeafNode: c.CheckRun}
+	event := &dashboardevents.LeafNodeProgress{
+		LeafNode:    c.CheckRun,
+		ExecutionId: c.CheckRun.executionTree.id,
+	}
 	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }
 

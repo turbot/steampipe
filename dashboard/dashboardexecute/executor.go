@@ -12,6 +12,7 @@ import (
 )
 
 type DashboardExecutor struct {
+	// map of executions, keyed by session id
 	executions    map[string]*DashboardExecutionTree
 	executionLock sync.Mutex
 }
@@ -25,13 +26,18 @@ func newDashboardExecutor() *DashboardExecutor {
 var Executor = newDashboardExecutor()
 
 func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]interface{}, workspace *workspace.Workspace, client db_common.Client) (err error) {
+	var executionTree *DashboardExecutionTree
 	defer func() {
 		// if there was an error executing, send an ExecutionError event
 		if err != nil {
-			workspace.PublishDashboardEvent(&dashboardevents.ExecutionError{
+			errorEvent := &dashboardevents.ExecutionError{
 				Error:   err,
 				Session: sessionId,
-			})
+			}
+			if executionTree != nil {
+				errorEvent.ExecutionId = executionTree.id
+			}
+			workspace.PublishDashboardEvent(errorEvent)
 		}
 	}()
 
@@ -39,10 +45,11 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	e.ClearDashboard(ctx, sessionId)
 
 	// now create a new execution
-	executionTree, err := NewDashboardExecutionTree(dashboardName, sessionId, client, workspace)
+	executionTree, err = NewDashboardExecutionTree(dashboardName, sessionId, client, workspace)
 	if err != nil {
 		return err
 	}
+
 	// add to execution map
 	e.setExecution(sessionId, executionTree)
 
@@ -73,6 +80,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 		event := &dashboardevents.InputValuesCleared{
 			ClearedInputs: clearedInputs,
 			Session:       executionTree.sessionId,
+			ExecutionId:   executionTree.id,
 		}
 		executionTree.workspace.PublishDashboardEvent(event)
 	}
@@ -123,11 +131,13 @@ func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) 
 
 	// cancel if in progress
 	executionTree.Cancel()
-
+	// wait for the execution to complete
+	<-executionTree.runComplete
 	// remove from execution tree
 	e.removeExecution(sessionId)
 }
 
+// find the execution for the given session id
 func (e *DashboardExecutor) getExecution(sessionId string) (*DashboardExecutionTree, bool) {
 	e.executionLock.Lock()
 	defer e.executionLock.Unlock()
