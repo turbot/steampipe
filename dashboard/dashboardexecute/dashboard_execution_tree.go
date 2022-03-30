@@ -99,11 +99,8 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
-	// execute syncronously
+	// execute synchronously
 	e.Root.Execute(cancelCtx)
-
-	//<-e.runComplete
-
 }
 
 // GetRunStatus returns the stats of the Root run
