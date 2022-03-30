@@ -12,6 +12,7 @@ import (
 )
 
 type DashboardExecutor struct {
+	// map of executions, keyed by session id
 	executions    map[string]*DashboardExecutionTree
 	executionLock sync.Mutex
 }
@@ -130,11 +131,13 @@ func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) 
 
 	// cancel if in progress
 	executionTree.Cancel()
-
+	// wait for the execution to complete
+	<-executionTree.runComplete
 	// remove from execution tree
 	e.removeExecution(sessionId)
 }
 
+// find the execution for the given session id
 func (e *DashboardExecutor) getExecution(sessionId string) (*DashboardExecutionTree, bool) {
 	e.executionLock.Lock()
 	defer e.executionLock.Unlock()

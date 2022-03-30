@@ -6,9 +6,8 @@ import (
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
-	"github.com/turbot/steampipe/utils"
-
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 // DashboardRun is a struct representing a container run
@@ -174,8 +173,8 @@ func (r *DashboardRun) SetError(err error) {
 	r.ErrorString = err.Error()
 	r.Status = dashboardinterfaces.DashboardRunError
 	// raise container error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{
-		Container:   r,
+	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.DashboardError{
+		Dashboard:   r,
 		Session:     r.executionTree.sessionId,
 		ExecutionId: r.executionTree.id,
 	})

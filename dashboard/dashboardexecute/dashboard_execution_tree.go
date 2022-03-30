@@ -75,6 +75,7 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRu
 }
 
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
+	log.Printf("[WARN] EXECUTE")
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
@@ -99,11 +100,11 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
-	// there is no strict need to run this async but it follows the pattern of child execution elsewhere
-	go e.Root.Execute(cancelCtx)
-	select {
-	case <-e.runComplete:
-	}
+	// execute syncronously
+	e.Root.Execute(cancelCtx)
+
+	//<-e.runComplete
+
 }
 
 // GetRunStatus returns the stats of the Root run
@@ -187,7 +188,9 @@ func (e *DashboardExecutionTree) Cancel() {
 	if e.GetRunStatus() != dashboardinterfaces.DashboardRunReady || e.cancel == nil {
 		return
 	}
+	log.Printf("[WARN] CANCELLING")
 	e.cancel()
+
 }
 
 func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
