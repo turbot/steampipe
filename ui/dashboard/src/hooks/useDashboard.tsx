@@ -350,10 +350,8 @@ function reducer(state, action) {
         state: "running",
       };
     case DashboardActions.EXECUTION_COMPLETE:
+      // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
-        console.warn(
-          `Ignoring ${action.type} event with id [${action.execution_id}] as currently executing [${state.execution_id}]`
-        );
         return state;
       }
       // Build map of SQL to data
@@ -371,10 +369,8 @@ function reducer(state, action) {
       return state;
     case DashboardActions.LEAF_NODE_PROGRESS:
     case DashboardActions.LEAF_NODE_COMPLETE: {
+      // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
-        console.warn(
-          `Ignoring ${action.type} event with id [${action.execution_id}] as currently executing [${state.execution_id}]`
-        );
         return state;
       }
       // Find the path to the name key that matches this panel and replace it
@@ -451,10 +447,8 @@ function reducer(state, action) {
         recordInputsHistory: !!action.recordInputsHistory,
       };
     case DashboardActions.INPUT_VALUES_CLEARED: {
+      // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
-        console.warn(
-          `Ignoring ${action.type} event with id [${action.execution_id}] as currently executing [${state.execution_id}]`
-        );
         return state;
       }
       const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
