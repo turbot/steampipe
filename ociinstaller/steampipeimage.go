@@ -52,14 +52,16 @@ func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
 	return SteampipeImage
 }
 
+type ImageType string
+
 const (
-	ImageTypeDatabase = "db"
-	ImageTypeFdw      = "fdw"
-	ImageTypeAssets   = "assets"
-	ImageTypePlugin   = "plugin"
+	ImageTypeDatabase ImageType = "db"
+	ImageTypeFdw      ImageType = "fdw"
+	ImageTypeAssets   ImageType = "assets"
+	ImageTypePlugin   ImageType = "plugin"
 )
 
-func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, imageType string, destDir string) (*SteampipeImage, error) {
+func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, imageType ImageType, destDir string) (*SteampipeImage, error) {
 	var mediaTypes []string
 	Image := o.newSteampipeImage()
 	Image.ImageRef = ref
