@@ -84,6 +84,7 @@ func buildLeafNodeProgressPayload(event *dashboardevents.LeafNodeProgress) ([]by
 	payload := ExecutionPayload{
 		Action:        "leaf_node_progress",
 		DashboardNode: event.LeafNode,
+		ExecutionId:   event.ExecutionId,
 	}
 	return json.Marshal(payload)
 }
@@ -92,6 +93,7 @@ func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]by
 	payload := ExecutionPayload{
 		Action:        "leaf_node_complete",
 		DashboardNode: event.LeafNode,
+		ExecutionId:   event.ExecutionId,
 	}
 	return json.Marshal(payload)
 }
@@ -100,6 +102,7 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 	payload := ExecutionPayload{
 		Action:        "execution_started",
 		DashboardNode: event.Dashboard,
+		ExecutionId:   event.ExecutionId,
 	}
 	return json.Marshal(payload)
 }
@@ -108,6 +111,7 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 	payload := ExecutionPayload{
 		Action:        "execution_complete",
 		DashboardNode: event.Dashboard,
+		ExecutionId:   event.ExecutionId,
 	}
 	return json.Marshal(payload)
 }
@@ -116,6 +120,7 @@ func buildInputValuesClearedPayload(event *dashboardevents.InputValuesCleared) (
 	payload := InputValuesClearedPayload{
 		Action:        "input_values_cleared",
 		ClearedInputs: event.ClearedInputs,
+		ExecutionId:   event.ExecutionId,
 	}
 	return json.Marshal(payload)
 }

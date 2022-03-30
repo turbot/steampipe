@@ -55,11 +55,13 @@ type ErrorPayload struct {
 type ExecutionPayload struct {
 	Action        string                               `json:"action"`
 	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
+	ExecutionId   string                               `json:"execution_id"`
 }
 
 type InputValuesClearedPayload struct {
 	Action        string   `json:"action"`
 	ClearedInputs []string `json:"cleared_inputs"`
+	ExecutionId   string   `json:"execution_id"`
 }
 
 type DashboardClientInfo struct {

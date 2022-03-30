@@ -346,9 +346,16 @@ function reducer(state, action) {
         ...state,
         error: null,
         dashboard: dashboardWithData,
+        execution_id: action.execution_id,
         state: "running",
       };
     case DashboardActions.EXECUTION_COMPLETE:
+      if (action.execution_id !== state.execution_id) {
+        console.warn(
+          `Ignoring ${action.type} event with id [${action.execution_id}] as currently executing [${state.execution_id}]`
+        );
+        return state;
+      }
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(action.dashboard_node);
       // Replace the whole dashboard as this event contains everything
@@ -364,6 +371,12 @@ function reducer(state, action) {
       return state;
     case DashboardActions.LEAF_NODE_PROGRESS:
     case DashboardActions.LEAF_NODE_COMPLETE: {
+      if (action.execution_id !== state.execution_id) {
+        console.warn(
+          `Ignoring ${action.type} event with id [${action.execution_id}] as currently executing [${state.execution_id}]`
+        );
+        return state;
+      }
       // Find the path to the name key that matches this panel and replace it
       const { dashboard_node } = action;
       let panelPath: string = findPathDeep(
@@ -396,6 +409,8 @@ function reducer(state, action) {
       return {
         ...state,
         dashboard: null,
+        execution_id: null,
+        state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
         lastChangedInput: null,
@@ -436,6 +451,12 @@ function reducer(state, action) {
         recordInputsHistory: !!action.recordInputsHistory,
       };
     case DashboardActions.INPUT_VALUES_CLEARED: {
+      if (action.execution_id !== state.execution_id) {
+        console.warn(
+          `Ignoring ${action.type} event with id [${action.execution_id}] as currently executing [${state.execution_id}]`
+        );
+        return state;
+      }
       const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
       for (const input of action.cleared_inputs || []) {
         delete newSelectedDashboardInputs[input];
@@ -520,6 +541,8 @@ const getInitialState = (searchParams) => {
     },
 
     sqlDataMap: {},
+
+    execution_id: null,
   };
 };
 
