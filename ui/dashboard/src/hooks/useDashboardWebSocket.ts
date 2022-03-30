@@ -1,5 +1,5 @@
-import { ElementType, IActions } from "./useDashboard";
 import { useCallback, useEffect, useRef } from "react";
+import { ElementType, IActions } from "./useDashboard";
 
 interface ReceivedSocketMessagePayload {
   action: string;
@@ -53,7 +53,7 @@ const getSocketServerUrl = () => {
   }
   // Otherwise, it's a production build, so use the URL details
   const url = new URL(window.location.toString());
-  return `ws://${url.host}/ws`;
+  return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws`
 };
 
 const useDashboardWebSocket = (dispatch): IWebSocket => {
