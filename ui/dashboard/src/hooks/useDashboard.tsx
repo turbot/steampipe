@@ -564,8 +564,9 @@ const DashboardProvider = ({
   useEffect(() => {
     setAnalyticsMetadata(state.metadata);
   }, [state.metadata, setAnalyticsMetadata]);
+
   useEffect(() => {
-    setAnalyticsSelectedDashboard(state.metadata);
+    setAnalyticsSelectedDashboard(state.selectedDashboard);
   }, [state.selectedDashboard, setAnalyticsSelectedDashboard]);
 
   // Ensure that on history pop / push we sync the new values into state
