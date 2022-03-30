@@ -109,20 +109,6 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-      - name: Pull & Extract - windows amd64
-        env:
-          OS: windows
-          ARCH: amd64
-          TGZ_FILE: postgres-windows-x86_64.txz #(name of the file once unzipped.  per platform but not same as in the jar name)
-        run: |-
-          JAR_FILE=${NAME_PREFIX}-${OS}-${ARCH}-${PG_VERSION}.jar
-          EXTRACT_DIR=extracted-${OS}-${ARCH}-${PG_VERSION}
-
-          curl -L  -O -J -L ${PATH_BASE}/${NAME_PREFIX}-${OS}-${ARCH}/${PG_VERSION}/${JAR_FILE}
-          unzip -o ${JAR_FILE}
-          mkdir $EXTRACT_DIR
-          tar -xf $TGZ_FILE --directory $EXTRACT_DIR
-
       - name: Build Config JSON
         run: |-
           JSON_STRING=$( jq -n \
