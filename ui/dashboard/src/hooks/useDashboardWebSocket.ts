@@ -101,7 +101,10 @@ const useDashboardWebSocket = (dispatch, socketFactory): IWebSocket => {
           keepAliveTimerId = setTimeout(keepAlive, timeout);
         };
 
-        if (!webSocket.current) {
+        if (
+          !webSocket.current ||
+          webSocket.current.readyState !== webSocket.current.OPEN
+        ) {
           return;
         }
 
