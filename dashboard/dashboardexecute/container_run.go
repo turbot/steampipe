@@ -109,7 +109,16 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 }
 
 // Initialise implements DashboardRunNode
-func (r *DashboardContainerRun) Initialise(ctx context.Context) {}
+func (r *DashboardContainerRun) Initialise(ctx context.Context) {
+	// initialise our children
+	for _, child := range r.Children {
+		child.Initialise(ctx)
+		if err := child.GetError(); err != nil {
+			r.SetError(err)
+			return
+		}
+	}
+}
 
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
