@@ -65,6 +65,23 @@ func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources)
 			Tags:      dashboard.Tags,
 		}
 	}
+	for _, benchmark := range workspaceResources.Mod.ResourceMaps.Benchmarks {
+		if benchmark.IsAnonymous() {
+			continue
+		}
+		mod := benchmark.Mod
+		// create a child map for this mod if needed
+		if _, ok := dashboardsByMod[mod.FullName]; !ok {
+			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
+		}
+		// add this dashboard
+		dashboardsByMod[mod.FullName][benchmark.FullName] = ModAvailableDashboard{
+			Title:     typeHelpers.SafeString(benchmark.Title),
+			FullName:  benchmark.FullName,
+			ShortName: benchmark.ShortName,
+			Tags:      benchmark.Tags,
+		}
+	}
 	payload := AvailableDashboardsPayload{
 		Action:          "available_dashboards",
 		DashboardsByMod: dashboardsByMod,
@@ -101,7 +118,7 @@ func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]by
 func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:        "execution_started",
-		DashboardNode: event.Dashboard,
+		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
 	}
 	return json.Marshal(payload)
@@ -110,7 +127,7 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:        "execution_complete",
-		DashboardNode: event.Dashboard,
+		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
 	}
 	return json.Marshal(payload)

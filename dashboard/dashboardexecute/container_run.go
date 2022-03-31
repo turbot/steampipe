@@ -208,3 +208,7 @@ func (r *DashboardContainerRun) ChildrenComplete() bool {
 func (r *DashboardContainerRun) ChildCompleteChan() chan dashboardinterfaces.DashboardNodeRun {
 	return r.childComplete
 }
+
+// GetInputsDependingOn implements DashboardNodeRun
+//return nothing for DashboardContainerRun
+func (r *DashboardContainerRun) GetInputsDependingOn(changedInputName string) []string { return nil }

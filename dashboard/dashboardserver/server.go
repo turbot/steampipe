@@ -119,7 +119,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		outputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
-		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Dashboard.GetName())
+		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
 		payload, payloadError = buildExecutionStartedPayload(e)
 		if payloadError != nil {
 			return
@@ -127,7 +127,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.mutex.Lock()
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
-		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Dashboard.GetName()))
+		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Root.GetName()))
 
 	case *dashboardevents.LeafNodeError:
 		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %v", e.Session, e.LeafNode.GetName(), e.Error)
@@ -282,7 +282,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		if payloadError != nil {
 			return
 		}
-		dashboardName := e.Dashboard.GetName()
+		dashboardName := e.Root.GetName()
 		s.mutex.Lock()
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()

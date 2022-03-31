@@ -184,6 +184,10 @@ func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }
 
+// GetInputsDependingOn implements DashboardNodeRun
+//return nothing for LeafRun
+func (r *LeafRun) GetInputsDependingOn(changedInputName string) []string { return nil }
+
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.DashboardNode.Name())
 	for _, resolvedDependency := range r.runtimeDependencies {

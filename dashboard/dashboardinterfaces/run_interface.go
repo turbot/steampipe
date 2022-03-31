@@ -23,6 +23,7 @@ type DashboardNodeRun interface {
 	SetComplete()
 	RunComplete() bool
 	ChildrenComplete() bool
+	GetInputsDependingOn(changedInputName string) []string
 }
 
 type DashboardNodeParent interface {
