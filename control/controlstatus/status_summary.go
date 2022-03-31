@@ -29,3 +29,11 @@ func (s *StatusSummary) FailedCount() int {
 func (s *StatusSummary) TotalCount() int {
 	return s.Alarm + s.Ok + s.Info + s.Skip + s.Error
 }
+
+func (s *StatusSummary) Merge(summary *StatusSummary) {
+	s.Alarm += summary.Alarm
+	s.Ok += summary.Ok
+	s.Info += summary.Info
+	s.Skip += summary.Skip
+	s.Error += summary.Error
+}
