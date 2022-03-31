@@ -49,6 +49,9 @@ const (
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
 func MediaTypeForPlatform(imageType ImageType) string {
 	arch := runtime.GOARCH
+	if imageType == ImageTypePlugin {
+		arch = "amd64"
+	}
 	switch imageType {
 	case ImageTypeDatabase:
 		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, arch)
