@@ -8,19 +8,21 @@ import (
 )
 
 type ControlProgress struct {
-	updateLock *sync.Mutex
-	Total      int `json:"total"`
-	Pending    int `json:"pending"`
-	Complete   int `json:"complete"`
-	Error      int `json:"error"`
-	Executing  int `json:"executing"`
+	updateLock      *sync.Mutex
+	Total           int `json:"total"`
+	Pending         int `json:"pending"`
+	Complete        int `json:"complete"`
+	Error           int `json:"error"`
+	Executing       int `json:"executing"`
+	StatusSummaries *StatusSummary
 }
 
 func NewControlProgress(total int) *ControlProgress {
 	return &ControlProgress{
-		updateLock: &sync.Mutex{},
-		Total:      total,
-		Pending:    total,
+		updateLock:      &sync.Mutex{},
+		Total:           total,
+		Pending:         total,
+		StatusSummaries: &StatusSummary{},
 	}
 }
 
@@ -50,7 +52,7 @@ func (p *ControlProgress) OnControlComplete(ctx context.Context, control *modcon
 	p.Complete++
 	// decrement the parallel execution count
 	p.Executing--
-
+	p.StatusSummaries.Merge(controlStatusSummary)
 	OnControlComplete(ctx, control, controlRunStatus, controlStatusSummary, p)
 }
 
@@ -60,7 +62,7 @@ func (p *ControlProgress) OnControlError(ctx context.Context, control *modconfig
 	p.Error++
 	// decrement the parallel execution count
 	p.Executing--
-
+	p.StatusSummaries.Merge(controlStatusSummary)
 	OnControlError(ctx, control, controlRunStatus, controlStatusSummary, p)
 }
 
