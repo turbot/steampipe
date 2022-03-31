@@ -363,7 +363,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 			dashboardexecute.Executor.OnInputChanged(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
 		case "clear_dashboard":
 			s.setDashboardInputsForSession(sessionId, nil)
-			dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
+			dashboardexecute.Executor.CancelExecutionForSession(ctx, sessionId)
 		}
 
 	}
@@ -386,7 +386,7 @@ func (s *Server) clearSession(ctx context.Context, session *melody.Session) {
 
 	s.mutex.Lock()
 	sessionId := s.getSessionId(session)
-	dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
+	dashboardexecute.Executor.CancelExecutionForSession(ctx, sessionId)
 	delete(s.dashboardClients, sessionId)
 	s.mutex.Unlock()
 }

@@ -86,6 +86,14 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
 	workspace := e.workspace
+
+	// perform any necessary initialisation
+	// (e.g. check run creates the control execution tree)
+	e.Root.Initialise(ctx)
+	if e.Root.GetError() != nil {
+		return
+	}
+
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,

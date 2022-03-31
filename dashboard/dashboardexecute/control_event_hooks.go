@@ -22,7 +22,7 @@ func (c *ControlEventHooks) OnStart(ctx context.Context, _ *controlhooks.Control
 	// nothing to do
 }
 
-func (c *ControlEventHooks) OnControlEvent(ctx context.Context, _ *controlhooks.ControlProgress) {
+func (c *ControlEventHooks) OnControlEvent(ctx context.Context, progress *controlhooks.ControlProgress) {
 	event := &dashboardevents.LeafNodeProgress{
 		LeafNode:    c.CheckRun,
 		ExecutionId: c.CheckRun.executionTree.id,

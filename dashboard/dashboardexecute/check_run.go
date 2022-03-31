@@ -70,18 +70,23 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 	return r, nil
 }
 
-// Execute implements DashboardRunNode
-func (r *CheckRun) Execute(ctx context.Context) {
+// Initialise implements DashboardRunNode
+func (r *CheckRun) Initialise(ctx context.Context) {
 	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.dashboardNode.Name())
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)
 		return
 	}
+	r.ControlExecutionTree = executionTree
+}
+
+// Execute implements DashboardRunNode
+func (r *CheckRun) Execute(ctx context.Context) {
+
 	// create a context with a ControlEventHooks to report control execution progress
 	ctx = controlhooks.AddControlHooksToContext(ctx, NewControlEventHooks(r))
-	r.ControlExecutionTree = executionTree
-	executionTree.Execute(ctx)
+	r.ControlExecutionTree.Execute(ctx)
 
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()

@@ -42,7 +42,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	}()
 
 	// reset any existing executions for this session
-	e.ClearDashboard(ctx, sessionId)
+	e.CancelExecutionForSession(ctx, sessionId)
 
 	// now create a new execution
 	executionTree, err = NewDashboardExecutionTree(dashboardName, sessionId, client, workspace)
@@ -121,7 +121,7 @@ func (e *DashboardExecutor) clearDependentInputs(root dashboardinterfaces.Dashbo
 	return clearedInputs
 }
 
-func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) {
+func (e *DashboardExecutor) CancelExecutionForSession(_ context.Context, sessionId string) {
 	// find the execution
 	executionTree, found := e.getExecution(sessionId)
 	if !found {
