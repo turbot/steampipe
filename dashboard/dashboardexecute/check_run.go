@@ -24,6 +24,7 @@ type CheckRun struct {
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
 	DashboardName        string                        `json:"dashboard"`
 	SourceDefinition     string                        `json:"source_definition"`
+	SessionId            string                        `json:"session_id"`
 	error                error
 	dashboardNode        modconfig.DashboardLeafNode
 	parent               dashboardinterfaces.DashboardNodeParent
@@ -42,10 +43,11 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		Name:             name,
 		Title:            resource.GetTitle(),
 		Width:            resource.GetWidth(),
-		dashboardNode:    resource,
 		DashboardName:    executionTree.dashboardName,
 		SourceDefinition: resource.GetMetadata().SourceDefinition,
+		SessionId:        executionTree.sessionId,
 		executionTree:    executionTree,
+		dashboardNode:    resource,
 		parent:           parent,
 
 		// set to complete, optimistically

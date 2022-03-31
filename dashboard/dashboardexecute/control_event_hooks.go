@@ -26,6 +26,7 @@ func (c *ControlEventHooks) OnControlEvent(ctx context.Context, progress *contro
 	event := &dashboardevents.LeafNodeProgress{
 		LeafNode:    c.CheckRun,
 		ExecutionId: c.CheckRun.executionTree.id,
+		Session:     c.CheckRun.SessionId,
 	}
 	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }
