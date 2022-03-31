@@ -24,12 +24,6 @@ func (c *ControlEventHooks) OnStart(ctx context.Context, _ *controlstatus.Contro
 }
 
 func (c *ControlEventHooks) OnControlStart(ctx context.Context, control *modconfig.Control, progress *controlstatus.ControlProgress) {
-	event := &dashboardevents.LeafNodeProgress{
-		LeafNode:    c.CheckRun,
-		ExecutionId: c.CheckRun.executionTree.id,
-		Session:     c.CheckRun.SessionId,
-	}
-	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }
 
 func (c *ControlEventHooks) OnControlComplete(ctx context.Context, control *modconfig.Control, controlRunStatus controlstatus.ControlRunStatus, controlStatusSummary *controlstatus.StatusSummary, progress *controlstatus.ControlProgress) {
