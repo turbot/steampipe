@@ -64,6 +64,7 @@ export const PanelStoryDecorator = ({
               sql: "storybook",
             },
           ],
+          node_type: "dashboard",
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
 
