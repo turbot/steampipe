@@ -10,3 +10,8 @@ dashboard "control" {
   }
 
 }
+
+benchmark "tl" {
+    title = "MY BENCHMARK"
+    base = aws_compliance.benchmark.cis_v140
+}

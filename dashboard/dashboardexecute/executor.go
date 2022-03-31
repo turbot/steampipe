@@ -104,15 +104,15 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	return nil
 }
 
-func (e *DashboardExecutor) clearDependentInputs(dashboard *DashboardRun, changedInput string, inputs map[string]interface{}) []string {
-	dependentInputs := dashboard.GetInputsDependingOn(changedInput)
+func (e *DashboardExecutor) clearDependentInputs(root dashboardinterfaces.DashboardNodeRun, changedInput string, inputs map[string]interface{}) []string {
+	dependentInputs := root.GetInputsDependingOn(changedInput)
 	clearedInputs := dependentInputs
 	if len(dependentInputs) > 0 {
 		for _, inputName := range dependentInputs {
 			if inputs[inputName] != nil {
 				// clear the input value
 				inputs[inputName] = nil
-				childDependentInputs := e.clearDependentInputs(dashboard, inputName, inputs)
+				childDependentInputs := e.clearDependentInputs(root, inputName, inputs)
 				clearedInputs = append(clearedInputs, childDependentInputs...)
 			}
 		}

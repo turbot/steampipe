@@ -142,3 +142,7 @@ func (r *CheckRun) RunComplete() bool {
 func (r *CheckRun) ChildrenComplete() bool {
 	return r.RunComplete()
 }
+
+// GetInputsDependingOn implements DashboardNodeRun
+//return nothing for CheckRun
+func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }

@@ -15,7 +15,7 @@ import (
 
 // DashboardExecutionTree is a structure representing the control result hierarchy
 type DashboardExecutionTree struct {
-	Root *DashboardRun
+	Root dashboardinterfaces.DashboardNodeRun
 
 	dashboardName string
 	sessionId     string
@@ -33,10 +33,10 @@ type DashboardExecutionTree struct {
 }
 
 // NewDashboardExecutionTree creates a result group from a ModTreeItem
-func NewDashboardExecutionTree(reportName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
+func NewDashboardExecutionTree(rootName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
 	// now populate the DashboardExecutionTree
 	executionTree := &DashboardExecutionTree{
-		dashboardName:          reportName,
+		dashboardName:          rootName,
 		sessionId:              sessionId,
 		client:                 client,
 		runs:                   make(map[string]dashboardinterfaces.DashboardNodeRun),
@@ -48,7 +48,7 @@ func NewDashboardExecutionTree(reportName string, sessionId string, client db_co
 	executionTree.id = fmt.Sprintf("%p", executionTree)
 
 	// create the root run node (either a report run or a counter run)
-	root, err := executionTree.createRootItem(reportName)
+	root, err := executionTree.createRootItem(rootName)
 	if err != nil {
 		return nil, err
 	}
@@ -57,21 +57,28 @@ func NewDashboardExecutionTree(reportName string, sessionId string, client db_co
 	return executionTree, nil
 }
 
-func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRun, error) {
-	parsedName, err := modconfig.ParseResourceName(reportName)
+func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardinterfaces.DashboardNodeRun, error) {
+	parsedName, err := modconfig.ParseResourceName(rootName)
 	if err != nil {
 		return nil, err
 	}
-
-	if parsedName.ItemType != modconfig.BlockTypeDashboard {
+	switch parsedName.ItemType {
+	case modconfig.BlockTypeDashboard:
+		dashboard, ok := e.workspace.GetResourceMaps().Dashboards[rootName]
+		if !ok {
+			return nil, fmt.Errorf("dashboard '%s' does not exist in workspace", rootName)
+		}
+		return NewDashboardRun(dashboard, e, e)
+	case modconfig.BlockTypeBenchmark:
+		benchmark, ok := e.workspace.GetResourceMaps().Benchmarks[rootName]
+		if !ok {
+			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
+		}
+		return NewCheckRun(benchmark, e, e)
+	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
-	}
-	dashboard, ok := e.workspace.GetResourceMaps().Dashboards[reportName]
-	if !ok {
-		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
-	}
-	return NewDashboardRun(dashboard, e, e)
 
+	}
 }
 
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
@@ -80,12 +87,12 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	e.cancel = cancel
 	workspace := e.workspace
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
-		Dashboard:   e.Root,
+		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
 	})
 	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{
-		Dashboard:   e.Root,
+		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
 	})
