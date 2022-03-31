@@ -132,6 +132,26 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 	case *dashboardevents.LeafNodeError:
 		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %v", e.Session, e.LeafNode.GetName(), e.Error)
 
+	case *dashboardevents.ControlComplete:
+		log.Printf("[TRACE] ControlComplete event session %s, control %s", e.Session, e.ControlName)
+		payload, payloadError = buildControlCompletePayload(e)
+		if payloadError != nil {
+			return
+		}
+		s.mutex.Lock()
+		s.writePayloadToSession(e.Session, payload)
+		s.mutex.Unlock()
+
+	case *dashboardevents.ControlError:
+		log.Printf("[TRACE] ControlError event session %s, control %s", e.Session, e.ControlName)
+		payload, payloadError = buildControlErrorPayload(e)
+		if payloadError != nil {
+			return
+		}
+		s.mutex.Lock()
+		s.writePayloadToSession(e.Session, payload)
+		s.mutex.Unlock()
+
 	case *dashboardevents.LeafNodeProgress:
 		log.Printf("[TRACE] LeafNodeProgress event session %s, node %s", e.Session, e.LeafNode.GetName())
 		payload, payloadError = buildLeafNodeProgressPayload(e)
