@@ -226,6 +226,7 @@ export interface PanelDefinition {
 
 export interface DashboardDefinition {
   name: string;
+  node_type: string;
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
