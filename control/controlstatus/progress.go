@@ -9,12 +9,12 @@ import (
 
 type ControlProgress struct {
 	updateLock      *sync.Mutex
-	Total           int `json:"total"`
-	Pending         int `json:"pending"`
-	Complete        int `json:"complete"`
-	Error           int `json:"error"`
-	Executing       int `json:"executing"`
-	StatusSummaries *StatusSummary
+	Total           int            `json:"total"`
+	Pending         int            `json:"pending"`
+	Complete        int            `json:"complete"`
+	Error           int            `json:"error"`
+	Executing       int            `json:"executing"`
+	StatusSummaries *StatusSummary `json:"status_summaries"`
 }
 
 func NewControlProgress(total int) *ControlProgress {
