@@ -15,6 +15,7 @@ const (
 )
 
 type DashboardNodeRun interface {
+	Initialise(ctx context.Context)
 	Execute(ctx context.Context)
 	GetName() string
 	GetRunStatus() DashboardRunStatus

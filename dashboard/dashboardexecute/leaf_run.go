@@ -88,6 +88,9 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 	return r, nil
 }
 
+// Initialise implements DashboardRunNode
+func (r *LeafRun) Initialise(ctx context.Context) {}
+
 // Execute implements DashboardRunNode
 func (r *LeafRun) Execute(ctx context.Context) {
 	// if there is nothing to do, return

@@ -123,6 +123,9 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 	return r, nil
 }
 
+// Initialise implements DashboardRunNode
+func (r *DashboardRun) Initialise(ctx context.Context) {}
+
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
 func (r *DashboardRun) Execute(ctx context.Context) {
