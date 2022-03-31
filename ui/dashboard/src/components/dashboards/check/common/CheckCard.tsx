@@ -36,7 +36,7 @@ const getCardLabel = (status) => {
     case "ok":
       return "OK";
     case "skip":
-      return "skip";
+      return "Skip";
     default:
       return startCase(status);
   }
