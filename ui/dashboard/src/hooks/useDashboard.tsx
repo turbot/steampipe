@@ -78,6 +78,8 @@ export interface IActions {
 const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
   CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
+  CONTROL_COMPLETE: "control_complete",
+  CONTROL_ERROR: "control_error",
   DASHBOARD_METADATA: "dashboard_metadata",
   DELETE_DASHBOARD_INPUT: "delete_dashboard_input",
   EXECUTION_COMPLETE: "execution_complete",
@@ -368,7 +370,9 @@ function reducer(state, action) {
     case DashboardActions.EXECUTION_ERROR:
       // console.error("Got execution error", action);
       return state;
-    case DashboardActions.LEAF_NODE_PROGRESS:
+    case DashboardActions.CONTROL_COMPLETE:
+    case DashboardActions.CONTROL_ERROR:
+      return state;
     case DashboardActions.LEAF_NODE_COMPLETE: {
       // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
