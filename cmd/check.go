@@ -20,7 +20,7 @@ import (
 	"github.com/turbot/steampipe/control"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
@@ -193,13 +193,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 // create the context for the check run - add a control status renderer
 func createCheckContext(ctx context.Context) context.Context {
-	var controlHooks controlhooks.ControlHooks = controlhooks.NullHooks
+	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		controlHooks = controlhooks.NewControlStatusHooks()
+		controlHooks = controlstatus.NewControlStatusHooks()
 	}
 
-	return controlhooks.AddControlHooksToContext(ctx, controlHooks)
+	return controlstatus.AddControlHooksToContext(ctx, controlHooks)
 }
 
 func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {

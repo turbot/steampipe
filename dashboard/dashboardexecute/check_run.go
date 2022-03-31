@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -88,7 +88,7 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 func (r *CheckRun) Execute(ctx context.Context) {
 
 	// create a context with a ControlEventHooks to report control execution progress
-	ctx = controlhooks.AddControlHooksToContext(ctx, NewControlEventHooks(r))
+	ctx = controlstatus.AddControlHooksToContext(ctx, NewControlEventHooks(r))
 	r.ControlExecutionTree.Execute(ctx)
 
 	// set complete status on counter - this will raise counter complete event

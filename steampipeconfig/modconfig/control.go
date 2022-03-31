@@ -51,7 +51,6 @@ type Control struct {
 }
 
 func NewControl(block *hcl.Block, mod *Mod, shortName string) *Control {
-
 	control := &Control{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),

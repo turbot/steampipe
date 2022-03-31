@@ -1,4 +1,4 @@
-package controlhooks
+package controlstatus
 
 import (
 	"context"
@@ -41,34 +41,29 @@ func (p *ControlProgress) OnControlStart(ctx context.Context, control *modconfig
 	// decrement pending count
 	p.Pending--
 
-	OnControlEvent(ctx, p)
+	OnControlStart(ctx, control, p)
 }
 
-func (p *ControlProgress) OnControlFinish(ctx context.Context) {
-	p.updateLock.Lock()
-	defer p.updateLock.Unlock()
-	// decrement the parallel execution count
-	p.Executing--
-
-	OnControlEvent(ctx, p)
-}
-
-func (p *ControlProgress) OnControlComplete(ctx context.Context) {
+func (p *ControlProgress) OnControlComplete(ctx context.Context, control *modconfig.Control, controlRunStatus ControlRunStatus, controlStatusSummary *StatusSummary) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.Complete++
+	// decrement the parallel execution count
+	p.Executing--
 
-	OnControlEvent(ctx, p)
+	OnControlComplete(ctx, control, controlRunStatus, controlStatusSummary, p)
 }
 
-func (p *ControlProgress) OnControlError(ctx context.Context) {
+func (p *ControlProgress) OnControlError(ctx context.Context, control *modconfig.Control, controlRunStatus ControlRunStatus, controlStatusSummary *StatusSummary) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.Error++
+	// decrement the parallel execution count
+	p.Executing--
 
-	OnControlEvent(ctx, p)
+	OnControlError(ctx, control, controlRunStatus, controlStatusSummary, p)
 }
 
 func (p *ControlProgress) Finish(ctx context.Context) {
-	OnDone(ctx, p)
+	OnComplete(ctx, p)
 }

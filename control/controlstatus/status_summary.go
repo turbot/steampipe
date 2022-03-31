@@ -1,4 +1,13 @@
-package controlexecute
+package controlstatus
+
+type ControlRunStatus uint32
+
+const (
+	ControlRunReady ControlRunStatus = 1 << iota
+	ControlRunStarted
+	ControlRunComplete
+	ControlRunError
+)
 
 // StatusSummary is a struct containing the counts of each possible control status
 type StatusSummary struct {

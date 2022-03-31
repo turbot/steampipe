@@ -1,4 +1,4 @@
-package controlhooks
+package controlstatus
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/statushooks"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -29,11 +30,39 @@ func (c *ControlStatusHooks) OnStart(ctx context.Context, _ *ControlProgress) {
 	statushooks.SetStatus(ctx, "Starting controls...")
 }
 
-func (c *ControlStatusHooks) OnControlEvent(ctx context.Context, p *ControlProgress) {
+func (c *ControlStatusHooks) OnControlStart(ctx context.Context, _ *modconfig.Control, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
 
+	c.setStatusFromProgress(ctx, p)
+}
+
+func (c *ControlStatusHooks) OnControlComplete(ctx context.Context, _ *modconfig.Control, _ ControlRunStatus, _ *StatusSummary, p *ControlProgress) {
+	if !c.Enabled {
+		return
+	}
+
+	c.setStatusFromProgress(ctx, p)
+}
+
+func (c *ControlStatusHooks) OnControlError(ctx context.Context, _ *modconfig.Control, _ ControlRunStatus, _ *StatusSummary, p *ControlProgress) {
+	if !c.Enabled {
+		return
+	}
+
+	c.setStatusFromProgress(ctx, p)
+}
+
+func (c *ControlStatusHooks) OnComplete(ctx context.Context, _ *ControlProgress) {
+	if !c.Enabled {
+		return
+	}
+
+	statushooks.Done(ctx)
+}
+
+func (c *ControlStatusHooks) setStatusFromProgress(ctx context.Context, p *ControlProgress) {
 	message := fmt.Sprintf("Running %d %s. (%d complete, %d running, %d pending, %d %s)",
 		p.Total,
 		utils.Pluralize("control", p.Total),
@@ -45,12 +74,4 @@ func (c *ControlStatusHooks) OnControlEvent(ctx context.Context, p *ControlProgr
 	)
 
 	statushooks.SetStatus(ctx, message)
-
-}
-func (c *ControlStatusHooks) OnDone(ctx context.Context, _ *ControlProgress) {
-	if !c.Enabled {
-		return
-	}
-
-	statushooks.Done(ctx)
 }

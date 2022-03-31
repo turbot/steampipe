@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -56,6 +57,14 @@ type ExecutionPayload struct {
 	Action        string                               `json:"action"`
 	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
 	ExecutionId   string                               `json:"execution_id"`
+}
+type ControlEventPayload struct {
+	Action               string                         `json:"action"`
+	ControlStatusSummary *controlstatus.StatusSummary   `json:"control_status_summary"`
+	ControlRunStatus     controlstatus.ControlRunStatus `json:"control_run_status"`
+	Progress             *controlstatus.ControlProgress `json:"progress"`
+	ExecutionId          string                         `json:"execution_id"`
+	ControlName          string
 }
 
 type InputValuesClearedPayload struct {
