@@ -48,11 +48,7 @@ const (
 
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
 func MediaTypeForPlatform(imageType ImageType) string {
-	// we do not (yet) support Arm for the database, FDW or plugins - on M1 macs Rosetta will emulate this for us
 	arch := runtime.GOARCH
-	if imageType == ImageTypePlugin {
-		arch = "amd64"
-	}
 	switch imageType {
 	case ImageTypeDatabase:
 		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, arch)
