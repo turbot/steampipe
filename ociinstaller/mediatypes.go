@@ -50,7 +50,7 @@ const (
 func MediaTypeForPlatform(imageType ImageType) string {
 	// we do not (yet) support Arm for the database, FDW or plugins - on M1 macs Rosetta will emulate this for us
 	arch := runtime.GOARCH
-	if imageType == ImageTypePlugin {
+	if imageType == ImageTypePlugin || imageType == ImageTypeFdw {
 		arch = "amd64"
 	}
 	switch imageType {
