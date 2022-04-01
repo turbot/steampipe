@@ -295,7 +295,7 @@ jobs:
     needs: [create_test_build,build_and_release_assets]
     strategy:
       matrix:
-        platform: [ubuntu-latest]
+        platform: [ macos-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Trim asset version prefix and Validate
@@ -364,7 +364,7 @@ jobs:
         steampipe service stop --force
 
     - name: Run Test Suite
-      timeout-minutes: 5
+      timeout-minutes: 30
       run: |
         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
         $GITHUB_WORKSPACE/tests/acceptance/run.sh
@@ -442,17 +442,17 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Setup GCloud
-      uses: google-github-actions/setup-gcloud@v0.6.0
-      with:
-        service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-        project_id: ${{ env.PROJECT_ID }}
-        export_default_credentials: true
+    # - name: Setup GCloud
+    #   uses: google-github-actions/setup-gcloud@v0.6.0
+    #   with:
+    #     service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+    #     project_id: ${{ env.PROJECT_ID }}
+    #     export_default_credentials: true
 
-    - name: Install GCloud Beta Components
-      run: |-
-        gcloud config list
-        gcloud components install beta
+    # - name: Install GCloud Beta Components
+    #   run: |-
+    #     gcloud config list
+    #     gcloud components install beta
 
     # - name: Upload rpm and deb packages to artifact registry
     #   run: |
