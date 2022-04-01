@@ -24,7 +24,7 @@ import (
 type ExecutionTree struct {
 	Root *ResultGroup `json:"root"`
 	// flat list of all control runs
-	ControlRuns []*ControlRun                  `json:"control_runs"`
+	ControlRuns []*ControlRun                  `json:"-"`
 	StartTime   time.Time                      `json:"start_time"`
 	EndTime     time.Time                      `json:"end_time"`
 	Progress    *controlstatus.ControlProgress `json:"progress"`
