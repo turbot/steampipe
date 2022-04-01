@@ -46,10 +46,15 @@ interface CheckLeafNodeDataGroup {
   controls?: CheckLeafNodeDataControl[];
 }
 
+interface CheckLeafNodeProgress {
+  control_row_status_summary: CheckLeafNodeDataGroupSummaryStatus;
+}
+
 export interface CheckLeafNodeExecutionTree {
   start_time: string;
   end_time: string;
   control_runs: CheckLeafNodeDataControl[];
+  progress: CheckLeafNodeProgress;
   root: CheckLeafNodeDataGroup;
 }
 

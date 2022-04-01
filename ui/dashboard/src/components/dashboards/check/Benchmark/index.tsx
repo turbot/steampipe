@@ -4,16 +4,20 @@ import { CheckLeafNodeDataGroupSummaryStatus, CheckProps } from "../common";
 import { useMemo } from "react";
 
 const Benchmark = (props: CheckProps) => {
-  const { loading, summary } = useMemo(() => {
-    const summary = props.execution_tree?.root?.summary?.status;
-    if (!summary) {
-      return {
-        loading: true,
-        summary: {} as CheckLeafNodeDataGroupSummaryStatus,
-      };
-    }
-    return { loading: false, summary };
-  }, [props.execution_tree]);
+  const summary =
+    props.execution_tree?.progress?.control_row_status_summary ||
+    ({} as CheckLeafNodeDataGroupSummaryStatus);
+  const loading = !summary;
+  // const { loading, summary } = useMemo(() => {
+  //   const summary = props.execution_tree?.progress?.control_row_status_summary;
+  //   if (!summary) {
+  //     return {
+  //       loading: true,
+  //       summary: {} as CheckLeafNodeDataGroupSummaryStatus,
+  //     };
+  //   }
+  //   return { loading: false, summary };
+  // }, [props.execution_tree]);
 
   return (
     <LayoutPanel

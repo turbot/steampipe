@@ -1,9 +1,6 @@
-import Benchmark from "../../check/Benchmark";
 import Children from "../common/Children";
 import LayoutPanel from "../common/LayoutPanel";
-import Panel from "../Panel";
 import PanelDetail from "../PanelDetail";
-import React from "react";
 import {
   DashboardDefinition,
   useDashboard,
@@ -21,19 +18,7 @@ const Dashboard = ({ definition, withPadding = false }: DashboardProps) => (
     isDashboard={true}
     withPadding={withPadding}
   >
-    <>
-      {definition.node_type === "benchmark" && (
-        <Panel definition={definition} allowExpand={true} withTitle={false}>
-          {/*@ts-ignore*/}
-          <Benchmark {...definition} />
-        </Panel>
-      )}
-    </>
-    <>
-      {definition.node_type === "dashboard" && (
-        <Children children={definition.children} />
-      )}
-    </>
+    <Children children={definition.children} />
   </LayoutPanel>
 );
 

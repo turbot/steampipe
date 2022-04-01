@@ -227,6 +227,7 @@ export interface PanelDefinition {
 }
 
 export interface DashboardDefinition {
+  artificial: boolean;
   name: string;
   node_type: string;
   title?: string;
@@ -312,6 +313,24 @@ function addDataToDashboard(
   return dashboard;
 }
 
+const wrapDefinitionInArtificialDashboard = (
+  definition: DashboardDefinition
+): DashboardDefinition => {
+  const { title, ...definitionWithoutTitle } = definition;
+  return {
+    artificial: true,
+    name: definition.name,
+    title: definition.title,
+    node_type: "dashboard",
+    children: [
+      {
+        ...definitionWithoutTitle,
+      },
+    ],
+    dashboard: definition.dashboard,
+  };
+};
+
 function reducer(state, action) {
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
@@ -340,37 +359,81 @@ function reducer(state, action) {
             ? state.dashboard
             : null,
       };
-    case DashboardActions.EXECUTION_STARTED:
-      const dashboardWithData = addDataToDashboard(
-        action.dashboard_node,
-        state.sqlDataMap
-      );
+    case DashboardActions.EXECUTION_STARTED: {
+      const originalDashboard = action.dashboard_node;
+      let dashboard;
+      // For benchmarks and controls that are run directly from a mod,
+      // we need to wrap these in an artificial dashboard so we can treat
+      // it just like any other dashboard
+      if (action.dashboard_node.type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+      } else {
+        dashboard = addDataToDashboard(action.dashboard_node, state.sqlDataMap);
+      }
       return {
         ...state,
         error: null,
-        dashboard: dashboardWithData,
+        dashboard,
         execution_id: action.execution_id,
         state: "running",
       };
-    case DashboardActions.EXECUTION_COMPLETE:
+    }
+    case DashboardActions.EXECUTION_COMPLETE: {
       // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
         return state;
       }
+
+      const originalDashboard = action.dashboard_node;
+      let dashboard;
+
+      if (action.dashboard_node.type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+      } else {
+        dashboard = originalDashboard;
+      }
+
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(action.dashboard_node);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
         error: null,
-        dashboard: action.dashboard_node,
+        dashboard,
         sqlDataMap,
         state: "complete",
       };
+    }
     case DashboardActions.EXECUTION_ERROR:
       // console.error("Got execution error", action);
       return state;
     case DashboardActions.CONTROL_COMPLETE:
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
+
+      if (state.dashboard.artificial) {
+        let newDashboard = { ...state.dashboard };
+        newDashboard = set(
+          newDashboard,
+          "children[0].execution_tree.progress",
+          action.progress
+        );
+        return {
+          ...state,
+          dashboard: newDashboard,
+        };
+      }
+
+      // let controlPath: string = findPathDeep(
+      //   state.dashboard,
+      //   (v, k) => k === "name" && v === dashboard_node.name
+      // );
+      // console.log({
+      //   action,
+      // });
+      return state;
     case DashboardActions.CONTROL_ERROR:
       return state;
     case DashboardActions.LEAF_NODE_COMPLETE: {
