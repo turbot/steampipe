@@ -40,7 +40,7 @@ const Children = ({
               allowExpand={allowPanelExpand}
               withTitle={withTitle}
             >
-              <Benchmark {...child} />
+              <Benchmark {...child.execution_tree} />
             </Panel>
           );
         case "card":

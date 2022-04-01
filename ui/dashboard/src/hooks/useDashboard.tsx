@@ -11,7 +11,7 @@ import React, {
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
 import { buildComponentsMap } from "../components";
-import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
+import { CheckExecutionTree } from "../components/dashboards/check/common";
 import { Theme } from "./useTheme";
 import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
@@ -220,7 +220,7 @@ export interface PanelDefinition {
   sql?: string;
   data?: LeafNodeData;
   source_definition?: string;
-  execution_tree?: CheckLeafNodeExecutionTree;
+  execution_tree?: CheckExecutionTree;
   error?: Error;
   properties?: PanelProperties;
   dashboard: string;
@@ -414,12 +414,25 @@ function reducer(state, action) {
       }
 
       if (state.dashboard.artificial) {
-        let newDashboard = { ...state.dashboard };
-        newDashboard = set(
-          newDashboard,
-          "children[0].execution_tree.progress",
-          action.progress
+        let panelPath: string = findPathDeep(
+          state.dashboard,
+          (v, k) => k === "control_id" && v === action.control.control_id
         );
+
+        if (!panelPath) {
+          console.warn(
+            "Cannot find control to update",
+            action.control.control_id
+          );
+          return state;
+        }
+
+        panelPath = panelPath.replace(".control_id", "");
+        let newDashboard = {
+          ...state.dashboard,
+        };
+        newDashboard = set(newDashboard, panelPath, action.control);
+
         return {
           ...state,
           dashboard: newDashboard,
