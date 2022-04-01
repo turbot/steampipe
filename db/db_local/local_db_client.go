@@ -35,7 +35,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.C
 		return nil, err
 	}
 
-	startResult := StartServices(ctx, constants.DatabaseDefaultPort, ListenTypeLocal, invoker)
+	startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
 	if startResult.Error != nil {
 		return nil, startResult.Error
 	}
