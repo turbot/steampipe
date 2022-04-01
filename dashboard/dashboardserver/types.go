@@ -59,12 +59,10 @@ type ExecutionPayload struct {
 	ExecutionId   string                               `json:"execution_id"`
 }
 type ControlEventPayload struct {
-	Action               string                         `json:"action"`
-	ControlStatusSummary *controlstatus.StatusSummary   `json:"control_status_summary"`
-	ControlRunStatus     controlstatus.ControlRunStatus `json:"control_run_status"`
-	Progress             *controlstatus.ControlProgress `json:"progress"`
-	ExecutionId          string                         `json:"execution_id"`
-	ControlName          string                         `json:"control_name"`
+	Action      string                                 `json:"action"`
+	Control     controlstatus.ControlRunStatusProvider `json:"control"`
+	Progress    *controlstatus.ControlProgress         `json:"progress"`
+	ExecutionId string                                 `json:"execution_id"`
 }
 
 type InputValuesClearedPayload struct {

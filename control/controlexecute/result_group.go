@@ -29,9 +29,9 @@ type ResultGroup struct {
 	// the overall summary of the group
 	Summary *GroupSummary `json:"group_summary"`
 	// child result groups
-	Groups []*ResultGroup `json:"groups"`
+	Groups []*ResultGroup `json:"child_groups"`
 	// child control runs
-	ControlRuns []*ControlRun                          `json:"controls"`
+	ControlRuns []*ControlRun                          `json:"child_controls"`
 	Severity    map[string]controlstatus.StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)

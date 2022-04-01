@@ -5,12 +5,10 @@ import (
 )
 
 type ControlComplete struct {
-	ControlName          string
-	ControlRunStatus     controlstatus.ControlRunStatus
-	ControlStatusSummary *controlstatus.StatusSummary
-	Progress             *controlstatus.ControlProgress
-	Session              string
-	ExecutionId          string
+	Progress    *controlstatus.ControlProgress
+	Control     controlstatus.ControlRunStatusProvider
+	Session     string
+	ExecutionId string
 }
 
 // IsDashboardEvent implements DashboardEvent interface
