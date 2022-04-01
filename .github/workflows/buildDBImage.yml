@@ -171,7 +171,6 @@ jobs:
 
       - name: Verify ORAS
         run: |- 
-          gcloud beta auth configure-docker us-docker.pkg.dev
           oras version
 
       - name: Push to Registry
