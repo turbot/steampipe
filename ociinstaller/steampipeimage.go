@@ -66,7 +66,7 @@ func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, im
 	Image := o.newSteampipeImage()
 	Image.ImageRef = ref
 
-	mediaTypes = append(mediaTypes, MediaTypeForPlatform(imageType))
+	mediaTypes = append(mediaTypes, MediaTypeForPlatform(imageType)...)
 	mediaTypes = append(mediaTypes, SharedMediaTypes(imageType)...)
 	mediaTypes = append(mediaTypes, ConfigMediaTypes()...)
 
@@ -89,7 +89,7 @@ func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, im
 	case ImageTypeDatabase:
 		Image.Database, err = getDBImageData(layers)
 	case ImageTypeFdw:
-		Image.Fdw, err = getHubImageData(layers)
+		Image.Fdw, err = getFdwImageData(layers)
 	case ImageTypePlugin:
 		Image.Plugin, err = getPluginImageData(layers)
 	case ImageTypeAssets:
@@ -121,7 +121,7 @@ func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
 	res := &DbImage{}
 
 	// get the binary jar file
-	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("db"))
+	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("db")[0])
 	if len(foundLayers) != 1 {
 		return nil, fmt.Errorf("invalid Image - Image should contain 1 installation file per platform, found %d", len(foundLayers))
 	}
@@ -141,13 +141,13 @@ func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
 	return res, nil
 }
 
-func getHubImageData(layers []ocispec.Descriptor) (*HubImage, error) {
+func getFdwImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 	res := &HubImage{}
 
 	// get the binary (steampipe-postgres-fdw.so) info
-	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("fdw"))
+	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("fdw")[0])
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("Invalid Image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
 	res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	//sourcePath := filepath.Join(tempDir.Path, fileName)
@@ -155,14 +155,14 @@ func getHubImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 	// get the control file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeFdwControlLayer)
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("Invalid Image - Image should contain 1 control file, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid image - Image should contain 1 control file, found %d", len(foundLayers))
 	}
 	res.ControlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
 	// get the sql file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeFdwSqlLayer)
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("Invalid Image - Image should contain 1 SQL file, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid image - Image should contain 1 SQL file, found %d", len(foundLayers))
 	}
 	res.SqlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
@@ -182,13 +182,20 @@ func getHubImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 
 func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 	res := &PluginImage{}
-
+	var foundLayers []ocispec.Descriptor
 	// get the binary plugin file info
-	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("plugin"))
-	if len(foundLayers) != 1 {
+	for _, mediaType := range MediaTypeForPlatform("plugin") {
+		foundLayers = findLayersForMediaType(layers, mediaType)
+		if len(foundLayers) != 1 {
+			log.Println("[TRACE] could not find data for", mediaType)
+			log.Println("[TRACE] falling back to the next one, if any")
+			continue
+		}
+		res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	}
+	if len(res.BinaryFile) == 0 {
 		return nil, fmt.Errorf("invalid Image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
-	res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
 	// get the docs dir
 	foundLayers = findLayersForMediaType(layers, MediaTypePluginDocsLayer)
@@ -212,6 +219,7 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 }
 
 func findLayersForMediaType(layers []ocispec.Descriptor, mediaType string) []ocispec.Descriptor {
+	log.Println("[TRACE] looking for", mediaType)
 	var matchedLayers []ocispec.Descriptor
 
 	for _, layer := range layers {
