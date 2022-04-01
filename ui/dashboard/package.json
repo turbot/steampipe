@@ -51,7 +51,7 @@
     "@storybook/addons": "6.5.0-alpha.51",
     "@storybook/builder-webpack5": "6.5.0-alpha.51",
     "@storybook/manager-webpack5": "6.5.0-alpha.51",
-    "@storybook/node-logger": "6.5.0-alpha.51",
+    "@storybook/node-logger": "6.5.0-alpha.53",
     "@storybook/preset-create-react-app": "4.1.0",
     "@storybook/react": "6.5.0-alpha.51",
     "@storybook/theming": "6.5.0-alpha.51",
