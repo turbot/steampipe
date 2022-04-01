@@ -119,8 +119,11 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 		statushooks.SetStatus(ctx, "Checking for running instances...")
 		defer statushooks.Done(ctx)
 		// do not use a context that can be cancelled
-		killInstanceIfAny(context.Background())
-		return ServiceStopped, nil
+		anyStopped := killInstanceIfAny(context.Background())
+		if anyStopped {
+			return ServiceStopped, nil
+		}
+		return ServiceNotRunning, nil
 	}
 
 	dbState, err := GetState()
