@@ -27,7 +27,7 @@ type ResultGroup struct {
 	Description string            `json:"description" csv:"description"`
 	Tags        map[string]string `json:"tags"`
 	// the overall summary of the group
-	Summary *GroupSummary `json:"summary"`
+	Summary *GroupSummary `json:"group_summary"`
 	// child result groups
 	Groups []*ResultGroup `json:"groups"`
 	// child control runs
@@ -46,7 +46,7 @@ type ResultGroup struct {
 }
 
 type GroupSummary struct {
-	Status   controlstatus.StatusSummary            `json:"status"`
+	Status   controlstatus.StatusSummary            `json:"control_row_status_summary"`
 	Severity map[string]controlstatus.StatusSummary `json:"-"`
 }
 
