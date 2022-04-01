@@ -96,7 +96,7 @@ func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, im
 		Image.Assets, err = getAssetImageData(layers)
 
 	default:
-		return nil, errors.New("invalid Type - Image types are: plugin, db, fdw")
+		return nil, errors.New("invalid Type - image types are: plugin, db, fdw")
 	}
 
 	if err != nil {
@@ -123,7 +123,7 @@ func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
 	// get the binary jar file
 	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("db")[0])
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("invalid Image - Image should contain 1 installation file per platform, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid Image - should contain 1 installation file per platform, found %d", len(foundLayers))
 	}
 	res.ArchiveDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
