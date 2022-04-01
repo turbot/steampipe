@@ -56,8 +56,7 @@ func MediaTypeForPlatform(imageType ImageType) []string {
 	case ImageTypeFdw:
 		return []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)}
 	case ImageTypePlugin:
-		pluginMediaTypes := []string{}
-		pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch))
+		pluginMediaTypes := []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)}
 		if runtime.GOOS == "darwin" && arch == "arm64" {
 			// add the amd64 layer as well, so that we can fall back to it
 			// this is required for plugins which don't have an arm64 build yet
