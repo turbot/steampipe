@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/steampipe/cmd"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -18,7 +19,7 @@ var exitCode int
 func main() {
 	ctx := context.Background()
 	utils.LogTime("main start")
-	exitCode := 0
+	exitCode := constants.ExitCodeSuccessful
 	defer func() {
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
@@ -62,7 +63,7 @@ func setULimit() error {
 // postgresql engine.
 func checkRoot(ctx context.Context) {
 	if os.Geteuid() == 0 {
-		exitCode = 1
+		exitCode = constants.ExitCodeUnknownErrorPanic
 		utils.ShowError(ctx, fmt.Errorf(`Steampipe cannot be run as the "root" user.
 To reduce security risk, use an unprivileged user account instead.`))
 		os.Exit(exitCode)
@@ -78,7 +79,7 @@ To reduce security risk, use an unprivileged user account instead.`))
 	 */
 
 	if os.Geteuid() != os.Getuid() {
-		exitCode = 1
+		exitCode = constants.ExitCodeUnknownErrorPanic
 		utils.ShowError(ctx, fmt.Errorf("real and effective user IDs must match."))
 		os.Exit(exitCode)
 	}

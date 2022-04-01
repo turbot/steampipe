@@ -98,7 +98,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 
 		if initData.Client != nil {
@@ -209,7 +209,7 @@ func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return false
 	}
 	return true

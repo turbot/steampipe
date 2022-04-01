@@ -140,11 +140,11 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			if exitCode == 0 {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = 1
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -323,11 +323,11 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			if exitCode == 0 {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = 1
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -447,11 +447,11 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			if exitCode == 0 {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = 1
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
