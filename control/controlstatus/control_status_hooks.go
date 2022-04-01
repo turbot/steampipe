@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/statushooks"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -30,7 +29,7 @@ func (c *ControlStatusHooks) OnStart(ctx context.Context, _ *ControlProgress) {
 	statushooks.SetStatus(ctx, "Starting controls...")
 }
 
-func (c *ControlStatusHooks) OnControlStart(ctx context.Context, _ *modconfig.Control, p *ControlProgress) {
+func (c *ControlStatusHooks) OnControlStart(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
@@ -38,7 +37,7 @@ func (c *ControlStatusHooks) OnControlStart(ctx context.Context, _ *modconfig.Co
 	c.setStatusFromProgress(ctx, p)
 }
 
-func (c *ControlStatusHooks) OnControlComplete(ctx context.Context, _ *modconfig.Control, _ ControlRunStatus, _ *StatusSummary, p *ControlProgress) {
+func (c *ControlStatusHooks) OnControlComplete(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
@@ -46,7 +45,7 @@ func (c *ControlStatusHooks) OnControlComplete(ctx context.Context, _ *modconfig
 	c.setStatusFromProgress(ctx, p)
 }
 
-func (c *ControlStatusHooks) OnControlError(ctx context.Context, _ *modconfig.Control, _ ControlRunStatus, _ *StatusSummary, p *ControlProgress) {
+func (c *ControlStatusHooks) OnControlError(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}

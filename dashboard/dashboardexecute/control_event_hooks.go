@@ -5,7 +5,6 @@ import (
 
 	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // ControlEventHooks is a struct which implements ControlHooks, and displays the control progress as a status message
@@ -23,29 +22,25 @@ func (c *ControlEventHooks) OnStart(ctx context.Context, _ *controlstatus.Contro
 	// nothing to do
 }
 
-func (c *ControlEventHooks) OnControlStart(ctx context.Context, control *modconfig.Control, progress *controlstatus.ControlProgress) {
+func (c *ControlEventHooks) OnControlStart(context.Context, controlstatus.ControlRunStatusProvider, *controlstatus.ControlProgress) {
 }
 
-func (c *ControlEventHooks) OnControlComplete(ctx context.Context, control *modconfig.Control, controlRunStatus controlstatus.ControlRunStatus, controlStatusSummary *controlstatus.StatusSummary, progress *controlstatus.ControlProgress) {
+func (c *ControlEventHooks) OnControlComplete(ctx context.Context, controlRun controlstatus.ControlRunStatusProvider, progress *controlstatus.ControlProgress) {
 	event := &dashboardevents.ControlComplete{
-		ControlName:          control.Name(),
-		ControlRunStatus:     controlRunStatus,
-		ControlStatusSummary: controlStatusSummary,
-		Progress:             progress,
-		ExecutionId:          c.CheckRun.executionTree.id,
-		Session:              c.CheckRun.SessionId,
+		Control:     controlRun,
+		Progress:    progress,
+		ExecutionId: c.CheckRun.executionTree.id,
+		Session:     c.CheckRun.SessionId,
 	}
 	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }
 
-func (c *ControlEventHooks) OnControlError(ctx context.Context, control *modconfig.Control, controlRunStatus controlstatus.ControlRunStatus, controlStatusSummary *controlstatus.StatusSummary, progress *controlstatus.ControlProgress) {
+func (c *ControlEventHooks) OnControlError(ctx context.Context, controlRun controlstatus.ControlRunStatusProvider, progress *controlstatus.ControlProgress) {
 	var event = &dashboardevents.ControlError{
-		ControlName:          control.Name(),
-		ControlRunStatus:     controlRunStatus,
-		ControlStatusSummary: controlStatusSummary,
-		Progress:             progress,
-		ExecutionId:          c.CheckRun.executionTree.id,
-		Session:              c.CheckRun.SessionId,
+		Control:     controlRun,
+		Progress:    progress,
+		ExecutionId: c.CheckRun.executionTree.id,
+		Session:     c.CheckRun.SessionId,
 	}
 	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }

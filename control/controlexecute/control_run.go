@@ -26,7 +26,7 @@ type ControlRun struct {
 	// the control being run
 	Control *modconfig.Control `json:"-"`
 	// control summary
-	Summary *controlstatus.StatusSummary `json:"-"`
+	Summary *controlstatus.StatusSummary `json:"control_row_status_summary"`
 	// result rows
 	Rows []*ResultRow `json:"results"`
 	// a list of distinct dimension keys from the results of this control
@@ -86,10 +86,25 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	return res
 }
 
+// GetControlId implements ControlRunStatusProvider
+func (r *ControlRun) GetControlId() string {
+	r.stateLock.Lock()
+	defer r.stateLock.Unlock()
+	return r.ControlId
+}
+
+// GetRunStatus implements ControlRunStatusProvider
 func (r *ControlRun) GetRunStatus() controlstatus.ControlRunStatus {
 	r.stateLock.Lock()
 	defer r.stateLock.Unlock()
 	return r.runStatus
+}
+
+// GetStatusSummary implements ControlRunStatusProvider
+func (r *ControlRun) GetStatusSummary() *controlstatus.StatusSummary {
+	r.stateLock.Lock()
+	defer r.stateLock.Unlock()
+	return r.Summary
 }
 
 func (r *ControlRun) Finished() bool {
@@ -201,13 +216,13 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	r.runStatus = controlstatus.ControlRunStarted
 
 	// update the current running control in the Progress renderer
-	r.Tree.Progress.OnControlStart(ctx, control)
+	r.Tree.Progress.OnControlStart(ctx, r)
 	defer func() {
 		// update Progress
 		if r.GetRunStatus() == controlstatus.ControlRunError {
-			r.Tree.Progress.OnControlError(ctx, r.Control, r.GetRunStatus(), r.Summary)
+			r.Tree.Progress.OnControlError(ctx, r)
 		} else {
-			r.Tree.Progress.OnControlComplete(ctx, r.Control, r.GetRunStatus(), r.Summary)
+			r.Tree.Progress.OnControlComplete(ctx, r)
 		}
 	}()
 

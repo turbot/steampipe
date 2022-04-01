@@ -3,8 +3,6 @@ package controlstatus
 import (
 	"context"
 
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/turbot/steampipe/contexthelpers"
 )
 
@@ -31,16 +29,16 @@ func OnStart(ctx context.Context, p *ControlProgress) {
 	ControlHooksFromContext(ctx).OnStart(ctx, p)
 }
 
-func OnControlStart(ctx context.Context, control *modconfig.Control, p *ControlProgress) {
-	ControlHooksFromContext(ctx).OnControlStart(ctx, control, p)
+func OnControlStart(ctx context.Context, controlRun ControlRunStatusProvider, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnControlStart(ctx, controlRun, p)
 }
 
-func OnControlComplete(ctx context.Context, control *modconfig.Control, controlRunStatus ControlRunStatus, controlStatusSummary *StatusSummary, p *ControlProgress) {
-	ControlHooksFromContext(ctx).OnControlComplete(ctx, control, controlRunStatus, controlStatusSummary, p)
+func OnControlComplete(ctx context.Context, controlRun ControlRunStatusProvider, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnControlComplete(ctx, controlRun, p)
 }
 
-func OnControlError(ctx context.Context, control *modconfig.Control, controlRunStatus ControlRunStatus, controlStatusSummary *StatusSummary, p *ControlProgress) {
-	ControlHooksFromContext(ctx).OnControlError(ctx, control, controlRunStatus, controlStatusSummary, p)
+func OnControlError(ctx context.Context, controlRun ControlRunStatusProvider, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnControlError(ctx, controlRun, p)
 }
 
 func OnComplete(ctx context.Context, p *ControlProgress) {

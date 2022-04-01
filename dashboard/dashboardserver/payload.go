@@ -99,23 +99,19 @@ func buildWorkspaceErrorPayload(e *dashboardevents.WorkspaceError) ([]byte, erro
 
 func buildControlCompletePayload(event *dashboardevents.ControlComplete) ([]byte, error) {
 	payload := ControlEventPayload{
-		Action:               "control_complete",
-		ControlName:          event.ControlName,
-		ControlStatusSummary: event.ControlStatusSummary,
-		ControlRunStatus:     event.ControlRunStatus,
-		Progress:             event.Progress,
-		ExecutionId:          event.ExecutionId,
+		Action:      "control_complete",
+		Control:     event.Control,
+		Progress:    event.Progress,
+		ExecutionId: event.ExecutionId,
 	}
 	return json.Marshal(payload)
 }
 func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, error) {
 	payload := ControlEventPayload{
-		Action:               "control_error",
-		ControlName:          event.ControlName,
-		ControlStatusSummary: event.ControlStatusSummary,
-		ControlRunStatus:     event.ControlRunStatus,
-		Progress:             event.Progress,
-		ExecutionId:          event.ExecutionId,
+		Action:      "control_error",
+		Control:     event.Control,
+		Progress:    event.Progress,
+		ExecutionId: event.ExecutionId,
 	}
 	return json.Marshal(payload)
 }

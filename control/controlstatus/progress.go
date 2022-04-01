@@ -3,8 +3,6 @@ package controlstatus
 import (
 	"context"
 	"sync"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 type ControlProgress struct {
@@ -33,7 +31,7 @@ func (p *ControlProgress) Start(ctx context.Context) {
 	OnStart(ctx, p)
 }
 
-func (p *ControlProgress) OnControlStart(ctx context.Context, control *modconfig.Control) {
+func (p *ControlProgress) OnControlStart(ctx context.Context, controlRun ControlRunStatusProvider) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 
@@ -43,27 +41,27 @@ func (p *ControlProgress) OnControlStart(ctx context.Context, control *modconfig
 	// decrement pending count
 	p.Pending--
 
-	OnControlStart(ctx, control, p)
+	OnControlStart(ctx, controlRun, p)
 }
 
-func (p *ControlProgress) OnControlComplete(ctx context.Context, control *modconfig.Control, controlRunStatus ControlRunStatus, controlStatusSummary *StatusSummary) {
+func (p *ControlProgress) OnControlComplete(ctx context.Context, controlRun ControlRunStatusProvider) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.Complete++
 	// decrement the parallel execution count
 	p.Executing--
-	p.StatusSummaries.Merge(controlStatusSummary)
-	OnControlComplete(ctx, control, controlRunStatus, controlStatusSummary, p)
+	p.StatusSummaries.Merge(controlRun.GetStatusSummary())
+	OnControlComplete(ctx, controlRun, p)
 }
 
-func (p *ControlProgress) OnControlError(ctx context.Context, control *modconfig.Control, controlRunStatus ControlRunStatus, controlStatusSummary *StatusSummary) {
+func (p *ControlProgress) OnControlError(ctx context.Context, controlRun ControlRunStatusProvider) {
 	p.updateLock.Lock()
 	defer p.updateLock.Unlock()
 	p.Error++
 	// decrement the parallel execution count
 	p.Executing--
-	p.StatusSummaries.Merge(controlStatusSummary)
-	OnControlError(ctx, control, controlRunStatus, controlStatusSummary, p)
+	p.StatusSummaries.Merge(controlRun.GetStatusSummary())
+	OnControlError(ctx, controlRun, p)
 }
 
 func (p *ControlProgress) Finish(ctx context.Context) {
