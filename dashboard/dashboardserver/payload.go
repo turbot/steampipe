@@ -120,15 +120,6 @@ func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, erro
 	return json.Marshal(payload)
 }
 
-func buildLeafNodeProgressPayload(event *dashboardevents.LeafNodeProgress) ([]byte, error) {
-	payload := ExecutionPayload{
-		Action:        "leaf_node_progress",
-		DashboardNode: event.LeafNode,
-		ExecutionId:   event.ExecutionId,
-	}
-	return json.Marshal(payload)
-}
-
 func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]byte, error) {
 	payload := ExecutionPayload{
 		Action:        "leaf_node_complete",
