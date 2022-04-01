@@ -1,3 +1,7 @@
+## v0.13.5 [2022-04-01]
+_Bug fixes_
+* Ensure the search path is escaped. ([#1770](https://github.com/turbot/steampipe/issues/1770))
+
 ## v0.13.4 [2022-03-31]
 _What's new?_
 * Add `ShortName` property to the dependencies listed in .mod.cache.json. ([#1731](https://github.com/turbot/steampipe/issues/1731))
