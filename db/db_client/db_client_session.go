@@ -149,9 +149,5 @@ func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*sql.C
 		return nil
 	})
 
-	if _, err := databaseConnection.ExecContext(ctx, "set enable_async_append to off"); err != nil {
-		return nil, 0, err
-	}
-
 	return databaseConnection, uint32(backendPid), nil
 }
