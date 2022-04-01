@@ -51,6 +51,7 @@ export const PanelStoryDecorator = ({
         selectedDashboardInputs: {},
         lastChangedInput: null,
         dashboard: {
+          artificial: false,
           name: "storybook.dashboard.storybook_dashboard_wrapper",
           children: [
             {
