@@ -40,31 +40,31 @@ const CheckSummary = ({ summary }) => {
       <pre
         className={classNames(
           "inline",
-          summary.ok > 0 ? "text-ok" : "text-foreground-lighter"
+          summary.ok > 0 ? "text-ok" : "text-foreground-lightest"
         )}
       >{`${padStart(summary.ok, 5)}`}</pre>
       <pre
         className={classNames(
           "inline",
-          summary.skip > 0 ? null : "text-foreground-lighter"
+          summary.skip > 0 ? null : "text-foreground-lightest"
         )}
       >{`${padStart(summary.skip, 5)}`}</pre>
       <pre
         className={classNames(
           "inline",
-          summary.info > 0 ? "text-info" : "text-foreground-lighter"
+          summary.info > 0 ? "text-info" : "text-foreground-lightest"
         )}
       >{`${padStart(summary.info, 5)}`}</pre>
       <pre
         className={classNames(
           "inline",
-          summary.alarm > 0 ? "text-alert" : "text-foreground-lighter"
+          summary.alarm > 0 ? "text-alert" : "text-foreground-lightest"
         )}
       >{`${padStart(summary.alarm, 5)}`}</pre>
       <pre
         className={classNames(
           "inline",
-          summary.error > 0 ? "text-alert" : "text-foreground-lighter"
+          summary.error > 0 ? "text-alert" : "text-foreground-lightest"
         )}
       >{`${padStart(summary.error, 5)}`}</pre>
     </div>
@@ -74,7 +74,12 @@ const CheckSummary = ({ summary }) => {
 const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
   return (
     <>
-      <div className={classNames(getPadding(depth), "col-span-4 truncate")}>
+      <div
+        className={classNames(
+          getPadding(depth),
+          "col-span-4 font-medium truncate"
+        )}
+      >
         {control.title || control.name}
       </div>
       <CheckSummary summary={control.summary} />
@@ -91,7 +96,7 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
           getPadding(depth),
           "col-span-4",
           benchmark.benchmarks || benchmark.controls
-            ? "cursor-pointer truncate"
+            ? "font-medium cursor-pointer truncate"
             : null
         )}
         onClick={
@@ -109,7 +114,9 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
             <BenchmarkNode key={b.name} depth={depth + 1} benchmark={b} />
           ))}
           {benchmark.controls.map((c) => (
-            <ControlNode key={c.name} depth={depth + 1} control={c} />
+            <div className="col-span-12 grid grid-cols-12">
+              <ControlNode key={c.name} depth={depth + 1} control={c} />
+            </div>
           ))}
         </>
       )}
