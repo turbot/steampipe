@@ -147,7 +147,7 @@ func getFdwImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 	// get the binary (steampipe-postgres-fdw.so) info
 	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("fdw")[0])
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("invalid image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid image - image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
 	res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	//sourcePath := filepath.Join(tempDir.Path, fileName)
@@ -155,14 +155,14 @@ func getFdwImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 	// get the control file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeFdwControlLayer)
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("invalid image - Image should contain 1 control file, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid image - image should contain 1 control file, found %d", len(foundLayers))
 	}
 	res.ControlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
 	// get the sql file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeFdwSqlLayer)
 	if len(foundLayers) != 1 {
-		return nil, fmt.Errorf("invalid image - Image should contain 1 SQL file, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid image - image should contain 1 SQL file, found %d", len(foundLayers))
 	}
 	res.SqlFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 
@@ -194,7 +194,7 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 		res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 	}
 	if len(res.BinaryFile) == 0 {
-		return nil, fmt.Errorf("invalid Image - Image should contain 1 binary file per platform, found %d", len(foundLayers))
+		return nil, fmt.Errorf("invalid image - should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
 
 	// get the docs dir
