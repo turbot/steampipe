@@ -94,10 +94,8 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
       <div
         className={classNames(
           getPadding(depth),
-          "col-span-4",
-          benchmark.benchmarks || benchmark.controls
-            ? "font-medium cursor-pointer truncate"
-            : null
+          "col-span-4 font-medium truncate",
+          benchmark.benchmarks || benchmark.controls ? "cursor-pointer " : null
         )}
         onClick={
           benchmark.benchmarks || benchmark.controls
@@ -114,7 +112,7 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
             <BenchmarkNode key={b.name} depth={depth + 1} benchmark={b} />
           ))}
           {benchmark.controls.map((c) => (
-            <div className="col-span-12 grid grid-cols-12">
+            <div className="col-span-12 grid grid-cols-12 gap-x-4">
               <ControlNode key={c.name} depth={depth + 1} control={c} />
             </div>
           ))}
