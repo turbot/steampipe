@@ -186,7 +186,6 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 	// get the binary plugin file info
 	for _, mediaType := range MediaTypeForPlatform("plugin") {
 		foundLayers = findLayersForMediaType(layers, mediaType)
-		log.Println("[TRACE] foundLayers", len(foundLayers))
 		if len(foundLayers) == 1 {
 			res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 			break
