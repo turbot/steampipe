@@ -31,6 +31,12 @@ func Ensure(ctx context.Context) error {
 	statushooks.SetStatus(ctx, "Installing dashboard server...")
 	defer statushooks.Done(ctx)
 	reportAssetsPath := filepaths.EnsureDashboardAssetsDir()
+
+	// remove the legacy report folder, if it exists
+	if _, err := os.Stat(filepaths.LegacyDashboardAssetsDir()); !os.IsNotExist(err) {
+		os.RemoveAll(filepaths.LegacyDashboardAssetsDir())
+	}
+
 	return ociinstaller.InstallAssets(ctx, reportAssetsPath)
 }
 
