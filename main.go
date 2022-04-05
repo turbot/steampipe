@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
@@ -31,6 +32,9 @@ func main() {
 
 	// ensure steampipe is not being run as root
 	checkRoot(ctx)
+
+	// ensure UTF-8 langpacks are installed
+	checkLangpacks(ctx)
 
 	// increase the soft ULIMIT to match the hard limit
 	err := setULimit()
@@ -82,5 +86,12 @@ To reduce security risk, use an unprivileged user account instead.`))
 		exitCode = constants.ExitCodeUnknownErrorPanic
 		utils.ShowError(ctx, fmt.Errorf("real and effective user IDs must match."))
 		os.Exit(exitCode)
+	}
+}
+
+func checkLangpacks(ctx context.Context) {
+	if !strings.Contains(os.Getenv("LC_CTYPE"), "UTF-8") {
+		utils.ShowError(ctx, fmt.Errorf(`UTF-8 langpacks need to be installed to run steampipe`))
+		os.Exit(1)
 	}
 }
