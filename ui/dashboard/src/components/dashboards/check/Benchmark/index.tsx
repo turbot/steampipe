@@ -79,7 +79,7 @@ interface CheckNodeStatusProps {
 
 const CheckNodeStatus = ({ run_state }: CheckNodeStatusProps) => {
   return (
-    <span className="mr-1 text-foreground-lighter">
+    <span className="mr-2 text-foreground-lighter">
       {(run_state === "ready" || run_state === "started") && (
         <LoadingIndicator className="inline w-5 h-5" />
       )}
@@ -154,8 +154,6 @@ const Benchmark = (props: CheckProps) => {
     rootBenchmark.child_groups,
     rootBenchmark.child_controls
   );
-
-  console.log(benchmark.run_state);
 
   return (
     <div className="p-4 grid grid-cols-12 gap-x-4 gap-y-1">
