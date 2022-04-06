@@ -2,6 +2,8 @@ import {
   ArrowsExpandIcon as ArrowsExpandIconOutline,
   ClipboardListIcon as ClipboardListIconOutline,
   ExclamationCircleIcon as ExclamationCircleIconOutline,
+  MinusSmIcon as MinusSmIconOutline,
+  PlusSmIcon as PlusSmIconOutline,
   SearchIcon as SearchIconOutline,
   SaveIcon as SaveIconOutline,
   XIcon as XIconOutline,
@@ -25,6 +27,10 @@ export const ErrorIcon = ExclamationCircleIconOutline;
 export const SearchIcon = SearchIconOutline;
 export const SubmitIcon = SaveIconOutline;
 export const ZoomIcon = ArrowsExpandIconOutline;
+
+// Benchmark
+export const CollapseBenchmarkIcon = MinusSmIconOutline;
+export const ExpandBenchmarkIcon = PlusSmIconOutline;
 
 // Control
 export const AlarmIcon = XIconSolid;
