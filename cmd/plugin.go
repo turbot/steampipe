@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
+	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -172,6 +175,15 @@ Example:
 	return cmd
 }
 
+var pluginInstallSteps = []string{
+	"Downloading",
+	"Installing Plugin",
+	"Installing Docs",
+	"Installing Config",
+	"Updating Steampipe",
+	"Done",
+}
+
 // exitCode=1 For unknown errors resulting in panics
 // exitCode=2 For insufficient/wrong arguments passed in the command
 // exitCode=3 For errors related to loading state, loading version data or an issue contacting the update server.
@@ -207,54 +219,40 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 
 	statusSpinner := statushooks.NewStatusSpinner()
-
-	for _, p := range plugins {
-		isPluginExists, _ := plugin.Exists(p)
+	progressBars := uiprogress.New()
+	installWaitGroup := &sync.WaitGroup{}
+	progressBars.Start()
+	for _, pl := range plugins {
+		isPluginExists, _ := plugin.Exists(pl)
 		if isPluginExists {
 			installReports = append(installReports, display.InstallReport{
-				Plugin:         p,
+				Plugin:         pl,
 				Skipped:        true,
 				SkipReason:     constants.PluginAlreadyInstalled,
 				IsUpdateReport: false,
 			})
 			continue
 		}
-		statusSpinner.SetStatus(fmt.Sprintf("Installing plugin: %s", p))
-		image, err := plugin.Install(cmd.Context(), p)
-		if err != nil {
-			msg := ""
-			if strings.HasSuffix(err.Error(), "not found") {
-				msg = "Not found"
-			} else {
-				msg = err.Error()
-			}
-			installReports = append(installReports, display.InstallReport{
-				Skipped:        true,
-				Plugin:         p,
-				SkipReason:     msg,
-				IsUpdateReport: false,
+
+		installWaitGroup.Add(1)
+		go func(p string) {
+			bar := progressBars.AddBar(len(pluginInstallSteps))
+			bar.PrependFunc(func(b *uiprogress.Bar) string {
+				return strutil.Resize(p, 20)
 			})
-			continue
-		}
-		versionString := ""
-		if image.Config.Plugin.Version != "" {
-			versionString = " v" + image.Config.Plugin.Version
-		}
-		org := image.Config.Plugin.Organization
-		name := image.Config.Plugin.Name
-		docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-		installReports = append(installReports, display.InstallReport{
-			Skipped:        false,
-			Plugin:         p,
-			DocURL:         docURL,
-			Version:        versionString,
-			IsUpdateReport: false,
-		})
+			bar.AppendFunc(func(b *uiprogress.Bar) string {
+				return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+			})
+			report := installPlugin(ctx, p, false, bar, installWaitGroup)
+			installReports = append(installReports, *report)
+		}(pl)
 	}
 
-	statusSpinner.Done()
-
+	installWaitGroup.Wait()
+	progressBars.Stop()
+	statusSpinner.UpdateSpinnerMessage("Refreshing connections...")
 	refreshConnectionsIfNecessary(cmd.Context(), installReports, true)
+	statusSpinner.Done()
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -355,6 +353,10 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	updateWaitGroup := &sync.WaitGroup{}
+	p := uiprogress.New()
+	p.Start()
+
 	for _, report := range reports {
 		shouldSkipUpdate, skipReason := plugin.SkipUpdate(report)
 		if shouldSkipUpdate {
@@ -367,46 +369,73 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		statusSpinner.SetStatus(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
-		image, err := plugin.Install(cmd.Context(), report.Plugin.Name)
-		statusSpinner.Done()
-		if err != nil {
-			msg := ""
-			if strings.HasSuffix(err.Error(), "not found") {
-				msg = "Not found"
-			} else {
-				msg = err.Error()
-			}
-			updateReports = append(updateReports, display.InstallReport{
-				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
-				Skipped:        true,
-				SkipReason:     msg,
-				IsUpdateReport: true,
+		updateWaitGroup.Add(1)
+		go func(pvr plugin.VersionCheckReport) {
+			bar := p.AddBar(len(pluginInstallSteps))
+			bar.PrependFunc(func(b *uiprogress.Bar) string {
+				return strutil.Resize(pvr.ShortName(), 20)
 			})
-			continue
-		}
+			bar.AppendFunc(func(b *uiprogress.Bar) string {
+				return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+			})
 
-		versionString := ""
-		if image.Config.Plugin.Version != "" {
-			versionString = " v" + image.Config.Plugin.Version
-		}
-		org := image.Config.Plugin.Organization
-		name := image.Config.Plugin.Name
-		docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-		updateReports = append(updateReports, display.InstallReport{
-			Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
-			Skipped:        false,
-			Version:        versionString,
-			DocURL:         docURL,
-			IsUpdateReport: true,
-		})
+			report := installPlugin(ctx, pvr.Plugin.Name, true, bar, updateWaitGroup)
+			updateReports = append(updateReports, *report)
+		}(report)
+
 	}
-
+	updateWaitGroup.Wait()
 	refreshConnectionsIfNecessary(cmd.Context(), updateReports, false)
+	p.Stop()
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
+}
+
+func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *uiprogress.Bar, wg *sync.WaitGroup) *display.InstallReport {
+	progress := make(chan struct{}, 5)
+	defer func() {
+		close(progress)
+		wg.Done()
+	}()
+	go func() {
+		for {
+			<-progress
+			bar.Incr()
+		}
+	}()
+
+	image, err := plugin.Install(ctx, pluginName, progress)
+	org, name, stream := image.ImageRef.GetOrgNameAndStream()
+
+	if err != nil {
+		msg := ""
+		if strings.HasSuffix(err.Error(), "not found") {
+			msg = "Not found"
+		} else {
+			msg = err.Error()
+		}
+		return &display.InstallReport{
+			Plugin:         fmt.Sprintf("%s@%s", name, stream),
+			Skipped:        true,
+			SkipReason:     msg,
+			IsUpdateReport: isUpdate,
+		}
+	}
+
+	versionString := ""
+	if image.Config.Plugin.Version != "" {
+		versionString = " v" + image.Config.Plugin.Version
+	}
+	docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
+	return &display.InstallReport{
+		Plugin:         fmt.Sprintf("%s@%s", name, stream),
+		Skipped:        false,
+		Version:        versionString,
+		DocURL:         docURL,
+		IsUpdateReport: isUpdate,
+	}
 }
 
 func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {

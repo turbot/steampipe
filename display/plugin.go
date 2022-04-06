@@ -2,12 +2,33 @@ package display
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/utils"
 )
+
+type InstallReports []InstallReport
+
+func (ir InstallReports) Len() int      { return len(ir) }
+func (ir InstallReports) Swap(i, j int) { ir[i], ir[j] = ir[j], ir[i] }
+
+// Less reports whether the element with index i
+// must sort before the element with index j.
+//
+// If both Less(i, j) and Less(j, i) are false,
+// then the elements at index i and j are considered equal.
+// Sort may place equal elements in any order in the final result,
+// while Stable preserves the original input order of equal elements.
+//
+// Less must describe a transitive ordering:
+//  - if both Less(i, j) and Less(j, k) are true, then Less(i, k) must be true as well.
+//  - if both Less(i, j) and Less(j, k) are false, then Less(i, k) must be false as well.
+func (ir InstallReports) Less(i, j int) bool {
+	return ir[i].Plugin < ir[j].Plugin
+}
 
 type InstallReport struct {
 	Skipped        bool
@@ -63,7 +84,7 @@ func (i *InstallReport) String() string {
 }
 
 // PrintInstallReports Prints out the installation reports onto the console
-func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
+func PrintInstallReports(reports InstallReports, isUpdateReport bool) {
 	installedOrUpdated := []InstallReport{}
 	canBeInstalled := []InstallReport{}
 	canBeUpdated := []InstallReport{}
@@ -79,7 +100,10 @@ func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 		}
 	}
 
+	sort.Stable(reports)
+
 	if len(installedOrUpdated) > 0 {
+		fmt.Println()
 		asString := []string{}
 		for _, report := range installedOrUpdated {
 			asString = append(asString, report.installString())
