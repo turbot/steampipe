@@ -1,5 +1,5 @@
 import Control from "./Control";
-import { CheckControl, CheckGroup, CheckSummary } from "./index";
+import { CheckControl, CheckGroup, CheckRunState, CheckSummary } from "./index";
 
 class Benchmark {
   private readonly _name: string;
@@ -7,8 +7,6 @@ class Benchmark {
   private readonly _description?: string;
   private readonly _benchmarks: Benchmark[];
   private readonly _controls: Control[];
-  // private execution_tree: CheckExecutionTree;
-  // private summary: CheckSummary;
 
   constructor(
     name: string,
@@ -24,7 +22,7 @@ class Benchmark {
     for (const nestedBenchmark of benchmarks || []) {
       nestedBenchmarks.push(
         new Benchmark(
-          nestedBenchmark.group_ip,
+          nestedBenchmark.group_id,
           nestedBenchmark.title,
           nestedBenchmark.description,
           nestedBenchmark.child_groups,
@@ -40,7 +38,8 @@ class Benchmark {
           nestedControl.title,
           nestedControl.description,
           nestedControl.results,
-          nestedControl.control_row_status_summary
+          nestedControl.control_row_status_summary,
+          nestedControl.run_status
         )
       );
     }
@@ -90,6 +89,38 @@ class Benchmark {
       summary.error += nestedSummary.error;
     }
     return summary;
+  }
+
+  get run_state(): CheckRunState {
+    for (const benchmark of this._benchmarks) {
+      if (benchmark.run_state === "error") {
+        return "error";
+      }
+      if (benchmark.run_state === "unknown") {
+        return "unknown";
+      }
+      if (benchmark.run_state === "ready") {
+        return "ready";
+      }
+      if (benchmark.run_state === "started") {
+        return "started";
+      }
+    }
+    for (const control of this._controls) {
+      if (control.run_state === "error") {
+        return "error";
+      }
+      if (control.run_state === "unknown") {
+        return "unknown";
+      }
+      if (control.run_state === "ready") {
+        return "ready";
+      }
+      if (control.run_state === "started") {
+        return "started";
+      }
+    }
+    return "complete";
   }
 }
 

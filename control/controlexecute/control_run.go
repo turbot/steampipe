@@ -50,8 +50,8 @@ type ControlRun struct {
 
 	// the query result stream
 	queryResult *queryresult.Result
-	rowMap      map[string][]*ResultRow `json:"-"`
-	runStatus   controlstatus.ControlRunStatus
+	rowMap      map[string][]*ResultRow        `json:"-"`
+	RunStatus   controlstatus.ControlRunStatus `json:"run_status"`
 	runError    error
 	stateLock   sync.Mutex
 	doneChan    chan bool
@@ -77,7 +77,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		Lifecycle:   utils.NewLifecycleTimer(),
 
 		Tree:      executionTree,
-		runStatus: controlstatus.ControlRunReady,
+		RunStatus: controlstatus.ControlRunReady,
 
 		Group:    group,
 		doneChan: make(chan bool, 1),
@@ -97,7 +97,7 @@ func (r *ControlRun) GetControlId() string {
 func (r *ControlRun) GetRunStatus() controlstatus.ControlRunStatus {
 	r.stateLock.Lock()
 	defer r.stateLock.Unlock()
-	return r.runStatus
+	return r.RunStatus
 }
 
 // GetStatusSummary implements ControlRunStatusProvider
@@ -213,7 +213,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	// set our status
-	r.runStatus = controlstatus.ControlRunStarted
+	r.RunStatus = controlstatus.ControlRunStarted
 
 	// update the current running control in the Progress renderer
 	r.Tree.Progress.OnControlStart(ctx, r)
@@ -399,7 +399,7 @@ func (r *ControlRun) createdOrderedResultRows() {
 
 func (r *ControlRun) setRunStatus(ctx context.Context, status controlstatus.ControlRunStatus) {
 	r.stateLock.Lock()
-	r.runStatus = status
+	r.RunStatus = status
 	r.stateLock.Unlock()
 
 	if r.Finished() {

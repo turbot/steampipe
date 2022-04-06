@@ -8,6 +8,7 @@ import {
 } from "@heroicons/react/outline";
 import {
   CheckIcon as CheckIconSolid,
+  QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
   ClipboardCheckIcon as ClipboardCheckIconSolid,
@@ -29,6 +30,7 @@ export const ZoomIcon = ArrowsExpandIconOutline;
 export const AlarmIcon = XIconSolid;
 export const InfoIcon = InformationCircleIconSolid;
 export const OKIcon = CheckIconSolid;
+export const UnknownIcon = QuestionMarkCircleIconSolid;
 
 // Table
 export const SortAscendingIcon = ChevronUpIconSolid;
