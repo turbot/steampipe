@@ -137,7 +137,7 @@ const Benchmark = (props: CheckProps) => {
   );
 
   return (
-    <div className="p-2 grid grid-cols-12 gap-x-4 gap-y-1">
+    <div className="p-4 grid grid-cols-12 gap-x-4 gap-y-1">
       <div className="col-span-4"></div>
       <div className="col-span-8 text-foreground-light space-x-4 tabular-nums">
         <pre className="inline">{`${padStart("OK", 5)}`}</pre>
