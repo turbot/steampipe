@@ -244,3 +244,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 }
+
+@test "connection name escaping" {
+    cp $SRC_DATA_DIR/chaos_conn_name_escaping.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_name_escaping.spc
+
+    # steampipe should accept default keyword in the connection configuration file, keywords should be escaped properly
+    run steampipe query "select * from \"default\".chaos_limit limit 1"
+    assert_success
+}
