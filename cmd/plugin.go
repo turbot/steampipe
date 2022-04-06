@@ -552,11 +552,19 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	reports := display.PluginRemoveReports{}
+	spinner := statushooks.NewStatusSpinner(statushooks.WithMessage(fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args)))))
 	for _, p := range args {
-		if err := plugin.Remove(ctx, p, connectionMap); err != nil {
+		spinner.SetStatus(fmt.Sprintf("Uninstalling %s", p))
+		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
 			utils.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
+		} else {
+			report.ShortName = p
+			reports = append(reports, *report)
 		}
 	}
+	spinner.Done()
+	reports.Print()
 }
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
