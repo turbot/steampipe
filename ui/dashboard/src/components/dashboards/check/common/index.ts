@@ -17,6 +17,13 @@ import { BasePrimitiveProps } from "../../common";
 //   controls: IControl[];
 // }
 
+export type CheckRunState =
+  | "ready"
+  | "started"
+  | "complete"
+  | "error"
+  | "unknown";
+
 export interface CheckSummary {
   alarm: number;
   ok: number;
@@ -52,10 +59,11 @@ export interface CheckControl {
   tags?: CheckTags;
   results: CheckResult[];
   control_row_status_summary: CheckSummary;
+  run_status: number;
 }
 
 export interface CheckGroup {
-  group_ip: string;
+  group_id: string;
   title?: string;
   description?: string;
   tags?: CheckTags;

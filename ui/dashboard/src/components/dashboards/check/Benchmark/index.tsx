@@ -1,9 +1,11 @@
+import LoadingIndicator from "../../LoadingIndicator";
 import padStart from "lodash/padStart";
-import { CheckProps } from "../common";
+import { CheckProps, CheckRunState } from "../common";
+import { classNames } from "../../../../utils/styles";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { default as ControlType } from "../common/Control";
+import { ErrorIcon, OKIcon, UnknownIcon } from "../../../../constants/icons";
 import { useState } from "react";
-import { classNames } from "../../../../utils/styles";
 
 const getPadding = (depth) => {
   switch (depth) {
@@ -71,16 +73,31 @@ const CheckSummary = ({ summary }) => {
   );
 };
 
+interface CheckNodeStatusProps {
+  run_state: CheckRunState;
+}
+
+const CheckNodeStatus = ({ run_state }: CheckNodeStatusProps) => {
+  return (
+    <span className="mr-1 text-foreground-lighter">
+      {(run_state === "ready" || run_state === "started") && (
+        <LoadingIndicator className="inline w-5 h-5" />
+      )}
+      {run_state === "complete" && <OKIcon className="inline w-5 h-5" />}
+      {run_state === "error" && <ErrorIcon className="inline w-5 h-5" />}
+      {run_state === "unknown" && <UnknownIcon className="inline w-5 h-5" />}
+    </span>
+  );
+};
+
 const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
   return (
     <>
-      <div
-        className={classNames(
-          getPadding(depth),
-          "col-span-4 font-medium truncate"
-        )}
-      >
-        {control.title || control.name}
+      <div className={classNames("col-span-4 font-medium truncate")}>
+        <CheckNodeStatus run_state={control.run_state} />
+        <span className={getPadding(depth)}>
+          {control.title || control.name}
+        </span>
       </div>
       <CheckSummary summary={control.summary} />
     </>
@@ -93,7 +110,6 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
     <>
       <div
         className={classNames(
-          getPadding(depth),
           "col-span-4 font-medium truncate",
           benchmark.benchmarks || benchmark.controls ? "cursor-pointer " : null
         )}
@@ -103,7 +119,10 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
             : undefined
         }
       >
-        {benchmark.title || benchmark.name}
+        <CheckNodeStatus run_state={benchmark.run_state} />
+        <span className={getPadding(depth)}>
+          {benchmark.title || benchmark.name}
+        </span>
       </div>
       <CheckSummary summary={benchmark.summary} />
       {expanded && (
@@ -129,12 +148,14 @@ const Benchmark = (props: CheckProps) => {
   }
   const rootBenchmark = rootGroups[0];
   const benchmark = new BenchmarkType(
-    rootBenchmark.group_ip,
+    rootBenchmark.group_id,
     rootBenchmark.title,
     rootBenchmark.description,
     rootBenchmark.child_groups,
     rootBenchmark.child_controls
   );
+
+  console.log(benchmark.run_state);
 
   return (
     <div className="p-4 grid grid-cols-12 gap-x-4 gap-y-1">
@@ -149,38 +170,6 @@ const Benchmark = (props: CheckProps) => {
       <BenchmarkNode depth={0} benchmark={benchmark} />
     </div>
   );
-  // return <>{JSON.stringify(benchmark.summary)}</>;
-  // const summary =
-  //   props.execution_tree?.progress?.control_row_status_summary ||
-  //   ({} as CheckLeafNodeDataGroupSummaryStatus);
-  // const loading = !summary;
-  // // const { loading, summary } = useMemo(() => {
-  // //   const summary = props.execution_tree?.progress?.control_row_status_summary;
-  // //   if (!summary) {
-  // //     return {
-  // //       loading: true,
-  // //       summary: {} as CheckLeafNodeDataGroupSummaryStatus,
-  // //     };
-  // //   }
-  // //   return { loading: false, summary };
-  // // }, [props.execution_tree]);
-  //
-  // return (
-  //   <LayoutPanel
-  //     definition={{
-  //       name: props.name,
-  //       width: props.width,
-  //     }}
-  //   >
-  //     <div className="col-span-12 grid grid-cols-5 gap-4">
-  //       <CheckCard loading={loading} status="ok" value={summary.ok} />
-  //       <CheckCard loading={loading} status="skip" value={summary.skip} />
-  //       <CheckCard loading={loading} status="info" value={summary.info} />
-  //       <CheckCard loading={loading} status="alarm" value={summary.alarm} />
-  //       <CheckCard loading={loading} status="error" value={summary.error} />
-  //     </div>
-  //   </LayoutPanel>
-  // );
 };
 
 export default Benchmark;
