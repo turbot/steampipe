@@ -26,6 +26,8 @@ func (prr PluginRemoveReports) Print() {
 		for _, report := range prr {
 			fmt.Printf("* %s\n", report.ShortName)
 			staleConnections = append(staleConnections, report.Connections...)
+
+			// sort the connections by line number while we are at it!
 			sort.SliceStable(report.Connections, func(i, j int) bool {
 				return report.Connections[j].DeclRange.Start.Line < report.Connections[i].DeclRange.Start.Line
 			})
