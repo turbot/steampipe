@@ -203,7 +203,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// plugin names can be simple names ('aws') for "standard" plugins,
 	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-	installReports := make([]display.InstallReport, 0, len(plugins))
+	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
 		fmt.Println()
@@ -225,7 +225,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	for _, pl := range plugins {
 		isPluginExists, _ := plugin.Exists(pl)
 		if isPluginExists {
-			installReports = append(installReports, display.InstallReport{
+			installReports = append(installReports, display.PluginInstallReport{
 				Plugin:         pl,
 				Skipped:        true,
 				SkipReason:     constants.PluginAlreadyInstalled,
@@ -300,7 +300,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	var runUpdatesFor []*versionfile.InstalledVersion
-	updateReports := make([]display.InstallReport, 0, len(plugins))
+	updateReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
@@ -322,7 +322,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
-				updateReports = append(updateReports, display.InstallReport{
+				updateReports = append(updateReports, display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
 					SkipReason:     constants.PluginNotInstalled,
@@ -393,7 +393,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *uiprogress.Bar, wg *sync.WaitGroup) *display.InstallReport {
+func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *uiprogress.Bar, wg *sync.WaitGroup) *display.PluginInstallReport {
 	progress := make(chan struct{}, 5)
 	defer func() {
 		close(progress)
@@ -416,7 +416,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		} else {
 			msg = err.Error()
 		}
-		return &display.InstallReport{
+		return &display.PluginInstallReport{
 			Plugin:         fmt.Sprintf("%s@%s", name, stream),
 			Skipped:        true,
 			SkipReason:     msg,
@@ -429,7 +429,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		versionString = " v" + image.Config.Plugin.Version
 	}
 	docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-	return &display.InstallReport{
+	return &display.PluginInstallReport{
 		Plugin:         fmt.Sprintf("%s@%s", name, stream),
 		Skipped:        false,
 		Version:        versionString,
@@ -454,7 +454,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, shouldReload bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports []display.PluginInstallReport, shouldReload bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {

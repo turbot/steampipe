@@ -10,10 +10,10 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type InstallReports []InstallReport
+type PluginInstallReports []PluginInstallReport
 
-func (ir InstallReports) Len() int      { return len(ir) }
-func (ir InstallReports) Swap(i, j int) { ir[i], ir[j] = ir[j], ir[i] }
+func (ir PluginInstallReports) Len() int      { return len(ir) }
+func (ir PluginInstallReports) Swap(i, j int) { ir[i], ir[j] = ir[j], ir[i] }
 
 // Less reports whether the element with index i
 // must sort before the element with index j.
@@ -26,11 +26,11 @@ func (ir InstallReports) Swap(i, j int) { ir[i], ir[j] = ir[j], ir[i] }
 // Less must describe a transitive ordering:
 //  - if both Less(i, j) and Less(j, k) are true, then Less(i, k) must be true as well.
 //  - if both Less(i, j) and Less(j, k) are false, then Less(i, k) must be false as well.
-func (ir InstallReports) Less(i, j int) bool {
+func (ir PluginInstallReports) Less(i, j int) bool {
 	return ir[i].Plugin < ir[j].Plugin
 }
 
-type InstallReport struct {
+type PluginInstallReport struct {
 	Skipped        bool
 	Plugin         string
 	SkipReason     string
@@ -39,14 +39,14 @@ type InstallReport struct {
 	IsUpdateReport bool
 }
 
-func (i *InstallReport) skipString() string {
+func (i *PluginInstallReport) skipString() string {
 	ref := ociinstaller.NewSteampipeImageRef(i.Plugin)
 	_, name, stream := ref.GetOrgNameAndStream()
 
 	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, stream), i.SkipReason)
 }
 
-func (i *InstallReport) installString() string {
+func (i *PluginInstallReport) installString() string {
 	thisReport := []string{}
 	if i.IsUpdateReport {
 		thisReport = append(
@@ -75,7 +75,7 @@ func (i *InstallReport) installString() string {
 	return strings.Join(thisReport, "\n")
 }
 
-func (i *InstallReport) String() string {
+func (i *PluginInstallReport) String() string {
 	if !i.Skipped {
 		return i.installString()
 	} else {
@@ -84,10 +84,10 @@ func (i *InstallReport) String() string {
 }
 
 // PrintInstallReports Prints out the installation reports onto the console
-func PrintInstallReports(reports InstallReports, isUpdateReport bool) {
-	installedOrUpdated := []InstallReport{}
-	canBeInstalled := []InstallReport{}
-	canBeUpdated := []InstallReport{}
+func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
+	installedOrUpdated := []PluginInstallReport{}
+	canBeInstalled := []PluginInstallReport{}
+	canBeUpdated := []PluginInstallReport{}
 
 	for _, report := range reports {
 		report.IsUpdateReport = isUpdateReport
