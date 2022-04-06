@@ -101,7 +101,7 @@ const CheckNodeStatus = ({ run_state }: CheckNodeStatusProps) => {
   return (
     <>
       {(run_state === "ready" || run_state === "started") && (
-        <LoadingIndicator className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
+        <LoadingIndicator className="flex-shrink-0 w-5 h-5 text-foreground-lightest" />
       )}
       {run_state === "complete" && (
         <OKIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
