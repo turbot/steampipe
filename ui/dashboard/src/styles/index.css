@@ -110,6 +110,10 @@
   html {
     font-size: 14px;
   }
+
+  [type='text'] {
+    background-color: var(--color-dashboard-panel);
+  }
 }
 
 @layer components {
