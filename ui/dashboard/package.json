@@ -49,7 +49,7 @@
     "@storybook/addon-essentials": "6.5.0-alpha.55",
     "@storybook/addon-links": "6.5.0-alpha.55",
     "@storybook/addons": "6.5.0-alpha.55",
-    "@storybook/builder-webpack5": "6.5.0-alpha.55",
+    "@storybook/builder-webpack5": "6.5.0-alpha.57",
     "@storybook/manager-webpack5": "6.5.0-alpha.55",
     "@storybook/node-logger": "6.5.0-alpha.55",
     "@storybook/preset-create-react-app": "4.1.0",
