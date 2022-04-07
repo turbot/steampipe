@@ -256,8 +256,8 @@ const DashboardList = () => {
       <div className="col-span-12 lg:col-span-9 space-y-4">
         <div className="grid grid-cols-6">
           {(!availableDashboardsLoaded || !metadata) && (
-            <div className="col-span-6 mt-2 ml-1 text-black-scale-4 flex">
-              <LoadingIndicator className="w-4 h-4" />{" "}
+            <div className="col-span-6 mt-2 ml-1 text-black-scale-4 flex items-center">
+              <LoadingIndicator className="mr-3 w-5 h-5" />{" "}
               <span className="italic -ml-1">Loading...</span>
             </div>
           )}
