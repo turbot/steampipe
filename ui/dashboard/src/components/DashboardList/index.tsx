@@ -7,8 +7,8 @@ import {
 } from "../../hooks/useDashboard";
 import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
-import { ColorGenerator } from "../../utils/color";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
+import { stringToColour } from "../../utils/color";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -34,18 +34,6 @@ interface SectionProps {
   dispatch: (action: DashboardAction) => void;
   searchValue: string;
 }
-
-const stringColorMap = {};
-const colorGenerator = new ColorGenerator(16, 0);
-
-const stringToColour = (str) => {
-  if (stringColorMap[str]) {
-    return stringColorMap[str];
-  }
-  const color = colorGenerator.nextColor().hex;
-  stringColorMap[str] = color;
-  return color;
-};
 
 const DashboardTag = ({
   tagKey,

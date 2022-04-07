@@ -1,4 +1,5 @@
 import useDeepCompareEffect from "use-deep-compare-effect";
+import { AlarmIcon, OKIcon, UnknownIcon } from "../../../constants/icons";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -20,6 +21,7 @@ import {
 } from "../../../constants/icons";
 import { useSortBy, useTable } from "react-table";
 import { useDashboard } from "../../../hooks/useDashboard";
+import { ControlDimension } from "../check/Benchmark";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
@@ -153,6 +155,27 @@ const CellValue = ({
       >
         <>null</>
       </span>
+    );
+  } else if (dataType === "control_status") {
+    switch (value) {
+      case "alarm":
+      case "error":
+      case "invalid":
+        cellContent = <AlarmIcon className="text-alert w-5 h-5" />;
+        break;
+      case "ok":
+        cellContent = <OKIcon className="text-ok w-5 h-5" />;
+        break;
+      default:
+        cellContent = <UnknownIcon className="text-foreground-light w-5 h-5" />;
+    }
+  } else if (dataType === "control_dimensions") {
+    cellContent = (
+      <div className="space-x-2">
+        {(value || []).map((dimension) => (
+          <ControlDimension key={dimension.key} value={dimension.value} />
+        ))}
+      </div>
     );
   } else if (dataType === "bool") {
     // True should be
@@ -299,17 +322,14 @@ export type TableProps = BaseTableProps & {
   properties?: TableProperties;
 };
 
-// TODO retain full width on mobile, no padding
-const TableView = (props: TableProps) => {
+const TableView = ({
+  rowData,
+  columns,
+  hiddenColumns,
+  hasTopBorder = false,
+}) => {
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
-  const { columns, hiddenColumns } = useMemo(
-    () => getColumns(props.data ? props.data.columns : [], props.properties),
-    [props.data, props.properties]
-  );
-  const rowData = useMemo(
-    () => getData(columns, props.data ? props.data.rows : []),
-    [columns, props.data]
-  );
+
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
     useTable(
       { columns, data: rowData, initialState: { hiddenColumns } },
@@ -343,13 +363,13 @@ const TableView = (props: TableProps) => {
     doRender();
   }, [columns, rows]);
 
-  return props.data ? (
+  return (
     <>
       <table
         {...getTableProps()}
         className={classNames(
           "min-w-full divide-y divide-table-divide overflow-hidden",
-          props.title ? "border-t border-table-divide" : null
+          hasTopBorder ? "border-t border-table-divide" : null
         )}
       >
         <thead className="bg-table-head text-table-head">
@@ -384,7 +404,7 @@ const TableView = (props: TableProps) => {
           {...getTableBodyProps()}
           className="divide-y divide-table-divide"
         >
-          {props.data && rows.length === 0 && (
+          {rows.length === 0 && (
             <tr>
               <td
                 className="px-4 py-4 align-top content-center text-sm italic whitespace-nowrap"
@@ -425,6 +445,27 @@ const TableView = (props: TableProps) => {
         </tbody>
       </table>
     </>
+  );
+};
+
+// TODO retain full width on mobile, no padding
+const TableViewWrapper = (props: TableProps) => {
+  const { columns, hiddenColumns } = useMemo(
+    () => getColumns(props.data ? props.data.columns : [], props.properties),
+    [props.data, props.properties]
+  );
+  const rowData = useMemo(
+    () => getData(columns, props.data ? props.data.rows : []),
+    [columns, props.data]
+  );
+
+  return props.data ? (
+    <TableView
+      rowData={rowData}
+      columns={columns}
+      hiddenColumns={hiddenColumns}
+      hasTopBorder={!!props.title}
+    />
   ) : null;
 };
 
@@ -548,7 +589,9 @@ const Table = (props: TableProps) => {
   if (props.properties && props.properties.type === "line") {
     return <LineView {...props} />;
   }
-  return <TableView {...props} />;
+  return <TableViewWrapper {...props} />;
 };
 
 export default Table;
+
+export { TableView };
