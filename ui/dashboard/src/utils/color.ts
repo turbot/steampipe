@@ -132,3 +132,15 @@ export class ColorGenerator {
     };
   }
 }
+
+const stringColorMap = {};
+const colorGenerator = new ColorGenerator(16, 0);
+
+export const stringToColour = (str: string): string => {
+  if (stringColorMap[str]) {
+    return stringColorMap[str];
+  }
+  const color = colorGenerator.nextColor().hex;
+  stringColorMap[str] = color;
+  return color;
+};

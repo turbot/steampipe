@@ -4,7 +4,7 @@ class Control {
   private readonly _name: string;
   private readonly _title: string | undefined;
   private readonly _description: string | undefined;
-  private readonly _results: CheckResult[] | undefined;
+  private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _run_state: CheckRunState;
 
@@ -19,7 +19,7 @@ class Control {
     this._name = name;
     this._title = title;
     this._description = description;
-    this._results = results;
+    this._results = results || [];
     this._summary = summary || {
       alarm: 0,
       ok: 0,
@@ -60,6 +60,10 @@ class Control {
 
   get run_state(): CheckRunState {
     return this._run_state;
+  }
+
+  get results(): CheckResult[] {
+    return this._results;
   }
 }
 

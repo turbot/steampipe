@@ -1,6 +1,6 @@
 import LoadingIndicator from "../../LoadingIndicator";
 import padStart from "lodash/padStart";
-import { CheckProps, CheckRunState } from "../common";
+import { CheckProps } from "../common";
 import { classNames } from "../../../../utils/styles";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { default as ControlType } from "../common/Control";
@@ -11,22 +11,24 @@ import {
   OKIcon,
   UnknownIcon,
 } from "../../../../constants/icons";
+import { stringToColour } from "../../../../utils/color";
+import { TableView } from "../../Table";
 import { useState } from "react";
 
 const getPadding = (depth) => {
   switch (depth) {
     case 1:
-      return "pl-1";
+      return "pl-[6px]";
     case 2:
-      return "pl-2";
+      return "pl-[12px]";
     case 3:
-      return "pl-3";
+      return "pl-[18px]";
     case 4:
-      return "pl-4";
+      return "pl-[24px]";
     case 5:
-      return "pl-5";
+      return "pl-[30px]";
     case 6:
-      return "pl-6";
+      return "pl-[36px]";
     default:
       return "pl-0";
   }
@@ -79,11 +81,7 @@ const CheckSummary = ({ summary }) => {
   );
 };
 
-interface CheckNodeStatusProps {
-  run_state: CheckRunState;
-}
-
-const BenchmarkIcon = ({ expanded, run_state }) => (
+const BenchmarkNodeIcon = ({ expanded, run_state }) => (
   <div className="relative flex items-center">
     {!expanded && (
       <ExpandBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
@@ -97,40 +95,124 @@ const BenchmarkIcon = ({ expanded, run_state }) => (
   </div>
 );
 
-const CheckNodeStatus = ({ run_state }: CheckNodeStatusProps) => {
-  return (
-    <>
+const ControlNodeIcon = ({ expanded, results, run_state }) => {
+  return expanded || results.length > 0 ? (
+    <div className="relative flex items-center">
+      {!expanded && (
+        <ExpandBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
+      )}
+      {expanded && (
+        <CollapseBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
+      )}
       {(run_state === "ready" || run_state === "started") && (
-        <LoadingIndicator className="flex-shrink-0 w-5 h-5 text-foreground-lightest" />
+        <LoadingIndicator className="absolute flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
+      )}
+    </div>
+  ) : (
+    <div className="flex items-center">
+      {run_state === "error" && (
+        <ErrorIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
       )}
       {run_state === "complete" && (
         <OKIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
       )}
-      {run_state === "error" && (
-        <ErrorIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-      )}
       {run_state === "unknown" && (
         <UnknownIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
       )}
-    </>
+      {(run_state === "ready" || run_state === "started") && (
+        <LoadingIndicator className="flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
+      )}
+    </div>
+  );
+};
+
+const controlColumns = [
+  {
+    Header: "status",
+    accessor: "status",
+    name: "status",
+    data_type_name: "CONTROL_STATUS",
+    wrap: false,
+  },
+  {
+    Header: "resource",
+    accessor: "resource",
+    name: "resource",
+    data_type_name: "TEXT",
+    wrap: false,
+  },
+  {
+    Header: "reason",
+    accessor: "reason",
+    name: "reason",
+    data_type_name: "TEXT",
+    wrap: true,
+  },
+  {
+    Header: "dimensions",
+    accessor: "dimensions",
+    name: "dimensions",
+    data_type_name: "CONTROL_DIMENSIONS",
+    wrap: true,
+  },
+];
+
+const ControlDimension = ({ key, value }) => (
+  <span
+    className="rounded-md text-xs"
+    style={{ color: stringToColour(value) }}
+    title={`${key} = ${value}`}
+  >
+    {value}
+  </span>
+);
+
+const ControlResults = ({ results }) => {
+  return (
+    <TableView
+      columns={controlColumns}
+      rowData={results}
+      hasTopBorder={true}
+      hiddenColumns={[]}
+    />
   );
 };
 
 const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
+  const [showControls, setShowControls] = useState(false);
   return (
-    <div className="group flex rounded-sm">
-      <div
-        className={classNames(
-          "px-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1"
-        )}
-      >
-        <CheckNodeStatus run_state={control.run_state} />
-        <p className={classNames("", getPadding(depth))}>
-          {control.title || control.name}
-        </p>
+    <>
+      <div className="group flex rounded-sm">
+        <div
+          className={classNames(
+            "px-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
+            showControls || control.results.length > 0
+              ? "cursor-pointer "
+              : null,
+            getPadding(depth)
+          )}
+          onClick={
+            showControls || control.results.length > 0
+              ? () => setShowControls(!showControls)
+              : undefined
+          }
+        >
+          <ControlNodeIcon
+            expanded={showControls}
+            results={control.results}
+            run_state={control.run_state}
+          />
+          {/*<CheckNodeStatus run_state={control.run_state} />*/}
+          <p>{control.title || control.name}</p>
+        </div>
+        <CheckSummary summary={control.summary} />
       </div>
-      <CheckSummary summary={control.summary} />
-    </div>
+      {showControls && (
+        <div className="p-4 w-full overflow-x-auto">
+          <ControlResults results={control.results} />
+        </div>
+      )}
+    </>
   );
 };
 
@@ -141,10 +223,11 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
       <div className="group flex rounded-sm">
         <div
           className={classNames(
-            "px-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1",
+            "px-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
             benchmark.benchmarks || benchmark.controls
               ? "cursor-pointer "
-              : null
+              : null,
+            getPadding(depth)
           )}
           onClick={
             benchmark.benchmarks || benchmark.controls
@@ -152,7 +235,10 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
               : undefined
           }
         >
-          <BenchmarkIcon expanded={expanded} run_state={benchmark.run_state} />
+          <BenchmarkNodeIcon
+            expanded={expanded}
+            run_state={benchmark.run_state}
+          />
           {/*<div className="relative flex items-center">*/}
           {/*  {!expanded && (*/}
           {/*    <ExpandBenchmarkIcon className="mr-1 inline w-5 h-5 text-foreground-lighter" />*/}
@@ -166,9 +252,7 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
           {/*  )}*/}
           {/*<LoadingIndicator className="absolute w-5 h-5 top-px left-0 text-foreground-lightest" />*/}
           {/*<CheckNodeStatus run_state={benchmark.run_state} />*/}
-          <p className={classNames("", getPadding(depth))}>
-            {benchmark.title || benchmark.name}
-          </p>
+          <p>{benchmark.title || benchmark.name}</p>
           {/*</div>*/}
         </div>
         <CheckSummary summary={benchmark.summary} />
@@ -217,3 +301,5 @@ const Benchmark = (props: CheckProps) => {
 };
 
 export default Benchmark;
+
+export { ControlDimension };
