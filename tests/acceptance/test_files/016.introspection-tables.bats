@@ -2,6 +2,7 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "ensure mod name in introspection table is <mod_name> not mod.<mod_name>" {
+  skip
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_query" --output json
   
@@ -19,6 +20,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "ensure query pseudo resources, i.e. sql files, have resource name <query_name> not <query.query_name>" {
+  skip
   cd $WORKSPACE_DIR
   run steampipe query "select * from steampipe_query" --output json
 
@@ -39,6 +41,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "ensure the reference_to and reference_from columns are populated correctly" {
+  skip
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_reference" --output json
 
@@ -51,6 +54,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "ensure the reference_to column includes variable references" {
+  skip
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_reference" --output json
 
@@ -69,6 +73,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "introspection tables should get populated in query batch mode" {
+  skip
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_query" --output json
 
