@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
@@ -14,7 +16,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type PluginManagerState struct {
+type LegacyPluginManagerState struct {
 	Protocol        plugin.Protocol
 	ProtocolVersion int
 	Addr            *pb.SimpleAddr
@@ -25,6 +27,18 @@ type PluginManagerState struct {
 	Running bool `json:"-"`
 }
 
+type PluginManagerState struct {
+	Protocol        plugin.Protocol `json:"protocol"`
+	ProtocolVersion int             `json:"protocol_version"`
+	Addr            *pb.SimpleAddr  `json:"addr"`
+	Pid             int             `json:"pid"`
+	// path to the steampipe executable
+	Executable string `json:"executable"`
+	// is the plugin manager running
+	Running       bool   `json:"-"`
+	SchemaVersion string `json:"schema_version"`
+}
+
 func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *PluginManagerState {
 	return &PluginManagerState{
 		Executable:      executable,
@@ -33,6 +47,40 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 		Addr:            pb.NewSimpleAddr(reattach.Addr),
 		Pid:             reattach.Pid,
 	}
+}
+
+func (s PluginManagerState) IsValid() bool {
+	return len(s.SchemaVersion) > 0
+}
+
+func (s PluginManagerState) MigrateFrom(oldI interface{}) migrate.Migrateable {
+	old := oldI.(LegacyPluginManagerState)
+	s.SchemaVersion = "20220407"
+	s.Protocol = old.Protocol
+	s.ProtocolVersion = old.ProtocolVersion
+	s.Addr = old.Addr
+	s.Pid = old.Pid
+	s.Executable = old.Executable
+	s.Running = old.Running
+
+	return s
+}
+
+func (s PluginManagerState) WriteOut() error {
+	// ensure internal dirs exists
+	if err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm); err != nil {
+		return err
+	}
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), "plugin_manager.json")
+	// if there is an existing file it must be bad/corrupt, so delete it
+	_ = os.Remove(stateFilePath)
+	// save state file
+	file, _ := json.MarshalIndent(s, "", " ")
+	return os.WriteFile(stateFilePath, file, 0644)
+}
+
+func LegacyStateFilePath() string {
+	return filepath.Join(filepaths.EnsureInternalDir(), "plugin_manager.json")
 }
 
 func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
