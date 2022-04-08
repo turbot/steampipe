@@ -115,7 +115,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		skipCount := len(reports) - len(installedOrUpdated)
 		asString := []string{}
 		for _, report := range reports {
-			if report.Skipped {
+			if report.Skipped && report.SkipReason == constants.PluginNotInstalled {
 				asString = append(asString, report.skipString())
 			}
 		}
