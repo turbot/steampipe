@@ -6,15 +6,17 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/utils"
 )
 
 // RunningDBInstanceInfo contains data about the running process and it's credentials
-type RunningDBInstanceInfo struct {
+type LegacyRunningDBInstanceInfo struct {
 	Pid        int
 	Port       int
 	Listen     []string
@@ -23,6 +25,54 @@ type RunningDBInstanceInfo struct {
 	Password   string
 	User       string
 	Database   string
+}
+
+type RunningDBInstanceInfo struct {
+	Pid           int               `json:"pid"`
+	Port          int               `json:"port"`
+	Listen        []string          `json:"listen"`
+	ListenType    StartListenType   `json:"listen_type"`
+	Invoker       constants.Invoker `json:"invoker"`
+	Password      string            `json:"password"`
+	User          string            `json:"user"`
+	Database      string            `json:"database"`
+	SchemaVersion string            `json:"schema_version"`
+}
+
+func (s RunningDBInstanceInfo) IsValid() bool {
+	return len(s.SchemaVersion) > 0
+}
+
+func (s RunningDBInstanceInfo) MigrateFrom(oldI interface{}) migrate.Migrateable {
+	old := oldI.(LegacyRunningDBInstanceInfo)
+	s.SchemaVersion = "20220407"
+	s.Pid = old.Pid
+	s.Port = old.Port
+	s.Listen = old.Listen
+	s.ListenType = old.ListenType
+	s.Invoker = old.Invoker
+	s.Password = old.Password
+	s.User = old.User
+	s.Database = old.Database
+
+	return s
+}
+
+func (s RunningDBInstanceInfo) WriteOut() error {
+	// ensure internal dirs exists
+	if err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm); err != nil {
+		return err
+	}
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), "steampipe.json")
+	// if there is an existing file it must be bad/corrupt, so delete it
+	_ = os.Remove(stateFilePath)
+	// save state file
+	file, _ := json.MarshalIndent(s, "", " ")
+	return os.WriteFile(stateFilePath, file, 0644)
+}
+
+func LegacyStateFilePath() string {
+	return filepath.Join(filepaths.EnsureInternalDir(), "steampipe.json")
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) *RunningDBInstanceInfo {
