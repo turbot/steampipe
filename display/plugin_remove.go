@@ -29,7 +29,9 @@ func (prr PluginRemoveReports) Print() {
 
 			// sort the connections by line number while we are at it!
 			sort.SliceStable(report.Connections, func(i, j int) bool {
-				return report.Connections[j].DeclRange.Start.Line < report.Connections[i].DeclRange.Start.Line
+				left := report.Connections[i]
+				right := report.Connections[j]
+				return left.DeclRange.Start.Line < right.DeclRange.Start.Line
 			})
 		}
 		fmt.Println()
