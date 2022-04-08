@@ -3599,6 +3599,14 @@
     core-js "^3.8.2"
     global "^4.4.0"
 
+"@storybook/client-logger@6.5.0-alpha.59":
+  version "6.5.0-alpha.59"
+  resolved "https://registry.yarnpkg.com/@storybook/client-logger/-/client-logger-6.5.0-alpha.59.tgz#a0a63c43cfc8013cd4861c66de2f4fa73bf6d295"
+  integrity sha512-86N5wvjJAS1/oIyIMgU5/PSSPeAcptrsrIZY96Dpg9y6gaupPkFc0JzBuFUAinVpIHzr3E/8FjTmac6DaQ1ncA==
+  dependencies:
+    core-js "^3.8.2"
+    global "^4.4.0"
+
 "@storybook/components@6.5.0-alpha.55":
   version "6.5.0-alpha.55"
   resolved "https://registry.yarnpkg.com/@storybook/components/-/components-6.5.0-alpha.55.tgz#dca7168f5c91bfcd67e5595bede93dbd36e42186"
@@ -4065,6 +4073,15 @@
   integrity sha512-sPeURfRLl2bkiW5HxXMu/3CjpQao95heWU6s81veNDGMFybZZytU9GbSqlBiX6kyGQA21/al+V4FGPmJ5qn9Sg==
   dependencies:
     "@storybook/client-logger" "6.5.0-alpha.55"
+    core-js "^3.8.2"
+    regenerator-runtime "^0.13.7"
+
+"@storybook/theming@6.5.0-alpha.59":
+  version "6.5.0-alpha.59"
+  resolved "https://registry.yarnpkg.com/@storybook/theming/-/theming-6.5.0-alpha.59.tgz#001f146772cf0e3df2cc58ac38ec584f7ec10ea7"
+  integrity sha512-kTISuyJhN1fTE2l1rAqIvJcgOlpVRIiomrRE4RNiiGc4Yu7guNyxTFe945Wokw+JubKkwzLEvkHXTzC9H0f95g==
+  dependencies:
+    "@storybook/client-logger" "6.5.0-alpha.59"
     core-js "^3.8.2"
     regenerator-runtime "^0.13.7"
 
@@ -6991,25 +7008,10 @@ core-js-pure@^3.8.1:
   resolved "https://registry.npmjs.org/core-js-pure/-/core-js-pure-3.20.0.tgz"
   integrity sha512-qsrbIwWSEEYOM7z616jAVgwhuDDtPLwZSpUsU3vyUkHYqKTf/uwOJBZg2V7lMurYWkpVlaVOxBrfX0Q3ppvjfg==
 
-core-js@^3.0.4:
-  version "3.9.1"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.9.1.tgz"
-  integrity sha512-gSjRvzkxQc1zjM/5paAmL4idJBFzuJoo+jDjF1tStYFMV2ERfD02HhahhCGXUyHxQRG4yFKVSdO6g62eoRMcDg==
-
-core-js@^3.19.2:
+core-js@^3.0.4, core-js@^3.19.2, core-js@^3.6.5, core-js@^3.8.2:
   version "3.20.0"
   resolved "https://registry.npmjs.org/core-js/-/core-js-3.20.0.tgz"
   integrity sha512-KjbKU7UEfg4YPpskMtMXPhUKn7m/1OdTHTVjy09ScR2LVaoUXe8Jh0UdvN2EKUR6iKTJph52SJP95mAB0MnVLQ==
-
-core-js@^3.6.5:
-  version "3.8.3"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.8.3.tgz"
-  integrity sha512-KPYXeVZYemC2TkNEkX/01I+7yd+nX3KddKwZ1Ww7SKWdI2wQprSgLmrTddT8nw92AjEklTsPBoSdQBhbI1bQ6Q==
-
-core-js@^3.8.2:
-  version "3.10.0"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.10.0.tgz"
-  integrity sha512-MQx/7TLgmmDVamSyfE+O+5BHvG1aUGj/gHhLn1wVtm2B5u1eVIPvh7vkfjwWKNCjrTJB8+He99IntSQ1qP+vYQ==
 
 core-util-is@~1.0.0:
   version "1.0.2"
@@ -14740,12 +14742,7 @@ regenerate@^1.4.0:
   resolved "https://registry.npmjs.org/regenerate/-/regenerate-1.4.2.tgz"
   integrity sha512-zrceR/XhGYU/d/opr2EKO7aRHUeiBI8qjtfHqADTwZd6Szfy16la6kqD0MIUs5z5hx6AaKa+PixpPrR289+I0A==
 
-regenerator-runtime@^0.13.4, regenerator-runtime@^0.13.7:
-  version "0.13.7"
-  resolved "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.7.tgz"
-  integrity sha512-a54FxoJDIr27pgf7IgeQGxmqUNYrcV338lf/6gH456HZ/PhX+5BcwHXG9ajESmwe6WRO0tAzRUrRmNONWgkrew==
-
-regenerator-runtime@^0.13.9:
+regenerator-runtime@^0.13.4, regenerator-runtime@^0.13.7, regenerator-runtime@^0.13.9:
   version "0.13.9"
   resolved "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.9.tgz"
   integrity sha512-p3VT+cOEgxFsRRA9X4lkI1E+k2/CtnKtU4gcxyaCUreilL/vqI6CdZ3wxVUx3UOUg+gnUOQQcRI7BmSI656MYA==
