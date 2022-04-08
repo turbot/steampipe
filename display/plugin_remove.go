@@ -6,14 +6,15 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
 type PluginRemoveReport struct {
-	FullPluginName string
-	ShortName      string
-	Connections    []modconfig.Connection
+	Image       *ociinstaller.SteampipeImageRef
+	ShortName   string
+	Connections []modconfig.Connection
 }
 
 type PluginRemoveReports []PluginRemoveReport
@@ -24,7 +25,8 @@ func (prr PluginRemoveReports) Print() {
 	if length > 0 {
 		fmt.Printf("\nUninstalled %s:\n", utils.Pluralize("plugin", length))
 		for _, report := range prr {
-			fmt.Printf("* %s\n", report.ShortName)
+			org, name, _ := report.Image.GetOrgNameAndStream()
+			fmt.Printf("* %s/%s\n", org, name)
 			staleConnections = append(staleConnections, report.Connections...)
 
 			// sort the connections by line number while we are at it!
