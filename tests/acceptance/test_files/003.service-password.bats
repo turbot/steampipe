@@ -6,7 +6,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe service start
 
   # Extract password from the state file
-  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .Password)
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
   echo $state_file_pass
 
   # Extract password stored in .passwd file
@@ -25,7 +25,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe service start --database-password "abcd-efgh-ijkl"
 
   # Extract password from the state file
-  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .Password)
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
   echo $state_file_pass
 
   # Both should be equal
@@ -42,7 +42,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe service start
 
   # Extract password from the state file
-  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .Password)
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
   echo $state_file_pass
 
   # Both should be equal
@@ -59,7 +59,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe service start --database-password "abcd-efgh-ijkl"
 
   # Extract password from the state file
-  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .Password)
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
   echo $state_file_pass
 
   # Both should be equal
@@ -76,7 +76,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe service start
 
   # Extract password from the state file
-  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .Password)
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
   echo $state_file_pass
 
   # Extract password stored in new .passwd file
