@@ -3,8 +3,8 @@ package proto
 import "net"
 
 type SimpleAddr struct {
-	NetworkString string `json:"Network"`
-	AddressString string `json:"String"`
+	NetworkString string `json:"network"`
+	AddressString string `json:"string"`
 }
 
 func NewSimpleAddr(addr net.Addr) *SimpleAddr {
