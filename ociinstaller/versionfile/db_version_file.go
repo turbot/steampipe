@@ -4,15 +4,23 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 )
 
+type LegacyDatabaseVersionFile struct {
+	FdwExtension LegacyInstalledVersion `json:"fdwExtension"`
+	EmbeddedDB   LegacyInstalledVersion `json:"embeddedDB"`
+}
+
 type DatabaseVersionFile struct {
-	FdwExtension InstalledVersion `json:"fdwExtension"`
-	EmbeddedDB   InstalledVersion `json:"embeddedDB"`
+	FdwExtension  InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB    InstalledVersion `json:"embedded_db"`
+	SchemaVersion string           `json:"schema_version"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
@@ -22,7 +30,48 @@ func NewDBVersionFile() *DatabaseVersionFile {
 	}
 }
 
-type InstalledVersion struct {
+func (s DatabaseVersionFile) IsValid() bool {
+	return len(s.SchemaVersion) > 0
+}
+
+func (s DatabaseVersionFile) MigrateFrom(oldI interface{}) migrate.Migrateable {
+	old := oldI.(LegacyDatabaseVersionFile)
+	s.SchemaVersion = "20220407"
+	s.FdwExtension.Name = old.FdwExtension.Name
+	s.FdwExtension.Version = old.FdwExtension.Version
+	s.FdwExtension.ImageDigest = old.FdwExtension.ImageDigest
+	s.FdwExtension.InstalledFrom = old.FdwExtension.InstalledFrom
+	s.FdwExtension.LastCheckedDate = old.FdwExtension.LastCheckedDate
+	s.FdwExtension.InstallDate = old.FdwExtension.InstallDate
+
+	s.EmbeddedDB.Name = old.EmbeddedDB.Name
+	s.EmbeddedDB.Version = old.EmbeddedDB.Version
+	s.EmbeddedDB.ImageDigest = old.EmbeddedDB.ImageDigest
+	s.EmbeddedDB.InstalledFrom = old.EmbeddedDB.InstalledFrom
+	s.EmbeddedDB.LastCheckedDate = old.EmbeddedDB.LastCheckedDate
+	s.EmbeddedDB.InstallDate = old.EmbeddedDB.InstallDate
+
+	return s
+}
+
+func (s DatabaseVersionFile) WriteOut() error {
+	// ensure internal dirs exists
+	if err := os.MkdirAll(filepaths.EnsureDatabaseDir(), os.ModePerm); err != nil {
+		return err
+	}
+	stateFilePath := filepath.Join(filepaths.EnsureDatabaseDir(), "versions.json")
+	// if there is an existing file it must be bad/corrupt, so delete it
+	_ = os.Remove(stateFilePath)
+	// save state file
+	file, _ := json.MarshalIndent(s, "", " ")
+	return os.WriteFile(stateFilePath, file, 0644)
+}
+
+func LegacyDbVersionsFilePath() string {
+	return filepath.Join(filepaths.EnsureDatabaseDir(), "versions.json")
+}
+
+type LegacyInstalledVersion struct {
 	Name            string `json:"name"`
 	Version         string `json:"version"`
 	ImageDigest     string `json:"imageDigest"`
@@ -31,7 +80,16 @@ type InstalledVersion struct {
 	InstallDate     string `json:"installDate"`
 }
 
-func databaseVersionFileFromLegacy(legacyFile *LegacyVersionFile) *DatabaseVersionFile {
+type InstalledVersion struct {
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	ImageDigest     string `json:"image_digest"`
+	InstalledFrom   string `json:"installed_from"`
+	LastCheckedDate string `json:"last_checked_date"`
+	InstallDate     string `json:"install_date"`
+}
+
+func databaseVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *DatabaseVersionFile {
 	return &DatabaseVersionFile{
 		FdwExtension: legacyFile.FdwExtension,
 		EmbeddedDB:   legacyFile.EmbeddedDB,

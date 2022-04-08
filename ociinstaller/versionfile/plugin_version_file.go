@@ -4,13 +4,58 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 )
 
+type LegacyPluginVersionFile struct {
+	Plugins map[string]*LegacyInstalledVersion `json:"plugins"`
+}
+
 type PluginVersionFile struct {
-	Plugins map[string]*InstalledVersion `json:"plugins"`
+	Plugins       map[string]*InstalledVersion `json:"plugins"`
+	SchemaVersion string                       `json:"schema_version"`
+}
+
+func (s PluginVersionFile) IsValid() bool {
+	return len(s.SchemaVersion) > 0
+}
+
+func (s PluginVersionFile) MigrateFrom(oldI interface{}) migrate.Migrateable {
+	old := oldI.(LegacyPluginVersionFile)
+	s.SchemaVersion = "20220407"
+	s.Plugins = make(map[string]*InstalledVersion, len(old.Plugins))
+	for p, i := range old.Plugins {
+		s.Plugins[p] = &InstalledVersion{
+			Name:            i.Name,
+			Version:         i.Version,
+			ImageDigest:     i.ImageDigest,
+			InstalledFrom:   i.InstalledFrom,
+			LastCheckedDate: i.LastCheckedDate,
+			InstallDate:     i.InstallDate,
+		}
+	}
+	return s
+}
+
+func (s PluginVersionFile) WriteOut() error {
+	// ensure internal dirs exists
+	if err := os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm); err != nil {
+		return err
+	}
+	stateFilePath := filepath.Join(filepaths.EnsurePluginDir(), "versions.json")
+	// if there is an existing file it must be bad/corrupt, so delete it
+	_ = os.Remove(stateFilePath)
+	// save state file
+	file, _ := json.MarshalIndent(s, "", " ")
+	return os.WriteFile(stateFilePath, file, 0644)
+}
+
+func LegacyPluginVersionsFilePath() string {
+	return filepath.Join(filepaths.EnsurePluginDir(), "versions.json")
 }
 
 func NewPluginVersionFile() *PluginVersionFile {
@@ -19,7 +64,7 @@ func NewPluginVersionFile() *PluginVersionFile {
 	}
 }
 
-func pluginVersionFileFromLegacy(legacyFile *LegacyVersionFile) *PluginVersionFile {
+func pluginVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *PluginVersionFile {
 	return &PluginVersionFile{
 		Plugins: legacyFile.Plugins,
 	}
