@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -25,13 +27,57 @@ const (
 	ServiceStateError   ServiceState = "running"
 )
 
-type DashboardServiceState struct {
+type LegacyDashboardServiceState struct {
 	State      ServiceState
 	Error      string
 	Pid        int
 	Port       int
 	ListenType string
 	Listen     []string
+}
+
+type DashboardServiceState struct {
+	State         ServiceState `json:"state"`
+	Error         string       `json:"error"`
+	Pid           int          `json:"pid"`
+	Port          int          `json:"port"`
+	ListenType    string       `json:"listen_type"`
+	Listen        []string     `json:"listen"`
+	SchemaVersion string       `json:"schema_version"`
+}
+
+func (s DashboardServiceState) IsValid() bool {
+	return len(s.SchemaVersion) > 0
+}
+
+func (s DashboardServiceState) MigrateFrom(oldI interface{}) migrate.Migrateable {
+	old := oldI.(LegacyDashboardServiceState)
+	s.SchemaVersion = "20220407"
+	s.State = old.State
+	s.Error = old.Error
+	s.Pid = old.Pid
+	s.Port = old.Port
+	s.ListenType = old.ListenType
+	s.Listen = old.Listen
+
+	return s
+}
+
+func (s DashboardServiceState) WriteOut() error {
+	// ensure internal dirs exists
+	if err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm); err != nil {
+		return err
+	}
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), "dashboard_service.json")
+	// if there is an existing file it must be bad/corrupt, so delete it
+	_ = os.Remove(stateFilePath)
+	// save state file
+	file, _ := json.MarshalIndent(s, "", " ")
+	return os.WriteFile(stateFilePath, file, 0644)
+}
+
+func LegacyStateFilePath() string {
+	return filepath.Join(filepaths.EnsureInternalDir(), "dashboard_service.json")
 }
 
 func GetDashboardServiceState() (*DashboardServiceState, error) {
