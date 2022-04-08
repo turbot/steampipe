@@ -1,9 +1,9 @@
 {
   "foo": {
-    "github.com/turbot/steampipe-mod-aws-compliance": {
-      "Name": "github.com/turbot/steampipe-mod-aws-compliance",
-      "ShortName": "steampipe-mod-aws-compliance",
-      "Version": "0.24.0",
+    "github.com/pskrbasu/steampipe-mod-m1": {
+      "Name": "github.com/pskrbasu/steampipe-mod-m1",
+      "ShortName": "steampipe-mod-m1",
+      "Version": "4.0.0",
       "Constraint": "*"
     }
   }
