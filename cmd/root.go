@@ -17,6 +17,8 @@ import (
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
+	"github.com/turbot/steampipe/statefile"
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/task"
@@ -115,8 +117,14 @@ func initGlobalConfig() {
 	// set global containing install dir
 	setInstallDir()
 
-	// load config (this sets the global config steampipeconfig.Config)
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+
+	// migrate all legacy config files
+	if cmd.Name() != "plugin-manager" {
+		utils.FailOnErrorWithMessage(migrateLegacyFiles(), "failed to migrate legacy files")
+	}
+
+	// load config (this sets the global config steampipeconfig.Config)
 	config, err := steampipeconfig.LoadSteampipeConfig(workspaceChdir, cmd.Name())
 	utils.FailOnError(err)
 
@@ -126,9 +134,16 @@ func initGlobalConfig() {
 	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
 
 	// now validate all config values have appropriate values
-	if err := validateConfig(); err != nil {
-		panic(err)
-	}
+	utils.FailOnErrorWithMessage(validateConfig(), "failed to validate config")
+}
+
+func migrateLegacyFiles() error {
+	return utils.CombineErrors(
+		migrate.Migrate(statefile.LegacyState{}, statefile.State{}, statefile.LegacyStateFilePath()),
+		// migrate.Migrate(pluginmanager.LegacyPluginManagerState{}, pluginmanager.PluginManagerState{}, pluginmanager.LegacyStateFilePath()),
+		// migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, db_local.RunningDBInstanceInfo{}, db_local.LegacyStateFilePath()),
+		// migrate.Migrate(versionfile.LegacyPluginVersionFile{}, versionfile.PluginVersionFile{}, versionfile.LegacyVersionsFilePath()),
+	)
 }
 
 // now validate  config values have appropriate values
