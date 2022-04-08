@@ -16,6 +16,8 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/pluginmanager"
@@ -142,7 +144,8 @@ func migrateLegacyFiles() error {
 	return utils.CombineErrors(
 		migrate.Migrate(statefile.LegacyState{}, statefile.State{}, statefile.LegacyStateFilePath()),
 		migrate.Migrate(pluginmanager.LegacyPluginManagerState{}, pluginmanager.PluginManagerState{}, pluginmanager.LegacyStateFilePath()),
-		// migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, db_local.RunningDBInstanceInfo{}, db_local.LegacyStateFilePath()),
+		migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, db_local.RunningDBInstanceInfo{}, db_local.LegacyStateFilePath()),
+		migrate.Migrate(dashboardserver.LegacyDashboardServiceState{}, dashboardserver.DashboardServiceState{}, dashboardserver.LegacyStateFilePath()),
 		// migrate.Migrate(versionfile.LegacyPluginVersionFile{}, versionfile.PluginVersionFile{}, versionfile.LegacyVersionsFilePath()),
 	)
 }
