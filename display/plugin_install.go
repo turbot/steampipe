@@ -119,15 +119,14 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				asString = append(asString, report.skipString())
 			}
 		}
-		// some have skipped
-		if len(installedOrUpdated) > 0 {
-			fmt.Println()
+
+		if (len(canBeInstalled) + len(canBeUpdated)) > 0 {
+			fmt.Printf(
+				"\nSkipped the following %s:\n\n%s\n",
+				utils.Pluralize("plugin", skipCount),
+				strings.Join(asString, "\n\n"),
+			)
 		}
-		fmt.Printf(
-			"Skipped the following %s:\n\n%s\n",
-			utils.Pluralize("plugin", skipCount),
-			strings.Join(asString, "\n\n"),
-		)
 
 		if len(canBeInstalled) > 0 {
 			asString := []string{}
