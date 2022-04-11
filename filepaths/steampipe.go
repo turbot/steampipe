@@ -69,7 +69,12 @@ func EnsureLogDir() string {
 }
 
 func EnsureDashboardAssetsDir() string {
-	return ensureSteampipeSubDir(filepath.Join("report", "assets"))
+	return ensureSteampipeSubDir(filepath.Join("dashboard", "assets"))
+}
+
+// LegacyDashboardAssetsDir returns the path to the legacy report assets folder
+func LegacyDashboardAssetsDir() string {
+	return steampipeSubDir("report")
 }
 
 // ConnectionStatePath returns the path of the connections state file
