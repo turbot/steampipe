@@ -131,8 +131,6 @@ func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) 
 
 	// cancel if in progress
 	executionTree.Cancel()
-	// wait for the execution to complete
-	<-executionTree.runComplete
 	// remove from execution tree
 	e.removeExecution(sessionId)
 }

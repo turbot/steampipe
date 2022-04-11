@@ -186,6 +186,10 @@ func (e *DashboardExecutionTree) Cancel() {
 	}
 	e.cancel()
 
+	// if there are any children, wait for the execution to complete
+	if len(e.Root.Children) > 0 {
+		<-e.runComplete
+	}
 }
 
 func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
