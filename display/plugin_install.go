@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type PluginInstallReports []PluginInstallReport
+type PluginInstallReports []*PluginInstallReport
 
 func (ir PluginInstallReports) Len() int      { return len(ir) }
 func (ir PluginInstallReports) Swap(i, j int) { ir[i], ir[j] = ir[j], ir[i] }
@@ -85,9 +85,9 @@ func (i *PluginInstallReport) String() string {
 
 // PrintInstallReports Prints out the installation reports onto the console
 func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
-	installedOrUpdated := []PluginInstallReport{}
-	canBeInstalled := []PluginInstallReport{}
-	canBeUpdated := []PluginInstallReport{}
+	installedOrUpdated := PluginInstallReports{}
+	canBeInstalled := PluginInstallReports{}
+	canBeUpdated := PluginInstallReports{}
 
 	for _, report := range reports {
 		report.IsUpdateReport = isUpdateReport
