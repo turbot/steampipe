@@ -149,7 +149,6 @@ func migrateLegacyFiles() error {
 		migrate.Migrate(dashboardserver.LegacyDashboardServiceState{}, dashboardserver.DashboardServiceState{}, dashboardserver.LegacyStateFilePath()),
 		migrate.Migrate(versionfile.LegacyPluginVersionFile{}, versionfile.PluginVersionFile{}, versionfile.LegacyPluginVersionsFilePath()),
 		migrate.Migrate(versionfile.LegacyDatabaseVersionFile{}, versionfile.DatabaseVersionFile{}, versionfile.LegacyDbVersionsFilePath()),
-		migrate.Migrate(steampipeconfig.LegacyConnectionData{}, steampipeconfig.ConnectionData{}, steampipeconfig.LegacyStateFilePath()),
 	)
 }
 
