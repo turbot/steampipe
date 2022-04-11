@@ -1,26 +1,18 @@
 package versionmap
 
 import (
-	"strings"
-
 	"github.com/Masterminds/semver"
 )
 
 type ResolvedVersionConstraint struct {
 	Name       string
-	ShortName  string
+	Alias      string
 	Version    *semver.Version
 	Constraint string
 }
 
-func NewResolvedVersionConstraint(name string, version *semver.Version, constraintString string) *ResolvedVersionConstraint {
-	shortName := getModShortName(name)
-	return &ResolvedVersionConstraint{Name: name, ShortName: shortName, Version: version, Constraint: constraintString}
-}
-
-func getModShortName(name string) string {
-	split := strings.Split(name, "/")
-	return split[len(split)-1]
+func NewResolvedVersionConstraint(name, alias string, version *semver.Version, constraintString string) *ResolvedVersionConstraint {
+	return &ResolvedVersionConstraint{Name: name, Alias: alias, Version: version, Constraint: constraintString}
 }
 
 func (c ResolvedVersionConstraint) Equals(other *ResolvedVersionConstraint) bool {
