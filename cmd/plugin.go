@@ -218,20 +218,29 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	statusSpinner := statushooks.NewStatusSpinner()
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
+	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
+	doneChannel := make(chan struct{})
+
 	progressBars.Start()
+
+	go func() {
+		installWaitGroup.Wait()
+		close(dataChannel)
+		<-doneChannel
+	}()
+	go func() {
+		for report := range dataChannel {
+			installReports = append(installReports, report)
+			installWaitGroup.Done()
+		}
+	}()
+
 	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
-		go func(p string) {
-			report := doPluginInstall(ctx, progressBars, p)
-			// append
-			installReports = append(installReports, report)
-			// signal the waitgroup that we are done
-			installWaitGroup.Done()
-		}(pluginName)
-
+		go doPluginInstall(ctx, progressBars, pluginName, dataChannel)
 	}
 
-	installWaitGroup.Wait()
+	<-doneChannel
 	progressBars.Stop()
 	statusSpinner.UpdateSpinnerMessage("Refreshing connections...")
 	refreshConnectionsIfNecessary(ctx, installReports, true)
@@ -242,7 +251,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginInstall(ctx context.Context, progressBars *uiprogress.Progress, pluginName string) *display.PluginInstallReport {
+func doPluginInstall(ctx context.Context, progressBars *uiprogress.Progress, pluginName string, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
 	bar := progressBars.AddBar(len(pluginInstallSteps))
@@ -269,7 +278,7 @@ func doPluginInstall(ctx context.Context, progressBars *uiprogress.Progress, plu
 		report = installPlugin(ctx, pluginName, false, bar)
 	}
 
-	return report
+	returnChannel <- report
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
@@ -369,37 +378,31 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	updateWaitGroup := &sync.WaitGroup{}
-	p := uiprogress.New()
-	p.Start()
-
-	for _, report := range reports {
-		shouldSkipUpdate, skipReason := plugin.SkipUpdate(report)
-		if shouldSkipUpdate {
-			updateReports = append(updateReports, display.InstallReport{
-				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
-				Skipped:        true,
-				SkipReason:     skipReason,
-				IsUpdateReport: true,
-			})
-			continue
-		}
-	}
-
+	dataChannel := make(chan *display.PluginInstallReport, len(reports))
+	doneChannel := make(chan struct{})
 	progressBars := uiprogress.New()
 	progressBars.Start()
+
+	go func() {
+		updateWaitGroup.Wait()
+		close(dataChannel)
+		<-doneChannel
+	}()
+	go func() {
+		for report := range dataChannel {
+			updateReports = append(updateReports, report)
+			updateWaitGroup.Done()
+		}
+	}()
 
 	sorted := utils.SortedStringKeys(reports)
 	for _, key := range sorted {
 		report := reports[key]
 		updateWaitGroup.Add(1)
-		go func(pvr plugin.VersionCheckReport) {
-			report := doPluginUpdate(ctx, progressBars, pvr)
-			updateWaitGroup.Done()
-			updateReports = append(updateReports, report)
-		}(report)
-
+		go doPluginUpdate(ctx, progressBars, report, dataChannel)
 	}
-	updateWaitGroup.Wait()
+
+	<-doneChannel
 	refreshConnectionsIfNecessary(cmd.Context(), updateReports, false)
 	progressBars.Stop()
 	fmt.Println()
@@ -409,7 +412,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginUpdate(ctx context.Context, progressBars *uiprogress.Progress, pvr plugin.VersionCheckReport) *display.PluginInstallReport {
+func doPluginUpdate(ctx context.Context, progressBars *uiprogress.Progress, pvr plugin.VersionCheckReport, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 	bar := progressBars.AddBar(len(pluginInstallSteps))
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
@@ -432,7 +435,7 @@ func doPluginUpdate(ctx context.Context, progressBars *uiprogress.Progress, pvr 
 		})
 		report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
 	}
-	return report
+	returnChannel <- report
 }
 
 func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *uiprogress.Bar) *display.PluginInstallReport {
