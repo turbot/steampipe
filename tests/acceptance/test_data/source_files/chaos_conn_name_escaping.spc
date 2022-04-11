@@ -1,0 +1,3 @@
+connection "default" {
+  plugin = "chaos"
+}
