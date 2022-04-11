@@ -55,7 +55,7 @@ func (d *InstallData) GetAvailableUpdates() (versionmap.DependencyVersionMap, er
 			constraint, _ := versionhelpers.NewConstraint(resolvedConstraint.Constraint)
 			var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
 			if latestVersion.GreaterThan(resolvedConstraint.Version) {
-				res.Add(name, latestVersion, constraint.Original, parent)
+				res.Add(name, resolvedConstraint.Alias, latestVersion, constraint.Original, parent)
 			}
 		}
 	}
@@ -63,19 +63,19 @@ func (d *InstallData) GetAvailableUpdates() (versionmap.DependencyVersionMap, er
 }
 
 // onModInstalled is called when a dependency is satisfied by installing a mod version
-func (d *InstallData) onModInstalled(dependency *ResolvedModRef, parent *modconfig.Mod) {
+func (d *InstallData) onModInstalled(dependency *ResolvedModRef, modDef *modconfig.Mod, parent *modconfig.Mod) {
 	parentPath := parent.GetModDependencyPath()
 	// get the constraint from the parent (it must be there)
 	modVersion := parent.Require.GetModDependency(dependency.Name)
 	// update lock
-	d.NewLock.InstallCache.Add(dependency.Name, dependency.Version, modVersion.Constraint.Original, parentPath)
+	d.NewLock.InstallCache.Add(dependency.Name, modDef.ShortName, modDef.Version, modVersion.Constraint.Original, parentPath)
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
-func (d *InstallData) addExisting(name string, version *semver.Version, constraint *versionhelpers.Constraints, parent *modconfig.Mod) {
+func (d *InstallData) addExisting(dependencyName string, existingDep *modconfig.Mod, constraint *versionhelpers.Constraints, parent *modconfig.Mod) {
 	// update lock
 	parentPath := parent.GetModDependencyPath()
-	d.NewLock.InstallCache.Add(name, version, constraint.Original, parentPath)
+	d.NewLock.InstallCache.Add(dependencyName, existingDep.ShortName, existingDep.Version, constraint.Original, parentPath)
 }
 
 // retrieve all available mod versions from our cache, or from Git if not yet cached
