@@ -64,13 +64,48 @@ type Connection struct {
 
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
-	DeclRange hcl.Range           `json:"decl_range,omitempty"`
+	DeclRange Range               `json:"decl_range,omitempty"`
+}
+
+// Range represents a span of characters between two positions in a source file.
+// This is a direct re-implementation of hcl.Range, allowing us to control JSON serialization
+type Range struct {
+	// Filename is the name of the file into which this range's positions point.
+	Filename string `json:"filename,omitempty"`
+
+	// Start and End represent the bounds of this range. Start is inclusive and End is exclusive.
+	Start Pos `json:"start,omitempty"`
+	End   Pos `json:"end,omitempty"`
+}
+
+func NewRange(sourceRange hcl.Range) Range {
+	return Range{
+		Filename: sourceRange.Filename,
+		Start:    NewPos(sourceRange.Start),
+		End:      NewPos(sourceRange.End),
+	}
+}
+
+// Pos represents a single position in a source file
+// This is a direct re-implementation of hcl.Pos, allowing us to control JSON serialization
+type Pos struct {
+	Line   int `json:"line,omitempty"`
+	Column int `json:"column,omitempty"`
+	Byte   int `json:"byte,omitempty"`
+}
+
+func NewPos(sourcePos hcl.Pos) Pos {
+	return Pos{
+		Line:   sourcePos.Line,
+		Column: sourcePos.Column,
+		Byte:   sourcePos.Byte,
+	}
 }
 
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
 		Name:      block.Labels[0],
-		DeclRange: block.TypeRange,
+		DeclRange: NewRange(block.TypeRange),
 	}
 }
 
