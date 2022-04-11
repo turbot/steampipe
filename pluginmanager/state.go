@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"path/filepath"
 	"syscall"
 
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 
@@ -16,6 +16,8 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+// LegacyPluginManagerState is the legacy plugin manager state struct, which was used
+// in the legacy plugin state file
 type LegacyPluginManagerState struct {
 	Protocol        plugin.Protocol
 	ProtocolVersion int
@@ -53,9 +55,9 @@ func (s PluginManagerState) IsValid() bool {
 	return len(s.SchemaVersion) > 0
 }
 
-func (s PluginManagerState) MigrateFrom(oldI interface{}) migrate.Migrateable {
-	old := oldI.(LegacyPluginManagerState)
-	s.SchemaVersion = "20220407"
+func (s *PluginManagerState) MigrateFrom(legacyState interface{}) migrate.Migrateable {
+	old := legacyState.(LegacyPluginManagerState)
+	s.SchemaVersion = constants.SchemaVersion
 	s.Protocol = old.Protocol
 	s.ProtocolVersion = old.ProtocolVersion
 	s.Addr = old.Addr
@@ -64,23 +66,6 @@ func (s PluginManagerState) MigrateFrom(oldI interface{}) migrate.Migrateable {
 	s.Running = old.Running
 
 	return s
-}
-
-func (s PluginManagerState) WriteOut() error {
-	// ensure internal dirs exists
-	if err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm); err != nil {
-		return err
-	}
-	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), "plugin_manager.json")
-	// if there is an existing file it must be bad/corrupt, so delete it
-	_ = os.Remove(stateFilePath)
-	// save state file
-	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
-}
-
-func LegacyStateFilePath() string {
-	return filepath.Join(filepaths.EnsureInternalDir(), "plugin_manager.json")
 }
 
 func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {

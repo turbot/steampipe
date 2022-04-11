@@ -16,11 +16,8 @@ const (
 	ConnectionTypeAggregator = "aggregator"
 )
 
-// Connection is a struct representing the partially parsed connection
-//
-// (Partial as the connection config, which is plugin specific, is stored as raw HCL.
-// This will be parsed by the plugin)
-// json tags needed as this is stored in the connection state file
+// LegacyConnection is the legacy connection struct, which was used in the legacy
+// connection state file
 type LegacyConnection struct {
 	// connection name
 	Name string
@@ -44,6 +41,11 @@ type LegacyConnection struct {
 	DeclRange hcl.Range
 }
 
+// Connection is a struct representing the partially parsed connection
+//
+// (Partial as the connection config, which is plugin specific, is stored as raw HCL.
+// This will be parsed by the plugin)
+// json tags needed as this is stored in the connection state file
 type Connection struct {
 	// connection name
 	Name string `json:"name,omitempty"`

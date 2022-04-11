@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 )
 
+// LegacyPluginVersionFile is the legacy plugin version file struct, which was used
+// in the legacy plugin version state file
 type LegacyPluginVersionFile struct {
 	Plugins map[string]*LegacyInstalledVersion `json:"plugins"`
 }
@@ -24,9 +26,9 @@ func (s PluginVersionFile) IsValid() bool {
 	return len(s.SchemaVersion) > 0
 }
 
-func (s PluginVersionFile) MigrateFrom(oldI interface{}) migrate.Migrateable {
-	old := oldI.(LegacyPluginVersionFile)
-	s.SchemaVersion = "20220407"
+func (s *PluginVersionFile) MigrateFrom(legacyState interface{}) migrate.Migrateable {
+	old := legacyState.(LegacyPluginVersionFile)
+	s.SchemaVersion = constants.SchemaVersion
 	s.Plugins = make(map[string]*InstalledVersion, len(old.Plugins))
 	for p, i := range old.Plugins {
 		s.Plugins[p] = &InstalledVersion{
@@ -39,23 +41,6 @@ func (s PluginVersionFile) MigrateFrom(oldI interface{}) migrate.Migrateable {
 		}
 	}
 	return s
-}
-
-func (s PluginVersionFile) WriteOut() error {
-	// ensure internal dirs exists
-	if err := os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm); err != nil {
-		return err
-	}
-	stateFilePath := filepath.Join(filepaths.EnsurePluginDir(), "versions.json")
-	// if there is an existing file it must be bad/corrupt, so delete it
-	_ = os.Remove(stateFilePath)
-	// save state file
-	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
-}
-
-func LegacyPluginVersionsFilePath() string {
-	return filepath.Join(filepaths.EnsurePluginDir(), "versions.json")
 }
 
 func NewPluginVersionFile() *PluginVersionFile {

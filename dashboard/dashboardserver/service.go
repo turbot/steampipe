@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -26,6 +26,8 @@ const (
 	ServiceStateError   ServiceState = "running"
 )
 
+// LegacyDashboardServiceState is the legacy dashboard service state struct, which was
+// used in the legacy dashboard service state file
 type LegacyDashboardServiceState struct {
 	State      ServiceState
 	Error      string
@@ -49,9 +51,9 @@ func (s DashboardServiceState) IsValid() bool {
 	return len(s.SchemaVersion) > 0
 }
 
-func (s DashboardServiceState) MigrateFrom(oldI interface{}) migrate.Migrateable {
-	old := oldI.(LegacyDashboardServiceState)
-	s.SchemaVersion = "20220407"
+func (s *DashboardServiceState) MigrateFrom(legacyState interface{}) migrate.Migrateable {
+	old := legacyState.(LegacyDashboardServiceState)
+	s.SchemaVersion = constants.SchemaVersion
 	s.State = old.State
 	s.Error = old.Error
 	s.Pid = old.Pid
@@ -60,23 +62,6 @@ func (s DashboardServiceState) MigrateFrom(oldI interface{}) migrate.Migrateable
 	s.Listen = old.Listen
 
 	return s
-}
-
-func (s DashboardServiceState) WriteOut() error {
-	// ensure internal dirs exists
-	if err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm); err != nil {
-		return err
-	}
-	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), "dashboard_service.json")
-	// if there is an existing file it must be bad/corrupt, so delete it
-	_ = os.Remove(stateFilePath)
-	// save state file
-	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
-}
-
-func LegacyStateFilePath() string {
-	return filepath.Join(filepaths.EnsureInternalDir(), "dashboard_service.json")
 }
 
 func GetDashboardServiceState() (*DashboardServiceState, error) {
@@ -233,4 +218,19 @@ func loadServiceStateFile() (*DashboardServiceState, error) {
 	}
 	err = json.Unmarshal(stateBytes, state)
 	return state, err
+}
+
+// Save writes the config
+func (f *DashboardServiceState) Save() error {
+	versionFilePath := filepaths.DashboardServiceStateFilePath()
+	return f.write(versionFilePath)
+}
+
+func (f *DashboardServiceState) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("[ERROR]", "Error while writing version file", err)
+		return err
+	}
+	return os.WriteFile(path, versionFileJSON, 0644)
 }

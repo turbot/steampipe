@@ -10,7 +10,7 @@ import (
 type Migrateable interface {
 	MigrateFrom(old interface{}) Migrateable
 	IsValid() bool
-	WriteOut() error
+	Save() error
 }
 
 func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
@@ -39,5 +39,5 @@ func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
 		return err
 	}
 	x := new.MigrateFrom(old)
-	return utils.CombineErrors(os.Remove(oldPath), x.WriteOut())
+	return utils.CombineErrors(os.Remove(oldPath), x.Save())
 }
