@@ -48,8 +48,10 @@ type ControlRun struct {
 	// used to trace the events within the duration of a control execution
 	Lifecycle *utils.LifecycleTimer          `json:"-"`
 	RunStatus controlstatus.ControlRunStatus `json:"run_status"`
-	RunError  error                          `json:"run_error"`
+	// save run error as string for JSON export
+	RunErrorString string `json:"run_error"`
 
+	runError error
 	// the query result stream
 	queryResult *queryresult.Result
 	rowMap      map[string][]*ResultRow
@@ -119,19 +121,19 @@ func (r *ControlRun) MatchTag(key string, value string) bool {
 }
 
 func (r *ControlRun) GetError() error {
-	return r.RunError
+	return r.runError
 }
 
 func (r *ControlRun) setError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
-	if r.RunError == context.DeadlineExceeded {
-		r.RunError = fmt.Errorf("control execution timed out")
+	if r.runError == context.DeadlineExceeded {
+		r.runError = fmt.Errorf("control execution timed out")
 	} else {
-		r.RunError = utils.TransformErrorToSteampipe(err)
+		r.runError = utils.TransformErrorToSteampipe(err)
 	}
-
+	r.RunErrorString = r.runError.Error()
 	// update error count
 	r.Summary.Error++
 	r.setRunStatus(ctx, controlstatus.ControlRunError)
