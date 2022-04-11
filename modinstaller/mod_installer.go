@@ -255,7 +255,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		// so we found an existing mod which will satisfy this requirement
 
 		// update the install data
-		i.installData.addExisting(requiredModVersion.Name, dependencyMod.Version, requiredModVersion.Constraint, parent)
+		i.installData.addExisting(requiredModVersion.Name, dependencyMod, requiredModVersion.Constraint, parent)
 		log.Printf("[TRACE] not installing %s with version constraint %s as version %s is already installed", requiredModVersion.Name, requiredModVersion.Constraint.Original, dependencyMod.Version)
 	}
 
@@ -348,13 +348,14 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 
 // install a mod
 func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod) (_ *modconfig.Mod, err error) {
+	var modDef *modconfig.Mod
 	// get the temp location to install the mod to
 	fullName := dependency.FullName()
 	tempDestPath := i.getDependencyTmpPath(fullName)
 
 	defer func() {
 		if err == nil {
-			i.installData.onModInstalled(dependency, parent)
+			i.installData.onModInstalled(dependency, modDef, parent)
 		}
 	}()
 	// if the target path exists, use the exiting file
@@ -366,7 +367,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	}
 
 	// now load the installed mod and return it
-	modDef, err := i.loadModfile(tempDestPath, false)
+	modDef, err = i.loadModfile(tempDestPath, false)
 	if err != nil {
 		return nil, err
 	}

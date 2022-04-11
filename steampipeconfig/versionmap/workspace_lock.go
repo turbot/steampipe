@@ -138,7 +138,7 @@ func (l *WorkspaceLock) setMissing() {
 				// get the mod name from the constraint (fullName includes the version)
 				name := resolvedConstraint.Name
 				// remove this item from the install cache and add into missing
-				l.MissingVersions.Add(name, resolvedConstraint.Version, resolvedConstraint.Constraint, parent)
+				l.MissingVersions.Add(name, resolvedConstraint.Alias, resolvedConstraint.Version, resolvedConstraint.Constraint, parent)
 				l.InstallCache[parent].Remove(name)
 			}
 		}
