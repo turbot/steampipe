@@ -46,13 +46,13 @@ type ControlRun struct {
 	// execution tree
 	Tree *ExecutionTree `json:"-"`
 	// used to trace the events within the duration of a control execution
-	Lifecycle *utils.LifecycleTimer `json:"-"`
+	Lifecycle *utils.LifecycleTimer          `json:"-"`
+	RunStatus controlstatus.ControlRunStatus `json:"run_status"`
+	RunError  error                          `json:"run_error"`
 
 	// the query result stream
 	queryResult *queryresult.Result
-	rowMap      map[string][]*ResultRow        `json:"-"`
-	RunStatus   controlstatus.ControlRunStatus `json:"run_status"`
-	runError    error
+	rowMap      map[string][]*ResultRow
 	stateLock   sync.Mutex
 	doneChan    chan bool
 	attempts    int
@@ -119,17 +119,17 @@ func (r *ControlRun) MatchTag(key string, value string) bool {
 }
 
 func (r *ControlRun) GetError() error {
-	return r.runError
+	return r.RunError
 }
 
 func (r *ControlRun) setError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
-	if r.runError == context.DeadlineExceeded {
-		r.runError = fmt.Errorf("control execution timed out")
+	if r.RunError == context.DeadlineExceeded {
+		r.RunError = fmt.Errorf("control execution timed out")
 	} else {
-		r.runError = utils.TransformErrorToSteampipe(err)
+		r.RunError = utils.TransformErrorToSteampipe(err)
 	}
 
 	// update error count
