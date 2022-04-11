@@ -180,10 +180,13 @@ interface AvailableDashboardTags {
   [key: string]: string;
 }
 
+type AvailableDashboardType = "dashboard" | "benchmark";
+
 export interface AvailableDashboard {
   full_name: string;
   short_name: string;
   mod_full_name: string;
+  type: AvailableDashboardType;
   tags: AvailableDashboardTags;
   title: string;
 }
@@ -248,6 +251,7 @@ const buildDashboardsList = (
         title: dashboard.title,
         full_name: dashboard.full_name,
         short_name: dashboard.short_name,
+        type: dashboard.type,
         tags: dashboard.tags,
         mod_full_name: mod_full_name,
       });

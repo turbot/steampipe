@@ -90,16 +90,15 @@ const useAnalyticsProvider = () => {
     }
 
     setEnabled(
-      metadata.telemetry === "info" && !!process.env.REACT_APP_HEAP_ID
+      process.env.NODE_ENV === "production" &&
+        metadata.telemetry === "info" &&
+        !!process.env.REACT_APP_HEAP_ID
     );
 
-    if (metadata.telemetry !== "info") {
-    } else {
+    // @ts-ignore
+    if (metadata.telemetry === "info" && window.heap) {
       // @ts-ignore
-      if (window.heap) {
-        // @ts-ignore
-        window.heap.load(process.env.REACT_APP_HEAP_ID);
-      }
+      window.heap.load(process.env.REACT_APP_HEAP_ID);
     }
 
     setInitialised(true);

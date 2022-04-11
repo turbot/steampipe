@@ -45,6 +45,7 @@ export const PanelStoryDecorator = ({
           title: "Storybook Dashboard Wrapper",
           full_name: "storybook.dashboard.storybook_dashboard_wrapper",
           short_name: "storybook_dashboard_wrapper",
+          type: "dashboard",
           tags: {},
           mod_full_name: "mod.storybook",
         },

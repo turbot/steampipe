@@ -46,6 +46,24 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 	return json.Marshal(payload)
 }
 
+func addBenchmarkChildren(benchmark *modconfig.Benchmark) []ModAvailableBenchmark {
+	var children []ModAvailableBenchmark
+	for _, child := range benchmark.GetChildren() {
+		switch t := child.(type) {
+		case *modconfig.Benchmark:
+			availableBenchmark := ModAvailableBenchmark{
+				Title:     t.GetTitle(),
+				FullName:  t.FullName,
+				ShortName: t.ShortName,
+				Tags:      t.Tags,
+				Children:  addBenchmarkChildren(t),
+			}
+			children = append(children, availableBenchmark)
+		}
+	}
+	return children
+}
+
 func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
 	// build a map of the dashboards provided by each mod
 	dashboardsByMod := make(map[string]map[string]ModAvailableDashboard)
@@ -62,13 +80,37 @@ func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources)
 			Title:     typeHelpers.SafeString(dashboard.Title),
 			FullName:  dashboard.FullName,
 			ShortName: dashboard.ShortName,
+			Type:      "dashboard",
 			Tags:      dashboard.Tags,
 		}
 	}
+
+	var benchmarks []ModAvailableBenchmark
 	for _, benchmark := range workspaceResources.Mod.ResourceMaps.Benchmarks {
 		if benchmark.IsAnonymous() {
 			continue
 		}
+
+		// Find any benchmarks who have a parent this is a mod - we consider these top-level
+		isTopLevel := false
+		for _, parent := range benchmark.Parents {
+			switch parent.(type) {
+			case *modconfig.Mod:
+				isTopLevel = true
+			}
+		}
+
+		if isTopLevel {
+			availableBenchmark := ModAvailableBenchmark{
+				Title:     benchmark.GetTitle(),
+				FullName:  benchmark.FullName,
+				ShortName: benchmark.ShortName,
+				Tags:      benchmark.Tags,
+				Children:  addBenchmarkChildren(benchmark),
+			}
+			benchmarks = append(benchmarks, availableBenchmark)
+		}
+
 		mod := benchmark.Mod
 		// create a child map for this mod if needed
 		if _, ok := dashboardsByMod[mod.FullName]; !ok {
@@ -79,12 +121,14 @@ func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources)
 			Title:     typeHelpers.SafeString(benchmark.Title),
 			FullName:  benchmark.FullName,
 			ShortName: benchmark.ShortName,
+			Type:      "benchmark",
 			Tags:      benchmark.Tags,
 		}
 	}
 	payload := AvailableDashboardsPayload{
 		Action:          "available_dashboards",
 		DashboardsByMod: dashboardsByMod,
+		Benchmarks:      benchmarks,
 	}
 	return json.Marshal(payload)
 }

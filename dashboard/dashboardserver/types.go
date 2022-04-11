@@ -96,12 +96,22 @@ type ModAvailableDashboard struct {
 	Title     string            `json:"title,omitempty"`
 	FullName  string            `json:"full_name"`
 	ShortName string            `json:"short_name"`
+	Type      string            `json:"type"`
 	Tags      map[string]string `json:"tags"`
+}
+
+type ModAvailableBenchmark struct {
+	Title     string                  `json:"title,omitempty"`
+	FullName  string                  `json:"full_name"`
+	ShortName string                  `json:"short_name"`
+	Tags      map[string]string       `json:"tags"`
+	Children  []ModAvailableBenchmark `json:"children,omitempty"`
 }
 
 type AvailableDashboardsPayload struct {
 	Action          string                                      `json:"action"`
 	DashboardsByMod map[string]map[string]ModAvailableDashboard `json:"dashboards_by_mod"`
+	Benchmarks      []ModAvailableBenchmark                     `json:"benchmarks"`
 }
 
 type ModDashboardMetadata struct {
