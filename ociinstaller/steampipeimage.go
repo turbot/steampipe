@@ -184,15 +184,19 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 	res := &PluginImage{}
 	var foundLayers []ocispec.Descriptor
 	// get the binary plugin file info
+	// iterate in order of mediatypes - as given by MediaTypeForPlatform (see function docs)
 	for _, mediaType := range MediaTypeForPlatform("plugin") {
+		// find out the layer with the medistype
 		foundLayers = findLayersForMediaType(layers, mediaType)
 		if len(foundLayers) == 1 {
+			// when found, exit
 			res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 			break
 		}
+
+		// loop over to the next one
 		log.Println("[TRACE] could not find data for", mediaType)
 		log.Println("[TRACE] falling back to the next one, if any")
-		continue
 	}
 	if len(res.BinaryFile) == 0 {
 		return nil, fmt.Errorf("invalid image - should contain 1 binary file per platform, found %d", len(foundLayers))
