@@ -14,8 +14,10 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// LegacyRunningDBInstanceInfo is the legacy running db instance info struct, which was used
-// in the legacy steampipe.json state file
+const StructVersion = 20220411
+
+// LegacyRunningDBInstanceInfo is a struct used to migrate the
+// RunningDBInstanceInfo to serialize with snake case property names
 type LegacyRunningDBInstanceInfo struct {
 	Pid        int
 	Port       int
@@ -37,24 +39,26 @@ type RunningDBInstanceInfo struct {
 	Password      string            `json:"password"`
 	User          string            `json:"user"`
 	Database      string            `json:"database"`
-	SchemaVersion string            `json:"schema_version"`
+	StructVersion int64             `json:"struct_version"`
 }
 
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
 func (s RunningDBInstanceInfo) IsValid() bool {
-	return len(s.SchemaVersion) > 0
+	return s.StructVersion > 0
 }
 
-func (s *RunningDBInstanceInfo) MigrateFrom(legacyState interface{}) migrate.Migrateable {
-	old := legacyState.(LegacyRunningDBInstanceInfo)
-	s.SchemaVersion = constants.SchemaVersion
-	s.Pid = old.Pid
-	s.Port = old.Port
-	s.Listen = old.Listen
-	s.ListenType = old.ListenType
-	s.Invoker = old.Invoker
-	s.Password = old.Password
-	s.User = old.User
-	s.Database = old.Database
+func (s *RunningDBInstanceInfo) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyRunningDBInstanceInfo)
+	s.StructVersion = StructVersion
+	s.Pid = legacyState.Pid
+	s.Port = legacyState.Port
+	s.Listen = legacyState.Listen
+	s.ListenType = legacyState.ListenType
+	s.Invoker = legacyState.Invoker
+	s.Password = legacyState.Password
+	s.User = legacyState.User
+	s.Database = legacyState.Database
 
 	return s
 }

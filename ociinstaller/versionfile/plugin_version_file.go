@@ -6,31 +6,32 @@ import (
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 )
 
-// LegacyPluginVersionFile is the legacy plugin version file struct, which was used
-// in the legacy plugin version state file
+// LegacyPluginVersionFile is a struct used to migrate the
+// PluginVersionFile to serialize with snake case property names
 type LegacyPluginVersionFile struct {
 	Plugins map[string]*LegacyInstalledVersion `json:"plugins"`
 }
 
 type PluginVersionFile struct {
 	Plugins       map[string]*InstalledVersion `json:"plugins"`
-	SchemaVersion string                       `json:"schema_version"`
+	StructVersion int64                        `json:"struct_version"`
 }
 
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
 func (s PluginVersionFile) IsValid() bool {
-	return len(s.SchemaVersion) > 0
+	return s.StructVersion > 0
 }
 
-func (s *PluginVersionFile) MigrateFrom(legacyState interface{}) migrate.Migrateable {
-	old := legacyState.(LegacyPluginVersionFile)
-	s.SchemaVersion = constants.SchemaVersion
-	s.Plugins = make(map[string]*InstalledVersion, len(old.Plugins))
-	for p, i := range old.Plugins {
+func (s *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyPluginVersionFile)
+	s.StructVersion = StructVersion
+	s.Plugins = make(map[string]*InstalledVersion, len(legacyState.Plugins))
+	for p, i := range legacyState.Plugins {
 		s.Plugins[p] = &InstalledVersion{
 			Name:            i.Name,
 			Version:         i.Version,

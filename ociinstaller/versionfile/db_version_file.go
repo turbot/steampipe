@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 )
 
-// LegacyDatabaseVersionFile is the legacy db version file struct, which was used
-// in the legacy db state file
+const StructVersion = 20220411
+
+// LegacyDatabaseVersionFile is a struct used to migrate the
+// DatabaseVersionFile to serialize with snake case property names
 type LegacyDatabaseVersionFile struct {
 	FdwExtension LegacyInstalledVersion `json:"fdwExtension"`
 	EmbeddedDB   LegacyInstalledVersion `json:"embeddedDB"`
@@ -22,7 +23,7 @@ type LegacyDatabaseVersionFile struct {
 type DatabaseVersionFile struct {
 	FdwExtension  InstalledVersion `json:"fdw_extension"`
 	EmbeddedDB    InstalledVersion `json:"embedded_db"`
-	SchemaVersion string           `json:"schema_version"`
+	StructVersion int64            `json:"struct_version"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
@@ -32,26 +33,28 @@ func NewDBVersionFile() *DatabaseVersionFile {
 	}
 }
 
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
 func (s DatabaseVersionFile) IsValid() bool {
-	return len(s.SchemaVersion) > 0
+	return s.StructVersion > 0
 }
 
-func (s *DatabaseVersionFile) MigrateFrom(legacyState interface{}) migrate.Migrateable {
-	old := legacyState.(LegacyDatabaseVersionFile)
-	s.SchemaVersion = constants.SchemaVersion
-	s.FdwExtension.Name = old.FdwExtension.Name
-	s.FdwExtension.Version = old.FdwExtension.Version
-	s.FdwExtension.ImageDigest = old.FdwExtension.ImageDigest
-	s.FdwExtension.InstalledFrom = old.FdwExtension.InstalledFrom
-	s.FdwExtension.LastCheckedDate = old.FdwExtension.LastCheckedDate
-	s.FdwExtension.InstallDate = old.FdwExtension.InstallDate
+func (s *DatabaseVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyDatabaseVersionFile)
+	s.StructVersion = StructVersion
+	s.FdwExtension.Name = legacyState.FdwExtension.Name
+	s.FdwExtension.Version = legacyState.FdwExtension.Version
+	s.FdwExtension.ImageDigest = legacyState.FdwExtension.ImageDigest
+	s.FdwExtension.InstalledFrom = legacyState.FdwExtension.InstalledFrom
+	s.FdwExtension.LastCheckedDate = legacyState.FdwExtension.LastCheckedDate
+	s.FdwExtension.InstallDate = legacyState.FdwExtension.InstallDate
 
-	s.EmbeddedDB.Name = old.EmbeddedDB.Name
-	s.EmbeddedDB.Version = old.EmbeddedDB.Version
-	s.EmbeddedDB.ImageDigest = old.EmbeddedDB.ImageDigest
-	s.EmbeddedDB.InstalledFrom = old.EmbeddedDB.InstalledFrom
-	s.EmbeddedDB.LastCheckedDate = old.EmbeddedDB.LastCheckedDate
-	s.EmbeddedDB.InstallDate = old.EmbeddedDB.InstallDate
+	s.EmbeddedDB.Name = legacyState.EmbeddedDB.Name
+	s.EmbeddedDB.Version = legacyState.EmbeddedDB.Version
+	s.EmbeddedDB.ImageDigest = legacyState.EmbeddedDB.ImageDigest
+	s.EmbeddedDB.InstalledFrom = legacyState.EmbeddedDB.InstalledFrom
+	s.EmbeddedDB.LastCheckedDate = legacyState.EmbeddedDB.LastCheckedDate
+	s.EmbeddedDB.InstallDate = legacyState.EmbeddedDB.InstallDate
 
 	return s
 }

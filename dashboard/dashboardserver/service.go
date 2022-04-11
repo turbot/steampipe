@@ -24,10 +24,11 @@ type ServiceState string
 const (
 	ServiceStateRunning ServiceState = "running"
 	ServiceStateError   ServiceState = "running"
+	StructVersion                    = 20220411
 )
 
-// LegacyDashboardServiceState is the legacy dashboard service state struct, which was
-// used in the legacy dashboard service state file
+// LegacyDashboardServiceState is a struct used to migrate the
+// DashboardServiceState to serialize with snake case property names
 type LegacyDashboardServiceState struct {
 	State      ServiceState
 	Error      string
@@ -44,22 +45,24 @@ type DashboardServiceState struct {
 	Port          int          `json:"port"`
 	ListenType    string       `json:"listen_type"`
 	Listen        []string     `json:"listen"`
-	SchemaVersion string       `json:"schema_version"`
+	StructVersion int64        `json:"struct_version"`
 }
 
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
 func (s DashboardServiceState) IsValid() bool {
-	return len(s.SchemaVersion) > 0
+	return s.StructVersion > 0
 }
 
-func (s *DashboardServiceState) MigrateFrom(legacyState interface{}) migrate.Migrateable {
-	old := legacyState.(LegacyDashboardServiceState)
-	s.SchemaVersion = constants.SchemaVersion
-	s.State = old.State
-	s.Error = old.Error
-	s.Pid = old.Pid
-	s.Port = old.Port
-	s.ListenType = old.ListenType
-	s.Listen = old.Listen
+func (s *DashboardServiceState) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyDashboardServiceState)
+	s.StructVersion = StructVersion
+	s.State = legacyState.State
+	s.Error = legacyState.Error
+	s.Pid = legacyState.Pid
+	s.Port = legacyState.Port
+	s.ListenType = legacyState.ListenType
+	s.Listen = legacyState.Listen
 
 	return s
 }
@@ -220,7 +223,6 @@ func loadServiceStateFile() (*DashboardServiceState, error) {
 	return state, err
 }
 
-// Save writes the config
 func (f *DashboardServiceState) Save() error {
 	versionFilePath := filepaths.DashboardServiceStateFilePath()
 	return f.write(versionFilePath)
