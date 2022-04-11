@@ -40,16 +40,16 @@ load "$LIB_BATS_SUPPORT/load.bash"
   
   # Start the service
   run steampipe service start --install-dir $target_install_directory
+  echo $output
+  # Check if database name in the output is the same
+  assert_output --partial 'custom_db_name'
   
   # Extract password from the state file
-  db_name=$(cat $target_install_directory/internal/steampipe.json | jq .Database)
+  db_name=$(cat $target_install_directory/internal/steampipe.json | jq .database)
   echo $db_name
-  echo $output
   
   # Both should be equal
   assert_equal "$db_name" "\"custom_db_name\""
-  # Check if database name in the output is the same
-  assert_output --partial 'Database:           custom_db_name'
   
   run steampipe service stop --install-dir $target_install_directory
   
@@ -74,7 +74,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe service start
 
     # set the `lastChecked` date in the update-check.json file to a past date
-    echo $(cat $STEAMPIPE_INSTALL_DIR/internal/update_check.json | jq '.lastChecked="2021-04-10T17:53:40+05:30"') > $STEAMPIPE_INSTALL_DIR/internal/update_check.json
+    echo $(cat $STEAMPIPE_INSTALL_DIR/internal/update_check.json | jq '.last_checked="2021-04-10T17:53:40+05:30"') > $STEAMPIPE_INSTALL_DIR/internal/update_check.json
 
     # get the content of the current update-check.json file
     checkFileContent=$(cat $STEAMPIPE_INSTALL_DIR/internal/update_check.json)
@@ -84,7 +84,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # get the content of the new update-check.json file
     newCheckFileContent=$(cat $STEAMPIPE_INSTALL_DIR/internal/update_check.json)
 
-    assert_equal "$(echo $newCheckFileContent | jq '.lastChecked')" '"2021-04-10T17:53:40+05:30"'
+    assert_equal "$(echo $newCheckFileContent | jq '.last_checked')" '"2021-04-10T17:53:40+05:30"'
 }
 
 @test "start service, install plugin and query" {
