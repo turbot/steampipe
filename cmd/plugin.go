@@ -219,14 +219,14 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
-	doneChannel := make(chan struct{})
+	doneChannel := make(chan struct{}, 1)
 
 	progressBars.Start()
 
 	go func() {
 		installWaitGroup.Wait()
 		close(dataChannel)
-		<-doneChannel
+		close(doneChannel)
 	}()
 	go func() {
 		for report := range dataChannel {
@@ -379,14 +379,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	updateWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(reports))
-	doneChannel := make(chan struct{})
+	doneChannel := make(chan struct{}, 1)
 	progressBars := uiprogress.New()
 	progressBars.Start()
 
 	go func() {
 		updateWaitGroup.Wait()
 		close(dataChannel)
-		<-doneChannel
+		close(doneChannel)
 	}()
 	go func() {
 		for report := range dataChannel {
