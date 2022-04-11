@@ -153,6 +153,10 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	if !ok {
 		return nil, err
 	}
+	// if interactive inp[ut is disabled, return the missing variables error
+	if !viper.GetBool(constants.ArgInput) {
+		return nil, missingVariablesError
+	}
 	// so we have missing variables - prompt for them
 	// first hide spinner if it is there
 	statushooks.Done(ctx)

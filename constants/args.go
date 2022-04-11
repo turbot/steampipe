@@ -45,6 +45,7 @@ const (
 	ArgModInstall        = "mod-install"
 	ArgServiceMode       = "service-mode"
 	ArgBrowser           = "browser"
+	ArgInput             = "input"
 )
 
 /// metaquery mode arguments
