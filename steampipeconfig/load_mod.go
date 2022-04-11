@@ -44,6 +44,7 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 				Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 			})
 		runCtx.BlockTypes = parentRunCtx.BlockTypes
+		runCtx.Variables = parentRunCtx.Variables
 	}
 
 	// verify the mod folder exists
