@@ -219,48 +219,57 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
 	progressBars.Start()
-	for _, pl := range plugins {
+	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
 		go func(p string) {
-			bar := progressBars.AddBar(len(pluginInstallSteps))
-			bar.PrependFunc(func(b *uiprogress.Bar) string {
-				return strutil.Resize(p, 20)
-			})
-
-			var report *display.PluginInstallReport
-
-			isPluginExists, _ := plugin.Exists(p)
-			if isPluginExists {
-				bar.Set(len(pluginInstallSteps))
-				report = &display.PluginInstallReport{
-					Plugin:         p,
-					Skipped:        true,
-					SkipReason:     constants.PluginAlreadyInstalled,
-					IsUpdateReport: false,
-				}
-				bar.AppendFunc(func(b *uiprogress.Bar) string {
-					return strutil.Resize(constants.PluginAlreadyInstalled, 20)
-				})
-			} else {
-				bar.AppendFunc(func(b *uiprogress.Bar) string {
-					return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
-				})
-				report = installPlugin(ctx, p, false, bar)
-			}
+			report := doPluginInstall(ctx, progressBars, p)
+			// append
+			installReports = append(installReports, report)
+			// signal the waitgroup that we are done
 			installWaitGroup.Done()
-			installReports = append(installReports, *report)
-		}(pl)
+		}(pluginName)
+
 	}
 
 	installWaitGroup.Wait()
 	progressBars.Stop()
 	statusSpinner.UpdateSpinnerMessage("Refreshing connections...")
-	refreshConnectionsIfNecessary(cmd.Context(), installReports, true)
+	refreshConnectionsIfNecessary(ctx, installReports, true)
 	statusSpinner.Done()
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
+}
+
+func doPluginInstall(ctx context.Context, progressBars *uiprogress.Progress, pluginName string) *display.PluginInstallReport {
+	var report *display.PluginInstallReport
+
+	bar := progressBars.AddBar(len(pluginInstallSteps))
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(pluginName, 20)
+	})
+
+	pluginExists, _ := plugin.Exists(pluginName)
+	if pluginExists {
+		bar.Set(len(pluginInstallSteps))
+		report = &display.PluginInstallReport{
+			Plugin:         pluginName,
+			Skipped:        true,
+			SkipReason:     constants.PluginAlreadyInstalled,
+			IsUpdateReport: false,
+		}
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			return strutil.Resize(constants.PluginAlreadyInstalled, 20)
+		})
+	} else {
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+		})
+		report = installPlugin(ctx, pluginName, false, bar)
+	}
+
+	return report
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
@@ -326,7 +335,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
-				updateReports = append(updateReports, display.PluginInstallReport{
+				updateReports = append(updateReports, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
 					SkipReason:     constants.PluginNotInstalled,
@@ -375,55 +384,55 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 	}
-	sorted := []string{}
-	for a := range reports {
-		sorted = append(sorted, a)
-	}
-	sort.Strings(sorted)
 
+	progressBars := uiprogress.New()
+	progressBars.Start()
+
+	sorted := utils.SortedStringKeys(reports)
 	for _, key := range sorted {
 		report := reports[key]
-
 		updateWaitGroup.Add(1)
-
-		bar := p.AddBar(len(pluginInstallSteps))
-
 		go func(pvr plugin.VersionCheckReport) {
-			var report *display.PluginInstallReport
-			bar.PrependFunc(func(b *uiprogress.Bar) string {
-				return strutil.Resize(pvr.ShortName(), 20)
-			})
-
-			if pvr.Plugin.ImageDigest == pvr.CheckResponse.Digest {
-				bar.AppendFunc(func(b *uiprogress.Bar) string {
-					return strutil.Resize(constants.PluginLatestAlreadyInstalled, 30)
-				})
-				bar.Set(len(pluginInstallSteps))
-				report = &display.PluginInstallReport{
-					Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Stream),
-					Skipped:        true,
-					SkipReason:     constants.PluginLatestAlreadyInstalled,
-					IsUpdateReport: true,
-				}
-			} else {
-				bar.AppendFunc(func(b *uiprogress.Bar) string {
-					return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
-				})
-				report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
-			}
+			report := doPluginUpdate(ctx, progressBars, pvr)
 			updateWaitGroup.Done()
-			updateReports = append(updateReports, *report)
+			updateReports = append(updateReports, report)
 		}(report)
 
 	}
 	updateWaitGroup.Wait()
 	refreshConnectionsIfNecessary(cmd.Context(), updateReports, false)
-	p.Stop()
+	progressBars.Stop()
 	fmt.Println()
 	display.PrintInstallReports(updateReports, true)
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
+}
+
+func doPluginUpdate(ctx context.Context, progressBars *uiprogress.Progress, pvr plugin.VersionCheckReport) *display.PluginInstallReport {
+	var report *display.PluginInstallReport
+	bar := progressBars.AddBar(len(pluginInstallSteps))
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(pvr.ShortName(), 20)
+	})
+	if pvr.Plugin.ImageDigest == pvr.CheckResponse.Digest {
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			return strutil.Resize(constants.PluginLatestAlreadyInstalled, 30)
+		})
+		bar.Set(len(pluginInstallSteps))
+		report = &display.PluginInstallReport{
+			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Stream),
+			Skipped:        true,
+			SkipReason:     constants.PluginLatestAlreadyInstalled,
+			IsUpdateReport: true,
+		}
+	} else {
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+		})
+		report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
+	}
+	return report
 }
 
 func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *uiprogress.Bar) *display.PluginInstallReport {
@@ -486,7 +495,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports []display.PluginInstallReport, shouldReload bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports display.PluginInstallReports, shouldReload bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
