@@ -1,8 +1,13 @@
 package steampipeconfig
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -14,7 +19,7 @@ var ConnectionDataStructVersion int64 = 20211125
 // ConnectionData is a struct containing all details for a connection
 // - the plugin name and checksum, the connection config and options
 // json tags needed as this is stored in the connection state file
-type ConnectionData struct {
+type LegacyConnectionData struct {
 	StructVersion int64
 	// the fully qualified name of the plugin
 	Plugin string
@@ -26,6 +31,53 @@ type ConnectionData struct {
 	SchemaHash string `json:"SchemaHash,omitempty"`
 	// the creation time of the plugin file (only used for local plugins)
 	ModTime time.Time
+}
+
+type ConnectionData struct {
+	StructVersion int64 `json:"struct_version,omitempty"`
+	// the fully qualified name of the plugin
+	Plugin string `json:"plugin,omitempty"`
+	// the underlying connection object
+	Connection *modconfig.Connection `json:"connection,omitempty"`
+	// schema mode - static or dynamic
+	SchemaMode string `json:"schema_mode,omitempty"`
+	// the hash of the connection schema
+	SchemaHash string `json:"schema_hash,omitempty"`
+	// the creation time of the plugin file (only used for local plugins)
+	ModTime time.Time `json:"mod_time"`
+}
+
+func (s ConnectionData) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s ConnectionData) MigrateFrom(oldI interface{}) migrate.Migrateable {
+	old := oldI.(LegacyConnectionData)
+	s.StructVersion = 20220407
+	s.Plugin = old.Plugin
+	s.SchemaMode = old.SchemaMode
+	s.SchemaHash = old.SchemaHash
+	s.ModTime = old.ModTime
+	s.Connection = old.Connection
+
+	return s
+}
+
+func (s ConnectionData) WriteOut() error {
+	// ensure internal dirs exists
+	if err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm); err != nil {
+		return err
+	}
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), "connection.json")
+	// if there is an existing file it must be bad/corrupt, so delete it
+	_ = os.Remove(stateFilePath)
+	// save state file
+	file, _ := json.MarshalIndent(s, "", " ")
+	return os.WriteFile(stateFilePath, file, 0644)
+}
+
+func LegacyStateFilePath() string {
+	return filepath.Join(filepaths.EnsureInternalDir(), "connection.json")
 }
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {

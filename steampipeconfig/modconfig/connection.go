@@ -21,7 +21,7 @@ const (
 // (Partial as the connection config, which is plugin specific, is stored as raw HCL.
 // This will be parsed by the plugin)
 // json tags needed as this is stored in the connection state file
-type Connection struct {
+type LegacyConnection struct {
 	// connection name
 	Name string
 	// The name of plugin as mentioned in config
@@ -42,6 +42,29 @@ type Connection struct {
 	// options
 	Options   *options.Connection `json:"Options,omitempty"`
 	DeclRange hcl.Range
+}
+
+type Connection struct {
+	// connection name
+	Name string `json:"name,omitempty"`
+	// The name of plugin as mentioned in config
+	PluginShortName string `json:"plugin_short_name,omitempty"`
+	// The fully qualified name of the plugin. derived from the short name
+	Plugin string `json:"plugin,omitempty"`
+	// Type - supported values: "aggregator"
+	Type string `json:"type,omitempty"`
+	// this is a list of names or wildcards which are resolved to connections
+	// (only valid for "aggregator" type)
+	ConnectionNames []string `json:"connections,omitempty"`
+	// a list of the resolved child connections
+	// (only valid for "aggregator" type)
+	Connections map[string]*Connection `json:"-"`
+	// unparsed HCL of plugin specific connection config
+	Config string `json:"config,omitempty"`
+
+	// options
+	Options   *options.Connection `json:"options,omitempty"`
+	DeclRange hcl.Range           `json:"decl_range,omitempty"`
 }
 
 func NewConnection(block *hcl.Block) *Connection {
