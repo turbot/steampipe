@@ -124,8 +124,8 @@ func initGlobalConfig() {
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 
 	// migrate all legacy config files
-	if cmd.Name() != "plugin-manager" {
-		utils.FailOnErrorWithMessage(migrateLegacyFiles(), "failed to migrate legacy files")
+	if cmd.Name() != constants.PluginManager {
+		utils.FailOnErrorWithMessage(migrateLegacyFiles(), "failed to migrate steampipe data files")
 	}
 
 	// load config (this sets the global config steampipeconfig.Config)
@@ -138,17 +138,19 @@ func initGlobalConfig() {
 	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
 
 	// now validate all config values have appropriate values
-	utils.FailOnErrorWithMessage(validateConfig(), "failed to validate config")
+	err = validateConfig()
+	utils.FailOnErrorWithMessage(err, "failed to validate config")
 }
 
+// migrate all data files to use snake casing for property names
 func migrateLegacyFiles() error {
 	return utils.CombineErrors(
-		migrate.Migrate(statefile.LegacyState{}, statefile.State{}, statefile.LegacyStateFilePath()),
-		migrate.Migrate(pluginmanager.LegacyPluginManagerState{}, pluginmanager.PluginManagerState{}, pluginmanager.LegacyStateFilePath()),
-		migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, db_local.RunningDBInstanceInfo{}, db_local.LegacyStateFilePath()),
-		migrate.Migrate(dashboardserver.LegacyDashboardServiceState{}, dashboardserver.DashboardServiceState{}, dashboardserver.LegacyStateFilePath()),
-		migrate.Migrate(versionfile.LegacyPluginVersionFile{}, versionfile.PluginVersionFile{}, versionfile.LegacyPluginVersionsFilePath()),
-		migrate.Migrate(versionfile.LegacyDatabaseVersionFile{}, versionfile.DatabaseVersionFile{}, versionfile.LegacyDbVersionsFilePath()),
+		migrate.Migrate(statefile.LegacyState{}, &statefile.State{}, filepaths.LegacyStateFilePath()),
+		migrate.Migrate(pluginmanager.LegacyPluginManagerState{}, &pluginmanager.PluginManagerState{}, filepaths.PluginManagerStateFilePath()),
+		migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, &db_local.RunningDBInstanceInfo{}, filepaths.RunningInfoFilePath()),
+		migrate.Migrate(dashboardserver.LegacyDashboardServiceState{}, &dashboardserver.DashboardServiceState{}, filepaths.DashboardServiceStateFilePath()),
+		migrate.Migrate(versionfile.LegacyPluginVersionFile{}, &versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
+		migrate.Migrate(versionfile.LegacyDatabaseVersionFile{}, &versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
 	)
 }
 

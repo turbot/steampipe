@@ -2,10 +2,12 @@ package steampipeconfig
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -16,9 +18,8 @@ import (
 // updating this version will force all connections to refresh, as the deserialized data will have an old version
 var ConnectionDataStructVersion int64 = 20211125
 
-// ConnectionData is a struct containing all details for a connection
-// - the plugin name and checksum, the connection config and options
-// json tags needed as this is stored in the connection state file
+// LegacyConnectionData is the legacy connection data struct, which was used in the legacy
+// connection state file
 type LegacyConnectionData struct {
 	StructVersion int64
 	// the fully qualified name of the plugin
@@ -33,6 +34,9 @@ type LegacyConnectionData struct {
 	ModTime time.Time
 }
 
+// ConnectionData is a struct containing all details for a connection
+// - the plugin name and checksum, the connection config and options
+// json tags needed as this is stored in the connection state file
 type ConnectionData struct {
 	StructVersion int64 `json:"struct_version,omitempty"`
 	// the fully qualified name of the plugin
@@ -51,9 +55,9 @@ func (s ConnectionData) IsValid() bool {
 	return s.StructVersion > 0
 }
 
-func (s ConnectionData) MigrateFrom(oldI interface{}) migrate.Migrateable {
-	old := oldI.(LegacyConnectionData)
-	s.StructVersion = 20220407
+func (s *ConnectionData) MigrateFrom(legacyState interface{}) migrate.Migrateable {
+	old := legacyState.(LegacyConnectionData)
+	s.StructVersion = constants.StructVersion
 	s.Plugin = old.Plugin
 	s.SchemaMode = old.SchemaMode
 	s.SchemaHash = old.SchemaHash
@@ -61,19 +65,6 @@ func (s ConnectionData) MigrateFrom(oldI interface{}) migrate.Migrateable {
 	s.Connection = old.Connection
 
 	return s
-}
-
-func (s ConnectionData) WriteOut() error {
-	// ensure internal dirs exists
-	if err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm); err != nil {
-		return err
-	}
-	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), "connection.json")
-	// if there is an existing file it must be bad/corrupt, so delete it
-	_ = os.Remove(stateFilePath)
-	// save state file
-	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
 }
 
 func LegacyStateFilePath() string {
@@ -99,4 +90,19 @@ func (p *ConnectionData) Equals(other *ConnectionData) bool {
 	return p.Plugin == other.Plugin &&
 		p.ModTime.Equal(other.ModTime) &&
 		p.Connection.Equals(other.Connection)
+}
+
+// Save writes the config
+func (f *ConnectionData) Save() error {
+	versionFilePath := filepaths.ConnectionStatePath()
+	return f.write(versionFilePath)
+}
+
+func (f *ConnectionData) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("[ERROR]", "Error while writing state file", err)
+		return err
+	}
+	return os.WriteFile(path, versionFileJSON, 0644)
 }

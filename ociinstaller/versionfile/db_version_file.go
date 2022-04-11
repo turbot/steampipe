@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 )
 
+// LegacyDatabaseVersionFile is the legacy db version file struct, which was used
+// in the legacy db state file
 type LegacyDatabaseVersionFile struct {
 	FdwExtension LegacyInstalledVersion `json:"fdwExtension"`
 	EmbeddedDB   LegacyInstalledVersion `json:"embeddedDB"`
@@ -34,9 +36,9 @@ func (s DatabaseVersionFile) IsValid() bool {
 	return len(s.SchemaVersion) > 0
 }
 
-func (s DatabaseVersionFile) MigrateFrom(oldI interface{}) migrate.Migrateable {
-	old := oldI.(LegacyDatabaseVersionFile)
-	s.SchemaVersion = "20220407"
+func (s *DatabaseVersionFile) MigrateFrom(legacyState interface{}) migrate.Migrateable {
+	old := legacyState.(LegacyDatabaseVersionFile)
+	s.SchemaVersion = constants.SchemaVersion
 	s.FdwExtension.Name = old.FdwExtension.Name
 	s.FdwExtension.Version = old.FdwExtension.Version
 	s.FdwExtension.ImageDigest = old.FdwExtension.ImageDigest
@@ -54,23 +56,7 @@ func (s DatabaseVersionFile) MigrateFrom(oldI interface{}) migrate.Migrateable {
 	return s
 }
 
-func (s DatabaseVersionFile) WriteOut() error {
-	// ensure internal dirs exists
-	if err := os.MkdirAll(filepaths.EnsureDatabaseDir(), os.ModePerm); err != nil {
-		return err
-	}
-	stateFilePath := filepath.Join(filepaths.EnsureDatabaseDir(), "versions.json")
-	// if there is an existing file it must be bad/corrupt, so delete it
-	_ = os.Remove(stateFilePath)
-	// save state file
-	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
-}
-
-func LegacyDbVersionsFilePath() string {
-	return filepath.Join(filepaths.EnsureDatabaseDir(), "versions.json")
-}
-
+// LegacyInstalledVersion is the legacy db installed version info struct
 type LegacyInstalledVersion struct {
 	Name            string `json:"name"`
 	Version         string `json:"version"`
