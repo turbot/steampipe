@@ -40,6 +40,7 @@ export const PanelStoryDecorator = ({
         dispatch: () => {},
         error: null,
         dashboards: [],
+        dashboardsMap: {},
         selectedPanel: null,
         selectedDashboard: {
           title: "Storybook Dashboard Wrapper",
@@ -48,6 +49,7 @@ export const PanelStoryDecorator = ({
           type: "dashboard",
           tags: {},
           mod_full_name: "mod.storybook",
+          is_top_level: true,
         },
         selectedDashboardInputs: {},
         lastChangedInput: null,

@@ -1,5 +1,6 @@
 import {
   AvailableDashboard,
+  AvailableDashboardsDictionary,
   DashboardAction,
   DashboardActions,
   ModDashboardMetadata,
@@ -7,9 +8,9 @@ import {
 } from "../../hooks/useDashboard";
 import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
 import { stringToColour } from "../../utils/color";
-import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 interface DashboardListSection {
@@ -67,27 +68,105 @@ const DashboardTag = ({
   );
 };
 
+const BenchmarkTitlePart = ({ benchmark }) => {
+  const {
+    components: { ExternalLink },
+  } = useDashboard();
+
+  return (
+    <ExternalLink className="link-highlight" to={`/${benchmark.full_name}`}>
+      {benchmark.title || benchmark.short_name}
+    </ExternalLink>
+  );
+};
+
+const BenchmarkTitle = ({ benchmark, searchValue }) => {
+  const {
+    components: { ExternalLink },
+    dashboardsMap,
+  } = useDashboard();
+
+  if (!searchValue) {
+    return (
+      <ExternalLink className="link-highlight" to={`/${benchmark.full_name}`}>
+        {benchmark.title || benchmark.short_name}
+      </ExternalLink>
+    );
+  }
+
+  const parts: AvailableDashboard[] = [];
+
+  for (const trunk of benchmark.trunks[0]) {
+    const part = dashboardsMap[trunk];
+    if (part) {
+      parts.push(part);
+    }
+  }
+
+  return (
+    <>
+      {parts.map((part, index) => (
+        <Fragment key={part.full_name}>
+          {!!index && <span key={index + "-separator"}>{" > "}</span>}
+          <BenchmarkTitlePart key={part.full_name} benchmark={part} />
+        </Fragment>
+      ))}
+    </>
+  );
+
+  // return parts.reduce((prev, curr, index) => [
+  //   prev,
+  //   <span key={index + "-separator"}>{" > "}</span>,
+  //   curr,
+  // ]);
+
+  // return parts.reduce((result, child, index) => {
+  //   if (index < parts.length - 1) {
+  //     // @ts-ignore
+  //     return result.concat([
+  //       // @ts-ignore
+  //       <BenchmarkTitlePart key={part.full_name} benchmark={part} />,
+  //       <span key={index + "-separator"}>{" > "}</span>,
+  //     ]);
+  //   }
+  //
+  //   return result.concat(
+  //     // @ts-ignore
+  //     <BenchmarkTitlePart key={part.full_name} benchmark={part} />
+  //   );
+  // }, []);
+};
+
+const DashboardTitle = ({ dashboard }) => {
+  const {
+    components: { ExternalLink },
+  } = useDashboard();
+
+  return (
+    <ExternalLink className="link-highlight" to={`/${dashboard.full_name}`}>
+      {dashboard.title || dashboard.short_name}
+    </ExternalLink>
+  );
+};
+
 const Section = ({
   title,
   dashboards,
   dispatch,
   searchValue,
 }: SectionProps) => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
   return (
     <div className="space-y-2">
       <h3 className="truncate">{title}</h3>
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            <ExternalLink
-              className="link-highlight"
-              to={`/${dashboard.full_name}`}
-            >
-              {dashboard.title || dashboard.short_name}
-            </ExternalLink>
+            {dashboard.type === "dashboard" && (
+              <DashboardTitle dashboard={dashboard} />
+            )}
+            {dashboard.type === "benchmark" && (
+              <BenchmarkTitle benchmark={dashboard} searchValue={searchValue} />
+            )}
           </div>
           <div className="hidden md:block col-span-6 space-x-2">
             {Object.entries(dashboard.tags || {}).map(([key, value]) => (
@@ -164,8 +243,33 @@ const searchAgainstDashboard = (
   return searchParts.every((searchPart) => joined.indexOf(searchPart) >= 0);
 };
 
-const sortDashboards = (dashboards: AvailableDashboard[] = []) => {
-  return sortBy(dashboards, [(d) => (d.title || d.short_name).toLowerCase()]);
+const sortDashboardSearchResults = (
+  dashboards: AvailableDashboard[] = [],
+  dashboardsMap: AvailableDashboardsDictionary
+) => {
+  return sortBy(dashboards, [
+    (d) => {
+      if (
+        d.type === "dashboard" ||
+        !d.trunks ||
+        d.trunks.length === 0 ||
+        d.trunks[0].length === 0
+      ) {
+        return (d.title || d.short_name).toLowerCase();
+      }
+      return d.trunks[0]
+        .map((t) => {
+          const part = dashboardsMap[t];
+          if (!part) {
+            return;
+          }
+          return part.title || part.short_name;
+        })
+        .filter((t) => !!t)
+        .join(" > ")
+        .toLowerCase();
+    },
+  ]);
 };
 
 const DashboardList = () => {
@@ -173,6 +277,7 @@ const DashboardList = () => {
     availableDashboardsLoaded,
     components: { DashboardListEmptyCallToAction },
     dashboards,
+    dashboardsMap,
     dispatch,
     metadata,
     search: { value: searchValue, groupBy: searchGroupBy },
@@ -180,18 +285,21 @@ const DashboardList = () => {
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
+  const [unfilteredTopLevelDashboards, setUnfilteredTopLevelDashboards] =
+    useState<AvailableDashboardWithMod[]>([]);
   const [filteredDashboards, setFilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
 
   // Initialise dashboards with their mod + update when the list of dashboards is updated
   useEffect(() => {
-    if (!metadata || !availableDashboardsLoaded) {
+    if (!metadata || !availableDashboardsLoaded || !dashboardsMap) {
       setUnfilteredDashboards([]);
       return;
     }
 
     const dashboardsWithMod: AvailableDashboardWithMod[] = [];
+    const topLevelDashboardsWithMod: AvailableDashboardWithMod[] = [];
     const newDashboardTagKeys: string[] = [];
     for (const dashboard of dashboards) {
       const dashboardMod = dashboard.mod_full_name;
@@ -210,6 +318,10 @@ const DashboardList = () => {
       dashboardWithMod.mod = mod;
       dashboardsWithMod.push(dashboardWithMod);
 
+      if (dashboard.is_top_level) {
+        topLevelDashboardsWithMod.push(dashboardWithMod);
+      }
+
       Object.entries(dashboard.tags || {}).forEach(([tagKey]) => {
         if (!newDashboardTagKeys.includes(tagKey)) {
           newDashboardTagKeys.push(tagKey);
@@ -217,6 +329,7 @@ const DashboardList = () => {
       });
     }
     setUnfilteredDashboards(dashboardsWithMod);
+    setUnfilteredTopLevelDashboards(topLevelDashboardsWithMod);
     dispatch({
       type: DashboardActions.SET_DASHBOARD_TAG_KEYS,
       keys: newDashboardTagKeys,
@@ -243,11 +356,17 @@ const DashboardList = () => {
       }
     });
 
-    setFilteredDashboards(sortDashboards(filtered));
-  }, [availableDashboardsLoaded, unfilteredDashboards, metadata, searchValue]);
+    setFilteredDashboards(sortDashboardSearchResults(filtered, dashboardsMap));
+  }, [
+    availableDashboardsLoaded,
+    dashboardsMap,
+    unfilteredDashboards,
+    metadata,
+    searchValue,
+  ]);
 
   const sections = useGroupedDashboards(
-    filteredDashboards,
+    searchValue ? filteredDashboards : unfilteredTopLevelDashboards,
     searchGroupBy,
     metadata
   );

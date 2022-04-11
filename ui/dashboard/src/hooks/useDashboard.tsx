@@ -12,11 +12,11 @@ import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
 import { buildComponentsMap } from "../components";
 import { CheckExecutionTree } from "../components/dashboards/check/common";
-import { Theme } from "./useTheme";
 import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
+import { Theme } from "./useTheme";
 import {
   useLocation,
   useNavigate,
@@ -52,6 +52,7 @@ interface IDashboardContext {
   error: any;
 
   dashboards: AvailableDashboard[];
+  dashboardsMap: AvailableDashboardsDictionary;
   dashboard: DashboardDefinition | null;
 
   selectedPanel: PanelDefinition | null;
@@ -180,23 +181,22 @@ interface AvailableDashboardTags {
   [key: string]: string;
 }
 
-type AvailableDashboardType = "dashboard" | "benchmark";
+type AvailableDashboardType = "benchmark" | "dashboard";
 
 export interface AvailableDashboard {
   full_name: string;
   short_name: string;
   mod_full_name: string;
-  type: AvailableDashboardType;
   tags: AvailableDashboardTags;
   title: string;
+  is_top_level: boolean;
+  type: AvailableDashboardType;
+  children?: AvailableDashboard[];
+  trunks?: string[][];
 }
 
-interface AvailableDashboardsForModDictionary {
+export interface AvailableDashboardsDictionary {
   [key: string]: AvailableDashboard;
-}
-
-interface DashboardsByModDictionary {
-  [key: string]: AvailableDashboardsForModDictionary;
 }
 
 export interface ContainerDefinition {
@@ -239,30 +239,57 @@ export interface DashboardDefinition {
   dashboard: string;
 }
 
-const buildDashboardsList = (
-  dashboards_by_mod: DashboardsByModDictionary
-): AvailableDashboard[] => {
-  const dashboards: AvailableDashboard[] = [];
-  for (const [mod_full_name, dashboards_for_mod] of Object.entries(
-    dashboards_by_mod
-  )) {
-    for (const [, dashboard] of Object.entries(dashboards_for_mod)) {
-      dashboards.push({
-        title: dashboard.title,
-        full_name: dashboard.full_name,
-        short_name: dashboard.short_name,
-        type: dashboard.type,
-        tags: dashboard.tags,
-        mod_full_name: mod_full_name,
-      });
-    }
+interface DashboardsCollection {
+  dashboards: AvailableDashboard[];
+  dashboardsMap: AvailableDashboardsDictionary;
+}
+
+const buildDashboards = (
+  dashboards: AvailableDashboardsDictionary,
+  benchmarks: AvailableDashboardsDictionary
+): DashboardsCollection => {
+  const dashboardsMap = {};
+  const builtDashboards: AvailableDashboard[] = [];
+
+  for (const [, dashboard] of Object.entries(dashboards)) {
+    const builtDashboard: AvailableDashboard = {
+      title: dashboard.title,
+      full_name: dashboard.full_name,
+      short_name: dashboard.short_name,
+      type: "dashboard",
+      tags: dashboard.tags,
+      mod_full_name: dashboard.mod_full_name,
+      is_top_level: true,
+    };
+    dashboardsMap[builtDashboard.full_name] = builtDashboard;
+    builtDashboards.push(builtDashboard);
   }
-  return sortBy(dashboards, [
-    (dashboard) =>
-      dashboard.title
-        ? dashboard.title.toLowerCase()
-        : dashboard.full_name.toLowerCase(),
-  ]);
+
+  for (const [, benchmark] of Object.entries(benchmarks)) {
+    const builtBenchmark: AvailableDashboard = {
+      title: benchmark.title,
+      full_name: benchmark.full_name,
+      short_name: benchmark.short_name,
+      type: "benchmark",
+      tags: benchmark.tags,
+      mod_full_name: benchmark.mod_full_name,
+      is_top_level: benchmark.is_top_level,
+      trunks: benchmark.trunks,
+      children: benchmark.children,
+    };
+    dashboardsMap[builtBenchmark.full_name] = builtBenchmark;
+    builtDashboards.push(builtBenchmark);
+  }
+
+  return {
+    dashboards: sortBy(builtDashboards, [
+      (dashboard) =>
+        dashboard.title
+          ? dashboard.title.toLowerCase()
+          : dashboard.full_name.toLowerCase(),
+    ]),
+    dashboardsMap,
+  };
 };
 
 const updateSelectedDashboard = (
@@ -343,7 +370,10 @@ function reducer(state, action) {
         metadata: action.metadata,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
-      const dashboards = buildDashboardsList(action.dashboards_by_mod);
+      const { dashboards, dashboardsMap } = buildDashboards(
+        action.dashboards,
+        action.benchmarks
+      );
       const selectedDashboard = updateSelectedDashboard(
         state.selectedDashboard,
         dashboards
@@ -353,6 +383,7 @@ function reducer(state, action) {
         error: null,
         availableDashboardsLoaded: true,
         dashboards,
+        dashboardsMap,
         selectedDashboard: updateSelectedDashboard(
           state.selectedDashboard,
           dashboards

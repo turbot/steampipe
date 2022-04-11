@@ -46,17 +46,21 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 	return json.Marshal(payload)
 }
 
-func addBenchmarkChildren(benchmark *modconfig.Benchmark) []ModAvailableBenchmark {
+func addBenchmarkChildren(benchmark *modconfig.Benchmark, recordTrunk bool, trunk []string, trunks map[string][][]string) []ModAvailableBenchmark {
 	var children []ModAvailableBenchmark
 	for _, child := range benchmark.GetChildren() {
 		switch t := child.(type) {
 		case *modconfig.Benchmark:
+			childTrunk := append(trunk, []string{t.FullName}...)
+			if recordTrunk {
+				trunks[t.FullName] = append(trunks[t.FullName], childTrunk)
+			}
 			availableBenchmark := ModAvailableBenchmark{
 				Title:     t.GetTitle(),
 				FullName:  t.FullName,
 				ShortName: t.ShortName,
 				Tags:      t.Tags,
-				Children:  addBenchmarkChildren(t),
+				Children:  addBenchmarkChildren(t, recordTrunk, childTrunk, trunks),
 			}
 			children = append(children, availableBenchmark)
 		}
@@ -66,32 +70,30 @@ func addBenchmarkChildren(benchmark *modconfig.Benchmark) []ModAvailableBenchmar
 
 func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
 	// build a map of the dashboards provided by each mod
-	dashboardsByMod := make(map[string]map[string]ModAvailableDashboard)
+	dashboards := make(map[string]ModAvailableDashboard)
 
 	// iterate over the dashboards for the top level mod - this will include the dashboards from dependency mods
 	for _, dashboard := range workspaceResources.Mod.ResourceMaps.Dashboards {
 		mod := dashboard.Mod
-		// create a child map for this mod if needed
-		if _, ok := dashboardsByMod[mod.FullName]; !ok {
-			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
-		}
 		// add this dashboard
-		dashboardsByMod[mod.FullName][dashboard.FullName] = ModAvailableDashboard{
-			Title:     typeHelpers.SafeString(dashboard.Title),
-			FullName:  dashboard.FullName,
-			ShortName: dashboard.ShortName,
-			Type:      "dashboard",
-			Tags:      dashboard.Tags,
+		dashboards[dashboard.FullName] = ModAvailableDashboard{
+			Title:       typeHelpers.SafeString(dashboard.Title),
+			FullName:    dashboard.FullName,
+			ShortName:   dashboard.ShortName,
+			Tags:        dashboard.Tags,
+			ModFullName: mod.FullName,
 		}
 	}
 
-	var benchmarks []ModAvailableBenchmark
+	benchmarks := make(map[string]ModAvailableBenchmark)
+	benchmarkTrunks := make(map[string][][]string)
+
 	for _, benchmark := range workspaceResources.Mod.ResourceMaps.Benchmarks {
 		if benchmark.IsAnonymous() {
 			continue
 		}
 
-		// Find any benchmarks who have a parent this is a mod - we consider these top-level
+		// Find any benchmarks who have a parent that is a mod - we consider these top-level
 		isTopLevel := false
 		for _, parent := range benchmark.Parents {
 			switch parent.(type) {
@@ -100,35 +102,36 @@ func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources)
 			}
 		}
 
+		mod := benchmark.Mod
+		trunk := []string{benchmark.FullName}
+
 		if isTopLevel {
-			availableBenchmark := ModAvailableBenchmark{
-				Title:     benchmark.GetTitle(),
-				FullName:  benchmark.FullName,
-				ShortName: benchmark.ShortName,
-				Tags:      benchmark.Tags,
-				Children:  addBenchmarkChildren(benchmark),
-			}
-			benchmarks = append(benchmarks, availableBenchmark)
+			benchmarkTrunks[benchmark.FullName] = [][]string{trunk}
 		}
 
-		mod := benchmark.Mod
-		// create a child map for this mod if needed
-		if _, ok := dashboardsByMod[mod.FullName]; !ok {
-			dashboardsByMod[mod.FullName] = make(map[string]ModAvailableDashboard)
+		availableBenchmark := ModAvailableBenchmark{
+			Title:       benchmark.GetTitle(),
+			FullName:    benchmark.FullName,
+			ShortName:   benchmark.ShortName,
+			Tags:        benchmark.Tags,
+			IsTopLevel:  isTopLevel,
+			Children:    addBenchmarkChildren(benchmark, isTopLevel, trunk, benchmarkTrunks),
+			ModFullName: mod.FullName,
 		}
-		// add this dashboard
-		dashboardsByMod[mod.FullName][benchmark.FullName] = ModAvailableDashboard{
-			Title:     typeHelpers.SafeString(benchmark.Title),
-			FullName:  benchmark.FullName,
-			ShortName: benchmark.ShortName,
-			Type:      "benchmark",
-			Tags:      benchmark.Tags,
+
+		benchmarks[benchmark.FullName] = availableBenchmark
+	}
+	for benchmarkName, trunks := range benchmarkTrunks {
+		if foundBenchmark, ok := benchmarks[benchmarkName]; ok {
+			foundBenchmark.Trunks = trunks
+			benchmarks[benchmarkName] = foundBenchmark
 		}
 	}
+
 	payload := AvailableDashboardsPayload{
-		Action:          "available_dashboards",
-		DashboardsByMod: dashboardsByMod,
-		Benchmarks:      benchmarks,
+		Action:     "available_dashboards",
+		Dashboards: dashboards,
+		Benchmarks: benchmarks,
 	}
 	return json.Marshal(payload)
 }

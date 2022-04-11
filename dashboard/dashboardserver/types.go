@@ -93,25 +93,28 @@ type ClientRequest struct {
 }
 
 type ModAvailableDashboard struct {
-	Title     string            `json:"title,omitempty"`
-	FullName  string            `json:"full_name"`
-	ShortName string            `json:"short_name"`
-	Type      string            `json:"type"`
-	Tags      map[string]string `json:"tags"`
+	Title       string            `json:"title,omitempty"`
+	FullName    string            `json:"full_name"`
+	ShortName   string            `json:"short_name"`
+	Tags        map[string]string `json:"tags"`
+	ModFullName string            `json:"mod_full_name"`
 }
 
 type ModAvailableBenchmark struct {
-	Title     string                  `json:"title,omitempty"`
-	FullName  string                  `json:"full_name"`
-	ShortName string                  `json:"short_name"`
-	Tags      map[string]string       `json:"tags"`
-	Children  []ModAvailableBenchmark `json:"children,omitempty"`
+	Title       string                  `json:"title,omitempty"`
+	FullName    string                  `json:"full_name"`
+	ShortName   string                  `json:"short_name"`
+	Tags        map[string]string       `json:"tags"`
+	IsTopLevel  bool                    `json:"is_top_level"`
+	Children    []ModAvailableBenchmark `json:"children,omitempty"`
+	Trunks      [][]string              `json:"trunks"`
+	ModFullName string                  `json:"mod_full_name"`
 }
 
 type AvailableDashboardsPayload struct {
-	Action          string                                      `json:"action"`
-	DashboardsByMod map[string]map[string]ModAvailableDashboard `json:"dashboards_by_mod"`
-	Benchmarks      []ModAvailableBenchmark                     `json:"benchmarks"`
+	Action     string                           `json:"action"`
+	Dashboards map[string]ModAvailableDashboard `json:"dashboards"`
+	Benchmarks map[string]ModAvailableBenchmark `json:"benchmarks"`
 }
 
 type ModDashboardMetadata struct {
