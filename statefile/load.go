@@ -8,36 +8,37 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 )
 
-const updateStateFileName = "update_check.json"
+const StructVersion = 20220411
 
-// LegacyState is the legacy state struct, which was used in the legacy
-// state file
+// LegacyState is a struct used to migrate the
+// State to serialize with snake case property names
 type LegacyState struct {
 	LastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
 	InstallationID string `json:"installationId"` // a UUIDv4 string
 }
 
-// State :: the state of the installation
+// State is a struct containing installation state
 type State struct {
 	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
 	InstallationID string `json:"installation_id"` // a UUIDv4 string
-	SchemaVersion  string `json:"schema_version"`
+	StructVersion  int64  `json:"struct_version"`
 }
 
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
 func (s State) IsValid() bool {
-	return len(s.SchemaVersion) > 0
+	return StructVersion > 0
 }
 
-func (s *State) MigrateFrom(legacyState interface{}) migrate.Migrateable {
-	old := legacyState.(LegacyState)
-	s.SchemaVersion = constants.SchemaVersion
-	s.LastCheck = old.LastCheck
-	s.InstallationID = old.InstallationID
+func (s *State) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyState)
+	s.StructVersion = StructVersion
+	s.LastCheck = legacyState.LastCheck
+	s.InstallationID = legacyState.InstallationID
 
 	return s
 }
@@ -45,7 +46,7 @@ func (s *State) MigrateFrom(legacyState interface{}) migrate.Migrateable {
 func LoadState() (State, error) {
 	currentState := createState()
 
-	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), updateStateFileName)
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
 	// get the state file
 	_, err := os.Stat(stateFilePath)
 	if err != nil {

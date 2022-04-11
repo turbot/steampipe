@@ -123,9 +123,10 @@ func initGlobalConfig() {
 
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 
-	// migrate all legacy config files
-	if cmd.Name() != constants.PluginManager {
-		utils.FailOnErrorWithMessage(migrateLegacyFiles(), "failed to migrate steampipe data files")
+	// migrate all legacy config files to use snake casing
+	if cmd.Name() != "plugin-manager" {
+		err := migrateLegacyFiles()
+		utils.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
 	}
 
 	// load config (this sets the global config steampipeconfig.Config)

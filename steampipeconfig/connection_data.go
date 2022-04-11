@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -51,18 +50,20 @@ type ConnectionData struct {
 	ModTime time.Time `json:"mod_time"`
 }
 
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
 func (s ConnectionData) IsValid() bool {
 	return s.StructVersion > 0
 }
 
-func (s *ConnectionData) MigrateFrom(legacyState interface{}) migrate.Migrateable {
-	old := legacyState.(LegacyConnectionData)
-	s.StructVersion = constants.StructVersion
-	s.Plugin = old.Plugin
-	s.SchemaMode = old.SchemaMode
-	s.SchemaHash = old.SchemaHash
-	s.ModTime = old.ModTime
-	s.Connection = old.Connection
+func (s *ConnectionData) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyConnectionData)
+	s.StructVersion = ConnectionDataStructVersion
+	s.Plugin = legacyState.Plugin
+	s.SchemaMode = legacyState.SchemaMode
+	s.SchemaHash = legacyState.SchemaHash
+	s.ModTime = legacyState.ModTime
+	s.Connection = legacyState.Connection
 
 	return s
 }
@@ -92,7 +93,6 @@ func (p *ConnectionData) Equals(other *ConnectionData) bool {
 		p.Connection.Equals(other.Connection)
 }
 
-// Save writes the config
 func (f *ConnectionData) Save() error {
 	versionFilePath := filepaths.ConnectionStatePath()
 	return f.write(versionFilePath)

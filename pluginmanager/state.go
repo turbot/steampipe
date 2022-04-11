@@ -6,7 +6,6 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 
@@ -16,8 +15,10 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// LegacyPluginManagerState is the legacy plugin manager state struct, which was used
-// in the legacy plugin state file
+const StructVersion = 20220411
+
+// LegacyPluginManagerState is a struct used to migrate the
+// PluginManagerState to serialize with snake case property names
 type LegacyPluginManagerState struct {
 	Protocol        plugin.Protocol
 	ProtocolVersion int
@@ -37,8 +38,8 @@ type PluginManagerState struct {
 	// path to the steampipe executable
 	Executable string `json:"executable"`
 	// is the plugin manager running
-	Running       bool   `json:"-"`
-	SchemaVersion string `json:"schema_version"`
+	Running       bool  `json:"-"`
+	StructVersion int64 `json:"struct_version"`
 }
 
 func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *PluginManagerState {
@@ -51,19 +52,21 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 	}
 }
 
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
 func (s PluginManagerState) IsValid() bool {
-	return len(s.SchemaVersion) > 0
+	return s.StructVersion > 0
 }
 
-func (s *PluginManagerState) MigrateFrom(legacyState interface{}) migrate.Migrateable {
-	old := legacyState.(LegacyPluginManagerState)
-	s.SchemaVersion = constants.SchemaVersion
-	s.Protocol = old.Protocol
-	s.ProtocolVersion = old.ProtocolVersion
-	s.Addr = old.Addr
-	s.Pid = old.Pid
-	s.Executable = old.Executable
-	s.Running = old.Running
+func (s *PluginManagerState) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyPluginManagerState)
+	s.StructVersion = StructVersion
+	s.Protocol = legacyState.Protocol
+	s.ProtocolVersion = legacyState.ProtocolVersion
+	s.Addr = legacyState.Addr
+	s.Pid = legacyState.Pid
+	s.Executable = legacyState.Executable
+	s.Running = legacyState.Running
 
 	return s
 }

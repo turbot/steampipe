@@ -125,3 +125,7 @@ func PluginManagerStateFilePath() string {
 func DashboardServiceStateFilePath() string {
 	return filepath.Join(EnsureInternalDir(), dashboardServerStateFileName)
 }
+
+func StateFileName() string {
+	return stateFileName
+}
