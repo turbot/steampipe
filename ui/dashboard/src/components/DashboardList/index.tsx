@@ -74,7 +74,10 @@ const BenchmarkTitlePart = ({ benchmark }) => {
   } = useDashboard();
 
   return (
-    <ExternalLink className="link-highlight" to={`/${benchmark.full_name}`}>
+    <ExternalLink
+      className="link-highlight hover:underline"
+      to={`/${benchmark.full_name}`}
+    >
       {benchmark.title || benchmark.short_name}
     </ExternalLink>
   );
@@ -88,7 +91,10 @@ const BenchmarkTitle = ({ benchmark, searchValue }) => {
 
   if (!searchValue) {
     return (
-      <ExternalLink className="link-highlight" to={`/${benchmark.full_name}`}>
+      <ExternalLink
+        className="link-highlight hover:underline"
+        to={`/${benchmark.full_name}`}
+      >
         {benchmark.title || benchmark.short_name}
       </ExternalLink>
     );
@@ -107,34 +113,19 @@ const BenchmarkTitle = ({ benchmark, searchValue }) => {
     <>
       {parts.map((part, index) => (
         <Fragment key={part.full_name}>
-          {!!index && <span key={index + "-separator"}>{" > "}</span>}
+          {!!index && (
+            <span
+              className="px-1 text-sm text-foreground-lighter"
+              key={index + "-separator"}
+            >
+              {">"}
+            </span>
+          )}
           <BenchmarkTitlePart key={part.full_name} benchmark={part} />
         </Fragment>
       ))}
     </>
   );
-
-  // return parts.reduce((prev, curr, index) => [
-  //   prev,
-  //   <span key={index + "-separator"}>{" > "}</span>,
-  //   curr,
-  // ]);
-
-  // return parts.reduce((result, child, index) => {
-  //   if (index < parts.length - 1) {
-  //     // @ts-ignore
-  //     return result.concat([
-  //       // @ts-ignore
-  //       <BenchmarkTitlePart key={part.full_name} benchmark={part} />,
-  //       <span key={index + "-separator"}>{" > "}</span>,
-  //     ]);
-  //   }
-  //
-  //   return result.concat(
-  //     // @ts-ignore
-  //     <BenchmarkTitlePart key={part.full_name} benchmark={part} />
-  //   );
-  // }, []);
 };
 
 const DashboardTitle = ({ dashboard }) => {
@@ -143,7 +134,10 @@ const DashboardTitle = ({ dashboard }) => {
   } = useDashboard();
 
   return (
-    <ExternalLink className="link-highlight" to={`/${dashboard.full_name}`}>
+    <ExternalLink
+      className="link-highlight hover:underline"
+      to={`/${dashboard.full_name}`}
+    >
       {dashboard.title || dashboard.short_name}
     </ExternalLink>
   );
@@ -160,7 +154,7 @@ const Section = ({
       <h3 className="truncate">{title}</h3>
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
-          <div className="md:col-span-6 truncate">
+          <div className="md:col-span-6 truncate" dir="rtl">
             {dashboard.type === "dashboard" && (
               <DashboardTitle dashboard={dashboard} />
             )}
