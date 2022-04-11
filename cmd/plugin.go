@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 
@@ -219,28 +218,22 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
-	doneChannel := make(chan struct{}, 1)
 
 	progressBars.Start()
-
-	go func() {
-		installWaitGroup.Wait()
-		close(dataChannel)
-		close(doneChannel)
-	}()
-	go func() {
-		for report := range dataChannel {
-			installReports = append(installReports, report)
-			installWaitGroup.Done()
-		}
-	}()
 
 	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
 		go doPluginInstall(ctx, progressBars, pluginName, dataChannel)
 	}
+	go func() {
+		installWaitGroup.Wait()
+		close(dataChannel)
+	}()
+	for report := range dataChannel {
+		installReports = append(installReports, report)
+		installWaitGroup.Done()
+	}
 
-	<-doneChannel
 	progressBars.Stop()
 	statusSpinner.UpdateSpinnerMessage("Refreshing connections...")
 	refreshConnectionsIfNecessary(ctx, installReports, true)
@@ -322,7 +315,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	var runUpdatesFor []*versionfile.InstalledVersion
-	updateReports := make(display.PluginInstallReports, 0, len(plugins))
+	updateResults := make(display.PluginInstallReports, 0, len(plugins))
 
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
@@ -344,7 +337,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
-				updateReports = append(updateReports, &display.PluginInstallReport{
+				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
 					SkipReason:     constants.PluginNotInstalled,
@@ -354,19 +347,18 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	sort.SliceStable(runUpdatesFor, func(i, j int) bool { return runUpdatesFor[i].Name < runUpdatesFor[j].Name })
-
-	if len(plugins) == len(updateReports) {
+	if len(plugins) == len(updateResults) {
 		// we have report for all
 		// this may happen if all given plugins are
 		// not installed
-		display.PrintInstallReports(updateReports, true)
+		display.PrintInstallReports(updateResults, true)
 		fmt.Println()
 		return
 	}
-
+	fmt.Println("checking for updates")
 	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
+	utils.DebugDumpJSON("reports:", reports)
 	statusSpinner.Done()
 
 	if len(reports) == 0 {
@@ -379,21 +371,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	updateWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(reports))
-	doneChannel := make(chan struct{}, 1)
 	progressBars := uiprogress.New()
 	progressBars.Start()
-
-	go func() {
-		updateWaitGroup.Wait()
-		close(dataChannel)
-		close(doneChannel)
-	}()
-	go func() {
-		for report := range dataChannel {
-			updateReports = append(updateReports, report)
-			updateWaitGroup.Done()
-		}
-	}()
 
 	sorted := utils.SortedStringKeys(reports)
 	for _, key := range sorted {
@@ -401,12 +380,19 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		updateWaitGroup.Add(1)
 		go doPluginUpdate(ctx, progressBars, report, dataChannel)
 	}
+	go func() {
+		updateWaitGroup.Wait()
+		close(dataChannel)
+	}()
+	for updateResult := range dataChannel {
+		updateResults = append(updateResults, updateResult)
+		updateWaitGroup.Done()
+	}
 
-	<-doneChannel
-	refreshConnectionsIfNecessary(cmd.Context(), updateReports, false)
+	refreshConnectionsIfNecessary(cmd.Context(), updateResults, false)
 	progressBars.Stop()
 	fmt.Println()
-	display.PrintInstallReports(updateReports, true)
+	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
