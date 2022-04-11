@@ -8,19 +8,19 @@ import (
 
 type ResolvedVersionConstraint struct {
 	Name       string
-	ShortName  string
+	Alias      string
 	Version    *semver.Version
 	Constraint string
 }
 
 func NewResolvedVersionConstraint(name string, version *semver.Version, constraintString string) *ResolvedVersionConstraint {
 	shortName := getModShortName(name)
-	return &ResolvedVersionConstraint{Name: name, ShortName: shortName, Version: version, Constraint: constraintString}
+	return &ResolvedVersionConstraint{Name: name, Alias: shortName, Version: version, Constraint: constraintString}
 }
 
 func getModShortName(name string) string {
 	split := strings.Split(name, "/")
-	return split[len(split)-1]
+	return strings.TrimPrefix(split[len(split)-1], "steampipe-mod-")
 }
 
 func (c ResolvedVersionConstraint) Equals(other *ResolvedVersionConstraint) bool {
