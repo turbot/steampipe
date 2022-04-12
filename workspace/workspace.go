@@ -29,13 +29,15 @@ type Workspace struct {
 	ModInstallationPath string
 	Mod                 *modconfig.Mod
 
-	Mods          map[string]*modconfig.Mod
-	CloudMetadata *steampipeconfig.CloudMetadata
+	Mods map[string]*modconfig.Mod
+	// the input variables used in the parse
+	Variables map[string]*modconfig.Variable
 
-	watcher     *utils.FileWatcher
-	loadLock    sync.Mutex
-	exclusions  []string
-	modFilePath string
+	CloudMetadata *steampipeconfig.CloudMetadata
+	watcher       *utils.FileWatcher
+	loadLock      sync.Mutex
+	exclusions    []string
+	modFilePath   string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)
@@ -226,6 +228,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Mods = runCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod
+	w.Variables = inputVariables
 
 	// verify all runtime dependencies can be resolved
 	return w.verifyResourceRuntimeDependencies()

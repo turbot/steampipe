@@ -3,8 +3,9 @@ package dashboardevents
 import (
 	"time"
 
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
-	"github.com/turbot/steampipe/steampipeconfig/inputvars"
 )
 
 type ExecutionComplete struct {
@@ -13,7 +14,7 @@ type ExecutionComplete struct {
 	ExecutionId string
 
 	Inputs     map[string]interface{}
-	Variables  map[string]*inputvars.InputValue
+	Variables  map[string]*modconfig.Variable
 	SearchPath []string
 	StartTime  time.Time
 	EndTime    time.Time

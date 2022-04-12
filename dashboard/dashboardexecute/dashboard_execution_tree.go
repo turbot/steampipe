@@ -77,7 +77,7 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRu
 
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	startTime := time.Now()
-	var endTime time.Time
+
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
@@ -92,10 +92,10 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		Session:     e.sessionId,
 		ExecutionId: e.id,
 		Inputs:      e.inputValues,
-		Variables:   nil,
+		Variables:   e.workspace.Variables,
 		SearchPath:  e.client.GetRequiredSessionSearchPath(),
 		StartTime:   startTime,
-		EndTime:     endTime,
+		EndTime:     time.Now(),
 		Actor:       "",
 	})
 
