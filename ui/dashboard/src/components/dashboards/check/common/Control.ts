@@ -7,6 +7,7 @@ class Control {
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _run_state: CheckRunState;
+  private readonly _run_error: string | undefined;
 
   constructor(
     name: string,
@@ -14,7 +15,8 @@ class Control {
     description: string | undefined,
     results: CheckResult[] | undefined,
     summary: CheckSummary | undefined,
-    run_state: number
+    run_state: number,
+    run_error: string | undefined
   ) {
     this._name = name;
     this._title = title;
@@ -28,6 +30,7 @@ class Control {
       error: 0,
     };
     this._run_state = Control._getRunState(run_state);
+    this._run_error = run_error;
   }
 
   private static _getRunState(run_state: number): CheckRunState {
@@ -56,6 +59,10 @@ class Control {
 
   get summary(): CheckSummary {
     return this._summary;
+  }
+
+  get run_error(): string | undefined {
+    return this._run_error;
   }
 
   get run_state(): CheckRunState {

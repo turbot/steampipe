@@ -483,6 +483,37 @@ function reducer(state, action) {
       // });
       return state;
     case DashboardActions.CONTROL_ERROR:
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
+
+      if (state.dashboard.artificial) {
+        let panelPath: string = findPathDeep(
+          state.dashboard,
+          (v, k) => k === "control_id" && v === action.control.control_id
+        );
+
+        if (!panelPath) {
+          console.warn(
+            "Cannot find control to update",
+            action.control.control_id
+          );
+          return state;
+        }
+
+        panelPath = panelPath.replace(".control_id", "");
+        let newDashboard = {
+          ...state.dashboard,
+        };
+        newDashboard = set(newDashboard, panelPath, action.control);
+
+        return {
+          ...state,
+          dashboard: newDashboard,
+        };
+      }
+
       return state;
     case DashboardActions.LEAF_NODE_COMPLETE: {
       // We're not expecting execution events for this ID

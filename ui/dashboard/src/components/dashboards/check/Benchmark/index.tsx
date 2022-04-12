@@ -1,3 +1,4 @@
+import Error from "../../Error";
 import LoadingIndicator from "../../LoadingIndicator";
 import padStart from "lodash/padStart";
 import { CheckProps } from "../common";
@@ -186,13 +187,13 @@ const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
         <div
           className={classNames(
             "px-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
-            showControls || control.results.length > 0
+            showControls || control.results.length > 0 || control.run_error
               ? "cursor-pointer "
               : null,
             getPadding(depth)
           )}
           onClick={
-            showControls || control.results.length > 0
+            showControls || control.results.length > 0 || control.run_error
               ? () => setShowControls(!showControls)
               : undefined
           }
@@ -208,9 +209,18 @@ const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
         <CheckSummary summary={control.summary} />
       </div>
       {showControls && (
-        <div className="p-4 w-full overflow-x-auto">
-          <ControlResults results={control.results} />
-        </div>
+        <>
+          {control.results.length > 0 && (
+            <div className="p-4 w-full overflow-x-auto">
+              <ControlResults results={control.results} />
+            </div>
+          )}
+          {control.run_error && (
+            <div className="pl-4 py-4">
+              <Error error={control.run_error} />
+            </div>
+          )}
+        </>
       )}
     </>
   );
@@ -239,21 +249,7 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
             expanded={expanded}
             run_state={benchmark.run_state}
           />
-          {/*<div className="relative flex items-center">*/}
-          {/*  {!expanded && (*/}
-          {/*    <ExpandBenchmarkIcon className="mr-1 inline w-5 h-5 text-foreground-lighter" />*/}
-          {/*  )}*/}
-          {/*  {expanded && (*/}
-          {/*    <CollapseBenchmarkIcon className="mr-1 inline w-5 h-5 text-foreground-lighter" />*/}
-          {/*  )}*/}
-          {/*  {(benchmark.run_state === "ready" ||*/}
-          {/*    benchmark.run_state === "started") && (*/}
-          {/*    <LoadingIndicator className="absolute mr-1 w-5 h-5 top-px left-0 text-foreground-lightest" />*/}
-          {/*  )}*/}
-          {/*<LoadingIndicator className="absolute w-5 h-5 top-px left-0 text-foreground-lightest" />*/}
-          {/*<CheckNodeStatus run_state={benchmark.run_state} />*/}
           <p>{benchmark.title || benchmark.name}</p>
-          {/*</div>*/}
         </div>
         <CheckSummary summary={benchmark.summary} />
       </div>

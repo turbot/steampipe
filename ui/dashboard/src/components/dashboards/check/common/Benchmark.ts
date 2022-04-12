@@ -39,7 +39,8 @@ class Benchmark {
           nestedControl.description,
           nestedControl.results,
           nestedControl.control_row_status_summary,
-          nestedControl.run_status
+          nestedControl.run_status,
+          nestedControl.run_error
         )
       );
     }

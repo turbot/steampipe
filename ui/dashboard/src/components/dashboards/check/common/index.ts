@@ -60,6 +60,7 @@ export interface CheckControl {
   results: CheckResult[];
   control_row_status_summary: CheckSummary;
   run_status: number;
+  run_error?: string;
 }
 
 export interface CheckGroup {
