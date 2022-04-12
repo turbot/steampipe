@@ -97,7 +97,7 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 	utils.FailOnError(serverPort.IsValid())
 	utils.FailOnError(serverListen.IsValid())
 
-	// NOTE: args must be specified <arg>=<arg val>, even where the syntax <arg> <arg val> would work on the command line
+	// NOTE: args must be specified <arg>=<arg val>, as each entry in this array is a separate arg passed to cobra
 	args := []string{
 		"dashboard",
 		fmt.Sprintf("--%s=%s", constants.ArgDashboardListen, string(serverListen)),
