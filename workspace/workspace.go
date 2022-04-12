@@ -329,21 +329,3 @@ func (w *Workspace) verifyResourceRuntimeDependencies() error {
 	}
 	return nil
 }
-
-// migrate all data files to use snake casing for property names
-// func migrateLegacyFiles() error {
-
-// skip migration for plugin manager commands because the plugin-manager will have
-// been started by some other steampipe command, which would have done the migration already
-// if viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name() == "plugin-manager" {
-// 	return nil
-// }
-// return utils.CombineErrors(
-// 	migrate.Migrate(statefile.LegacyState{}, &statefile.State{}, filepaths.LegacyStateFilePath()),
-// 	migrate.Migrate(pluginmanager.LegacyPluginManagerState{}, &pluginmanager.PluginManagerState{}, filepaths.PluginManagerStateFilePath()),
-// 	migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, &db_local.RunningDBInstanceInfo{}, filepaths.RunningInfoFilePath()),
-// 	migrate.Migrate(dashboardserver.LegacyDashboardServiceState{}, &dashboardserver.DashboardServiceState{}, filepaths.DashboardServiceStateFilePath()),
-// 	migrate.Migrate(versionfile.LegacyPluginVersionFile{}, &versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
-// 	migrate.Migrate(versionfile.LegacyDatabaseVersionFile{}, &versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
-// )
-// }
