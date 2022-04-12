@@ -202,7 +202,7 @@ func (e *DashboardExecutionTree) Cancel() {
 	e.cancel()
 
 	// if there are any children, wait for the execution to complete
-	if len(e.Root.Children) > 0 {
+	if !e.Root.RunComplete() {
 		<-e.runComplete
 	}
 }
