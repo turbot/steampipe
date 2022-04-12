@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
+
+	"github.com/turbot/steampipe/steampipeconfig/inputvars"
 
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
@@ -56,6 +59,21 @@ type ExecutionPayload struct {
 	Action        string                               `json:"action"`
 	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
 	ExecutionId   string                               `json:"execution_id"`
+}
+
+var ExecutionCompleteSchemaVersion int64 = 20220411
+
+type ExecutionCompletePayload struct {
+	SchemaVersion int64                                `json:"schema_version"`
+	Action        string                               `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
+	ExecutionId   string                               `json:"execution_id"`
+	Inputs        map[string]interface{}               `json:"inputs"`
+	Variables     map[string]*inputvars.InputValue     `json:"variables"`
+	SearchPath    []string                             `json:"search_path"`
+	StartTime     time.Time                            `json:"start_time"`
+	EndTime       time.Time                            `json:"end_time"`
+	Actor         string                               `json:"actor"`
 }
 
 type InputValuesClearedPayload struct {

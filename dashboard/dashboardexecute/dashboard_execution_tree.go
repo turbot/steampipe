@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
@@ -75,6 +76,8 @@ func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRu
 }
 
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
+	startTime := time.Now()
+	var endTime time.Time
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
@@ -88,6 +91,12 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		Dashboard:   e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
+		Inputs:      e.inputValues,
+		Variables:   nil,
+		SearchPath:  e.client.GetRequiredSessionSearchPath(),
+		StartTime:   startTime,
+		EndTime:     endTime,
+		Actor:       "",
 	})
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
