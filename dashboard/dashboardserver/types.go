@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -69,7 +67,7 @@ type ExecutionCompletePayload struct {
 	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
 	ExecutionId   string                               `json:"execution_id"`
 	Inputs        map[string]interface{}               `json:"inputs"`
-	Variables     map[string]*modconfig.Variable       `json:"variables"`
+	Variables     map[string]string                    `json:"variables"`
 	SearchPath    []string                             `json:"search_path"`
 	StartTime     time.Time                            `json:"start_time"`
 	EndTime       time.Time                            `json:"end_time"`

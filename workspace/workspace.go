@@ -31,7 +31,7 @@ type Workspace struct {
 
 	Mods map[string]*modconfig.Mod
 	// the input variables used in the parse
-	Variables map[string]*modconfig.Variable
+	VariableValues map[string]string
 
 	CloudMetadata *steampipeconfig.CloudMetadata
 	watcher       *utils.FileWatcher
@@ -228,7 +228,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.Mods = runCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod
-	w.Variables = inputVariables
 
 	// verify all runtime dependencies can be resolved
 	return w.verifyResourceRuntimeDependencies()

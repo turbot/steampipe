@@ -45,13 +45,19 @@ func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.
 		return nil, err
 	}
 
+	w.VariableValues = make(map[string]string, len(inputVariables))
 	// now update the variables map with the input values
 	for name, inputValue := range inputVariables {
+		// get the variable from the map
 		variable := variableMap[name]
+		// set the variable value
 		variable.SetInputValue(
 			inputValue.Value,
 			inputValue.SourceTypeString(),
 			inputValue.SourceRange)
+
+		// set variable value string in our workspace map
+		w.VariableValues[name] = inputValue.Value.AsString()
 	}
 
 	return variableMap, nil

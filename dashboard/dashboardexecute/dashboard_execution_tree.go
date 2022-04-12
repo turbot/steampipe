@@ -92,7 +92,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		Session:     e.sessionId,
 		ExecutionId: e.id,
 		Inputs:      e.inputValues,
-		Variables:   e.workspace.Variables,
+		Variables:   e.workspace.VariableValues,
 		SearchPath:  e.client.GetRequiredSessionSearchPath(),
 		StartTime:   startTime,
 		EndTime:     time.Now(),
