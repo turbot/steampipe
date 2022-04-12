@@ -58,10 +58,6 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 		Path: workspacePath,
 	}
 
-	// migrate legacy workspace lock files in the directory to use snake casing(migrated in v0.14.0)
-	err := migrate.Migrate(versionmap.DependencyVersionMap{}, &versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath))
-	utils.FailOnErrorWithMessage(err, "failed to migrate legacy workspace lock files")
-
 	// check whether the workspace contains a modfile
 	// this will determine whether we load files recursively, and create pseudo resources for sql files
 	workspace.setModfileExists()
@@ -75,6 +71,10 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	if err := workspace.loadWorkspaceMod(ctx); err != nil {
 		return nil, err
 	}
+
+	// migrate legacy workspace lock files in the directory to use snake casing(migrated in v0.14.0)
+	err := migrate.Migrate(versionmap.DependencyVersionMap{}, &versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath))
+	utils.FailOnErrorWithMessage(err, "failed to migrate legacy workspace lock files")
 
 	// return context error so calling code can handle cancellations
 	return workspace, nil
