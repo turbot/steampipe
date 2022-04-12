@@ -31,7 +31,7 @@ type State struct {
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the StructVersion is populated
 func (s State) IsValid() bool {
-	return StructVersion > 0
+	return s.StructVersion > 0
 }
 
 func (s *State) MigrateFrom(prev interface{}) migrate.Migrateable {
