@@ -154,7 +154,7 @@ const Section = ({
       <h3 className="truncate">{title}</h3>
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
-          <div className="md:col-span-6 truncate" dir="rtl">
+          <div className="md:col-span-6 truncate">
             {dashboard.type === "dashboard" && (
               <DashboardTitle dashboard={dashboard} />
             )}
