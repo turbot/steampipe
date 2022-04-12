@@ -12,23 +12,10 @@ import (
 
 type PluginInstallReports []*PluginInstallReport
 
-func (ir PluginInstallReports) Len() int      { return len(ir) }
-func (ir PluginInstallReports) Swap(i, j int) { ir[i], ir[j] = ir[j], ir[i] }
-
-// Less reports whether the element with index i
-// must sort before the element with index j.
-//
-// If both Less(i, j) and Less(j, i) are false,
-// then the elements at index i and j are considered equal.
-// Sort may place equal elements in any order in the final result,
-// while Stable preserves the original input order of equal elements.
-//
-// Less must describe a transitive ordering:
-//  - if both Less(i, j) and Less(j, k) are true, then Less(i, k) must be true as well.
-//  - if both Less(i, j) and Less(j, k) are false, then Less(i, k) must be false as well.
-func (ir PluginInstallReports) Less(i, j int) bool {
-	return ir[i].Plugin < ir[j].Plugin
-}
+// making the type compatible with sort.Interface so that we can use the sort package utilities
+func (ir PluginInstallReports) Len() int           { return len(ir) }
+func (ir PluginInstallReports) Swap(i, j int)      { ir[i], ir[j] = ir[j], ir[i] }
+func (ir PluginInstallReports) Less(i, j int) bool { return ir[i].Plugin < ir[j].Plugin }
 
 type PluginInstallReport struct {
 	Skipped        bool

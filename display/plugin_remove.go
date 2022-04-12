@@ -19,12 +19,12 @@ type PluginRemoveReport struct {
 
 type PluginRemoveReports []PluginRemoveReport
 
-func (prr PluginRemoveReports) Print() {
-	length := len(prr)
+func (r PluginRemoveReports) Print() {
+	length := len(r)
 	staleConnections := []modconfig.Connection{}
 	if length > 0 {
 		fmt.Printf("\nUninstalled %s:\n", utils.Pluralize("plugin", length))
-		for _, report := range prr {
+		for _, report := range r {
 			org, name, _ := report.Image.GetOrgNameAndStream()
 			fmt.Printf("* %s/%s\n", org, name)
 			staleConnections = append(staleConnections, report.Connections...)
@@ -41,7 +41,7 @@ func (prr PluginRemoveReports) Print() {
 		uniqueFiles := map[string]bool{}
 		// get the unique files
 		if staleLength > 0 {
-			for _, report := range prr {
+			for _, report := range r {
 				for _, conn := range report.Connections {
 					uniqueFiles[conn.DeclRange.Filename] = true
 				}
@@ -57,7 +57,7 @@ func (prr PluginRemoveReports) Print() {
 
 			for file := range uniqueFiles {
 				str = append(str, fmt.Sprintf("  * %s contains:", constants.Bold(file)))
-				for _, report := range prr {
+				for _, report := range r {
 					for _, conn := range report.Connections {
 						if conn.DeclRange.Filename == file {
 							str = append(str, fmt.Sprintf("         '%s' in line %2d", conn.Name, conn.DeclRange.Start.Line))
