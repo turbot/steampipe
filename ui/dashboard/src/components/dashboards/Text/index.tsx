@@ -40,7 +40,7 @@ const Markdown = ({ value }) => {
   const isLong = value.split("\n").length > 3;
   const panelClasses = isLong ? getLongPanelClasses() : getShortPanelClasses();
   const proseHeadings =
-    "prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h3:mt-1";
+    "prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h3:mt-1 p-4";
 
   return (
     <>
