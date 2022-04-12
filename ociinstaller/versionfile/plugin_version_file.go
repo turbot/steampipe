@@ -10,8 +10,10 @@ import (
 	"github.com/turbot/steampipe/migrate"
 )
 
+const PluginStructVersion = 20220411
+
 // LegacyPluginVersionFile is a struct used to migrate the
-// PluginVersionFile to serialize with snake case property names
+// PluginVersionFile to serialize with snake case property names(migrated in v0.14.0)
 type LegacyPluginVersionFile struct {
 	Plugins map[string]*LegacyInstalledVersion `json:"plugins"`
 }
@@ -29,7 +31,7 @@ func (s PluginVersionFile) IsValid() bool {
 
 func (s *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyPluginVersionFile)
-	s.StructVersion = StructVersion
+	s.StructVersion = PluginStructVersion
 	s.Plugins = make(map[string]*InstalledVersion, len(legacyState.Plugins))
 	for p, i := range legacyState.Plugins {
 		s.Plugins[p] = &InstalledVersion{

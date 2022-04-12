@@ -9,6 +9,8 @@ import (
 	"github.com/turbot/steampipe/filepaths"
 )
 
+// LegacyCompositeVersionFile is the composite version file used before v0.7.0, which contained
+// both db and plugin properties, now split into two different files
 type LegacyCompositeVersionFile struct {
 	Plugins      map[string]*InstalledVersion `json:"plugins"`
 	FdwExtension InstalledVersion             `json:"fdwExtension"`
