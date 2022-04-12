@@ -79,7 +79,6 @@ connection from any Postgres compatible database client.`,
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompt for missing variable values").
 
 		// hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
@@ -158,11 +157,9 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	// LegacyRunningDBInstanceInfo is a struct used to migrate the	// RunningDBInstanceInfo to serialize with snake case property names
-
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
 	defer cancel()
-	// IsValid checks whether the struct was correctly deserialized	// by checking if the StructVersion is populated
+
 	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
 		panic("Invalid port - must be within range (1:65535)")
