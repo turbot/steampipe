@@ -13,9 +13,9 @@ import (
 type PluginInstallReports []*PluginInstallReport
 
 // making the type compatible with sort.Interface so that we can use the sort package utilities
-func (ir PluginInstallReports) Len() int           { return len(ir) }
-func (ir PluginInstallReports) Swap(i, j int)      { ir[i], ir[j] = ir[j], ir[i] }
-func (ir PluginInstallReports) Less(i, j int) bool { return ir[i].Plugin < ir[j].Plugin }
+func (i PluginInstallReports) Len() int                 { return len(i) }
+func (i PluginInstallReports) Swap(lIdx, rIdx int)      { i[lIdx], i[rIdx] = i[rIdx], i[lIdx] }
+func (i PluginInstallReports) Less(lIdx, rIdx int) bool { return i[lIdx].Plugin < i[rIdx].Plugin }
 
 type PluginInstallReport struct {
 	Skipped        bool

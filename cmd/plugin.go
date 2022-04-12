@@ -268,8 +268,8 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		})
 		report = installPlugin(ctx, pluginName, false, bar)
 	}
-	wg.Done()
 	returnChannel <- report
+	wg.Done()
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
@@ -418,8 +418,8 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 		})
 		report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
 	}
-	wg.Done()
 	returnChannel <- report
+	wg.Done()
 }
 
 func createProgressBar(plugin string, parentProgressBars *uiprogress.Progress) *uiprogress.Bar {
