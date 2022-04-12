@@ -72,7 +72,15 @@ connection from any Postgres compatible database client.`,
 		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port.").
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
-		// Hidden flags for internal use
+
+		// flags relevant only if the --dashboard arg is used:
+		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
+		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV,
+		// where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
+
+		// hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd

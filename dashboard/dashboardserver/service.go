@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/process"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/filepaths"
@@ -77,6 +78,8 @@ func StopDashboardService(ctx context.Context) error {
 	return os.Remove(filepaths.DashboardServiceStateFilePath())
 }
 
+// RunForService spanws an execution of the 'steampipe dashboard' command.
+// It is used when starting/restarting the steampipe service with the --dashboard flag set
 func RunForService(ctx context.Context, serverListen ListenType, serverPort ListenPort) error {
 	self, err := os.Executable()
 	if err != nil {
@@ -94,13 +97,26 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 	utils.FailOnError(serverPort.IsValid())
 	utils.FailOnError(serverListen.IsValid())
 
-	cmd := exec.Command(
-		self,
+	// NOTE: args must be specified <arg>=<arg val>, as each entry in this array is a separate arg passed to cobra
+	args := []string{
 		"dashboard",
 		fmt.Sprintf("--%s=%s", constants.ArgDashboardListen, string(serverListen)),
 		fmt.Sprintf("--%s=%d", constants.ArgDashboardPort, serverPort),
 		fmt.Sprintf("--%s=%s", constants.ArgInstallDir, filepaths.SteampipeDir),
 		fmt.Sprintf("--%s=true", constants.ArgServiceMode),
+		fmt.Sprintf("--%s=false", constants.ArgInput),
+	}
+
+	for _, variableArg := range viper.GetStringSlice(constants.ArgVariable) {
+		args = append(args, fmt.Sprintf("--%s=%s", constants.ArgVariable, variableArg))
+	}
+
+	for _, varFile := range viper.GetStringSlice(constants.ArgVarFile) {
+		args = append(args, fmt.Sprintf("--%s=%s", constants.ArgVarFile, varFile))
+	}
+	cmd := exec.Command(
+		self,
+		args...,
 	)
 	cmd.Env = os.Environ()
 

@@ -74,7 +74,8 @@ Examples:
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable")
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompt for missing variable values")
 	return cmd
 }
 
@@ -152,6 +153,10 @@ func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	// if there was an error which is NOT a MissingVariableError, return it
 	if !ok {
 		return nil, err
+	}
+	// if interactive inp[ut is disabled, return the missing variables error
+	if !viper.GetBool(constants.ArgInput) {
+		return nil, missingVariablesError
 	}
 	// so we have missing variables - prompt for them
 	// first hide spinner if it is there

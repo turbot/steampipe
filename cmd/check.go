@@ -76,7 +76,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
 		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
-		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check")
+		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check").
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompt for missing variable values")
 
 	return cmd
 }
