@@ -183,9 +183,10 @@ const sortDashboards = (dashboards: AvailableDashboard[] = []) => {
 const DashboardList = () => {
   const {
     availableDashboardsLoaded,
-    metadata,
+    components: { DashboardListEmptyCallToAction },
     dashboards,
     dispatch,
+    metadata,
     search: { value: searchValue, groupBy: searchGroupBy },
   } = useDashboard();
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
@@ -295,7 +296,7 @@ const DashboardList = () => {
                       .
                     </>
                   ) : (
-                    <span>No dashboards defined.</span>
+                    <DashboardListEmptyCallToAction />
                   )}
                 </div>
               )}

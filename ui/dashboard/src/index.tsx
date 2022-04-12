@@ -9,6 +9,7 @@ import { ThemeProvider } from "./hooks/useTheme";
 import "./styles/index.css";
 
 const container = document.getElementById("root");
+// @ts-ignore
 const root = createRoot(container);
 
 root.render(
