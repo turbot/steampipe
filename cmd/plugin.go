@@ -223,7 +223,8 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
-		go doPluginInstall(ctx, progressBars, pluginName, installWaitGroup, dataChannel)
+		bar := createProgressBar(pluginName, progressBars)
+		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, dataChannel)
 	}
 	go func() {
 		installWaitGroup.Wait()
@@ -243,10 +244,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginInstall(ctx context.Context, progressBars *uiprogress.Progress, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	bar := createProgressBar(pluginName, progressBars)
 	pluginExists, _ := plugin.Exists(pluginName)
 	if pluginExists {
 		// set the bar to MAX
@@ -371,10 +371,12 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	progressBars.Start()
 
 	sorted := utils.SortedStringKeys(reports)
+	fmt.Println(sorted)
 	for _, key := range sorted {
 		report := reports[key]
 		updateWaitGroup.Add(1)
-		go doPluginUpdate(ctx, progressBars, report, updateWaitGroup, dataChannel)
+		bar := createProgressBar(report.ShortName(), progressBars)
+		go doPluginUpdate(ctx, bar, report, updateWaitGroup, dataChannel)
 	}
 	go func() {
 		updateWaitGroup.Wait()
@@ -393,9 +395,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginUpdate(ctx context.Context, progressBars *uiprogress.Progress, pvr plugin.VersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.VersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
-	bar := createProgressBar(pvr.ShortName(), progressBars)
 
 	if pvr.Plugin.ImageDigest == pvr.CheckResponse.Digest {
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
