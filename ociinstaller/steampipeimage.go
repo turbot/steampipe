@@ -186,7 +186,7 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 	// get the binary plugin file info
 	// iterate in order of mediatypes - as given by MediaTypeForPlatform (see function docs)
 	for _, mediaType := range MediaTypeForPlatform("plugin") {
-		// find out the layer with the medistype
+		// find out the layer with the correct media type
 		foundLayers = findLayersForMediaType(layers, mediaType)
 		if len(foundLayers) == 1 {
 			// when found, exit
