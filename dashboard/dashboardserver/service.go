@@ -103,7 +103,8 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		fmt.Sprintf("--%s %s", constants.ArgInstallDir, filepaths.SteampipeDir),
 		fmt.Sprintf("--%s=true", constants.ArgServiceMode),
 		fmt.Sprintf("--%s=false", constants.ArgInput),
-		"--var v1=foo"}
+		//"--var v1=foo"
+	}
 	//
 	//for _, variableArg := range viper.GetStringSlice(constants.ArgVariable) {
 	//	args = append(args, fmt.Sprintf("--%s %s", constants.ArgVariable, variableArg))
