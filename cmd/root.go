@@ -80,7 +80,6 @@ func InitCmd() {
 	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "local", "Steampipe Cloud workspace database")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
-	rootCmd.PersistentFlags().Bool(constants.ArgInput, true, "Enable interactive prompt for missing variable values")
 
 	rootCmd.Flag(constants.ArgWorkspace).Deprecated = "please use workspace-chdir"
 
@@ -91,7 +90,6 @@ func InitCmd() {
 	viper.BindPFlag(constants.ArgCloudToken, rootCmd.PersistentFlags().Lookup(constants.ArgCloudToken))
 	viper.BindPFlag(constants.ArgWorkspaceDatabase, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceDatabase))
 	viper.BindPFlag(constants.ArgSchemaComments, rootCmd.PersistentFlags().Lookup(constants.ArgSchemaComments))
-	viper.BindPFlag(constants.ArgInput, rootCmd.PersistentFlags().Lookup(constants.ArgInput))
 
 	AddCommands()
 

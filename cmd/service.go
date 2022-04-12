@@ -72,7 +72,16 @@ connection from any Postgres compatible database client.`,
 		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port.").
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
-		// Hidden flags for internal use
+
+		// flags relevant only if the --dashboard arg is used:
+		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
+		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV,
+		// where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompt for missing variable values").
+
+		// hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
@@ -149,9 +158,11 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// LegacyRunningDBInstanceInfo is a struct used to migrate the	// RunningDBInstanceInfo to serialize with snake case property names
+
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
 	defer cancel()
-
+	// IsValid checks whether the struct was correctly deserialized	// by checking if the StructVersion is populated
 	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
 		panic("Invalid port - must be within range (1:65535)")

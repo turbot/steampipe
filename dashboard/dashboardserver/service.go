@@ -77,6 +77,8 @@ func StopDashboardService(ctx context.Context) error {
 	return os.Remove(filepaths.DashboardServiceStateFilePath())
 }
 
+// RunForService spanws an execution of the 'steampipe dashboard' command.
+// It is used when starting/restarting the steampipe service with the --dashboard flag set
 func RunForService(ctx context.Context, serverListen ListenType, serverPort ListenPort) error {
 	self, err := os.Executable()
 	if err != nil {
@@ -94,13 +96,25 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 	utils.FailOnError(serverPort.IsValid())
 	utils.FailOnError(serverListen.IsValid())
 
+	args := []string{
+		"dashboard",
+		fmt.Sprintf("--%s %s", constants.ArgDashboardListen, string(serverListen)),
+		fmt.Sprintf("--%s %d", constants.ArgDashboardPort, serverPort),
+		fmt.Sprintf("--%s %s", constants.ArgInstallDir, filepaths.SteampipeDir),
+		fmt.Sprintf("--%s=true", constants.ArgServiceMode),
+		fmt.Sprintf("--%s=false", constants.ArgInput),
+		"--var v1=foo"}
+	//
+	//for _, variableArg := range viper.GetStringSlice(constants.ArgVariable) {
+	//	args = append(args, fmt.Sprintf("--%s %s", constants.ArgVariable, variableArg))
+	//}
+	//
+	//for _, varFile := range viper.GetStringSlice(constants.ArgVarFile) {
+	//	args = append(args, fmt.Sprintf("--%s %v", constants.ArgVarFile, varFile))
+	//}
 	cmd := exec.Command(
 		self,
-		"dashboard",
-		fmt.Sprintf("--%s=%s", constants.ArgDashboardListen, string(serverListen)),
-		fmt.Sprintf("--%s=%d", constants.ArgDashboardPort, serverPort),
-		fmt.Sprintf("--%s=%s", constants.ArgInstallDir, filepaths.SteampipeDir),
-		fmt.Sprintf("--%s=true", constants.ArgServiceMode),
+		args...,
 	)
 	cmd.Env = os.Environ()
 
