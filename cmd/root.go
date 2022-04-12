@@ -16,7 +16,13 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
+	"github.com/turbot/steampipe/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/statefile"
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/task"
@@ -115,8 +121,13 @@ func initGlobalConfig() {
 	// set global containing install dir
 	setInstallDir()
 
-	// load config (this sets the global config steampipeconfig.Config)
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+
+	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
+	err := migrateLegacyFiles()
+	utils.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
+
+	// load config (this sets the global config steampipeconfig.Config)
 	config, err := steampipeconfig.LoadSteampipeConfig(workspaceChdir, cmd.Name())
 	utils.FailOnError(err)
 
@@ -126,9 +137,26 @@ func initGlobalConfig() {
 	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
 
 	// now validate all config values have appropriate values
-	if err := validateConfig(); err != nil {
-		panic(err)
+	err = validateConfig()
+	utils.FailOnErrorWithMessage(err, "failed to validate config")
+}
+
+// migrate all data files to use snake casing for property names
+func migrateLegacyFiles() error {
+
+	// skip migration for plugin manager commands because the plugin-manager will have
+	// been started by some other steampipe command, which would have done the migration already
+	if viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name() == "plugin-manager" {
+		return nil
 	}
+	return utils.CombineErrors(
+		migrate.Migrate(statefile.LegacyState{}, &statefile.State{}, filepaths.LegacyStateFilePath()),
+		migrate.Migrate(pluginmanager.LegacyPluginManagerState{}, &pluginmanager.PluginManagerState{}, filepaths.PluginManagerStateFilePath()),
+		migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, &db_local.RunningDBInstanceInfo{}, filepaths.RunningInfoFilePath()),
+		migrate.Migrate(dashboardserver.LegacyDashboardServiceState{}, &dashboardserver.DashboardServiceState{}, filepaths.DashboardServiceStateFilePath()),
+		migrate.Migrate(versionfile.LegacyPluginVersionFile{}, &versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
+		migrate.Migrate(versionfile.LegacyDatabaseVersionFile{}, &versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
+	)
 }
 
 // now validate  config values have appropriate values

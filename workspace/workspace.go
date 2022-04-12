@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -70,6 +71,10 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	if err := workspace.loadWorkspaceMod(ctx); err != nil {
 		return nil, err
 	}
+
+	// migrate legacy workspace lock files in the directory to use snake casing (migrated in v0.14.0)
+	err := migrate.Migrate(versionmap.DependencyVersionMap{}, &versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath))
+	utils.FailOnErrorWithMessage(err, "failed to migrate legacy workspace lock files")
 
 	// return context error so calling code can handle cancellations
 	return workspace, nil

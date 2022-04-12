@@ -9,20 +9,44 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 )
 
-const updateStateFileName = "update-check.json"
+const StateStructVersion = 20220411
 
-// State :: the state of the installation
-type State struct {
+// LegacyState is a struct used to migrate the
+// State to serialize with snake case property names(migrated in v0.14.0)
+type LegacyState struct {
 	LastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
 	InstallationID string `json:"installationId"` // a UUIDv4 string
+}
+
+// State is a struct containing installation state
+type State struct {
+	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
+	InstallationID string `json:"installation_id"` // a UUIDv4 string
+	StructVersion  int64  `json:"struct_version"`
+}
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (s State) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s *State) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyState)
+	s.StructVersion = StateStructVersion
+	s.LastCheck = legacyState.LastCheck
+	s.InstallationID = legacyState.InstallationID
+
+	return s
 }
 
 func LoadState() (State, error) {
 	currentState := createState()
 
-	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), updateStateFileName)
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
 	// get the state file
 	_, err := os.Stat(stateFilePath)
 	if err != nil {

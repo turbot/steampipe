@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
@@ -14,7 +15,11 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type PluginManagerState struct {
+const PluginManagerStructVersion = 20220411
+
+// LegacyPluginManagerState is a struct used to migrate the
+// PluginManagerState to serialize with snake case property names(migrated in v0.14.0)
+type LegacyPluginManagerState struct {
 	Protocol        plugin.Protocol
 	ProtocolVersion int
 	Addr            *pb.SimpleAddr
@@ -25,6 +30,18 @@ type PluginManagerState struct {
 	Running bool `json:"-"`
 }
 
+type PluginManagerState struct {
+	Protocol        plugin.Protocol `json:"protocol"`
+	ProtocolVersion int             `json:"protocol_version"`
+	Addr            *pb.SimpleAddr  `json:"addr"`
+	Pid             int             `json:"pid"`
+	// path to the steampipe executable
+	Executable string `json:"executable"`
+	// is the plugin manager running
+	Running       bool  `json:"-"`
+	StructVersion int64 `json:"struct_version"`
+}
+
 func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *PluginManagerState {
 	return &PluginManagerState{
 		Executable:      executable,
@@ -33,6 +50,25 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 		Addr:            pb.NewSimpleAddr(reattach.Addr),
 		Pid:             reattach.Pid,
 	}
+}
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (s PluginManagerState) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s *PluginManagerState) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyPluginManagerState)
+	s.StructVersion = PluginManagerStructVersion
+	s.Protocol = legacyState.Protocol
+	s.ProtocolVersion = legacyState.ProtocolVersion
+	s.Addr = legacyState.Addr
+	s.Pid = legacyState.Pid
+	s.Executable = legacyState.Executable
+	s.Running = legacyState.Running
+
+	return s
 }
 
 func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {

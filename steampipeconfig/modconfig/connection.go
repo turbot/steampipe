@@ -16,12 +16,9 @@ const (
 	ConnectionTypeAggregator = "aggregator"
 )
 
-// Connection is a struct representing the partially parsed connection
-//
-// (Partial as the connection config, which is plugin specific, is stored as raw HCL.
-// This will be parsed by the plugin)
-// json tags needed as this is stored in the connection state file
-type Connection struct {
+// LegacyConnection is the legacy connection struct, which was used in the legacy
+// connection state file
+type LegacyConnection struct {
 	// connection name
 	Name string
 	// The name of plugin as mentioned in config
@@ -44,10 +41,73 @@ type Connection struct {
 	DeclRange hcl.Range
 }
 
+// Connection is a struct representing the partially parsed connection
+//
+// (Partial as the connection config, which is plugin specific, is stored as raw HCL.
+// This will be parsed by the plugin)
+// json tags needed as this is stored in the connection state file
+type Connection struct {
+	// connection name
+	Name string `json:"name,omitempty"`
+	// The name of plugin as mentioned in config
+	PluginShortName string `json:"plugin_short_name,omitempty"`
+	// The fully qualified name of the plugin. derived from the short name
+	Plugin string `json:"plugin,omitempty"`
+	// Type - supported values: "aggregator"
+	Type string `json:"type,omitempty"`
+	// this is a list of names or wildcards which are resolved to connections
+	// (only valid for "aggregator" type)
+	ConnectionNames []string `json:"connections,omitempty"`
+	// a list of the resolved child connections
+	// (only valid for "aggregator" type)
+	Connections map[string]*Connection `json:"-"`
+	// unparsed HCL of plugin specific connection config
+	Config string `json:"config,omitempty"`
+
+	// options
+	Options   *options.Connection `json:"options,omitempty"`
+	DeclRange Range               `json:"decl_range,omitempty"`
+}
+
+// Range represents a span of characters between two positions in a source file.
+// This is a direct re-implementation of hcl.Range, allowing us to control JSON serialization
+type Range struct {
+	// Filename is the name of the file into which this range's positions point.
+	Filename string `json:"filename,omitempty"`
+
+	// Start and End represent the bounds of this range. Start is inclusive and End is exclusive.
+	Start Pos `json:"start,omitempty"`
+	End   Pos `json:"end,omitempty"`
+}
+
+func NewRange(sourceRange hcl.Range) Range {
+	return Range{
+		Filename: sourceRange.Filename,
+		Start:    NewPos(sourceRange.Start),
+		End:      NewPos(sourceRange.End),
+	}
+}
+
+// Pos represents a single position in a source file
+// This is a direct re-implementation of hcl.Pos, allowing us to control JSON serialization
+type Pos struct {
+	Line   int `json:"line,omitempty"`
+	Column int `json:"column,omitempty"`
+	Byte   int `json:"byte,omitempty"`
+}
+
+func NewPos(sourcePos hcl.Pos) Pos {
+	return Pos{
+		Line:   sourcePos.Line,
+		Column: sourcePos.Column,
+		Byte:   sourcePos.Byte,
+	}
+}
+
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
 		Name:      block.Labels[0],
-		DeclRange: block.TypeRange,
+		DeclRange: NewRange(block.TypeRange),
 	}
 }
 

@@ -57,7 +57,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 		remoteSchema := connection.Plugin
 		pluginPath, err := pluginmanager.GetPluginPath(connection.Plugin, connection.PluginShortName)
 		if err != nil {
-			err := fmt.Errorf("failed to load connection '%s': %v\n%s", connection.Name, err, connection.DeclRange)
+			err := fmt.Errorf("failed to load connection '%s': %v\n%v", connection.Name, err, connection.DeclRange)
 			return nil, nil, err
 		}
 		// if plugin is not installed, the path will be returned as empty

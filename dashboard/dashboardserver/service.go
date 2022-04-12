@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -15,23 +16,55 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/utils"
 )
 
 type ServiceState string
 
 const (
-	ServiceStateRunning ServiceState = "running"
-	ServiceStateError   ServiceState = "running"
+	ServiceStateRunning       ServiceState = "running"
+	ServiceStateError         ServiceState = "running"
+	ServiceStateStructVersion              = 20220411
 )
 
-type DashboardServiceState struct {
+// LegacyDashboardServiceState is a struct used to migrate the
+// DashboardServiceState to serialize with snake case property names(migrated in v0.14.0)
+type LegacyDashboardServiceState struct {
 	State      ServiceState
 	Error      string
 	Pid        int
 	Port       int
 	ListenType string
 	Listen     []string
+}
+
+type DashboardServiceState struct {
+	State         ServiceState `json:"state"`
+	Error         string       `json:"error"`
+	Pid           int          `json:"pid"`
+	Port          int          `json:"port"`
+	ListenType    string       `json:"listen_type"`
+	Listen        []string     `json:"listen"`
+	StructVersion int64        `json:"struct_version"`
+}
+
+// IsValid checks whether the struct was correctly deserialized, by checking if the StructVersion is populated
+func (s DashboardServiceState) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s *DashboardServiceState) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyDashboardServiceState)
+	s.StructVersion = ServiceStateStructVersion
+	s.State = legacyState.State
+	s.Error = legacyState.Error
+	s.Pid = legacyState.Pid
+	s.Port = legacyState.Port
+	s.ListenType = legacyState.ListenType
+	s.Listen = legacyState.Listen
+
+	return s
 }
 
 func GetDashboardServiceState() (*DashboardServiceState, error) {
@@ -203,4 +236,18 @@ func loadServiceStateFile() (*DashboardServiceState, error) {
 	}
 	err = json.Unmarshal(stateBytes, state)
 	return state, err
+}
+
+func (f *DashboardServiceState) Save() error {
+	versionFilePath := filepaths.DashboardServiceStateFilePath()
+	return f.write(versionFilePath)
+}
+
+func (f *DashboardServiceState) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("Error while writing version file", err)
+		return err
+	}
+	return os.WriteFile(path, versionFileJSON, 0644)
 }

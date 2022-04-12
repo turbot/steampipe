@@ -7,10 +7,43 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 )
 
+const PluginStructVersion = 20220411
+
+// LegacyPluginVersionFile is a struct used to migrate the
+// PluginVersionFile to serialize with snake case property names(migrated in v0.14.0)
+type LegacyPluginVersionFile struct {
+	Plugins map[string]*LegacyInstalledVersion `json:"plugins"`
+}
+
 type PluginVersionFile struct {
-	Plugins map[string]*InstalledVersion `json:"plugins"`
+	Plugins       map[string]*InstalledVersion `json:"plugins"`
+	StructVersion int64                        `json:"struct_version"`
+}
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (s PluginVersionFile) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyPluginVersionFile)
+	s.StructVersion = PluginStructVersion
+	s.Plugins = make(map[string]*InstalledVersion, len(legacyState.Plugins))
+	for p, i := range legacyState.Plugins {
+		s.Plugins[p] = &InstalledVersion{
+			Name:            i.Name,
+			Version:         i.Version,
+			ImageDigest:     i.ImageDigest,
+			InstalledFrom:   i.InstalledFrom,
+			LastCheckedDate: i.LastCheckedDate,
+			InstallDate:     i.InstallDate,
+		}
+	}
+	return s
 }
 
 func NewPluginVersionFile() *PluginVersionFile {
@@ -19,7 +52,7 @@ func NewPluginVersionFile() *PluginVersionFile {
 	}
 }
 
-func pluginVersionFileFromLegacy(legacyFile *LegacyVersionFile) *PluginVersionFile {
+func pluginVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *PluginVersionFile {
 	return &PluginVersionFile{
 		Plugins: legacyFile.Plugins,
 	}

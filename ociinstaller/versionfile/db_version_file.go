@@ -8,11 +8,22 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 )
 
+const DatabaseStructVersion = 20220411
+
+// LegacyDatabaseVersionFile is a struct used to migrate the
+// DatabaseVersionFile to serialize with snake case property names(migrated in v0.14.0)
+type LegacyDatabaseVersionFile struct {
+	FdwExtension LegacyInstalledVersion `json:"fdwExtension"`
+	EmbeddedDB   LegacyInstalledVersion `json:"embeddedDB"`
+}
+
 type DatabaseVersionFile struct {
-	FdwExtension InstalledVersion `json:"fdwExtension"`
-	EmbeddedDB   InstalledVersion `json:"embeddedDB"`
+	FdwExtension  InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB    InstalledVersion `json:"embedded_db"`
+	StructVersion int64            `json:"struct_version"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
@@ -22,7 +33,34 @@ func NewDBVersionFile() *DatabaseVersionFile {
 	}
 }
 
-type InstalledVersion struct {
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (s DatabaseVersionFile) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s *DatabaseVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyDatabaseVersionFile)
+	s.StructVersion = DatabaseStructVersion
+	s.FdwExtension.Name = legacyState.FdwExtension.Name
+	s.FdwExtension.Version = legacyState.FdwExtension.Version
+	s.FdwExtension.ImageDigest = legacyState.FdwExtension.ImageDigest
+	s.FdwExtension.InstalledFrom = legacyState.FdwExtension.InstalledFrom
+	s.FdwExtension.LastCheckedDate = legacyState.FdwExtension.LastCheckedDate
+	s.FdwExtension.InstallDate = legacyState.FdwExtension.InstallDate
+
+	s.EmbeddedDB.Name = legacyState.EmbeddedDB.Name
+	s.EmbeddedDB.Version = legacyState.EmbeddedDB.Version
+	s.EmbeddedDB.ImageDigest = legacyState.EmbeddedDB.ImageDigest
+	s.EmbeddedDB.InstalledFrom = legacyState.EmbeddedDB.InstalledFrom
+	s.EmbeddedDB.LastCheckedDate = legacyState.EmbeddedDB.LastCheckedDate
+	s.EmbeddedDB.InstallDate = legacyState.EmbeddedDB.InstallDate
+
+	return s
+}
+
+// LegacyInstalledVersion is the legacy db installed version info struct
+type LegacyInstalledVersion struct {
 	Name            string `json:"name"`
 	Version         string `json:"version"`
 	ImageDigest     string `json:"imageDigest"`
@@ -31,7 +69,16 @@ type InstalledVersion struct {
 	InstallDate     string `json:"installDate"`
 }
 
-func databaseVersionFileFromLegacy(legacyFile *LegacyVersionFile) *DatabaseVersionFile {
+type InstalledVersion struct {
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	ImageDigest     string `json:"image_digest"`
+	InstalledFrom   string `json:"installed_from"`
+	LastCheckedDate string `json:"last_checked_date"`
+	InstallDate     string `json:"install_date"`
+}
+
+func databaseVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *DatabaseVersionFile {
 	return &DatabaseVersionFile{
 		FdwExtension: legacyFile.FdwExtension,
 		EmbeddedDB:   legacyFile.EmbeddedDB,

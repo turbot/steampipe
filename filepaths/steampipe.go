@@ -16,6 +16,8 @@ const (
 	databaseRunningInfoFileName  = "steampipe.json"
 	pluginManagerStateFileName   = "plugin_manager.json"
 	dashboardServerStateFileName = "dashboard_service.json"
+	stateFileName                = "update_check.json"
+	legacyStateFileName          = "update-check.json"
 )
 
 var SteampipeDir string
@@ -77,6 +79,16 @@ func LegacyDashboardAssetsDir() string {
 	return steampipeSubDir("report")
 }
 
+// LegacyStateFilePath returns the path of the legacy update-check.json state file
+func LegacyStateFilePath() string {
+	return filepath.Join(EnsureInternalDir(), legacyStateFileName)
+}
+
+// StateFilePath returns the path of the update_check.json state file
+func StateFilePath() string {
+	return filepath.Join(EnsureInternalDir(), stateFileName)
+}
+
 // ConnectionStatePath returns the path of the connections state file
 func ConnectionStatePath() string {
 	return filepath.Join(EnsureInternalDir(), connectionsStateFileName)
@@ -112,4 +124,8 @@ func PluginManagerStateFilePath() string {
 
 func DashboardServiceStateFilePath() string {
 	return filepath.Join(EnsureInternalDir(), dashboardServerStateFileName)
+}
+
+func StateFileName() string {
+	return stateFileName
 }
