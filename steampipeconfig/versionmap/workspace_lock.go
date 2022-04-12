@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -17,6 +18,19 @@ import (
 	"github.com/turbot/steampipe/versionhelpers"
 )
 
+const WorkspaceLockStructVersion = 20220411
+
+// LegacyWorkspaceLock is a struct used to migrate the WorkspaceLock
+// to serialize with snake case property names(migrated in v0.14.0)
+type LegacyWorkspaceLock struct {
+	WorkspacePath   string
+	InstallCache    DependencyVersionMap
+	MissingVersions DependencyVersionMap
+
+	ModInstallationPath string
+	installedMods       VersionListMap
+}
+
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
 type WorkspaceLock struct {
 	WorkspacePath   string
@@ -25,6 +39,21 @@ type WorkspaceLock struct {
 
 	ModInstallationPath string
 	installedMods       VersionListMap
+	StructVersion       int64
+}
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (s WorkspaceLock) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s *WorkspaceLock) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(DependencyVersionMap)
+	s.StructVersion = WorkspaceLockStructVersion
+	s.InstallCache = legacyState
+
+	return s
 }
 
 // EmptyWorkspaceLock creates a new empty workspace lock based,

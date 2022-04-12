@@ -5,10 +5,10 @@ import (
 )
 
 type ResolvedVersionConstraint struct {
-	Name       string
-	Alias      string
-	Version    *semver.Version
-	Constraint string
+	Name       string          `json:"name,omitempty"`
+	Alias      string          `json:"alias,omitempty"`
+	Version    *semver.Version `json:"version,omitempty"`
+	Constraint string          `json:"constraint,omitempty"`
 }
 
 func NewResolvedVersionConstraint(name, alias string, version *semver.Version, constraintString string) *ResolvedVersionConstraint {
