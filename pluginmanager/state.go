@@ -15,10 +15,10 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const StructVersion = 20220411
+const PluginManagerStructVersion = 20220411
 
 // LegacyPluginManagerState is a struct used to migrate the
-// PluginManagerState to serialize with snake case property names
+// PluginManagerState to serialize with snake case property names(migrated in v0.14.0)
 type LegacyPluginManagerState struct {
 	Protocol        plugin.Protocol
 	ProtocolVersion int
@@ -60,7 +60,7 @@ func (s PluginManagerState) IsValid() bool {
 
 func (s *PluginManagerState) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyPluginManagerState)
-	s.StructVersion = StructVersion
+	s.StructVersion = PluginManagerStructVersion
 	s.Protocol = legacyState.Protocol
 	s.ProtocolVersion = legacyState.ProtocolVersion
 	s.Addr = legacyState.Addr

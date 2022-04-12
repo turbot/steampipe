@@ -11,10 +11,10 @@ import (
 	"github.com/turbot/steampipe/migrate"
 )
 
-const StructVersion = 20220411
+const DatabaseStructVersion = 20220411
 
 // LegacyDatabaseVersionFile is a struct used to migrate the
-// DatabaseVersionFile to serialize with snake case property names
+// DatabaseVersionFile to serialize with snake case property names(migrated in v0.14.0)
 type LegacyDatabaseVersionFile struct {
 	FdwExtension LegacyInstalledVersion `json:"fdwExtension"`
 	EmbeddedDB   LegacyInstalledVersion `json:"embeddedDB"`
@@ -41,7 +41,7 @@ func (s DatabaseVersionFile) IsValid() bool {
 
 func (s *DatabaseVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyDatabaseVersionFile)
-	s.StructVersion = StructVersion
+	s.StructVersion = DatabaseStructVersion
 	s.FdwExtension.Name = legacyState.FdwExtension.Name
 	s.FdwExtension.Version = legacyState.FdwExtension.Version
 	s.FdwExtension.ImageDigest = legacyState.FdwExtension.ImageDigest

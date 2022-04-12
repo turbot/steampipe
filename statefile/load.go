@@ -12,10 +12,10 @@ import (
 	"github.com/turbot/steampipe/migrate"
 )
 
-const StructVersion = 20220411
+const StateStructVersion = 20220411
 
 // LegacyState is a struct used to migrate the
-// State to serialize with snake case property names
+// State to serialize with snake case property names(migrated in v0.14.0)
 type LegacyState struct {
 	LastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
 	InstallationID string `json:"installationId"` // a UUIDv4 string
@@ -36,7 +36,7 @@ func (s State) IsValid() bool {
 
 func (s *State) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyState)
-	s.StructVersion = StructVersion
+	s.StructVersion = StateStructVersion
 	s.LastCheck = legacyState.LastCheck
 	s.InstallationID = legacyState.InstallationID
 

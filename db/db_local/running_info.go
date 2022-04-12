@@ -14,10 +14,10 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const StructVersion = 20220411
+const RunningDBStructVersion = 20220411
 
 // LegacyRunningDBInstanceInfo is a struct used to migrate the
-// RunningDBInstanceInfo to serialize with snake case property names
+// RunningDBInstanceInfo to serialize with snake case property names(migrated in v0.14.0)
 type LegacyRunningDBInstanceInfo struct {
 	Pid        int
 	Port       int
@@ -50,7 +50,7 @@ func (s RunningDBInstanceInfo) IsValid() bool {
 
 func (s *RunningDBInstanceInfo) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyRunningDBInstanceInfo)
-	s.StructVersion = StructVersion
+	s.StructVersion = RunningDBStructVersion
 	s.Pid = legacyState.Pid
 	s.Port = legacyState.Port
 	s.Listen = legacyState.Listen

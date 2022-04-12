@@ -23,13 +23,13 @@ import (
 type ServiceState string
 
 const (
-	ServiceStateRunning ServiceState = "running"
-	ServiceStateError   ServiceState = "running"
-	StructVersion                    = 20220411
+	ServiceStateRunning       ServiceState = "running"
+	ServiceStateError         ServiceState = "running"
+	ServiceStateStructVersion              = 20220411
 )
 
 // LegacyDashboardServiceState is a struct used to migrate the
-// DashboardServiceState to serialize with snake case property names
+// DashboardServiceState to serialize with snake case property names(migrated in v0.14.0)
 type LegacyDashboardServiceState struct {
 	State      ServiceState
 	Error      string
@@ -49,15 +49,14 @@ type DashboardServiceState struct {
 	StructVersion int64        `json:"struct_version"`
 }
 
-// IsValid checks whether the struct was correctly deserialized,
-// by checking if the StructVersion is populated
+// IsValid checks whether the struct was correctly deserialized, by checking if the StructVersion is populated
 func (s DashboardServiceState) IsValid() bool {
 	return s.StructVersion > 0
 }
 
 func (s *DashboardServiceState) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyDashboardServiceState)
-	s.StructVersion = StructVersion
+	s.StructVersion = ServiceStateStructVersion
 	s.State = legacyState.State
 	s.Error = legacyState.Error
 	s.Pid = legacyState.Pid
@@ -247,7 +246,7 @@ func (f *DashboardServiceState) Save() error {
 func (f *DashboardServiceState) write(path string) error {
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
-		log.Println("[ERROR]", "Error while writing version file", err)
+		log.Println("Error while writing version file", err)
 		return err
 	}
 	return os.WriteFile(path, versionFileJSON, 0644)
