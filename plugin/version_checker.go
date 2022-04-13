@@ -131,10 +131,10 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 
 	log.Println("[TRACE] serverResponse:", serverResponse)
 
-	for _, rD := range serverResponse {
-		r := reports[rD.getMapKey()]
-		r.CheckResponse = rD
-		reports[rD.getMapKey()] = r
+	for _, pluginResponseData := range serverResponse {
+		r := reports[pluginResponseData.getMapKey()]
+		r.CheckResponse = pluginResponseData
+		reports[pluginResponseData.getMapKey()] = r
 	}
 
 	return reports
@@ -156,7 +156,7 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 func (v *VersionChecker) getVersionCheckURL() url.URL {
 	var u url.URL
 	u.Scheme = "https"
-	u.Host = "hub-steampipe-io-git-development-turbot.vercel.app"
+	u.Host = "hub.steampipe.io"
 	u.Path = "api/plugin/version"
 	return u
 }
