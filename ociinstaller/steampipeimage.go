@@ -9,6 +9,7 @@ import (
 
 	"github.com/containerd/containerd/remotes"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/turbot/steampipe/constants"
 )
 
 type SteampipeImage struct {
@@ -196,9 +197,9 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 			// when found, assign and exit
 			res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 			res.BinaryDigest = string(foundLayers[0].Digest)
-			res.BinaryArchitecture = "amd64"
-			if strings.Contains(mediaType, "arm64") {
-				res.BinaryArchitecture = "arm64"
+			res.BinaryArchitecture = constants.ArchAMD64
+			if strings.Contains(mediaType, constants.ArchARM64) {
+				res.BinaryArchitecture = constants.ArchARM64
 			}
 			break
 		}

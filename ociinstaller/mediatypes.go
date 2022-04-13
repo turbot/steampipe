@@ -3,6 +3,8 @@ package ociinstaller
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/turbot/steampipe/constants"
 )
 
 // Steampipe Media Types
@@ -50,17 +52,18 @@ const (
 // and it's fallbacks in order of priority
 func MediaTypeForPlatform(imageType ImageType) []string {
 	arch := runtime.GOARCH
+	layerFmt := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar"
 	switch imageType {
 	case ImageTypeDatabase:
-		return []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, arch)}
+		return []string{fmt.Sprintf(layerFmt, imageType, runtime.GOOS, arch)}
 	case ImageTypeFdw:
-		return []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)}
+		return []string{fmt.Sprintf(layerFmt, imageType, runtime.GOOS, arch)}
 	case ImageTypePlugin:
-		pluginMediaTypes := []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)}
-		if runtime.GOOS == "darwin" && arch == "arm64" {
+		pluginMediaTypes := []string{fmt.Sprintf(layerFmt, imageType, runtime.GOOS, arch)}
+		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
 			// add the amd64 layer as well, so that we can fall back to it
 			// this is required for plugins which don't have an arm64 build yet
-			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-amd64.layer.v1+gzip", imageType, runtime.GOOS))
+			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmt, imageType, runtime.GOOS, constants.ArchAMD64))
 		}
 		return pluginMediaTypes
 	}
