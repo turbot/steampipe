@@ -32,19 +32,16 @@ type PluginImage struct {
 }
 
 type DbImage struct {
-	ArchiveDir   string
-	BinaryDigest string
-	ReadmeFile   string
-	LicenseFile  string
+	ArchiveDir  string
+	ReadmeFile  string
+	LicenseFile string
 }
 type HubImage struct {
-	BinaryFile         string
-	BinaryDigest       string
-	BinaryArchitecture string
-	ReadmeFile         string
-	LicenseFile        string
-	ControlFile        string
-	SqlFile            string
+	BinaryFile  string
+	ReadmeFile  string
+	LicenseFile string
+	ControlFile string
+	SqlFile     string
 }
 type AssetsImage struct {
 	ReportUI string
@@ -132,7 +129,6 @@ func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
 		return nil, fmt.Errorf("invalid Image - should contain 1 installation file per platform, found %d", len(foundLayers))
 	}
 	res.ArchiveDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
-	res.BinaryDigest = string(foundLayers[0].Digest)
 
 	// get the readme file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeDbDocLayer)
@@ -157,8 +153,6 @@ func getFdwImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 		return nil, fmt.Errorf("invalid image - image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
 	res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
-	res.BinaryDigest = string(foundLayers[0].Digest)
-	res.BinaryArchitecture = foundLayers[0].Platform.Architecture
 
 	//sourcePath := filepath.Join(tempDir.Path, fileName)
 
