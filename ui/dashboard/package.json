@@ -46,7 +46,7 @@
   "devDependencies": {
     "@craco/craco": "6.4.3",
     "@storybook/addon-actions": "6.5.0-alpha.61",
-    "@storybook/addon-essentials": "6.5.0-alpha.61",
+    "@storybook/addon-essentials": "6.5.0-alpha.62",
     "@storybook/addon-links": "6.5.0-alpha.61",
     "@storybook/addons": "6.5.0-alpha.61",
     "@storybook/builder-webpack5": "6.5.0-alpha.61",
