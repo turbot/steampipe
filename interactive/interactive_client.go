@@ -57,8 +57,6 @@ type InteractiveClient struct {
 
 	// the schema metadata - this is loaded asynchronously during init
 	schemaMetadata *schema.Metadata
-	// was there an error loading the schema
-	schemaMetadataError error
 
 	highlighter *Highlighter
 }
@@ -161,8 +159,7 @@ func (c *InteractiveClient) loadSchema() error {
 	// in a background context, since we are not running in a context - but GetSchemaFromDB needs one
 	metadata, err := c.client().GetSchemaFromDB(context.Background())
 	if err != nil {
-		c.schemaMetadataError = err
-		return err
+		return fmt.Errorf("failed to load schemas: %s", err.Error())
 	}
 
 	c.schemaMetadata = metadata

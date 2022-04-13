@@ -59,13 +59,18 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	}()
 	<-c.initData.Loaded
 
+	defer func() { c.initResultChan <- c.initData.Result }()
+
 	if c.initData.Result.Error != nil {
-		c.initResultChan <- c.initData.Result
+
 		return
 	}
 
 	// asyncronously fetch the schema
-	go c.loadSchema()
+	if err := c.loadSchema(); err != nil {
+		c.initData.Result.Error = err
+		return
+	}
 
 	log.Printf("[TRACE] readInitDataStream - data has arrived")
 
@@ -76,7 +81,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			c.initData.Result.Error = err
 		}
 	}
-	c.initResultChan <- c.initData.Result
+
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
