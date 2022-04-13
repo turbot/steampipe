@@ -63,6 +63,8 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 	plugin.Name = pluginFullName
 	plugin.Version = image.Config.Plugin.Version
 	plugin.ImageDigest = string(image.OCIDescriptor.Digest)
+	plugin.BinaryDigest = image.Plugin.BinaryDigest
+	plugin.BinaryArchitecture = image.Plugin.BinaryArchitecture
 	plugin.InstalledFrom = image.ImageRef.ActualImageRef()
 	plugin.LastCheckedDate = timeNow
 	plugin.InstallDate = timeNow

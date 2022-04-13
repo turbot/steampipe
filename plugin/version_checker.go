@@ -17,21 +17,12 @@ import (
 // VersionCheckReport ::
 type VersionCheckReport struct {
 	Plugin        *versionfile.InstalledVersion
-	CheckResponse versionCheckPayload
-	CheckRequest  versionCheckPayload
+	CheckResponse versionCheckResponsePayload
+	CheckRequest  versionCheckRequestPayload
 }
 
 func (vr *VersionCheckReport) ShortName() string {
 	return fmt.Sprintf("%s/%s", vr.CheckResponse.Org, vr.CheckResponse.Name)
-}
-
-// the payload that travels to-and-fro between steampipe and the server
-type versionCheckPayload struct {
-	Org     string `json:"org"`
-	Name    string `json:"name"`
-	Stream  string `json:"stream"`
-	Version string `json:"version"`
-	Digest  string `json:"digest"`
 }
 
 // VersionChecker :: wrapper struct over the plugin version check utilities
@@ -113,11 +104,11 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 
 func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.InstalledVersion) map[string]VersionCheckReport {
 
-	getMapKey := func(thisPayload versionCheckPayload) string {
+	getMapKey := func(thisPayload versionCheckRequestPayload) string {
 		return fmt.Sprintf("%s/%s/%s", thisPayload.Org, thisPayload.Name, thisPayload.Stream)
 	}
 
-	requestPayload := []versionCheckPayload{}
+	requestPayload := []versionCheckRequestPayload{}
 	reports := map[string]VersionCheckReport{}
 
 	for _, ref := range plugins {
@@ -127,7 +118,7 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 		reports[getMapKey(thisPayload)] = VersionCheckReport{
 			Plugin:        ref,
 			CheckRequest:  thisPayload,
-			CheckResponse: versionCheckPayload{},
+			CheckResponse: versionCheckResponsePayload{},
 		}
 	}
 
@@ -138,19 +129,21 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 		return map[string]VersionCheckReport{}
 	}
 
-	for _, rD := range serverResponse {
-		r := reports[getMapKey(rD)]
-		r.CheckResponse = rD
-		reports[getMapKey(rD)] = r
+	log.Println("[TRACE] serverResponse:", serverResponse)
+
+	for _, pluginResponseData := range serverResponse {
+		r := reports[pluginResponseData.getMapKey()]
+		r.CheckResponse = pluginResponseData
+		reports[pluginResponseData.getMapKey()] = r
 	}
 
 	return reports
 }
 
-func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckPayload {
+func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckRequestPayload {
 	ref := ociinstaller.NewSteampipeImageRef(plugin.Name)
 	org, name, stream := ref.GetOrgNameAndStream()
-	payload := versionCheckPayload{
+	payload := versionCheckRequestPayload{
 		Org:     org,
 		Name:    name,
 		Stream:  stream,
@@ -168,7 +161,7 @@ func (v *VersionChecker) getVersionCheckURL() url.URL {
 	return u
 }
 
-func (v *VersionChecker) requestServerForLatest(payload []versionCheckPayload) []versionCheckPayload {
+func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPayload) []versionCheckResponsePayload {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	sendRequestTo := v.getVersionCheckURL()
 	requestBody := utils.BuildRequestPayload(v.signature, map[string]interface{}{
@@ -198,7 +191,7 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckPayload) [
 	}
 	defer resp.Body.Close()
 
-	var responseData []versionCheckPayload
+	var responseData []versionCheckResponsePayload
 
 	err = json.Unmarshal(bodyBytes, &responseData)
 	if err != nil {

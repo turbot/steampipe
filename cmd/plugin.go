@@ -356,11 +356,12 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	for _, report := range reports {
-		if report.Plugin.ImageDigest == report.CheckResponse.Digest {
+		shouldSkipUpdate, skipReason := plugin.SkipUpdate(report)
+		if shouldSkipUpdate {
 			updateReports = append(updateReports, display.InstallReport{
 				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
 				Skipped:        true,
-				SkipReason:     constants.PluginLatestAlreadyInstalled,
+				SkipReason:     skipReason,
 				IsUpdateReport: true,
 			})
 			continue
