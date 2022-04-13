@@ -27,11 +27,11 @@ type ResultGroup struct {
 	Description string            `json:"description" csv:"description"`
 	Tags        map[string]string `json:"tags"`
 	// the overall summary of the group
-	Summary *GroupSummary `json:"group_summary"`
+	Summary *GroupSummary `json:"summary"`
 	// child result groups
-	Groups []*ResultGroup `json:"child_groups"`
+	Groups []*ResultGroup `json:"groups"`
 	// child control runs
-	ControlRuns []*ControlRun                          `json:"child_controls"`
+	ControlRuns []*ControlRun                          `json:"controls"`
 	Severity    map[string]controlstatus.StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
@@ -46,7 +46,7 @@ type ResultGroup struct {
 }
 
 type GroupSummary struct {
-	Status   controlstatus.StatusSummary            `json:"control_row_status_summary"`
+	Status   controlstatus.StatusSummary            `json:"summary"`
 	Severity map[string]controlstatus.StatusSummary `json:"-"`
 }
 

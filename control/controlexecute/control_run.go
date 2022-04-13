@@ -26,7 +26,7 @@ type ControlRun struct {
 	// the control being run
 	Control *modconfig.Control `json:"-"`
 	// control summary
-	Summary *controlstatus.StatusSummary `json:"control_row_status_summary"`
+	Summary *controlstatus.StatusSummary `json:"summary"`
 	// result rows
 	Rows []*ResultRow `json:"results"`
 	// a list of distinct dimension keys from the results of this control

@@ -12,7 +12,7 @@ type ControlProgress struct {
 	Complete        int            `json:"complete"`
 	Error           int            `json:"error"`
 	Executing       int            `json:"executing"`
-	StatusSummaries *StatusSummary `json:"control_row_status_summary"`
+	StatusSummaries *StatusSummary `json:"summary"`
 }
 
 func NewControlProgress(total int) *ControlProgress {
