@@ -71,7 +71,6 @@ type ExecutionCompletePayload struct {
 	SearchPath    []string                             `json:"search_path"`
 	StartTime     time.Time                            `json:"start_time"`
 	EndTime       time.Time                            `json:"end_time"`
-	Actor         string                               `json:"actor"`
 }
 
 type InputValuesClearedPayload struct {

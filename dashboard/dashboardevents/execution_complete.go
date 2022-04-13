@@ -16,7 +16,6 @@ type ExecutionComplete struct {
 	SearchPath []string
 	StartTime  time.Time
 	EndTime    time.Time
-	Actor      string
 }
 
 // IsDashboardEvent implements DashboardEvent interface

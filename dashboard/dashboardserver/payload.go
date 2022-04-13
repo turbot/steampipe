@@ -118,7 +118,6 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		SearchPath:    event.SearchPath,
 		StartTime:     event.StartTime,
 		EndTime:       event.EndTime,
-		Actor:         event.Actor,
 	}
 	return json.Marshal(payload)
 }

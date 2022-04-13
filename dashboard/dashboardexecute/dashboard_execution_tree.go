@@ -96,7 +96,6 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		SearchPath:  e.client.GetRequiredSessionSearchPath(),
 		StartTime:   startTime,
 		EndTime:     time.Now(),
-		Actor:       "",
 	})
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
