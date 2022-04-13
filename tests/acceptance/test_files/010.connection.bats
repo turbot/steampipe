@@ -92,7 +92,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; hcl)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # cache functionality check since cache=true in options
@@ -114,7 +113,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; yml)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     # cache functionality check since cache=true in options
@@ -136,7 +134,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; json)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     # cache functionality check since cache=true in options
@@ -158,7 +155,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=false; hcl)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options_2.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
 
     # cache functionality check since cache=false in options
@@ -185,7 +181,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=false; yml)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options_2.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
 
     # cache functionality check since cache=false in options
@@ -212,7 +207,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(hcl)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # check regions in connection config is being parsed and used
@@ -226,7 +220,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(yml)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     # check regions in connection config is being parsed and used
@@ -240,7 +233,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(json)" {
-    skip
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     # check regions in connection config is being parsed and used

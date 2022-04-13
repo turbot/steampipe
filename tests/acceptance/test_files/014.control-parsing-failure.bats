@@ -3,7 +3,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 
 @test "control with neither query property nor sql property" {
-  skip
   cd $BAD_TEST_MOD_DIR
   run steampipe check control.control_fail_with_no_query_no_sql --output json
 
@@ -16,7 +15,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with both query property and sql property" {
-  skip
   cd $BAD_TEST_MOD_DIR
   run steampipe check control.control_fail_with_both_query_and_sql --output json
 
@@ -29,7 +27,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control with both params property and query property" {
-  skip
   cd $BAD_TEST_MOD_DIR
   run steampipe check control.control_fail_with_params_and_query --output json
 
@@ -42,7 +39,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control referring to query with no params definitions and named args passed" {
-  skip
   cd $BAD_TEST_MOD_DIR
   run steampipe check control.control_fail_with_query_with_no_def_and_named_args_passed --output json
 
@@ -55,7 +51,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control referring to query with no params defaults and partial positional args passed" {
-  skip
   cd $BAD_TEST_MOD_DIR
   run steampipe check control.control_fail_with_insufficient_positional_args_passed --output json
 
@@ -68,7 +63,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "control referring to query with no params defaults and partial named args passed" {
-  skip
   cd $BAD_TEST_MOD_DIR
   run steampipe check control.control_fail_with_insufficient_named_args_passed --output json
 

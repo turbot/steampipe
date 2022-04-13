@@ -71,7 +71,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - output json" {
-  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --output=json --progress=false
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
@@ -95,7 +94,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export json" {
-  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.json --progress=false
   assert_equal "$(cat test.json)" "$(cat $TEST_DATA_DIR/expected_check_json.json)"

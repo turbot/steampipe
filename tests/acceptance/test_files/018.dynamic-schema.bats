@@ -28,7 +28,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "dynamic schema - remove the csv with extra column and query (should fail)" {
- skip
  # query the extra column and verify - should pass
  run steampipe query 'select "column_D" from csv1.a'
  assert_success
