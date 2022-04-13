@@ -2,9 +2,9 @@ name: Build and Publish DB Image
 
 ## LINKS
 ##   pg_dump
-##     pg14 darwin amd64 https://drive.google.com/file/d/1ICG7hFYNcDCRB-8YtfLtZDINyX7COESS/view?usp=sharing
+##     pg14 darwin amd64 https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump?dl=0
 ##   pg_restore
-##     pg14 darwin amd64 https://drive.google.com/file/d/1pDCkoOofwuBAD65OQGENa2MAP4OeqkeP/view?usp=sharing
+##     pg14 darwin amd64 https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore?dl=0
 
 # Controls when the action will run. 
 on:
@@ -85,10 +85,10 @@ jobs:
           unzip -o ${JAR_FILE}
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
-          curl -L -O -J -L https://drive.google.com/file/d/1ICG7hFYNcDCRB-8YtfLtZDINyX7COESS/view?usp=sharing -o pg_dump
-          curl -L -O -J -L https://drive.google.com/file/d/1pDCkoOofwuBAD65OQGENa2MAP4OeqkeP/view?usp=sharing -o pg_restore
-          mv pg_dump $EXTRACT_DIR/bin
-          mv pg_restore $EXTRACT_DIR/bin
+          curl -L -O -J https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump?dl=0 -o pg_dump
+          curl -L -O -J https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore?dl=0 -o pg_restore
+          mv pg_dump $EXTRACT_DIR/bin/pg_dump
+          mv pg_restore $EXTRACT_DIR/bin/pg_restore
 
       - name: Pull & Extract - linux amd64
         env:
