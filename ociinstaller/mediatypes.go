@@ -51,18 +51,21 @@ const (
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
 // and it's fallbacks in order of priority
 func MediaTypeForPlatform(imageType ImageType) []string {
+	layerFmtGzip := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip"
+	layerFmtTar := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar"
+
 	arch := runtime.GOARCH
 	switch imageType {
 	case ImageTypeDatabase:
-		return []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, arch)}
+		return []string{fmt.Sprintf(layerFmtTar, imageType, runtime.GOOS, arch)}
 	case ImageTypeFdw:
-		return []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)}
+		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
 	case ImageTypePlugin:
-		pluginMediaTypes := []string{fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)}
+		pluginMediaTypes := []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
 		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
 			// add the amd64 layer as well, so that we can fall back to it
 			// this is required for plugins which don't have an arm64 build yet
-			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, constants.ArchAMD64, runtime.GOOS))
+			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, constants.ArchAMD64, runtime.GOOS))
 		}
 		return pluginMediaTypes
 	}
