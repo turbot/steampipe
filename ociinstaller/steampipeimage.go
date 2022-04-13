@@ -199,16 +199,18 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 		// find out the layer with the correct media type
 		foundLayers = findLayersForMediaType(layers, mediaType)
 		if len(foundLayers) == 1 {
-			// when found, exit
+			// when found, assign and exit
 			res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+			res.BinaryDigest = string(foundLayers[0].Digest)
+			res.BinaryArchitecture = "amd64"
+			if strings.Contains(mediaType, "arm64") {
+				res.BinaryArchitecture = "arm64"
+			}
 			break
 		}
-		res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
-		res.BinaryDigest = string(foundLayers[0].Digest)
-		res.BinaryArchitecture = "amd64"
-		if strings.Contains(mediaType, "arm64") {
-			res.BinaryArchitecture = "arm64"
-		}
+		// loop over to the next one
+		log.Println("[TRACE] could not find data for", mediaType)
+		log.Println("[TRACE] falling back to the next one, if any")
 	}
 	if len(res.BinaryFile) == 0 {
 		return nil, fmt.Errorf("invalid image - should contain 1 binary file per platform, found %d", len(foundLayers))
