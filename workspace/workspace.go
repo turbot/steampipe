@@ -30,13 +30,15 @@ type Workspace struct {
 	ModInstallationPath string
 	Mod                 *modconfig.Mod
 
-	Mods          map[string]*modconfig.Mod
-	CloudMetadata *steampipeconfig.CloudMetadata
+	Mods map[string]*modconfig.Mod
+	// the input variables used in the parse
+	VariableValues map[string]string
 
-	watcher     *utils.FileWatcher
-	loadLock    sync.Mutex
-	exclusions  []string
-	modFilePath string
+	CloudMetadata *steampipeconfig.CloudMetadata
+	watcher       *utils.FileWatcher
+	loadLock      sync.Mutex
+	exclusions    []string
+	modFilePath   string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)

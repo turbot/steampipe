@@ -80,6 +80,11 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	return err
 }
 
+// GetRequiredSessionSearchPath implements Client
+func (c *DbClient) GetRequiredSessionSearchPath() []string {
+	return c.requiredSessionSearchPath
+}
+
 func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPath, searchPathPrefix []string) ([]string, error) {
 	// store custom search path and search path prefix
 	c.searchPathPrefix = searchPathPrefix

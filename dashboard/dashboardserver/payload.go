@@ -182,10 +182,16 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 }
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
-	payload := ExecutionPayload{
+	payload := ExecutionCompletePayload{
+		SchemaVersion: ExecutionCompleteSchemaVersion,
 		Action:        "execution_complete",
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
+		Inputs:        event.Inputs,
+		Variables:     event.Variables,
+		SearchPath:    event.SearchPath,
+		StartTime:     event.StartTime,
+		EndTime:       event.EndTime,
 	}
 	return json.Marshal(payload)
 }

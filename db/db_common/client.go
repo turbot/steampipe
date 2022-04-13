@@ -21,6 +21,7 @@ type Client interface {
 	GetCurrentSearchPath(context.Context) ([]string, error)
 	GetCurrentSearchPathForDbConnection(context.Context, *sql.Conn) ([]string, error)
 	SetRequiredSessionSearchPath(context.Context) error
+	GetRequiredSessionSearchPath() []string
 	ContructSearchPath(context.Context, []string, []string) ([]string, error)
 
 	AcquireSession(context.Context) *AcquireSessionResult

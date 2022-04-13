@@ -159,6 +159,11 @@ func (c *LocalDbClient) SetRequiredSessionSearchPath(ctx context.Context) error 
 	return c.client.SetRequiredSessionSearchPath(ctx)
 }
 
+// GetRequiredSessionSearchPath implements Client
+func (c *LocalDbClient) GetRequiredSessionSearchPath() []string {
+	return c.client.GetRequiredSessionSearchPath()
+}
+
 func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPath, searchPathPrefix []string) ([]string, error) {
 	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
 }
