@@ -146,7 +146,7 @@ const Control = (props: CheckProps) => {
         control: null,
       };
     }
-    const control = props.root?.child_controls?.[0];
+    const control = props.root?.controls?.[0];
     if (!control) {
       return {
         loading: true,

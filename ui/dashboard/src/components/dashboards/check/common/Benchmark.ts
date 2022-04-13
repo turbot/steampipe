@@ -25,8 +25,8 @@ class Benchmark {
           nestedBenchmark.group_id,
           nestedBenchmark.title,
           nestedBenchmark.description,
-          nestedBenchmark.child_groups,
-          nestedBenchmark.child_controls
+          nestedBenchmark.groups,
+          nestedBenchmark.controls
         )
       );
     }
@@ -38,7 +38,7 @@ class Benchmark {
           nestedControl.title,
           nestedControl.description,
           nestedControl.results,
-          nestedControl.control_row_status_summary,
+          nestedControl.summary,
           nestedControl.run_status,
           nestedControl.run_error
         )

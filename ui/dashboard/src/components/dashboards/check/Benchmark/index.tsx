@@ -268,7 +268,7 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
 };
 
 const Benchmark = (props: CheckProps) => {
-  const rootGroups = props.root.child_groups;
+  const rootGroups = props.root.groups;
   if (!rootGroups) {
     return null;
   }
@@ -277,8 +277,8 @@ const Benchmark = (props: CheckProps) => {
     rootBenchmark.group_id,
     rootBenchmark.title,
     rootBenchmark.description,
-    rootBenchmark.child_groups,
-    rootBenchmark.child_controls
+    rootBenchmark.groups,
+    rootBenchmark.controls
   );
 
   return (

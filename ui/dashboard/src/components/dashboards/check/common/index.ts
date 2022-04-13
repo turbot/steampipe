@@ -58,7 +58,7 @@ export interface CheckControl {
   severity?: string;
   tags?: CheckTags;
   results: CheckResult[];
-  control_row_status_summary: CheckSummary;
+  summary: CheckSummary;
   run_status: number;
   run_error?: string;
 }
@@ -69,12 +69,12 @@ export interface CheckGroup {
   description?: string;
   tags?: CheckTags;
   summary: CheckLeafNodeDataGroupSummary;
-  child_groups?: CheckGroup[];
-  child_controls?: CheckControl[];
+  groups?: CheckGroup[];
+  controls?: CheckControl[];
 }
 
 interface CheckLeafNodeProgress {
-  control_row_status_summary: CheckSummary;
+  summary: CheckSummary;
 }
 
 export interface CheckExecutionTree {
