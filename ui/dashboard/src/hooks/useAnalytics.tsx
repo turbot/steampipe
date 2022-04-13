@@ -48,12 +48,18 @@ const useAnalyticsProvider = () => {
 
   const identify = useCallback((actor) => {
     // @ts-ignore
-    window.heap && window.heap.identify(actor.id);
+    if (window.heap) {
+      // @ts-ignore
+      window.heap.identify(actor.id);
+    }
   }, []);
 
   const reset = useCallback(() => {
     // @ts-ignore
-    window.heap && window.heap.resetIdentity();
+    if (window.heap) {
+      // @ts-ignore
+      window.heap.resetIdentity();
+    }
   }, []);
 
   const track = useCallback(
@@ -81,7 +87,7 @@ const useAnalyticsProvider = () => {
       // @ts-ignore
       window.heap && window.heap.track(event, finalProperties);
     },
-    [enabled, initialised, identity, workspace, localStorageTheme, theme]
+    [enabled, initialised, identity, workspace, localStorageTheme, theme.name]
   );
 
   useEffect(() => {
@@ -89,18 +95,18 @@ const useAnalyticsProvider = () => {
       return;
     }
 
-    setEnabled(
+    const enabled =
       process.env.NODE_ENV === "production" &&
-        metadata.telemetry === "info" &&
-        !!process.env.REACT_APP_HEAP_ID
-    );
+      metadata.telemetry === "info" &&
+      !!process.env.REACT_APP_HEAP_ID;
 
     // @ts-ignore
-    if (metadata.telemetry === "info" && window.heap) {
+    if (enabled && window.heap) {
       // @ts-ignore
       window.heap.load(process.env.REACT_APP_HEAP_ID);
     }
 
+    setEnabled(enabled);
     setInitialised(true);
   }, [metadata]);
 
