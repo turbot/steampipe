@@ -89,6 +89,8 @@ func (r *Runner) shouldRun() bool {
 	utils.LogTime("task.Runner.shouldRun start")
 	defer utils.LogTime("task.Runner.shouldRun end")
 
+	return true
+
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
 	if isIgnoredCmd(cmd, cmdArgs) {

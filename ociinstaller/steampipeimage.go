@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/containerd/containerd/remotes"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -22,23 +23,28 @@ type SteampipeImage struct {
 }
 
 type PluginImage struct {
-	BinaryFile    string
-	DocsDir       string
-	ConfigFileDir string
-	LicenseFile   string
+	BinaryFile         string
+	BinaryDigest       string
+	BinaryArchitecture string
+	DocsDir            string
+	ConfigFileDir      string
+	LicenseFile        string
 }
 
 type DbImage struct {
-	ArchiveDir  string
-	ReadmeFile  string
-	LicenseFile string
+	ArchiveDir   string
+	BinaryDigest string
+	ReadmeFile   string
+	LicenseFile  string
 }
 type HubImage struct {
-	BinaryFile  string
-	ReadmeFile  string
-	LicenseFile string
-	ControlFile string
-	SqlFile     string
+	BinaryFile         string
+	BinaryDigest       string
+	BinaryArchitecture string
+	ReadmeFile         string
+	LicenseFile        string
+	ControlFile        string
+	SqlFile            string
 }
 type AssetsImage struct {
 	ReportUI string
@@ -126,6 +132,7 @@ func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
 		return nil, fmt.Errorf("invalid Image - should contain 1 installation file per platform, found %d", len(foundLayers))
 	}
 	res.ArchiveDir = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	res.BinaryDigest = string(foundLayers[0].Digest)
 
 	// get the readme file info
 	foundLayers = findLayersForMediaType(layers, MediaTypeDbDocLayer)
@@ -150,6 +157,9 @@ func getFdwImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 		return nil, fmt.Errorf("invalid image - image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
 	res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+	res.BinaryDigest = string(foundLayers[0].Digest)
+	res.BinaryArchitecture = foundLayers[0].Platform.Architecture
+
 	//sourcePath := filepath.Join(tempDir.Path, fileName)
 
 	// get the control file info
@@ -193,10 +203,12 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 			res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
 			break
 		}
-
-		// loop over to the next one
-		log.Println("[TRACE] could not find data for", mediaType)
-		log.Println("[TRACE] falling back to the next one, if any")
+		res.BinaryFile = foundLayers[0].Annotations["org.opencontainers.image.title"]
+		res.BinaryDigest = string(foundLayers[0].Digest)
+		res.BinaryArchitecture = "amd64"
+		if strings.Contains(mediaType, "arm64") {
+			res.BinaryArchitecture = "arm64"
+		}
 	}
 	if len(res.BinaryFile) == 0 {
 		return nil, fmt.Errorf("invalid image - should contain 1 binary file per platform, found %d", len(foundLayers))
