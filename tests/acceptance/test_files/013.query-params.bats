@@ -4,7 +4,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ############### QUERIES ###############
 
 @test "query with default params and no params passed through CLI" {
-  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query query.query_params_with_all_defaults --output json
 
@@ -15,7 +14,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with default params and some positional params passed through CLI" {
-  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_params_with_all_defaults(\"command_param_1\")" --output json
 
@@ -26,7 +24,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with default params and some named params passed through CLI" {
-  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_params_with_all_defaults(p1 => \"command_param_1\")" --output json
 
@@ -37,7 +34,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with no default params and no params passed through CLI" {
-  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query query.query_params_with_no_defaults --output json
 
@@ -45,7 +41,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with no default params and all params passed through CLI" {
-  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_params_with_all_defaults(\"command_param_1\",\"command_param_2\",\"command_param_3\")" --output json
 
@@ -66,7 +61,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query specific property from map param" {
-  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query query.query_map_params_with_default --output json
 
@@ -77,7 +71,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with invalid param syntax" {
-  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_map_params_with_default(\"foo \")" --output json
 
