@@ -16,6 +16,35 @@ import (
 )
 
 func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.Variable, error) {
+	// load all variable definitions
+	variableMap, err := w.loadVariables()
+	if err != nil {
+		return nil, err
+	}
+
+	// now resolve all input variables
+	inputVariables, err := w.getInputVariables(variableMap)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
+		return nil, err
+	}
+
+	// now update the variables map with the input values
+	for name, inputValue := range inputVariables {
+		variable := variableMap[name]
+		variable.SetInputValue(
+			inputValue.Value,
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange)
+	}
+
+	return variableMap, nil
+}
+
+func (w *Workspace) loadVariables() (map[string]*modconfig.Variable, error) {
 	// build options used to load workspace
 	runCtx, err := w.getRunContext()
 	if err != nil {
@@ -34,32 +63,6 @@ func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.
 		name := strings.Split(k, ".")[1]
 		variableMap[name] = v
 	}
-
-	// if there is a steampipe variables file, load it
-	inputVariables, err := w.getInputVariables(variableMap)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
-		return nil, err
-	}
-
-	w.VariableValues = make(map[string]string, len(inputVariables))
-	// now update the variables map with the input values
-	for name, inputValue := range inputVariables {
-		// get the variable from the map
-		variable := variableMap[name]
-		// set the variable value
-		variable.SetInputValue(
-			inputValue.Value,
-			inputValue.SourceTypeString(),
-			inputValue.SourceRange)
-
-		// set variable value string in our workspace map
-		w.VariableValues[name] = inputValue.Value.AsString()
-	}
-
 	return variableMap, nil
 }
 

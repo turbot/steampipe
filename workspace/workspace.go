@@ -82,6 +82,21 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	return workspace, nil
 }
 
+func LoadVariables(ctx context.Context, workspacePath string) (map[string]*modconfig.Variable, error) {
+	utils.LogTime("workspace.LoadVariables start")
+	defer utils.LogTime("workspace.LoadVariables end")
+
+	// create shell workspace
+	workspace := &Workspace{
+		Path: workspacePath,
+	}
+	// check whether the workspace contains a modfile
+	// this will determine whether we load files recursively, and create pseudo resources for sql files
+	workspace.setModfileExists()
+
+	return workspace.getAllVariables(ctx)
+}
+
 // LoadResourceNames builds lists of all workspace resource names
 func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, error) {
 	utils.LogTime("workspace.LoadResourceNames start")

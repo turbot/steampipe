@@ -11,21 +11,35 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+type T struct {
+	ValueDefault int    `json:"value_default"`
+	Description  string `json:"description"`
+	ModName      string `json:"mod_name"`
+	Name         string `json:"name"`
+	Value        int    `json:"value"`
+	Type         string `json:"type"`
+}
+
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	ResourceWithMetadataBase
 
-	ShortName string
-	FullName  string `column:"name,text"`
+	ShortName string `json:"name"`
+	FullName  string `column:"name,text" json:"-"`
 
-	Description    string    `column:"description,text"`
-	Default        cty.Value `column:"default_value,jsonb"`
-	Type           cty.Type  `column:"var_type,text"`
-	DescriptionSet bool
+	Description    string    `column:"description,text" json:"description"`
+	Default        cty.Value `column:"default_value,jsonb" json:"-"`
+	Type           cty.Type  `column:"var_type,text"  json:"-"`
+	DescriptionSet bool      ` json:"-"`
+
+	TypeString    string `json:"type"`
+	DefaultString string `json:"value_default"`
+	ValueString   string `json:"value"`
+	ModName       string `json:"mod_name"`
 
 	// set after value resolution `column:"value,jsonb"`
-	Value                      cty.Value `column:"value,jsonb"`
-	ValueSourceType            string    `column:"value_source,text"`
+	Value                      cty.Value `column:"value,jsonb" json:"-"`
+	ValueSourceType            string    `column:"value_source,text" json:"-"`
 	ValueSourceFileName        string    `column:"value_source_file_name,text"`
 	ValueSourceStartLineNumber int       `column:"value_source_start_line_number,integer"`
 	ValueSourceEndLineNumber   int       `column:"value_source_end_line_number,integer"`
@@ -49,8 +63,11 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 		Type:            v.Type,
 		ParsingMode:     v.ParsingMode,
 		Mod:             mod,
+		DeclRange:       v.DeclRange,
 
-		DeclRange: v.DeclRange,
+		ModName:       mod.ShortName,
+		DefaultString: v.Default.AsString(),
+		TypeString:    v.Type.GoString(),
 	}
 }
 
@@ -112,6 +129,7 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
+	v.ValueString = value.AsString()
 }
 
 // AddParent implements ModTreeItem
