@@ -397,17 +397,17 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.VersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	if pvr.Plugin.ImageDigest == pvr.CheckResponse.Digest {
+	if skip, skipReason := plugin.SkipUpdate(pvr); skip {
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			// set the progress bar to append itself with "Already Installed"
-			return strutil.Resize(constants.PluginLatestAlreadyInstalled, 30)
+			return strutil.Resize(skipReason, 30)
 		})
 		// set the progress bar to the maximum
 		bar.Set(len(pluginInstallSteps))
 		report = &display.PluginInstallReport{
 			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Stream),
 			Skipped:        true,
-			SkipReason:     constants.PluginLatestAlreadyInstalled,
+			SkipReason:     skipReason,
 			IsUpdateReport: true,
 		}
 	} else {
