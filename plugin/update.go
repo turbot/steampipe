@@ -7,19 +7,33 @@ import (
 	"github.com/turbot/steampipe/ociinstaller"
 )
 
+// SkipUpdate determines if the latest version in a "stream"
+// requires the plugin to update.
 func SkipUpdate(report VersionCheckReport) (bool, string) {
-	if report.Plugin.ImageDigest == report.CheckResponse.Digest {
-		return true, constants.PluginLatestAlreadyInstalled
-	}
-	if isMacM1() && len(report.Plugin.BinaryArchitecture) == 0 && hasM1Binary(report.CheckResponse.Manifest) {
+
+	// 1) If there is an updated version ALWAYS update
+	if report.Plugin.ImageDigest != report.CheckResponse.Digest {
 		return false, ""
 	}
-	return false, ""
+
+	// 2) If we are M1, current installed version is AMD, and ARM is available - update
+	if isRunningAsMacM1() && report.Plugin.BinaryArchitecture == "amd64" && manifestHasM1Binary(report.CheckResponse.Manifest) {
+		return false, ""
+	}
+
+	// 3) Otherwise skip
+	return true, constants.PluginLatestAlreadyInstalled
 }
-func isMacM1() bool {
+
+// check to see if steampipe is running as a Mac/M1 build
+// Mac/M1 can run 'amd64' builds, but that is not a
+// problem, since they will be running under 'rosetta'
+// TODO: Find a way to determine the underlying architecture, rather than depending on Go runtime
+func isRunningAsMacM1() bool {
 	return runtime.GOOS == "darwin" && runtime.GOARCH == "arm64"
 }
-func hasM1Binary(manifest responseManifest) bool {
+
+func manifestHasM1Binary(manifest responseManifest) bool {
 	for _, rml := range manifest.Layers {
 		if rml.MediaType == ociinstaller.MediaTypePluginDarwinArm64Layer {
 			return true
