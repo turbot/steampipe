@@ -56,11 +56,11 @@ func (r PluginRemoveReports) Print() {
 			str = append(str, "")
 
 			for file := range uniqueFiles {
-				str = append(str, fmt.Sprintf("  * %s contains:", constants.Bold(file)))
+				str = append(str, fmt.Sprintf("  * %s", constants.Bold(file)))
 				for _, report := range r {
 					for _, conn := range report.Connections {
 						if conn.DeclRange.Filename == file {
-							str = append(str, fmt.Sprintf("         '%s' in line %2d", conn.Name, conn.DeclRange.Start.Line))
+							str = append(str, fmt.Sprintf("         '%s' (line %2d)", conn.Name, conn.DeclRange.Start.Line))
 						}
 					}
 				}
