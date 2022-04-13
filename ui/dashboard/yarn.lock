@@ -3911,6 +3911,17 @@
     npmlog "^5.0.1"
     pretty-hrtime "^1.0.3"
 
+"@storybook/node-logger@6.5.0-alpha.62":
+  version "6.5.0-alpha.62"
+  resolved "https://registry.yarnpkg.com/@storybook/node-logger/-/node-logger-6.5.0-alpha.62.tgz#6ab71c8c161b2f02084b0acf0dc50ebf32d06402"
+  integrity sha512-j+wUqR3AgB6zEy4HEHJ2rdPcZJMBKQEu4RlUHWqWq0jGHHYAxb7CfUIYQWKFx6zo62Cg/A9qlGVN/lx4vDZ/8g==
+  dependencies:
+    "@types/npmlog" "^4.1.2"
+    chalk "^4.1.0"
+    core-js "^3.8.2"
+    npmlog "^5.0.1"
+    pretty-hrtime "^1.0.3"
+
 "@storybook/postinstall@6.5.0-alpha.61":
   version "6.5.0-alpha.61"
   resolved "https://registry.yarnpkg.com/@storybook/postinstall/-/postinstall-6.5.0-alpha.61.tgz#0e22ac92943ad1d7ab21d663777454e93373a743"
@@ -6455,15 +6466,7 @@ chalk@^3.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-chalk@^4.0.0, chalk@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.npmjs.org/chalk/-/chalk-4.1.0.tgz"
-  integrity sha512-qwx12AxXe2Q5xQ43Ac//I6v5aXTipYrSESdOgzrN+9XjgEpyjpKuvSGaN4qE93f7TQTlerQQ8S+EQ0EyDoVL1A==
-  dependencies:
-    ansi-styles "^4.1.0"
-    supports-color "^7.1.0"
-
-chalk@^4.1.2:
+chalk@^4.0.0, chalk@^4.1.0, chalk@^4.1.2:
   version "4.1.2"
   resolved "https://registry.npmjs.org/chalk/-/chalk-4.1.2.tgz"
   integrity sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==
@@ -6985,25 +6988,10 @@ core-js-pure@^3.8.1:
   resolved "https://registry.npmjs.org/core-js-pure/-/core-js-pure-3.20.0.tgz"
   integrity sha512-qsrbIwWSEEYOM7z616jAVgwhuDDtPLwZSpUsU3vyUkHYqKTf/uwOJBZg2V7lMurYWkpVlaVOxBrfX0Q3ppvjfg==
 
-core-js@^3.0.4:
-  version "3.9.1"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.9.1.tgz"
-  integrity sha512-gSjRvzkxQc1zjM/5paAmL4idJBFzuJoo+jDjF1tStYFMV2ERfD02HhahhCGXUyHxQRG4yFKVSdO6g62eoRMcDg==
-
-core-js@^3.19.2:
+core-js@^3.0.4, core-js@^3.19.2, core-js@^3.6.5, core-js@^3.8.2:
   version "3.20.0"
   resolved "https://registry.npmjs.org/core-js/-/core-js-3.20.0.tgz"
   integrity sha512-KjbKU7UEfg4YPpskMtMXPhUKn7m/1OdTHTVjy09ScR2LVaoUXe8Jh0UdvN2EKUR6iKTJph52SJP95mAB0MnVLQ==
-
-core-js@^3.6.5:
-  version "3.8.3"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.8.3.tgz"
-  integrity sha512-KPYXeVZYemC2TkNEkX/01I+7yd+nX3KddKwZ1Ww7SKWdI2wQprSgLmrTddT8nw92AjEklTsPBoSdQBhbI1bQ6Q==
-
-core-js@^3.8.2:
-  version "3.10.0"
-  resolved "https://registry.npmjs.org/core-js/-/core-js-3.10.0.tgz"
-  integrity sha512-MQx/7TLgmmDVamSyfE+O+5BHvG1aUGj/gHhLn1wVtm2B5u1eVIPvh7vkfjwWKNCjrTJB8+He99IntSQ1qP+vYQ==
 
 core-util-is@~1.0.0:
   version "1.0.2"
