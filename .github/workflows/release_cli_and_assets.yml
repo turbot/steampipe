@@ -79,11 +79,12 @@ jobs:
         gcloud components install beta
         gcloud components install alpha --quiet
 
-    - name: Verify
+    - name: Delete the tag if it already exists
       id: verify
       continue-on-error: true
       run: |-
-        [ $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length') -eq 0 ]
+        [ $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length') -eq 1 ]
+        gcloud beta artifacts docker tags delete ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:"${{ env.VERSION }}"
 
   build_and_release_assets:
     name: Build and Release Assets
