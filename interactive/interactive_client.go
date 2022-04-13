@@ -158,7 +158,7 @@ func (c *InteractiveClient) LoadSchema() error {
 	// in a background context, since we are not running in a context - but GetSchemaFromDB needs one
 	metadata, err := c.client().GetSchemaFromDB(context.Background())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load schemas: %s", err.Error())
 	}
 
 	c.schemaMetadata = metadata
