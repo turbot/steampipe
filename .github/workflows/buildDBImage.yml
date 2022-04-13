@@ -1,5 +1,11 @@
 name: Build and Publish DB Image
 
+## LINKS
+##   pg_dump
+##     pg14 darwin amd64 https://drive.google.com/file/d/1ICG7hFYNcDCRB-8YtfLtZDINyX7COESS/view?usp=sharing
+##   pg_restore
+##     pg14 darwin amd64 https://drive.google.com/file/d/1pDCkoOofwuBAD65OQGENa2MAP4OeqkeP/view?usp=sharing
+
 # Controls when the action will run. 
 on:
   workflow_dispatch:
@@ -79,6 +85,10 @@ jobs:
           unzip -o ${JAR_FILE}
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
+          curl -L -O -J -L "https://drive.google.com/file/d/1ICG7hFYNcDCRB-8YtfLtZDINyX7COESS/view?usp=sharing" -o pg_dump
+          curl -L -O -J -L "https://drive.google.com/file/d/1pDCkoOofwuBAD65OQGENa2MAP4OeqkeP/view?usp=sharing" -o pg_restore
+          mv pg_dump $EXTRACT_DIR/bin
+          mv pg_restore $EXTRACT_DIR/bin
 
       - name: Pull & Extract - linux amd64
         env:
