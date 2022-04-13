@@ -46,7 +46,7 @@ type ResultGroup struct {
 }
 
 type GroupSummary struct {
-	Status   controlstatus.StatusSummary            `json:"summary"`
+	Status   controlstatus.StatusSummary            `json:"status"`
 	Severity map[string]controlstatus.StatusSummary `json:"-"`
 }
 
