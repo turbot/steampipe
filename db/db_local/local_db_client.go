@@ -232,7 +232,15 @@ func (c *LocalDbClient) buildSchemasQuery(schemas []string) string {
 	for idx, s := range schemas {
 		schemas[idx] = fmt.Sprintf("'%s'", s)
 	}
-	schemaClause := strings.Join(schemas, ",")
+
+	// build the schemas filter clause
+	schemaClause := ""
+	if len(schemas) > 0 {
+		schemaClause = fmt.Sprintf(`
+    cols.table_schema in (%s)
+	OR`, strings.Join(schemas, ","))
+	}
+
 	query := fmt.Sprintf(`
 SELECT
     table_name,
@@ -249,11 +257,8 @@ LEFT JOIN
     pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
 LEFT JOIN
     pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
-WHERE
-	cols.table_schema in (%s)
-	OR
-    LEFT(cols.table_schema,8) = 'pg_temp_'
-
+WHERE %s
+	LEFT(cols.table_schema,8) = 'pg_temp_'
 `, schemaClause)
 	return query
 }

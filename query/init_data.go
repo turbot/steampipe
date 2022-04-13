@@ -69,6 +69,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 			i.Result.Error = ctx.Err()
 		}
 		i.cancel = nil
+		// close loaded channel to indicate we are complete
 		close(i.Loaded)
 	}()
 

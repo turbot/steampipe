@@ -53,7 +53,9 @@ type InteractiveClient struct {
 	initResultChan chan *db_common.InitResult
 	afterClose     AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
-	executionLock  sync.Mutex
+	executionLock sync.Mutex
+
+	// the schema metadata - this is loaded asynchronously during init
 	schemaMetadata *schema.Metadata
 
 	highlighter *Highlighter
@@ -148,54 +150,20 @@ func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	c.cancelPrompt()
 }
 
-// LoadSchema implements Client
 // retrieve both the raw query result and a sanitised version in list form
-func (c *InteractiveClient) LoadSchema() error {
-	utils.LogTime("db_client.LoadSchema start")
-	defer utils.LogTime("db_client.LoadSchema end")
+func (c *InteractiveClient) loadSchema() error {
+	utils.LogTime("db_client.loadSchema start")
+	defer utils.LogTime("db_client.loadSchema end")
 
 	// load these schemas
 	// in a background context, since we are not running in a context - but GetSchemaFromDB needs one
 	metadata, err := c.client().GetSchemaFromDB(context.Background())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load schemas: %s", err.Error())
 	}
 
 	c.schemaMetadata = metadata
 	return nil
-}
-
-// init data has arrived, handle any errors/warnings/messages
-func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
-	// try to take an execution lock, so that we don't end up showing warnings and errors
-	// while an execution is underway
-	c.executionLock.Lock()
-	defer c.executionLock.Unlock()
-
-	if utils.IsContextCancelled(ctx) {
-		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
-		return
-	}
-
-	if initResult.Error != nil {
-		c.ClosePrompt(AfterPromptCloseExit)
-		// add newline to ensure error is not printed at end of current prompt line
-		fmt.Println()
-		utils.ShowError(ctx, initResult.Error)
-		return
-	}
-
-	if initResult.HasMessages() {
-		fmt.Println()
-		initResult.DisplayMessages()
-	}
-
-	// We need to render the prompt here to make sure that it comes back
-	// after the messages have been displayed
-	c.interactivePrompt.Render()
-
-	// tell the workspace to reset the prompt after displaying async filewatcher messages
-	c.initData.Workspace.SetOnFileWatcherEventMessages(func() { c.interactivePrompt.Render() })
 }
 
 func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
