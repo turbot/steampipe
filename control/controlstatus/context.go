@@ -1,4 +1,4 @@
-package controlhooks
+package controlstatus
 
 import (
 	"context"
@@ -29,10 +29,18 @@ func OnStart(ctx context.Context, p *ControlProgress) {
 	ControlHooksFromContext(ctx).OnStart(ctx, p)
 }
 
-func OnControlEvent(ctx context.Context, p *ControlProgress) {
-	ControlHooksFromContext(ctx).OnControlEvent(ctx, p)
+func OnControlStart(ctx context.Context, controlRun ControlRunStatusProvider, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnControlStart(ctx, controlRun, p)
 }
 
-func OnDone(ctx context.Context, p *ControlProgress) {
-	ControlHooksFromContext(ctx).OnDone(ctx, p)
+func OnControlComplete(ctx context.Context, controlRun ControlRunStatusProvider, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnControlComplete(ctx, controlRun, p)
+}
+
+func OnControlError(ctx context.Context, controlRun ControlRunStatusProvider, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnControlError(ctx, controlRun, p)
+}
+
+func OnComplete(ctx context.Context, p *ControlProgress) {
+	ControlHooksFromContext(ctx).OnComplete(ctx, p)
 }

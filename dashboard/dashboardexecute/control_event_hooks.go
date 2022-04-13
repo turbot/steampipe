@@ -3,7 +3,7 @@ package dashboardexecute
 import (
 	"context"
 
-	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 )
 
@@ -18,18 +18,33 @@ func NewControlEventHooks(r *CheckRun) *ControlEventHooks {
 	}
 }
 
-func (c *ControlEventHooks) OnStart(ctx context.Context, _ *controlhooks.ControlProgress) {
+func (c *ControlEventHooks) OnStart(ctx context.Context, _ *controlstatus.ControlProgress) {
 	// nothing to do
 }
 
-func (c *ControlEventHooks) OnControlEvent(ctx context.Context, _ *controlhooks.ControlProgress) {
-	event := &dashboardevents.LeafNodeProgress{
-		LeafNode:    c.CheckRun,
+func (c *ControlEventHooks) OnControlStart(context.Context, controlstatus.ControlRunStatusProvider, *controlstatus.ControlProgress) {
+}
+
+func (c *ControlEventHooks) OnControlComplete(ctx context.Context, controlRun controlstatus.ControlRunStatusProvider, progress *controlstatus.ControlProgress) {
+	event := &dashboardevents.ControlComplete{
+		Control:     controlRun,
+		Progress:    progress,
 		ExecutionId: c.CheckRun.executionTree.id,
+		Session:     c.CheckRun.SessionId,
 	}
 	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }
 
-func (c *ControlEventHooks) OnDone(ctx context.Context, _ *controlhooks.ControlProgress) {
-	// nothing to do - LeadNodeDone will be sent anyway
+func (c *ControlEventHooks) OnControlError(ctx context.Context, controlRun controlstatus.ControlRunStatusProvider, progress *controlstatus.ControlProgress) {
+	var event = &dashboardevents.ControlError{
+		Control:     controlRun,
+		Progress:    progress,
+		ExecutionId: c.CheckRun.executionTree.id,
+		Session:     c.CheckRun.SessionId,
+	}
+	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
+}
+
+func (c *ControlEventHooks) OnComplete(ctx context.Context, _ *controlstatus.ControlProgress) {
+	// nothing to do - LeafNodeDone will be sent anyway
 }

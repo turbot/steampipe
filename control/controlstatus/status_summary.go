@@ -1,4 +1,13 @@
-package controlexecute
+package controlstatus
+
+type ControlRunStatus uint32
+
+const (
+	ControlRunReady ControlRunStatus = 1 << iota
+	ControlRunStarted
+	ControlRunComplete
+	ControlRunError
+)
 
 // StatusSummary is a struct containing the counts of each possible control status
 type StatusSummary struct {
@@ -19,4 +28,12 @@ func (s *StatusSummary) FailedCount() int {
 
 func (s *StatusSummary) TotalCount() int {
 	return s.Alarm + s.Ok + s.Info + s.Skip + s.Error
+}
+
+func (s *StatusSummary) Merge(summary *StatusSummary) {
+	s.Alarm += summary.Alarm
+	s.Ok += summary.Ok
+	s.Info += summary.Info
+	s.Skip += summary.Skip
+	s.Error += summary.Error
 }

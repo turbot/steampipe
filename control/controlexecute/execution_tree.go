@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/statushooks"
@@ -24,10 +24,10 @@ import (
 type ExecutionTree struct {
 	Root *ResultGroup `json:"root"`
 	// flat list of all control runs
-	ControlRuns []*ControlRun                 `json:"control_runs"`
-	StartTime   time.Time                     `json:"start_time"`
-	EndTime     time.Time                     `json:"end_time"`
-	Progress    *controlhooks.ControlProgress `json:"progress"`
+	ControlRuns []*ControlRun                  `json:"-"`
+	StartTime   time.Time                      `json:"start_time"`
+	EndTime     time.Time                      `json:"end_time"`
+	Progress    *controlstatus.ControlProgress `json:"progress"`
 	// map of dimension property name to property value to color map
 	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
 
@@ -63,7 +63,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
-	executionTree.Progress = controlhooks.NewControlProgress(len(executionTree.ControlRuns))
+	executionTree.Progress = controlstatus.NewControlProgress(len(executionTree.ControlRuns))
 
 	return executionTree, nil
 }

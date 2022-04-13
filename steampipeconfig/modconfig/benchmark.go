@@ -40,7 +40,7 @@ type Benchmark struct {
 	DeclRange  hcl.Range
 	Paths      []NodePath `column:"path,jsonb"`
 
-	parents []ModTreeItem
+	Parents []ModTreeItem
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) *Benchmark {
@@ -124,7 +124,7 @@ func (b *Benchmark) String() string {
 	}
 	// build list of parents names
 	var parents []string
-	for _, p := range b.parents {
+	for _, p := range b.Parents {
 		parents = append(parents, p.Name())
 	}
 	sort.Strings(children)
@@ -159,13 +159,13 @@ func (b *Benchmark) GetChildControls() []*Control {
 
 // AddParent implements ModTreeItem
 func (b *Benchmark) AddParent(parent ModTreeItem) error {
-	b.parents = append(b.parents, parent)
+	b.Parents = append(b.Parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
 func (b *Benchmark) GetParents() []ModTreeItem {
-	return b.parents
+	return b.Parents
 }
 
 // GetTitle implements ModTreeItem
@@ -203,7 +203,7 @@ func (b *Benchmark) GetPaths() []NodePath {
 
 // SetPaths implements ModTreeItem
 func (b *Benchmark) SetPaths() {
-	for _, parent := range b.parents {
+	for _, parent := range b.Parents {
 		for _, parentPath := range parent.GetPaths() {
 			b.Paths = append(b.Paths, append(parentPath, b.Name()))
 		}

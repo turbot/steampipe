@@ -1,0 +1,10 @@
+{
+  "foo": {
+    "github.com/pskrbasu/steampipe-mod-m1": {
+      "Name": "github.com/pskrbasu/steampipe-mod-m1",
+      "ShortName": "steampipe-mod-m1",
+      "Version": "4.0.0",
+      "Constraint": "*"
+    }
+  }
+}

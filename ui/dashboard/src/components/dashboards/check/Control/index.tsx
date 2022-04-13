@@ -9,17 +9,13 @@ import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../../constants/icons";
-import {
-  CheckLeafNodeDataControl,
-  CheckLeafNodeDataGroupSummaryStatus,
-  CheckProps,
-} from "../common";
+import { CheckControl, CheckProps, CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
 import { useSortBy, useTable } from "react-table";
 
 interface ControlsTableProps {
   loading: boolean;
-  control: CheckLeafNodeDataControl | null;
+  control: CheckControl | null;
 }
 
 const ControlsTable = ({ loading, control }: ControlsTableProps) => {
@@ -142,24 +138,24 @@ const ControlsTable = ({ loading, control }: ControlsTableProps) => {
 
 const Control = (props: CheckProps) => {
   const { loading, summary, control } = useMemo(() => {
-    const summary = props.execution_tree?.root?.summary?.status;
+    const summary = props.root?.summary?.status;
     if (!summary) {
       return {
         loading: true,
-        summary: {} as CheckLeafNodeDataGroupSummaryStatus,
+        summary: {} as CheckSummary,
         control: null,
       };
     }
-    const control = props.execution_tree?.root?.controls?.[0];
+    const control = props.root?.controls?.[0];
     if (!control) {
       return {
         loading: true,
-        summary: {} as CheckLeafNodeDataGroupSummaryStatus,
+        summary: {} as CheckSummary,
         control: null,
       };
     }
     return { loading: false, summary, control };
-  }, [props.execution_tree]);
+  }, [props.root]);
 
   return (
     <LayoutPanel

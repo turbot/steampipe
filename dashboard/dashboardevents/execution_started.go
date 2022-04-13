@@ -5,7 +5,7 @@ import (
 )
 
 type ExecutionStarted struct {
-	Dashboard   dashboardinterfaces.DashboardNodeRun `json:"dashboard"`
+	Root        dashboardinterfaces.DashboardNodeRun `json:"dashboard"`
 	Session     string
 	ExecutionId string
 }

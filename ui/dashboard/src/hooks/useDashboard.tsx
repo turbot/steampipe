@@ -11,12 +11,12 @@ import React, {
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
 import { buildComponentsMap } from "../components";
-import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
-import { Theme } from "./useTheme";
+import { CheckExecutionTree } from "../components/dashboards/check/common";
 import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";
+import { Theme } from "./useTheme";
 import {
   useLocation,
   useNavigate,
@@ -52,6 +52,7 @@ interface IDashboardContext {
   error: any;
 
   dashboards: AvailableDashboard[];
+  dashboardsMap: AvailableDashboardsDictionary;
   dashboard: DashboardDefinition | null;
 
   selectedPanel: PanelDefinition | null;
@@ -78,6 +79,8 @@ export interface IActions {
 const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
   CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
+  CONTROL_COMPLETE: "control_complete",
+  CONTROL_ERROR: "control_error",
   DASHBOARD_METADATA: "dashboard_metadata",
   DELETE_DASHBOARD_INPUT: "delete_dashboard_input",
   EXECUTION_COMPLETE: "execution_complete",
@@ -178,20 +181,22 @@ interface AvailableDashboardTags {
   [key: string]: string;
 }
 
+type AvailableDashboardType = "benchmark" | "dashboard";
+
 export interface AvailableDashboard {
   full_name: string;
   short_name: string;
   mod_full_name: string;
   tags: AvailableDashboardTags;
   title: string;
+  is_top_level: boolean;
+  type: AvailableDashboardType;
+  children?: AvailableDashboard[];
+  trunks?: string[][];
 }
 
-interface AvailableDashboardsForModDictionary {
+export interface AvailableDashboardsDictionary {
   [key: string]: AvailableDashboard;
-}
-
-interface DashboardsByModDictionary {
-  [key: string]: AvailableDashboardsForModDictionary;
 }
 
 export interface ContainerDefinition {
@@ -218,43 +223,73 @@ export interface PanelDefinition {
   sql?: string;
   data?: LeafNodeData;
   source_definition?: string;
-  execution_tree?: CheckLeafNodeExecutionTree;
+  execution_tree?: CheckExecutionTree;
   error?: Error;
   properties?: PanelProperties;
   dashboard: string;
 }
 
 export interface DashboardDefinition {
+  artificial: boolean;
   name: string;
+  node_type: string;
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
   dashboard: string;
 }
 
-const buildDashboardsList = (
-  dashboards_by_mod: DashboardsByModDictionary
-): AvailableDashboard[] => {
-  const dashboards: AvailableDashboard[] = [];
-  for (const [mod_full_name, dashboards_for_mod] of Object.entries(
-    dashboards_by_mod
-  )) {
-    for (const [, dashboard] of Object.entries(dashboards_for_mod)) {
-      dashboards.push({
-        title: dashboard.title,
-        full_name: dashboard.full_name,
-        short_name: dashboard.short_name,
-        tags: dashboard.tags,
-        mod_full_name: mod_full_name,
-      });
-    }
+interface DashboardsCollection {
+  dashboards: AvailableDashboard[];
+  dashboardsMap: AvailableDashboardsDictionary;
+}
+
+const buildDashboards = (
+  dashboards: AvailableDashboardsDictionary,
+  benchmarks: AvailableDashboardsDictionary
+): DashboardsCollection => {
+  const dashboardsMap = {};
+  const builtDashboards: AvailableDashboard[] = [];
+
+  for (const [, dashboard] of Object.entries(dashboards)) {
+    const builtDashboard: AvailableDashboard = {
+      title: dashboard.title,
+      full_name: dashboard.full_name,
+      short_name: dashboard.short_name,
+      type: "dashboard",
+      tags: dashboard.tags,
+      mod_full_name: dashboard.mod_full_name,
+      is_top_level: true,
+    };
+    dashboardsMap[builtDashboard.full_name] = builtDashboard;
+    builtDashboards.push(builtDashboard);
   }
-  return sortBy(dashboards, [
-    (dashboard) =>
-      dashboard.title
-        ? dashboard.title.toLowerCase()
-        : dashboard.full_name.toLowerCase(),
-  ]);
+
+  for (const [, benchmark] of Object.entries(benchmarks)) {
+    const builtBenchmark: AvailableDashboard = {
+      title: benchmark.title,
+      full_name: benchmark.full_name,
+      short_name: benchmark.short_name,
+      type: "benchmark",
+      tags: benchmark.tags,
+      mod_full_name: benchmark.mod_full_name,
+      is_top_level: benchmark.is_top_level,
+      trunks: benchmark.trunks,
+      children: benchmark.children,
+    };
+    dashboardsMap[builtBenchmark.full_name] = builtBenchmark;
+    builtDashboards.push(builtBenchmark);
+  }
+
+  return {
+    dashboards: sortBy(builtDashboards, [
+      (dashboard) =>
+        dashboard.title
+          ? dashboard.title.toLowerCase()
+          : dashboard.full_name.toLowerCase(),
+    ]),
+    dashboardsMap,
+  };
 };
 
 const updateSelectedDashboard = (
@@ -309,6 +344,24 @@ function addDataToDashboard(
   return dashboard;
 }
 
+const wrapDefinitionInArtificialDashboard = (
+  definition: DashboardDefinition
+): DashboardDefinition => {
+  const { title, ...definitionWithoutTitle } = definition;
+  return {
+    artificial: true,
+    name: definition.name,
+    title: definition.title,
+    node_type: "dashboard",
+    children: [
+      {
+        ...definitionWithoutTitle,
+      },
+    ],
+    dashboard: definition.dashboard,
+  };
+};
+
 function reducer(state, action) {
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
@@ -317,7 +370,10 @@ function reducer(state, action) {
         metadata: action.metadata,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
-      const dashboards = buildDashboardsList(action.dashboards_by_mod);
+      const { dashboards, dashboardsMap } = buildDashboards(
+        action.dashboards,
+        action.benchmarks
+      );
       const selectedDashboard = updateSelectedDashboard(
         state.selectedDashboard,
         dashboards
@@ -327,6 +383,7 @@ function reducer(state, action) {
         error: null,
         availableDashboardsLoaded: true,
         dashboards,
+        dashboardsMap,
         selectedDashboard: updateSelectedDashboard(
           state.selectedDashboard,
           dashboards
@@ -337,37 +394,127 @@ function reducer(state, action) {
             ? state.dashboard
             : null,
       };
-    case DashboardActions.EXECUTION_STARTED:
-      const dashboardWithData = addDataToDashboard(
-        action.dashboard_node,
-        state.sqlDataMap
-      );
+    case DashboardActions.EXECUTION_STARTED: {
+      const originalDashboard = action.dashboard_node;
+      let dashboard;
+      // For benchmarks and controls that are run directly from a mod,
+      // we need to wrap these in an artificial dashboard so we can treat
+      // it just like any other dashboard
+      if (action.dashboard_node.type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+      } else {
+        dashboard = addDataToDashboard(action.dashboard_node, state.sqlDataMap);
+      }
       return {
         ...state,
         error: null,
-        dashboard: dashboardWithData,
+        dashboard,
         execution_id: action.execution_id,
         state: "running",
       };
-    case DashboardActions.EXECUTION_COMPLETE:
+    }
+    case DashboardActions.EXECUTION_COMPLETE: {
       // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
         return state;
       }
+
+      const originalDashboard = action.dashboard_node;
+      let dashboard;
+
+      if (action.dashboard_node.type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+      } else {
+        dashboard = originalDashboard;
+      }
+
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(action.dashboard_node);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
         error: null,
-        dashboard: action.dashboard_node,
+        dashboard,
         sqlDataMap,
         state: "complete",
       };
+    }
     case DashboardActions.EXECUTION_ERROR:
       // console.error("Got execution error", action);
       return state;
-    case DashboardActions.LEAF_NODE_PROGRESS:
+    case DashboardActions.CONTROL_COMPLETE:
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
+
+      if (state.dashboard.artificial) {
+        let panelPath: string = findPathDeep(
+          state.dashboard,
+          (v, k) => k === "control_id" && v === action.control.control_id
+        );
+
+        if (!panelPath) {
+          console.warn(
+            "Cannot find control to update",
+            action.control.control_id
+          );
+          return state;
+        }
+
+        panelPath = panelPath.replace(".control_id", "");
+        let newDashboard = {
+          ...state.dashboard,
+        };
+        newDashboard = set(newDashboard, panelPath, action.control);
+
+        return {
+          ...state,
+          dashboard: newDashboard,
+        };
+      }
+
+      // let controlPath: string = findPathDeep(
+      //   state.dashboard,
+      //   (v, k) => k === "name" && v === dashboard_node.name
+      // );
+      // console.log({
+      //   action,
+      // });
+      return state;
+    case DashboardActions.CONTROL_ERROR:
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
+
+      if (state.dashboard.artificial) {
+        let panelPath: string = findPathDeep(
+          state.dashboard,
+          (v, k) => k === "control_id" && v === action.control.control_id
+        );
+
+        if (!panelPath) {
+          console.warn(
+            "Cannot find control to update",
+            action.control.control_id
+          );
+          return state;
+        }
+
+        panelPath = panelPath.replace(".control_id", "");
+        let newDashboard = {
+          ...state.dashboard,
+        };
+        newDashboard = set(newDashboard, panelPath, action.control);
+
+        return {
+          ...state,
+          dashboard: newDashboard,
+        };
+      }
+
+      return state;
     case DashboardActions.LEAF_NODE_COMPLETE: {
       // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {

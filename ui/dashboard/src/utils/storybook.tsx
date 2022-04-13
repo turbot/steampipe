@@ -40,17 +40,21 @@ export const PanelStoryDecorator = ({
         dispatch: () => {},
         error: null,
         dashboards: [],
+        dashboardsMap: {},
         selectedPanel: null,
         selectedDashboard: {
           title: "Storybook Dashboard Wrapper",
           full_name: "storybook.dashboard.storybook_dashboard_wrapper",
           short_name: "storybook_dashboard_wrapper",
+          type: "dashboard",
           tags: {},
           mod_full_name: "mod.storybook",
+          is_top_level: true,
         },
         selectedDashboardInputs: {},
         lastChangedInput: null,
         dashboard: {
+          artificial: false,
           name: "storybook.dashboard.storybook_dashboard_wrapper",
           children: [
             {
@@ -64,6 +68,7 @@ export const PanelStoryDecorator = ({
               sql: "storybook",
             },
           ],
+          node_type: "dashboard",
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
 

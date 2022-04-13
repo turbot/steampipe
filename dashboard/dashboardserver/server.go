@@ -82,8 +82,9 @@ func (s *Server) Start() chan struct{} {
 // Shutdown stops the API server
 func (s *Server) Shutdown() {
 	log.Println("[TRACE] Server shutdown")
+
 	if s.webSocket != nil {
-		s.webSocket.Close()
+		_ = s.webSocket.Close()
 	}
 
 	// Close the workspace
@@ -115,11 +116,11 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		if payloadError != nil {
 			return
 		}
-		s.webSocket.Broadcast(payload)
+		_ = s.webSocket.Broadcast(payload)
 		outputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
-		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Dashboard.GetName())
+		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
 		payload, payloadError = buildExecutionStartedPayload(e)
 		if payloadError != nil {
 			return
@@ -127,14 +128,24 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		s.mutex.Lock()
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
-		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Dashboard.GetName()))
+		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Root.GetName()))
 
 	case *dashboardevents.LeafNodeError:
 		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %v", e.Session, e.LeafNode.GetName(), e.Error)
 
-	case *dashboardevents.LeafNodeProgress:
-		log.Printf("[TRACE] LeafNodeProgress event session %s, node %s", e.Session, e.LeafNode.GetName())
-		payload, payloadError = buildLeafNodeProgressPayload(e)
+	case *dashboardevents.ControlComplete:
+		log.Printf("[TRACE] ControlComplete event session %s, control %s", e.Session, e.Control.GetControlId())
+		payload, payloadError = buildControlCompletePayload(e)
+		if payloadError != nil {
+			return
+		}
+		s.mutex.Lock()
+		s.writePayloadToSession(e.Session, payload)
+		s.mutex.Unlock()
+
+	case *dashboardevents.ControlError:
+		log.Printf("[TRACE] ControlError event session %s, control %s", e.Session, e.Control.GetControlId())
+		payload, payloadError = buildControlErrorPayload(e)
 		if payloadError != nil {
 			return
 		}
@@ -199,7 +210,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			if payloadError != nil {
 				return
 			}
-			s.webSocket.Broadcast(payload)
+			_ = s.webSocket.Broadcast(payload)
 		}
 
 		var dashboardssBeingWatched []string
@@ -243,7 +254,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == changedDashboardName {
 					// 					outputMessage(s.context, fmt.Sprintf("Dashboard Changed - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
-					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
+					_ = dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
 			s.mutex.Unlock()
@@ -264,7 +275,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			for sessionId, dashboardClientInfo := range s.dashboardClients {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == newDashboardName {
 					// 					outputMessage(s.context, fmt.Sprintf("New Dashboard - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
-					dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
+					_ = dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
 			s.mutex.Unlock()
@@ -282,7 +293,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		if payloadError != nil {
 			return
 		}
-		dashboardName := e.Dashboard.GetName()
+		dashboardName := e.Root.GetName()
 		s.mutex.Lock()
 		s.writePayloadToSession(e.Session, payload)
 		s.mutex.Unlock()
@@ -348,22 +359,22 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 			if err != nil {
 				panic(fmt.Errorf("error building payload for get_metadata: %v", err))
 			}
-			session.Write(payload)
+			_ = session.Write(payload)
 		case "get_available_dashboards":
 			payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if err != nil {
 				panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
 			}
-			session.Write(payload)
+			_ = session.Write(payload)
 		case "select_dashboard":
 			s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues)
-			dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
+			_ = dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
 		case "input_changed":
 			s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
-			dashboardexecute.Executor.OnInputChanged(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
+			_ = dashboardexecute.Executor.OnInputChanged(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
 		case "clear_dashboard":
 			s.setDashboardInputsForSession(sessionId, nil)
-			dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
+			dashboardexecute.Executor.CancelExecutionForSession(ctx, sessionId)
 		}
 
 	}
@@ -386,7 +397,7 @@ func (s *Server) clearSession(ctx context.Context, session *melody.Session) {
 
 	s.mutex.Lock()
 	sessionId := s.getSessionId(session)
-	dashboardexecute.Executor.ClearDashboard(ctx, sessionId)
+	dashboardexecute.Executor.CancelExecutionForSession(ctx, sessionId)
 	delete(s.dashboardClients, sessionId)
 	s.mutex.Unlock()
 }
@@ -415,6 +426,6 @@ func (s *Server) getSessionId(session *melody.Session) string {
 
 func (s *Server) writePayloadToSession(sessionId string, payload []byte) {
 	if sessionInfo, ok := s.dashboardClients[sessionId]; ok {
-		sessionInfo.Session.Write(payload)
+		_ = sessionInfo.Session.Write(payload)
 	}
 }
