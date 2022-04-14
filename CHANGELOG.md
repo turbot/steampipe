@@ -1,3 +1,9 @@
+## v0.13.6 [2022-04-14]
+_Bug fixes_
+* Update dashboard UI to use wss when the location protocol is https. ([#1717](https://github.com/turbot/steampipe/issues/1717))
+* Fix interactive query initialisation hang when no plugins are installed. ([#1860](https://github.com/turbot/steampipe/issues/1860))
+* Fixes issue where `steampipe query` was always using a default port. ([#1753](https://github.com/turbot/steampipe/issues/1753))
+
 ## v0.13.5 [2022-04-01]
 _Bug fixes_
 * Ensure the search path is escaped. ([#1770](https://github.com/turbot/steampipe/issues/1770))
