@@ -194,6 +194,11 @@ func (h *DashboardHierarchy) GetWidth() int {
 	return *h.Width
 }
 
+// GetDisplay implements DashboardLeafNode
+func (h *DashboardHierarchy) GetDisplay() *string {
+	return h.Display
+}
+
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (h *DashboardHierarchy) GetUnqualifiedName() string {
 	return h.UnqualifiedName
@@ -260,6 +265,10 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesP
 
 	if h.Type == nil {
 		h.Type = h.Base.Type
+	}
+
+	if h.Display == nil {
+		h.Display = h.Base.Display
 	}
 
 	if h.Width == nil {

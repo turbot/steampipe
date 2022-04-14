@@ -225,6 +225,11 @@ func (c *DashboardChart) GetWidth() int {
 	return *c.Width
 }
 
+// GetDisplay implements DashboardLeafNode
+func (c *DashboardChart) GetDisplay() *string {
+	return c.Display
+}
+
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (c *DashboardChart) GetUnqualifiedName() string {
 	return c.UnqualifiedName
@@ -291,6 +296,10 @@ func (c *DashboardChart) setBaseProperties(resourceMapProvider ModResourcesProvi
 
 	if c.Type == nil {
 		c.Type = c.Base.Type
+	}
+
+	if c.Display == nil {
+		c.Display = c.Base.Display
 	}
 
 	if c.Axes == nil {

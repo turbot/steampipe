@@ -32,8 +32,10 @@ type Benchmark struct {
 	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// dashboard specific properties
-	Base  *Benchmark `hcl:"base" json:"-"`
-	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Base    *Benchmark `hcl:"base" json:"-"`
+	Width   *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Type    *string    `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Display *string    `cty:"display" hcl:"display" json:"display,omitempty"`
 
 	References []*ResourceReference
 	Mod        *Mod `cty:"mod"`
@@ -224,6 +226,11 @@ func (b *Benchmark) GetWidth() int {
 	return *b.Width
 }
 
+// GetDisplay implements DashboardLeafNode
+func (b *Benchmark) GetDisplay() *string {
+	return b.Display
+}
+
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (b *Benchmark) GetUnqualifiedName() string {
 	return b.UnqualifiedName
@@ -249,6 +256,10 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 				res.AddPropertyDiff("Tags")
 			}
 		}
+	}
+
+	if !utils.SafeStringsEqual(b.Type, other.Type) {
+		res.AddPropertyDiff("Type")
 	}
 
 	if len(b.ChildNameStrings) != len(other.ChildNameStrings) {
@@ -283,6 +294,14 @@ func (b *Benchmark) setBaseProperties(resourceMapProvider ModResourcesProvider) 
 
 	if b.Documentation == nil {
 		b.Documentation = b.Base.Documentation
+	}
+
+	if b.Type == nil {
+		b.Type = b.Base.Type
+	}
+
+	if b.Display == nil {
+		b.Display = b.Base.Display
 	}
 
 	b.Tags = utils.MergeStringMaps(b.Tags, b.Base.Tags)

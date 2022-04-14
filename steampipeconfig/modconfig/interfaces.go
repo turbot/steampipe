@@ -77,6 +77,7 @@ type DashboardLeafNode interface {
 	Name() string
 	GetUnqualifiedName() string
 	GetTitle() string
+	GetDisplay() *string
 	GetWidth() int
 	GetPaths() []NodePath
 	GetMetadata() *ResourceMetadata

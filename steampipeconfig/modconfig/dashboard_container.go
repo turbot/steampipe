@@ -164,6 +164,10 @@ func (c *DashboardContainer) Diff(other *DashboardContainer) *DashboardTreeItemD
 		res.AddPropertyDiff("Width")
 	}
 
+	if !utils.SafeStringsEqual(c.Display, other.Display) {
+		res.AddPropertyDiff("Display")
+	}
+
 	res.populateChildDiffs(c, other)
 	return res
 }

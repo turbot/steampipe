@@ -117,4 +117,7 @@ func (d *DashboardTreeItemDiffs) dashboardLeafNodeDiff(l DashboardLeafNode, r Da
 	if l.GetWidth() != r.GetWidth() {
 		d.AddPropertyDiff("Width")
 	}
+	if !utils.SafeStringsEqual(l.GetDisplay(), r.GetDisplay()) {
+		d.AddPropertyDiff("Display")
+	}
 }
