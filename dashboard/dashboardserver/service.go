@@ -24,7 +24,7 @@ type ServiceState string
 
 const (
 	ServiceStateRunning       ServiceState = "running"
-	ServiceStateError         ServiceState = "running"
+	ServiceStateError         ServiceState = "error"
 	ServiceStateStructVersion              = 20220411
 )
 
@@ -49,6 +49,19 @@ type DashboardServiceState struct {
 	StructVersion int64        `json:"struct_version"`
 }
 
+func loadServiceStateFile() (*DashboardServiceState, error) {
+	state := &DashboardServiceState{}
+	stateBytes, err := os.ReadFile(filepaths.DashboardServiceStateFilePath())
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	err = json.Unmarshal(stateBytes, state)
+	return state, err
+}
+
 // IsValid checks whether the struct was correctly deserialized, by checking if the StructVersion is populated
 func (s DashboardServiceState) IsValid() bool {
 	return s.StructVersion > 0
@@ -65,6 +78,23 @@ func (s *DashboardServiceState) MigrateFrom(prev interface{}) migrate.Migrateabl
 	s.Listen = legacyState.Listen
 
 	return s
+}
+
+func (s *DashboardServiceState) Save() error {
+	// set struct version
+	s.StructVersion = ServiceStateStructVersion
+
+	versionFilePath := filepaths.DashboardServiceStateFilePath()
+	return s.write(versionFilePath)
+}
+
+func (s *DashboardServiceState) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		log.Println("Error while writing version file", err)
+		return err
+	}
+	return os.WriteFile(path, versionFileJSON, 0644)
 }
 
 func GetDashboardServiceState() (*DashboardServiceState, error) {
@@ -223,31 +253,4 @@ func WriteServiceStateFile(state *DashboardServiceState) error {
 		return err
 	}
 	return os.WriteFile(filepaths.DashboardServiceStateFilePath(), stateBytes, 0666)
-}
-
-func loadServiceStateFile() (*DashboardServiceState, error) {
-	state := new(DashboardServiceState)
-	stateBytes, err := os.ReadFile(filepaths.DashboardServiceStateFilePath())
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	err = json.Unmarshal(stateBytes, state)
-	return state, err
-}
-
-func (f *DashboardServiceState) Save() error {
-	versionFilePath := filepaths.DashboardServiceStateFilePath()
-	return f.write(versionFilePath)
-}
-
-func (f *DashboardServiceState) write(path string) error {
-	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
-	if err != nil {
-		log.Println("Error while writing version file", err)
-		return err
-	}
-	return os.WriteFile(path, versionFileJSON, 0644)
 }

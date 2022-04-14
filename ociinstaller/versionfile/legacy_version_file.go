@@ -85,13 +85,3 @@ func (f *LegacyCompositeVersionFile) delete() {
 		os.Remove(versionFilePath)
 	}
 }
-
-func MigrateDatabaseVersionFile() (*DatabaseVersionFile, error) {
-	_, databaseVersionFile, err := migrateVersionFiles()
-	return databaseVersionFile, err
-}
-
-func MigratePluginVersionFile() (*PluginVersionFile, error) {
-	pluginVersionFile, _, err := migrateVersionFiles()
-	return pluginVersionFile, err
-}

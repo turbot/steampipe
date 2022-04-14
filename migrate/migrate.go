@@ -28,7 +28,7 @@ func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
 		return err
 	}
 
-	// check for schemaVersion
+	// check whether we successfully derserialized into the new struct
 	if new.IsValid() {
 		return nil
 	}

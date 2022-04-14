@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/steampipe/migrate"
+
 	"github.com/google/uuid"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
 )
 
 const StateStructVersion = 20220411
@@ -28,23 +29,15 @@ type State struct {
 	StructVersion  int64  `json:"struct_version"`
 }
 
-// IsValid checks whether the struct was correctly deserialized,
-// by checking if the StructVersion is populated
-func (s State) IsValid() bool {
-	return s.StructVersion > 0
-}
-
-func (s *State) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyState)
-	s.StructVersion = StateStructVersion
-	s.LastCheck = legacyState.LastCheck
-	s.InstallationID = legacyState.InstallationID
-
-	return s
+func newState() State {
+	return State{
+		InstallationID: newInstallationID(),
+		StructVersion:  StateStructVersion,
+	}
 }
 
 func LoadState() (State, error) {
-	currentState := createState()
+	currentState := newState()
 
 	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
 	// get the state file
@@ -68,11 +61,36 @@ func LoadState() (State, error) {
 	return currentState, nil
 }
 
-func createState() State {
-	// start new current state
-	return State{
-		InstallationID: newInstallationID(), // a new ID
-	}
+// Save the state
+// NOTE: this updates the last checked time
+func (s *State) Save() error {
+	// set the struct version
+	s.StructVersion = StateStructVersion
+
+	s.LastCheck = nowTimeString()
+	// ensure internal dirs exists
+	_ = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
+	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
+	// if there is an existing file it must be bad/corrupt, so delete it
+	_ = os.Remove(stateFilePath)
+	// save state file
+	file, _ := json.MarshalIndent(s, "", " ")
+	return os.WriteFile(stateFilePath, file, 0644)
+}
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (s *State) IsValid() bool {
+	return s.StructVersion > 0
+}
+
+func (s *State) MigrateFrom(prev interface{}) migrate.Migrateable {
+	legacyState := prev.(LegacyState)
+	s.StructVersion = StateStructVersion
+	s.LastCheck = legacyState.LastCheck
+	s.InstallationID = legacyState.InstallationID
+
+	return s
 }
 
 func newInstallationID() string {

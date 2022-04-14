@@ -6,11 +6,10 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
-
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	"github.com/turbot/steampipe/utils"
 )
@@ -49,7 +48,41 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 		ProtocolVersion: reattach.ProtocolVersion,
 		Addr:            pb.NewSimpleAddr(reattach.Addr),
 		Pid:             reattach.Pid,
+		StructVersion:   PluginManagerStructVersion,
 	}
+}
+
+func LoadPluginManagerState() (*PluginManagerState, error) {
+	// always return empty state
+	s := new(PluginManagerState)
+	if !helpers.FileExists(filepaths.PluginManagerStateFilePath()) {
+		log.Printf("[TRACE] plugin manager state file not found")
+		return s, nil
+	}
+
+	fileContent, err := os.ReadFile(filepaths.PluginManagerStateFilePath())
+	if err != nil {
+		return s, err
+	}
+	err = json.Unmarshal(fileContent, s)
+	if err != nil {
+		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", filepaths.PluginManagerStateFilePath(), err.Error())
+		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
+		s.delete()
+		return s, nil
+	}
+
+	// check is the manager is running - this deletes that state file if it is not running,
+	// and set the 'Running' property on the state if it is
+	pluginManagerRunning, err := s.verifyRunning()
+	if err != nil {
+		return s, err
+	}
+	// save the running status on the state struct
+	s.Running = pluginManagerRunning
+
+	// return error (which may be nil)
+	return s, err
 }
 
 // IsValid checks whether the struct was correctly deserialized,
@@ -71,6 +104,17 @@ func (s *PluginManagerState) MigrateFrom(prev interface{}) migrate.Migrateable {
 	return s
 }
 
+func (s *PluginManagerState) Save() error {
+	// set struct version
+	s.StructVersion = PluginManagerStructVersion
+
+	content, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
+}
+
 func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
 	return &plugin.ReattachConfig{
 		Protocol:        s.Protocol,
@@ -78,14 +122,6 @@ func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
 		Addr:            *s.Addr,
 		Pid:             s.Pid,
 	}
-}
-
-func (s *PluginManagerState) Save() error {
-	content, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
 }
 
 // check whether the plugin manager is running
@@ -121,37 +157,4 @@ func (s *PluginManagerState) kill() error {
 
 func (s *PluginManagerState) delete() {
 	os.Remove(filepaths.PluginManagerStateFilePath())
-}
-
-func LoadPluginManagerState() (*PluginManagerState, error) {
-	// always return empty state
-	s := new(PluginManagerState)
-	if !helpers.FileExists(filepaths.PluginManagerStateFilePath()) {
-		log.Printf("[TRACE] plugin manager state file not found")
-		return s, nil
-	}
-
-	fileContent, err := os.ReadFile(filepaths.PluginManagerStateFilePath())
-	if err != nil {
-		return s, err
-	}
-	err = json.Unmarshal(fileContent, s)
-	if err != nil {
-		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", filepaths.PluginManagerStateFilePath(), err.Error())
-		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
-		s.delete()
-		return s, nil
-	}
-
-	// check is the manager is running - this deletes that state file if it is not running,
-	// and set the 'Running' property on the state if it is
-	pluginManagerRunning, err := s.verifyRunning()
-	if err != nil {
-		return s, err
-	}
-	// save the running status on the state struct
-	s.Running = pluginManagerRunning
-
-	// return error (which may be nil)
-	return s, err
 }

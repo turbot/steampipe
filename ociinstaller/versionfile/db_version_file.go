@@ -28,8 +28,9 @@ type DatabaseVersionFile struct {
 
 func NewDBVersionFile() *DatabaseVersionFile {
 	return &DatabaseVersionFile{
-		FdwExtension: InstalledVersion{},
-		EmbeddedDB:   InstalledVersion{},
+		FdwExtension:  InstalledVersion{},
+		EmbeddedDB:    InstalledVersion{},
+		StructVersion: DatabaseStructVersion,
 	}
 }
 
@@ -68,16 +69,6 @@ func databaseVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *Data
 
 // LoadDatabaseVersionFile migrates from the old version file format if necessary and loads the database version data
 func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
-	// first, see if a migration is necessary - if so, it will return the version data to us
-	migratedVersionFile, err := MigrateDatabaseVersionFile()
-	if err != nil {
-		return nil, err
-	}
-	if migratedVersionFile != nil {
-		log.Println("[TRACE] using migrated database version file")
-		return migratedVersionFile, nil
-	}
-
 	versionFilePath := filepaths.DatabaseVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readDatabaseVersionFile(versionFilePath)
@@ -105,6 +96,9 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 
 // Save writes the config
 func (f *DatabaseVersionFile) Save() error {
+	// set the struct version
+	f.StructVersion = DatabaseStructVersion
+
 	versionFilePath := filepaths.DatabaseVersionFilePath()
 	return f.write(versionFilePath)
 }
