@@ -63,3 +63,11 @@ query "q3"{
     description = query.q1.description
     sql = var.v3[0].query
 }
+
+variable "stringVar"{}
+variable "numberVar"{}
+variable "floatVar"{}
+variable "stringArrayVar"{}
+variable "intArrayVar"{}
+variable "objcArrayVar"{}
+variable "boolVar"{}

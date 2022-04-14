@@ -57,7 +57,8 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 
 	// create shell workspace
 	workspace := &Workspace{
-		Path: workspacePath,
+		Path:           workspacePath,
+		VariableValues: make(map[string]string),
 	}
 
 	// check whether the workspace contains a modfile
@@ -80,6 +81,36 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 
 	// return context error so calling code can handle cancellations
 	return workspace, nil
+}
+
+// LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
+func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error) {
+	utils.LogTime("workspace.LoadVariables start")
+	defer utils.LogTime("workspace.LoadVariables end")
+
+	// create shell workspace
+	workspace := &Workspace{
+		Path:           workspacePath,
+		VariableValues: make(map[string]string),
+	}
+	// check whether the workspace contains a modfile
+	// this will determine whether we load files recursively, and create pseudo resources for sql files
+	workspace.setModfileExists()
+
+	// we will NOT validate missing variables when loading
+	validateMissing := false
+	varMap, err := workspace.getAllVariables(ctx, validateMissing)
+	if err != nil {
+		return nil, err
+	}
+	// convert into array
+	res := make([]*modconfig.Variable, len(varMap))
+	idx := 0
+	for _, v := range varMap {
+		res[idx] = v
+		idx++
+	}
+	return res, nil
 }
 
 // LoadResourceNames builds lists of all workspace resource names
@@ -204,7 +235,9 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	// load and evaluate all variables
-	inputVariables, err := w.getAllVariables(ctx)
+	// we WILL validate missing variables when loading
+	validateMissing := true
+	inputVariables, err := w.getAllVariables(ctx, validateMissing)
 	if err != nil {
 		return err
 	}

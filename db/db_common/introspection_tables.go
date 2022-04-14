@@ -11,7 +11,6 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -214,7 +213,7 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 		if columnTag.ColumnType != "jsonb" {
 			return "nil", fmt.Errorf("data for column %s is of type cty.Value so column type should be 'jsonb' but is actually %s", columnTag.Column, columnTag.ColumnType)
 		}
-		str, err := parse.CtyToJSON(t)
+		str, err := utils.CtyToJSON(t)
 		if err != nil {
 			return "", err
 		}

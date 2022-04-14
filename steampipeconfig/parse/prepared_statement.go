@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe-plugin-sdk/v3/plugin"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 )
 
 // ParsePreparedStatementInvocation parses a query invocation and extracts the args (if any)
@@ -136,7 +137,7 @@ func parseArg(v string) (string, error) {
 	if diags.HasErrors() {
 		return "", plugin.DiagsToError("bad arg syntax", diags)
 	}
-	return ctyToPostgresString(val)
+	return utils.CtyToPostgresString(val)
 }
 
 func parseNamedArgs(argsList []string) (map[string]string, error) {

@@ -3,11 +3,12 @@ package inputvars
 import (
 	"fmt"
 
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // UnparsedVariableValue represents a variable value provided by the caller
@@ -41,7 +42,7 @@ type UnparsedVariableValue interface {
 // InputValues may be incomplete but will include the subset of variables
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*modconfig.Variable) (InputValues, tfdiags.Diagnostics) {
+func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*modconfig.Variable, validate bool) (InputValues, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	ret := make(InputValues, len(vv))
 
@@ -126,13 +127,8 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 			continue
 		}
 
+		//  are we missing a required variable?
 		if vc.Required() {
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "No value for required variable",
-				Detail:   fmt.Sprintf("The input variable %q is not set, and has no default value. Use a --var or --var-file command line argument to provide a value for this variable.", name),
-				Subject:  vc.DeclRange.Ptr(),
-			})
 
 			// We'll include a placeholder value anyway, just so that our
 			// result is complete for any calling code that wants to cautiously
@@ -143,7 +139,18 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 				SourceType:  ValueFromConfig,
 				SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
 			}
+
+			// if validation flag is et, raise an error
+			if validate {
+				diags = diags.Append(&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "No value for required variable",
+					Detail:   fmt.Sprintf("The input variable %q is not set, and has no default value. Use a --var or --var-file command line argument to provide a value for this variable.", name),
+					Subject:  vc.DeclRange.Ptr(),
+				})
+			}
 		} else {
+			// not required - use default
 			ret[name] = &InputValue{
 				Value:       vc.Default,
 				SourceType:  ValueFromConfig,
