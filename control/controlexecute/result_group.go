@@ -41,6 +41,10 @@ type ResultGroup struct {
 	// a list of distinct dimension keys from descendant controls
 	DimensionKeys []string `json:"-"`
 
+	// fields used by dashboards
+	Type    *string `json:"type,omitempty"`
+	Display *string `json:"display,omitempty"`
+
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
 }
@@ -99,6 +103,11 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 		Summary:     NewGroupSummary(),
 		Severity:    make(map[string]controlstatus.StatusSummary),
 		updateLock:  new(sync.Mutex),
+	}
+	// TACTICAL for dashboard - if roo item is a benchmark, pull up 'type' and 'display'
+	if benchmark, ok := treeItem.(*modconfig.Benchmark); ok {
+		group.Type = benchmark.Type
+		group.Display = benchmark.Display
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {

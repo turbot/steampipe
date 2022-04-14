@@ -33,9 +33,9 @@ type Benchmark struct {
 
 	// dashboard specific properties
 	Base    *Benchmark `hcl:"base" json:"-"`
-	Width   *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type    *string    `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Display *string    `cty:"display" hcl:"display" json:"display,omitempty"`
+	Width   *int       `cty:"width" hcl:"width" column:"width,text"`
+	Type    *string    `cty:"type" hcl:"type" column:"type,text"  `
+	Display *string    `cty:"display" hcl:"display" `
 
 	References []*ResourceReference
 	Mod        *Mod `cty:"mod"`
