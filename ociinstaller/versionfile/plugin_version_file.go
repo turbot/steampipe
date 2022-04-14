@@ -25,16 +25,16 @@ type PluginVersionFile struct {
 
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the StructVersion is populated
-func (s PluginVersionFile) IsValid() bool {
-	return s.StructVersion > 0
+func (f PluginVersionFile) IsValid() bool {
+	return f.StructVersion > 0
 }
 
-func (s *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
+func (f *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyPluginVersionFile)
-	s.StructVersion = PluginStructVersion
-	s.Plugins = make(map[string]*InstalledVersion, len(legacyState.Plugins))
+	f.StructVersion = PluginStructVersion
+	f.Plugins = make(map[string]*InstalledVersion, len(legacyState.Plugins))
 	for p, i := range legacyState.Plugins {
-		s.Plugins[p] = &InstalledVersion{
+		f.Plugins[p] = &InstalledVersion{
 			Name:            i.Name,
 			Version:         i.Version,
 			ImageDigest:     i.ImageDigest,
@@ -43,12 +43,13 @@ func (s *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
 			InstallDate:     i.InstallDate,
 		}
 	}
-	return s
+	return f
 }
 
 func NewPluginVersionFile() *PluginVersionFile {
 	return &PluginVersionFile{
-		Plugins: map[string]*InstalledVersion{},
+		Plugins:       map[string]*InstalledVersion{},
+		StructVersion: PluginStructVersion,
 	}
 }
 
@@ -60,21 +61,36 @@ func pluginVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *Plugin
 
 // LoadPluginVersionFile migrates from the old version file format if necessary and loads the plugin version data
 func LoadPluginVersionFile() (*PluginVersionFile, error) {
-	// first, see if a migration is necessary - if so, it will return the version data to us
-	migratedVersionFile, err := MigratePluginVersionFile()
-	if err != nil {
-		return nil, err
-	}
-	if migratedVersionFile != nil {
-		log.Println("[TRACE] using migrated plugin version file")
-		return migratedVersionFile, nil
-	}
-
 	versionFilePath := filepaths.PluginVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readPluginVersionFile(versionFilePath)
 	}
 	return NewPluginVersionFile(), nil
+}
+
+// Save writes the config file to disk
+func (f *PluginVersionFile) Save() error {
+	// set struct version
+	f.StructVersion = PluginStructVersion
+	versionFilePath := filepaths.PluginVersionFilePath()
+	return f.write(versionFilePath)
+}
+
+func (f *PluginVersionFile) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("[ERROR]", "Error while writing version file", err)
+		return err
+	}
+	return os.WriteFile(path, versionFileJSON, 0644)
+}
+
+// delete the file on disk if it exists
+func (f *PluginVersionFile) delete() {
+	versionFilePath := filepaths.PluginVersionFilePath()
+	if helpers.FileExists(versionFilePath) {
+		os.Remove(versionFilePath)
+	}
 }
 
 func readPluginVersionFile(path string) (*PluginVersionFile, error) {
@@ -97,27 +113,4 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 	}
 
 	return &data, nil
-}
-
-// Save writes the config file to disk
-func (f *PluginVersionFile) Save() error {
-	versionFilePath := filepaths.PluginVersionFilePath()
-	return f.write(versionFilePath)
-}
-
-func (f *PluginVersionFile) write(path string) error {
-	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
-	if err != nil {
-		log.Println("[ERROR]", "Error while writing version file", err)
-		return err
-	}
-	return os.WriteFile(path, versionFileJSON, 0644)
-}
-
-// delete the file on disk if it exists
-func (f *PluginVersionFile) delete() {
-	versionFilePath := filepaths.PluginVersionFilePath()
-	if helpers.FileExists(versionFilePath) {
-		os.Remove(versionFilePath)
-	}
 }

@@ -44,43 +44,50 @@ type RunningDBInstanceInfo struct {
 
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the StructVersion is populated
-func (s RunningDBInstanceInfo) IsValid() bool {
-	return s.StructVersion > 0
+func (r RunningDBInstanceInfo) IsValid() bool {
+	return r.StructVersion > 0
 }
 
-func (s *RunningDBInstanceInfo) MigrateFrom(prev interface{}) migrate.Migrateable {
+func (r *RunningDBInstanceInfo) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyRunningDBInstanceInfo)
-	s.StructVersion = RunningDBStructVersion
-	s.Pid = legacyState.Pid
-	s.Port = legacyState.Port
-	s.Listen = legacyState.Listen
-	s.ListenType = legacyState.ListenType
-	s.Invoker = legacyState.Invoker
-	s.Password = legacyState.Password
-	s.User = legacyState.User
-	s.Database = legacyState.Database
+	r.StructVersion = RunningDBStructVersion
+	r.Pid = legacyState.Pid
+	r.Port = legacyState.Port
+	r.Listen = legacyState.Listen
+	r.ListenType = legacyState.ListenType
+	r.Invoker = legacyState.Invoker
+	r.Password = legacyState.Password
+	r.User = legacyState.User
+	r.Database = legacyState.Database
 
-	return s
+	return r
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) *RunningDBInstanceInfo {
-	dbState := new(RunningDBInstanceInfo)
-	dbState.Pid = cmd.Process.Pid
-	dbState.Port = port
-	dbState.User = constants.DatabaseUser
-	dbState.Password = password
-	dbState.Database = databaseName
-	dbState.ListenType = listen
-	dbState.Invoker = invoker
-	dbState.Listen = constants.DatabaseListenAddresses
+	dbState := &RunningDBInstanceInfo{
+		Pid:           cmd.Process.Pid,
+		Port:          port,
+		User:          constants.DatabaseUser,
+		Password:      password,
+		Database:      databaseName,
+		ListenType:    listen,
+		Invoker:       invoker,
+		Listen:        constants.DatabaseListenAddresses,
+		StructVersion: RunningDBStructVersion,
+	}
 
 	if listen == ListenTypeNetwork {
 		addrs, _ := utils.LocalAddresses()
 		dbState.Listen = append(dbState.Listen, addrs...)
 	}
+
 	return dbState
 }
+
 func (r *RunningDBInstanceInfo) Save() error {
+	// set struct version
+	r.StructVersion = RunningDBStructVersion
+
 	content, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return err

@@ -1,9 +1,2 @@
-v3 =  [
-     {
-         internal = 8300
-         external = 8300
-         query = "select 'default4'"
-     }
-     ]
-
-
+account = "fooooo"
+v1 = "bar"
