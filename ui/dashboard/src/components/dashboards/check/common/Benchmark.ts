@@ -1,5 +1,17 @@
 import Control from "./Control";
-import { CheckControl, CheckGroup, CheckRunState, CheckSummary } from "./index";
+import {
+  CheckControl,
+  CheckDimensionKeysMap,
+  CheckGroup,
+  CheckRunState,
+  CheckSummary,
+} from "./index";
+import {
+  LeafNodeData,
+  LeafNodeDataColumn,
+  LeafNodeDataRow,
+} from "../../common";
+import merge from "lodash/merge";
 
 class Benchmark {
   private readonly _name: string;
@@ -34,6 +46,9 @@ class Benchmark {
     for (const nestedControl of controls || []) {
       nestedControls.push(
         new Control(
+          this._name,
+          this._title,
+          this._description,
           nestedControl.control_id,
           nestedControl.title,
           nestedControl.description,
@@ -122,6 +137,91 @@ class Benchmark {
       }
     }
     return "complete";
+  }
+
+  get_data_table(): LeafNodeData {
+    const columns: LeafNodeDataColumn[] = [
+      {
+        name: "group_id",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "title",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "description",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "control_id",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "control_title",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "control_description",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "reason",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "resource",
+        data_type_name: "TEXT",
+      },
+      {
+        name: "status",
+        data_type_name: "TEXT",
+      },
+    ];
+    const dimensions = this.get_dimension_keys();
+    Object.keys(dimensions).forEach((dimension) =>
+      columns.push({
+        name: dimension,
+        data_type_name: "TEXT",
+      })
+    );
+    const rows = this.get_data_rows(Object.keys(dimensions));
+    // let rows: LeafNodeDataRow[] = [];
+    // this._benchmarks.forEach(benchmark => {
+    //   rows = [...rows, ...benchmark.get_data_rows()]
+    // })
+    // this._controls.forEach(control => {
+    //   rows = [...rows, ...control.get_data_rows()]
+    // })
+
+    return {
+      columns,
+      rows,
+    };
+  }
+
+  get_dimension_keys(): CheckDimensionKeysMap {
+    let keys = {};
+    this._benchmarks.forEach((benchmark) => {
+      const subBenchmarkKeys = benchmark.get_dimension_keys();
+      keys = merge(keys, subBenchmarkKeys);
+    });
+    this._controls.forEach((control) => {
+      const controlKeys = control.get_dimension_keys();
+      keys = merge(keys, controlKeys);
+    });
+    return keys;
+  }
+
+  get_data_rows(dimensions: string[]): LeafNodeDataRow[] {
+    let rows: LeafNodeDataRow[] = [];
+    this._benchmarks.forEach((benchmark) => {
+      rows = [...rows, ...benchmark.get_data_rows(dimensions)];
+    });
+    this._controls.forEach((control) => {
+      rows = [...rows, ...control.get_data_rows(dimensions)];
+    });
+    return rows;
   }
 }
 

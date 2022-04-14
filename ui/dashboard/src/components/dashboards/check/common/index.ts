@@ -35,6 +35,10 @@ export interface CheckLeafNodeDataGroupSummary {
   status: CheckSummary;
 }
 
+export interface CheckDimensionKeysMap {
+  [dimension: string]: boolean;
+}
+
 interface CheckTags {
   [key: string]: string;
 }
@@ -85,7 +89,12 @@ export interface CheckExecutionTree {
   root: CheckGroup;
 }
 
+type CheckType = "summary" | "table" | null;
+
 export interface CheckProps extends BasePrimitiveProps {
   root: CheckGroup;
   error?: Error;
+  properties: {
+    type?: CheckType;
+  };
 }
