@@ -258,7 +258,7 @@ func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modc
 
 		if !moreDiags.HasErrors() {
 			// convert the raw default into a postgres representation
-			if valStr, err := ctyToPostgresString(v); err == nil {
+			if valStr, err := utils.CtyToPostgresString(v); err == nil {
 				def.Default = utils.ToStringPointer(valStr)
 			} else {
 				diags = append(diags, &hcl.Diagnostic{

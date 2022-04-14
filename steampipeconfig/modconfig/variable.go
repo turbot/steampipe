@@ -11,15 +11,6 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type T struct {
-	ValueDefault int    `json:"value_default"`
-	Description  string `json:"description"`
-	ModName      string `json:"mod_name"`
-	Name         string `json:"name"`
-	Value        int    `json:"value"`
-	Type         string `json:"type"`
-}
-
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	ResourceWithMetadataBase
@@ -38,22 +29,26 @@ type Variable struct {
 	ModName       string `json:"mod_name"`
 
 	// set after value resolution `column:"value,jsonb"`
-	Value                      cty.Value `column:"value,jsonb" json:"-"`
-	ValueSourceType            string    `column:"value_source,text" json:"-"`
-	ValueSourceFileName        string    `column:"value_source_file_name,text"`
-	ValueSourceStartLineNumber int       `column:"value_source_start_line_number,integer"`
-	ValueSourceEndLineNumber   int       `column:"value_source_end_line_number,integer"`
-	DeclRange                  hcl.Range
-	ParsingMode                var_config.VariableParsingMode
-	Mod                        *Mod
+	Value                      cty.Value                      `column:"value,jsonb" json:"-"`
+	ValueSourceType            string                         `column:"value_source,text" json:"-"`
+	ValueSourceFileName        string                         `column:"value_source_file_name,text" json:"-"`
+	ValueSourceStartLineNumber int                            `column:"value_source_start_line_number,integer" json:"-"`
+	ValueSourceEndLineNumber   int                            `column:"value_source_end_line_number,integer" json:"-"`
+	DeclRange                  hcl.Range                      `json:"-"`
+	ParsingMode                var_config.VariableParsingMode `json:"-"`
+	Mod                        *Mod                           `json:"-"`
+	UnqualifiedName            string                         `json:"-"`
+	Paths                      []NodePath                     `column:"path,jsonb" json:"-"`
 
-	metadata        *ResourceMetadata
-	parents         []ModTreeItem
-	Paths           []NodePath `column:"path,jsonb"`
-	UnqualifiedName string
+	metadata *ResourceMetadata
+	parents  []ModTreeItem
 }
 
 func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
+	defaultString := ""
+	if !v.Default.IsNull() {
+		defaultString, _ = utils.CtyToString(v.Default)
+	}
 	return &Variable{
 		ShortName:       v.Name,
 		Description:     v.Description,
@@ -64,10 +59,9 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 		ParsingMode:     v.ParsingMode,
 		Mod:             mod,
 		DeclRange:       v.DeclRange,
-
-		ModName:       mod.ShortName,
-		DefaultString: v.Default.AsString(),
-		TypeString:    v.Type.GoString(),
+		ModName:         mod.ShortName,
+		DefaultString:   defaultString,
+		TypeString:      v.Type.FriendlyName(),
 	}
 }
 
@@ -129,7 +123,7 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
-	v.ValueString = value.AsString()
+	v.ValueString, _ = utils.CtyToString(value)
 }
 
 // AddParent implements ModTreeItem

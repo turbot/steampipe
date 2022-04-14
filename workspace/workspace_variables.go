@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.Variable, error) {
+func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (map[string]*modconfig.Variable, error) {
 	// load all variable definitions
 	variableMap, err := w.loadVariables()
 	if err != nil {
@@ -23,13 +23,15 @@ func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.
 	}
 
 	// now resolve all input variables
-	inputVariables, err := w.getInputVariables(variableMap)
+	inputVariables, err := w.getInputVariables(variableMap, validate)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
-		return nil, err
+	if validate {
+		if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
+			return nil, err
+		}
 	}
 
 	// now update the variables map with the input values
@@ -39,6 +41,12 @@ func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.
 			inputValue.Value,
 			inputValue.SourceTypeString(),
 			inputValue.SourceRange)
+
+		// set variable value string in our workspace map
+		w.VariableValues[name], err = utils.CtyToString(inputValue.Value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return variableMap, nil
@@ -66,7 +74,7 @@ func (w *Workspace) loadVariables() (map[string]*modconfig.Variable, error) {
 	return variableMap, nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (inputvars.InputValues, error) {
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, validate bool) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -75,10 +83,12 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 		return nil, diags.Err()
 	}
 
-	if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
-		return nil, err
+	if validate {
+		if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
+			return nil, err
+		}
 	}
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
 
 	return parsedValues, diags.Err()
 }

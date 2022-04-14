@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/utils"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -73,7 +74,7 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modco
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a postgres compatible
-			valStr, err := ctyToPostgresString(v)
+			valStr, err := utils.CtyToPostgresString(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
 				return nil, nil, err
@@ -107,7 +108,7 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a postgres compatible
-			valStr, err := ctyToPostgresString(v)
+			valStr, err := utils.CtyToPostgresString(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 				return nil, nil, err

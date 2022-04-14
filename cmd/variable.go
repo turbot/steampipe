@@ -3,9 +3,11 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+
+	"github.com/turbot/steampipe/display"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
 
 	"github.com/spf13/cobra"
@@ -53,7 +55,8 @@ Examples:
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", "", false, "Check each variable in the list for updates").
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for variable list")
+		AddBoolFlag(constants.ArgHelp, "h", false, "Help for variable list").
+		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatTable, "Select a console output format: table or json")
 
 	return cmd
 }
@@ -67,26 +70,39 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// validate output arg
+	output := viper.GetString(constants.ArgOutput)
+	if !helpers.StringSliceContains([]string{constants.OutputFormatTable, constants.OutputFormatJSON}, output) {
+		utils.ShowError(ctx, fmt.Errorf("output flag must be either 'json' or 'table'"))
+		return
+	}
+
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
 
 	vars, err := workspace.LoadVariables(ctx, workspacePath)
 	// load the workspace
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	log.Printf("[WARN] %v", vars)
-
 	if viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON {
-		jsonOutput, err := json.MarshalIndent(vars, "", "  ")
-		utils.FailOnErrorWithMessage(err, "failed to marshal variables to JSON")
-		fmt.Println(jsonOutput)
+		jsonVarList(vars)
 	} else {
 
+		tableVarList(vars)
 	}
-	//headers := []string{"Name", "Version", "Connections"}
-	//rows := [][]string{}
-	//for _, item := range list {
-	//	rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
-	//}
-	//display.ShowWrappedTable(headers, rows, false)
+}
 
+func jsonVarList(vars []*modconfig.Variable) {
+	jsonOutput, err := json.MarshalIndent(vars, "", "  ")
+	utils.FailOnErrorWithMessage(err, "failed to marshal variables to JSON")
+
+	fmt.Println(string(jsonOutput))
+}
+
+func tableVarList(vars []*modconfig.Variable) {
+	headers := []string{"mod_name", "name", "description", "value", "value_default", "type"}
+	var rows = make([][]string, len(vars))
+	for i, v := range vars {
+		rows[i] = []string{v.ModName, v.ShortName, v.Description, v.ValueString, v.DefaultString, v.TypeString}
+	}
+	display.ShowWrappedTable(headers, rows, false)
 }
