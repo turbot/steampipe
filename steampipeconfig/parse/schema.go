@@ -210,6 +210,8 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 		// for report benchmark blocks
 		{Name: "width"},
 		{Name: "base"},
+		{Name: "type"},
+		{Name: "display"},
 	},
 }
 
