@@ -102,7 +102,7 @@ func tableVarList(vars []*modconfig.Variable) {
 	headers := []string{"mod_name", "name", "description", "value", "value_default", "type"}
 	var rows = make([][]string, len(vars))
 	for i, v := range vars {
-		rows[i] = []string{v.ModName, v.ShortName, v.Description, v.ValueString, v.DefaultString, v.TypeString}
+		rows[i] = []string{v.ModName, v.ShortName, v.Description, fmt.Sprintf("%v", v.ValueGo), v.DefaultString, v.TypeString}
 	}
 	display.ShowWrappedTable(headers, rows, false)
 }

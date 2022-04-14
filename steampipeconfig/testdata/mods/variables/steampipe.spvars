@@ -7,3 +7,17 @@ v3 =  [
      ]
 
 
+
+stringVar = "foo"
+numberVar = 100
+floatVar = 100.1
+stringArrayVar = ["100","200"]
+intArrayVar = [1,2]
+objcArrayVar =   [
+{
+internal = 8300
+external = 8300
+query = "select 'default4'"
+}
+]
+boolVar = false

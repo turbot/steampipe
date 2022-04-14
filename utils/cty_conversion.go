@@ -82,7 +82,7 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 
 // CtyToString convert a cty value into a string representation of the value
 func CtyToString(v cty.Value) (valStr string, err error) {
-	if v.IsNull() {
+	if v.IsNull() || !v.IsWhollyKnown() {
 		return "", nil
 	}
 	ty := v.Type()
@@ -108,7 +108,6 @@ func CtyToString(v cty.Value) (valStr string, err error) {
 		var target int
 		if err = gocty.FromCtyValue(v, &target); err == nil {
 			valStr = fmt.Sprintf("%d", target)
-			return
 		} else {
 			var targetf float64
 			if err = gocty.FromCtyValue(v, &targetf); err == nil {
@@ -118,19 +117,117 @@ func CtyToString(v cty.Value) (valStr string, err error) {
 	case cty.String:
 		var target string
 		if err := gocty.FromCtyValue(v, &target); err == nil {
-			valStr = fmt.Sprintf("%s", target)
+			valStr = target
+		}
+	default:
+		var json string
+		// wrap as postgres string
+		if json, err = CtyToJSON(v); err == nil {
+			valStr = json
+		}
+
+	}
+
+	return valStr, err
+}
+
+func CtyToGo(v cty.Value) (val interface{}, err error) {
+	if v.IsNull() {
+		return nil, nil
+	}
+	ty := v.Type()
+	switch {
+	case ty.IsTupleType(), ty.IsListType():
+		{
+
+			var array []string
+			if array, err = ctyTupleToArrayOfPgStrings(v); err == nil {
+				val = array
+			}
+			return
+		}
+	}
+
+	switch ty {
+	case cty.Bool:
+		var target bool
+		if err = gocty.FromCtyValue(v, &target); err == nil {
+			val = target
+		}
+
+	case cty.Number:
+		var target int
+		if err = gocty.FromCtyValue(v, &target); err == nil {
+			val = target
+		} else {
+			var targetf float64
+			if err = gocty.FromCtyValue(v, &targetf); err == nil {
+				val = targetf
+			}
+		}
+	case cty.String:
+		var target string
+		if err := gocty.FromCtyValue(v, &target); err == nil {
+			val = target
 		}
 
 	default:
 		var json string
 		// wrap as postgres string
 		if json, err = CtyToJSON(v); err == nil {
-			valStr = fmt.Sprintf("%s", json)
+			val = json
 		}
-
 	}
 
-	return valStr, err
+	return
+}
+
+// CtyTypeToHclType converts a cty type to a hcl type
+// accept multiple types and use the first non null and non dynamic one
+func CtyTypeToHclType(types ...cty.Type) string {
+	// find which if any of the types are non nil and not dynamic
+	t := getKnownType(types)
+	if t == cty.NilType {
+		return ""
+	}
+
+	friendlyName := t.FriendlyName()
+
+	// func to convert from ctyt aggregate syntax to hcl
+	convertAggregate := func(prefix string) (string, bool) {
+		if strings.HasPrefix(friendlyName, prefix) {
+			return fmt.Sprintf("%s(%s)", strings.TrimSuffix(prefix, " of "), strings.TrimPrefix(friendlyName, prefix)), true
+		}
+		return "", false
+	}
+
+	if convertedName, isList := convertAggregate("list of "); isList {
+		return convertedName
+	}
+	if convertedName, isMap := convertAggregate("map of "); isMap {
+		return convertedName
+	}
+	if convertedName, isSet := convertAggregate("set of "); isSet {
+		return convertedName
+	}
+	if friendlyName == "tuple" {
+		underlyingType := t.TupleElementTypes()[0]
+		return fmt.Sprintf("list(%s)", CtyTypeToHclType(underlyingType))
+	}
+	if friendlyName == "dynamic" {
+		return ""
+	}
+	return friendlyName
+}
+
+// from a list oif cty typoes, return the first which is non nil and not dynamic
+func getKnownType(types []cty.Type) cty.Type {
+	for _, t := range types {
+		if t != cty.NilType && !t.HasDynamicTypes() {
+			return t
+		}
+	}
+	return cty.NilType
 }
 
 func ctyTupleToArrayOfPgStrings(val cty.Value) ([]string, error) {

@@ -23,10 +23,10 @@ type Variable struct {
 	Type           cty.Type  `column:"var_type,text"  json:"-"`
 	DescriptionSet bool      ` json:"-"`
 
-	TypeString    string `json:"type"`
-	DefaultString string `json:"value_default"`
-	ValueString   string `json:"value"`
-	ModName       string `json:"mod_name"`
+	TypeString    string      `json:"type"`
+	DefaultString string      `json:"value_default"`
+	ValueGo       interface{} `json:"value"`
+	ModName       string      `json:"mod_name"`
 
 	// set after value resolution `column:"value,jsonb"`
 	Value                      cty.Value                      `column:"value,jsonb" json:"-"`
@@ -49,6 +49,7 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	if !v.Default.IsNull() {
 		defaultString, _ = utils.CtyToString(v.Default)
 	}
+
 	return &Variable{
 		ShortName:       v.Name,
 		Description:     v.Description,
@@ -61,7 +62,7 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 		DeclRange:       v.DeclRange,
 		ModName:         mod.ShortName,
 		DefaultString:   defaultString,
-		TypeString:      v.Type.FriendlyName(),
+		TypeString:      utils.CtyTypeToHclType(v.Type, v.Default.Type()),
 	}
 }
 
@@ -123,7 +124,8 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
-	v.ValueString, _ = utils.CtyToString(value)
+	v.ValueGo, _ = utils.CtyToGo(value)
+	v.TypeString = utils.CtyTypeToHclType(value.Type())
 }
 
 // AddParent implements ModTreeItem
