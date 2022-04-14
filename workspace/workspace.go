@@ -57,7 +57,8 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 
 	// create shell workspace
 	workspace := &Workspace{
-		Path: workspacePath,
+		Path:           workspacePath,
+		VariableValues: make(map[string]string),
 	}
 
 	// check whether the workspace contains a modfile
