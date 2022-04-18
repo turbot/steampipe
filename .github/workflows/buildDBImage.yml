@@ -92,8 +92,8 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -O -J https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump_darwin_amd64?dl=0 --output pg_dump
-          curl -L -O -J https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore_darwin_amd64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump_darwin_amd64?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore_darwin_amd64?dl=0 --output pg_restore
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
           chmod +x $EXTRACT_DIR/bin/pg_dump
@@ -113,8 +113,8 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -O -J https://www.dropbox.com/s/w5f6elrpco4c69t/pg_dump_darwin_arm64?dl=0 --output pg_dump
-          curl -L -O -J https://www.dropbox.com/s/8m7geqpmjp5cbu6/pg_restore_darwin_arm64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/w5f6elrpco4c69t/pg_dump_darwin_arm64?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/8m7geqpmjp5cbu6/pg_restore_darwin_arm64?dl=0 --output pg_restore
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
           chmod +x $EXTRACT_DIR/bin/pg_dump
@@ -134,8 +134,8 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -O -J https://www.dropbox.com/s/8ojapmxbopic3xm/pg_dump_linux_amd64?dl=0 --output pg_dump
-          curl -L -O -J https://www.dropbox.com/s/ap9ikyyjwugcsty/pg_restore_linux_amd64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/8ojapmxbopic3xm/pg_dump_linux_amd64?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/ap9ikyyjwugcsty/pg_restore_linux_amd64?dl=0 --output pg_restore
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
           chmod +x $EXTRACT_DIR/bin/pg_dump
@@ -155,8 +155,8 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -O -J https://www.dropbox.com/s/whuwjpycf4atnny/pg_dump_linux_arm64?dl=0 --output pg_dump
-          curl -L -O -J https://www.dropbox.com/s/bsfegf4tp1rckni/pg_restore_linux_arm64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/whuwjpycf4atnny/pg_dump_linux_arm64?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/bsfegf4tp1rckni/pg_restore_linux_arm64?dl=0 --output pg_restore
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
           chmod +x $EXTRACT_DIR/bin/pg_dump
