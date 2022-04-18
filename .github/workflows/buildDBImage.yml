@@ -2,9 +2,15 @@ name: Build and Publish DB Image
 
 ## LINKS
 ##   pg_dump
-##     pg14 darwin amd64 https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump?dl=0
+##     pg14 darwin amd64 https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump_darwin_amd64?dl=0
+##     pg14 darwin arm64 https://www.dropbox.com/s/w5f6elrpco4c69t/pg_dump_darwin_arm64?dl=0
+##     pg14 linux amd64 https://www.dropbox.com/s/8ojapmxbopic3xm/pg_dump_linux_amd64?dl=0
+##     pg14 linux arm64 https://www.dropbox.com/s/whuwjpycf4atnny/pg_dump_linux_arm64?dl=0
 ##   pg_restore
-##     pg14 darwin amd64 https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore?dl=0
+##     pg14 darwin amd64 https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore_darwin_amd64?dl=0
+##     pg14 darwin arm64 https://www.dropbox.com/s/8m7geqpmjp5cbu6/pg_restore_darwin_arm64?dl=0
+##     pg14 linux amd64 https://www.dropbox.com/s/ap9ikyyjwugcsty/pg_restore_linux_amd64?dl=0
+##     pg14 linux arm64 https://www.dropbox.com/s/bsfegf4tp1rckni/pg_restore_linux_arm64?dl=0
 
 # Controls when the action will run. 
 on:
@@ -85,10 +91,34 @@ jobs:
           unzip -o ${JAR_FILE}
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
-          curl -L -O -J https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump?dl=0 -o pg_dump
-          curl -L -O -J https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore?dl=0 -o pg_restore
+
+          curl -L -O -J https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump_darwin_amd64?dl=0 -o pg_dump
+          curl -L -O -J https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore_darwin_amd64?dl=0 -o pg_restore
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
+          chmod +x $EXTRACT_DIR/bin/pg_dump
+          chmod +x $EXTRACT_DIR/bin/pg_restore
+
+      - name: Pull & Extract - darwin arm64
+        env:
+          OS: darwin
+          ARCH: arm64v8
+          TGZ_FILE: postgres-darwin-arm_64.txz #(name of the file once unzipped.  per platform but not same as in the jar name)
+        run: |-
+          JAR_FILE=${NAME_PREFIX}-${OS}-${ARCH}-${PG_VERSION}.jar
+          EXTRACT_DIR=extracted-${OS}-${ARCH}-${PG_VERSION}
+
+          curl -L -O -J -L ${PATH_BASE}/${NAME_PREFIX}-${OS}-${ARCH}/${PG_VERSION}/${JAR_FILE}
+          unzip -o ${JAR_FILE}
+          mkdir $EXTRACT_DIR
+          tar -xf $TGZ_FILE --directory $EXTRACT_DIR
+
+          curl -L -O -J https://www.dropbox.com/s/w5f6elrpco4c69t/pg_dump_darwin_arm64?dl=0 -o pg_dump
+          curl -L -O -J https://www.dropbox.com/s/8m7geqpmjp5cbu6/pg_restore_darwin_arm64?dl=0 -o pg_restore
+          mv pg_dump $EXTRACT_DIR/bin/pg_dump
+          mv pg_restore $EXTRACT_DIR/bin/pg_restore
+          chmod +x $EXTRACT_DIR/bin/pg_dump
+          chmod +x $EXTRACT_DIR/bin/pg_restore
 
       - name: Pull & Extract - linux amd64
         env:
@@ -104,6 +134,13 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
+          curl -L -O -J https://www.dropbox.com/s/8ojapmxbopic3xm/pg_dump_linux_amd64?dl=0 -o pg_dump
+          curl -L -O -J https://www.dropbox.com/s/ap9ikyyjwugcsty/pg_restore_linux_amd64?dl=0 -o pg_restore
+          mv pg_dump $EXTRACT_DIR/bin/pg_dump
+          mv pg_restore $EXTRACT_DIR/bin/pg_restore
+          chmod +x $EXTRACT_DIR/bin/pg_dump
+          chmod +x $EXTRACT_DIR/bin/pg_restore
+
       - name: Pull & Extract - linux arm64v8
         env:
           OS: linux
@@ -117,6 +154,13 @@ jobs:
           unzip -o ${JAR_FILE}
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
+
+          curl -L -O -J https://www.dropbox.com/s/whuwjpycf4atnny/pg_dump_linux_arm64?dl=0 -o pg_dump
+          curl -L -O -J https://www.dropbox.com/s/bsfegf4tp1rckni/pg_restore_linux_arm64?dl=0 -o pg_restore
+          mv pg_dump $EXTRACT_DIR/bin/pg_dump
+          mv pg_restore $EXTRACT_DIR/bin/pg_restore
+          chmod +x $EXTRACT_DIR/bin/pg_dump
+          chmod +x $EXTRACT_DIR/bin/pg_restore
 
       - name: Pull & Extract - windows amd64
         env:
@@ -191,7 +235,7 @@ jobs:
               --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
               --manifest-annotations annotations.json \
               extracted-darwin-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-amd64.layer.v1+tar \
-              extracted-darwin-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
+              extracted-darwin-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
               extracted-windows-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.windows-amd64.layer.v1+tar \
               extracted-linux-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
               extracted-linux-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
