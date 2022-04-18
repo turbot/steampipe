@@ -21,7 +21,7 @@ func checkPluginVersions(installationID string) []string {
 	var pluginsToUpdate []plugin.VersionCheckReport
 
 	for _, r := range updateReport {
-		if r.CheckResponse.Digest != r.Plugin.ImageDigest {
+		if skip, _ := plugin.SkipUpdate(r); !skip {
 			pluginsToUpdate = append(pluginsToUpdate, r)
 		}
 	}
@@ -63,13 +63,17 @@ func pluginNotificationMessage(reports []plugin.VersionCheckReport) []string {
 				constants.Bold(report.CheckResponse.Version),
 			)
 		} else {
+			version := report.CheckResponse.Version
 			format := fmt.Sprintf("  %%-%ds @ %%-10s       %%10s → %%-10s", longestNameLength)
+			if report.Plugin.Version == report.CheckResponse.Version {
+				version = fmt.Sprintf("%s (arm64)", version)
+			}
 			line = fmt.Sprintf(
 				format,
 				thisName,
 				report.CheckResponse.Stream,
 				constants.Bold(report.Plugin.Version),
-				constants.Bold(report.CheckResponse.Version),
+				constants.Bold(version),
 			)
 		}
 		notificationLines = append(notificationLines, line)

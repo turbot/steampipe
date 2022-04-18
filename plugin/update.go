@@ -17,7 +17,7 @@ func SkipUpdate(report VersionCheckReport) (bool, string) {
 	}
 
 	// 2) If we are M1, current installed version is AMD, and ARM is available - update
-	if isRunningAsMacM1() && report.Plugin.BinaryArchitecture == constants.ArchARM64 && manifestHasM1Binary(report.CheckResponse.Manifest) {
+	if isRunningAsMacM1() && manifestHasM1Binary(report.CheckResponse.Manifest) && report.Plugin.BinaryArchitecture != constants.ArchARM64 {
 		return false, ""
 	}
 
