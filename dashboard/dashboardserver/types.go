@@ -69,6 +69,12 @@ type ControlEventPayload struct {
 
 var ExecutionCompleteSchemaVersion int64 = 20220411
 
+//type ExecutionErrorPayload struct {
+//	Action      string `json:"action"`
+//	Error       string `json:"error"`
+//	ExecutionId string `json:"execution_id"`
+//}
+
 type ExecutionCompletePayload struct {
 	SchemaVersion int64                                `json:"schema_version"`
 	Action        string                               `json:"action"`
