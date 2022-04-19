@@ -5,7 +5,12 @@ import (
 	"strings"
 )
 
+// PgEscapeName escapes strings which will be usaed for Podsdtgres object identifiers
+// (table names, column names, schema names)
 func PgEscapeName(name string) string {
+	// first escape all quotes by prefixing an addition quote
+	name = strings.Replace(name, `"`, `""`, -1)
+	// now wrap the whole string in quotes
 	return fmt.Sprintf(`"%s"`, name)
 }
 
