@@ -1,7 +1,7 @@
 import Control from "./Control";
 import {
   CheckControl,
-  CheckDimensionKeysMap,
+  CheckDynamicColsMap,
   CheckGroup,
   CheckRunState,
   CheckSummary,
@@ -54,6 +54,7 @@ class Benchmark {
           nestedControl.description,
           nestedControl.results,
           nestedControl.summary,
+          nestedControl.tags,
           nestedControl.run_status,
           nestedControl.run_error
         )
@@ -178,14 +179,20 @@ class Benchmark {
         data_type_name: "TEXT",
       },
     ];
-    const dimensions = this.get_dimension_keys();
+    const { dimensions, tags } = this.get_dynamic_cols();
+    Object.keys(tags).forEach((tag) =>
+      columns.push({
+        name: tag,
+        data_type_name: "TEXT",
+      })
+    );
     Object.keys(dimensions).forEach((dimension) =>
       columns.push({
         name: dimension,
         data_type_name: "TEXT",
       })
     );
-    const rows = this.get_data_rows(Object.keys(dimensions));
+    const rows = this.get_data_rows(Object.keys(tags), Object.keys(dimensions));
     // let rows: LeafNodeDataRow[] = [];
     // this._benchmarks.forEach(benchmark => {
     //   rows = [...rows, ...benchmark.get_data_rows()]
@@ -200,26 +207,29 @@ class Benchmark {
     };
   }
 
-  get_dimension_keys(): CheckDimensionKeysMap {
-    let keys = {};
+  get_dynamic_cols(): CheckDynamicColsMap {
+    let keys = {
+      dimensions: {},
+      tags: {},
+    };
     this._benchmarks.forEach((benchmark) => {
-      const subBenchmarkKeys = benchmark.get_dimension_keys();
+      const subBenchmarkKeys = benchmark.get_dynamic_cols();
       keys = merge(keys, subBenchmarkKeys);
     });
     this._controls.forEach((control) => {
-      const controlKeys = control.get_dimension_keys();
+      const controlKeys = control.get_dynamic_cols();
       keys = merge(keys, controlKeys);
     });
     return keys;
   }
 
-  get_data_rows(dimensions: string[]): LeafNodeDataRow[] {
+  get_data_rows(tags: string[], dimensions: string[]): LeafNodeDataRow[] {
     let rows: LeafNodeDataRow[] = [];
     this._benchmarks.forEach((benchmark) => {
-      rows = [...rows, ...benchmark.get_data_rows(dimensions)];
+      rows = [...rows, ...benchmark.get_data_rows(tags, dimensions)];
     });
     this._controls.forEach((control) => {
-      rows = [...rows, ...control.get_data_rows(dimensions)];
+      rows = [...rows, ...control.get_data_rows(tags, dimensions)];
     });
     return rows;
   }

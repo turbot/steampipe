@@ -36,11 +36,16 @@ export interface CheckLeafNodeDataGroupSummary {
   status: CheckSummary;
 }
 
-export interface CheckDimensionKeysMap {
+export interface CheckDynamicValueMap {
   [dimension: string]: boolean;
 }
 
-interface CheckTags {
+export interface CheckDynamicColsMap {
+  dimensions: CheckDynamicValueMap;
+  tags: CheckDynamicValueMap;
+}
+
+export interface CheckTags {
   [key: string]: string;
 }
 

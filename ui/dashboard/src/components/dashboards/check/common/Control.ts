@@ -1,8 +1,9 @@
 import {
-  CheckDimensionKeysMap,
+  CheckDynamicColsMap,
   CheckResult,
   CheckRunState,
   CheckSummary,
+  CheckTags,
 } from "./index";
 import { LeafNodeDataRow } from "../../common";
 
@@ -15,6 +16,7 @@ class Control {
   private readonly _description: string | undefined;
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
+  private readonly _tags: CheckTags;
   private readonly _run_state: CheckRunState;
   private readonly _run_error: string | undefined;
 
@@ -27,6 +29,7 @@ class Control {
     description: string | undefined,
     results: CheckResult[] | undefined,
     summary: CheckSummary | undefined,
+    tags: CheckTags | undefined,
     run_state: number,
     run_error: string | undefined
   ) {
@@ -44,6 +47,7 @@ class Control {
       skip: 0,
       error: 0,
     };
+    this._tags = tags || {};
     this._run_state = Control._getRunState(run_state);
     this._run_error = run_error;
   }
@@ -88,8 +92,14 @@ class Control {
     return this._results;
   }
 
-  get_dimension_keys(): CheckDimensionKeysMap {
-    const dimensionKeysMap = {};
+  get_dynamic_cols(): CheckDynamicColsMap {
+    const dimensionKeysMap = {
+      dimensions: {},
+      tags: {},
+    };
+
+    Object.keys(this._tags).forEach((t) => (dimensionKeysMap.tags[t] = true));
+
     if (this._results.length === 0) {
       return dimensionKeysMap;
     }
@@ -99,12 +109,12 @@ class Control {
     //   }
     // }
     for (const dimension of this._results[0].dimensions) {
-      dimensionKeysMap[dimension.key] = true;
+      dimensionKeysMap.dimensions[dimension.key] = true;
     }
     return dimensionKeysMap;
   }
 
-  get_data_rows(dimensions: string[]): LeafNodeDataRow[] {
+  get_data_rows(tags: string[], dimensions: string[]): LeafNodeDataRow[] {
     let rows: LeafNodeDataRow[] = [];
     this._results.forEach((result) => {
       const row: LeafNodeDataRow = [
@@ -119,10 +129,16 @@ class Control {
         result.status,
       ];
 
+      tags.forEach((tag) => {
+        const val = this._tags[tag];
+        row.push(val === undefined ? null : val);
+      });
+
       dimensions.forEach((dimension) => {
         const val = result.dimensions.find((d) => d.key === dimension);
         row.push(val === undefined ? null : val.value);
       });
+
       rows.push(row);
     });
     return rows;
