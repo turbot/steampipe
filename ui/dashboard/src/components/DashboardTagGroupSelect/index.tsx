@@ -3,7 +3,7 @@ import { classNames } from "../../utils/styles";
 import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
-import { sortBy, startCase } from "lodash";
+import { sortBy } from "lodash";
 import { useParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
@@ -30,15 +30,15 @@ const DashboardTagGroupSelect = () => {
         label: "Type",
       },
     ];
-    for (const dashboardTagKey of dashboardTags.keys) {
-      if (!o.find((i) => i.tag === dashboardTagKey)) {
-        o.push({
-          groupBy: "tag",
-          tag: dashboardTagKey,
-          label: startCase(dashboardTagKey),
-        });
-      }
-    }
+    // for (const dashboardTagKey of dashboardTags.keys) {
+    //   if (!o.find((i) => i.tag === dashboardTagKey)) {
+    //     o.push({
+    //       groupBy: "tag",
+    //       tag: dashboardTagKey,
+    //       label: startCase(dashboardTagKey),
+    //     });
+    //   }
+    // }
     return sortBy(o, ["label"]);
   }, [dashboardTags.keys]);
 

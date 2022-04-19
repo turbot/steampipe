@@ -539,6 +539,12 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 	diags = decodeProperty(content, "title", &benchmark.Title, runCtx)
 	res.handleDecodeDiags(diags)
 
+	diags = decodeProperty(content, "type", &benchmark.Type, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "display", &benchmark.Display, runCtx)
+	res.handleDecodeDiags(diags)
+
 	// now add children
 	if res.Success() {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}

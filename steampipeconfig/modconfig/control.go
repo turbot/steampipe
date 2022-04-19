@@ -44,8 +44,10 @@ type Control struct {
 	Paths           []NodePath           `json:"-"`
 
 	// dashboard specific properties
-	Base  *Control `hcl:"base" json:"-"`
-	Width *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Base    *Control `hcl:"base" json:"-"`
+	Width   *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string  `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Display *string  `cty:"display" hcl:"display" json:"display,omitempty"`
 
 	parents []ModTreeItem
 }
@@ -327,6 +329,11 @@ func (c *Control) GetWidth() int {
 	return *c.Width
 }
 
+// GetDisplay implements DashboardLeafNode
+func (c *Control) GetDisplay() *string {
+	return c.Display
+}
+
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (c *Control) GetUnqualifiedName() string {
 	return c.UnqualifiedName
@@ -409,6 +416,12 @@ func (c *Control) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	}
 	if c.Params == nil {
 		c.Params = c.Base.Params
+	}
+	if c.Type == nil {
+		c.Type = c.Base.Type
+	}
+	if c.Display == nil {
+		c.Display = c.Base.Display
 	}
 	c.MergeRuntimeDependencies(c.Base)
 }

@@ -29,6 +29,7 @@ func (c *ControlEventHooks) OnControlComplete(ctx context.Context, controlRun co
 	event := &dashboardevents.ControlComplete{
 		Control:     controlRun,
 		Progress:    progress,
+		Name:        c.CheckRun.Name,
 		ExecutionId: c.CheckRun.executionTree.id,
 		Session:     c.CheckRun.SessionId,
 	}
@@ -39,6 +40,7 @@ func (c *ControlEventHooks) OnControlError(ctx context.Context, controlRun contr
 	var event = &dashboardevents.ControlError{
 		Control:     controlRun,
 		Progress:    progress,
+		Name:        c.CheckRun.Name,
 		ExecutionId: c.CheckRun.executionTree.id,
 		Session:     c.CheckRun.SessionId,
 	}

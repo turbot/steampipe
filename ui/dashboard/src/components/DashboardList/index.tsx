@@ -163,15 +163,20 @@ const Section = ({
             )}
           </div>
           <div className="hidden md:block col-span-6 space-x-2">
-            {Object.entries(dashboard.tags || {}).map(([key, value]) => (
-              <DashboardTag
-                key={key}
-                tagKey={key}
-                tagValue={value}
-                dispatch={dispatch}
-                searchValue={searchValue}
-              />
-            ))}
+            {Object.entries(dashboard.tags || {}).map(([key, value]) => {
+              if (key !== "category" && key !== "service" && key !== "type") {
+                return null;
+              }
+              return (
+                <DashboardTag
+                  key={key}
+                  tagKey={key}
+                  tagValue={value}
+                  dispatch={dispatch}
+                  searchValue={searchValue}
+                />
+              );
+            })}
           </div>
         </div>
       ))}

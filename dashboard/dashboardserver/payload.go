@@ -148,6 +148,7 @@ func buildControlCompletePayload(event *dashboardevents.ControlComplete) ([]byte
 	payload := ControlEventPayload{
 		Action:      "control_complete",
 		Control:     event.Control,
+		Name:        event.Name,
 		Progress:    event.Progress,
 		ExecutionId: event.ExecutionId,
 	}
@@ -157,6 +158,7 @@ func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, erro
 	payload := ControlEventPayload{
 		Action:      "control_error",
 		Control:     event.Control,
+		Name:        event.Name,
 		Progress:    event.Progress,
 		ExecutionId: event.ExecutionId,
 	}
@@ -180,6 +182,15 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 	}
 	return json.Marshal(payload)
 }
+
+//func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, error) {
+//	payload := ExecutionErrorPayload{
+//		Action:      "execution_error",
+//		Error:       event.Error.Error(),
+//		ExecutionId: event.ExecutionId,
+//	}
+//	return json.Marshal(payload)
+//}
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
 	payload := ExecutionCompletePayload{

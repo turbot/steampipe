@@ -1,4 +1,5 @@
-import { BasePrimitiveProps } from "../../common";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
+import Benchmark from "./Benchmark";
 
 // export interface IControl {
 //   name: string;
@@ -35,7 +36,16 @@ export interface CheckLeafNodeDataGroupSummary {
   status: CheckSummary;
 }
 
-interface CheckTags {
+export interface CheckDynamicValueMap {
+  [dimension: string]: boolean;
+}
+
+export interface CheckDynamicColsMap {
+  dimensions: CheckDynamicValueMap;
+  tags: CheckDynamicValueMap;
+}
+
+export interface CheckTags {
   [key: string]: string;
 }
 
@@ -85,7 +95,20 @@ export interface CheckExecutionTree {
   root: CheckGroup;
 }
 
-export interface CheckProps extends BasePrimitiveProps {
-  root: CheckGroup;
-  error?: Error;
-}
+type CheckType = "summary" | "table" | null;
+
+export type CheckProps = BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
+    type?: CheckType;
+    properties: {
+      display: "all" | "none";
+      type?: CheckType;
+    };
+  };
+
+export type BenchmarkTreeProps = BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
+    properties: {
+      benchmark: Benchmark;
+    };
+  };

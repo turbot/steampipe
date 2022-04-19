@@ -1,5 +1,11 @@
 import useDeepCompareEffect from "use-deep-compare-effect";
-import { AlarmIcon, OKIcon, UnknownIcon } from "../../../constants/icons";
+import {
+  AlarmIcon,
+  InfoIcon,
+  OKIcon,
+  SkipIcon,
+  UnknownIcon,
+} from "../../../constants/icons";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -8,20 +14,20 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
+import { ControlDimension } from "../check/Benchmark";
+import {
+  ErrorIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
+} from "../../../constants/icons";
 import { isEmpty, isObject } from "lodash";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
-import {
-  ErrorIcon,
-  SortAscendingIcon,
-  SortDescendingIcon,
-} from "../../../constants/icons";
-import { useSortBy, useTable } from "react-table";
 import { useDashboard } from "../../../hooks/useDashboard";
-import { ControlDimension } from "../check/Benchmark";
+import { useSortBy, useTable } from "react-table";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
@@ -159,15 +165,46 @@ const CellValue = ({
   } else if (dataType === "control_status") {
     switch (value) {
       case "alarm":
+        cellContent = (
+          <span title="Status = Alarm">
+            <AlarmIcon className="text-alert w-5 h-5" />
+          </span>
+        );
+        break;
       case "error":
-      case "invalid":
-        cellContent = <AlarmIcon className="text-alert w-5 h-5" />;
+        cellContent = (
+          <span title="Status = Error">
+            <AlarmIcon className="text-alert w-5 h-5" />
+          </span>
+        );
         break;
       case "ok":
-        cellContent = <OKIcon className="text-ok w-5 h-5" />;
+        cellContent = (
+          <span title="Status = OK">
+            <OKIcon className="text-ok w-5 h-5" />
+          </span>
+        );
+        break;
+      case "info":
+        cellContent = (
+          <span title="Status = Info">
+            <InfoIcon className="text-info w-5 h-5" />
+          </span>
+        );
+        break;
+      case "skip":
+        cellContent = (
+          <span title="Status = Skipped">
+            <SkipIcon className="text-tbd w-5 h-5" />
+          </span>
+        );
         break;
       default:
-        cellContent = <UnknownIcon className="text-foreground-light w-5 h-5" />;
+        cellContent = (
+          <span title="Status = Unknown">
+            <UnknownIcon className="text-foreground-light w-5 h-5" />
+          </span>
+        );
     }
   } else if (dataType === "control_dimensions") {
     cellContent = (

@@ -4,10 +4,18 @@ import {
   DashboardDefinition,
 } from "../../../../hooks/useDashboard";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
+import { useState } from "react";
+
+interface EventMap {
+  [name: string]: any;
+}
 
 interface LayoutPanelProps {
+  allowExpand?: boolean;
   children: null | JSX.Element | JSX.Element[];
+  className?: string;
   definition: DashboardDefinition | ContainerDefinition;
+  events?: EventMap;
   isDashboard?: boolean;
   withNarrowVertical?: boolean;
   withPadding?: boolean;
@@ -15,8 +23,11 @@ interface LayoutPanelProps {
 }
 
 const LayoutPanel = ({
+  allowExpand = false,
   children,
+  className,
   definition,
+  events = {},
   isDashboard = false,
   withNarrowVertical = false,
   withPadding = false,
@@ -30,8 +41,10 @@ const LayoutPanel = ({
         withNarrowVertical ? "gap-y-2" : "gap-y-4 md:gap-y-6",
         panelWidthClass,
         withPadding ? "p-4" : null,
-        "auto-rows-min"
+        "auto-rows-min",
+        className
       )}
+      {...events}
     >
       {withTitle && definition.title && isDashboard && (
         <h1 className={classNames("col-span-12")}>{definition.title}</h1>

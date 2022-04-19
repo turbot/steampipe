@@ -7,6 +7,7 @@ import (
 type ControlComplete struct {
 	Progress    *controlstatus.ControlProgress
 	Control     controlstatus.ControlRunStatusProvider
+	Name        string
 	Session     string
 	ExecutionId string
 }

@@ -1,7 +1,6 @@
-import Benchmark from "../../check/Benchmark";
+import Benchmark, { BenchmarkTree } from "../../check/Benchmark";
 import Card from "../../Card";
 import Container from "../Container";
-import Control from "../../check/Control";
 import ErrorPanel from "../../Error";
 import Image from "../../Image";
 import Panel from "../Panel";
@@ -34,13 +33,25 @@ const Children = ({
       switch (child.node_type) {
         case "benchmark":
           return (
+            <Benchmark key={child.name} {...child} />
+            // <Panel
+            //   key={child.name}
+            //   definition={child}
+            //   allowExpand={allowPanelExpand}
+            //   withTitle={withTitle}
+            // >
+            //   <Benchmark {...child.execution_tree} />
+            // </Panel>
+          );
+        case "benchmark_tree":
+          return (
             <Panel
               key={child.name}
               definition={child}
               allowExpand={allowPanelExpand}
               withTitle={withTitle}
             >
-              <Benchmark {...child.execution_tree} />
+              <BenchmarkTree {...child} />
             </Panel>
           );
         case "card":
@@ -67,18 +78,24 @@ const Children = ({
             </Panel>
           );
         case "container":
-          return <Container key={child.name} definition={child} />;
-        case "control":
           return (
-            <Panel
+            <Container
               key={child.name}
+              allowChildPanelExpand={child.allow_child_panel_expand}
               definition={child}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <Control {...child} />
-            </Panel>
+            />
           );
+        // case "control":
+        //   return (
+        //     <Panel
+        //       key={child.name}
+        //       definition={child}
+        //       allowExpand={allowPanelExpand}
+        //       withTitle={withTitle}
+        //     >
+        //       <Control {...child} />
+        //     </Panel>
+        //   );
         case "dashboard":
           return <Dashboard key={child.name} definition={child} />;
         case "error":

@@ -36,6 +36,7 @@ interface PanelProps {
   allowExpand?: boolean;
   forceBackground?: boolean;
   ready?: boolean;
+  withOverflow?: boolean;
   withTitle?: boolean;
 }
 
@@ -45,6 +46,7 @@ const Panel = ({
   allowExpand = true,
   forceBackground = false,
   ready = true,
+  withOverflow = false,
   withTitle = true,
 }: PanelProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
@@ -159,8 +161,9 @@ const Panel = ({
                       : "border-background"
                   )
                 : null,
-              (definition.node_type === "table" &&
-                get(definition, "properties.type") !== "line") ||
+              withOverflow ||
+                (definition.node_type === "table" &&
+                  get(definition, "properties.type") !== "line") ||
                 get(definition, "properties.type") === "table"
                 ? "overflow-x-auto"
                 : "overflow-x-hidden"

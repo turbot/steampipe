@@ -287,6 +287,18 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 	case *dashboardevents.DashboardComplete:
 		log.Println("[TRACE] dashboard complete event", *e)
 
+	//case *dashboardevents.ExecutionError:
+	//	log.Println("[TRACE] execution error event", *e)
+	//	payload, payloadError = buildExecutionErrorPayload(e)
+	//	if payloadError != nil {
+	//		return
+	//	}
+	//	dashboardName := e.Root.GetName()
+	//	s.mutex.Lock()
+	//	s.writePayloadToSession(e.Session, payload)
+	//	s.mutex.Unlock()
+	//	outputReady(s.context, fmt.Sprintf("Execution complete: %s", dashboardName))
+
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)
 		payload, payloadError = buildExecutionCompletePayload(e)

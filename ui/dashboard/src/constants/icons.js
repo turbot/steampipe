@@ -9,6 +9,7 @@ import {
   XIcon as XIconOutline,
 } from "@heroicons/react/outline";
 import {
+  ArrowCircleRightIcon as ArrowCircleRightIconSolid,
   CheckIcon as CheckIconSolid,
   QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
@@ -36,6 +37,7 @@ export const ExpandBenchmarkIcon = PlusSmIconOutline;
 export const AlarmIcon = XIconSolid;
 export const InfoIcon = InformationCircleIconSolid;
 export const OKIcon = CheckIconSolid;
+export const SkipIcon = ArrowCircleRightIconSolid;
 export const UnknownIcon = QuestionMarkCircleIconSolid;
 
 // Table
