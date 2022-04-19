@@ -47,6 +47,13 @@ func getDataLocation() string {
 	}
 	return loc
 }
+
+// location where the dump file will be stored, so that it can be later restored after connections
+// refresh in a new installation
+func getBackupLocation() string {
+	return filepath.Join(filepaths.EnsureDatabaseDir(), "backup.tar")
+}
+
 func getRootCertLocation() string {
 	return filepath.Join(getDataLocation(), constants.RootCert)
 }
@@ -69,6 +76,14 @@ func getInitDbBinaryExecutablePath() string {
 
 func getPostgresBinaryExecutablePath() string {
 	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PostgresExecutable)
+}
+
+func getPgDumpBinaryExecutablePath() string {
+	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PgDumpExecutable)
+}
+
+func getPgRestoreBinaryExecutablePath() string {
+	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PgRestoreExecutable)
 }
 
 func getDBSignatureLocation() string {

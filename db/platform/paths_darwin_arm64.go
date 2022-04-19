@@ -4,7 +4,9 @@
 package platform
 
 var Paths = PlatformPaths{
-	TarFileName:        "postgres-darwin-arm_64.txz",
-	InitDbExecutable:   "initdb",
-	PostgresExecutable: "postgres",
+	TarFileName:         "postgres-darwin-arm_64.txz",
+	InitDbExecutable:    "initdb",
+	PostgresExecutable:  "postgres",
+	PgDumpExecutable:    "pg_dump",
+	PgRestoreExecutable: "pg_restore",
 }
