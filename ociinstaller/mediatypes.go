@@ -5,6 +5,7 @@ import (
 	"runtime"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 // Steampipe Media Types
@@ -59,7 +60,7 @@ func MediaTypeForPlatform(imageType ImageType) []string {
 	case ImageTypeDatabase:
 		return []string{fmt.Sprintf(layerFmtTar, imageType, runtime.GOOS, arch)}
 	case ImageTypeFdw:
-		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
+		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, utils.UnderlyingArch())} // Detect the underlying architecture(amd64/arm64)
 	case ImageTypePlugin:
 		pluginMediaTypes := []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
 		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
