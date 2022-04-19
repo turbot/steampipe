@@ -341,6 +341,7 @@ const Benchmark = (props: InnerCheckProps) => {
                 properties: {
                   label: "Skipped",
                   value: summary.skip,
+                  icon: "heroicons-solid:arrow-circle-right",
                 },
               },
             ],
