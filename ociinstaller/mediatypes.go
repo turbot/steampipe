@@ -77,6 +77,8 @@ func MediaTypeForPlatform(imageType ImageType) ([]string, error) {
 		}
 		return pluginMediaTypes, nil
 	}
+	// there are cases(dashboard commands) where we have a different imageType, we need to return empty
+	// in such cases and not return error
 	return []string{}, nil
 }
 
