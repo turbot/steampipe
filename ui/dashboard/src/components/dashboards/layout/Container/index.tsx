@@ -23,10 +23,7 @@ const Container = ({
   withNarrowVertical,
 }: ContainerProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const {
-    dispatch,
-    themeContext: { theme },
-  } = useDashboard();
+  const { dispatch } = useDashboard();
   return (
     <LayoutPanel
       allowExpand={allowExpand}
