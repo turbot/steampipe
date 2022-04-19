@@ -65,7 +65,7 @@ func MediaTypeForPlatform(imageType ImageType) []string {
 		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
 			// add the amd64 layer as well, so that we can fall back to it
 			// this is required for plugins which don't have an arm64 build yet
-			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, constants.ArchAMD64, runtime.GOOS))
+			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, constants.ArchAMD64))
 		}
 		return pluginMediaTypes
 	}
