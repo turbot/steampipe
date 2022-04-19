@@ -65,6 +65,7 @@ func pluginNotificationMessage(reports []plugin.VersionCheckReport) []string {
 		} else {
 			version := report.CheckResponse.Version
 			format := fmt.Sprintf("  %%-%ds @ %%-10s       %%10s → %%-10s", longestNameLength)
+			// an arm64 binary of the plugin might exist for the same version
 			if report.Plugin.Version == report.CheckResponse.Version {
 				version = fmt.Sprintf("%s (arm64)", version)
 			}
