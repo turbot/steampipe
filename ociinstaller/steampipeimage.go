@@ -69,8 +69,12 @@ func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, im
 	var mediaTypes []string
 	Image := o.newSteampipeImage()
 	Image.ImageRef = ref
+	mediaType, err := MediaTypeForPlatform(imageType)
+	if err != nil {
+		return nil, err
+	}
 
-	mediaTypes = append(mediaTypes, MediaTypeForPlatform(imageType)...)
+	mediaTypes = append(mediaTypes, mediaType...)
 	mediaTypes = append(mediaTypes, SharedMediaTypes(imageType)...)
 	mediaTypes = append(mediaTypes, ConfigMediaTypes()...)
 
@@ -125,7 +129,11 @@ func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
 	res := &DbImage{}
 
 	// get the binary jar file
-	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("db")[0])
+	mediaType, err := MediaTypeForPlatform("db")
+	if err != nil {
+		return nil, err
+	}
+	foundLayers := findLayersForMediaType(layers, mediaType[0])
 	if len(foundLayers) != 1 {
 		return nil, fmt.Errorf("invalid Image - should contain 1 installation file per platform, found %d", len(foundLayers))
 	}
@@ -149,7 +157,11 @@ func getFdwImageData(layers []ocispec.Descriptor) (*HubImage, error) {
 	res := &HubImage{}
 
 	// get the binary (steampipe-postgres-fdw.so) info
-	foundLayers := findLayersForMediaType(layers, MediaTypeForPlatform("fdw")[0])
+	mediaType, err := MediaTypeForPlatform("fdw")
+	if err != nil {
+		return nil, err
+	}
+	foundLayers := findLayersForMediaType(layers, mediaType[0])
 	if len(foundLayers) != 1 {
 		return nil, fmt.Errorf("invalid image - image should contain 1 binary file per platform, found %d", len(foundLayers))
 	}
@@ -190,7 +202,12 @@ func getPluginImageData(layers []ocispec.Descriptor) (*PluginImage, error) {
 	var foundLayers []ocispec.Descriptor
 	// get the binary plugin file info
 	// iterate in order of mediatypes - as given by MediaTypeForPlatform (see function docs)
-	for _, mediaType := range MediaTypeForPlatform("plugin") {
+	mediaTypes, err := MediaTypeForPlatform("plugin")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, mediaType := range mediaTypes {
 		// find out the layer with the correct media type
 		foundLayers = findLayersForMediaType(layers, mediaType)
 		if len(foundLayers) == 1 {
