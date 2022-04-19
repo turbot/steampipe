@@ -129,7 +129,7 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 		if current, ok := resourceMaps.Benchmarks[name]; ok {
 			diff := prev.Diff(current)
 			if diff.HasChanges() {
-				event.ChangedControls = append(event.ChangedBenchmarks, diff)
+				event.ChangedBenchmarks = append(event.ChangedBenchmarks, diff)
 			}
 		} else {
 			event.DeletedBenchmarks = append(event.DeletedBenchmarks, prev)
