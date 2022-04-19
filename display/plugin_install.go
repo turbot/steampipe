@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/utils"
@@ -103,27 +102,30 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 	}
 
 	if len(installedOrUpdated) < len(reports) {
-		skipCount := len(reports) - len(installedOrUpdated)
-		asString := []string{}
+		installSkipReports := []string{}
 		for _, report := range reports {
-			reportAsSkipped := helpers.StringSliceContains([]string{constants.PluginNotInstalled, constants.PluginNotFound}, report.SkipReason)
-			if report.Skipped && reportAsSkipped {
-				asString = append(asString, report.skipString())
+			showReport := true
+			if report.SkipReason == constants.PluginAlreadyInstalled || report.SkipReason == constants.PluginLatestAlreadyInstalled {
+				showReport = false
+			}
+			if report.Skipped && showReport {
+				installSkipReports = append(installSkipReports, report.skipString())
 			}
 		}
 
-		if (len(canBeInstalled) + len(canBeUpdated) + len(notFound)) > 0 {
+		skipCount := len(installSkipReports)
+		if (len(installSkipReports)) > 0 {
 			fmt.Printf(
 				"\nSkipped the following %s:\n\n%s\n",
 				utils.Pluralize("plugin", skipCount),
-				strings.Join(asString, "\n\n"),
+				strings.Join(installSkipReports, "\n\n"),
 			)
 		}
 
 		if len(canBeInstalled) > 0 {
-			asString := []string{}
+			pluginList := []string{}
 			for _, r := range canBeInstalled {
-				asString = append(asString, r.Plugin)
+				pluginList = append(pluginList, r.Plugin)
 			}
 			fmt.Println()
 			fmt.Printf(
@@ -132,14 +134,15 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				utils.Pluralize("is", len(canBeInstalled)),
 				constants.Bold(fmt.Sprintf(
 					"steampipe plugin install %s",
-					strings.Join(asString, " "),
+					strings.Join(pluginList, " "),
 				)),
 			)
 		}
+
 		if len(canBeUpdated) > 0 {
-			asString := []string{}
+			pluginList := []string{}
 			for _, r := range canBeUpdated {
-				asString = append(asString, r.Plugin)
+				pluginList = append(pluginList, r.Plugin)
 			}
 			fmt.Println()
 			fmt.Printf(
@@ -148,7 +151,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				utils.Pluralize("is", len(canBeUpdated)),
 				constants.Bold(fmt.Sprintf(
 					"steampipe plugin update %s",
-					strings.Join(asString, " "),
+					strings.Join(pluginList, " "),
 				)),
 			)
 		}
