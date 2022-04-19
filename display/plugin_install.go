@@ -75,6 +75,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 	installedOrUpdated := PluginInstallReports{}
 	canBeInstalled := PluginInstallReports{}
 	canBeUpdated := PluginInstallReports{}
+	notFound := PluginInstallReports{}
 
 	for _, report := range reports {
 		report.IsUpdateReport = isUpdateReport
@@ -84,6 +85,8 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 			canBeInstalled = append(canBeInstalled, report)
 		} else if report.SkipReason == constants.PluginAlreadyInstalled {
 			canBeUpdated = append(canBeUpdated, report)
+		} else if report.SkipReason == constants.PluginNotFound {
+			notFound = append(notFound, report)
 		}
 	}
 
@@ -99,26 +102,30 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 	}
 
 	if len(installedOrUpdated) < len(reports) {
-		skipCount := len(reports) - len(installedOrUpdated)
-		asString := []string{}
+		installSkipReports := []string{}
 		for _, report := range reports {
-			if report.Skipped && report.SkipReason == constants.PluginNotInstalled {
-				asString = append(asString, report.skipString())
+			showReport := true
+			if report.SkipReason == constants.PluginAlreadyInstalled || report.SkipReason == constants.PluginLatestAlreadyInstalled {
+				showReport = false
+			}
+			if report.Skipped && showReport {
+				installSkipReports = append(installSkipReports, report.skipString())
 			}
 		}
 
-		if (len(canBeInstalled) + len(canBeUpdated)) > 0 {
+		skipCount := len(installSkipReports)
+		if (len(installSkipReports)) > 0 {
 			fmt.Printf(
 				"\nSkipped the following %s:\n\n%s\n",
 				utils.Pluralize("plugin", skipCount),
-				strings.Join(asString, "\n\n"),
+				strings.Join(installSkipReports, "\n\n"),
 			)
 		}
 
 		if len(canBeInstalled) > 0 {
-			asString := []string{}
+			pluginList := []string{}
 			for _, r := range canBeInstalled {
-				asString = append(asString, r.Plugin)
+				pluginList = append(pluginList, r.Plugin)
 			}
 			fmt.Println()
 			fmt.Printf(
@@ -127,14 +134,15 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				utils.Pluralize("is", len(canBeInstalled)),
 				constants.Bold(fmt.Sprintf(
 					"steampipe plugin install %s",
-					strings.Join(asString, " "),
+					strings.Join(pluginList, " "),
 				)),
 			)
 		}
+
 		if len(canBeUpdated) > 0 {
-			asString := []string{}
+			pluginList := []string{}
 			for _, r := range canBeUpdated {
-				asString = append(asString, r.Plugin)
+				pluginList = append(pluginList, r.Plugin)
 			}
 			fmt.Println()
 			fmt.Printf(
@@ -143,7 +151,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				utils.Pluralize("is", len(canBeUpdated)),
 				constants.Bold(fmt.Sprintf(
 					"steampipe plugin update %s",
-					strings.Join(asString, " "),
+					strings.Join(pluginList, " "),
 				)),
 			)
 		}

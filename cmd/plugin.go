@@ -247,8 +247,8 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	pluginExists, _ := plugin.Exists(pluginName)
-	if pluginExists {
+	pluginAlreadyInstalled, _ := plugin.Exists(pluginName)
+	if pluginAlreadyInstalled {
 		// set the bar to MAX
 		bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
@@ -264,7 +264,11 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 	} else {
 		// let the bar append itself with the current installation step
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+			if report != nil && report.SkipReason == constants.PluginNotFound {
+				return strutil.Resize(constants.PluginNotFound, 20)
+			} else {
+				return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+			}
 		})
 		report = installPlugin(ctx, pluginName, false, bar)
 	}
@@ -446,12 +450,11 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 	}()
 
 	image, err := plugin.Install(ctx, pluginName, progress)
-	org, name, stream := image.ImageRef.GetOrgNameAndStream()
-
 	if err != nil {
 		msg := ""
+		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
-			msg = "Not found"
+			msg = constants.PluginNotFound
 		} else {
 			msg = err.Error()
 		}
@@ -463,6 +466,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		}
 	}
 
+	org, name, stream := image.ImageRef.GetOrgNameAndStream()
 	versionString := ""
 	if image.Config.Plugin.Version != "" {
 		versionString = " v" + image.Config.Plugin.Version
