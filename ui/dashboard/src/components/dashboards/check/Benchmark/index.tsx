@@ -61,18 +61,6 @@ const CheckSummary = ({ summary }) => {
       <pre
         className={classNames(
           "inline",
-          summary.skip > 0 ? null : "text-foreground-lightest"
-        )}
-      >{`${padStart(summary.skip, 5)}`}</pre>
-      <pre
-        className={classNames(
-          "inline",
-          summary.info > 0 ? "text-info" : "text-foreground-lightest"
-        )}
-      >{`${padStart(summary.info, 5)}`}</pre>
-      <pre
-        className={classNames(
-          "inline",
           summary.alarm > 0 ? "text-alert" : "text-foreground-lightest"
         )}
       >{`${padStart(summary.alarm, 5)}`}</pre>
@@ -82,6 +70,18 @@ const CheckSummary = ({ summary }) => {
           summary.error > 0 ? "text-alert" : "text-foreground-lightest"
         )}
       >{`${padStart(summary.error, 5)}`}</pre>
+      <pre
+        className={classNames(
+          "inline",
+          summary.info > 0 ? "text-info" : "text-foreground-lightest"
+        )}
+      >{`${padStart(summary.info, 5)}`}</pre>
+      <pre
+        className={classNames(
+          "inline",
+          summary.skip > 0 ? null : "text-foreground-lightest"
+        )}
+      >{`${padStart(summary.skip, 5)}`}</pre>
     </div>
   );
 };
@@ -372,10 +372,10 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
       <div className="flex flex-grow"></div>
       <div className="flex text-foreground-light space-x-4 tabular-nums justify-end px-1">
         <pre className="inline">{`${padStart("OK", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Skip", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Info", 5)}`}</pre>
         <pre className="inline">{`${padStart("Alarm", 5)}`}</pre>
         <pre className="inline">{`${padStart("Error", 5)}`}</pre>
+        <pre className="inline">{`${padStart("Info", 5)}`}</pre>
+        <pre className="inline">{`${padStart("Skip", 5)}`}</pre>
       </div>
       <BenchmarkNode depth={0} benchmark={props.properties.benchmark} />
     </div>
