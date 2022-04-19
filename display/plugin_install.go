@@ -2,6 +2,7 @@ package display
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/turbot/steampipe/constants"
@@ -9,7 +10,14 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-type InstallReport struct {
+type PluginInstallReports []*PluginInstallReport
+
+// making the type compatible with sort.Interface so that we can use the sort package utilities
+func (i PluginInstallReports) Len() int                 { return len(i) }
+func (i PluginInstallReports) Swap(lIdx, rIdx int)      { i[lIdx], i[rIdx] = i[rIdx], i[lIdx] }
+func (i PluginInstallReports) Less(lIdx, rIdx int) bool { return i[lIdx].Plugin < i[rIdx].Plugin }
+
+type PluginInstallReport struct {
 	Skipped        bool
 	Plugin         string
 	SkipReason     string
@@ -18,14 +26,14 @@ type InstallReport struct {
 	IsUpdateReport bool
 }
 
-func (i *InstallReport) skipString() string {
+func (i *PluginInstallReport) skipString() string {
 	ref := ociinstaller.NewSteampipeImageRef(i.Plugin)
 	_, name, stream := ref.GetOrgNameAndStream()
 
 	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, stream), i.SkipReason)
 }
 
-func (i *InstallReport) installString() string {
+func (i *PluginInstallReport) installString() string {
 	thisReport := []string{}
 	if i.IsUpdateReport {
 		thisReport = append(
@@ -54,7 +62,7 @@ func (i *InstallReport) installString() string {
 	return strings.Join(thisReport, "\n")
 }
 
-func (i *InstallReport) String() string {
+func (i *PluginInstallReport) String() string {
 	if !i.Skipped {
 		return i.installString()
 	} else {
@@ -63,10 +71,10 @@ func (i *InstallReport) String() string {
 }
 
 // PrintInstallReports Prints out the installation reports onto the console
-func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
-	installedOrUpdated := []InstallReport{}
-	canBeInstalled := []InstallReport{}
-	canBeUpdated := []InstallReport{}
+func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
+	installedOrUpdated := PluginInstallReports{}
+	canBeInstalled := PluginInstallReports{}
+	canBeUpdated := PluginInstallReports{}
 
 	for _, report := range reports {
 		report.IsUpdateReport = isUpdateReport
@@ -79,7 +87,10 @@ func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 		}
 	}
 
+	sort.Stable(reports)
+
 	if len(installedOrUpdated) > 0 {
+		fmt.Println()
 		asString := []string{}
 		for _, report := range installedOrUpdated {
 			asString = append(asString, report.installString())
@@ -91,19 +102,18 @@ func PrintInstallReports(reports []InstallReport, isUpdateReport bool) {
 		skipCount := len(reports) - len(installedOrUpdated)
 		asString := []string{}
 		for _, report := range reports {
-			if report.Skipped {
+			if report.Skipped && report.SkipReason == constants.PluginNotInstalled {
 				asString = append(asString, report.skipString())
 			}
 		}
-		// some have skipped
-		if len(installedOrUpdated) > 0 {
-			fmt.Println()
+
+		if (len(canBeInstalled) + len(canBeUpdated)) > 0 {
+			fmt.Printf(
+				"\nSkipped the following %s:\n\n%s\n",
+				utils.Pluralize("plugin", skipCount),
+				strings.Join(asString, "\n\n"),
+			)
 		}
-		fmt.Printf(
-			"Skipped the following %s:\n\n%s\n",
-			utils.Pluralize("plugin", skipCount),
-			strings.Join(asString, "\n\n"),
-		)
 
 		if len(canBeInstalled) > 0 {
 			asString := []string{}

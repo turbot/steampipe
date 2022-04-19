@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/utils"
 )
 
 const (
@@ -22,11 +22,12 @@ const (
 )
 
 // Remove removes an installed plugin
-func Remove(ctx context.Context, image string, pluginConnections map[string][]modconfig.Connection) error {
+func Remove(ctx context.Context, image string, pluginConnections map[string][]modconfig.Connection) (*display.PluginRemoveReport, error) {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
 	defer statushooks.Done(ctx)
 
-	fullPluginName := ociinstaller.NewSteampipeImageRef(image).DisplayImageRef()
+	imageRef := ociinstaller.NewSteampipeImageRef(image)
+	fullPluginName := imageRef.DisplayImageRef()
 
 	// are any connections using this plugin???
 	conns := pluginConnections[fullPluginName]
@@ -34,54 +35,23 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]mo
 	installedTo := filepath.Join(filepaths.EnsurePluginDir(), filepath.FromSlash(fullPluginName))
 	_, err := os.Stat(installedTo)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("plugin '%s' not found", image)
+		return nil, fmt.Errorf("plugin '%s' not found", image)
 	}
 	// remove from file system
 	err = os.RemoveAll(installedTo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// update the version file
 	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	delete(v.Plugins, fullPluginName)
 	err = v.Save()
 
-	// store the filenames of the config files, that have the connections
-	var files = map[int]string{}
-	if len(conns) > 0 {
-		for i, con := range conns {
-			files[i] = con.DeclRange.Filename
-		}
-	}
-	connFiles := Unique(files)
-
-	if len(connFiles) > 0 {
-
-		str := []string{fmt.Sprintf("\nUninstalled plugin %s\n\nNote: the following %s %s %s steampipe %s using the '%s' plugin:", image, utils.Pluralize("file", len(connFiles)), utils.Pluralize("has", len(connFiles)), utils.Pluralize("a", len(conns)), utils.Pluralize("connection", len(conns)), image)}
-		for _, file := range connFiles {
-			str = append(str, fmt.Sprintf("\n \t* file: %s", file))
-			for _, conn := range conns {
-				if conn.DeclRange.Filename == file {
-					str = append(
-						str,
-						fmt.Sprintf(
-							"\t  connection: '%s' (line %d)",
-							conn.Name,
-							conn.DeclRange.Start.Line,
-						),
-					)
-				}
-			}
-		}
-		str = append(str, fmt.Sprintf("\nPlease remove %s to continue using steampipe", utils.Pluralize("it", len(connFiles))))
-		statushooks.Message(ctx, str...)
-		fmt.Println()
-	}
-	return err
+	return &display.PluginRemoveReport{Connections: conns, Image: imageRef}, err
 }
 
 // Exists looks up the version file and reports whether a plugin is already installed
@@ -99,8 +69,8 @@ func Exists(plugin string) (bool, error) {
 }
 
 // Install installs a plugin in the local file system
-func Install(ctx context.Context, plugin string) (*ociinstaller.SteampipeImage, error) {
-	image, err := ociinstaller.InstallPlugin(ctx, plugin)
+func Install(ctx context.Context, plugin string, sub chan struct{}) (*ociinstaller.SteampipeImage, error) {
+	image, err := ociinstaller.InstallPlugin(ctx, plugin, sub)
 	return image, err
 }
 

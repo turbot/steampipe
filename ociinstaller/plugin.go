@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/turbot/steampipe/filepaths"
@@ -17,35 +18,49 @@ import (
 )
 
 // InstallPlugin installs a plugin from an OCI Image
-func InstallPlugin(ctx context.Context, imageRef string) (*SteampipeImage, error) {
+func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*SteampipeImage, error) {
 	tempDir := NewTempDir(filepaths.EnsurePluginDir())
-	defer tempDir.Delete()
+	defer func() {
+		// send a last beacon to signal completion
+		sub <- struct{}{}
+		tempDir.Delete()
+	}()
 
 	ref := NewSteampipeImageRef(imageRef)
 	imageDownloader := NewOciDownloader()
 
+	sub <- struct{}{}
 	image, err := imageDownloader.Download(ctx, ref, ImageTypePlugin, tempDir.Path)
 	if err != nil {
 		return nil, err
 	}
 
+	sub <- struct{}{}
 	if err = installPluginBinary(image, tempDir.Path); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
+	sub <- struct{}{}
 	if err = installPluginDocs(image, tempDir.Path); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
+	sub <- struct{}{}
 	if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
 
+	sub <- struct{}{}
 	if err := updateVersionFilePlugin(image); err != nil {
 		return nil, err
 	}
 	return image, nil
 }
 
+var versionFileUpdateLock = &sync.Mutex{}
+
 func updateVersionFilePlugin(image *SteampipeImage) error {
+	versionFileUpdateLock.Lock()
+	defer versionFileUpdateLock.Unlock()
+
 	timeNow := versionfile.FormatTime(time.Now())
 	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {

@@ -1,5 +1,9 @@
 package utils
 
+import (
+	"sort"
+)
+
 // MergeStringMaps merges 'new' onto old. Any vakue existing in new but not old is added to old
 // NOTE this mutates old
 func MergeStringMaps(old, new map[string]string) map[string]string {
@@ -16,4 +20,13 @@ func MergeStringMaps(old, new map[string]string) map[string]string {
 	}
 
 	return old
+}
+
+func SortedStringKeys[V any](m map[string]V) []string {
+	keys := []string{}
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
