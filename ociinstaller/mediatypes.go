@@ -60,7 +60,12 @@ func MediaTypeForPlatform(imageType ImageType) []string {
 	case ImageTypeDatabase:
 		return []string{fmt.Sprintf(layerFmtTar, imageType, runtime.GOOS, arch)}
 	case ImageTypeFdw:
-		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, utils.UnderlyingArch())} // Detect the underlying architecture(amd64/arm64)
+		// detect the underlying architecture(amd64/arm64)
+		// we have to do this rather than just using runtime.GOARCH, because runtime.GOARCH does not give us
+		// the actual underlying architecture of the system(GOARCH can be changed during runtime)
+		arch, err := utils.UnderlyingArch()
+		utils.FailOnErrorWithMessage(err, "failed to find underlying architecture")
+		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
 	case ImageTypePlugin:
 		pluginMediaTypes := []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
 		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
