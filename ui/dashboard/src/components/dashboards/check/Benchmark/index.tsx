@@ -8,10 +8,7 @@ import { BenchmarkTreeProps, CheckProps } from "../common";
 import { classNames } from "../../../../utils/styles";
 import {
   CollapseBenchmarkIcon,
-  ErrorIcon,
   ExpandBenchmarkIcon,
-  OKIcon,
-  UnknownIcon,
 } from "../../../../constants/icons";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { default as ControlType } from "../common/Control";
@@ -100,8 +97,8 @@ const BenchmarkNodeIcon = ({ expanded, run_state }) => (
   </div>
 );
 
-const ControlNodeIcon = ({ expanded, results, run_state }) => {
-  return expanded || results.length > 0 ? (
+const ControlNodeIcon = ({ expanded, run_state }) => {
+  return (
     <div className="relative flex items-center">
       {!expanded && (
         <ExpandBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
@@ -111,21 +108,6 @@ const ControlNodeIcon = ({ expanded, results, run_state }) => {
       )}
       {(run_state === "ready" || run_state === "started") && (
         <LoadingIndicator className="absolute flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
-      )}
-    </div>
-  ) : (
-    <div className="flex items-center">
-      {run_state === "error" && (
-        <ErrorIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-      )}
-      {run_state === "complete" && (
-        <OKIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-      )}
-      {run_state === "unknown" && (
-        <UnknownIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-      )}
-      {(run_state === "ready" || run_state === "started") && (
-        <LoadingIndicator className="flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
       )}
     </div>
   );
@@ -204,10 +186,8 @@ const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
         >
           <ControlNodeIcon
             expanded={showControls}
-            results={control.results}
             run_state={control.run_state}
           />
-          {/*<CheckNodeStatus run_state={control.run_state} />*/}
           <p>{control.title || control.name}</p>
         </div>
         <CheckSummary summary={control.summary} />
@@ -313,7 +293,8 @@ const Benchmark = (props: InnerCheckProps) => {
                 properties: {
                   label: "Alarm",
                   value: summary.alarm,
-                  type: "alert",
+                  type: summary.alarm > 0 ? "alert" : null,
+                  icon: "heroicons-solid:x-circle",
                 },
               },
               {
@@ -323,7 +304,8 @@ const Benchmark = (props: InnerCheckProps) => {
                 properties: {
                   label: "Error",
                   value: summary.error,
-                  type: "alert",
+                  type: summary.error > 0 ? "alert" : null,
+                  icon: "heroicons-solid:exclamation-circle",
                 },
               },
               {

@@ -165,21 +165,46 @@ const CellValue = ({
   } else if (dataType === "control_status") {
     switch (value) {
       case "alarm":
+        cellContent = (
+          <span title="Status = Alarm">
+            <AlarmIcon className="text-alert w-5 h-5" />
+          </span>
+        );
+        break;
       case "error":
-      case "invalid":
-        cellContent = <AlarmIcon className="text-alert w-5 h-5" />;
+        cellContent = (
+          <span title="Status = Error">
+            <AlarmIcon className="text-alert w-5 h-5" />
+          </span>
+        );
         break;
       case "ok":
-        cellContent = <OKIcon className="text-ok w-5 h-5" />;
+        cellContent = (
+          <span title="Status = OK">
+            <OKIcon className="text-ok w-5 h-5" />
+          </span>
+        );
         break;
       case "info":
-        cellContent = <InfoIcon className="text-ok w-5 h-5" />;
+        cellContent = (
+          <span title="Status = Info">
+            <InfoIcon className="text-info w-5 h-5" />
+          </span>
+        );
         break;
       case "skip":
-        cellContent = <SkipIcon className="text-ok w-5 h-5" />;
+        cellContent = (
+          <span title="Status = Skipped">
+            <SkipIcon className="text-tbd w-5 h-5" />
+          </span>
+        );
         break;
       default:
-        cellContent = <UnknownIcon className="text-foreground-light w-5 h-5" />;
+        cellContent = (
+          <span title="Status = Unknown">
+            <UnknownIcon className="text-foreground-light w-5 h-5" />
+          </span>
+        );
     }
   } else if (dataType === "control_dimensions") {
     cellContent = (
