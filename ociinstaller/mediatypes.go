@@ -5,6 +5,7 @@ import (
 	"runtime"
 
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 // Steampipe Media Types
@@ -50,16 +51,23 @@ const (
 
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
 // and it's fallbacks in order of priority
-func MediaTypeForPlatform(imageType ImageType) []string {
+func MediaTypeForPlatform(imageType ImageType) ([]string, error) {
 	layerFmtGzip := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip"
 	layerFmtTar := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar"
 
 	arch := runtime.GOARCH
 	switch imageType {
 	case ImageTypeDatabase:
-		return []string{fmt.Sprintf(layerFmtTar, imageType, runtime.GOOS, arch)}
+		return []string{fmt.Sprintf(layerFmtTar, imageType, runtime.GOOS, arch)}, nil
 	case ImageTypeFdw:
-		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
+		// detect the underlying architecture(amd64/arm64)
+		// we have to do this rather than just using runtime.GOARCH, because runtime.GOARCH does not give us
+		// the actual underlying architecture of the system(GOARCH can be changed during runtime)
+		arch, err := utils.UnderlyingArch()
+		if err != nil {
+			return nil, err
+		}
+		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}, nil
 	case ImageTypePlugin:
 		pluginMediaTypes := []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
 		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
@@ -67,9 +75,11 @@ func MediaTypeForPlatform(imageType ImageType) []string {
 			// this is required for plugins which don't have an arm64 build yet
 			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, constants.ArchAMD64, runtime.GOOS))
 		}
-		return pluginMediaTypes
+		return pluginMediaTypes, nil
 	}
-	return []string{}
+	// there are cases(dashboard commands) where we have a different imageType, we need to return empty
+	// in such cases and not return error
+	return []string{}, nil
 }
 
 // SharedMediaTypes returns media types that are NOT specific to the os and arch (readmes, control files, etc)
