@@ -56,7 +56,7 @@ func getDashboardsInterestedInResourceChanges(dashboardsBeingWatched []string, e
 			for _, nodeName := range nodePath {
 				resourceParts, _ := modconfig.ParseResourceName(nodeName)
 				// We only care about changes from these resource types
-				if resourceParts.ItemType != modconfig.BlockTypeDashboard {
+				if !helpers.StringSliceContains([]string{modconfig.BlockTypeDashboard, modconfig.BlockTypeBenchmark}, resourceParts.ItemType) {
 					continue
 				}
 
