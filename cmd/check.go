@@ -125,11 +125,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	initData = initialiseCheck(ctx)
 
 	// check the init result - should we quit?
-	if shouldExit, err := handleCheckInitResult(ctx, initData); shouldExit {
+	if err := handleCheckInitResult(ctx, initData); err != nil {
 		initData.Cleanup(ctx)
 		// if there was an error, display it
 		utils.FailOnError(err)
-		return
 	}
 
 	// pull out useful properties
@@ -233,23 +232,20 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	return initData
 }
 
-func handleCheckInitResult(ctx context.Context, initData *control.InitData) (bool, error) {
+func handleCheckInitResult(ctx context.Context, initData *control.InitData) error {
 	// if there is an error or cancellation we bomb out
 	if initData.Result.Error != nil {
-		return true, initData.Result.Error
+		return initData.Result.Error
 	}
 	// cancelled?
 	if ctx != nil && ctx.Err() != nil {
-		return true, ctx.Err()
+		return ctx.Err()
 	}
 
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
-	// if there is are any warnings, exit politely
-	shouldExit := len(initData.Result.Warnings) > 0
-
-	return shouldExit, nil
+	return nil
 }
 
 func printTiming(args []string, durations []time.Duration) {
