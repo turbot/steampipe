@@ -272,6 +272,7 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
 };
 
 type InnerCheckProps = CheckProps & {
+  data?: LeafNodeData;
   benchmark: BenchmarkType | null;
 };
 
@@ -285,6 +286,7 @@ const Benchmark = (props: InnerCheckProps) => {
   return (
     <Container
       allowChildPanelExpand={false}
+      allowExpand={true}
       definition={{
         name: props.name,
         node_type: "container",
@@ -361,6 +363,7 @@ const Benchmark = (props: InnerCheckProps) => {
             ],
           },
         ],
+        data: props.data,
       }}
     />
   );
@@ -435,7 +438,13 @@ const BenchmarkWrapper = (props: CheckProps) => {
     );
   }
 
-  return <Benchmark {...props} benchmark={benchmark} />;
+  return (
+    <Benchmark
+      {...props}
+      data={benchmarkDataTable ? benchmarkDataTable : undefined}
+      benchmark={benchmark}
+    />
+  );
 };
 
 export default BenchmarkWrapper;
