@@ -130,7 +130,7 @@ func needsBackup(ctx context.Context) (bool, string, error) {
 	}
 	for _, de := range entries {
 		if de.IsDir() {
-			// check if it contains a postgres binary
+			// check if it contains a postgres binary - meaning this is a DB installation
 			isDBInstallationDirectory := helpers.FileExists(
 				filepath.Join(
 					dbBaseDirectory,
@@ -140,8 +140,8 @@ func needsBackup(ctx context.Context) (bool, string, error) {
 					"postgres",
 				),
 			)
-			// this must be the installation directory
-			// nothing else should exist here
+
+			// if not the target DB version
 			if de.Name() != constants.DatabaseVersion && isDBInstallationDirectory {
 				// this is an unknown directory.
 				// this MUST be some other installation
