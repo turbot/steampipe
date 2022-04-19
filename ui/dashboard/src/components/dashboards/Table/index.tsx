@@ -1,5 +1,11 @@
 import useDeepCompareEffect from "use-deep-compare-effect";
-import { AlarmIcon, OKIcon, UnknownIcon } from "../../../constants/icons";
+import {
+  AlarmIcon,
+  InfoIcon,
+  OKIcon,
+  SkipIcon,
+  UnknownIcon,
+} from "../../../constants/icons";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -8,20 +14,20 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
+import { ControlDimension } from "../check/Benchmark";
+import {
+  ErrorIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
+} from "../../../constants/icons";
 import { isEmpty, isObject } from "lodash";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
-import {
-  ErrorIcon,
-  SortAscendingIcon,
-  SortDescendingIcon,
-} from "../../../constants/icons";
-import { useSortBy, useTable } from "react-table";
 import { useDashboard } from "../../../hooks/useDashboard";
-import { ControlDimension } from "../check/Benchmark";
+import { useSortBy, useTable } from "react-table";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
@@ -165,6 +171,12 @@ const CellValue = ({
         break;
       case "ok":
         cellContent = <OKIcon className="text-ok w-5 h-5" />;
+        break;
+      case "info":
+        cellContent = <InfoIcon className="text-ok w-5 h-5" />;
+        break;
+      case "skip":
+        cellContent = <SkipIcon className="text-ok w-5 h-5" />;
         break;
       default:
         cellContent = <UnknownIcon className="text-foreground-light w-5 h-5" />;
