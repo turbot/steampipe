@@ -20,8 +20,10 @@ type dbStartConfig struct {
 	dbName string
 }
 
-// prepareBackup creates a backup file for the current database if it is not the same version
-// that is required
+// prepareBackup creates a backup file of the public schema for the current database
+// if it is not the same version that is required
+// If a backup was taken, this returns the name of the database that was backed up
+// so that the new database can be created with the same name. Returns `nil` otherwise
 func prepareBackup(ctx context.Context) (*string, error) {
 	needs, location, err := needsBackup(ctx)
 	if err != nil {
@@ -78,6 +80,7 @@ func takeBackup(ctx context.Context, config *dbStartConfig) error {
 	return nil
 }
 
+// startDatabaseInLocation starts up the postgres binary in a specific installation directory
 func startDatabaseInLocation(ctx context.Context, location string) (*dbStartConfig, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
@@ -114,6 +117,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*dbStartConf
 	return &dbStartConfig{cmd: cmd, port: port, dbName: dbName}, nil
 }
 
+// stopDbByCmd uses signals as suggested by https://www.postgresql.org/docs/12/server-shutdown.html
+// to try to shutdown a process - used for shutting down postgres instance spun up for extracting dump
 func stopDbByCmd(ctx context.Context, cmd *exec.Cmd) error {
 	p, err := process.NewProcess(int32(cmd.Process.Pid))
 	if err != nil {
@@ -122,6 +127,8 @@ func stopDbByCmd(ctx context.Context, cmd *exec.Cmd) error {
 	return doThreeStepPostgresExit(ctx, p)
 }
 
+// needsBackup returns true if it finds any directory in `$STEAMPIPE_INSTALL_DIR/db` other than the ones it expects
+// where a DB is installed.
 func needsBackup(ctx context.Context) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
