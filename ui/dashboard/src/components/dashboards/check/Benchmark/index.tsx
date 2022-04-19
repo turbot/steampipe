@@ -1,5 +1,6 @@
 import Error from "../../Error";
 import LoadingIndicator from "../../LoadingIndicator";
+import Panel from "../../layout/Panel";
 import padStart from "lodash/padStart";
 import Table, { TableView } from "../../Table";
 import { CheckProps } from "../common";
@@ -17,6 +18,7 @@ import { get } from "lodash";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
 import { useEffect, useMemo, useState } from "react";
+import Container from "../../layout/Container";
 
 const getPadding = (depth) => {
   switch (depth) {
@@ -269,7 +271,11 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
   );
 };
 
-const Benchmark = ({ benchmark }) => {
+type InnerCheckProps = CheckProps & {
+  benchmark: BenchmarkType | null;
+};
+
+const Benchmark = (props: InnerCheckProps) => {
   // let benchmark: BenchmarkType | null = null;
   //
   // if (rootGroups) {
@@ -283,22 +289,81 @@ const Benchmark = ({ benchmark }) => {
   //   );
   // }
 
-  if (!benchmark) {
+  if (!props.benchmark) {
     return null;
   }
 
   return (
-    <div className="p-4">
-      <div className="flex flex-grow"></div>
-      <div className="flex text-foreground-light space-x-4 tabular-nums justify-end px-1">
-        <pre className="inline">{`${padStart("OK", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Skip", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Info", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Alarm", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Error", 5)}`}</pre>
+    <>
+      <Container
+        definition={{
+          name: `${props.name}.container.summary`,
+          node_type: "container",
+          children: [
+            {
+              node_type: "card",
+              name: `${props.name}.container.summary.ok`,
+              width: 2,
+              properties: {
+                label: "OK",
+                value: props.benchmark.summary.ok,
+                type: "ok",
+              },
+            },
+            {
+              node_type: "card",
+              name: `${props.name}.container.summary.alarm`,
+              width: 2,
+              properties: {
+                label: "Alarm",
+                value: props.benchmark.summary.alarm,
+                type: "alert",
+              },
+            },
+            {
+              node_type: "card",
+              name: `${props.name}.container.summary.error`,
+              width: 2,
+              properties: {
+                label: "Error",
+                value: props.benchmark.summary.error,
+                type: "alert",
+              },
+            },
+            {
+              node_type: "card",
+              name: `${props.name}.container.summary.info`,
+              width: 2,
+              properties: {
+                label: "Info",
+                value: props.benchmark.summary.info,
+                type: "info",
+              },
+            },
+            {
+              node_type: "card",
+              name: `${props.name}.container.summary.skip`,
+              width: 2,
+              properties: {
+                label: "Skipped",
+                value: props.benchmark.summary.skip,
+              },
+            },
+          ],
+        }}
+      />
+      <div className="p-4">
+        <div className="flex flex-grow"></div>
+        <div className="flex text-foreground-light space-x-4 tabular-nums justify-end px-1">
+          <pre className="inline">{`${padStart("OK", 5)}`}</pre>
+          <pre className="inline">{`${padStart("Skip", 5)}`}</pre>
+          <pre className="inline">{`${padStart("Info", 5)}`}</pre>
+          <pre className="inline">{`${padStart("Alarm", 5)}`}</pre>
+          <pre className="inline">{`${padStart("Error", 5)}`}</pre>
+        </div>
+        <BenchmarkNode depth={0} benchmark={props.benchmark} />
       </div>
-      <BenchmarkNode depth={0} benchmark={benchmark} />
-    </div>
+    </>
   );
 };
 
@@ -306,16 +371,17 @@ const BenchmarkWrapper = (props: CheckProps) => {
   const [benchmarkTable, setBenchmarkTable] = useState<LeafNodeData | null>(
     null
   );
-  const rootGroups = props.root.groups;
+  const rootGroups = get(props, "execution_tree.root.groups", null);
+  // const rootGroups = props.root.groups;
+  const rootBenchmark = rootGroups ? rootGroups[0] : null;
 
   const benchmark = useMemo(() => {
-    if (!rootGroups) {
+    if (!rootBenchmark) {
       return null;
     }
     // let benchmark: BenchmarkType | null = null;
 
     // if (rootGroups) {
-    const rootBenchmark = rootGroups[0];
     return new BenchmarkType(
       rootBenchmark.group_id,
       rootBenchmark.title,
@@ -324,7 +390,19 @@ const BenchmarkWrapper = (props: CheckProps) => {
       rootBenchmark.controls
     );
     // }
-  }, [rootGroups]);
+  }, [rootBenchmark]);
+
+  // let benchmark: BenchmarkType | null = null;
+  // if (rootGroups) {
+  //   const rootBenchmark = rootGroups[0];
+  //   benchmark = new BenchmarkType(
+  //     rootBenchmark.group_id,
+  //     rootBenchmark.title,
+  //     rootBenchmark.description,
+  //     rootBenchmark.groups,
+  //     rootBenchmark.controls
+  //   );
+  // }
 
   useEffect(() => {
     if (
@@ -336,11 +414,45 @@ const BenchmarkWrapper = (props: CheckProps) => {
     setBenchmarkTable(benchmark.get_data_table());
   }, [benchmark]);
 
-  if (get(props, "properties.type") === "table") {
-    // @ts-ignore
-    return <Table {...props} data={benchmarkTable} />;
+  if (!benchmark) {
+    return null;
   }
-  return <Benchmark benchmark={benchmark} />;
+
+  // if (benchmarkTable) {
+  //   // @ts-ignore
+  //   return <Table {...props} data={benchmarkTable} />;
+  // }
+
+  if (rootBenchmark.type === "table") {
+    // @ts-ignore
+    return (
+      <Panel
+        definition={{
+          name: props.name,
+          node_type: props.node_type,
+          width: props.width,
+        }}
+      >
+        <Table
+          name={`${props.name}.table`}
+          node_type="table"
+          data={benchmarkTable ? benchmarkTable : undefined}
+        />
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel
+      definition={{
+        name: props.name,
+        node_type: props.node_type,
+        width: props.width,
+      }}
+    >
+      <Benchmark {...props} benchmark={benchmark} />
+    </Panel>
+  );
 };
 
 export default BenchmarkWrapper;

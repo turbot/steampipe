@@ -1,4 +1,4 @@
-import { BasePrimitiveProps } from "../../common";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 
 // export interface IControl {
 //   name: string;
@@ -91,10 +91,11 @@ export interface CheckExecutionTree {
 
 type CheckType = "summary" | "table" | null;
 
-export interface CheckProps extends BasePrimitiveProps {
-  root: CheckGroup;
-  error?: Error;
-  properties: {
+export type CheckProps = BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
     type?: CheckType;
+    properties: {
+      display: "all" | "none";
+      type?: CheckType;
+    };
   };
-}

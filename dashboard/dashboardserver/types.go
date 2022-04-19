@@ -62,6 +62,7 @@ type ExecutionPayload struct {
 type ControlEventPayload struct {
 	Action      string                                 `json:"action"`
 	Control     controlstatus.ControlRunStatusProvider `json:"control"`
+	Name        string                                 `json:"name"`
 	Progress    *controlstatus.ControlProgress         `json:"progress"`
 	ExecutionId string                                 `json:"execution_id"`
 }
