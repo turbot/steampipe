@@ -78,6 +78,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
 	var dbName *string
+	// call prepareBackup to generate the db dump file if necessary
+	// NOTE: this returns the existing database name - we use this when creating the new database
 	if d, err := prepareBackup(ctx); err != nil {
 		log.Printf("[TRACE] prepareBackup failed: %v", err)
 		return fmt.Errorf("Could not backup old data... FAILED!")

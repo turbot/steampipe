@@ -20,10 +20,8 @@ type dbStartConfig struct {
 	dbName string
 }
 
-// prepareBackup creates a backup file of the public schema for the current database
-// if it is not the same version that is required
-// If a backup was taken, this returns the name of the database that was backed up
-// so that the new database can be created with the same name. Returns `nil` otherwise
+// prepareBackup creates a backup file of the public schema for the current database, if we are migrating
+// if a backup was taken, this returns the name of the database that was backed up
 func prepareBackup(ctx context.Context) (*string, error) {
 	needs, location, err := needsBackup(ctx)
 	if err != nil {
@@ -117,8 +115,9 @@ func startDatabaseInLocation(ctx context.Context, location string) (*dbStartConf
 	return &dbStartConfig{cmd: cmd, port: port, dbName: dbName}, nil
 }
 
-// stopDbByCmd uses signals as suggested by https://www.postgresql.org/docs/12/server-shutdown.html
-// to try to shutdown a process - used for shutting down postgres instance spun up for extracting dump
+// stopDbByCmd is used for shutting down postgres instance spun up for extracting dump
+// it uses signals as suggested by https://www.postgresql.org/docs/12/server-shutdown.html
+// to try to shutdown the db process process
 func stopDbByCmd(ctx context.Context, cmd *exec.Cmd) error {
 	p, err := process.NewProcess(int32(cmd.Process.Pid))
 	if err != nil {
@@ -127,8 +126,9 @@ func stopDbByCmd(ctx context.Context, cmd *exec.Cmd) error {
 	return doThreeStepPostgresExit(ctx, p)
 }
 
-// needsBackup returns true if it finds any directory in `$STEAMPIPE_INSTALL_DIR/db` other than the ones it expects
-// where a DB is installed.
+// needsBackup checks whether the `$STEAMPIPE_INSTALL_DIR/db` directory contains any database installation
+// other than desired version.
+// it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
 func needsBackup(ctx context.Context) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
