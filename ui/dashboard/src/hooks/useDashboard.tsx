@@ -202,6 +202,7 @@ export interface AvailableDashboardsDictionary {
 export interface ContainerDefinition {
   name: string;
   node_type?: string;
+  allow_child_panel_expand?: boolean;
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];

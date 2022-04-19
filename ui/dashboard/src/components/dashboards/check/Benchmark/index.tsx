@@ -284,7 +284,7 @@ const Benchmark = (props: InnerCheckProps) => {
 
   return (
     <Container
-      allowChildPanelExpand={true}
+      allowChildPanelExpand={false}
       definition={{
         name: props.name,
         node_type: "container",
@@ -292,6 +292,7 @@ const Benchmark = (props: InnerCheckProps) => {
           {
             name: `${props.name}.container.summary`,
             node_type: "container",
+            allow_child_panel_expand: false,
             children: [
               {
                 node_type: "card",
@@ -347,6 +348,7 @@ const Benchmark = (props: InnerCheckProps) => {
           {
             name: `${props.name}.container.tree`,
             node_type: "container",
+            allow_child_panel_expand: false,
             children: [
               {
                 name: `${props.name}.container.tree.results`,

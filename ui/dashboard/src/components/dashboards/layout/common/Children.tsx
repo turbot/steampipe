@@ -78,7 +78,13 @@ const Children = ({
             </Panel>
           );
         case "container":
-          return <Container key={child.name} definition={child} />;
+          return (
+            <Container
+              key={child.name}
+              allowChildPanelExpand={child.allow_child_panel_expand}
+              definition={child}
+            />
+          );
         // case "control":
         //   return (
         //     <Panel

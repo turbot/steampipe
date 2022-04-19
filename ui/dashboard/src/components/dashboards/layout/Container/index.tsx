@@ -12,18 +12,13 @@ const Container = ({
   allowChildPanelExpand = true,
   definition,
   withNarrowVertical,
-}: ContainerProps) => {
-  return (
-    <LayoutPanel
-      definition={definition}
-      withNarrowVertical={withNarrowVertical}
-    >
-      <Children
-        allowPanelExpand={allowChildPanelExpand}
-        children={definition.children}
-      />
-    </LayoutPanel>
-  );
-};
+}: ContainerProps) => (
+  <LayoutPanel definition={definition} withNarrowVertical={withNarrowVertical}>
+    <Children
+      allowPanelExpand={allowChildPanelExpand}
+      children={definition.children}
+    />
+  </LayoutPanel>
+);
 
 export default Container;
