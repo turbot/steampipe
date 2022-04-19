@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/ociinstaller"
 	"github.com/turbot/steampipe/utils"
@@ -75,6 +76,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 	installedOrUpdated := PluginInstallReports{}
 	canBeInstalled := PluginInstallReports{}
 	canBeUpdated := PluginInstallReports{}
+	notFound := PluginInstallReports{}
 
 	for _, report := range reports {
 		report.IsUpdateReport = isUpdateReport
@@ -84,6 +86,8 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 			canBeInstalled = append(canBeInstalled, report)
 		} else if report.SkipReason == constants.PluginAlreadyInstalled {
 			canBeUpdated = append(canBeUpdated, report)
+		} else if report.SkipReason == constants.PluginNotFound {
+			notFound = append(notFound, report)
 		}
 	}
 
@@ -102,12 +106,13 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		skipCount := len(reports) - len(installedOrUpdated)
 		asString := []string{}
 		for _, report := range reports {
-			if report.Skipped && report.SkipReason == constants.PluginNotInstalled {
+			reportAsSkipped := helpers.StringSliceContains([]string{constants.PluginNotInstalled, constants.PluginNotFound}, report.SkipReason)
+			if report.Skipped && reportAsSkipped {
 				asString = append(asString, report.skipString())
 			}
 		}
 
-		if (len(canBeInstalled) + len(canBeUpdated)) > 0 {
+		if (len(canBeInstalled) + len(canBeUpdated) + len(notFound)) > 0 {
 			fmt.Printf(
 				"\nSkipped the following %s:\n\n%s\n",
 				utils.Pluralize("plugin", skipCount),
