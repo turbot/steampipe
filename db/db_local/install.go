@@ -76,8 +76,17 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
+	statushooks.SetStatus(ctx, "Preparing backups...")
+	var dbName *string
+	if d, err := prepareBackup(ctx); err != nil {
+		log.Printf("[TRACE] prepareBackup failed: %v", err)
+		return fmt.Errorf("Could not backup old data... FAILED!")
+	} else {
+		dbName = d
+	}
+
 	// run the database installation
-	err = runInstall(ctx, true)
+	err = runInstall(ctx, true, dbName)
 	if err != nil {
 		return err
 	}
@@ -144,7 +153,7 @@ func prepareDb(ctx context.Context) error {
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes...")
 		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, false); err != nil {
+		if err := runInstall(ctx, false, nil); err != nil {
 			return err
 		}
 	}
@@ -192,7 +201,7 @@ func needsInit() bool {
 	return !helpers.FileExists(getPgHbaConfLocation())
 }
 
-func runInstall(ctx context.Context, firstInstall bool) error {
+func runInstall(ctx context.Context, firstInstall bool, oldDbName *string) error {
 	utils.LogTime("db_local.runInstall start")
 	defer utils.LogTime("db_local.runInstall end")
 
@@ -245,7 +254,7 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	}
 
 	// resolve the name of the database that is to be installed
-	databaseName := resolveDatabaseName()
+	databaseName := resolveDatabaseName(oldDbName)
 	// validate db name
 	firstCharacter := databaseName[0:1]
 	var ascii int
@@ -276,9 +285,12 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	return nil
 }
 
-func resolveDatabaseName() string {
+func resolveDatabaseName(oldDbName *string) string {
 	// resolve the name of the database that is to be installed
 	// use the application constant as default
+	if oldDbName != nil {
+		return *oldDbName
+	}
 	databaseName := constants.DatabaseName
 	if envValue, exists := os.LookupEnv(constants.EnvInstallDatabase); exists && len(envValue) > 0 {
 		// use whatever is supplied, if available

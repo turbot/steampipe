@@ -304,6 +304,11 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 		return res
 	}
 
+	if err := loadBackup(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
 	return res
 }
 
