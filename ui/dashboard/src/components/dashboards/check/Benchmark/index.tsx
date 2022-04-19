@@ -1,9 +1,10 @@
+import Container from "../../layout/Container";
 import Error from "../../Error";
 import LoadingIndicator from "../../LoadingIndicator";
 import Panel from "../../layout/Panel";
 import padStart from "lodash/padStart";
 import Table, { TableView } from "../../Table";
-import { CheckProps } from "../common";
+import { BenchmarkTreeProps, CheckProps } from "../common";
 import { classNames } from "../../../../utils/styles";
 import {
   CollapseBenchmarkIcon,
@@ -18,7 +19,6 @@ import { get } from "lodash";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
 import { useEffect, useMemo, useState } from "react";
-import Container from "../../layout/Container";
 
 const getPadding = (depth) => {
   switch (depth) {
@@ -276,112 +276,119 @@ type InnerCheckProps = CheckProps & {
 };
 
 const Benchmark = (props: InnerCheckProps) => {
-  // let benchmark: BenchmarkType | null = null;
-  //
-  // if (rootGroups) {
-  //   const rootBenchmark = rootGroups[0];
-  //   benchmark = new BenchmarkType(
-  //     rootBenchmark.group_id,
-  //     rootBenchmark.title,
-  //     rootBenchmark.description,
-  //     rootBenchmark.groups,
-  //     rootBenchmark.controls
-  //   );
-  // }
-
   if (!props.benchmark) {
     return null;
   }
 
+  const summary = props.benchmark.summary;
+
   return (
-    <>
-      <Container
-        definition={{
-          name: `${props.name}.container.summary`,
-          node_type: "container",
-          children: [
-            {
-              node_type: "card",
-              name: `${props.name}.container.summary.ok`,
-              width: 2,
-              properties: {
-                label: "OK",
-                value: props.benchmark.summary.ok,
-                type: "ok",
+    <Container
+      allowChildPanelExpand={true}
+      definition={{
+        name: props.name,
+        node_type: "container",
+        children: [
+          {
+            name: `${props.name}.container.summary`,
+            node_type: "container",
+            children: [
+              {
+                node_type: "card",
+                name: `${props.name}.container.summary.ok-${summary.ok}`,
+                width: 2,
+                properties: {
+                  label: "OK",
+                  value: summary.ok,
+                  type: "ok",
+                },
               },
-            },
-            {
-              node_type: "card",
-              name: `${props.name}.container.summary.alarm`,
-              width: 2,
-              properties: {
-                label: "Alarm",
-                value: props.benchmark.summary.alarm,
-                type: "alert",
+              {
+                node_type: "card",
+                name: `${props.name}.container.summary.alarm-${summary.alarm}`,
+                width: 2,
+                properties: {
+                  label: "Alarm",
+                  value: summary.alarm,
+                  type: "alert",
+                },
               },
-            },
-            {
-              node_type: "card",
-              name: `${props.name}.container.summary.error`,
-              width: 2,
-              properties: {
-                label: "Error",
-                value: props.benchmark.summary.error,
-                type: "alert",
+              {
+                node_type: "card",
+                name: `${props.name}.container.summary.error-${summary.error}`,
+                width: 2,
+                properties: {
+                  label: "Error",
+                  value: summary.error,
+                  type: "alert",
+                },
               },
-            },
-            {
-              node_type: "card",
-              name: `${props.name}.container.summary.info`,
-              width: 2,
-              properties: {
-                label: "Info",
-                value: props.benchmark.summary.info,
-                type: "info",
+              {
+                node_type: "card",
+                name: `${props.name}.container.summary.info-${summary.info}`,
+                width: 2,
+                properties: {
+                  label: "Info",
+                  value: summary.info,
+                  type: "info",
+                },
               },
-            },
-            {
-              node_type: "card",
-              name: `${props.name}.container.summary.skip`,
-              width: 2,
-              properties: {
-                label: "Skipped",
-                value: props.benchmark.summary.skip,
+              {
+                node_type: "card",
+                name: `${props.name}.container.summary.skip-${summary.skip}`,
+                width: 2,
+                properties: {
+                  label: "Skipped",
+                  value: summary.skip,
+                },
               },
-            },
-          ],
-        }}
-      />
-      <div className="p-4">
-        <div className="flex flex-grow"></div>
-        <div className="flex text-foreground-light space-x-4 tabular-nums justify-end px-1">
-          <pre className="inline">{`${padStart("OK", 5)}`}</pre>
-          <pre className="inline">{`${padStart("Skip", 5)}`}</pre>
-          <pre className="inline">{`${padStart("Info", 5)}`}</pre>
-          <pre className="inline">{`${padStart("Alarm", 5)}`}</pre>
-          <pre className="inline">{`${padStart("Error", 5)}`}</pre>
-        </div>
-        <BenchmarkNode depth={0} benchmark={props.benchmark} />
+            ],
+          },
+          {
+            name: `${props.name}.container.tree`,
+            node_type: "container",
+            children: [
+              {
+                name: `${props.name}.container.tree.results`,
+                node_type: "benchmark_tree",
+                properties: {
+                  benchmark: props.benchmark,
+                },
+              },
+            ],
+          },
+        ],
+      }}
+    />
+  );
+};
+
+const BenchmarkTree = (props: BenchmarkTreeProps) => {
+  return (
+    <div className="p-4">
+      <div className="flex flex-grow"></div>
+      <div className="flex text-foreground-light space-x-4 tabular-nums justify-end px-1">
+        <pre className="inline">{`${padStart("OK", 5)}`}</pre>
+        <pre className="inline">{`${padStart("Skip", 5)}`}</pre>
+        <pre className="inline">{`${padStart("Info", 5)}`}</pre>
+        <pre className="inline">{`${padStart("Alarm", 5)}`}</pre>
+        <pre className="inline">{`${padStart("Error", 5)}`}</pre>
       </div>
-    </>
+      <BenchmarkNode depth={0} benchmark={props.properties.benchmark} />
+    </div>
   );
 };
 
 const BenchmarkWrapper = (props: CheckProps) => {
-  const [benchmarkTable, setBenchmarkTable] = useState<LeafNodeData | null>(
-    null
-  );
-  const rootGroups = get(props, "execution_tree.root.groups", null);
-  // const rootGroups = props.root.groups;
-  const rootBenchmark = rootGroups ? rootGroups[0] : null;
+  const [benchmarkDataTable, setBenchmarkDataTable] =
+    useState<LeafNodeData | null>(null);
+  const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
 
   const benchmark = useMemo(() => {
     if (!rootBenchmark) {
       return null;
     }
-    // let benchmark: BenchmarkType | null = null;
 
-    // if (rootGroups) {
     return new BenchmarkType(
       rootBenchmark.group_id,
       rootBenchmark.title,
@@ -389,20 +396,7 @@ const BenchmarkWrapper = (props: CheckProps) => {
       rootBenchmark.groups,
       rootBenchmark.controls
     );
-    // }
   }, [rootBenchmark]);
-
-  // let benchmark: BenchmarkType | null = null;
-  // if (rootGroups) {
-  //   const rootBenchmark = rootGroups[0];
-  //   benchmark = new BenchmarkType(
-  //     rootBenchmark.group_id,
-  //     rootBenchmark.title,
-  //     rootBenchmark.description,
-  //     rootBenchmark.groups,
-  //     rootBenchmark.controls
-  //   );
-  // }
 
   useEffect(() => {
     if (
@@ -411,96 +405,82 @@ const BenchmarkWrapper = (props: CheckProps) => {
     ) {
       return;
     }
-    setBenchmarkTable(benchmark.get_data_table());
+    setBenchmarkDataTable(benchmark.get_data_table());
   }, [benchmark]);
 
   if (!benchmark) {
     return null;
   }
 
-  // if (benchmarkTable) {
-  //   // @ts-ignore
-  //   return <Table {...props} data={benchmarkTable} />;
-  // }
-
   if (rootBenchmark.type === "table") {
-    // @ts-ignore
     return (
       <Panel
         definition={{
           name: props.name,
-          node_type: props.node_type,
+          node_type: "table",
           width: props.width,
+          data: benchmarkDataTable ? benchmarkDataTable : undefined,
         }}
+        ready={!!benchmarkDataTable}
       >
         <Table
           name={`${props.name}.table`}
           node_type="table"
-          data={benchmarkTable ? benchmarkTable : undefined}
+          data={benchmarkDataTable ? benchmarkDataTable : undefined}
         />
       </Panel>
     );
   }
 
-  return (
-    <Panel
-      definition={{
-        name: props.name,
-        node_type: props.node_type,
-        width: props.width,
-      }}
-    >
-      <Benchmark {...props} benchmark={benchmark} />
-    </Panel>
-  );
+  return <Benchmark {...props} benchmark={benchmark} />;
 };
 
 export default BenchmarkWrapper;
 
-export { ControlDimension };
+export { BenchmarkTree, ControlDimension };
 
-const res = {
-  action: "leaf_node_complete",
-  dashboard_node: {
-    name: "mike.chart.dashboard_benchmarks_anonymous_chart_0",
-    sql: "      select region, count(*) as total from aws_s3_bucket group by region order by total asc\n",
-    data: {
-      columns: [
-        {
-          name: "region",
-          data_type_name: "TEXT",
-        },
-        {
-          name: "total",
-          data_type_name: "INT8",
-        },
-      ],
-      rows: [
-        ["us-west-2", 1],
-        ["ap-northeast-2", 1],
-        ["ap-south-1", 1],
-        ["ap-southeast-1", 1],
-        ["ap-southeast-2", 1],
-        ["ca-central-1", 1],
-        ["us-west-1", 1],
-        ["ap-northeast-1", 1],
-        ["eu-north-1", 1],
-        ["eu-west-1", 1],
-        ["eu-west-2", 1],
-        ["eu-west-3", 1],
-        ["sa-east-1", 1],
-        ["us-east-2", 1],
-        ["eu-central-1", 2],
-        ["us-east-1", 15],
-      ],
-    },
-    properties: {
-      type: "column",
-    },
-    node_type: "chart",
-    dashboard: "mike.dashboard.benchmarks",
-    source_definition:
-      '  chart {\n    type = "column"\n    sql = <<EOQ\n      select region, count(*) as total from aws_s3_bucket group by region order by total asc\n    EOQ\n  }',
-  },
-  execution_id: "0x14001696e10",
-};
+// const res = {
+//   action: "leaf_node_complete",
+//   dashboard_node: {
+//     name: "mike.chart.dashboard_benchmarks_anonymous_chart_0",
+//     sql: "      select region, count(*) as total from aws_s3_bucket group by region order by total asc\n",
+//     data: {
+//       columns: [
+//         {
+//           name: "region",
+//           data_type_name: "TEXT",
+//         },
+//         {
+//           name: "total",
+//           data_type_name: "INT8",
+//         },
+//       ],
+//       rows: [
+//         ["us-west-2", 1],
+//         ["ap-northeast-2", 1],
+//         ["ap-south-1", 1],
+//         ["ap-southeast-1", 1],
+//         ["ap-southeast-2", 1],
+//         ["ca-central-1", 1],
+//         ["us-west-1", 1],
+//         ["ap-northeast-1", 1],
+//         ["eu-north-1", 1],
+//         ["eu-west-1", 1],
+//         ["eu-west-2", 1],
+//         ["eu-west-3", 1],
+//         ["sa-east-1", 1],
+//         ["us-east-2", 1],
+//         ["eu-central-1", 2],
+//         ["us-east-1", 15],
+//       ],
+//     },
+//     properties: {
+//       type: "column",
+//     },
+//     node_type: "chart",
+//     dashboard: "mike.dashboard.benchmarks",
+//     source_definition:
+//       '  chart {\n    type = "column"\n    sql = <<EOQ\n      select region, count(*) as total from aws_s3_bucket group by region order by total asc\n    EOQ\n  }',
+//   },
+//   execution_id: "0x14001696e10",
+// };

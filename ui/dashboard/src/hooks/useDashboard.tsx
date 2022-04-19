@@ -362,6 +362,79 @@ const wrapDefinitionInArtificialDashboard = (
   };
 };
 
+const updateCheckNode = (dashboardCheckNode, action) => {
+  let panelPath: string = findPathDeep(
+    dashboardCheckNode,
+    (v, k) => k === "control_id" && v === action.control.control_id
+  );
+
+  if (!panelPath) {
+    console.warn("Cannot find control to update", action.control.control_id);
+    return null;
+  }
+
+  panelPath = panelPath.replace(".control_id", "");
+
+  let newCheckNode = {
+    ...dashboardCheckNode,
+  };
+
+  return set(newCheckNode, panelPath, action.control);
+};
+
+const updateDashboardWithControlEvent = (dashboard, action) => {
+  if (dashboard.artificial) {
+    let updatedCheckNode = updateCheckNode(dashboard, action);
+
+    if (!updatedCheckNode) {
+      console.warn("Cannot find control to update", action.control.control_id);
+      return null;
+    }
+
+    const rootBenchmark = get(
+      updatedCheckNode,
+      "execution_tree.root.groups[0]",
+      {}
+    );
+    updatedCheckNode = set(updatedCheckNode, "execution_tree.root.groups[0]", {
+      ...rootBenchmark,
+    });
+
+    return updatedCheckNode;
+  } else {
+    let nodePath: string = findPathDeep(
+      dashboard,
+      (v, k) => k === "name" && v === action.name
+    );
+
+    if (!nodePath) {
+      console.warn("Cannot find dashboard node to update", action.name);
+      return null;
+    }
+
+    nodePath = nodePath.replace(".name", "");
+
+    let node = get(dashboard, nodePath);
+
+    const rootBenchmark = get(node, "execution_tree.root.groups[0]", {});
+    node = set(node, "execution_tree.root.groups[0]", { ...rootBenchmark });
+
+    if (!node) {
+      console.warn("Cannot find dashboard node to update", action.name);
+      return null;
+    }
+
+    let updatedNode = updateCheckNode(node, action);
+
+    if (!updatedNode) {
+      console.warn("Cannot find control to update", action.control.control_id);
+      return null;
+    }
+
+    return set(dashboard, nodePath, updatedNode);
+  }
+};
+
 function reducer(state, action) {
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
@@ -400,7 +473,7 @@ function reducer(state, action) {
       // For benchmarks and controls that are run directly from a mod,
       // we need to wrap these in an artificial dashboard so we can treat
       // it just like any other dashboard
-      if (action.dashboard_node.type !== "dashboard") {
+      if (action.dashboard_node.node_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
       } else {
         dashboard = addDataToDashboard(action.dashboard_node, state.sqlDataMap);
@@ -443,78 +516,123 @@ function reducer(state, action) {
       // console.error("Got execution error", action);
       return state;
     case DashboardActions.CONTROL_COMPLETE:
-      // We're not expecting execution events for this ID
-      if (action.execution_id !== state.execution_id) {
-        return state;
-      }
-
-      if (state.dashboard.artificial) {
-        let panelPath: string = findPathDeep(
-          state.dashboard,
-          (v, k) => k === "control_id" && v === action.control.control_id
-        );
-
-        if (!panelPath) {
-          console.warn(
-            "Cannot find control to update",
-            action.control.control_id
-          );
-          return state;
-        }
-
-        panelPath = panelPath.replace(".control_id", "");
-        let newDashboard = {
-          ...state.dashboard,
-        };
-        newDashboard = set(newDashboard, panelPath, action.control);
-
-        return {
-          ...state,
-          dashboard: newDashboard,
-        };
-      }
-
-      // let controlPath: string = findPathDeep(
-      //   state.dashboard,
-      //   (v, k) => k === "name" && v === dashboard_node.name
-      // );
-      // console.log({
-      //   action,
-      // });
-      return state;
     case DashboardActions.CONTROL_ERROR:
       // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
         return state;
       }
 
-      if (state.dashboard.artificial) {
-        let panelPath: string = findPathDeep(
-          state.dashboard,
-          (v, k) => k === "control_id" && v === action.control.control_id
-        );
+      const updatedDashboard = updateDashboardWithControlEvent(
+        state.dashboard,
+        action
+      );
 
-        if (!panelPath) {
-          console.warn(
-            "Cannot find control to update",
-            action.control.control_id
-          );
-          return state;
-        }
-
-        panelPath = panelPath.replace(".control_id", "");
-        let newDashboard = {
-          ...state.dashboard,
-        };
-        newDashboard = set(newDashboard, panelPath, action.control);
-
-        return {
-          ...state,
-          dashboard: newDashboard,
-        };
+      if (!updatedDashboard) {
+        return state;
       }
 
-      return state;
+      return {
+        ...state,
+        dashboard: updatedDashboard,
+      };
+
+    // if (state.dashboard.artificial) {
+    //   const updatedNode = updateCheckNode(state.dashboard, action);
+    //
+    //   if (!updatedNode) {
+    //     console.warn(
+    //       "Cannot find control to update",
+    //       action.control.control_id
+    //     );
+    //     return state;
+    //   }
+    //
+    //   return {
+    //     ...state,
+    //     dashboard: updatedNode,
+    //   };
+    // } else {
+    //   let nodePath: string = findPathDeep(
+    //     state.dashboard,
+    //     (v, k) => k === "name" && v === action.name
+    //   );
+    //
+    //   if (!nodePath) {
+    //     console.warn("Cannot find dashboard node to update", action.name);
+    //     return state;
+    //   }
+    //
+    //   nodePath = nodePath.replace(".name", "");
+    //
+    //   let node = get(state.dashboard, nodePath);
+    //
+    //   if (!node) {
+    //     console.warn("Cannot find dashboard node to update", action.name);
+    //     return state;
+    //   }
+    //
+    //   const updatedNode = updateCheckNode(state.dashboard, action);
+    //
+    //   if (!updatedNode) {
+    //     console.warn(
+    //       "Cannot find control to update",
+    //       action.control.control_id
+    //     );
+    //     return state;
+    //   }
+    //
+    //   let newDashboard = {
+    //     ...state.dashboard,
+    //   };
+    //   newDashboard = set(newDashboard, nodePath, updatedNode);
+    //
+    //   return {
+    //     ...state,
+    //     dashboard: newDashboard,
+    //   };
+    // }
+
+    // let controlPath: string = findPathDeep(
+    //   state.dashboard,
+    //   (v, k) => k === "name" && v === dashboard_node.name
+    // );
+    // console.log({
+    //   action,
+    // });
+    // return state;
+    // case DashboardActions.CONTROL_ERROR:
+    //   // We're not expecting execution events for this ID
+    //   if (action.execution_id !== state.execution_id) {
+    //     return state;
+    //   }
+    //
+    //   if (state.dashboard.artificial) {
+    //     let panelPath: string = findPathDeep(
+    //       state.dashboard,
+    //       (v, k) => k === "control_id" && v === action.control.control_id
+    //     );
+    //
+    //     if (!panelPath) {
+    //       console.warn(
+    //         "Cannot find control to update",
+    //         action.control.control_id
+    //       );
+    //       return state;
+    //     }
+    //
+    //     panelPath = panelPath.replace(".control_id", "");
+    //     let newDashboard = {
+    //       ...state.dashboard,
+    //     };
+    //     newDashboard = set(newDashboard, panelPath, action.control);
+    //
+    //     return {
+    //       ...state,
+    //       dashboard: newDashboard,
+    //     };
+    //   }
+    //
+    //   return state;
     case DashboardActions.LEAF_NODE_COMPLETE: {
       // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {

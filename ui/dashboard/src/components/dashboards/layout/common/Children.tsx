@@ -1,4 +1,4 @@
-import Benchmark from "../../check/Benchmark";
+import Benchmark, { BenchmarkTree } from "../../check/Benchmark";
 import Card from "../../Card";
 import Container from "../Container";
 import ErrorPanel from "../../Error";
@@ -33,7 +33,7 @@ const Children = ({
       switch (child.node_type) {
         case "benchmark":
           return (
-            <Benchmark {...child} />
+            <Benchmark key={child.name} {...child} />
             // <Panel
             //   key={child.name}
             //   definition={child}
@@ -42,6 +42,17 @@ const Children = ({
             // >
             //   <Benchmark {...child.execution_tree} />
             // </Panel>
+          );
+        case "benchmark_tree":
+          return (
+            <Panel
+              key={child.name}
+              definition={child}
+              allowExpand={allowPanelExpand}
+              withTitle={withTitle}
+            >
+              <BenchmarkTree {...child} />
+            </Panel>
           );
         case "card":
           return (

@@ -1,4 +1,5 @@
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
+import Benchmark from "./Benchmark";
 
 // export interface IControl {
 //   name: string;
@@ -97,5 +98,12 @@ export type CheckProps = BasePrimitiveProps &
     properties: {
       display: "all" | "none";
       type?: CheckType;
+    };
+  };
+
+export type BenchmarkTreeProps = BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
+    properties: {
+      benchmark: Benchmark;
     };
   };

@@ -3,17 +3,25 @@ import LayoutPanel from "../common/LayoutPanel";
 import { ContainerDefinition } from "../../../../hooks/useDashboard";
 
 interface ContainerProps {
+  allowChildPanelExpand?: boolean;
   definition: ContainerDefinition;
   withNarrowVertical?: boolean;
 }
 
-const Container = ({ definition, withNarrowVertical }: ContainerProps) => {
+const Container = ({
+  allowChildPanelExpand = true,
+  definition,
+  withNarrowVertical,
+}: ContainerProps) => {
   return (
     <LayoutPanel
       definition={definition}
       withNarrowVertical={withNarrowVertical}
     >
-      <Children children={definition.children} />
+      <Children
+        allowPanelExpand={allowChildPanelExpand}
+        children={definition.children}
+      />
     </LayoutPanel>
   );
 };
