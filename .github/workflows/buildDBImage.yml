@@ -162,20 +162,6 @@ jobs:
           chmod +x $EXTRACT_DIR/bin/pg_dump
           chmod +x $EXTRACT_DIR/bin/pg_restore
 
-      - name: Pull & Extract - windows amd64
-        env:
-          OS: windows
-          ARCH: amd64
-          TGZ_FILE: postgres-windows-x86_64.txz #(name of the file once unzipped.  per platform but not same as in the jar name)
-        run: |-
-          JAR_FILE=${NAME_PREFIX}-${OS}-${ARCH}-${PG_VERSION}.jar
-          EXTRACT_DIR=extracted-${OS}-${ARCH}-${PG_VERSION}
-
-          curl -L  -O -J -L ${PATH_BASE}/${NAME_PREFIX}-${OS}-${ARCH}/${PG_VERSION}/${JAR_FILE}
-          unzip -o ${JAR_FILE}
-          mkdir $EXTRACT_DIR
-          tar -xf $TGZ_FILE --directory $EXTRACT_DIR
-
       - name: Build Config JSON
         run: |-
           JSON_STRING=$( jq -n \
@@ -236,7 +222,6 @@ jobs:
               --manifest-annotations annotations.json \
               extracted-darwin-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-amd64.layer.v1+tar \
               extracted-darwin-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
-              extracted-windows-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.windows-amd64.layer.v1+tar \
               extracted-linux-amd64-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
               extracted-linux-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
 
