@@ -65,7 +65,7 @@ func MediaTypeForPlatform(imageType ImageType) ([]string, error) {
 		// the actual underlying architecture of the system(GOARCH can be changed during runtime)
 		arch, err := utils.UnderlyingArch()
 		if err != nil {
-			return []string{}, err
+			return nil, err
 		}
 		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}, nil
 	case ImageTypePlugin:
@@ -76,8 +76,9 @@ func MediaTypeForPlatform(imageType ImageType) ([]string, error) {
 			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, constants.ArchAMD64, runtime.GOOS))
 		}
 		return pluginMediaTypes, nil
+	default:
+		return nil, fmt.Errorf("invalid image type: %s", imageType)
 	}
-	return []string{}, nil
 }
 
 // SharedMediaTypes returns media types that are NOT specific to the os and arch (readmes, control files, etc)
