@@ -105,16 +105,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 	// just execute the root - it will traverse the tree
 	e.Root.execute(ctx, e.client, parallelismLock)
 
-	executeFinishWaitCtx := ctx
-	if ctx.Err() != nil {
-		// use a Background context - since the original context has been cancelled
-		// this lets us wait for the active control queries to cancel
-		c, cancel := context.WithTimeout(context.Background(), constants.ControlQueryCancellationTimeoutSecs*time.Second)
-		executeFinishWaitCtx = c
-		defer cancel()
-	}
-	// wait till we can acquire all semaphores - meaning that all active runs have finished
-	parallelismLock.Acquire(executeFinishWaitCtx, maxParallelGoRoutines)
+	e.waitForActiveRunsToComplete(ctx, parallelismLock, maxParallelGoRoutines)
 
 	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
 
@@ -123,6 +114,20 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 	e.DimensionColorGenerator.populate(e)
 
 	return failures
+}
+
+func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) {
+	waitCtx := ctx
+	// if the context was already cancelled, we must creat ea new one to use  when waiting to acquire the lock
+	if ctx.Err() != nil {
+		// use a Background context - since the original context has been cancelled
+		// this lets us wait for the active control queries to cancel
+		c, cancel := context.WithTimeout(context.Background(), constants.ControlQueryCancellationTimeoutSecs*time.Second)
+		waitCtx = c
+		defer cancel()
+	}
+	// wait till we can acquire all semaphores - meaning that all active runs have finished
+	parallelismLock.Acquire(waitCtx, maxParallelGoRoutines)
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {

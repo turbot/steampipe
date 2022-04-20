@@ -55,9 +55,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 
 	// if inputs have been passed, set them first
 	if len(inputs) > 0 {
-		if err := executionTree.SetInputs(inputs); err != nil {
-			return err
-		}
+		executionTree.SetInputs(inputs)
 	}
 
 	go executionTree.Execute(ctx)
@@ -97,9 +95,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	}
 
 	// set the inputs
-	if err := executionTree.SetInputs(inputs); err != nil {
-		return err
-	}
+	executionTree.SetInputs(inputs)
 
 	return nil
 }

@@ -409,7 +409,11 @@ func (s *Server) clearSession(ctx context.Context, session *melody.Session) {
 
 	s.mutex.Lock()
 	sessionId := s.getSessionId(session)
+	s.mutex.Unlock()
+
 	dashboardexecute.Executor.CancelExecutionForSession(ctx, sessionId)
+
+	s.mutex.Lock()
 	delete(s.dashboardClients, sessionId)
 	s.mutex.Unlock()
 }

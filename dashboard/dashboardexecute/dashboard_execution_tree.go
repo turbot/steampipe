@@ -142,13 +142,12 @@ func (e *DashboardExecutionTree) GetName() string {
 	return e.workspace.Mod.ShortName
 }
 
-func (e *DashboardExecutionTree) SetInputs(inputValues map[string]interface{}) error {
+func (e *DashboardExecutionTree) SetInputs(inputValues map[string]interface{}) {
 	for name, value := range inputValues {
 		e.inputValues[name] = value
 		// now see if anyone needs to be notified about this input
 		e.notifyInputAvailable(name)
 	}
-	return nil
 }
 
 // ChildCompleteChan implements DashboardNodeParent
