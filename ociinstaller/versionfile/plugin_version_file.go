@@ -2,15 +2,20 @@ package versionfile
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
+	"github.com/turbot/steampipe/utils"
 )
 
 const PluginStructVersion = 20220411
+
+var versionFileMutex = sync.Mutex{}
 
 // LegacyPluginVersionFile is a struct used to migrate the
 // PluginVersionFile to serialize with snake case property names(migrated in v0.14.0)
@@ -19,6 +24,7 @@ type LegacyPluginVersionFile struct {
 }
 
 type PluginVersionFile struct {
+	mtx           *sync.Mutex
 	Plugins       map[string]*InstalledVersion `json:"plugins"`
 	StructVersion int64                        `json:"struct_version"`
 }
@@ -33,6 +39,8 @@ func (f *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
 	legacyState := prev.(LegacyPluginVersionFile)
 	f.StructVersion = PluginStructVersion
 	f.Plugins = make(map[string]*InstalledVersion, len(legacyState.Plugins))
+	f.mtx = &versionFileMutex
+
 	for p, i := range legacyState.Plugins {
 		f.Plugins[p] = &InstalledVersion{
 			Name:            i.Name,
@@ -48,6 +56,7 @@ func (f *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
 
 func NewPluginVersionFile() *PluginVersionFile {
 	return &PluginVersionFile{
+		mtx:           &versionFileMutex,
 		Plugins:       map[string]*InstalledVersion{},
 		StructVersion: PluginStructVersion,
 	}
@@ -77,12 +86,28 @@ func (f *PluginVersionFile) Save() ([]byte, error) {
 }
 
 func (f *PluginVersionFile) write(path string) ([]byte, error) {
+	if f.mtx == nil {
+		f.mtx = &versionFileMutex
+	}
+	f.mtx.Lock()
+	defer f.mtx.Unlock()
+
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing version file", err)
 		return nil, err
 	}
 	return versionFileJSON, os.WriteFile(path, versionFileJSON, 0644)
+}
+
+func (f *PluginVersionFile) validate() []error {
+	errFound := []error{}
+	for _, iv := range f.Plugins {
+		if len(iv.ImageDigest) == 0 {
+			errFound = append(errFound, fmt.Errorf(iv.Name))
+		}
+	}
+	return errFound
 }
 
 // delete the file on disk if it exists
@@ -112,5 +137,13 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 		data.Plugins[key].Name = key
 	}
 
-	return &data, nil
+	if validationErrors := data.validate(); len(validationErrors) > 0 {
+		// the data in the file is corrupt
+		for _, e := range validationErrors {
+			log.Printf("[WARN] information for %s is invalid in %s\n", e.Error(), path)
+		}
+	}
+	data.mtx = &versionFileMutex
+
+	return &data, utils.CombineErrors(data.validate()...)
 }
