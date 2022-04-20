@@ -251,13 +251,14 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 
 		for _, changedDashboardName := range changedDashboardNames {
 			s.mutex.Lock()
-			for sessionId, dashboardClientInfo := range s.dashboardClients {
+			sessionMap := s.dashboardClients
+			s.mutex.Unlock()
+			for sessionId, dashboardClientInfo := range sessionMap {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == changedDashboardName {
 					// 					outputMessage(s.context, fmt.Sprintf("Dashboard Changed - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
 					_ = dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
-			s.mutex.Unlock()
 		}
 
 		// Special case - if we previously had a workspace error, any previously existing dashboards
@@ -272,13 +273,14 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 
 		for _, newDashboardName := range newDashboardNames {
 			s.mutex.Lock()
-			for sessionId, dashboardClientInfo := range s.dashboardClients {
+			sessionMap := s.dashboardClients
+			s.mutex.Unlock()
+			for sessionId, dashboardClientInfo := range sessionMap {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == newDashboardName {
 					// 					outputMessage(s.context, fmt.Sprintf("New Dashboard - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
 					_ = dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
-			s.mutex.Unlock()
 		}
 
 	case *dashboardevents.DashboardError:
