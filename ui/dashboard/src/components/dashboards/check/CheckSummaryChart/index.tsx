@@ -13,7 +13,7 @@ interface ProgressBarProps {
 
 interface CheckSummaryChartProps {
   summary: CheckSummary;
-  rootSummary: CheckSummary;
+  // rootSummary: CheckSummary;
 }
 
 const getWidth = (x, y) => {
@@ -31,7 +31,7 @@ const ProgressBar = ({ className, value }: ProgressBarProps) => {
   }
   return (
     <div
-      className={className}
+      className={classNames("h-3", className)}
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={100}
@@ -42,35 +42,60 @@ const ProgressBar = ({ className, value }: ProgressBarProps) => {
 
 const CheckSummaryChart = ({
   summary,
-  rootSummary,
-}: CheckSummaryChartProps) => {
-  const maxAlerts = rootSummary.alarm + rootSummary.error;
-  const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
+}: // rootSummary,
+CheckSummaryChartProps) => {
+  // const maxAlerts = rootSummary.alarm + rootSummary.error;
+  // const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
   const { alarm, error, ok, info, skip } = summary;
-  let alertsWidth = getWidth(maxAlerts, maxNonAlerts);
-  let nonAlertsWidth = getWidth(maxNonAlerts, maxAlerts);
-  if (alertsWidth > nonAlertsWidth) {
-    alertsWidth -= 2;
-  } else {
-    nonAlertsWidth -= 2;
+  const total = alarm + error + ok + info + skip;
+  // let alertsWidth = getWidth(maxAlerts, maxNonAlerts);
+  // let nonAlertsWidth = getWidth(maxNonAlerts, maxAlerts);
+  // if (alertsWidth > nonAlertsWidth) {
+  //   alertsWidth -= 2;
+  // } else {
+  //   nonAlertsWidth -= 2;
+  // }
+
+  if (total === 0) {
+    return null;
   }
 
   return (
     <div className="flex w-96">
-      <div className="my-auto px-0" style={{ width: `${alertsWidth}%` }}>
-        <ProgressBarGroup className="flex-row-reverse">
-          <ProgressBar className="bg-alert border border-alert" value={alarm} />
-          <ProgressBar className="border border-alert" value={error} />
-        </ProgressBarGroup>
-      </div>
-      <div className="h-6 w-0 border-l border-black-scale-4" />
-      <div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>
-        <ProgressBarGroup>
-          <ProgressBar className="bg-ok border border-ok" value={ok} />
-          <ProgressBar className="bg-info border border-info" value={info} />
-          <ProgressBar className="bg-tbd border border-tbd" value={skip} />
-        </ProgressBarGroup>
-      </div>
+      <ProgressBar
+        className="border border-alert"
+        value={(error / total) * 100}
+      />
+      <ProgressBar
+        className="bg-alert border border-alert"
+        value={(alarm / total) * 100}
+      />
+      <ProgressBar
+        className="bg-ok border border-ok"
+        value={(ok / total) * 100}
+      />
+      <ProgressBar
+        className="bg-info border border-info"
+        value={(info / total) * 100}
+      />
+      <ProgressBar
+        className="bg-tbd border border-tbd"
+        value={(skip / total) * 100}
+      />
+      {/*<div className="my-auto px-0" style={{ width: `${alertsWidth}%` }}>*/}
+      {/*  <ProgressBarGroup className="flex-row-reverse">*/}
+      {/*    <ProgressBar className="bg-alert border border-alert" value={alarm} />*/}
+      {/*    <ProgressBar className="border border-alert" value={error} />*/}
+      {/*  </ProgressBarGroup>*/}
+      {/*</div>*/}
+      {/*<div className="h-6 w-0 border-l border-black-scale-4" />*/}
+      {/*<div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>*/}
+      {/*  <ProgressBarGroup>*/}
+      {/*    <ProgressBar className="bg-ok border border-ok" value={ok} />*/}
+      {/*    <ProgressBar className="bg-info border border-info" value={info} />*/}
+      {/*    <ProgressBar className="bg-tbd border border-tbd" value={skip} />*/}
+      {/*  </ProgressBarGroup>*/}
+      {/*</div>*/}
     </div>
   );
 };
