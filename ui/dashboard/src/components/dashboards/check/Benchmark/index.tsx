@@ -388,8 +388,6 @@ const Benchmark = (props: InnerCheckProps) => {
     return null;
   }
 
-  console.log(benchmarkDataTable);
-
   const summary = props.benchmark.summary;
 
   return (
