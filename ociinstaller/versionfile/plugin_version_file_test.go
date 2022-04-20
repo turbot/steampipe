@@ -35,7 +35,7 @@ func TestWrite(t *testing.T) {
 		InstallDate:     timeNow2.Format(time.UnixDate),
 	}
 	v.Plugins[googlePlugin.Name] = &googlePlugin
-	if err := v.write(fileName); err != nil {
+	if _, err := v.write(fileName); err != nil {
 		t.Errorf("\nError writing file: %s", err.Error())
 	}
 	v2, err := readPluginVersionFile(fileName)

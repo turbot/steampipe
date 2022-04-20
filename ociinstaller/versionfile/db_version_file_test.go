@@ -29,7 +29,7 @@ func TestWriteDatabaseVersionFile(t *testing.T) {
 	v.FdwExtension.LastCheckedDate = timeNow2.Format(time.UnixDate)
 	v.FdwExtension.InstallDate = timeNow2.Format(time.UnixDate)
 
-	if err := v.write(fileName); err != nil {
+	if _, err := v.write(fileName); err != nil {
 		t.Errorf("\nError writing file: %s", err.Error())
 	}
 
