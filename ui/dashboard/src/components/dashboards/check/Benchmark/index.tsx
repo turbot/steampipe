@@ -1,10 +1,12 @@
+import CheckSummaryChart from "../CheckSummaryChart";
 import Container from "../../layout/Container";
 import Error from "../../Error";
 import LoadingIndicator from "../../LoadingIndicator";
 import Panel from "../../layout/Panel";
+import padEnd from "lodash/padEnd";
 import padStart from "lodash/padStart";
-import Table, { TableView } from "../../Table";
-import { BenchmarkTreeProps, CheckProps } from "../common";
+import Table from "../../Table";
+import { BenchmarkTreeProps, CheckProps, CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
 import {
   CollapseBenchmarkIcon,
@@ -39,144 +41,206 @@ const getPadding = (depth) => {
 interface ControlNodeProps {
   depth: number;
   control: ControlType;
+  rootSummary: CheckSummary;
 }
 
 interface BenchmarkNodeProps {
   depth: number;
   benchmark: BenchmarkType;
+  rootSummary: CheckSummary;
 }
 
-const CheckSummary = ({ summary }) => {
-  return (
-    <div className="flex tabular-nums space-x-4 justify-end group-hover:bg-black-scale-1 px-1">
-      <pre
-        className={classNames(
-          "inline",
-          summary.ok > 0 ? "text-ok" : "text-foreground-lightest"
-        )}
-      >{`${padStart(summary.ok, 5)}`}</pre>
-      <pre
-        className={classNames(
-          "inline",
-          summary.alarm > 0 ? "text-alert" : "text-foreground-lightest"
-        )}
-      >{`${padStart(summary.alarm, 5)}`}</pre>
-      <pre
-        className={classNames(
-          "inline",
-          summary.error > 0 ? "text-alert" : "text-foreground-lightest"
-        )}
-      >{`${padStart(summary.error, 5)}`}</pre>
-      <pre
-        className={classNames(
-          "inline",
-          summary.info > 0 ? "text-info" : "text-foreground-lightest"
-        )}
-      >{`${padStart(summary.info, 5)}`}</pre>
-      <pre
-        className={classNames(
-          "inline",
-          summary.skip > 0 ? null : "text-foreground-lightest"
-        )}
-      >{`${padStart(summary.skip, 5)}`}</pre>
-    </div>
-  );
-};
+// const CheckSummary = ({ summary }) => {
+//   return (
+//     <div className="flex tabular-nums space-x-4 justify-end group-hover:bg-black-scale-1 px-1">
+//       <pre
+//         className={classNames(
+//           "inline",
+//           summary.ok > 0 ? "text-ok" : "text-foreground-lightest"
+//         )}
+//       >{`${padStart(summary.ok, 5)}`}</pre>
+//       <pre
+//         className={classNames(
+//           "inline",
+//           summary.alarm > 0 ? "text-alert" : "text-foreground-lightest"
+//         )}
+//       >{`${padStart(summary.alarm, 5)}`}</pre>
+//       <pre
+//         className={classNames(
+//           "inline",
+//           summary.error > 0 ? "text-alert" : "text-foreground-lightest"
+//         )}
+//       >{`${padStart(summary.error, 5)}`}</pre>
+//       <pre
+//         className={classNames(
+//           "inline",
+//           summary.info > 0 ? "text-info" : "text-foreground-lightest"
+//         )}
+//       >{`${padStart(summary.info, 5)}`}</pre>
+//       <pre
+//         className={classNames(
+//           "inline",
+//           summary.skip > 0 ? null : "text-foreground-lightest"
+//         )}
+//       >{`${padStart(summary.skip, 5)}`}</pre>
+//     </div>
+//   );
+// };
 
-const BenchmarkNodeIcon = ({ expanded, run_state }) => (
-  <div className="relative flex items-center">
-    {!expanded && (
-      <ExpandBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-    )}
-    {expanded && (
-      <CollapseBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-    )}
-    {(run_state === "ready" || run_state === "started") && (
-      <LoadingIndicator className="absolute flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
-    )}
-  </div>
-);
+// const BenchmarkNodeIcon = ({ expanded, run_state }) => (
+//   <div className="relative flex items-center">
+//     {!expanded && (
+//       <ExpandBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
+//     )}
+//     {expanded && (
+//       <CollapseBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
+//     )}
+//     {(run_state === "ready" || run_state === "started") && (
+//       <LoadingIndicator className="absolute flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
+//     )}
+//   </div>
+// );
+//
+// const ControlNodeIcon = ({ expanded, run_state }) => {
+//   return (
+//     <div className="relative flex items-center">
+//       {!expanded && (
+//         <ExpandBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
+//       )}
+//       {expanded && (
+//         <CollapseBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
+//       )}
+//       {(run_state === "ready" || run_state === "started") && (
+//         <LoadingIndicator className="absolute flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
+//       )}
+//     </div>
+//   );
+// };
 
-const ControlNodeIcon = ({ expanded, run_state }) => {
-  return (
-    <div className="relative flex items-center">
-      {!expanded && (
-        <ExpandBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-      )}
-      {expanded && (
-        <CollapseBenchmarkIcon className="flex-shrink-0 w-5 h-5 text-foreground-lighter" />
-      )}
-      {(run_state === "ready" || run_state === "started") && (
-        <LoadingIndicator className="absolute flex-shrink-0 w-5 h-5 top-px left-0 text-foreground-lightest" />
-      )}
-    </div>
-  );
-};
+// const controlColumns = [
+//   {
+//     Header: "status",
+//     accessor: "status",
+//     name: "status",
+//     data_type_name: "CONTROL_STATUS",
+//     wrap: false,
+//   },
+//   {
+//     Header: "resource",
+//     accessor: "resource",
+//     name: "resource",
+//     data_type_name: "TEXT",
+//     wrap: false,
+//   },
+//   {
+//     Header: "reason",
+//     accessor: "reason",
+//     name: "reason",
+//     data_type_name: "TEXT",
+//     wrap: true,
+//   },
+//   {
+//     Header: "dimensions",
+//     accessor: "dimensions",
+//     name: "dimensions",
+//     data_type_name: "CONTROL_DIMENSIONS",
+//     wrap: true,
+//   },
+// ];
 
-const controlColumns = [
-  {
-    Header: "status",
-    accessor: "status",
-    name: "status",
-    data_type_name: "CONTROL_STATUS",
-    wrap: false,
-  },
-  {
-    Header: "resource",
-    accessor: "resource",
-    name: "resource",
-    data_type_name: "TEXT",
-    wrap: false,
-  },
-  {
-    Header: "reason",
-    accessor: "reason",
-    name: "reason",
-    data_type_name: "TEXT",
-    wrap: true,
-  },
-  {
-    Header: "dimensions",
-    accessor: "dimensions",
-    name: "dimensions",
-    data_type_name: "CONTROL_DIMENSIONS",
-    wrap: true,
-  },
-];
-
-const ControlDimension = ({ key, value }) => (
+const ControlDimension = ({ dimensionKey, dimensionValue }) => (
   <span
     className="rounded-md text-xs"
-    style={{ color: stringToColour(value) }}
-    title={`${key} = ${value}`}
+    style={{ color: stringToColour(dimensionValue) }}
+    title={`${dimensionKey} = ${dimensionValue}`}
   >
-    {value}
+    {dimensionValue}
   </span>
 );
 
-const ControlResults = ({ results }) => {
+const ControlResultStatus = ({ status }) => {
+  let textClass;
+  switch (status) {
+    case "alarm":
+    case "error":
+      textClass = "text-alert";
+      break;
+    case "ok":
+      textClass = "text-ok";
+      break;
+    case "info":
+      textClass = "text-info";
+      break;
+    default:
+      textClass = "text-tbd";
+      break;
+  }
   return (
-    <TableView
-      columns={controlColumns}
-      rowData={results}
-      hasTopBorder={true}
-      hiddenColumns={[]}
-    />
+    <pre>
+      <span className={classNames(textClass, "uppercase")}>
+        {padEnd(status, 5)}
+      </span>
+      <span className="text-foreground-lightest">:</span>
+    </pre>
   );
 };
 
-const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
+const ControlResult = ({ depth, result }) => {
+  return (
+    <div className="group flex rounded-sm">
+      <ControlIndentMarker depth={depth} />
+      <div className="pr-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-baseline">
+        <div className="flex truncate">
+          <ControlResultStatus status={result.status} />
+          <span className="px-1">{result.reason}</span>
+        </div>
+        <div className="flex-grow border-b border-dotted" />
+        <div className="space-x-2">
+          {(result.dimensions || []).map((dimension) => (
+            <ControlDimension
+              key={dimension.key}
+              dimensionKey={dimension.key}
+              dimensionValue={dimension.value}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ControlError = ({ depth, error }) => {
+  return (
+    <div className="group flex rounded-sm">
+      <ControlIndentMarker depth={depth} />
+      <div className="pr-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-baseline">
+        <div className="flex truncate">
+          <ControlResultStatus status="error" />
+          <span className="px-1 text-alert">{error}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ControlResults = ({ depth, results }) => {
+  return results.map((result) => (
+    <ControlResult key={result.resource} depth={depth} result={result} />
+  ));
+};
+
+const ControlNode = ({ depth = 0, control, rootSummary }: ControlNodeProps) => {
   const [showControls, setShowControls] = useState(false);
   return (
     <>
-      <div className="group flex rounded-sm">
+      <div className="group flex rounded-sm py-2">
+        <NodeIndentMarker depth={depth} expanded={showControls} />
         <div
           className={classNames(
-            "px-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
+            "pr-1 space-x-2 flex flex-grow flex-nowrap truncate group-hover:bg-black-scale-1 items-center",
             showControls || control.results.length > 0 || control.run_error
               ? "cursor-pointer "
-              : null,
-            getPadding(depth)
+              : null
           )}
           onClick={
             showControls || control.results.length > 0 || control.run_error
@@ -184,25 +248,31 @@ const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
               : undefined
           }
         >
-          <ControlNodeIcon
-            expanded={showControls}
-            run_state={control.run_state}
-          />
           <p>{control.title || control.name}</p>
         </div>
-        <CheckSummary summary={control.summary} />
+        <CheckSummaryChart
+          summary={control.summary}
+          rootSummary={rootSummary}
+        />
+        {/*<CheckSummary summary={control.summary} />*/}
       </div>
       {showControls && (
         <>
           {control.results.length > 0 && (
-            <div className="p-4 w-full overflow-x-auto">
-              <ControlResults results={control.results} />
-            </div>
+            <>
+              <ControlIndentMarker depth={depth + 1} />
+              <ControlResults depth={depth} results={control.results} />
+              <ControlIndentMarker depth={depth} />
+            </>
           )}
           {control.run_error && (
-            <div className="pl-4 py-4">
-              <Error error={control.run_error} />
-            </div>
+            <>
+              <ControlIndentMarker depth={depth + 1} />
+              <ControlError depth={depth + 1} error={control.run_error} />
+            </>
+            // <div className="pl-4 py-4">
+            //   <Error error={control.run_error} />
+            // </div>
           )}
         </>
       )}
@@ -210,18 +280,51 @@ const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
   );
 };
 
-const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
+const ControlIndentMarker = ({ depth }) => {
+  const barArray = Array(depth > 0 ? depth : 0).fill("|");
+  const joined = barArray.join(" ");
+
+  return (
+    <span className="flex-shrink-0 font-mono text-foreground-lightest">
+      {joined}
+      {depth > 0 ? <span>&nbsp;</span> : ""}
+    </span>
+  );
+};
+
+const NodeIndentMarker = ({ depth, expanded }) => {
+  const barArray = Array(depth > 0 ? depth - 1 : 0).fill("|");
+  // const plusArray = Array(depth > 0 ? 1 : 0).fill(expanded ? "-" : "+");
+  const plusArray = Array(depth > 0 ? 1 : 0).fill("+");
+  const combinedArray = [...barArray, ...plusArray];
+  const joined = combinedArray.join(" ");
+
+  return (
+    <span className="flex-shrink-0 font-mono text-foreground-lightest">
+      {joined}
+      {depth > 0 ? <span>&nbsp;</span> : ""}
+    </span>
+  );
+};
+
+const BenchmarkNode = ({
+  depth = 0,
+  benchmark,
+  rootSummary,
+}: BenchmarkNodeProps) => {
   const [expanded, setExpanded] = useState(depth < 1);
+
   return (
     <>
-      <div className="group flex rounded-sm">
+      <div className="group flex rounded-sm py-2">
+        <NodeIndentMarker depth={depth} expanded={expanded} />
         <div
           className={classNames(
-            "px-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
+            "pr-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
             benchmark.benchmarks || benchmark.controls
               ? "cursor-pointer "
-              : null,
-            getPadding(depth)
+              : null
+            // getPadding(depth)
           )}
           onClick={
             benchmark.benchmarks || benchmark.controls
@@ -229,21 +332,41 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
               : undefined
           }
         >
-          <BenchmarkNodeIcon
-            expanded={expanded}
-            run_state={benchmark.run_state}
-          />
+          {/*<BenchmarkNodeIcon*/}
+          {/*  expanded={expanded}*/}
+          {/*  run_state={benchmark.run_state}*/}
+          {/*/>*/}
           <p>{benchmark.title || benchmark.name}</p>
         </div>
-        <CheckSummary summary={benchmark.summary} />
+        <CheckSummaryChart
+          summary={benchmark.summary}
+          rootSummary={rootSummary}
+        />
+        {/*<CheckSummary summary={benchmark.summary} />*/}
       </div>
       {expanded && (
         <>
           {benchmark.benchmarks.map((b) => (
-            <BenchmarkNode key={b.name} depth={depth + 1} benchmark={b} />
+            <>
+              {/*<ControlIndentMarker depth={depth + 1} />*/}
+              <BenchmarkNode
+                key={b.name}
+                depth={depth + 1}
+                benchmark={b}
+                rootSummary={rootSummary}
+              />
+            </>
           ))}
           {benchmark.controls.map((c) => (
-            <ControlNode key={c.name} depth={depth + 1} control={c} />
+            <>
+              {/*<ControlIndentMarker depth={depth + 1} />*/}
+              <ControlNode
+                key={c.name}
+                depth={depth + 1}
+                control={c}
+                rootSummary={rootSummary}
+              />
+            </>
           ))}
         </>
       )}
@@ -352,17 +475,34 @@ const Benchmark = (props: InnerCheckProps) => {
 };
 
 const BenchmarkTree = (props: BenchmarkTreeProps) => {
+  const rootSummary = useMemo(() => {
+    if (!props.properties.benchmark) {
+      return null;
+    }
+    return props.properties.benchmark.summary;
+  }, [props.properties.benchmark]);
+
+  if (!rootSummary) {
+    return null;
+  }
+
   return (
     <div className="p-4">
-      <div className="flex flex-grow"></div>
-      <div className="flex text-foreground-light space-x-4 tabular-nums justify-end px-1">
-        <pre className="inline">{`${padStart("OK", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Alarm", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Error", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Info", 5)}`}</pre>
-        <pre className="inline">{`${padStart("Skip", 5)}`}</pre>
-      </div>
-      <BenchmarkNode depth={0} benchmark={props.properties.benchmark} />
+      {/*// <div className="flex flex-grow"></div>*/}
+      {/*//{" "}*/}
+      {/*<div className="flex text-foreground-light space-x-4 tabular-nums justify-end px-1">*/}
+      {/*  // <pre className="inline">{`${padStart("OK", 5)}`}</pre>*/}
+      {/*  // <pre className="inline">{`${padStart("Alarm", 5)}`}</pre>*/}
+      {/*  // <pre className="inline">{`${padStart("Error", 5)}`}</pre>*/}
+      {/*  // <pre className="inline">{`${padStart("Info", 5)}`}</pre>*/}
+      {/*  // <pre className="inline">{`${padStart("Skip", 5)}`}</pre>*/}
+      {/*  //{" "}*/}
+      {/*</div>*/}
+      <BenchmarkNode
+        depth={0}
+        benchmark={props.properties.benchmark}
+        rootSummary={rootSummary}
+      />
     </div>
   );
 };
