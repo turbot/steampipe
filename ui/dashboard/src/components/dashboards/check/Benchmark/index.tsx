@@ -1,23 +1,17 @@
 import CheckSummaryChart from "../CheckSummaryChart";
 import Container from "../../layout/Container";
 import Error from "../../Error";
-import LoadingIndicator from "../../LoadingIndicator";
 import Panel from "../../layout/Panel";
 import padEnd from "lodash/padEnd";
-import padStart from "lodash/padStart";
 import Table from "../../Table";
 import { BenchmarkTreeProps, CheckProps, CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
-import {
-  CollapseBenchmarkIcon,
-  ExpandBenchmarkIcon,
-} from "../../../../constants/icons";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { default as ControlType } from "../common/Control";
 import { get } from "lodash";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const getPadding = (depth) => {
   switch (depth) {
@@ -48,6 +42,11 @@ interface BenchmarkNodeProps {
   depth: number;
   benchmark: BenchmarkType;
   rootSummary: CheckSummary;
+}
+
+interface BenchmarkTableViewProps {
+  benchmark: BenchmarkType;
+  definition: CheckProps;
 }
 
 // const CheckSummary = ({ summary }) => {
@@ -347,26 +346,20 @@ const BenchmarkNode = ({
       {expanded && (
         <>
           {benchmark.benchmarks.map((b) => (
-            <>
-              {/*<ControlIndentMarker depth={depth + 1} />*/}
-              <BenchmarkNode
-                key={b.name}
-                depth={depth + 1}
-                benchmark={b}
-                rootSummary={rootSummary}
-              />
-            </>
+            <BenchmarkNode
+              key={b.name}
+              depth={depth + 1}
+              benchmark={b}
+              rootSummary={rootSummary}
+            />
           ))}
           {benchmark.controls.map((c) => (
-            <>
-              {/*<ControlIndentMarker depth={depth + 1} />*/}
-              <ControlNode
-                key={c.name}
-                depth={depth + 1}
-                control={c}
-                rootSummary={rootSummary}
-              />
-            </>
+            <ControlNode
+              key={c.name}
+              depth={depth + 1}
+              control={c}
+              rootSummary={rootSummary}
+            />
           ))}
         </>
       )}
@@ -380,9 +373,22 @@ type InnerCheckProps = CheckProps & {
 };
 
 const Benchmark = (props: InnerCheckProps) => {
+  const benchmarkDataTable = useMemo(() => {
+    if (
+      !props.benchmark ||
+      (props.benchmark.run_state !== "complete" &&
+        props.benchmark.run_state !== "error")
+    ) {
+      return undefined;
+    }
+    return props.benchmark.get_data_table();
+  }, [props.benchmark]);
+
   if (!props.benchmark) {
     return null;
   }
+
+  console.log(benchmarkDataTable);
 
   const summary = props.benchmark.summary;
 
@@ -468,7 +474,7 @@ const Benchmark = (props: InnerCheckProps) => {
             ],
           },
         ],
-        data: props.data,
+        data: benchmarkDataTable,
       }}
     />
   );
@@ -507,9 +513,35 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
   );
 };
 
+const BenchmarkTableView = ({
+  benchmark,
+  definition,
+}: BenchmarkTableViewProps) => {
+  const benchmarkDataTable = useMemo(
+    () => benchmark.get_data_table(),
+    [benchmark]
+  );
+
+  return (
+    <Panel
+      definition={{
+        name: definition.name,
+        node_type: "table",
+        width: definition.width,
+        data: benchmarkDataTable,
+      }}
+      ready={!!benchmarkDataTable}
+    >
+      <Table
+        name={`${definition.name}.table`}
+        node_type="table"
+        data={benchmarkDataTable}
+      />
+    </Panel>
+  );
+};
+
 const BenchmarkWrapper = (props: CheckProps) => {
-  const [benchmarkDataTable, setBenchmarkDataTable] =
-    useState<LeafNodeData | null>(null);
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
 
   const benchmark = useMemo(() => {
@@ -526,47 +558,15 @@ const BenchmarkWrapper = (props: CheckProps) => {
     );
   }, [rootBenchmark]);
 
-  useEffect(() => {
-    if (
-      !benchmark ||
-      (benchmark.run_state !== "complete" && benchmark.run_state !== "error")
-    ) {
-      return;
-    }
-    setBenchmarkDataTable(benchmark.get_data_table());
-  }, [benchmark]);
-
   if (!benchmark) {
     return null;
   }
 
   if (rootBenchmark.type === "table") {
-    return (
-      <Panel
-        definition={{
-          name: props.name,
-          node_type: "table",
-          width: props.width,
-          data: benchmarkDataTable ? benchmarkDataTable : undefined,
-        }}
-        ready={!!benchmarkDataTable}
-      >
-        <Table
-          name={`${props.name}.table`}
-          node_type="table"
-          data={benchmarkDataTable ? benchmarkDataTable : undefined}
-        />
-      </Panel>
-    );
+    return <BenchmarkTableView benchmark={benchmark} definition={props} />;
   }
 
-  return (
-    <Benchmark
-      {...props}
-      data={benchmarkDataTable ? benchmarkDataTable : undefined}
-      benchmark={benchmark}
-    />
-  );
+  return <Benchmark {...props} benchmark={benchmark} />;
 };
 
 export default BenchmarkWrapper;
