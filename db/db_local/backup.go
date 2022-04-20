@@ -59,8 +59,8 @@ func takeBackup(ctx context.Context, config *dbStartConfig) error {
 		"--no-toast-compression",
 		// include large objects in the dump
 		"--blobs",
-		// Dump only the data, not the schema (data definitions).
-		"--data-only",
+		// Do not output commands to set ownership of objects to match the original database.
+		"--no-owner",
 		// only backup the database used by steampipe
 		fmt.Sprintf("--dbname=%s", config.dbName),
 		// connection parameters
