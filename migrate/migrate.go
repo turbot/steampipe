@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/turbot/steampipe/utils"
 )
 
 type Migrateable interface {
@@ -52,5 +54,5 @@ func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(fmt.Sprintf("%s.migrated", oldPath), data, 0644)
+	return utils.CombineErrors(os.Remove(oldPath), os.WriteFile(fmt.Sprintf("%s.migrated", oldPath), data, 0644))
 }
