@@ -210,7 +210,11 @@ const CellValue = ({
     cellContent = (
       <div className="space-x-2">
         {(value || []).map((dimension) => (
-          <ControlDimension key={dimension.key} value={dimension.value} />
+          <ControlDimension
+            key={dimension.key}
+            dimensionKey={dimension.key}
+            dimensionValue={dimension.value}
+          />
         ))}
       </div>
     );
