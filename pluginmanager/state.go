@@ -104,15 +104,15 @@ func (s *PluginManagerState) MigrateFrom(prev interface{}) migrate.Migrateable {
 	return s
 }
 
-func (s *PluginManagerState) Save() error {
+func (s *PluginManagerState) Save() ([]byte, error) {
 	// set struct version
 	s.StructVersion = PluginManagerStructVersion
 
 	content, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
+	return content, os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
 }
 
 func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {

@@ -84,15 +84,15 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, pass
 	return dbState
 }
 
-func (r *RunningDBInstanceInfo) Save() error {
+func (r *RunningDBInstanceInfo) Save() ([]byte, error) {
 	// set struct version
 	r.StructVersion = RunningDBStructVersion
 
 	content, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return os.WriteFile(filepaths.RunningInfoFilePath(), content, 0644)
+	return content, os.WriteFile(filepaths.RunningInfoFilePath(), content, 0644)
 }
 
 func (r *RunningDBInstanceInfo) String() string {

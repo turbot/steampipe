@@ -47,7 +47,9 @@ func updateVersionFileFdw(image *SteampipeImage) error {
 	v.FdwExtension.InstalledFrom = image.ImageRef.requestedRef
 	v.FdwExtension.LastCheckedDate = timeNow
 	v.FdwExtension.InstallDate = timeNow
-	return v.Save()
+
+	_, err = v.Save()
+	return err
 }
 
 func installFdwFiles(image *SteampipeImage, tempdir string, dest string) error {

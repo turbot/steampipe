@@ -86,7 +86,8 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 
 	v.Plugins[pluginFullName] = plugin
 
-	return v.Save()
+	_, err = v.Save()
+	return err
 }
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {

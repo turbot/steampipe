@@ -80,7 +80,7 @@ func (s *DashboardServiceState) MigrateFrom(prev interface{}) migrate.Migrateabl
 	return s
 }
 
-func (s *DashboardServiceState) Save() error {
+func (s *DashboardServiceState) Save() ([]byte, error) {
 	// set struct version
 	s.StructVersion = ServiceStateStructVersion
 
@@ -88,13 +88,13 @@ func (s *DashboardServiceState) Save() error {
 	return s.write(versionFilePath)
 }
 
-func (s *DashboardServiceState) write(path string) error {
+func (s *DashboardServiceState) write(path string) ([]byte, error) {
 	versionFileJSON, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		log.Println("Error while writing version file", err)
-		return err
+		return nil, err
 	}
-	return os.WriteFile(path, versionFileJSON, 0644)
+	return versionFileJSON, os.WriteFile(path, versionFileJSON, 0644)
 }
 
 func GetDashboardServiceState() (*DashboardServiceState, error) {

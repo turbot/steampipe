@@ -71,7 +71,8 @@ func start(steampipeExecutablePath string) error {
 	log.Printf("[TRACE] start: started plugin manager, pid %d", state.Pid)
 
 	// now save the state
-	return state.Save()
+	_, err := state.Save()
+	return err
 }
 
 // Stop loads the plugin manager state and if a running instance is found, stop it

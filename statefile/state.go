@@ -63,7 +63,7 @@ func LoadState() (State, error) {
 
 // Save the state
 // NOTE: this updates the last checked time
-func (s *State) Save() error {
+func (s *State) Save() ([]byte, error) {
 	// set the struct version
 	s.StructVersion = StateStructVersion
 
@@ -75,7 +75,7 @@ func (s *State) Save() error {
 	_ = os.Remove(stateFilePath)
 	// save state file
 	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
+	return file, os.WriteFile(stateFilePath, file, 0644)
 }
 
 // IsValid checks whether the struct was correctly deserialized,

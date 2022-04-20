@@ -49,7 +49,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]mo
 		return nil, err
 	}
 	delete(v.Plugins, fullPluginName)
-	err = v.Save()
+	_, err = v.Save()
 
 	return &display.PluginRemoveReport{Connections: conns, Image: imageRef}, err
 }

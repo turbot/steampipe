@@ -69,20 +69,20 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 }
 
 // Save writes the config file to disk
-func (f *PluginVersionFile) Save() error {
+func (f *PluginVersionFile) Save() ([]byte, error) {
 	// set struct version
 	f.StructVersion = PluginStructVersion
 	versionFilePath := filepaths.PluginVersionFilePath()
 	return f.write(versionFilePath)
 }
 
-func (f *PluginVersionFile) write(path string) error {
+func (f *PluginVersionFile) write(path string) ([]byte, error) {
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing version file", err)
-		return err
+		return nil, err
 	}
-	return os.WriteFile(path, versionFileJSON, 0644)
+	return versionFileJSON, os.WriteFile(path, versionFileJSON, 0644)
 }
 
 // delete the file on disk if it exists

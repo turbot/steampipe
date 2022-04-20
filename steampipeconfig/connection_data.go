@@ -93,16 +93,16 @@ func (p *ConnectionData) Equals(other *ConnectionData) bool {
 		p.Connection.Equals(other.Connection)
 }
 
-func (f *ConnectionData) Save() error {
+func (f *ConnectionData) Save() ([]byte, error) {
 	versionFilePath := filepaths.ConnectionStatePath()
 	return f.write(versionFilePath)
 }
 
-func (f *ConnectionData) write(path string) error {
+func (f *ConnectionData) write(path string) ([]byte, error) {
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing state file", err)
-		return err
+		return nil, err
 	}
-	return os.WriteFile(path, versionFileJSON, 0644)
+	return versionFileJSON, os.WriteFile(path, versionFileJSON, 0644)
 }

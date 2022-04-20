@@ -195,7 +195,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 		// convert to being invoked by service
 		startResult.DbState.Invoker = constants.InvokerService
-		err = startResult.DbState.Save()
+		_, err = startResult.DbState.Save()
 		if err != nil {
 			utils.FailOnErrorWithMessage(err, "service was already running, but could not make it persistent")
 		}

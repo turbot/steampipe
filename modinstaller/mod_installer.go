@@ -109,7 +109,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 	}
 
 	// write the lock file
-	if err := i.installData.Lock.Save(); err != nil {
+	if _, err := i.installData.Lock.Save(); err != nil {
 		return err
 	}
 
@@ -164,7 +164,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() (err error) {
 	}
 
 	// write the lock file
-	if err := i.installData.Lock.Save(); err != nil {
+	if _, err := i.installData.Lock.Save(); err != nil {
 		return err
 	}
 

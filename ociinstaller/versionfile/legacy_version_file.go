@@ -66,10 +66,10 @@ func migrateVersionFiles() (*PluginVersionFile, *DatabaseVersionFile, error) {
 	databaseVersionFile := databaseVersionFileFromLegacy(legacyVersionFile)
 
 	// save the new files and remove the old one
-	if err := pluginVersionFile.Save(); err != nil {
+	if _, err := pluginVersionFile.Save(); err != nil {
 		return nil, nil, err
 	}
-	if err := databaseVersionFile.Save(); err != nil {
+	if _, err := databaseVersionFile.Save(); err != nil {
 		// delete the plugin version file which we have already saved
 		pluginVersionFile.delete()
 		return nil, nil, err

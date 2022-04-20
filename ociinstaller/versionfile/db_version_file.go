@@ -95,7 +95,7 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 }
 
 // Save writes the config
-func (f *DatabaseVersionFile) Save() error {
+func (f *DatabaseVersionFile) Save() ([]byte, error) {
 	// set the struct version
 	f.StructVersion = DatabaseStructVersion
 
@@ -103,13 +103,13 @@ func (f *DatabaseVersionFile) Save() error {
 	return f.write(versionFilePath)
 }
 
-func (f *DatabaseVersionFile) write(path string) error {
+func (f *DatabaseVersionFile) write(path string) ([]byte, error) {
 	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing version file", err)
-		return err
+		return nil, err
 	}
-	return os.WriteFile(path, versionFileJSON, 0644)
+	return versionFileJSON, os.WriteFile(path, versionFileJSON, 0644)
 }
 
 // FormatTime :: format time as RFC3339 in UTC

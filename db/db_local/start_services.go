@@ -347,7 +347,8 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 		return runningInfo, err
 	}
 	runningInfo.Database = databaseName
-	return runningInfo, runningInfo.Save()
+	_, err = runningInfo.Save()
+	return runningInfo, err
 }
 
 func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd {

@@ -2,15 +2,14 @@ package migrate
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
-
-	"github.com/turbot/steampipe/utils"
 )
 
 type Migrateable interface {
 	MigrateFrom(old interface{}) Migrateable
 	IsValid() bool
-	Save() error
+	Save() ([]byte, error)
 }
 
 func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
@@ -38,6 +37,20 @@ func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
 	if err != nil {
 		return err
 	}
+	// save the old file as a backup
+	data, err := json.MarshalIndent(old, "", " ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(fmt.Sprintf("%s.backup", oldPath), data, 0644)
+	if err != nil {
+		return err
+	}
+
 	x := new.MigrateFrom(old)
-	return utils.CombineErrors(os.Remove(oldPath), x.Save())
+	data, err = x.Save()
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(fmt.Sprintf("%s.migrated", oldPath), data, 0644)
 }

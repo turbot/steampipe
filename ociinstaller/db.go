@@ -45,7 +45,9 @@ func updateVersionFileDB(image *SteampipeImage) error {
 	v.EmbeddedDB.InstalledFrom = image.ImageRef.requestedRef
 	v.EmbeddedDB.LastCheckedDate = timeNow
 	v.EmbeddedDB.InstallDate = timeNow
-	return v.Save()
+
+	_, err = v.Save()
+	return err
 }
 
 func installDbFiles(image *SteampipeImage, tempDir string, dest string) error {

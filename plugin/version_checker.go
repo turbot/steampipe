@@ -94,7 +94,7 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 		versionFileData.Plugins[plugin.Name].LastCheckedDate = versionfile.FormatTime(time.Now())
 	}
 
-	if err = versionFileData.Save(); err != nil {
+	if _, err = versionFileData.Save(); err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not save versionfile")
 		return nil
 	}

@@ -183,17 +183,17 @@ func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVer
 	return modconfig.ParseModFullName(modFullName)
 }
 
-func (l *WorkspaceLock) Save() error {
+func (l *WorkspaceLock) Save() ([]byte, error) {
 	if len(l.InstallCache) == 0 {
 		// ignore error
 		l.Delete()
-		return nil
+		return nil, nil
 	}
 	content, err := json.MarshalIndent(l.InstallCache, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return os.WriteFile(filepaths.WorkspaceLockPath(l.WorkspacePath), content, 0644)
+	return content, os.WriteFile(filepaths.WorkspaceLockPath(l.WorkspacePath), content, 0644)
 }
 
 // Delete deletes the lock file
