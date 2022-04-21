@@ -94,6 +94,18 @@ const FullHeightThemeWrapper = ({ children }) => {
   );
 };
 
+const ThemeWrapper = ({ children }) => {
+  const { setWrapperRef, theme } = useTheme();
+  return (
+    <div
+      ref={setWrapperRef}
+      className={`theme-${theme.name} bg-dashboard text-foreground`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
@@ -102,4 +114,11 @@ const useTheme = () => {
   return context;
 };
 
-export { FullHeightThemeWrapper, Themes, ThemeNames, ThemeProvider, useTheme };
+export {
+  FullHeightThemeWrapper,
+  Themes,
+  ThemeNames,
+  ThemeProvider,
+  ThemeWrapper,
+  useTheme,
+};

@@ -1,5 +1,10 @@
 import { CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
+import { Popover } from "@headlessui/react";
+import { forwardRef, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { ThemeProvider, ThemeWrapper } from "../../../../hooks/useTheme";
+import { usePopper } from "react-popper";
 
 interface ProgressBarGroupProps {
   children: JSX.Element | JSX.Element[];
@@ -12,6 +17,14 @@ interface ProgressBarProps {
 }
 
 interface CheckSummaryChartProps {
+  name: string;
+  summary: CheckSummary;
+  setReferenceElement: any;
+  triggerShowTooltip: () => void;
+  triggerHideTooltip: () => void;
+}
+
+interface CheckSummaryChartWrapperProps {
   name: string;
   summary: CheckSummary;
   // rootSummary: CheckSummary;
@@ -68,20 +81,20 @@ const ensureMinPercentages = (
     }
   }).length;
   const perItem = diff / numberOfValuesToDistributeAcross;
-  // if (name === "aws_compliance.benchmark.cis_v140_1") {
-  //   console.log({
-  //     values,
-  //     total,
-  //     valuesWithPercentAndIndex,
-  //     withMinPercentages,
-  //     flooredPercentages,
-  //     numberOfValuesToDistributeAcross,
-  //     perItem,
-  //     diff,
-  //   });
-  // }
+  if (name === "aws_compliance.control.cis_v140_1_12") {
+    console.log({
+      values,
+      total,
+      valuesWithPercentAndIndex,
+      withMinPercentages,
+      flooredPercentages,
+      numberOfValuesToDistributeAcross,
+      perItem,
+      diff,
+    });
+  }
   let adjusted;
-  if (diff !== 0 && perItem < 0) {
+  if (diff < 0) {
     const ascending = [...flooredPercentages]
       .sort((a, b) =>
         a.percent < b.percent ? -1 : a.percent > b.percent ? 1 : 0
@@ -99,8 +112,8 @@ const ensureMinPercentages = (
         percentageItem.percent += 1;
         diff += 1;
       } else {
-        percentageItem.percent += perItem;
-        diff += perItem;
+        percentageItem.percent -= perItem;
+        diff -= perItem;
       }
     }
     adjusted = ascending
@@ -132,6 +145,9 @@ const ensureMinPercentages = (
       .sort((a, b) => (a.index < b.index ? -1 : a.index > b.index ? 1 : 0))
       .map((p) => p.percent);
   }
+  if (name === "aws_compliance.control.cis_v140_1_12") {
+    console.log(adjusted);
+  }
   return adjusted;
 };
 
@@ -153,8 +169,10 @@ const ProgressBar = ({ className, percent }: ProgressBarProps) => {
 const CheckSummaryChart = ({
   name,
   summary,
-}: // rootSummary,
-CheckSummaryChartProps) => {
+  setReferenceElement,
+  triggerShowTooltip,
+  triggerHideTooltip,
+}: CheckSummaryChartProps) => {
   // const maxAlerts = rootSummary.alarm + rootSummary.error;
   // const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
   const [alarm, error, ok, info, skip] = ensureMinPercentages(name, [
@@ -180,7 +198,13 @@ CheckSummaryChartProps) => {
   }
 
   return (
-    <div className="flex w-96">
+    <div
+      // @ts-ignore
+      ref={setReferenceElement}
+      className="flex w-96"
+      onMouseEnter={triggerShowTooltip}
+      onMouseLeave={triggerHideTooltip}
+    >
       <ProgressBar
         className={classNames(
           "border border-alert",
@@ -247,4 +271,70 @@ CheckSummaryChartProps) => {
   );
 };
 
-export default CheckSummaryChart;
+const CheckSummaryChartTooltip = (props) => {
+  console.log(props);
+  return (
+    <ThemeWrapper>
+      <Popover.Panel
+        ref={props.setPopperElement}
+        style={{
+          ...(props.styles.popper || {}),
+          paddingTop: 0,
+          paddingBottom: 0,
+        }}
+        {...props.attributes.popper}
+      >
+        <div className="bg-dashboard-panel border border-black-scale-2 grid grid-cols-2">
+          <a href="/analytics">Analytics</a>
+          <a href="/engagement">Engagement</a>
+          <a href="/security">Security</a>
+          <a href="/integrations">Integrations</a>
+        </div>
+      </Popover.Panel>
+    </ThemeWrapper>
+  );
+};
+
+const CheckSummaryChartWrapper = ({
+  name,
+  summary,
+}: CheckSummaryChartWrapperProps) => {
+  const [referenceElement, setReferenceElement] = useState(null);
+  const [popperElement, setPopperElement] = useState(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const { styles, attributes } = usePopper(referenceElement, popperElement);
+
+  return (
+    <Popover as="div" className="relative">
+      {() => (
+        <>
+          <Popover.Button
+            as={CheckSummaryChart}
+            // @ts-ignore
+            ref={setReferenceElement}
+            // setReferenceElement={setReferenceElement}
+            name={name}
+            summary={summary}
+            triggerShowTooltip={() => setShowTooltip(true)}
+            triggerHideTooltip={() => setShowTooltip(false)}
+          />
+
+          {showTooltip &&
+            createPortal(
+              <ThemeProvider>
+                <CheckSummaryChartTooltip
+                  attributes={attributes}
+                  setPopperElement={setPopperElement}
+                  styles={styles}
+                />
+              </ThemeProvider>,
+              document.body
+            )}
+        </>
+      )}
+    </Popover>
+  );
+  // return <CheckSummaryChart name={name} summary={summary} />;
+};
+
+export default CheckSummaryChartWrapper;
