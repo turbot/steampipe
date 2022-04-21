@@ -28,6 +28,44 @@ interface BenchmarkTableViewProps {
   definition: CheckProps;
 }
 
+const getPadding = (depth) => {
+  switch (depth) {
+    case 1:
+      return "pl-[6px]";
+    case 2:
+      return "pl-[12px]";
+    case 3:
+      return "pl-[18px]";
+    case 4:
+      return "pl-[24px]";
+    case 5:
+      return "pl-[30px]";
+    case 6:
+      return "pl-[36px]";
+    default:
+      return "pl-0";
+  }
+};
+
+const getMargin = (depth) => {
+  switch (depth) {
+    case 1:
+      return "ml-[6px]";
+    case 2:
+      return "ml-[12px]";
+    case 3:
+      return "ml-[18px]";
+    case 4:
+      return "ml-[24px]";
+    case 5:
+      return "ml-[30px]";
+    case 6:
+      return "ml-[36px]";
+    default:
+      return "ml-0";
+  }
+};
+
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
   <span
     className="rounded-md text-xs"
@@ -114,13 +152,14 @@ const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
   return (
     <>
       <div className="group flex rounded-sm py-2 items-center">
-        <NodeIndentMarker depth={depth} />
+        {/*<NodeIndentMarker depth={depth} />*/}
         <div
           className={classNames(
             "pr-1 space-x-2 flex flex-grow flex-nowrap truncate group-hover:bg-black-scale-1 items-center",
             showControls || control.results.length > 0 || control.run_error
               ? "cursor-pointer "
               : null
+            // getPadding(depth)
           )}
           onClick={
             showControls || control.results.length > 0 || control.run_error
@@ -166,6 +205,10 @@ const ControlIndentMarker = ({ depth }) => {
 };
 
 const NodeIndentMarker = ({ depth }) => {
+  // return (
+  //   <div className="flex-shrink-0 border-l border-black-scale-3 h-3 w-1" />
+  // );
+
   const barArray = Array(depth > 0 ? depth - 1 : 0).fill("|");
   const plusArray = Array(depth > 0 ? 1 : 0).fill("+");
   const combinedArray = [...barArray, ...plusArray];
@@ -184,8 +227,8 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
 
   return (
     <>
-      <div className="group flex rounded-sm py-2 items-center">
-        <NodeIndentMarker depth={depth} />
+      <div className="group flex rounded-sm items-center">
+        {/*<NodeIndentMarker depth={depth} />*/}
         <div
           className={classNames(
             "pr-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
@@ -204,14 +247,14 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
         <CheckSummaryChart name={benchmark.name} summary={benchmark.summary} />
       </div>
       {expanded && (
-        <>
+        <div className={classNames("border-l", getPadding(depth))}>
           {benchmark.benchmarks.map((b) => (
             <BenchmarkNode key={b.name} depth={depth + 1} benchmark={b} />
           ))}
           {benchmark.controls.map((c) => (
             <ControlNode key={c.name} depth={depth + 1} control={c} />
           ))}
-        </>
+        </div>
       )}
     </>
   );
