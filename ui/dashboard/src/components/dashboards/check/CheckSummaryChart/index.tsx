@@ -272,11 +272,6 @@ const CheckSummaryChart = ({
 };
 
 const CheckSummaryChartTooltip = (props) => {
-  console.log({
-    ...(props.styles.popper || {}),
-    paddingTop: 0,
-    paddingBottom: 0,
-  });
   return (
     <ThemeWrapper>
       <Popover.Panel
