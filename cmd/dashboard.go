@@ -47,7 +47,7 @@ The current mod is the working directory, or the directory specified by the --wo
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompt for missing variable values").
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
