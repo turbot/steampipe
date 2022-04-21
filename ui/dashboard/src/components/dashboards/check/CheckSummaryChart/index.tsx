@@ -12,6 +12,7 @@ interface ProgressBarProps {
 }
 
 interface CheckSummaryChartProps {
+  name: string;
   summary: CheckSummary;
   // rootSummary: CheckSummary;
 }
@@ -31,7 +32,11 @@ interface ValueWithIndex {
   index: number;
 }
 
-const ensureMinPercentages = (values: number[] = [], minPercentage = 2) => {
+const ensureMinPercentages = (
+  name,
+  values: number[] = [],
+  minPercentage = 2
+) => {
   // Summary here is I want to ensure each percent is >= 2% and a round number, so I'll adjust
   // all other values accordingly to ensure we total 100%
   const total = values.reduce((partial, v) => partial + v, 0);
@@ -55,15 +60,33 @@ const ensureMinPercentages = (values: number[] = [], minPercentage = 2) => {
   }));
   let diff =
     flooredPercentages.reduce((partial, v) => partial + v.percent, 0) - 100;
-  const numberOfValuesToDistributeAcross = flooredPercentages.filter(
-    (p) => p.percent > minPercentage && p.percent - 4 > minPercentage
-  ).length;
+  const numberOfValuesToDistributeAcross = flooredPercentages.filter((p) => {
+    if (diff < 0) {
+      return p.percent > minPercentage && 100 - p.percent + 4 > 0;
+    } else {
+      return p.percent > minPercentage && p.percent - 4 > minPercentage;
+    }
+  }).length;
   const perItem = diff / numberOfValuesToDistributeAcross;
+  // if (name === "aws_compliance.benchmark.cis_v140_1") {
+  //   console.log({
+  //     values,
+  //     total,
+  //     valuesWithPercentAndIndex,
+  //     withMinPercentages,
+  //     flooredPercentages,
+  //     numberOfValuesToDistributeAcross,
+  //     perItem,
+  //     diff,
+  //   });
+  // }
   let adjusted;
   if (diff !== 0 && perItem < 0) {
-    const ascending = flooredPercentages.sort((a, b) =>
-      a.percent < b.percent ? -1 : a.percent > b.percent ? 1 : 0
-    );
+    const ascending = [...flooredPercentages]
+      .sort((a, b) =>
+        a.percent < b.percent ? -1 : a.percent > b.percent ? 1 : 0
+      )
+      .map((p) => ({ ...p }));
     for (const percentageItem of ascending) {
       if (
         diff === 0 ||
@@ -72,7 +95,7 @@ const ensureMinPercentages = (values: number[] = [], minPercentage = 2) => {
       ) {
         continue;
       }
-      if (perItem === -0.5) {
+      if (perItem < 0 && perItem > -1) {
         percentageItem.percent += 1;
         diff += 1;
       } else {
@@ -84,9 +107,11 @@ const ensureMinPercentages = (values: number[] = [], minPercentage = 2) => {
       .sort((a, b) => (a.index < b.index ? -1 : a.index > b.index ? 1 : 0))
       .map((p) => p.percent);
   } else {
-    const descending = flooredPercentages.sort((a, b) =>
-      b.percent < a.percent ? -1 : b.percent > a.percent ? 1 : 0
-    );
+    const descending = [...flooredPercentages]
+      .sort((a, b) =>
+        b.percent < a.percent ? -1 : b.percent > a.percent ? 1 : 0
+      )
+      .map((p) => ({ ...p }));
     for (const percentageItem of descending) {
       if (
         diff === 0 ||
@@ -95,7 +120,7 @@ const ensureMinPercentages = (values: number[] = [], minPercentage = 2) => {
       ) {
         continue;
       }
-      if (perItem === +0.5) {
+      if (perItem > 0 && perItem < 1) {
         percentageItem.percent -= 1;
         diff -= 1;
       } else {
@@ -126,15 +151,19 @@ const ProgressBar = ({ className, percent }: ProgressBarProps) => {
 };
 
 const CheckSummaryChart = ({
+  name,
   summary,
 }: // rootSummary,
 CheckSummaryChartProps) => {
   // const maxAlerts = rootSummary.alarm + rootSummary.error;
   // const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
-  let { alarm, error, ok, info, skip } = summary;
-  const values = [alarm, error, ok, info, skip];
-  [alarm, error, ok, info, skip] = ensureMinPercentages(values);
-  const total = alarm + error + ok + info + skip;
+  const [alarm, error, ok, info, skip] = ensureMinPercentages(name, [
+    summary.alarm,
+    summary.error,
+    summary.ok,
+    summary.info,
+    summary.skip,
+  ]);
   // let alertsWidth = getWidth(maxAlerts, maxNonAlerts);
   // let nonAlertsWidth = getWidth(maxNonAlerts, maxAlerts);
   // if (alertsWidth > nonAlertsWidth) {
@@ -143,7 +172,10 @@ CheckSummaryChartProps) => {
   //   nonAlertsWidth -= 2;
   // }
 
-  if (total === 0) {
+  if (
+    summary.alarm + summary.error + summary.ok + summary.info + summary.skip ===
+    0
+  ) {
     return null;
   }
 
