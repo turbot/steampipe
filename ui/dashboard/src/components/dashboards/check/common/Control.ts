@@ -1,5 +1,7 @@
 import {
   CheckDynamicColsMap,
+  CheckNode,
+  CheckNodeType,
   CheckResult,
   CheckRunState,
   CheckSummary,
@@ -7,7 +9,8 @@ import {
 } from "./index";
 import { LeafNodeDataRow } from "../../common";
 
-class Control {
+class Control implements CheckNode {
+  private readonly _depth: number;
   private readonly _group_id: string;
   private readonly _group_title: string | undefined;
   private readonly _group_description: string | undefined;
@@ -21,6 +24,7 @@ class Control {
   private readonly _run_error: string | undefined;
 
   constructor(
+    depth: number,
     group_id: string,
     group_title: string | undefined,
     group_description: string | undefined,
@@ -33,6 +37,7 @@ class Control {
     run_state: number,
     run_error: string | undefined
   ) {
+    this._depth = depth;
     this._group_id = group_id;
     this._group_title = group_title;
     this._group_description = group_description;
@@ -68,12 +73,20 @@ class Control {
     return "unknown";
   }
 
+  get depth(): number {
+    return this._depth;
+  }
+
   get name(): string {
     return this._name;
   }
 
   get title(): string | undefined {
     return this._title;
+  }
+
+  get type(): CheckNodeType {
+    return "control";
   }
 
   get summary(): CheckSummary {

@@ -1,6 +1,17 @@
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 import Benchmark from "./Benchmark";
 
+export type CheckNodeType = "benchmark" | "control";
+
+export interface CheckNode {
+  depth: number;
+  name: string;
+  title?: string;
+  type: CheckNodeType;
+  summary: CheckSummary;
+  children?: CheckNode[];
+}
+
 // export interface IControl {
 //   name: string;
 //   title: string;

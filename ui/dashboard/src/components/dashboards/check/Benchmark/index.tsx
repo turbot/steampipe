@@ -12,6 +12,7 @@ import { get } from "lodash";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo, useState } from "react";
+import CheckGrouping from "../CheckGrouping";
 
 interface ControlNodeProps {
   depth: number;
@@ -383,11 +384,13 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
     return null;
   }
 
-  return (
-    <div className="p-4">
-      <BenchmarkNode depth={0} benchmark={props.properties.benchmark} />
-    </div>
-  );
+  return <CheckGrouping node={props.properties.benchmark} />;
+
+  // return (
+  //   <div className="p-4">
+  //     <BenchmarkNode depth={0} benchmark={props.properties.benchmark} />
+  //   </div>
+  // );
 };
 
 const BenchmarkTableView = ({
@@ -427,6 +430,7 @@ const BenchmarkWrapper = (props: CheckProps) => {
     }
 
     return new BenchmarkType(
+      0,
       rootBenchmark.group_id,
       rootBenchmark.title,
       rootBenchmark.description,

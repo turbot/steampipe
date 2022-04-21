@@ -3,6 +3,8 @@ import {
   CheckControl,
   CheckDynamicColsMap,
   CheckGroup,
+  CheckNode,
+  CheckNodeType,
   CheckRunState,
   CheckSummary,
 } from "./index";
@@ -13,7 +15,8 @@ import {
 } from "../../common";
 import merge from "lodash/merge";
 
-class Benchmark {
+class Benchmark implements CheckNode {
+  private readonly _depth: number;
   private readonly _name: string;
   private readonly _title?: string;
   private readonly _description?: string;
@@ -21,12 +24,14 @@ class Benchmark {
   private readonly _controls: Control[];
 
   constructor(
+    depth: number,
     name: string,
     title: string | undefined,
     description: string | undefined,
     benchmarks: CheckGroup[] | undefined,
     controls: CheckControl[] | undefined
   ) {
+    this._depth = depth;
     this._name = name;
     this._title = title;
     this._description = description;
@@ -34,6 +39,7 @@ class Benchmark {
     for (const nestedBenchmark of benchmarks || []) {
       nestedBenchmarks.push(
         new Benchmark(
+          this._depth + 1,
           nestedBenchmark.group_id,
           nestedBenchmark.title,
           nestedBenchmark.description,
@@ -46,6 +52,7 @@ class Benchmark {
     for (const nestedControl of controls || []) {
       nestedControls.push(
         new Control(
+          this._depth + 1,
           this._name,
           this._title,
           this._description,
@@ -65,12 +72,24 @@ class Benchmark {
     // this.execution_tree = execution_tree;
   }
 
+  get depth(): number {
+    return this._depth;
+  }
+
   get name(): string {
     return this._name;
   }
 
   get title(): string | undefined {
     return this._title;
+  }
+
+  get type(): CheckNodeType {
+    return "benchmark";
+  }
+
+  get children(): CheckNode[] {
+    return [...this._benchmarks, ...this._controls];
   }
 
   get benchmarks(): Benchmark[] {
