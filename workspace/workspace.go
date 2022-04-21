@@ -48,6 +48,8 @@ type Workspace struct {
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
 	loadPseudoResources        bool
+	// channel used to send ashboard events to the handleDashbooardEvent goroutine
+	dashboardEventChan chan dashboardevents.DashboardEvent
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -179,6 +181,9 @@ func (w *Workspace) SetOnFileWatcherEventMessages(f func()) {
 func (w *Workspace) Close() {
 	if w.watcher != nil {
 		w.watcher.Close()
+	}
+	if w.dashboardEventChan != nil {
+		close(w.dashboardEventChan)
 	}
 }
 

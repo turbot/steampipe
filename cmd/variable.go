@@ -43,13 +43,12 @@ func variableListCmd() *cobra.Command {
 
 List all Steampipe variables installed for this user.
 
-Examples:
+Example:
 
   # List installed variables
   steampipe variable list
 
-  # List variables that have updates available
-  steampipe variable list --outdated`,
+`,
 	}
 
 	cmdconfig.
