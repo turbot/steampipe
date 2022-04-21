@@ -81,18 +81,18 @@ const ensureMinPercentages = (
     }
   }).length;
   const perItem = diff / numberOfValuesToDistributeAcross;
-  if (name === "aws_compliance.control.cis_v140_1_12") {
-    console.log({
-      values,
-      total,
-      valuesWithPercentAndIndex,
-      withMinPercentages,
-      flooredPercentages,
-      numberOfValuesToDistributeAcross,
-      perItem,
-      diff,
-    });
-  }
+  // if (name === "aws_compliance.control.cis_v140_1_12") {
+  //   console.log({
+  //     values,
+  //     total,
+  //     valuesWithPercentAndIndex,
+  //     withMinPercentages,
+  //     flooredPercentages,
+  //     numberOfValuesToDistributeAcross,
+  //     perItem,
+  //     diff,
+  //   });
+  // }
   let adjusted;
   if (diff < 0) {
     const ascending = [...flooredPercentages]
@@ -145,9 +145,9 @@ const ensureMinPercentages = (
       .sort((a, b) => (a.index < b.index ? -1 : a.index > b.index ? 1 : 0))
       .map((p) => p.percent);
   }
-  if (name === "aws_compliance.control.cis_v140_1_12") {
-    console.log(adjusted);
-  }
+  // if (name === "aws_compliance.control.cis_v140_1_12") {
+  //   console.log(adjusted);
+  // }
   return adjusted;
 };
 
@@ -272,7 +272,11 @@ const CheckSummaryChart = ({
 };
 
 const CheckSummaryChartTooltip = (props) => {
-  console.log(props);
+  console.log({
+    ...(props.styles.popper || {}),
+    paddingTop: 0,
+    paddingBottom: 0,
+  });
   return (
     <ThemeWrapper>
       <Popover.Panel
@@ -284,12 +288,13 @@ const CheckSummaryChartTooltip = (props) => {
         }}
         {...props.attributes.popper}
       >
-        <div className="bg-dashboard-panel border border-black-scale-2 grid grid-cols-2">
-          <a href="/analytics">Analytics</a>
-          <a href="/engagement">Engagement</a>
-          <a href="/security">Security</a>
-          <a href="/integrations">Integrations</a>
-        </div>
+        <div className="bg-red-200">Hello</div>
+        {/*<div className="bg-dashboard-panel border border-black-scale-2 grid grid-cols-2">*/}
+        {/*  <a href="/analytics">Analytics</a>*/}
+        {/*  <a href="/engagement">Engagement</a>*/}
+        {/*  <a href="/security">Security</a>*/}
+        {/*  <a href="/integrations">Integrations</a>*/}
+        {/*</div>*/}
       </Popover.Panel>
     </ThemeWrapper>
   );
@@ -311,7 +316,7 @@ const CheckSummaryChartWrapper = ({
           <Popover.Button
             as={CheckSummaryChart}
             // @ts-ignore
-            ref={setReferenceElement}
+            setReferenceElement={setReferenceElement}
             // setReferenceElement={setReferenceElement}
             name={name}
             summary={summary}
