@@ -130,7 +130,7 @@ const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
         >
           <p>{control.title || control.name}</p>
         </div>
-        <CheckSummaryChart summary={control.summary} />
+        <CheckSummaryChart name={control.name} summary={control.summary} />
       </div>
       {showControls && (
         <>
@@ -201,7 +201,7 @@ const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
         >
           <p>{benchmark.title || benchmark.name}</p>
         </div>
-        <CheckSummaryChart summary={benchmark.summary} />
+        <CheckSummaryChart name={benchmark.name} summary={benchmark.summary} />
       </div>
       {expanded && (
         <>
