@@ -1,3 +1,4 @@
+import CheckSummaryChart from "../CheckSummaryChart";
 import { CheckNode } from "../common";
 import { useState } from "react";
 
@@ -11,8 +12,8 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
   return (
     <div id={node.name}>
       <section className="bg-dashboard-panel shadow-sm rounded-md p-4">
-        <div className="flex justify-between">
-          <div className="flex justify-between">
+        <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center">
             <h3
               id={`${node.name}-title`}
               className="truncate"
@@ -21,6 +22,7 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
               {node.title}
             </h3>
           </div>
+          <CheckSummaryChart name={node.name} summary={node.summary} />
         </div>
       </section>
     </div>
