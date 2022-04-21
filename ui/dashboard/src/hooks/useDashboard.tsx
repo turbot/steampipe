@@ -386,7 +386,10 @@ const updateCheckNode = (dashboardCheckNode, action) => {
 
 const updateDashboardWithControlEvent = (dashboard, action) => {
   if (dashboard.artificial) {
-    let updatedCheckNode = updateCheckNode(dashboard, action);
+    let updatedCheckNode = updateCheckNode(
+      get(dashboard, "children[0]"),
+      action
+    );
 
     if (!updatedCheckNode) {
       console.warn("Cannot find control to update", action.control.control_id);
@@ -398,11 +401,16 @@ const updateDashboardWithControlEvent = (dashboard, action) => {
       "execution_tree.root.groups[0]",
       {}
     );
+
     updatedCheckNode = set(updatedCheckNode, "execution_tree.root.groups[0]", {
       ...rootBenchmark,
     });
 
-    return updatedCheckNode;
+    const newDashboard = {
+      ...dashboard,
+    };
+
+    return set(newDashboard, "children[0]", updatedCheckNode);
   } else {
     let nodePath: string = findPathDeep(
       dashboard,
