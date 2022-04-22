@@ -9,25 +9,11 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	"github.com/turbot/steampipe/utils"
 )
 
 const PluginManagerStructVersion = 20220411
-
-// LegacyPluginManagerState is a struct used to migrate the
-// PluginManagerState to serialize with snake case property names(migrated in v0.14.0)
-type LegacyPluginManagerState struct {
-	Protocol        plugin.Protocol
-	ProtocolVersion int
-	Addr            *pb.SimpleAddr
-	Pid             int
-	// path to the steampipe executable
-	Executable string
-	// is the plugin manager running
-	Running bool `json:"-"`
-}
 
 type PluginManagerState struct {
 	Protocol        plugin.Protocol `json:"protocol"`
@@ -83,25 +69,6 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 
 	// return error (which may be nil)
 	return s, err
-}
-
-// IsValid checks whether the struct was correctly deserialized,
-// by checking if the StructVersion is populated
-func (s PluginManagerState) IsValid() bool {
-	return s.StructVersion > 0
-}
-
-func (s *PluginManagerState) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyPluginManagerState)
-	s.StructVersion = PluginManagerStructVersion
-	s.Protocol = legacyState.Protocol
-	s.ProtocolVersion = legacyState.ProtocolVersion
-	s.Addr = legacyState.Addr
-	s.Pid = legacyState.Pid
-	s.Executable = legacyState.Executable
-	s.Running = legacyState.Running
-
-	return s
 }
 
 func (s *PluginManagerState) Save() error {
