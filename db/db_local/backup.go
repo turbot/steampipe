@@ -214,12 +214,18 @@ func loadBackup(ctx context.Context) error {
 		// This ensures that either all the commands complete successfully, or no changes are applied.
 		// This option implies --exit-on-error.
 		"--single-transaction",
+		// immadiately Exit if an error is encountered while sending SQL commands to the database.
+		"--exit-on-error",
+		// the database name
+		fmt.Sprintf("--dbname=%s", info.Database),
+		// connection parameters
+		"--host=localhost",
 		// the database name
 		fmt.Sprintf("--dbname=%s", info.Database),
 		// connection parameters
 		"--host=localhost",
 		fmt.Sprintf("--port=%d", info.Port),
-		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
+		fmt.Sprintf("--username=%s", info.User),
 	)
 	log.Println("[TRACE]", cmd.String())
 
