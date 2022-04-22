@@ -1,10 +1,5 @@
 import { CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
-import { Popover } from "@headlessui/react";
-import { forwardRef, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { ThemeProvider, ThemeWrapper } from "../../../../hooks/useTheme";
-import { usePopper } from "react-popper";
 
 interface ProgressBarGroupProps {
   children: JSX.Element | JSX.Element[];
@@ -19,15 +14,6 @@ interface ProgressBarProps {
 interface CheckSummaryChartProps {
   name: string;
   summary: CheckSummary;
-  setReferenceElement: any;
-  triggerShowTooltip: () => void;
-  triggerHideTooltip: () => void;
-}
-
-interface CheckSummaryChartWrapperProps {
-  name: string;
-  summary: CheckSummary;
-  // rootSummary: CheckSummary;
 }
 
 // const getWidth = (x, y) => {
@@ -166,13 +152,7 @@ const ProgressBar = ({ className, percent }: ProgressBarProps) => {
   );
 };
 
-const CheckSummaryChart = ({
-  name,
-  summary,
-  setReferenceElement,
-  triggerShowTooltip,
-  triggerHideTooltip,
-}: CheckSummaryChartProps) => {
+const CheckSummaryChart = ({ name, summary }: CheckSummaryChartProps) => {
   // const maxAlerts = rootSummary.alarm + rootSummary.error;
   // const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
   const [alarm, error, ok, info, skip] = ensureMinPercentages(name, [
@@ -198,13 +178,7 @@ const CheckSummaryChart = ({
   }
 
   return (
-    <div
-      // @ts-ignore
-      ref={setReferenceElement}
-      className="flex w-96"
-      onMouseEnter={triggerShowTooltip}
-      onMouseLeave={triggerHideTooltip}
-    >
+    <div className="flex w-96">
       <ProgressBar
         className={classNames(
           "border border-alert",
@@ -271,70 +245,4 @@ const CheckSummaryChart = ({
   );
 };
 
-const CheckSummaryChartTooltip = (props) => {
-  return (
-    <ThemeWrapper>
-      <Popover.Panel
-        ref={props.setPopperElement}
-        style={{
-          ...(props.styles.popper || {}),
-          paddingTop: 0,
-          paddingBottom: 0,
-        }}
-        {...props.attributes.popper}
-      >
-        <div className="bg-red-200">Hello</div>
-        {/*<div className="bg-dashboard-panel border border-black-scale-2 grid grid-cols-2">*/}
-        {/*  <a href="/analytics">Analytics</a>*/}
-        {/*  <a href="/engagement">Engagement</a>*/}
-        {/*  <a href="/security">Security</a>*/}
-        {/*  <a href="/integrations">Integrations</a>*/}
-        {/*</div>*/}
-      </Popover.Panel>
-    </ThemeWrapper>
-  );
-};
-
-const CheckSummaryChartWrapper = ({
-  name,
-  summary,
-}: CheckSummaryChartWrapperProps) => {
-  const [referenceElement, setReferenceElement] = useState(null);
-  const [popperElement, setPopperElement] = useState(null);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const { styles, attributes } = usePopper(referenceElement, popperElement);
-
-  return (
-    <Popover as="div" className="relative">
-      {() => (
-        <>
-          <Popover.Button
-            as={CheckSummaryChart}
-            // @ts-ignore
-            setReferenceElement={setReferenceElement}
-            // setReferenceElement={setReferenceElement}
-            name={name}
-            summary={summary}
-            triggerShowTooltip={() => setShowTooltip(true)}
-            triggerHideTooltip={() => setShowTooltip(false)}
-          />
-
-          {showTooltip &&
-            createPortal(
-              <ThemeProvider>
-                <CheckSummaryChartTooltip
-                  attributes={attributes}
-                  setPopperElement={setPopperElement}
-                  styles={styles}
-                />
-              </ThemeProvider>,
-              document.body
-            )}
-        </>
-      )}
-    </Popover>
-  );
-  // return <CheckSummaryChart name={name} summary={summary} />;
-};
-
-export default CheckSummaryChartWrapper;
+export default CheckSummaryChart;
