@@ -216,3 +216,7 @@ const BenchmarkWrapper = (props: CheckProps) => {
 export default BenchmarkWrapper;
 
 export { BenchmarkTree, ControlDimension };
+
+// "benchmark" / "control" / "result"
+// <dimension> / "benchmark" / "control" / "result"
+// <tag> / "benchmark" / "control" / "result"
