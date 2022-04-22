@@ -1,9 +1,9 @@
 import {
   ArrowsExpandIcon as ArrowsExpandIconOutline,
+  ChevronDownIcon as ChevronDownIconOutline,
+  ChevronUpIcon as ChevronUpIconOutline,
   ClipboardListIcon as ClipboardListIconOutline,
   ExclamationCircleIcon as ExclamationCircleIconOutline,
-  MinusSmIcon as MinusSmIconOutline,
-  PlusSmIcon as PlusSmIconOutline,
   SearchIcon as SearchIconOutline,
   SaveIcon as SaveIconOutline,
   XIcon as XIconOutline,
@@ -29,9 +29,9 @@ export const SearchIcon = SearchIconOutline;
 export const SubmitIcon = SaveIconOutline;
 export const ZoomIcon = ArrowsExpandIconOutline;
 
-// Benchmark
-export const CollapseBenchmarkIcon = MinusSmIconOutline;
-export const ExpandBenchmarkIcon = PlusSmIconOutline;
+// Check
+export const CollapseBenchmarkIcon = ChevronUpIconOutline;
+export const ExpandCheckNodeIcon = ChevronDownIconOutline;
 
 // Control
 export const AlarmIcon = XIconSolid;

@@ -1,3 +1,4 @@
+import CheckGrouping from "../CheckGrouping";
 import CheckSummaryChart from "../CheckSummaryChart";
 import Container from "../../layout/Container";
 import Error from "../../Error";
@@ -12,7 +13,6 @@ import { get } from "lodash";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo, useState } from "react";
-import CheckGrouping from "../CheckGrouping";
 
 interface ControlNodeProps {
   depth: number;
