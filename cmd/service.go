@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/turbot/steampipe/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/statushooks"
@@ -405,6 +406,7 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runServiceStatusCmd end")
 		if r := recover(); r != nil {
+			debug.PrintStack()
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
