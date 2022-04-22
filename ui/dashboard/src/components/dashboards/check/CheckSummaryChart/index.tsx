@@ -178,7 +178,7 @@ const CheckSummaryChart = ({ name, summary }: CheckSummaryChartProps) => {
   }
 
   return (
-    <div className="flex w-96">
+    <div className="flex">
       <ProgressBar
         className={classNames(
           "border border-alert",

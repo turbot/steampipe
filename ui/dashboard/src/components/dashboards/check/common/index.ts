@@ -10,6 +10,7 @@ export interface CheckNode {
   type: CheckNodeType;
   summary: CheckSummary;
   children?: CheckNode[];
+  results?: CheckResult[];
 }
 
 // export interface IControl {
@@ -65,10 +66,12 @@ interface CheckResultDimension {
   value: string;
 }
 
+export type CheckResultStatus = "alarm" | "ok" | "info" | "skip" | "error";
+
 export interface CheckResult {
   reason: string;
   resource: string;
-  status: "alarm" | "ok" | "info" | "skip" | "error";
+  status: CheckResultStatus;
   dimensions: CheckResultDimension[];
 }
 

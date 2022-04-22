@@ -1,13 +1,30 @@
 import CheckSummaryChart from "../CheckSummaryChart";
-import { CheckNode } from "../common";
+import { CheckNode, CheckResult, CheckResultStatus } from "../common";
+import { classNames } from "../../../../utils/styles";
 import {
+  AlarmIcon,
   CollapseBenchmarkIcon,
+  ErrorIcon,
   ExpandCheckNodeIcon,
+  InfoIcon,
+  OKIcon,
+  SkipIcon,
+  UnknownIcon,
 } from "../../../../constants/icons";
+import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useState } from "react";
+import { ControlDimension } from "../Benchmark";
 
 interface CheckPanelProps {
   node: CheckNode;
+}
+
+interface CheckResultRowProps {
+  result: CheckResult;
+}
+
+interface CheckResultRowStatusIconProps {
+  status: CheckResultStatus;
 }
 
 const getMargin = (depth) => {
@@ -43,6 +60,68 @@ const CheckChildren = ({ node }: CheckPanelProps) => {
   );
 };
 
+const CheckResultRowStatusIcon = ({
+  status,
+}: CheckResultRowStatusIconProps) => {
+  switch (status) {
+    case "alarm":
+      return <AlarmIcon className="h-5 w-5 text-alert" />;
+    case "error":
+      return <ErrorIcon className="h-5 w-5 text-alert" />;
+    case "ok":
+      return <OKIcon className="h-5 w-5 text-ok" />;
+    case "info":
+      return <InfoIcon className="h-5 w-5 text-info" />;
+    case "skip":
+      return <SkipIcon className="h-5 w-5 text-tbd" />;
+    default:
+      return <UnknownIcon className="h-5 w-5 text-tbd" />;
+  }
+};
+
+const CheckResultRow = ({ result }: CheckResultRowProps) => {
+  return (
+    <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md">
+      <div className="flex-shrink-0 mr-4">
+        <CheckResultRowStatusIcon status={result.status} />
+      </div>
+      <div className="flex-grow font-medium">{result.reason}</div>
+      <div className="flex-wrap space-x-2">
+        {(result.dimensions || []).map((dimension) => (
+          <ControlDimension
+            key={dimension.key}
+            dimensionKey={dimension.key}
+            dimensionValue={dimension.value}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CheckResults = ({ node }: CheckPanelProps) => {
+  const { theme } = useTheme();
+
+  if (!node.results) {
+    return null;
+  }
+
+  return (
+    <div
+      className={classNames(
+        "border-t shadow-sm rounded-b-md divide-y divide-table-divide",
+        theme.name === ThemeNames.STEAMPIPE_DARK
+          ? "border-table-divide"
+          : "border-background"
+      )}
+    >
+      {node.results.map((result) => (
+        <CheckResultRow key={result.resource} result={result} />
+      ))}
+    </div>
+  );
+};
+
 const CheckPanel = ({ node }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -50,10 +129,13 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
     <>
       <div id={node.name} className={getMargin(node.depth - 1)}>
         <section
-          className="bg-dashboard-panel shadow-sm rounded-md p-4 cursor-pointer"
+          className={classNames(
+            "bg-dashboard-panel cursor-pointer shadow-sm rounded-md",
+            expanded && node.results ? "rounded-b-none" : null
+          )}
           onClick={() => setExpanded((current) => !current)}
         >
-          <div className="flex items-center space-x-6">
+          <div className="p-4 flex items-center space-x-6">
             <div className="flex flex-grow justify-between items-center">
               <h3
                 id={`${node.name}-title`}
@@ -62,7 +144,9 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
               >
                 {node.title}
               </h3>
-              <CheckSummaryChart name={node.name} summary={node.summary} />
+              <div className="w-48 md:w-72 lg:w-96">
+                <CheckSummaryChart name={node.name} summary={node.summary} />
+              </div>
             </div>
             {!expanded && (
               <ExpandCheckNodeIcon className="h-7 w-7 flex-shrink-0 text-foreground-lightest" />
@@ -72,6 +156,7 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
             )}
           </div>
         </section>
+        {expanded && <CheckResults node={node} />}
       </div>
       {expanded && <CheckChildren node={node} />}
     </>
