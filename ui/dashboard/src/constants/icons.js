@@ -16,7 +16,7 @@ import {
   ClipboardCheckIcon as ClipboardCheckIconSolid,
   ExclamationCircleIcon as ExclamationCircleIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
-  XIcon as XIconSolid,
+  XCircleIcon as XCircleIconSolid,
 } from "@heroicons/react/solid";
 
 // General
@@ -24,7 +24,7 @@ export const ClearIcon = XIconOutline;
 export const CloseIcon = XIconOutline;
 export const CopyToClipboardIcon = ClipboardListIconOutline;
 export const CopyToClipboardSuccessIcon = ClipboardCheckIconSolid;
-export const ErrorIcon = XIconSolid;
+export const ErrorIcon = XCircleIconSolid;
 export const SearchIcon = SearchIconOutline;
 export const SubmitIcon = SaveIconOutline;
 export const ZoomIcon = ArrowsExpandIconOutline;
