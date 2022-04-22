@@ -48,10 +48,9 @@ func (s WorkspaceLock) IsValid() bool {
 	return s.StructVersion > 0
 }
 
-func (s *WorkspaceLock) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(DependencyVersionMap)
+func (s *WorkspaceLock) MigrateFrom() migrate.Migrateable {
 	s.StructVersion = WorkspaceLockStructVersion
-	s.InstallCache = legacyState
+	// s.InstallCache = legacyState
 
 	return s
 }
