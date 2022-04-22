@@ -48,9 +48,9 @@ func getDataLocation() string {
 	return loc
 }
 
-// location where the dump file will be stored, so that it can be later restored after connections
+// tar file where the dump file will be stored, so that it can be later restored after connections
 // refresh in a new installation
-func getBackupLocation() string {
+func getBackupFile() string {
 	return filepath.Join(filepaths.EnsureDatabaseDir(), "backup.tar")
 }
 

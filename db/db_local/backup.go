@@ -73,7 +73,7 @@ func takeBackup(ctx context.Context, config *db12StartConfig) error {
 	cmd := exec.CommandContext(
 		ctx,
 		getPgDumpBinaryExecutablePath(),
-		fmt.Sprintf("--file=%s", getBackupLocation()),
+		fmt.Sprintf("--file=%s", getBackupFile()),
 		// as a tar format
 		"--format=tar",
 		// of the public schema only
@@ -188,7 +188,7 @@ func needsBackup(ctx context.Context) (bool, string, error) {
 
 // loadBackup loads the back up file into the database
 func loadBackup(ctx context.Context) error {
-	if !helpers.FileExists(getBackupLocation()) {
+	if !helpers.FileExists(getBackupFile()) {
 		// nothing to do here
 		return nil
 	}
@@ -205,7 +205,7 @@ func loadBackup(ctx context.Context) error {
 	cmd := exec.CommandContext(
 		ctx,
 		getPgRestoreBinaryExecutablePath(),
-		getBackupLocation(),
+		getBackupFile(),
 		// as a tar format
 		"--format=tar",
 		// only the public schema is backed up
@@ -228,5 +228,5 @@ func loadBackup(ctx context.Context) error {
 		return err
 	}
 
-	return os.Remove(getBackupLocation())
+	return os.Remove(getBackupFile())
 }
