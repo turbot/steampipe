@@ -86,6 +86,7 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 }
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
+// this is use for the variable list command
 func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error) {
 	utils.LogTime("workspace.LoadVariables start")
 	defer utils.LogTime("workspace.LoadVariables end")
@@ -106,13 +107,7 @@ func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Vari
 		return nil, err
 	}
 	// convert into array
-	res := make([]*modconfig.Variable, len(varMap))
-	idx := 0
-	for _, v := range varMap {
-		res[idx] = v
-		idx++
-	}
-	return res, nil
+	return varMap.ToArray(), nil
 }
 
 // LoadResourceNames builds lists of all workspace resource names
@@ -252,7 +247,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// add variables to runContext
+	// add workspace mod variables to runContext
 	runCtx.AddVariables(inputVariables)
 
 	// now load the mod

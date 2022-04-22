@@ -182,8 +182,11 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// add pseudo resources to the mod
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
-	// add this mod to run context - this it to ensure all pseudo resources get added
+	// add the parsed content to the run context
 	runCtx.SetDecodeContent(content, fileData)
+
+	// add the mod to the run context
+	// - this it to ensure all pseudo resources get added and build the eval context with the variables we just added
 	if diags = runCtx.AddMod(mod); diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to add mod to run context", diags)
 	}

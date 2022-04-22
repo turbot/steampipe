@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
@@ -15,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (map[string]*modconfig.Variable, error) {
+func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modconfig.ModVariableMap, error) {
 	// load all variable definitions
 	variableMap, err := w.loadVariables()
 	if err != nil {
@@ -23,20 +22,22 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (map[str
 	}
 
 	// now resolve all input variables
-	inputVariables, err := w.getInputVariables(variableMap, validate)
+	inputVariables, err := w.getInputVariables(variableMap.CombinedMap(), validate)
 	if err != nil {
 		return nil, err
 	}
 
 	if validate {
-		if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
+		if err := validateVariables(ctx, variableMap.Variables, inputVariables); err != nil {
 			return nil, err
 		}
 	}
 
 	// now update the variables map with the input values
+	// TODO for now we only support setting values for variables in the workspace mod
+	//  or unique variables in dependency mods
 	for name, inputValue := range inputVariables {
-		variable := variableMap[name]
+		variable := variableMap.Variables[name]
 		variable.SetInputValue(
 			inputValue.Value,
 			inputValue.SourceTypeString(),
@@ -52,7 +53,7 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (map[str
 	return variableMap, nil
 }
 
-func (w *Workspace) loadVariables() (map[string]*modconfig.Variable, error) {
+func (w *Workspace) loadVariables() (*modconfig.ModVariableMap, error) {
 	// build options used to load workspace
 	runCtx, err := w.getRunContext()
 	if err != nil {
@@ -65,12 +66,15 @@ func (w *Workspace) loadVariables() (map[string]*modconfig.Variable, error) {
 		return nil, err
 	}
 
-	// TACTICAL - as the tf derived code builds a map keyed by the short variable name, do the same
-	variableMap := make(map[string]*modconfig.Variable)
-	for k, v := range mod.ResourceMaps.Variables {
-		name := strings.Split(k, ".")[1]
-		variableMap[name] = v
+	variableMap := modconfig.NewModVariableMap()
+	variableMap.AddVariables(mod.ResourceMaps.Variables)
+	// now add variables from dependency mods
+	for _, mod := range runCtx.LoadedDependencyMods {
+		variableMap.AddDependencyVariables(mod.ShortName, mod.ResourceMaps.Variables)
 	}
+	// add any unique varaibles of dependency mods into the top level variables
+	variableMap.PromoteUniqueDependencyVariables()
+
 	return variableMap, nil
 }
 

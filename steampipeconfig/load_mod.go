@@ -44,7 +44,6 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 				Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 			})
 		runCtx.BlockTypes = parentRunCtx.BlockTypes
-		runCtx.Variables = parentRunCtx.Variables
 	}
 
 	// verify the mod folder exists
@@ -57,6 +56,10 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 		mod, err = parse.ParseModDefinition(modPath)
 		if err != nil {
 			return nil, err
+		}
+		// now we have loaded the mod, if this is a dependency mod, add in any variables we have loaded
+		if dependencyVariables, ok := parentRunCtx.DependencyVariables[mod.ShortName]; ok {
+			runCtx.Variables = dependencyVariables
 		}
 	} else {
 		// so there is no mod file - should we create a default?

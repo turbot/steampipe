@@ -51,7 +51,16 @@ type RunContext struct {
 	BlockTypes []string
 	// if set, exclude these block types
 	BlockTypeExclusions []string
-	Variables           map[string]*modconfig.Variable
+
+	// Variables are populated in an initial parse pass top we store them on the run context
+	// so we can set them on the mod when we do the main parse
+
+	// Variables is a map of the variables in the current mod
+	// it is used to populate the variables property on the mod
+	Variables map[string]*modconfig.Variable
+	// DependencyVariables is a map of the variables in the dependency mods of the current mod
+	// it is used to populate the variables property on the dependency
+	DependencyVariables map[string]map[string]*modconfig.Variable
 
 	// stack of parent resources for the currently parsed block
 	// (unqualified name)
@@ -128,10 +137,18 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 
 // AddVariables adds variables to the run context.
 // We load and evaluate variables before loading the workspace
-func (r *RunContext) AddVariables(inputVariables map[string]*modconfig.Variable) {
-	r.Variables = inputVariables
+func (r *RunContext) AddVariables(inputVariables *modconfig.ModVariableMap) {
+	r.Variables = inputVariables.Variables
+	r.DependencyVariables = inputVariables.DependencyVariables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	r.referenceValues["local"]["var"] = VariableValueMap(inputVariables)
+	// add top level variables
+	r.referenceValues["local"]["var"] = VariableValueMap(r.Variables)
+	// add dependency mod variables, scoped by mod name
+	for depModName, depVars := range r.DependencyVariables {
+		r.referenceValues[depModName] = make(ReferenceTypeValueMap)
+		r.referenceValues[depModName]["var"] = VariableValueMap(depVars)
+	}
+
 	// do not reload variables as we already have them
 	r.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 }
