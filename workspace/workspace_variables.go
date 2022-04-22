@@ -22,13 +22,14 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 	}
 
 	// now resolve all input variables
-	inputVariables, err := w.getInputVariables(variableMap.CombinedMap(), validate)
+
+	inputVariables, err := w.getInputVariables(variableMap.AllVariables, variableMap.VariableAliases, validate)
 	if err != nil {
 		return nil, err
 	}
 
 	if validate {
-		if err := validateVariables(ctx, variableMap.Variables, inputVariables); err != nil {
+		if err := validateVariables(ctx, variableMap.AllVariables, inputVariables); err != nil {
 			return nil, err
 		}
 	}
@@ -37,7 +38,7 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 	// TODO for now we only support setting values for variables in the workspace mod
 	//  or unique variables in dependency mods
 	for name, inputValue := range inputVariables {
-		variable := variableMap.Variables[name]
+		variable := variableMap.AllVariables[name]
 		variable.SetInputValue(
 			inputValue.Value,
 			inputValue.SourceTypeString(),
@@ -66,19 +67,12 @@ func (w *Workspace) loadVariables() (*modconfig.ModVariableMap, error) {
 		return nil, err
 	}
 
-	variableMap := modconfig.NewModVariableMap()
-	variableMap.AddVariables(mod.ResourceMaps.Variables)
-	// now add variables from dependency mods
-	for _, mod := range runCtx.LoadedDependencyMods {
-		variableMap.AddDependencyVariables(mod.ShortName, mod.ResourceMaps.Variables)
-	}
-	// add any unique varaibles of dependency mods into the top level variables
-	variableMap.PromoteUniqueDependencyVariables()
+	variableMap := modconfig.NewModVariableMap(mod, runCtx.LoadedDependencyMods)
 
 	return variableMap, nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, validate bool) (inputvars.InputValues, error) {
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, variableAliases map[string]string, validate bool) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -92,7 +86,7 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 			return nil, err
 		}
 	}
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, variableAliases, validate)
 
 	return parsedValues, diags.Err()
 }

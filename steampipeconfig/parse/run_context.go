@@ -138,7 +138,7 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 // AddVariables adds variables to the run context.
 // We load and evaluate variables before loading the workspace
 func (r *RunContext) AddVariables(inputVariables *modconfig.ModVariableMap) {
-	r.Variables = inputVariables.Variables
+	r.Variables = inputVariables.RootVariables
 	r.DependencyVariables = inputVariables.DependencyVariables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	// add top level variables
