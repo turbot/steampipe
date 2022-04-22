@@ -1,11 +1,15 @@
 import Control from "./Control";
+import merge from "lodash/merge";
 import {
+  AddControlResultsAction,
   CheckControl,
+  CheckDisplayGroup,
   CheckDynamicColsMap,
   CheckGroup,
   CheckNode,
   CheckNodeStatus,
   CheckNodeType,
+  CheckResult,
   CheckSummary,
 } from "./index";
 import {
@@ -13,38 +17,51 @@ import {
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../../common";
-import merge from "lodash/merge";
 
 class Benchmark implements CheckNode {
+  private readonly _groupings: CheckDisplayGroup[];
   private readonly _depth: number;
   private readonly _name: string;
   private readonly _title?: string;
   private readonly _description?: string;
   private readonly _benchmarks: Benchmark[];
   private readonly _controls: Control[];
+  private readonly _add_control_results: AddControlResultsAction;
+  private readonly _all_control_results: CheckResult[];
 
   constructor(
+    groupings: CheckDisplayGroup[],
     depth: number,
     name: string,
     title: string | undefined,
     description: string | undefined,
     benchmarks: CheckGroup[] | undefined,
-    controls: CheckControl[] | undefined
+    controls: CheckControl[] | undefined,
+    add_control_results?: AddControlResultsAction
   ) {
+    this._all_control_results = [];
+    this._groupings = groupings;
     this._depth = depth;
     this._name = name;
     this._title = title;
     this._description = description;
+    if (!add_control_results) {
+      this._add_control_results = this.add_control_results;
+    } else {
+      this._add_control_results = add_control_results;
+    }
     const nestedBenchmarks: Benchmark[] = [];
     for (const nestedBenchmark of benchmarks || []) {
       nestedBenchmarks.push(
         new Benchmark(
+          groupings,
           this._depth + 1,
           nestedBenchmark.group_id,
           nestedBenchmark.title,
           nestedBenchmark.description,
           nestedBenchmark.groups,
-          nestedBenchmark.controls
+          nestedBenchmark.controls,
+          this._add_control_results
         )
       );
     }
@@ -52,6 +69,7 @@ class Benchmark implements CheckNode {
     for (const nestedControl of controls || []) {
       nestedControls.push(
         new Control(
+          this._groupings,
           this._depth + 1,
           this._name,
           this._title,
@@ -63,13 +81,23 @@ class Benchmark implements CheckNode {
           nestedControl.summary,
           nestedControl.tags,
           nestedControl.run_status,
-          nestedControl.run_error
+          nestedControl.run_error,
+          this._add_control_results
         )
       );
     }
     this._benchmarks = nestedBenchmarks;
     this._controls = nestedControls;
-    // this.execution_tree = execution_tree;
+  }
+
+  private add_control_results = (results: CheckResult[], control: Control) => {
+    this._all_control_results.push(
+      ...results.map((r) => ({ ...r, tags: control.tags }))
+    );
+  };
+
+  get all_control_results(): CheckResult[] {
+    return this._all_control_results;
   }
 
   get depth(): number {
