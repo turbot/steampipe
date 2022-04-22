@@ -1,22 +1,28 @@
 package versionfile
 
-// LegacyInstalledVersion is the legacy db installed version info struct
-type LegacyInstalledVersion struct {
-	Name            string `json:"name"`
-	Version         string `json:"version"`
-	ImageDigest     string `json:"imageDigest"`
-	InstalledFrom   string `json:"installedFrom"`
-	LastCheckedDate string `json:"lastCheckedDate"`
-	InstallDate     string `json:"installDate"`
-}
-
 type InstalledVersion struct {
 	Name               string `json:"name"`
 	Version            string `json:"version"`
-	ImageDigest        string `json:"image_digest"`
-	BinaryDigest       string `json:"binary_digest"`
-	BinaryArchitecture string `json:"binary_arch"`
-	InstalledFrom      string `json:"installed_from"`
-	LastCheckedDate    string `json:"last_checked_date"`
-	InstallDate        string `json:"install_date"`
+	ImageDigest        string `json:"image_digest,omitempty"`
+	BinaryDigest       string `json:"binary_digest,omitempty"`
+	BinaryArchitecture string `json:"binary_arch,omitempty"`
+	InstalledFrom      string `json:"installed_from,omitempty"`
+	LastCheckedDate    string `json:"last_checked_date,omitempty"`
+	InstallDate        string `json:"install_date,omitempty"`
+
+	// json tags are same in the new version
+	// LegacyName            string `json:"name"`
+	// LegacyVersion         string `json:"version"`
+	LegacyImageDigest     string `json:"imageDigest,omitempty"`
+	LegacyInstalledFrom   string `json:"installedFrom,omitempty"`
+	LegacyLastCheckedDate string `json:"lastCheckedDate,omitempty"`
+	LegacyInstallDate     string `json:"installDate,omitempty"`
+}
+
+// MigrateLegacy migrates the legacy properties into new properties
+func (f *InstalledVersion) MigrateLegacy() {
+	f.ImageDigest = f.LegacyImageDigest
+	f.InstalledFrom = f.LegacyInstalledFrom
+	f.InstallDate = f.LegacyInstallDate
+	f.LastCheckedDate = f.LegacyLastCheckedDate
 }

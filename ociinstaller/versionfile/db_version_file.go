@@ -13,17 +13,12 @@ import (
 
 const DatabaseStructVersion = 20220411
 
-// LegacyDatabaseVersionFile is a struct used to migrate the
-// DatabaseVersionFile to serialize with snake case property names(migrated in v0.14.0)
-type LegacyDatabaseVersionFile struct {
-	FdwExtension LegacyInstalledVersion `json:"fdwExtension"`
-	EmbeddedDB   LegacyInstalledVersion `json:"embeddedDB"`
-}
-
 type DatabaseVersionFile struct {
-	FdwExtension  InstalledVersion `json:"fdw_extension"`
-	EmbeddedDB    InstalledVersion `json:"embedded_db"`
-	StructVersion int64            `json:"struct_version"`
+	FdwExtension       InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB         InstalledVersion `json:"embedded_db"`
+	StructVersion      int64            `json:"struct_version"`
+	LegacyFdwExtension InstalledVersion `json:"fdwExtension"`
+	LegacyEmbeddedDB   InstalledVersion `json:"embeddedDB"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
@@ -40,22 +35,12 @@ func (s DatabaseVersionFile) IsValid() bool {
 	return s.StructVersion > 0
 }
 
-func (s *DatabaseVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyDatabaseVersionFile)
+func (s *DatabaseVersionFile) MigrateFrom() migrate.Migrateable {
 	s.StructVersion = DatabaseStructVersion
-	s.FdwExtension.Name = legacyState.FdwExtension.Name
-	s.FdwExtension.Version = legacyState.FdwExtension.Version
-	s.FdwExtension.ImageDigest = legacyState.FdwExtension.ImageDigest
-	s.FdwExtension.InstalledFrom = legacyState.FdwExtension.InstalledFrom
-	s.FdwExtension.LastCheckedDate = legacyState.FdwExtension.LastCheckedDate
-	s.FdwExtension.InstallDate = legacyState.FdwExtension.InstallDate
-
-	s.EmbeddedDB.Name = legacyState.EmbeddedDB.Name
-	s.EmbeddedDB.Version = legacyState.EmbeddedDB.Version
-	s.EmbeddedDB.ImageDigest = legacyState.EmbeddedDB.ImageDigest
-	s.EmbeddedDB.InstalledFrom = legacyState.EmbeddedDB.InstalledFrom
-	s.EmbeddedDB.LastCheckedDate = legacyState.EmbeddedDB.LastCheckedDate
-	s.EmbeddedDB.InstallDate = legacyState.EmbeddedDB.InstallDate
+	s.FdwExtension = s.LegacyFdwExtension
+	s.FdwExtension.MigrateLegacy()
+	s.EmbeddedDB = s.LegacyEmbeddedDB
+	s.EmbeddedDB.MigrateLegacy()
 
 	return s
 }

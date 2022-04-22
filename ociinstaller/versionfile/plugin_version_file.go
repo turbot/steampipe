@@ -12,12 +12,6 @@ import (
 
 const PluginStructVersion = 20220411
 
-// LegacyPluginVersionFile is a struct used to migrate the
-// PluginVersionFile to serialize with snake case property names(migrated in v0.14.0)
-type LegacyPluginVersionFile struct {
-	Plugins map[string]*LegacyInstalledVersion `json:"plugins"`
-}
-
 type PluginVersionFile struct {
 	Plugins       map[string]*InstalledVersion `json:"plugins"`
 	StructVersion int64                        `json:"struct_version"`
@@ -29,19 +23,10 @@ func (f PluginVersionFile) IsValid() bool {
 	return f.StructVersion > 0
 }
 
-func (f *PluginVersionFile) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyPluginVersionFile)
+func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
 	f.StructVersion = PluginStructVersion
-	f.Plugins = make(map[string]*InstalledVersion, len(legacyState.Plugins))
-	for p, i := range legacyState.Plugins {
-		f.Plugins[p] = &InstalledVersion{
-			Name:            i.Name,
-			Version:         i.Version,
-			ImageDigest:     i.ImageDigest,
-			InstalledFrom:   i.InstalledFrom,
-			LastCheckedDate: i.LastCheckedDate,
-			InstallDate:     i.InstallDate,
-		}
+	for p := range f.Plugins {
+		f.Plugins[p].MigrateLegacy()
 	}
 	return f
 }

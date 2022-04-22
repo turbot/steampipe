@@ -8,12 +8,12 @@ import (
 )
 
 type Migrateable interface {
-	MigrateFrom(old interface{}) Migrateable
+	MigrateFrom() Migrateable
 	IsValid() bool
 	Save() error
 }
 
-func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
+func Migrate(old Migrateable, oldPath string) error {
 	stateFileContent, err := os.ReadFile(oldPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -22,22 +22,16 @@ func Migrate[O any, T Migrateable](old O, new T, oldPath string) error {
 		return err
 	}
 
-	// deserialize into new
-	err = json.Unmarshal(stateFileContent, &new)
-	if err != nil {
-		return err
-	}
-
 	// check whether we successfully derserialized into the new struct
-	if new.IsValid() {
+	if old.IsValid() {
 		return nil
 	}
 
-	// if schemaVersion is not available, deserialize into old
+	// if StructVersion is not available, deserialize into old struct
 	err = json.Unmarshal(stateFileContent, &old)
 	if err != nil {
 		return err
 	}
-	x := new.MigrateFrom(old)
+	x := old.MigrateFrom()
 	return utils.CombineErrors(os.Remove(oldPath), x.Save())
 }

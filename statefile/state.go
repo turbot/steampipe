@@ -15,18 +15,13 @@ import (
 
 const StateStructVersion = 20220411
 
-// LegacyState is a struct used to migrate the
-// State to serialize with snake case property names(migrated in v0.14.0)
-type LegacyState struct {
-	LastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
-	InstallationID string `json:"installationId"` // a UUIDv4 string
-}
-
 // State is a struct containing installation state
 type State struct {
-	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
-	InstallationID string `json:"installation_id"` // a UUIDv4 string
-	StructVersion  int64  `json:"struct_version"`
+	LastCheck            string `json:"last_checked"`    // an RFC3339 encoded time stamp
+	InstallationID       string `json:"installation_id"` // a UUIDv4 string
+	StructVersion        int64  `json:"struct_version"`
+	LegacyLastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
+	LegacyInstallationID string `json:"installationId"` // a UUIDv4 string
 }
 
 func newState() State {
@@ -84,11 +79,11 @@ func (s *State) IsValid() bool {
 	return s.StructVersion > 0
 }
 
-func (s *State) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyState)
+func (s *State) MigrateFrom() migrate.Migrateable {
+	// save the existing property values to the new legacy properties
 	s.StructVersion = StateStructVersion
-	s.LastCheck = legacyState.LastCheck
-	s.InstallationID = legacyState.InstallationID
+	s.LastCheck = s.LegacyLastCheck
+	s.InstallationID = s.LegacyInstallationID
 
 	return s
 }
