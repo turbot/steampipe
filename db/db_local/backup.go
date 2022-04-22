@@ -16,10 +16,10 @@ import (
 )
 
 var (
-	ErrDbInstanceRunning = fmt.Errorf("cannot start DB backup - an instance is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - an instance is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
 )
 
-type db12StartConfig struct {
+type oldDbRunningConfig struct {
 	cmd    *exec.Cmd
 	port   int
 	dbName string
@@ -35,7 +35,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	if !needs {
 		return nil, nil
 	}
-	// short circuit if there is an instance running
+	// fail if there is a db instance running
 	if err := errIfInstanceRunning(ctx, location); err != nil {
 		return nil, err
 	}
@@ -63,17 +63,17 @@ func errIfInstanceRunning(ctx context.Context, location string) error {
 			continue
 		}
 		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
-			return ErrDbInstanceRunning
+			return errDbInstanceRunning
 		}
 	}
 	return nil
 }
 
-func takeBackup(ctx context.Context, config *db12StartConfig) error {
+func takeBackup(ctx context.Context, config *oldDbRunningConfig) error {
 	cmd := exec.CommandContext(
 		ctx,
-		getPgDumpBinaryExecutablePath(),
-		fmt.Sprintf("--file=%s", getBackupFile()),
+		pgDumpBinaryExecutablePath(),
+		fmt.Sprintf("--file=%s", databaseBackupFilePath()),
 		// as a tar format
 		"--format=tar",
 		// of the public schema only
@@ -105,7 +105,7 @@ func takeBackup(ctx context.Context, config *db12StartConfig) error {
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-func startDatabaseInLocation(ctx context.Context, location string) (*db12StartConfig, error) {
+func startDatabaseInLocation(ctx context.Context, location string) (*oldDbRunningConfig, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
 	port, err := getNextFreePort()
@@ -138,7 +138,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*db12StartCo
 		return nil, err
 	}
 
-	return &db12StartConfig{cmd: cmd, port: port, dbName: dbName}, nil
+	return &oldDbRunningConfig{cmd: cmd, port: port, dbName: dbName}, nil
 }
 
 // stopDbByCmd is used for shutting down postgres instance spun up for extracting dump
@@ -188,7 +188,7 @@ func needsBackup(ctx context.Context) (bool, string, error) {
 
 // loadBackup loads the back up file into the database
 func loadBackup(ctx context.Context) error {
-	if !helpers.FileExists(getBackupFile()) {
+	if !helpers.FileExists(databaseBackupFilePath()) {
 		// nothing to do here
 		return nil
 	}
@@ -204,8 +204,8 @@ func loadBackup(ctx context.Context) error {
 
 	cmd := exec.CommandContext(
 		ctx,
-		getPgRestoreBinaryExecutablePath(),
-		getBackupFile(),
+		pgRestoreBinaryExecutablePath(),
+		databaseBackupFilePath(),
 		// as a tar format
 		"--format=tar",
 		// only the public schema is backed up
@@ -220,10 +220,6 @@ func loadBackup(ctx context.Context) error {
 		fmt.Sprintf("--dbname=%s", info.Database),
 		// connection parameters
 		"--host=localhost",
-		// the database name
-		fmt.Sprintf("--dbname=%s", info.Database),
-		// connection parameters
-		"--host=localhost",
 		fmt.Sprintf("--port=%d", info.Port),
 		fmt.Sprintf("--username=%s", info.User),
 	)
@@ -234,5 +230,5 @@ func loadBackup(ctx context.Context) error {
 		return err
 	}
 
-	return os.Remove(getBackupFile())
+	return nil // os.Remove(getBackupFile())
 }
