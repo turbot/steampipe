@@ -1,11 +1,12 @@
 import CheckGrouping from "../CheckGrouping";
 import Container from "../../layout/Container";
 import Error from "../../Error";
+import get from "lodash/get";
+import groupBy from "lodash/groupBy";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
-import { BenchmarkTreeProps, CheckProps } from "../common";
+import { BenchmarkTreeProps, CheckDisplayGroup, CheckProps } from "../common";
 import { default as BenchmarkType } from "../common/Benchmark";
-import { get } from "lodash";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo } from "react";
@@ -187,12 +188,24 @@ const BenchmarkTableView = ({
 const BenchmarkWrapper = (props: CheckProps) => {
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
 
+  const groupings = useMemo(
+    () =>
+      props.properties?.grouping ||
+      ([
+        { type: "benchmark" },
+        { type: "control" },
+        { type: "result" },
+      ] as CheckDisplayGroup[]),
+    [props.properties]
+  );
+
   const benchmark = useMemo(() => {
     if (!rootBenchmark) {
       return null;
     }
 
-    return new BenchmarkType(
+    const b = new BenchmarkType(
+      groupings,
       0,
       rootBenchmark.group_id,
       rootBenchmark.title,
@@ -200,7 +213,16 @@ const BenchmarkWrapper = (props: CheckProps) => {
       rootBenchmark.groups,
       rootBenchmark.controls
     );
-  }, [rootBenchmark]);
+
+    console.log(
+      groupBy(b.all_control_results, (result) => {
+        const dimension = result.dimensions.find((d) => d.key === "region");
+        return dimension?.value || "Other";
+      })
+    );
+
+    return b;
+  }, [groupings, rootBenchmark]);
 
   if (!benchmark) {
     return null;
