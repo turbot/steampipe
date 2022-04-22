@@ -79,7 +79,7 @@ const Benchmark = (props: InnerCheckProps) => {
                   label: "Alarm",
                   value: summary.alarm,
                   type: summary.alarm > 0 ? "alert" : null,
-                  icon: "heroicons-solid:x-circle",
+                  icon: "heroicons-solid:exclamation-circle",
                 },
               },
               {
@@ -90,7 +90,7 @@ const Benchmark = (props: InnerCheckProps) => {
                   label: "Error",
                   value: summary.error,
                   type: summary.error > 0 ? "alert" : null,
-                  icon: "heroicons-solid:exclamation-circle",
+                  icon: "heroicons-solid:x-circle",
                 },
               },
               {
