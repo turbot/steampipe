@@ -23,6 +23,10 @@ interface CheckResultRowProps {
   result: CheckResult;
 }
 
+interface CheckErrorRowProps {
+  error: string;
+}
+
 interface CheckResultRowStatusIconProps {
   status: CheckResultStatus;
 }
@@ -99,6 +103,17 @@ const CheckResultRow = ({ result }: CheckResultRowProps) => {
   );
 };
 
+const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
+  return (
+    <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md">
+      <div className="flex-shrink-0 mr-4">
+        <CheckResultRowStatusIcon status="error" />
+      </div>
+      <div className="flex-grow font-medium">{error}</div>
+    </div>
+  );
+};
+
 const CheckResults = ({ node }: CheckPanelProps) => {
   const { theme } = useTheme();
 
@@ -115,6 +130,7 @@ const CheckResults = ({ node }: CheckPanelProps) => {
           : "border-background"
       )}
     >
+      {node.error && <CheckErrorRow error={node.error} />}
       {node.results.map((result) => (
         <CheckResultRow key={result.resource} result={result} />
       ))}
