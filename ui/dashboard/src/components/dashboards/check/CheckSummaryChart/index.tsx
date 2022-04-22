@@ -14,16 +14,17 @@ interface ProgressBarProps {
 interface CheckSummaryChartProps {
   name: string;
   summary: CheckSummary;
+  rootSummary: CheckSummary;
 }
 
-// const getWidth = (x, y) => {
-//   const percent = (x / (x + y)) * 100;
-//   return percent >= 0.5 ? Math.round(percent) : 1;
-// };
-//
-// const ProgressBarGroup = ({ children, className }: ProgressBarGroupProps) => (
-//   <div className={classNames("flex h-3", className)}>{children}</div>
-// );
+const getWidth = (x, y) => {
+  const percent = (x / (x + y)) * 100;
+  return percent >= 0.5 ? Math.round(percent) : 1;
+};
+
+const ProgressBarGroup = ({ children, className }: ProgressBarGroupProps) => (
+  <div className={classNames("flex h-3", className)}>{children}</div>
+);
 
 interface ValueWithIndex {
   value: number;
@@ -152,9 +153,13 @@ const ProgressBar = ({ className, percent }: ProgressBarProps) => {
   );
 };
 
-const CheckSummaryChart = ({ name, summary }: CheckSummaryChartProps) => {
-  // const maxAlerts = rootSummary.alarm + rootSummary.error;
-  // const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
+const CheckSummaryChart = ({
+  name,
+  summary,
+  rootSummary,
+}: CheckSummaryChartProps) => {
+  const maxAlerts = rootSummary.alarm + rootSummary.error;
+  const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
   const [alarm, error, ok, info, skip] = ensureMinPercentages(name, [
     summary.alarm,
     summary.error,
@@ -162,13 +167,13 @@ const CheckSummaryChart = ({ name, summary }: CheckSummaryChartProps) => {
     summary.info,
     summary.skip,
   ]);
-  // let alertsWidth = getWidth(maxAlerts, maxNonAlerts);
-  // let nonAlertsWidth = getWidth(maxNonAlerts, maxAlerts);
-  // if (alertsWidth > nonAlertsWidth) {
-  //   alertsWidth -= 2;
-  // } else {
-  //   nonAlertsWidth -= 2;
-  // }
+  let alertsWidth = getWidth(maxAlerts, maxNonAlerts);
+  let nonAlertsWidth = getWidth(maxNonAlerts, maxAlerts);
+  if (alertsWidth > nonAlertsWidth) {
+    alertsWidth -= 2;
+  } else {
+    nonAlertsWidth -= 2;
+  }
 
   if (
     summary.alarm + summary.error + summary.ok + summary.info + summary.skip ===
@@ -179,68 +184,71 @@ const CheckSummaryChart = ({ name, summary }: CheckSummaryChartProps) => {
 
   return (
     <div className="flex">
-      <ProgressBar
-        className={classNames(
-          "border border-alert",
-          error > 0 ? "rounded-l-sm" : null,
-          skip === 0 && info === 0 && ok === 0 && alarm === 0 && error > 0
-            ? "rounded-r-sm"
-            : null
-        )}
-        percent={error}
-      />
-      <ProgressBar
-        className={classNames(
-          "bg-alert border border-alert",
-          error === 0 && alarm > 0 ? "rounded-l-sm" : null,
-          skip === 0 && info === 0 && ok === 0 && alarm > 0
-            ? "rounded-r-sm"
-            : null
-        )}
-        percent={alarm}
-      />
-      <ProgressBar
-        className={classNames(
-          "bg-ok border border-ok",
-          error === 0 && alarm === 0 && ok > 0 ? "rounded-l-sm" : null,
-          skip === 0 && info === 0 && ok > 0 ? "rounded-r-sm" : null
-        )}
-        percent={ok}
-      />
-      <ProgressBar
-        className={classNames(
-          "bg-info border border-info",
-          error === 0 && alarm === 0 && ok === 0 && info > 0
-            ? "rounded-l-sm"
-            : null,
-          skip === 0 && info > 0 ? "rounded-r-sm" : null
-        )}
-        percent={info}
-      />
-      <ProgressBar
-        className={classNames(
-          "bg-tbd border border-tbd",
-          error === 0 && alarm === 0 && ok === 0 && info === 0 && error > 0
-            ? "rounded-l-sm"
-            : null,
-          skip > 0 ? "rounded-r-sm" : null
-        )}
-        percent={skip}
-      />
-      {/*<div className="my-auto px-0" style={{ width: `${alertsWidth}%` }}>*/}
-      {/*  <ProgressBarGroup className="flex-row-reverse">*/}
-      {/*    <ProgressBar className="bg-alert border border-alert" value={alarm} />*/}
-      {/*    <ProgressBar className="border border-alert" value={error} />*/}
-      {/*  </ProgressBarGroup>*/}
-      {/*</div>*/}
-      {/*<div className="h-6 w-0 border-l border-black-scale-4" />*/}
-      {/*<div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>*/}
-      {/*  <ProgressBarGroup>*/}
-      {/*    <ProgressBar className="bg-ok border border-ok" value={ok} />*/}
-      {/*    <ProgressBar className="bg-info border border-info" value={info} />*/}
-      {/*    <ProgressBar className="bg-tbd border border-tbd" value={skip} />*/}
-      {/*  </ProgressBarGroup>*/}
-      {/*</div>*/}
+      {/*<ProgressBar*/}
+      {/*  className={classNames(*/}
+      {/*    "border border-alert",*/}
+      {/*    error > 0 ? "rounded-l-sm" : null,*/}
+      {/*    skip === 0 && info === 0 && ok === 0 && alarm === 0 && error > 0*/}
+      {/*      ? "rounded-r-sm"*/}
+      {/*      : null*/}
+      {/*  )}*/}
+      {/*  percent={error}*/}
+      {/*/>*/}
+      {/*<ProgressBar*/}
+      {/*  className={classNames(*/}
+      {/*    "bg-alert border border-alert",*/}
+      {/*    error === 0 && alarm > 0 ? "rounded-l-sm" : null,*/}
+      {/*    skip === 0 && info === 0 && ok === 0 && alarm > 0*/}
+      {/*      ? "rounded-r-sm"*/}
+      {/*      : null*/}
+      {/*  )}*/}
+      {/*  percent={alarm}*/}
+      {/*/>*/}
+      {/*<ProgressBar*/}
+      {/*  className={classNames(*/}
+      {/*    "bg-ok border border-ok",*/}
+      {/*    error === 0 && alarm === 0 && ok > 0 ? "rounded-l-sm" : null,*/}
+      {/*    skip === 0 && info === 0 && ok > 0 ? "rounded-r-sm" : null*/}
+      {/*  )}*/}
+      {/*  percent={ok}*/}
+      {/*/>*/}
+      {/*<ProgressBar*/}
+      {/*  className={classNames(*/}
+      {/*    "bg-info border border-info",*/}
+      {/*    error === 0 && alarm === 0 && ok === 0 && info > 0*/}
+      {/*      ? "rounded-l-sm"*/}
+      {/*      : null,*/}
+      {/*    skip === 0 && info > 0 ? "rounded-r-sm" : null*/}
+      {/*  )}*/}
+      {/*  percent={info}*/}
+      {/*/>*/}
+      {/*<ProgressBar*/}
+      {/*  className={classNames(*/}
+      {/*    "bg-tbd border border-tbd",*/}
+      {/*    error === 0 && alarm === 0 && ok === 0 && info === 0 && error > 0*/}
+      {/*      ? "rounded-l-sm"*/}
+      {/*      : null,*/}
+      {/*    skip > 0 ? "rounded-r-sm" : null*/}
+      {/*  )}*/}
+      {/*  percent={skip}*/}
+      {/*/>*/}
+      <div className="my-auto px-0" style={{ width: `${alertsWidth}%` }}>
+        <ProgressBarGroup className="flex-row-reverse">
+          <ProgressBar
+            className="bg-alert border border-alert"
+            percent={alarm}
+          />
+          <ProgressBar className="border border-alert" percent={error} />
+        </ProgressBarGroup>
+      </div>
+      <div className="h-6 w-0 border-l border-black-scale-4" />
+      <div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>
+        <ProgressBarGroup>
+          <ProgressBar className="bg-ok border border-ok" percent={ok} />
+          <ProgressBar className="bg-info border border-info" percent={info} />
+          <ProgressBar className="bg-tbd border border-tbd" percent={skip} />
+        </ProgressBarGroup>
+      </div>
     </div>
   );
 };

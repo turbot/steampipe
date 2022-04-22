@@ -1,6 +1,4 @@
 import CheckSummaryChart from "../CheckSummaryChart";
-import { CheckNode, CheckResult, CheckResultStatus } from "../common";
-import { classNames } from "../../../../utils/styles";
 import {
   AlarmIcon,
   CollapseBenchmarkIcon,
@@ -11,12 +9,20 @@ import {
   SkipIcon,
   UnknownIcon,
 } from "../../../../constants/icons";
+import {
+  CheckNode,
+  CheckResult,
+  CheckResultStatus,
+  CheckSummary,
+} from "../common";
+import { classNames } from "../../../../utils/styles";
+import { ControlDimension } from "../Benchmark";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useState } from "react";
-import { ControlDimension } from "../Benchmark";
 
 interface CheckPanelProps {
   node: CheckNode;
+  rootSummary: CheckSummary;
 }
 
 interface CheckResultRowProps {
@@ -50,7 +56,7 @@ const getMargin = (depth) => {
   }
 };
 
-const CheckChildren = ({ node }: CheckPanelProps) => {
+const CheckChildren = ({ node, rootSummary }: CheckPanelProps) => {
   if (!node.children) {
     return null;
   }
@@ -58,7 +64,7 @@ const CheckChildren = ({ node }: CheckPanelProps) => {
   return (
     <>
       {node.children.map((child) => (
-        <CheckPanel key={child.name} node={child} />
+        <CheckPanel key={child.name} node={child} rootSummary={rootSummary} />
       ))}
     </>
   );
@@ -85,8 +91,8 @@ const CheckResultRowStatusIcon = ({
 
 const CheckResultRow = ({ result }: CheckResultRowProps) => {
   return (
-    <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md">
-      <div className="flex-shrink-0 mr-4">
+    <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
+      <div className="flex-shrink-0">
         <CheckResultRowStatusIcon status={result.status} />
       </div>
       <div className="flex-grow font-medium">{result.reason}</div>
@@ -138,7 +144,7 @@ const CheckResults = ({ node }: CheckPanelProps) => {
   );
 };
 
-const CheckPanel = ({ node }: CheckPanelProps) => {
+const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -152,16 +158,22 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
           onClick={() => setExpanded((current) => !current)}
         >
           <div className="p-4 flex items-center space-x-6">
-            <div className="flex flex-grow justify-between items-center">
-              <h3
-                id={`${node.name}-title`}
-                className="truncate mt-0"
-                title={node.title}
-              >
-                {node.title}
-              </h3>
-              <div className="w-48 md:w-72 lg:w-96">
-                <CheckSummaryChart name={node.name} summary={node.summary} />
+            <div className="flex flex-grow justify-between items-center space-x-6">
+              <div>
+                <h3
+                  id={`${node.name}-title`}
+                  className="mt-0"
+                  title={node.title}
+                >
+                  {node.title}
+                </h3>
+              </div>
+              <div className="flex-shrink-0 w-40 md:w-72 lg:w-96">
+                <CheckSummaryChart
+                  name={node.name}
+                  summary={node.summary}
+                  rootSummary={rootSummary}
+                />
               </div>
             </div>
             {!expanded && (
@@ -172,9 +184,9 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
             )}
           </div>
         </section>
-        {expanded && <CheckResults node={node} />}
+        {expanded && <CheckResults node={node} rootSummary={rootSummary} />}
       </div>
-      {expanded && <CheckChildren node={node} />}
+      {expanded && <CheckChildren node={node} rootSummary={rootSummary} />}
     </>
   );
 };
