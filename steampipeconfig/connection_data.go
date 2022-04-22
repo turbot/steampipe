@@ -1,14 +1,8 @@
 package steampipeconfig
 
 import (
-	"encoding/json"
-	"log"
-	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -16,22 +10,6 @@ import (
 // If we need to force a connection refresh (for example if any of the underlying schema generation code changes),
 // updating this version will force all connections to refresh, as the deserialized data will have an old version
 var ConnectionDataStructVersion int64 = 20211125
-
-// LegacyConnectionData is the legacy connection data struct, which was used in the legacy
-// connection state file
-type LegacyConnectionData struct {
-	StructVersion int64
-	// the fully qualified name of the plugin
-	Plugin string
-	// the underlying connection object
-	Connection *modconfig.Connection
-	// schema mode - static or dynamic
-	SchemaMode string `json:"SchemaMode,omitempty"`
-	// the hash of the connection schema
-	SchemaHash string `json:"SchemaHash,omitempty"`
-	// the creation time of the plugin file (only used for local plugins)
-	ModTime time.Time
-}
 
 // ConnectionData is a struct containing all details for a connection
 // - the plugin name and checksum, the connection config and options
@@ -48,28 +26,40 @@ type ConnectionData struct {
 	SchemaHash string `json:"schema_hash,omitempty"`
 	// the creation time of the plugin file (only used for local plugins)
 	ModTime time.Time `json:"mod_time"`
+
+	// legacy properties
+	LegacyPlugin     string                `json:"Plugin,omitempty"`
+	LegacyConnection *modconfig.Connection `json:"Connection,omitempty"`
+	LegacySchemaMode string                `json:"SchemaMode,omitempty"`
+	LegacySchemaHash string                `json:"SchemaHash,omitempty"`
+	LegacyModTime    time.Time             `json:"ModTime,omitempty"`
 }
 
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the StructVersion is populated
-func (s ConnectionData) IsValid() bool {
+func (s *ConnectionData) IsValid() bool {
 	return s.StructVersion > 0
 }
 
-func (s *ConnectionData) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyConnectionData)
+// MigrateLegacy migrates the legacy properties into new properties
+func (s *ConnectionData) MigrateLegacy() {
 	s.StructVersion = ConnectionDataStructVersion
-	s.Plugin = legacyState.Plugin
-	s.SchemaMode = legacyState.SchemaMode
-	s.SchemaHash = legacyState.SchemaHash
-	s.ModTime = legacyState.ModTime
-	s.Connection = legacyState.Connection
-
-	return s
+	s.Plugin = s.LegacyPlugin
+	s.SchemaMode = s.LegacySchemaMode
+	s.SchemaHash = s.LegacySchemaHash
+	s.ModTime = s.LegacyModTime
+	s.Connection = s.LegacyConnection
+	s.Connection.MigrateLegacy()
 }
 
-func LegacyStateFilePath() string {
-	return filepath.Join(filepaths.EnsureInternalDir(), "connection.json")
+// MaintainLegacy keeps the values of the legacy properties intact while
+// refreshing connections
+func (s *ConnectionData) MaintainLegacy() {
+	s.LegacyPlugin = s.Plugin
+	s.LegacySchemaMode = s.SchemaMode
+	s.LegacySchemaHash = s.SchemaHash
+	s.LegacyModTime = s.ModTime
+	s.LegacyConnection = s.Connection
 }
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
@@ -91,18 +81,4 @@ func (p *ConnectionData) Equals(other *ConnectionData) bool {
 	return p.Plugin == other.Plugin &&
 		p.ModTime.Equal(other.ModTime) &&
 		p.Connection.Equals(other.Connection)
-}
-
-func (f *ConnectionData) Save() error {
-	versionFilePath := filepaths.ConnectionStatePath()
-	return f.write(versionFilePath)
-}
-
-func (f *ConnectionData) write(path string) error {
-	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
-	if err != nil {
-		log.Println("[ERROR]", "Error while writing state file", err)
-		return err
-	}
-	return os.WriteFile(path, versionFileJSON, 0644)
 }

@@ -16,31 +16,6 @@ const (
 	ConnectionTypeAggregator = "aggregator"
 )
 
-// LegacyConnection is the legacy connection struct, which was used in the legacy
-// connection state file
-type LegacyConnection struct {
-	// connection name
-	Name string
-	// The name of plugin as mentioned in config
-	PluginShortName string
-	// The fully qualified name of the plugin. derived from the short name
-	Plugin string
-	// Type - supported values: "aggregator"
-	Type string `json:"Type,omitempty"`
-	// this is a list of names or wildcards which are resolved to connections
-	// (only valid for "aggregator" type)
-	ConnectionNames []string `json:"Connections,omitempty"`
-	// a list of the resolved child connections
-	// (only valid for "aggregator" type)
-	Connections map[string]*Connection `json:"-"`
-	// unparsed HCL of plugin specific connection config
-	Config string `json:"Config,omitempty"`
-
-	// options
-	Options   *options.Connection `json:"Options,omitempty"`
-	DeclRange hcl.Range
-}
-
 // Connection is a struct representing the partially parsed connection
 //
 // (Partial as the connection config, which is plugin specific, is stored as raw HCL.
@@ -67,6 +42,29 @@ type Connection struct {
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
 	DeclRange Range               `json:"decl_range,omitempty"`
+
+	// legacy properties
+	LegacyName            string                 `json:"Name,omitempty"`
+	LegacyPluginShortName string                 `json:"PluginShortName,omitempty"`
+	LegacyPlugin          string                 `json:"Plugin,omitempty"`
+	LegacyType            string                 `json:"Type,omitempty"`
+	LegacyConnectionNames []string               `json:"Connections,omitempty"`
+	LegacyConnections     map[string]*Connection `json:"-"`
+	LegacyConfig          string                 `json:"Config,omitempty"`
+	LegacyOptions         *options.Connection    `json:"Options,omitempty"`
+	LegacyDeclRange       hcl.Range              `json:"DeclRange,omitempty"`
+}
+
+// MigrateLegacy migrates the legacy properties into new properties
+func (c *Connection) MigrateLegacy() {
+	c.Name = c.LegacyName
+	c.Plugin = c.LegacyPlugin
+	c.PluginShortName = c.LegacyPluginShortName
+	c.Type = c.LegacyType
+	c.ConnectionNames = c.LegacyConnectionNames
+	c.Connections = c.LegacyConnections
+	c.Config = c.LegacyConfig
+	c.DeclRange = NewRange(c.LegacyDeclRange)
 }
 
 // Range represents a span of characters between two positions in a source file.
@@ -91,9 +89,9 @@ func NewRange(sourceRange hcl.Range) Range {
 // Pos represents a single position in a source file
 // This is a direct re-implementation of hcl.Pos, allowing us to control JSON serialization
 type Pos struct {
-	Line   int `json:"line,omitempty"`
-	Column int `json:"column,omitempty"`
-	Byte   int `json:"byte,omitempty"`
+	Line   int `json:"line"`
+	Column int `json:"column"`
+	Byte   int `json:"byte"`
 }
 
 func NewPos(sourcePos hcl.Pos) Pos {
