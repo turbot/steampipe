@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -46,6 +47,21 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 
+	statushooks.SetStatus(ctx, "Preparing backups...")
+	defer statushooks.Done(ctx)
+	var dbName *string
+	// call prepareBackup to generate the db dump file if necessary
+	// NOTE: this returns the existing database name - we use this when creating the new database
+	if d, err := prepareBackup(ctx); err != nil {
+		if errors.Is(err, ErrDbInstanceRunning) {
+			return err
+		}
+		log.Printf("[TRACE] prepareBackup failed: %v", err)
+		return fmt.Errorf("Could not backup old data... FAILED!")
+	} else {
+		dbName = d
+	}
+
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
@@ -55,7 +71,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	log.Println("[TRACE] removing previous installation")
 	statushooks.SetStatus(ctx, "Prepare database install location...")
-	defer statushooks.Done(ctx)
 
 	err = os.RemoveAll(getDatabaseLocation())
 	if err != nil {
@@ -74,17 +89,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
-	}
-
-	statushooks.SetStatus(ctx, "Preparing backups...")
-	var dbName *string
-	// call prepareBackup to generate the db dump file if necessary
-	// NOTE: this returns the existing database name - we use this when creating the new database
-	if d, err := prepareBackup(ctx); err != nil {
-		log.Printf("[TRACE] prepareBackup failed: %v", err)
-		return fmt.Errorf("Could not backup old data... FAILED!")
-	} else {
-		dbName = d
 	}
 
 	// run the database installation

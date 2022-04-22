@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
@@ -14,7 +15,11 @@ import (
 	"github.com/turbot/steampipe/filepaths"
 )
 
-type dbStartConfig struct {
+var (
+	ErrDbInstanceRunning = fmt.Errorf("cannot start DB backup - an instance is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+)
+
+type db12StartConfig struct {
 	cmd    *exec.Cmd
 	port   int
 	dbName string
@@ -30,6 +35,10 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	if !needs {
 		return nil, nil
 	}
+	// short circuit if there is an instance running
+	if err := errIfInstanceRunning(ctx, location); err != nil {
+		return nil, err
+	}
 	config, err := startDatabaseInLocation(ctx, location)
 	if err != nil {
 		return nil, err
@@ -43,7 +52,24 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	return &config.dbName, os.RemoveAll(location)
 }
 
-func takeBackup(ctx context.Context, config *dbStartConfig) error {
+func errIfInstanceRunning(ctx context.Context, location string) error {
+	processes, err := FindAllSteampipePostgresInstances(ctx)
+	if err != nil {
+		return err
+	}
+	for _, p := range processes {
+		cmdLine, err := p.CmdlineWithContext(ctx)
+		if err != nil {
+			continue
+		}
+		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
+			return ErrDbInstanceRunning
+		}
+	}
+	return nil
+}
+
+func takeBackup(ctx context.Context, config *db12StartConfig) error {
 	cmd := exec.CommandContext(
 		ctx,
 		getPgDumpBinaryExecutablePath(),
@@ -79,7 +105,7 @@ func takeBackup(ctx context.Context, config *dbStartConfig) error {
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-func startDatabaseInLocation(ctx context.Context, location string) (*dbStartConfig, error) {
+func startDatabaseInLocation(ctx context.Context, location string) (*db12StartConfig, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
 	port, err := getNextFreePort()
@@ -112,7 +138,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*dbStartConf
 		return nil, err
 	}
 
-	return &dbStartConfig{cmd: cmd, port: port, dbName: dbName}, nil
+	return &db12StartConfig{cmd: cmd, port: port, dbName: dbName}, nil
 }
 
 // stopDbByCmd is used for shutting down postgres instance spun up for extracting dump
