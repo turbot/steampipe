@@ -53,7 +53,7 @@ const CheckPanel = ({ node }: CheckPanelProps) => {
           className="bg-dashboard-panel shadow-sm rounded-md p-4 cursor-pointer"
           onClick={() => setExpanded((current) => !current)}
         >
-          <div className="flex justify-between items-center space-x-4">
+          <div className="flex items-center space-x-4">
             <div className="flex flex-grow justify-between items-center">
               <h3
                 id={`${node.name}-title`}
