@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"log"
+	"sort"
 	"strings"
 )
 
@@ -9,6 +10,7 @@ type ModVariableMap struct {
 	RootVariables       map[string]*Variable
 	DependencyVariables map[string]map[string]*Variable
 	// a map of top level AND dependency variables
+	// used to set variable values from inputVariables
 	AllVariables map[string]*Variable
 
 	// a map of promoted dependency variables
@@ -40,6 +42,8 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 	// add any unique variables of dependency mods into the top level variables
 	// this allows users to reference (and set values of) variables in dependency mods without qualifying them
 	m.promoteUniqueDependencyVariables()
+
+	// build map of all variables
 	m.AllVariables = m.buildCombinedMap()
 
 	return m
@@ -86,14 +90,44 @@ func (m ModVariableMap) buildCombinedMap() map[string]*Variable {
 func (m ModVariableMap) ToArray() []*Variable {
 	var res []*Variable
 
-	for _, v := range m.RootVariables {
-		res = append(res, v)
-	}
-	for _, dep := range m.DependencyVariables {
-		for _, v := range dep {
-			res = append(res, v)
+	if len(m.AllVariables) > 0 {
+		var keys = make([]string, len(m.RootVariables)-len(m.VariableAliases))
+		idx := 0
+
+		for k := range m.RootVariables {
+			// if there is an alias for this variable, that means it is will appear twice in AllVariables,
+			// so exclude this copy
+			if _, ok := m.VariableAliases[k]; ok {
+				continue
+			}
+			keys[idx] = k
+			idx++
+		}
+		// sort keys
+		sort.Strings(keys)
+		for _, k := range keys {
+			res = append(res, m.RootVariables[k])
 		}
 	}
+
+	for _, depVariables := range m.DependencyVariables {
+		if len(depVariables) == 0 {
+			continue
+		}
+		keys := make([]string, len(depVariables))
+		idx := 0
+
+		for k := range depVariables {
+			keys[idx] = k
+			idx++
+		}
+		// sort keys
+		sort.Strings(keys)
+		for _, k := range keys {
+			res = append(res, depVariables[k])
+		}
+	}
+
 	return res
 }
 

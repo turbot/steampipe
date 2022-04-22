@@ -57,18 +57,8 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
-	// create shell workspace
-	workspace := &Workspace{
-		Path:           workspacePath,
-		VariableValues: make(map[string]string),
-	}
-
-	// check whether the workspace contains a modfile
-	// this will determine whether we load files recursively, and create pseudo resources for sql files
-	workspace.setModfileExists()
-
-	// load the .steampipe ignore file
-	if err := workspace.loadExclusions(); err != nil {
+	workspace, err := createShellWorkspace(workspacePath)
+	if err != nil {
 		return nil, err
 	}
 
@@ -92,13 +82,10 @@ func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Vari
 	defer utils.LogTime("workspace.LoadVariables end")
 
 	// create shell workspace
-	workspace := &Workspace{
-		Path:           workspacePath,
-		VariableValues: make(map[string]string),
+	workspace, err := createShellWorkspace(workspacePath)
+	if err != nil {
+		return nil, err
 	}
-	// check whether the workspace contains a modfile
-	// this will determine whether we load files recursively, and create pseudo resources for sql files
-	workspace.setModfileExists()
 
 	// we will NOT validate missing variables when loading
 	validateMissing := false
@@ -106,8 +93,26 @@ func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Vari
 	if err != nil {
 		return nil, err
 	}
-	// convert into array
+	// convert into a sorted array
 	return varMap.ToArray(), nil
+}
+
+func createShellWorkspace(workspacePath string) (*Workspace, error) {
+	// create shell workspace
+	workspace := &Workspace{
+		Path:           workspacePath,
+		VariableValues: make(map[string]string),
+	}
+
+	// check whether the workspace contains a modfile
+	// this will determine whether we load files recursively, and create pseudo resources for sql files
+	workspace.setModfileExists()
+
+	// load the .steampipe ignore file
+	if err := workspace.loadExclusions(); err != nil {
+		return nil, err
+	}
+	return workspace, nil
 }
 
 // LoadResourceNames builds lists of all workspace resource names
