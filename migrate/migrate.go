@@ -21,17 +21,17 @@ func Migrate(old Migrateable, oldPath string) error {
 		}
 		return err
 	}
+	// Deserialize into old struct
+	err = json.Unmarshal(stateFileContent, &old)
+	if err != nil {
+		return err
+	}
 
 	// check whether we successfully derserialized into the new struct
 	if old.IsValid() {
 		return nil
 	}
 
-	// if StructVersion is not available, deserialize into old struct
-	err = json.Unmarshal(stateFileContent, &old)
-	if err != nil {
-		return err
-	}
 	x := old.MigrateFrom()
 	return utils.CombineErrors(os.Remove(oldPath), x.Save())
 }
