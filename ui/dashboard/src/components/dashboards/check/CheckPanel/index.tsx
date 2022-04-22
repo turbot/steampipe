@@ -40,17 +40,17 @@ interface CheckResultRowStatusIconProps {
 const getMargin = (depth) => {
   switch (depth) {
     case 1:
-      return "ml-[24px]";
+      return "md:ml-[24px]";
     case 2:
-      return "ml-[48px]";
+      return "md:ml-[48px]";
     case 3:
-      return "ml-[72px]";
+      return "md:ml-[72px]";
     case 4:
-      return "ml-[96px]";
+      return "md:ml-[96px]";
     case 5:
-      return "ml-[120px]";
+      return "md:ml-[120px]";
     case 6:
-      return "ml-[144px]";
+      return "md:ml-[144px]";
     default:
       return "ml-0";
   }
@@ -146,6 +146,10 @@ const CheckResults = ({ node }: CheckPanelProps) => {
 
 const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
+  const canBeExpanded =
+    (!!node.children && node.children.length > 0) ||
+    (!!node.results && node.results.length > 0) ||
+    node.error;
 
   return (
     <>
@@ -179,12 +183,13 @@ const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
                 />
               </div>
             </div>
-            {!expanded && (
-              <ExpandCheckNodeIcon className="h-7 w-7 flex-shrink-0 text-foreground-lightest" />
+            {canBeExpanded && !expanded && (
+              <ExpandCheckNodeIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
             {expanded && (
-              <CollapseBenchmarkIcon className="h-7 w-7 flex-shrink-0 text-foreground-lightest" />
+              <CollapseBenchmarkIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
+            {!canBeExpanded && <div className="w-5 md:w-7 h-5 md:h-7" />}
           </div>
         </section>
         {expanded && <CheckResults node={node} rootSummary={rootSummary} />}
