@@ -11,6 +11,7 @@ export interface CheckNode {
   summary: CheckSummary;
   children?: CheckNode[];
   results?: CheckResult[];
+  error?: string;
 }
 
 // export interface IControl {

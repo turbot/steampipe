@@ -93,6 +93,10 @@ class Control implements CheckNode {
     return this._summary;
   }
 
+  get error(): string | undefined {
+    return this._run_error;
+  }
+
   get run_error(): string | undefined {
     return this._run_error;
   }
