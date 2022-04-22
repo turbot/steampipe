@@ -10,58 +10,15 @@ import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo } from "react";
 
-// interface ControlNodeProps {
-//   depth: number;
-//   control: ControlType;
-// }
-//
-// interface BenchmarkNodeProps {
-//   depth: number;
-//   benchmark: BenchmarkType;
-// }
-
 interface BenchmarkTableViewProps {
   benchmark: BenchmarkType;
   definition: CheckProps;
 }
 
-// const getPadding = (depth) => {
-//   switch (depth) {
-//     case 1:
-//       return "pl-[6px]";
-//     case 2:
-//       return "pl-[12px]";
-//     case 3:
-//       return "pl-[18px]";
-//     case 4:
-//       return "pl-[24px]";
-//     case 5:
-//       return "pl-[30px]";
-//     case 6:
-//       return "pl-[36px]";
-//     default:
-//       return "pl-0";
-//   }
-// };
-
-// const getMargin = (depth) => {
-//   switch (depth) {
-//     case 1:
-//       return "ml-[6px]";
-//     case 2:
-//       return "ml-[12px]";
-//     case 3:
-//       return "ml-[18px]";
-//     case 4:
-//       return "ml-[24px]";
-//     case 5:
-//       return "ml-[30px]";
-//     case 6:
-//       return "ml-[36px]";
-//     default:
-//       return "ml-0";
-//   }
-// };
+type InnerCheckProps = CheckProps & {
+  data?: LeafNodeData;
+  benchmark: BenchmarkType | null;
+};
 
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
   <span
@@ -72,195 +29,6 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
     {dimensionValue}
   </span>
 );
-
-// const ControlResultStatus = ({ status }) => {
-//   let textClass;
-//   switch (status) {
-//     case "alarm":
-//     case "error":
-//       textClass = "text-alert";
-//       break;
-//     case "ok":
-//       textClass = "text-ok";
-//       break;
-//     case "info":
-//       textClass = "text-info";
-//       break;
-//     default:
-//       textClass = "text-tbd";
-//       break;
-//   }
-//   return (
-//     <pre>
-//       <span className={classNames(textClass, "uppercase")}>
-//         {padEnd(status, 5)}
-//       </span>
-//       <span className="text-foreground-lightest">:</span>
-//     </pre>
-//   );
-// };
-
-// const ControlResult = ({ depth, result }) => {
-//   return (
-//     <div className="group flex rounded-sm">
-//       <ControlIndentMarker depth={depth} />
-//       <div className="pr-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-baseline">
-//         <div className="flex truncate">
-//           <ControlResultStatus status={result.status} />
-//           <span className="px-1">{result.reason}</span>
-//         </div>
-//         <div className="flex-grow border-b border-dotted" />
-//         <div className="space-x-2">
-//           {(result.dimensions || []).map((dimension) => (
-//             <ControlDimension
-//               key={dimension.key}
-//               dimensionKey={dimension.key}
-//               dimensionValue={dimension.value}
-//             />
-//           ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ControlError = ({ depth, error }) => {
-//   return (
-//     <div className="group flex rounded-sm">
-//       <ControlIndentMarker depth={depth} />
-//       <div className="pr-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-baseline">
-//         <div className="flex truncate">
-//           <ControlResultStatus status="error" />
-//           <span className="px-1 text-alert">{error}</span>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ControlResults = ({ depth, results }) => {
-//   return results.map((result) => (
-//     <ControlResult key={result.resource} depth={depth} result={result} />
-//   ));
-// };
-
-// const ControlNode = ({ depth = 0, control }: ControlNodeProps) => {
-//   const [showControls, setShowControls] = useState(false);
-//   return (
-//     <>
-//       <div className="group flex rounded-sm py-2 items-center">
-//         {/*<NodeIndentMarker depth={depth} />*/}
-//         <div
-//           className={classNames(
-//             "pr-1 space-x-2 flex flex-grow flex-nowrap truncate group-hover:bg-black-scale-1 items-center",
-//             showControls || control.results.length > 0 || control.run_error
-//               ? "cursor-pointer "
-//               : null
-//             // getPadding(depth)
-//           )}
-//           onClick={
-//             showControls || control.results.length > 0 || control.run_error
-//               ? () => setShowControls(!showControls)
-//               : undefined
-//           }
-//         >
-//           <p>{control.title || control.name}</p>
-//         </div>
-//         <CheckSummaryChart name={control.name} summary={control.summary} />
-//       </div>
-//       {showControls && (
-//         <>
-//           {control.results.length > 0 && (
-//             <>
-//               <ControlIndentMarker depth={depth + 1} />
-//               <ControlResults depth={depth} results={control.results} />
-//               <ControlIndentMarker depth={depth} />
-//             </>
-//           )}
-//           {control.run_error && (
-//             <>
-//               <ControlIndentMarker depth={depth + 1} />
-//               <ControlError depth={depth + 1} error={control.run_error} />
-//             </>
-//           )}
-//         </>
-//       )}
-//     </>
-//   );
-// };
-
-// const ControlIndentMarker = ({ depth }) => {
-//   const barArray = Array(depth > 0 ? depth : 0).fill("|");
-//   const joined = barArray.join(" ");
-//
-//   return (
-//     <span className="flex-shrink-0 font-mono text-foreground-lightest">
-//       {joined}
-//       {depth > 0 ? <span>&nbsp;</span> : ""}
-//     </span>
-//   );
-// };
-
-// const NodeIndentMarker = ({ depth }) => {
-//   // return (
-//   //   <div className="flex-shrink-0 border-l border-black-scale-3 h-3 w-1" />
-//   // );
-//
-//   const barArray = Array(depth > 0 ? depth - 1 : 0).fill("|");
-//   const plusArray = Array(depth > 0 ? 1 : 0).fill("+");
-//   const combinedArray = [...barArray, ...plusArray];
-//   const joined = combinedArray.join(" ");
-//
-//   return (
-//     <span className="flex-shrink-0 font-mono text-foreground-lightest">
-//       {joined}
-//       {depth > 0 ? <span>&nbsp;</span> : ""}
-//     </span>
-//   );
-// };
-
-// const BenchmarkNode = ({ depth = 0, benchmark }: BenchmarkNodeProps) => {
-//   const [expanded, setExpanded] = useState(depth < 1);
-//
-//   return (
-//     <>
-//       <div className="group flex rounded-sm items-center">
-//         {/*<NodeIndentMarker depth={depth} />*/}
-//         <div
-//           className={classNames(
-//             "pr-1 space-x-2 flex flex-grow group-hover:bg-black-scale-1 items-center",
-//             benchmark.benchmarks || benchmark.controls
-//               ? "cursor-pointer "
-//               : null
-//           )}
-//           onClick={
-//             benchmark.benchmarks || benchmark.controls
-//               ? () => setExpanded(!expanded)
-//               : undefined
-//           }
-//         >
-//           <p>{benchmark.title || benchmark.name}</p>
-//         </div>
-//         <CheckSummaryChart name={benchmark.name} summary={benchmark.summary} />
-//       </div>
-//       {expanded && (
-//         <div className={classNames("border-l", getPadding(depth))}>
-//           {benchmark.benchmarks.map((b) => (
-//             <BenchmarkNode key={b.name} depth={depth + 1} benchmark={b} />
-//           ))}
-//           {benchmark.controls.map((c) => (
-//             <ControlNode key={c.name} depth={depth + 1} control={c} />
-//           ))}
-//         </div>
-//       )}
-//     </>
-//   );
-// };
-
-type InnerCheckProps = CheckProps & {
-  data?: LeafNodeData;
-  benchmark: BenchmarkType | null;
-};
 
 const Benchmark = (props: InnerCheckProps) => {
   const benchmarkDataTable = useMemo(() => {
@@ -386,12 +154,6 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
       rootSummary={rootSummary}
     />
   );
-
-  // return (
-  //   <div className="p-4">
-  //     <BenchmarkNode depth={0} benchmark={props.properties.benchmark} />
-  //   </div>
-  // );
 };
 
 const BenchmarkTableView = ({

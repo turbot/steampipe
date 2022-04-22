@@ -8,7 +8,7 @@ interface CheckGroupingProps {
 
 const CheckGrouping = ({ node, rootSummary }: CheckGroupingProps) => {
   return (
-    <div className="space-y-8 col-span-12">
+    <div className="space-y-6 md:space-y-8 col-span-12">
       {node.children?.map((child) => (
         <CheckPanel key={child.name} node={child} rootSummary={rootSummary} />
       ))}
