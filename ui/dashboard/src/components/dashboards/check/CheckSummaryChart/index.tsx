@@ -1,5 +1,6 @@
 import { CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
+import IntegerDisplay from "../../../IntegerDisplay";
 
 interface ProgressBarGroupProps {
   children: JSX.Element | JSX.Element[];
@@ -183,7 +184,10 @@ const CheckSummaryChart = ({
   }
 
   return (
-    <div className="flex">
+    <div className="flex items-center">
+      {/*<span className="mr-2 text-alert text-right text-sm">*/}
+      {/*  {summary.alarm > 0 ? <IntegerDisplay num={summary.alarm} /> : "-"}*/}
+      {/*</span>*/}
       {/*<ProgressBar*/}
       {/*  className={classNames(*/}
       {/*    "border border-alert",*/}
@@ -249,6 +253,9 @@ const CheckSummaryChart = ({
           <ProgressBar className="bg-tbd border border-tbd" percent={skip} />
         </ProgressBarGroup>
       </div>
+      {/*<span className="ml-2 text-ok text-right text-sm">*/}
+      {/*  {summary.ok > 0 ? <IntegerDisplay num={summary.ok} /> : "-"}*/}
+      {/*</span>*/}
     </div>
   );
 };
