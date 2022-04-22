@@ -17,3 +17,10 @@ const CheckGrouping = ({ node, rootSummary }: CheckGroupingProps) => {
 };
 
 export default CheckGrouping;
+
+// TODO
+// Summary chart should show something if no results
+// Add counts to summary chart
+// Add animation to summary charts + remove from row
+// If no results and no error, show no resources row
+// Scaling of summary charts is off
