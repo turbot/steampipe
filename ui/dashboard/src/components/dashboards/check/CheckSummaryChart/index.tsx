@@ -1,6 +1,5 @@
 import { CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
-import IntegerDisplay from "../../../IntegerDisplay";
 
 interface ProgressBarGroupProps {
   children: JSX.Element | JSX.Element[];

@@ -95,7 +95,7 @@ const CheckResultRow = ({ result }: CheckResultRowProps) => {
       <div className="flex-shrink-0">
         <CheckResultRowStatusIcon status={result.status} />
       </div>
-      <div className="flex-grow font-medium">{result.reason}</div>
+      <div className="flex-grow">{result.reason}</div>
       <div className="flex-wrap space-x-2">
         {(result.dimensions || []).map((dimension) => (
           <ControlDimension
