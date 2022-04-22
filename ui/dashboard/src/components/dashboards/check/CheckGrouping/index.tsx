@@ -24,3 +24,8 @@ export default CheckGrouping;
 // Add animation to summary charts + remove from row
 // If no results and no error, show no resources row
 // Scaling of summary charts is off
+
+// "benchmark" / "control" / "result"
+// <dimension> / "benchmark" / "control" / "result"
+// <tag> / "benchmark" / "control" / "result"
+// etc
