@@ -160,13 +160,13 @@ const CheckSummaryChart = ({
 }: CheckSummaryChartProps) => {
   const maxAlerts = rootSummary.alarm + rootSummary.error;
   const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
-  const [alarm, error, ok, info, skip] = ensureMinPercentages(name, [
-    summary.alarm,
-    summary.error,
-    summary.ok,
-    summary.info,
-    summary.skip,
-  ]);
+  // const [alarm, error, ok, info, skip] = ensureMinPercentages(name, [
+  //   summary.alarm,
+  //   summary.error,
+  //   summary.ok,
+  //   summary.info,
+  //   summary.skip,
+  // ]);
   let alertsWidth = getWidth(maxAlerts, maxNonAlerts);
   let nonAlertsWidth = getWidth(maxNonAlerts, maxAlerts);
   if (alertsWidth > nonAlertsWidth) {
@@ -239,17 +239,29 @@ const CheckSummaryChart = ({
         <ProgressBarGroup className="flex-row-reverse">
           <ProgressBar
             className="bg-alert border border-alert"
-            percent={alarm}
+            percent={summary.alarm}
           />
-          <ProgressBar className="border border-alert" percent={error} />
+          <ProgressBar
+            className="border border-alert"
+            percent={summary.error}
+          />
         </ProgressBarGroup>
       </div>
       <div className="h-6 w-0 border-l border-black-scale-4" />
       <div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>
         <ProgressBarGroup>
-          <ProgressBar className="bg-ok border border-ok" percent={ok} />
-          <ProgressBar className="bg-info border border-info" percent={info} />
-          <ProgressBar className="bg-tbd border border-tbd" percent={skip} />
+          <ProgressBar
+            className="bg-ok border border-ok"
+            percent={summary.ok}
+          />
+          <ProgressBar
+            className="bg-info border border-info"
+            percent={summary.info}
+          />
+          <ProgressBar
+            className="bg-tbd border border-tbd"
+            percent={summary.skip}
+          />
         </ProgressBarGroup>
       </div>
       {/*<span className="ml-2 text-ok text-right text-sm">*/}
