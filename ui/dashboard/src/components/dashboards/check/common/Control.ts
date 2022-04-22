@@ -1,9 +1,9 @@
 import {
   CheckDynamicColsMap,
   CheckNode,
+  CheckNodeStatus,
   CheckNodeType,
   CheckResult,
-  CheckRunState,
   CheckSummary,
   CheckTags,
 } from "./index";
@@ -20,7 +20,7 @@ class Control implements CheckNode {
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _tags: CheckTags;
-  private readonly _run_state: CheckRunState;
+  private readonly _run_state: CheckNodeStatus;
   private readonly _run_error: string | undefined;
 
   constructor(
@@ -34,7 +34,7 @@ class Control implements CheckNode {
     results: CheckResult[] | undefined,
     summary: CheckSummary | undefined,
     tags: CheckTags | undefined,
-    run_state: number,
+    status: number,
     run_error: string | undefined
   ) {
     this._depth = depth;
@@ -53,21 +53,21 @@ class Control implements CheckNode {
       error: 0,
     };
     this._tags = tags || {};
-    this._run_state = Control._getRunState(run_state);
+    this._run_state = Control._getRunState(status);
     this._run_error = run_error;
   }
 
-  private static _getRunState(run_state: number): CheckRunState {
-    if (run_state === 1) {
+  private static _getRunState(status: number): CheckNodeStatus {
+    if (status === 1) {
       return "ready";
     }
-    if (run_state === 2) {
+    if (status === 2) {
       return "started";
     }
-    if (run_state === 4) {
+    if (status === 4) {
       return "complete";
     }
-    if (run_state === 8) {
+    if (status === 8) {
       return "error";
     }
     return "unknown";
@@ -97,11 +97,7 @@ class Control implements CheckNode {
     return this._run_error;
   }
 
-  get run_error(): string | undefined {
-    return this._run_error;
-  }
-
-  get run_state(): CheckRunState {
+  get status(): CheckNodeStatus {
     return this._run_state;
   }
 

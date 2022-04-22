@@ -153,7 +153,10 @@ const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
         <section
           className={classNames(
             "bg-dashboard-panel cursor-pointer shadow-sm rounded-md",
-            expanded && node.results ? "rounded-b-none" : null
+            expanded && node.results ? "rounded-b-none" : null,
+            node.status !== "complete" && node.status !== "error"
+              ? "animate-pulse"
+              : null
           )}
           onClick={() => setExpanded((current) => !current)}
         >

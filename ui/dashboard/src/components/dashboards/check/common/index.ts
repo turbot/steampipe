@@ -1,5 +1,5 @@
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 import Benchmark from "./Benchmark";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 
 export type CheckNodeType = "benchmark" | "control";
 
@@ -8,6 +8,7 @@ export interface CheckNode {
   name: string;
   title?: string;
   type: CheckNodeType;
+  status: CheckNodeStatus;
   summary: CheckSummary;
   children?: CheckNode[];
   results?: CheckResult[];
@@ -31,7 +32,7 @@ export interface CheckNode {
 //   controls: IControl[];
 // }
 
-export type CheckRunState =
+export type CheckNodeStatus =
   | "ready"
   | "started"
   | "complete"

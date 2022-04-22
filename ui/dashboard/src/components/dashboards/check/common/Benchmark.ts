@@ -4,8 +4,8 @@ import {
   CheckDynamicColsMap,
   CheckGroup,
   CheckNode,
+  CheckNodeStatus,
   CheckNodeType,
-  CheckRunState,
   CheckSummary,
 } from "./index";
 import {
@@ -127,32 +127,32 @@ class Benchmark implements CheckNode {
     return summary;
   }
 
-  get run_state(): CheckRunState {
+  get status(): CheckNodeStatus {
     for (const benchmark of this._benchmarks) {
-      if (benchmark.run_state === "error") {
+      if (benchmark.status === "error") {
         return "error";
       }
-      if (benchmark.run_state === "unknown") {
+      if (benchmark.status === "unknown") {
         return "unknown";
       }
-      if (benchmark.run_state === "ready") {
+      if (benchmark.status === "ready") {
         return "ready";
       }
-      if (benchmark.run_state === "started") {
+      if (benchmark.status === "started") {
         return "started";
       }
     }
     for (const control of this._controls) {
-      if (control.run_state === "error") {
+      if (control.status === "error") {
         return "error";
       }
-      if (control.run_state === "unknown") {
+      if (control.status === "unknown") {
         return "unknown";
       }
-      if (control.run_state === "ready") {
+      if (control.status === "ready") {
         return "ready";
       }
-      if (control.run_state === "started") {
+      if (control.status === "started") {
         return "started";
       }
     }

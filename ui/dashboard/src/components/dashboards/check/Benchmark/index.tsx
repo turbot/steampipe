@@ -266,8 +266,8 @@ const Benchmark = (props: InnerCheckProps) => {
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
-      (props.benchmark.run_state !== "complete" &&
-        props.benchmark.run_state !== "error")
+      (props.benchmark.status !== "complete" &&
+        props.benchmark.status !== "error")
     ) {
       return undefined;
     }
