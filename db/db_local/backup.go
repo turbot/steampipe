@@ -163,7 +163,7 @@ func stopDbByCmd(ctx context.Context, cmd *exec.Cmd) error {
 	return doThreeStepPostgresExit(ctx, p)
 }
 
-// needsBackup checks whether the `$STEAMPIPE_INSTALL_DIR/db` directory contains any database installation
+// needsBackup checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
 // other than desired version.
 // it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
 // it's also called as part of `restoreBackup` for removal of the installation once restoration successfully completes
@@ -221,13 +221,13 @@ func restoreBackup(ctx context.Context) error {
 	}
 
 	// extract the Table of Contents from the Backup Archive
-	toc, err := getTOCFromBackup(ctx)
+	toc, err := getToCFromBackup(ctx)
 	if err != nil {
 		return err
 	}
 
 	// partition the Table of Contents into separate lists (no refresh and only refresh)
-	noRefreshListFile, onlyRefreshListFile, err := splitTocMatViewRefreshData(ctx, toc)
+	noRefreshListFile, onlyRefreshListFile, err := splitToCMatViewRefreshData(ctx, toc)
 	if err != nil {
 		return err
 	}
@@ -291,20 +291,20 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 	return nil
 }
 
-// splitTocMatViewRefreshData writes back the TableOfContents into a two temporary files:
+// splitToCMatViewRefreshData writes back the TableOfContents into a two temporary files:
 // 	1. without REFRESH MATERIALIZED VIEWS
 //  2. only REFRESH MATERIALIZED VIEWS
 //
 // This needs to be done because REFRESHING cannot work in restore, since the BackUP will always set
 // a blank search path before commencing and the MATERIALIZED VIEWS may have functions with
 // unqualified table names
-func splitTocMatViewRefreshData(ctx context.Context, toc []string) (string, string, error) {
+func splitToCMatViewRefreshData(ctx context.Context, toc []string) (string, string, error) {
 	withoutRefresh, onlyRefresh := utils.Partition(toc, func(v string) bool {
 		return !strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
 	})
 
-	withoutFile := filepath.Join(filepaths.EnsureDatabaseDir(), NoMatViewRefreshListFileName)
-	onlyFile := filepath.Join(filepaths.EnsureDatabaseDir(), OnlyMatViewRefreshListFileName)
+	withoutFile := filepath.Join(filepaths.EnsureDatabaseDir(), noMatViewRefreshListFileName)
+	onlyFile := filepath.Join(filepaths.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
 
 	err := utils.CombineErrors(
 		os.WriteFile(withoutFile, []byte(strings.Join(withoutRefresh, "\n")), 0644),
@@ -314,9 +314,9 @@ func splitTocMatViewRefreshData(ctx context.Context, toc []string) (string, stri
 	return withoutFile, onlyFile, err
 }
 
-// getTOCFromBackup uses pg_restore to read the TableOfContents from the
+// getToCFromBackup uses pg_restore to read the TableOfContents from the
 // back archive
-func getTOCFromBackup(ctx context.Context) ([]string, error) {
+func getToCFromBackup(ctx context.Context) ([]string, error) {
 	cmd := exec.CommandContext(
 		ctx,
 		pgRestoreBinaryExecutablePath(),
@@ -337,7 +337,8 @@ func getTOCFromBackup(ctx context.Context) ([]string, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(b)))
 	scanner.Split(bufio.ScanLines)
 
-	lines := []string{";" /* start with an extra comment line */}
+	/* start with an extra comment line */
+	lines := []string{";"}
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, ";") {
@@ -346,7 +347,8 @@ func getTOCFromBackup(ctx context.Context) ([]string, error) {
 		}
 		lines = append(lines, scanner.Text())
 	}
-	lines = append(lines, ";" /* an extra comment line at the end */)
+	/* an extra comment line at the end */
+	lines = append(lines, ";")
 
 	return lines, err
 }

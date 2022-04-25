@@ -558,6 +558,10 @@ func showAllStatus(ctx context.Context) {
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
 	cmdLine, _ := process.CmdlineSlice()
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5d07b264 (tweaks)
 	installDir := strings.TrimSuffix(cmdLine[0], db_local.ServiceExecutableRelativeLocation())
 	var port string
 	var listenType db_local.StartListenType
