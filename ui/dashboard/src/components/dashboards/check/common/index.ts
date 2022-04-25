@@ -1,14 +1,14 @@
-import Benchmark from "./Benchmark";
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 import Control from "./Control";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
+import Benchmark from "./Benchmark";
 
 export type CheckNodeType =
   | "root"
   | "benchmark"
   | "control"
+  | "control_result"
   | "dimension"
-  | "tag"
-  | "result";
+  | "tag";
 
 export interface CheckNode {
   depth: number;
@@ -84,6 +84,7 @@ export interface CheckResult {
   dimensions: CheckResultDimension[];
   tags: CheckTags;
   control: CheckNode;
+  benchmark_trunk: Benchmark[];
 }
 
 export interface CheckControl {
@@ -123,7 +124,13 @@ export interface CheckExecutionTree {
 type CheckType = "summary" | "table" | null;
 
 export interface CheckDisplayGroup {
-  type: "benchmark" | "control" | "result" | "tag" | "dimension";
+  type:
+    | "benchmark"
+    | "control"
+    | "control_result"
+    | "result"
+    | "tag"
+    | "dimension";
   value?: string;
 }
 
@@ -140,12 +147,14 @@ export type CheckProps = BasePrimitiveProps &
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
-      benchmark: CheckNode;
+      grouping: CheckNode;
+      grouping_config: CheckDisplayGroup[];
       root_summary: CheckSummary;
     };
   };
 
 export type AddControlResultsAction = (
   results: CheckResult[],
-  control: Control
+  control: Control,
+  benchmark_trunk: Benchmark[]
 ) => void;

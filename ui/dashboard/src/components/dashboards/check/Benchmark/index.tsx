@@ -4,7 +4,12 @@ import Error from "../../Error";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
 import useCheckGrouping from "../../../../hooks/useCheckGrouping";
-import { BenchmarkTreeProps, CheckNode, CheckProps } from "../common";
+import {
+  BenchmarkTreeProps,
+  CheckDisplayGroup,
+  CheckNode,
+  CheckProps,
+} from "../common";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
@@ -17,7 +22,8 @@ interface BenchmarkTableViewProps {
 
 type InnerCheckProps = CheckProps & {
   data?: LeafNodeData;
-  benchmark: CheckNode;
+  grouping: CheckNode;
+  groupingConfig: CheckDisplayGroup[];
 };
 
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
@@ -42,11 +48,11 @@ const Benchmark = (props: InnerCheckProps) => {
   //   return props.benchmark.get_data_table();
   // }, [props.benchmark]);
 
-  if (!props.benchmark) {
+  if (!props.grouping) {
     return null;
   }
 
-  const summary = props.benchmark.summary;
+  const summary = props.grouping.summary;
 
   return (
     <Container
@@ -124,7 +130,7 @@ const Benchmark = (props: InnerCheckProps) => {
                 name: `${props.name}.container.tree.results`,
                 node_type: "benchmark_tree",
                 properties: {
-                  benchmark: props.benchmark,
+                  grouping: props.grouping,
                   root_summary: summary,
                 },
               },
@@ -151,7 +157,8 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
 
   return (
     <CheckGrouping
-      node={props.properties.benchmark}
+      node={props.properties.grouping}
+      groupingConfig={props.properties.grouping_config}
       rootSummary={props.properties.root_summary}
     />
   );
@@ -186,19 +193,25 @@ const BenchmarkTableView = ({
 };
 
 const BenchmarkWrapper = (props: CheckProps) => {
-  const groups = useCheckGrouping(props);
+  const [grouping, groupingsConfig] = useCheckGrouping(props);
 
-  if (!groups) {
+  if (!grouping) {
     return null;
   }
 
-  console.log(groups);
+  console.log(grouping);
 
   // if (props.properties && props.properties.type === "table") {
   //   return <BenchmarkTableView benchmark={groups} definition={props} />;
   // }
 
-  return <Benchmark {...props} benchmark={groups} />;
+  return (
+    <Benchmark
+      {...props}
+      grouping={grouping}
+      groupingConfig={groupingsConfig}
+    />
+  );
 };
 
 export default BenchmarkWrapper;

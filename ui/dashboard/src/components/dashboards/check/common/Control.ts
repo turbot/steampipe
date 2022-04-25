@@ -9,6 +9,7 @@ import {
   CheckTags,
 } from "./index";
 import { LeafNodeDataRow } from "../../common";
+import Benchmark from "./Benchmark";
 
 class Control implements CheckNode {
   private readonly _depth: number;
@@ -37,6 +38,7 @@ class Control implements CheckNode {
     tags: CheckTags | undefined,
     status: number,
     run_error: string | undefined,
+    benchmark_trunk: Benchmark[],
     add_control_results: AddControlResultsAction
   ) {
     this._depth = depth;
@@ -59,7 +61,7 @@ class Control implements CheckNode {
     this._run_error = run_error;
 
     if (this._results) {
-      add_control_results(this._results, this);
+      add_control_results(this._results, this, benchmark_trunk);
     }
   }
 

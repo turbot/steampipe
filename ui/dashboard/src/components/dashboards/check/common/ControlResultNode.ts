@@ -32,7 +32,7 @@ class ControlResultNode implements CheckNode {
   }
 
   get type(): CheckNodeType {
-    return "result";
+    return "control_result";
   }
 
   get summary(): CheckSummary {

@@ -1,4 +1,5 @@
 import CheckSummaryChart from "../CheckSummaryChart";
+import ControlResultNode from "../common/ControlResultNode";
 import sortBy from "lodash/sortBy";
 import {
   AlarmIcon,
@@ -11,6 +12,7 @@ import {
   UnknownIcon,
 } from "../../../../constants/icons";
 import {
+  CheckDisplayGroup,
   CheckNode,
   CheckResult,
   CheckResultStatus,
@@ -20,10 +22,10 @@ import { classNames } from "../../../../utils/styles";
 import { ControlDimension } from "../Benchmark";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useMemo, useState } from "react";
-import ControlResultNode from "../common/ControlResultNode";
 
 interface CheckChildrenProps {
   children: CheckNode[];
+  groupingConfig: CheckDisplayGroup[];
   rootSummary: CheckSummary;
 }
 
@@ -34,6 +36,7 @@ interface CheckResultsProps {
 
 interface CheckPanelProps {
   node: CheckNode;
+  groupingConfig: CheckDisplayGroup[];
   rootSummary: CheckSummary;
 }
 
@@ -68,7 +71,11 @@ const getMargin = (depth) => {
   }
 };
 
-const CheckChildren = ({ children, rootSummary }: CheckChildrenProps) => {
+const CheckChildren = ({
+  children,
+  groupingConfig,
+  rootSummary,
+}: CheckChildrenProps) => {
   if (!children) {
     return null;
   }
@@ -76,7 +83,12 @@ const CheckChildren = ({ children, rootSummary }: CheckChildrenProps) => {
   return (
     <>
       {children.map((child) => (
-        <CheckPanel key={child.name} node={child} rootSummary={rootSummary} />
+        <CheckPanel
+          key={child.name}
+          node={child}
+          groupingConfig={groupingConfig}
+          rootSummary={rootSummary}
+        />
       ))}
     </>
   );
@@ -159,32 +171,37 @@ const CheckResults = ({ error, results }: CheckResultsProps) => {
   );
 };
 
-const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
+const CheckPanel = ({ node, groupingConfig, rootSummary }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
-  const canBeExpanded =
-    (!!node.children && node.children.length > 0) ||
-    (!!node.results && node.results.length > 0) ||
-    node.error;
 
-  const [child_nodes, result_nodes] = useMemo(() => {
+  const [child_nodes, result_nodes, can_be_expanded] = useMemo(() => {
     const children: CheckNode[] = [];
     const results: CheckResult[] = [];
     for (const child of node.children || []) {
-      if (child.type === "result") {
+      if (child.type === "control_result") {
         results.push((child as ControlResultNode).result);
       } else {
         children.push(child);
       }
     }
-    return [sortBy(children, "title"), results];
-  }, [node]);
+    return [
+      sortBy(children, "title"),
+      results,
+      node.error ||
+        children.length > 0 ||
+        (groupingConfig &&
+          groupingConfig[groupingConfig.length - 1].type === "control_result" &&
+          results.length > 0),
+    ];
+  }, [groupingConfig, node]);
 
   return (
     <>
       <div id={node.name} className={getMargin(node.depth - 1)}>
         <section
           className={classNames(
-            "bg-dashboard-panel cursor-pointer shadow-sm rounded-md",
+            "bg-dashboard-panel shadow-sm rounded-md",
+            can_be_expanded ? "cursor-pointer" : null,
             expanded && node.results && node.results.length > 0
               ? "rounded-b-none"
               : null,
@@ -192,7 +209,9 @@ const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
               ? "animate-pulse"
               : null
           )}
-          onClick={() => setExpanded((current) => !current)}
+          onClick={() =>
+            can_be_expanded ? setExpanded((current) => !current) : null
+          }
         >
           <div className="p-4 flex items-center space-x-6">
             <div className="flex flex-grow justify-between items-center space-x-6">
@@ -213,19 +232,26 @@ const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
                 />
               </div>
             </div>
-            {canBeExpanded && !expanded && (
+            {can_be_expanded && !expanded && (
               <ExpandCheckNodeIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
             {expanded && (
               <CollapseBenchmarkIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
-            {!canBeExpanded && <div className="w-5 md:w-7 h-5 md:h-7" />}
+            {!can_be_expanded && <div className="w-5 md:w-7 h-5 md:h-7" />}
           </div>
         </section>
-        {expanded && <CheckResults results={result_nodes} />}
+        {expanded &&
+          groupingConfig &&
+          groupingConfig[groupingConfig.length - 1].type ===
+            "control_result" && <CheckResults results={result_nodes} />}
       </div>
       {expanded && (
-        <CheckChildren children={child_nodes} rootSummary={rootSummary} />
+        <CheckChildren
+          children={child_nodes}
+          groupingConfig={groupingConfig}
+          rootSummary={rootSummary}
+        />
       )}
     </>
   );
