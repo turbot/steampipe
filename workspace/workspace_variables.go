@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -21,9 +20,6 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO DEBUG
-	display.ShowVarsListTable(variableMap.ToArray())
 
 	// now resolve all input variables
 
@@ -39,8 +35,6 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 	}
 
 	// now update the variables map with the input values
-	// TODO for now we only support setting values for variables in the workspace mod
-	//  or unique variables in dependency mods
 	for name, inputValue := range inputVariables {
 		variable := variableMap.AllVariables[name]
 		variable.SetInputValue(
@@ -54,6 +48,8 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 			return nil, err
 		}
 	}
+
+	//display.ShowVarsListTable(variableMap.ToArray())
 
 	return variableMap, nil
 }

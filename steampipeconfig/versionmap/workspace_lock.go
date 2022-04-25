@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime/debug"
 
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"

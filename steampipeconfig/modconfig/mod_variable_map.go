@@ -16,7 +16,7 @@ type ModVariableMap struct {
 	// a map of promoted dependency variables
 	// we use this to ensure the promoted variable and the original variable both get their value set if
 	// the value is passed in
-	// key - variable short name, value - variable full name
+	// we include aliases mapped in both directions (short -> long and long -> short)
 	VariableAliases map[string]string
 }
 
@@ -63,8 +63,9 @@ func (m ModVariableMap) promoteUniqueDependencyVariables() {
 				log.Printf("[TRACE] variable %s from dependency mod %s is unique in the workspace - adding to Workspace variables",
 					v.ShortName, v.ModName)
 				m.RootVariables[v.ShortName] = v
-				// also add to aliases
+				// also add to aliases (both directions)
 				m.VariableAliases[v.ShortName] = v.Name()
+				m.VariableAliases[v.Name()] = v.ShortName
 			}
 		}
 	}
@@ -91,8 +92,7 @@ func (m ModVariableMap) ToArray() []*Variable {
 	var res []*Variable
 
 	if len(m.AllVariables) > 0 {
-		var keys = make([]string, len(m.RootVariables)-len(m.VariableAliases))
-		idx := 0
+		var keys []string
 
 		for k := range m.RootVariables {
 			// if there is an alias for this variable, that means it is will appear twice in AllVariables,
@@ -100,8 +100,7 @@ func (m ModVariableMap) ToArray() []*Variable {
 			if _, ok := m.VariableAliases[k]; ok {
 				continue
 			}
-			keys[idx] = k
-			idx++
+			keys = append(keys, k)
 		}
 		// sort keys
 		sort.Strings(keys)
