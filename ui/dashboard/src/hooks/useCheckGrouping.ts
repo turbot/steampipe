@@ -25,12 +25,28 @@ const getCheckGroupingKey = (check: CheckResult, group: CheckDisplayGroup) => {
     case "benchmark":
       const root =
         check.benchmark_trunk.length > 1 ? check.benchmark_trunk[1] : null;
-      return root ? root.name : "None";
+      return root ? root.name : "Other";
     case "control":
       return check.control.name;
     default:
-      return "None";
+      return "Other";
   }
+};
+
+const addBenchmarkTrunkNode = (
+  benchmark_trunk: BenchmarkType[],
+  depth: number,
+  children: CheckNode[]
+) => {
+  const currentNode = benchmark_trunk.length > 0 ? benchmark_trunk[0] : null;
+  return new BenchmarkNode(
+    depth,
+    currentNode?.name || "Other",
+    currentNode?.title || "Other",
+    benchmark_trunk.length > 1
+      ? [addBenchmarkTrunkNode(benchmark_trunk.slice(1), depth + 1, children)]
+      : children
+  );
 };
 
 const getCheckGroupingNode = (
@@ -44,7 +60,7 @@ const getCheckGroupingNode = (
       const foundDimension = check.dimensions.find(
         (d) => d.key === group.value
       );
-      const dimensionValue = foundDimension ? foundDimension.value : "None";
+      const dimensionValue = foundDimension ? foundDimension.value : "Other";
       return new KeyValuePairNode(
         depth,
         group.value || "Other",
@@ -54,17 +70,14 @@ const getCheckGroupingNode = (
     case "tag":
       return new KeyValuePairNode(
         depth,
-        group.value || "None",
-        group.value ? check.tags[group.value] || "None" : "None",
+        group.value || "Other",
+        group.value ? check.tags[group.value] || "Other" : "Other",
         children
       );
     case "benchmark":
-      const root =
-        check.benchmark_trunk.length > 1 ? check.benchmark_trunk[1] : null;
-      return new BenchmarkNode(
+      return addBenchmarkTrunkNode(
+        check.benchmark_trunk.length > 1 ? check.benchmark_trunk.slice(1) : [],
         depth,
-        root ? root.name : "None",
-        root ? root.title : "None",
         children
       );
     case "control":
@@ -93,8 +106,9 @@ const useCheckGrouping = (props: CheckProps) => {
         { type: "dimension", value: "region" },
         { type: "tag", value: "service" },
         // { type: "tag", value: "cis_type" },
-        { type: "benchmark" },
+        // { type: "benchmark" },
         { type: "control" },
+        { type: "control_result" },
       ] as CheckDisplayGroup[]),
     [props.properties]
   );
@@ -119,12 +133,13 @@ const useCheckGrouping = (props: CheckProps) => {
     b.all_control_results.forEach(function (checkResult) {
       // reduced._ = [reduced._, ...checkResult];
       return groupingsConfig
+        .filter((group) => group.type !== "control_result")
         .reduce(function (grouping, currentGroup, currentIndex) {
           // const groupingNode = getCheckGroupingNode(a, current);
           // const foundDimension = a.dimensions.find(
           //   (d) => d.key === current.value
           // );
-          // const dimension = foundDimension ? foundDimension.value : "None";
+          // const dimension = foundDimension ? foundDimension.value : "Other";
           const groupKey = getCheckGroupingKey(checkResult, currentGroup);
           // console.log({ groupKey, grouping });
           // console.log({ key: groupKey, grouping, result });

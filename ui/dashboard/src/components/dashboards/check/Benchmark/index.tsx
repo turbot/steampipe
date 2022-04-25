@@ -131,6 +131,7 @@ const Benchmark = (props: InnerCheckProps) => {
                 node_type: "benchmark_tree",
                 properties: {
                   grouping: props.grouping,
+                  grouping_config: props.groupingConfig,
                   root_summary: summary,
                 },
               },
