@@ -13,13 +13,34 @@ import (
 )
 
 func (w *Workspace) PublishDashboardEvent(e dashboardevents.DashboardEvent) {
-	for _, handler := range w.dashboardEventHandlers {
-		handler(e)
-	}
+	// send an event onto the event bus
+	w.dashboardEventChan <- e
 }
 
+// RegisterDashboardEventHandler starts the event handler goroutine if necessary and
+// adds the event handler to our list
 func (w *Workspace) RegisterDashboardEventHandler(handler dashboardevents.DashboardEventHandler) {
+	// if no event channel has been created we need to start the event handler goroutine
+	if w.dashboardEventChan == nil {
+		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 20)
+		go w.handleDashboardEvent()
+	}
+	// now add the handler to our list
 	w.dashboardEventHandlers = append(w.dashboardEventHandlers, handler)
+}
+
+// this function is run as a goroutine to call registered event handlers for all received events
+func (w *Workspace) handleDashboardEvent() {
+	for {
+		e := <-w.dashboardEventChan
+		if e == nil {
+			return
+		}
+
+		for _, handler := range w.dashboardEventHandlers {
+			handler(e)
+		}
+	}
 }
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, _ []fsnotify.Event) {
