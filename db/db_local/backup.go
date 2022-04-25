@@ -190,8 +190,8 @@ func needsBackup(ctx context.Context) (bool, string, error) {
 	return false, "", nil
 }
 
-// loadBackup loads the back up file into the database
-func loadBackup(ctx context.Context) error {
+// restoreBackup loads the back up file into the database
+func restoreBackup(ctx context.Context) error {
 	if !helpers.FileExists(databaseBackupFilePath()) {
 		// nothing to do here
 		return nil
