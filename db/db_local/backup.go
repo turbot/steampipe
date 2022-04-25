@@ -30,8 +30,8 @@ type pgRunningInfo struct {
 }
 
 const (
-	NoMatViewRefreshListFileName   = "without_refresh.lst"
-	OnlyMatViewRefreshListFileName = "only_refresh.lst"
+	noMatViewRefreshListFileName   = "without_refresh.lst"
+	onlyMatViewRefreshListFileName = "only_refresh.lst"
 )
 
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
