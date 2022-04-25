@@ -10,9 +10,7 @@ type InstalledVersion struct {
 	LastCheckedDate    string `json:"last_checked_date,omitempty"`
 	InstallDate        string `json:"install_date,omitempty"`
 
-	// json tags are same in the new version
-	// LegacyName            string `json:"name"`
-	// LegacyVersion         string `json:"version"`
+	// legacy properties
 	LegacyImageDigest     string `json:"imageDigest,omitempty"`
 	LegacyInstalledFrom   string `json:"installedFrom,omitempty"`
 	LegacyLastCheckedDate string `json:"lastCheckedDate,omitempty"`
