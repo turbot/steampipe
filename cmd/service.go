@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime/debug"
 
 	"github.com/turbot/steampipe/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/statushooks"
@@ -406,7 +405,6 @@ func runServiceStatusCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runServiceStatusCmd end")
 		if r := recover(); r != nil {
-			debug.PrintStack()
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
@@ -560,9 +558,6 @@ func showAllStatus(ctx context.Context) {
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
 	cmdLine, _ := process.CmdlineSlice()
-
-	fmt.Println(db_local.ServiceExecutableRelativeLocation())
-
 	installDir := strings.TrimSuffix(cmdLine[0], db_local.ServiceExecutableRelativeLocation())
 	var port string
 	var listenType db_local.StartListenType
