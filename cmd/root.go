@@ -101,7 +101,6 @@ func InitCmd() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for steampipe")
 	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "Version for steampipe")
-
 }
 
 // initConfig reads in config file and ENV variables if set.

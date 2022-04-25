@@ -23,7 +23,7 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 
 	// now resolve all input variables
 
-	inputVariables, err := w.getInputVariables(variableMap.AllVariables, variableMap.VariableAliases, validate)
+	inputVariables, err := w.getInputVariables(variableMap.AllVariables, validate)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (w *Workspace) loadVariables() (*modconfig.ModVariableMap, error) {
 	return variableMap, nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, variableAliases map[string]string, validate bool) (inputvars.InputValues, error) {
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, validate bool) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -86,7 +86,7 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 			return nil, err
 		}
 	}
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, variableAliases, validate)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
 
 	return parsedValues, diags.Err()
 }

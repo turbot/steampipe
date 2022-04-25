@@ -42,7 +42,7 @@ type UnparsedVariableValue interface {
 // InputValues may be incomplete but will include the subset of variables
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap map[string]*modconfig.Variable, variableAliases map[string]string, validate bool) (InputValues, tfdiags.Diagnostics) {
+func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap map[string]*modconfig.Variable, validate bool) (InputValues, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	ret := make(InputValues, len(inputValuesUnparsed))
 
@@ -55,7 +55,6 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 	for name, unparsedVal := range inputValuesUnparsed {
 		var mode var_config.VariableParsingMode
 		config, declared := variablesMap[name]
-		alias, gotAlias := variableAliases[name]
 		if declared {
 			mode = config.ParsingMode
 		} else {
@@ -108,10 +107,6 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 		}
 
 		ret[name] = val
-		// if this variable has an alias, also set that value
-		if gotAlias {
-			ret[alias] = val
-		}
 	}
 
 	if seenUndeclaredInFile > 2 {

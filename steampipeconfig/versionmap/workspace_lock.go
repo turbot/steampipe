@@ -209,15 +209,6 @@ func (l *WorkspaceLock) GetMod(modName string, parent *modconfig.Mod) *ResolvedV
 	return nil
 }
 
-// GetDependencyShortName looks for a lock file entry matching the given version constraint and returns
-func (l *WorkspaceLock) GetResolvedDependency(modName string, parent *modconfig.Mod) *ResolvedVersionConstraint {
-	if parentDependencies := l.InstallCache[parent.GetModDependencyPath()]; parentDependencies != nil {
-		// look for this mod in the lock file entries for this parent
-		return parentDependencies[modName]
-	}
-	return nil
-}
-
 // GetLockedModVersions builds a ResolvedVersionListMap with the resolved versions
 // for each item of the given VersionConstraintMap found in the lock file
 func (l *WorkspaceLock) GetLockedModVersions(mods VersionConstraintMap, parent *modconfig.Mod) (ResolvedVersionListMap, error) {
