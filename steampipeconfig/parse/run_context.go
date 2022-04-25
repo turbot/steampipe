@@ -61,13 +61,14 @@ type RunContext struct {
 	// DependencyVariables is a map of the variables in the dependency mods of the current mod
 	// it is used to populate the variables property on the dependency
 	DependencyVariables map[string]map[string]*modconfig.Variable
+	ParentRunCtx        *RunContext
 
 	// stack of parent resources for the currently parsed block
 	// (unqualified name)
 	parents []string
-	// map of resource children, keyed by parent unqualified name
-	blockChildMap map[string][]string
 
+	// map of resource children, keyed by parent unqualified name
+	blockChildMap   map[string][]string
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
@@ -135,22 +136,35 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 	return ret
 }
 
-// AddVariables adds variables to the run context.
-// We load and evaluate variables before loading the workspace
-func (r *RunContext) AddVariables(inputVariables *modconfig.ModVariableMap) {
-	r.Variables = inputVariables.RootVariables
+// AddInputVariables adds variables to the run context.
+// This function is called for the root eval context after loading all input variables
+func (r *RunContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
+	r.SetLocalVariables(inputVariables.RootVariables)
+	r.setDependencyVariables(inputVariables)
+
+	// do not reload variables as we already have them
+	r.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
+}
+
+// SetLocalVariables sets the Variables property
+// and adds the variables to the referenceValues map (used to build the eval context)
+func (r *RunContext) SetLocalVariables(variables map[string]*modconfig.Variable) {
+	r.Variables = variables
+	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
+	r.referenceValues["local"]["var"] = VariableValueMap(variables)
+}
+
+// SetLocalVariables sets the DependencyVariables property
+// and adds the dependency variables to the referenceValues map (used to build the eval context
+func (r *RunContext) setDependencyVariables(inputVariables *modconfig.ModVariableMap) {
 	r.DependencyVariables = inputVariables.DependencyVariables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	// add top level variables
-	r.referenceValues["local"]["var"] = VariableValueMap(r.Variables)
 	// add dependency mod variables, scoped by mod name
 	for depModName, depVars := range r.DependencyVariables {
 		r.referenceValues[depModName] = make(ReferenceTypeValueMap)
 		r.referenceValues[depModName]["var"] = VariableValueMap(depVars)
 	}
-
-	// do not reload variables as we already have them
-	r.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 }
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
@@ -501,4 +515,35 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
+}
+
+func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
+	for k, v := range mods {
+		if _, alreadyLoaded := r.LoadedDependencyMods[k]; !alreadyLoaded {
+			r.LoadedDependencyMods[k] = v
+		}
+	}
+}
+
+func (r *RunContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
+	// build list of the mods dependencys
+	var modDeps []string
+
+	// we need to map the dependency name to short name for all dependency mods
+	// we can look in the workspace lock
+	if mod.Require != nil {
+		// find this mod in the install cache
+		mod := r.WorkspaceLock.GetMod(mod.Name(), nil)
+		for range mod.Require.Mods {
+			//if installedMod, ok := r.WorkspaceLock.InstallCache["local"][mod.Name]; ok {
+			//	if installedDepMod, ok := r.WorkspaceLock.InstallCache[installedMod.Name][dep.Name]; ok {
+			//	modDeps = append(modDeps, installedMod.Alias)
+			//}
+		}
+	}
+	// now determine whether to 'promote' any variables from this mods dependencies
+	variableMap := modconfig.ModVariableMapFromVariableMap(mod, dependencyVariablesMap, modDeps)
+	fmt.Println(variableMap)
+	//runCtx.SetLocalVariables(dependencyVariables)
+	//}
 }

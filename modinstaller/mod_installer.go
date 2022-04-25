@@ -439,7 +439,7 @@ func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionC
 
 }
 
-// HACK set the mod depdnency path
+// HACK set the mod depdendency path
 func (i *ModInstaller) setModDependencyPath(mod *modconfig.Mod, modPath string) (err error) {
 	mod.ModDependencyPath, err = filepath.Rel(i.modsPath, modPath)
 	return

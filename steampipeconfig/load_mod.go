@@ -23,28 +23,12 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
+func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
 		}
 	}()
-
-	runCtx := parentRunCtx
-	// if this it not the root mod, create child a run context for its evaluation
-	if modPath != parentRunCtx.RootEvalPath {
-		runCtx = parse.NewRunContext(
-			parentRunCtx.WorkspaceLock,
-			modPath,
-			parse.CreatePseudoResources,
-			&filehelpers.ListOptions{
-				// listFlag specifies whether to load files recursively
-				Flags: filehelpers.FilesRecursive,
-				// only load .sp files
-				Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
-			})
-		runCtx.BlockTypes = parentRunCtx.BlockTypes
-	}
 
 	// verify the mod folder exists
 	if _, err := os.Stat(modPath); os.IsNotExist(err) {
@@ -58,9 +42,11 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 			return nil, err
 		}
 		// now we have loaded the mod, if this is a dependency mod, add in any variables we have loaded
-		if dependencyVariables, ok := parentRunCtx.DependencyVariables[mod.ShortName]; ok {
-			runCtx.Variables = dependencyVariables
+		if runCtx.ParentRunCtx != nil {
+			runCtx.Variables = runCtx.ParentRunCtx.DependencyVariables[mod.ShortName]
+			runCtx.SetVariablesForDependencyMod(mod, runCtx.ParentRunCtx.DependencyVariables)
 		}
+
 	} else {
 		// so there is no mod file - should we create a default?
 		if !runCtx.ShouldCreateDefaultMod() {
@@ -114,9 +100,9 @@ func LoadMod(modPath string, parentRunCtx *parse.RunContext) (mod *modconfig.Mod
 	}
 
 	// now add fully populated mod to the parent run context
-	if modPath != parentRunCtx.RootEvalPath {
-		parentRunCtx.CurrentMod = mod
-		parentRunCtx.AddMod(mod)
+	if runCtx.ParentRunCtx != nil {
+		runCtx.ParentRunCtx.CurrentMod = mod
+		runCtx.ParentRunCtx.AddMod(mod)
 	}
 
 	return mod, err
@@ -166,7 +152,8 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 
 	// we need to iterate through all mods in the parent folder and find one that satisfies requirements
 	parentFolder := filepath.Dir(filepath.Join(runCtx.WorkspaceLock.ModInstallationPath, modDependency.Name))
-	// get the last segment of mod name
+
+	// search the parent folder for a mod installation which satisfied the given mod dependency
 	dependencyPath, version, err := findInstalledDependency(modDependency, parentFolder)
 	if err != nil {
 		return err
@@ -177,7 +164,21 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 	runCtx.ListOptions.Exclude = nil
 	defer func() { runCtx.ListOptions.Exclude = prevExclusions }()
 
-	mod, err := LoadMod(dependencyPath, runCtx)
+	// create a child run context
+	childRunCtx := parse.NewRunContext(
+		runCtx.WorkspaceLock,
+		dependencyPath,
+		parse.CreatePseudoResources,
+		&filehelpers.ListOptions{
+			// listFlag specifies whether to load files recursively
+			Flags: filehelpers.FilesRecursive,
+			// only load .sp files
+			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
+		})
+	childRunCtx.BlockTypes = runCtx.BlockTypes
+	childRunCtx.ParentRunCtx = runCtx
+
+	mod, err := LoadMod(dependencyPath, childRunCtx)
 	if err != nil {
 		return err
 	}
@@ -188,11 +189,15 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 
 	// update loaded dependency mods
 	runCtx.LoadedDependencyMods[modDependency.Name] = mod
+	if runCtx.ParentRunCtx != nil {
+		runCtx.ParentRunCtx.LoadedDependencyMods[modDependency.Name] = mod
+	}
 
 	return err
 
 }
 
+// search the parent folder for a mod installatio which satisfied the given mod dependency
 func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, parentFolder string) (string, *semver.Version, error) {
 	shortDepName := filepath.Base(modDependency.Name)
 	entries, err := os.ReadDir(parentFolder)

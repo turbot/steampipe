@@ -253,7 +253,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 		return err
 	}
 	// add workspace mod variables to runContext
-	runCtx.AddVariables(inputVariables)
+	runCtx.AddInputVariables(inputVariables)
 
 	// now load the mod
 	m, err := steampipeconfig.LoadMod(w.Path, runCtx)
