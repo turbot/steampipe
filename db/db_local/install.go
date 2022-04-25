@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -70,21 +71,26 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
 	}
 
-	_, err = installFDW(ctx, true)
-	if err != nil {
-		log.Printf("[TRACE] installFDW failed: %v", err)
-		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
-	}
-
 	statushooks.SetStatus(ctx, "Preparing backups...")
 	var dbName *string
 	// call prepareBackup to generate the db dump file if necessary
 	// NOTE: this returns the existing database name - we use this when creating the new database
 	if d, err := prepareBackup(ctx); err != nil {
+		if errors.Is(err, errDbInstanceRunning) {
+			// remove the installation, since otherwise, the backup won't get triggered, even if the user stops the service
+			os.RemoveAll(databaseInstanceDir())
+			return err
+		}
 		log.Printf("[TRACE] prepareBackup failed: %v", err)
 		return fmt.Errorf("Could not backup old data... FAILED!")
 	} else {
 		dbName = d
+	}
+
+	_, err = installFDW(ctx, true)
+	if err != nil {
+		log.Printf("[TRACE] installFDW failed: %v", err)
+		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
 	// run the database installation

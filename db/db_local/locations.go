@@ -10,7 +10,9 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const ServiceExecutableRelativeLocation = "/db/12.1.0/postgres/bin/postgres"
+func ServiceExecutableRelativeLocation() string {
+	return filepath.Join("db", constants.DatabaseVersion, "postgres", "bin", "postgres")
+}
 
 func databaseInstanceDir() string {
 	loc := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion)
@@ -48,9 +50,9 @@ func getDataLocation() string {
 	return loc
 }
 
-// location where the dump file will be stored, so that it can be later restored after connections
+// tar file where the dump file will be stored, so that it can be later restored after connections
 // refresh in a new installation
-func getBackupLocation() string {
+func databaseBackupFilePath() string {
 	return filepath.Join(filepaths.EnsureDatabaseDir(), "backup.tar")
 }
 
@@ -78,11 +80,11 @@ func getPostgresBinaryExecutablePath() string {
 	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PostgresExecutable)
 }
 
-func getPgDumpBinaryExecutablePath() string {
+func pgDumpBinaryExecutablePath() string {
 	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PgDumpExecutable)
 }
 
-func getPgRestoreBinaryExecutablePath() string {
+func pgRestoreBinaryExecutablePath() string {
 	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PgRestoreExecutable)
 }
 
