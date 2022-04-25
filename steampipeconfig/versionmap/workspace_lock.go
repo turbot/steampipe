@@ -20,17 +20,6 @@ import (
 
 const WorkspaceLockStructVersion = 20220411
 
-// LegacyWorkspaceLock is a struct used to migrate the WorkspaceLock
-// to serialize with snake case property names(migrated in v0.14.0)
-type LegacyWorkspaceLock struct {
-	WorkspacePath   string
-	InstallCache    DependencyVersionMap
-	MissingVersions DependencyVersionMap
-
-	ModInstallationPath string
-	installedMods       VersionListMap
-}
-
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
 type WorkspaceLock struct {
 	WorkspacePath   string
@@ -50,7 +39,6 @@ func (s WorkspaceLock) IsValid() bool {
 
 func (s *WorkspaceLock) MigrateFrom() migrate.Migrateable {
 	s.StructVersion = WorkspaceLockStructVersion
-	// s.InstallCache = legacyState
 
 	return s
 }
