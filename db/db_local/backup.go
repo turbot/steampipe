@@ -71,7 +71,7 @@ func errIfInstanceRunning(ctx context.Context, location string) error {
 	return nil
 }
 
-// backup the pg12 instance public schema using pg_dump
+// backup the old pg instance public schema using pg_dump
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 	cmd := exec.CommandContext(
 		ctx,
@@ -108,7 +108,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-// returns a pg12RunningInfo instance
+// returns a pgRunningInfo instance
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
