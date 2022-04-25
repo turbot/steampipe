@@ -12,7 +12,6 @@ import { LeafNodeDataRow } from "../../common";
 import Benchmark from "./Benchmark";
 
 class Control implements CheckNode {
-  private readonly _depth: number;
   private readonly _group_id: string;
   private readonly _group_title: string | undefined;
   private readonly _group_description: string | undefined;
@@ -26,7 +25,6 @@ class Control implements CheckNode {
   private readonly _run_error: string | undefined;
 
   constructor(
-    depth: number,
     group_id: string,
     group_title: string | undefined,
     group_description: string | undefined,
@@ -41,7 +39,6 @@ class Control implements CheckNode {
     benchmark_trunk: Benchmark[],
     add_control_results: AddControlResultsAction
   ) {
-    this._depth = depth;
     this._group_id = group_id;
     this._group_title = group_title;
     this._group_description = group_description;
@@ -79,10 +76,6 @@ class Control implements CheckNode {
       return "error";
     }
     return "unknown";
-  }
-
-  get depth(): number {
-    return this._depth;
   }
 
   get name(): string {

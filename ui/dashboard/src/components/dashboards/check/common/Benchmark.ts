@@ -18,7 +18,6 @@ import {
 } from "../../common";
 
 class Benchmark implements CheckNode {
-  private readonly _depth: number;
   private readonly _name: string;
   private readonly _title: string;
   private readonly _description?: string;
@@ -28,7 +27,6 @@ class Benchmark implements CheckNode {
   private readonly _all_control_results: CheckResult[];
 
   constructor(
-    depth: number,
     name: string,
     title: string | undefined,
     description: string | undefined,
@@ -38,7 +36,6 @@ class Benchmark implements CheckNode {
     add_control_results?: AddControlResultsAction
   ) {
     this._all_control_results = [];
-    this._depth = depth;
     this._name = name;
     this._title = title || name;
     this._description = description;
@@ -51,7 +48,6 @@ class Benchmark implements CheckNode {
     for (const nestedBenchmark of benchmarks || []) {
       nestedBenchmarks.push(
         new Benchmark(
-          this._depth + 1,
           nestedBenchmark.group_id,
           nestedBenchmark.title,
           nestedBenchmark.description,
@@ -66,7 +62,6 @@ class Benchmark implements CheckNode {
     for (const nestedControl of controls || []) {
       nestedControls.push(
         new Control(
-          this._depth + 1,
           this._name,
           this._title,
           this._description,
@@ -104,10 +99,6 @@ class Benchmark implements CheckNode {
 
   get all_control_results(): CheckResult[] {
     return this._all_control_results;
-  }
-
-  get depth(): number {
-    return this._depth;
   }
 
   get name(): string {

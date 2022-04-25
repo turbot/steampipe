@@ -24,6 +24,7 @@ import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useMemo, useState } from "react";
 
 interface CheckChildrenProps {
+  depth: number;
   children: CheckNode[];
   groupingConfig: CheckDisplayGroup[];
   rootSummary: CheckSummary;
@@ -35,6 +36,7 @@ interface CheckResultsProps {
 }
 
 interface CheckPanelProps {
+  depth: number;
   node: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   rootSummary: CheckSummary;
@@ -73,6 +75,7 @@ const getMargin = (depth) => {
 
 const CheckChildren = ({
   children,
+  depth,
   groupingConfig,
   rootSummary,
 }: CheckChildrenProps) => {
@@ -85,6 +88,7 @@ const CheckChildren = ({
       {children.map((child) => (
         <CheckPanel
           key={child.name}
+          depth={depth}
           node={child}
           groupingConfig={groupingConfig}
           rootSummary={rootSummary}
@@ -171,7 +175,12 @@ const CheckResults = ({ error, results }: CheckResultsProps) => {
   );
 };
 
-const CheckPanel = ({ node, groupingConfig, rootSummary }: CheckPanelProps) => {
+const CheckPanel = ({
+  depth,
+  node,
+  groupingConfig,
+  rootSummary,
+}: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
 
   const [child_nodes, result_nodes, can_be_expanded] = useMemo(() => {
@@ -200,7 +209,7 @@ const CheckPanel = ({ node, groupingConfig, rootSummary }: CheckPanelProps) => {
 
   return (
     <>
-      <div id={node.name} className={getMargin(node.depth - 1)}>
+      <div id={node.name} className={getMargin(depth - 1)}>
         <section
           className={classNames(
             "bg-dashboard-panel shadow-sm rounded-md",
@@ -252,6 +261,7 @@ const CheckPanel = ({ node, groupingConfig, rootSummary }: CheckPanelProps) => {
       {expanded && (
         <CheckChildren
           children={child_nodes}
+          depth={depth + 1}
           groupingConfig={groupingConfig}
           rootSummary={rootSummary}
         />

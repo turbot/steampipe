@@ -7,16 +7,10 @@ import {
 } from "./index";
 
 class ControlResultNode implements CheckNode {
-  private readonly _depth: number;
   private readonly _result: CheckResult;
 
-  constructor(depth: number, result: CheckResult) {
-    this._depth = depth;
+  constructor(result: CheckResult) {
     this._result = result;
-  }
-
-  get depth(): number {
-    return this._depth;
   }
 
   get name(): string {

@@ -18,6 +18,7 @@ const CheckGrouping = ({
       {sortBy(node.children, "title")?.map((child) => (
         <CheckPanel
           key={child.name}
+          depth={1}
           node={child}
           groupingConfig={groupingConfig}
           rootSummary={rootSummary}
