@@ -25,8 +25,8 @@ var (
 // backup archive and the name of the installed database
 type pgRunningInfo struct {
 	cmd    *exec.Cmd
-	port   *int
-	dbName *string
+	port   int
+	dbName string
 }
 
 // stop is used for shutting down postgres instance spun up for extracting dump
@@ -72,7 +72,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		return nil, err
 	}
 
-	return runConfig.dbName, nil
+	return &runConfig.dbName, nil
 }
 
 // errIfInstanceRunning returns an error (of type errDbInstanceRunning) if there an instance of the
@@ -160,7 +160,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 
-	runConfig := &pgRunningInfo{cmd: cmd, port: &port}
+	runConfig := &pgRunningInfo{cmd: cmd, port: port}
 
 	dbName, err := getDatabaseName(ctx, port)
 	if err != nil {
@@ -168,7 +168,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 
-	runConfig.dbName = &dbName
+	runConfig.dbName = dbName
 
 	return runConfig, nil
 }
