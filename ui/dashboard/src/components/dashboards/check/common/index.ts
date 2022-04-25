@@ -11,7 +11,6 @@ export type CheckNodeType =
   | "tag";
 
 export interface CheckNode {
-  depth: number;
   name: string;
   title?: string;
   type: CheckNodeType;

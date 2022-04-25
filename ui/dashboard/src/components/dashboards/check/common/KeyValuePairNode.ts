@@ -7,27 +7,16 @@ import {
 } from "./index";
 
 class KeyValuePairNode implements CheckNode {
-  private readonly _depth: number;
   private readonly _key: string;
   private readonly _value: string;
   private readonly _children: CheckNode[];
   private readonly _results: CheckResult[];
 
-  constructor(
-    depth: number,
-    key: string,
-    value: string,
-    children?: CheckNode[]
-  ) {
-    this._depth = depth;
+  constructor(key: string, value: string, children?: CheckNode[]) {
     this._key = key;
     this._value = value;
     this._children = children || [];
     this._results = [];
-  }
-
-  get depth(): number {
-    return this._depth;
   }
 
   get name(): string {

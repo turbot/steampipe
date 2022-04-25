@@ -12,10 +12,6 @@ class RootNode implements CheckNode {
     this._children = children || [];
   }
 
-  get depth(): number {
-    return 0;
-  }
-
   get name(): string {
     return "root";
   }
