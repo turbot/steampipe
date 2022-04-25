@@ -1,16 +1,27 @@
 import CheckPanel from "../CheckPanel";
-import { CheckNode, CheckSummary } from "../common";
+import sortBy from "lodash/sortBy";
+import { CheckDisplayGroup, CheckNode, CheckSummary } from "../common";
 
 interface CheckGroupingProps {
   node: CheckNode;
+  groupingConfig: CheckDisplayGroup[];
   rootSummary: CheckSummary;
 }
 
-const CheckGrouping = ({ node, rootSummary }: CheckGroupingProps) => {
+const CheckGrouping = ({
+  node,
+  groupingConfig,
+  rootSummary,
+}: CheckGroupingProps) => {
   return (
     <div className="space-y-4 md:space-y-6 col-span-12">
-      {node.children?.map((child) => (
-        <CheckPanel key={child.name} node={child} rootSummary={rootSummary} />
+      {sortBy(node.children, "title")?.map((child) => (
+        <CheckPanel
+          key={child.name}
+          node={child}
+          groupingConfig={groupingConfig}
+          rootSummary={rootSummary}
+        />
       ))}
     </div>
   );

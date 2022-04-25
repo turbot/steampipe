@@ -34,6 +34,7 @@ class Benchmark implements CheckNode {
     description: string | undefined,
     benchmarks: CheckGroup[] | undefined,
     controls: CheckControl[] | undefined,
+    trunk: Benchmark[],
     add_control_results?: AddControlResultsAction
   ) {
     this._all_control_results = [];
@@ -56,6 +57,7 @@ class Benchmark implements CheckNode {
           nestedBenchmark.description,
           nestedBenchmark.groups,
           nestedBenchmark.controls,
+          [...trunk, this],
           this._add_control_results
         )
       );
@@ -76,6 +78,7 @@ class Benchmark implements CheckNode {
           nestedControl.tags,
           nestedControl.run_status,
           nestedControl.run_error,
+          [...trunk, this],
           this._add_control_results
         )
       );
@@ -84,9 +87,18 @@ class Benchmark implements CheckNode {
     this._controls = nestedControls;
   }
 
-  private add_control_results = (results: CheckResult[], control: Control) => {
+  private add_control_results = (
+    results: CheckResult[],
+    control: Control,
+    benchmark_trunk: Benchmark[]
+  ) => {
     this._all_control_results.push(
-      ...results.map((r) => ({ ...r, tags: control.tags, control }))
+      ...results.map((r) => ({
+        ...r,
+        tags: control.tags,
+        control,
+        benchmark_trunk,
+      }))
     );
   };
 

@@ -1,3 +1,6 @@
+import BenchmarkNode from "../components/dashboards/check/common/BenchmarkNode";
+import ControlNode from "../components/dashboards/check/common/ControlNode";
+import ControlResultNode from "../components/dashboards/check/common/ControlResultNode";
 import get from "lodash/get";
 import KeyValuePairNode from "../components/dashboards/check/common/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/RootNode";
@@ -9,8 +12,6 @@ import {
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
-import ControlNode from "../components/dashboards/check/common/ControlNode";
-import ControlResultNode from "../components/dashboards/check/common/ControlResultNode";
 
 const getCheckGroupingKey = (check: CheckResult, group: CheckDisplayGroup) => {
   switch (group.type) {
@@ -21,10 +22,14 @@ const getCheckGroupingKey = (check: CheckResult, group: CheckDisplayGroup) => {
       return foundDimension ? foundDimension.value : "Other";
     case "tag":
       return group.value ? check.tags[group.value] || "Other" : "Other";
+    case "benchmark":
+      const root =
+        check.benchmark_trunk.length > 1 ? check.benchmark_trunk[1] : null;
+      return root ? root.name : "None";
     case "control":
       return check.control.name;
     default:
-      return "Other";
+      return "None";
   }
 };
 
@@ -53,6 +58,15 @@ const getCheckGroupingNode = (
         group.value ? check.tags[group.value] || "None" : "None",
         children
       );
+    case "benchmark":
+      const root =
+        check.benchmark_trunk.length > 1 ? check.benchmark_trunk[1] : null;
+      return new BenchmarkNode(
+        depth,
+        root ? root.name : "None",
+        root ? root.title : "None",
+        children
+      );
     case "control":
       return new ControlNode(
         depth,
@@ -79,12 +93,13 @@ const useCheckGrouping = (props: CheckProps) => {
         { type: "dimension", value: "region" },
         { type: "tag", value: "service" },
         // { type: "tag", value: "cis_type" },
+        { type: "benchmark" },
         { type: "control" },
       ] as CheckDisplayGroup[]),
     [props.properties]
   );
 
-  return useMemo(() => {
+  const grouping = useMemo(() => {
     if (!rootBenchmark) {
       return null;
     }
@@ -95,7 +110,8 @@ const useCheckGrouping = (props: CheckProps) => {
       rootBenchmark.title,
       rootBenchmark.description,
       rootBenchmark.groups,
-      rootBenchmark.controls
+      rootBenchmark.controls,
+      []
     );
 
     const result: CheckNode[] = [];
@@ -182,6 +198,8 @@ const useCheckGrouping = (props: CheckProps) => {
 
     // return b;
   }, [groupingsConfig, rootBenchmark]);
+
+  return [grouping, groupingsConfig] as const;
 };
 
 export default useCheckGrouping;
