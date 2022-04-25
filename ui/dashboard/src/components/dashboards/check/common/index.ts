@@ -2,7 +2,13 @@ import Benchmark from "./Benchmark";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 import Control from "./Control";
 
-export type CheckNodeType = "benchmark" | "control";
+export type CheckNodeType =
+  | "root"
+  | "benchmark"
+  | "control"
+  | "dimension"
+  | "tag"
+  | "result";
 
 export interface CheckNode {
   depth: number;
@@ -77,6 +83,7 @@ export interface CheckResult {
   status: CheckResultStatus;
   dimensions: CheckResultDimension[];
   tags: CheckTags;
+  control: CheckNode;
 }
 
 export interface CheckControl {
@@ -133,7 +140,8 @@ export type CheckProps = BasePrimitiveProps &
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
-      benchmark: Benchmark;
+      benchmark: CheckNode;
+      root_summary: CheckSummary;
     };
   };
 

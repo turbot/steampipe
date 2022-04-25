@@ -1,6 +1,5 @@
 import {
   AddControlResultsAction,
-  CheckDisplayGroup,
   CheckDynamicColsMap,
   CheckNode,
   CheckNodeStatus,
@@ -12,7 +11,6 @@ import {
 import { LeafNodeDataRow } from "../../common";
 
 class Control implements CheckNode {
-  private readonly _groupings: CheckDisplayGroup[];
   private readonly _depth: number;
   private readonly _group_id: string;
   private readonly _group_title: string | undefined;
@@ -27,7 +25,6 @@ class Control implements CheckNode {
   private readonly _run_error: string | undefined;
 
   constructor(
-    groupings: CheckDisplayGroup[],
     depth: number,
     group_id: string,
     group_title: string | undefined,
@@ -42,7 +39,6 @@ class Control implements CheckNode {
     run_error: string | undefined,
     add_control_results: AddControlResultsAction
   ) {
-    this._groupings = groupings;
     this._depth = depth;
     this._group_id = group_id;
     this._group_title = group_title;

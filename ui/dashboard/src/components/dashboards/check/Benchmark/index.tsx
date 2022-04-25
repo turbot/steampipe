@@ -4,7 +4,7 @@ import Error from "../../Error";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
 import useCheckGrouping from "../../../../hooks/useCheckGrouping";
-import { BenchmarkTreeProps, CheckProps } from "../common";
+import { BenchmarkTreeProps, CheckNode, CheckProps } from "../common";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
@@ -17,7 +17,7 @@ interface BenchmarkTableViewProps {
 
 type InnerCheckProps = CheckProps & {
   data?: LeafNodeData;
-  benchmark: BenchmarkType | null;
+  benchmark: CheckNode;
 };
 
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
@@ -31,16 +31,16 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 );
 
 const Benchmark = (props: InnerCheckProps) => {
-  const benchmarkDataTable = useMemo(() => {
-    if (
-      !props.benchmark ||
-      (props.benchmark.status !== "complete" &&
-        props.benchmark.status !== "error")
-    ) {
-      return undefined;
-    }
-    return props.benchmark.get_data_table();
-  }, [props.benchmark]);
+  // const benchmarkDataTable = useMemo(() => {
+  //   if (
+  //     !props.benchmark ||
+  //     (props.benchmark.status !== "complete" &&
+  //       props.benchmark.status !== "error")
+  //   ) {
+  //     return undefined;
+  //   }
+  //   return props.benchmark.get_data_table();
+  // }, [props.benchmark]);
 
   if (!props.benchmark) {
     return null;
@@ -125,33 +125,34 @@ const Benchmark = (props: InnerCheckProps) => {
                 node_type: "benchmark_tree",
                 properties: {
                   benchmark: props.benchmark,
+                  root_summary: summary,
                 },
               },
             ],
           },
         ],
-        data: benchmarkDataTable,
+        // data: benchmarkDataTable,
       }}
     />
   );
 };
 
 const BenchmarkTree = (props: BenchmarkTreeProps) => {
-  const rootSummary = useMemo(() => {
-    if (!props.properties.benchmark) {
-      return null;
-    }
-    return props.properties.benchmark.summary;
-  }, [props.properties.benchmark]);
+  // const rootSummary = useMemo(() => {
+  //   if (!props.properties.benchmark) {
+  //     return null;
+  //   }
+  //   return props.properties.benchmark.summary;
+  // }, [props.properties.benchmark]);
 
-  if (!rootSummary) {
+  if (!props.properties || !props.properties.root_summary) {
     return null;
   }
 
   return (
     <CheckGrouping
       node={props.properties.benchmark}
-      rootSummary={rootSummary}
+      rootSummary={props.properties.root_summary}
     />
   );
 };
@@ -191,9 +192,11 @@ const BenchmarkWrapper = (props: CheckProps) => {
     return null;
   }
 
-  if (props.properties && props.properties.type === "table") {
-    return <BenchmarkTableView benchmark={groups} definition={props} />;
-  }
+  console.log(groups);
+
+  // if (props.properties && props.properties.type === "table") {
+  //   return <BenchmarkTableView benchmark={groups} definition={props} />;
+  // }
 
   return <Benchmark {...props} benchmark={groups} />;
 };

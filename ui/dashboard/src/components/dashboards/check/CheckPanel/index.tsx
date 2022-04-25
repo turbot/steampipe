@@ -1,4 +1,5 @@
 import CheckSummaryChart from "../CheckSummaryChart";
+import sortBy from "lodash/sortBy";
 import {
   AlarmIcon,
   CollapseBenchmarkIcon,
@@ -18,7 +19,18 @@ import {
 import { classNames } from "../../../../utils/styles";
 import { ControlDimension } from "../Benchmark";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import ControlResultNode from "../common/ControlResultNode";
+
+interface CheckChildrenProps {
+  children: CheckNode[];
+  rootSummary: CheckSummary;
+}
+
+interface CheckResultsProps {
+  results: CheckResult[];
+  error?: string;
+}
 
 interface CheckPanelProps {
   node: CheckNode;
@@ -56,14 +68,14 @@ const getMargin = (depth) => {
   }
 };
 
-const CheckChildren = ({ node, rootSummary }: CheckPanelProps) => {
-  if (!node.children) {
+const CheckChildren = ({ children, rootSummary }: CheckChildrenProps) => {
+  if (!children) {
     return null;
   }
 
   return (
     <>
-      {node.children.map((child) => (
+      {children.map((child) => (
         <CheckPanel key={child.name} node={child} rootSummary={rootSummary} />
       ))}
     </>
@@ -120,10 +132,10 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
   );
 };
 
-const CheckResults = ({ node }: CheckPanelProps) => {
+const CheckResults = ({ error, results }: CheckResultsProps) => {
   const { theme } = useTheme();
 
-  if (!node.results) {
+  if (!results) {
     return null;
   }
 
@@ -136,9 +148,12 @@ const CheckResults = ({ node }: CheckPanelProps) => {
           : "border-background"
       )}
     >
-      {node.error && <CheckErrorRow error={node.error} />}
-      {node.results.map((result) => (
-        <CheckResultRow key={result.resource} result={result} />
+      {error && <CheckErrorRow error={error} />}
+      {results.map((result) => (
+        <CheckResultRow
+          key={`${result.control.name}-${result.resource}`}
+          result={result}
+        />
       ))}
     </div>
   );
@@ -151,13 +166,28 @@ const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
     (!!node.results && node.results.length > 0) ||
     node.error;
 
+  const [child_nodes, result_nodes] = useMemo(() => {
+    const children: CheckNode[] = [];
+    const results: CheckResult[] = [];
+    for (const child of node.children || []) {
+      if (child.type === "result") {
+        results.push((child as ControlResultNode).result);
+      } else {
+        children.push(child);
+      }
+    }
+    return [sortBy(children, "title"), results];
+  }, [node]);
+
   return (
     <>
       <div id={node.name} className={getMargin(node.depth - 1)}>
         <section
           className={classNames(
             "bg-dashboard-panel cursor-pointer shadow-sm rounded-md",
-            expanded && node.results ? "rounded-b-none" : null,
+            expanded && node.results && node.results.length > 0
+              ? "rounded-b-none"
+              : null,
             node.status !== "complete" && node.status !== "error"
               ? "animate-pulse"
               : null
@@ -192,9 +222,11 @@ const CheckPanel = ({ node, rootSummary }: CheckPanelProps) => {
             {!canBeExpanded && <div className="w-5 md:w-7 h-5 md:h-7" />}
           </div>
         </section>
-        {expanded && <CheckResults node={node} rootSummary={rootSummary} />}
+        {expanded && <CheckResults results={result_nodes} />}
       </div>
-      {expanded && <CheckChildren node={node} rootSummary={rootSummary} />}
+      {expanded && (
+        <CheckChildren children={child_nodes} rootSummary={rootSummary} />
+      )}
     </>
   );
 };

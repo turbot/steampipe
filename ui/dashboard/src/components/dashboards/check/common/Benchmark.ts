@@ -3,7 +3,6 @@ import merge from "lodash/merge";
 import {
   AddControlResultsAction,
   CheckControl,
-  CheckDisplayGroup,
   CheckDynamicColsMap,
   CheckGroup,
   CheckNode,
@@ -19,10 +18,9 @@ import {
 } from "../../common";
 
 class Benchmark implements CheckNode {
-  private readonly _groupings: CheckDisplayGroup[];
   private readonly _depth: number;
   private readonly _name: string;
-  private readonly _title?: string;
+  private readonly _title: string;
   private readonly _description?: string;
   private readonly _benchmarks: Benchmark[];
   private readonly _controls: Control[];
@@ -30,7 +28,6 @@ class Benchmark implements CheckNode {
   private readonly _all_control_results: CheckResult[];
 
   constructor(
-    groupings: CheckDisplayGroup[],
     depth: number,
     name: string,
     title: string | undefined,
@@ -40,10 +37,9 @@ class Benchmark implements CheckNode {
     add_control_results?: AddControlResultsAction
   ) {
     this._all_control_results = [];
-    this._groupings = groupings;
     this._depth = depth;
     this._name = name;
-    this._title = title;
+    this._title = title || name;
     this._description = description;
     if (!add_control_results) {
       this._add_control_results = this.add_control_results;
@@ -54,7 +50,6 @@ class Benchmark implements CheckNode {
     for (const nestedBenchmark of benchmarks || []) {
       nestedBenchmarks.push(
         new Benchmark(
-          groupings,
           this._depth + 1,
           nestedBenchmark.group_id,
           nestedBenchmark.title,
@@ -69,7 +64,6 @@ class Benchmark implements CheckNode {
     for (const nestedControl of controls || []) {
       nestedControls.push(
         new Control(
-          this._groupings,
           this._depth + 1,
           this._name,
           this._title,
@@ -92,7 +86,7 @@ class Benchmark implements CheckNode {
 
   private add_control_results = (results: CheckResult[], control: Control) => {
     this._all_control_results.push(
-      ...results.map((r) => ({ ...r, tags: control.tags }))
+      ...results.map((r) => ({ ...r, tags: control.tags, control }))
     );
   };
 
@@ -108,8 +102,8 @@ class Benchmark implements CheckNode {
     return this._name;
   }
 
-  get title(): string | undefined {
-    return this._title;
+  get title(): string {
+    return this._title || this._name;
   }
 
   get type(): CheckNodeType {
