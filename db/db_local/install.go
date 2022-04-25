@@ -77,8 +77,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	// NOTE: this returns the existing database name - we use this when creating the new database
 	if d, err := prepareBackup(ctx); err != nil {
 		if errors.Is(err, errDbInstanceRunning) {
-			// remove the installation, since otherwise, the backup won't get triggered,
-			// even if the user stops the service
+			// remove the installation, since otherwise, the backup won't get triggered, even if the user stops the service
 			os.RemoveAll(databaseInstanceDir())
 			return err
 		}
