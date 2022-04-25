@@ -25,8 +25,21 @@ var (
 // backup archive and the name of the installed database
 type pgRunningInfo struct {
 	cmd    *exec.Cmd
-	port   int
-	dbName string
+	port   *int
+	dbName *string
+}
+
+// stop is used for shutting down postgres instance spun up for extracting dump
+// it uses signals as suggested by https://www.postgresql.org/docs/12/server-shutdown.html
+// to try to shutdown the db process process.
+// It is not expected that any client is connected to the instance when 'stop' is called.
+// Connected clients will be forcefully disconnected
+func (r *pgRunningInfo) stop(ctx context.Context) error {
+	p, err := process.NewProcess(int32(r.cmd.Process.Pid))
+	if err != nil {
+		return err
+	}
+	return doThreeStepPostgresExit(ctx, p)
 }
 
 const (
@@ -37,30 +50,33 @@ const (
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
 func prepareBackup(ctx context.Context) (*string, error) {
-	needs, location, err := needsBackup(ctx)
+	found, location, err := findDifferentPgInstallation(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if !needs {
+	// nothing found - nothing to do
+	if !found {
 		return nil, nil
 	}
-	// fail if there is a db instance running
+	// fail if there is an instance of the found installation running
 	if err := errIfInstanceRunning(ctx, location); err != nil {
 		return nil, err
 	}
-	config, err := startDatabaseInLocation(ctx, location)
+	runConfig, err := startDatabaseInLocation(ctx, location)
 	if err != nil {
 		return nil, err
 	}
-	defer stopDbByCmd(ctx, config.cmd)
+	defer runConfig.stop(ctx)
 
-	if err := takeBackup(ctx, config); err != nil {
+	if err := takeBackup(ctx, runConfig); err != nil {
 		return nil, err
 	}
 
-	return &config.dbName, nil
+	return runConfig.dbName, nil
 }
 
+// errIfInstanceRunning returns an error (of type errDbInstanceRunning) if there an instance of the
+// installation located at 'location' is running. Other errors may also be returned.
 func errIfInstanceRunning(ctx context.Context, location string) error {
 	processes, err := FindAllSteampipePostgresInstances(ctx)
 	if err != nil {
@@ -144,30 +160,24 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 
+	runConfig := &pgRunningInfo{cmd: cmd, port: &port}
+
 	dbName, err := getDatabaseName(ctx, port)
 	if err != nil {
+		runConfig.stop(ctx)
 		return nil, err
 	}
 
-	return &pgRunningInfo{cmd: cmd, port: port, dbName: dbName}, nil
+	runConfig.dbName = &dbName
+
+	return runConfig, nil
 }
 
-// stopDbByCmd is used for shutting down postgres instance spun up for extracting dump
-// it uses signals as suggested by https://www.postgresql.org/docs/12/server-shutdown.html
-// to try to shutdown the db process process
-func stopDbByCmd(ctx context.Context, cmd *exec.Cmd) error {
-	p, err := process.NewProcess(int32(cmd.Process.Pid))
-	if err != nil {
-		return err
-	}
-	return doThreeStepPostgresExit(ctx, p)
-}
-
-// needsBackup checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
+// findDifferentPgInstallation checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
 // other than desired version.
 // it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
 // it's also called as part of `restoreBackup` for removal of the installation once restoration successfully completes
-func needsBackup(ctx context.Context) (bool, string, error) {
+func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
 	if err != nil {
@@ -214,52 +224,74 @@ func restoreBackup(ctx context.Context) error {
 		return fmt.Errorf("steampipe service is not running")
 	}
 
-	// get the location of the other instance which was backed up
-	_, location, err := needsBackup(ctx)
-	if err != nil {
-		return err
-	}
-
 	// extract the Table of Contents from the Backup Archive
-	toc, err := getToCFromBackup(ctx)
+	toc, err := getTableOfContentsFromBackup(ctx)
 	if err != nil {
 		return err
 	}
 
 	// partition the Table of Contents into separate lists (no refresh and only refresh)
-	noRefreshListFile, onlyRefreshListFile, err := splitToCMatViewRefreshData(ctx, toc)
+	objectAndStaticDataListFile, matviewRefreshListFile, err := partitionTableOfContents(ctx, toc)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		os.Remove(noRefreshListFile)
-		os.Remove(onlyRefreshListFile)
+		// remove both files before returning
+		// if the restoration fails, these will be regenerated at the next run
+		os.Remove(objectAndStaticDataListFile)
+		os.Remove(matviewRefreshListFile)
 	}()
-	err = runRestoreUsingList(ctx, runningInfo, noRefreshListFile)
+
+	// restore everything, but don't refresh Materialized views.
+	err = runRestoreUsingList(ctx, runningInfo, objectAndStaticDataListFile)
 	if err != nil {
 		return err
 	}
-	err = runRestoreUsingList(ctx, runningInfo, onlyRefreshListFile)
+
+	//
+	// make an attempt at refreshing the materialized views as part of restoration
+	// we are doing this separately, since we do not want the whole restoration to fail if we can't refresh
+	//
+	// we may not be able to restore when the materilized views contain transitive references to unqualified
+	// table names
+	//
+	// since 'pg_dump' always set a blank 'search_path', it will not be able to resolve the aforementioned transitive
+	// dependencies and will fail to refresh
+	//
+	err = runRestoreUsingList(ctx, runningInfo, matviewRefreshListFile)
 	if err != nil {
+		//
 		// we could not refresh the Materialized views
 		// this is probably because the Materialized views
 		// contain transitive references to unqualified table names
+		//
 		// WARN the user.
+		//
 		// TODO: We should try to refresh these separately using a Maintenance Client
 		// https://github.com/turbot/steampipe/issues/1934
-		log.Println("[WARN] Could not REFRESH MATERAILIZED VIEWS while restoring data.")
+		//
+		log.Println("[WARN] Could not REFRESH Materialized Views while restoring data.")
 	}
 
-	err = os.Remove(databaseBackupFilePath())
-	if err != nil {
+	if err := os.Remove(databaseBackupFilePath()); err != nil {
 		log.Printf("[WARN] Could not remove Backup data at %s.", databaseBackupFilePath())
 	}
 
-	return os.RemoveAll(location)
+	// get the location of the other instance which was backed up
+	_, location, err := findDifferentPgInstallation(ctx)
+	if err != nil {
+		return err
+	}
+
+	// remove it
+	if err := os.RemoveAll(location); err != nil {
+		log.Printf("[WARN] Could not remove old installation at %s.", location)
+	}
+
+	return nil
 }
 
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
-
 	cmd := exec.CommandContext(
 		ctx,
 		pgRestoreBinaryExecutablePath(),
@@ -291,16 +323,15 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 	return nil
 }
 
-// splitToCMatViewRefreshData writes back the TableOfContents into a two temporary files:
-// 	1. without REFRESH MATERIALIZED VIEWS
-//  2. only REFRESH MATERIALIZED VIEWS
+// partitionTableOfContents writes back the TableOfContents into a two temporary files:
+// 1. without REFRESH MATERIALIZED VIEWS
+// 2. only REFRESH MATERIALIZED VIEWS
 //
-// This needs to be done because REFRESHING cannot work in restore, since the BackUP will always set
-// a blank search path before commencing and the MATERIALIZED VIEWS may have functions with
-// unqualified table names
-func splitToCMatViewRefreshData(ctx context.Context, toc []string) (string, string, error) {
-	withoutRefresh, onlyRefresh := utils.Partition(toc, func(v string) bool {
-		return !strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
+// This needs to be done because the BackUP will always set  a blank search path before commencing
+// and the MATERIALIZED VIEWS may have functions with unqualified table names
+func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []string) (string, string, error) {
+	onlyRefresh, withoutRefresh := utils.Partition(tableOfContentsOfBackup, func(v string) bool {
+		return strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
 	})
 
 	withoutFile := filepath.Join(filepaths.EnsureDatabaseDir(), noMatViewRefreshListFileName)
@@ -314,9 +345,9 @@ func splitToCMatViewRefreshData(ctx context.Context, toc []string) (string, stri
 	return withoutFile, onlyFile, err
 }
 
-// getToCFromBackup uses pg_restore to read the TableOfContents from the
+// getTableOfContentsFromBackup uses pg_restore to read the TableOfContents from the
 // back archive
-func getToCFromBackup(ctx context.Context) ([]string, error) {
+func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	cmd := exec.CommandContext(
 		ctx,
 		pgRestoreBinaryExecutablePath(),
