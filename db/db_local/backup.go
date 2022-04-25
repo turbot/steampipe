@@ -19,7 +19,7 @@ var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - an instance is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
 )
 
-type oldDbRunningConfig struct {
+type pg12RunningInfo struct {
 	cmd    *exec.Cmd
 	port   int
 	dbName string
@@ -69,7 +69,7 @@ func errIfInstanceRunning(ctx context.Context, location string) error {
 	return nil
 }
 
-func takeBackup(ctx context.Context, config *oldDbRunningConfig) error {
+func takeBackup(ctx context.Context, config *pg12RunningInfo) error {
 	cmd := exec.CommandContext(
 		ctx,
 		pgDumpBinaryExecutablePath(),
@@ -105,7 +105,7 @@ func takeBackup(ctx context.Context, config *oldDbRunningConfig) error {
 }
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
-func startDatabaseInLocation(ctx context.Context, location string) (*oldDbRunningConfig, error) {
+func startDatabaseInLocation(ctx context.Context, location string) (*pg12RunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
 	port, err := getNextFreePort()
@@ -138,7 +138,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*oldDbRunnin
 		return nil, err
 	}
 
-	return &oldDbRunningConfig{cmd: cmd, port: port, dbName: dbName}, nil
+	return &pg12RunningInfo{cmd: cmd, port: port, dbName: dbName}, nil
 }
 
 // stopDbByCmd is used for shutting down postgres instance spun up for extracting dump
