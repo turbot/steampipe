@@ -278,14 +278,16 @@ func restoreBackup(ctx context.Context) error {
 	}
 
 	// get the location of the other instance which was backed up
-	_, location, err := findDifferentPgInstallation(ctx)
+	found, location, err := findDifferentPgInstallation(ctx)
 	if err != nil {
 		return err
 	}
 
 	// remove it
-	if err := os.RemoveAll(location); err != nil {
-		log.Printf("[WARN] Could not remove old installation at %s.", location)
+	if found {
+		if err := os.RemoveAll(location); err != nil {
+			log.Printf("[WARN] Could not remove old installation at %s.", location)
+		}
 	}
 
 	return nil
