@@ -1,11 +1,10 @@
 import CheckGrouping from "../CheckGrouping";
 import Container from "../../layout/Container";
 import Error from "../../Error";
-import get from "lodash/get";
-import groupBy from "lodash/groupBy";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
-import { BenchmarkTreeProps, CheckDisplayGroup, CheckProps } from "../common";
+import useCheckGrouping from "../../../../hooks/useCheckGrouping";
+import { BenchmarkTreeProps, CheckProps } from "../common";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
@@ -186,53 +185,17 @@ const BenchmarkTableView = ({
 };
 
 const BenchmarkWrapper = (props: CheckProps) => {
-  const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
+  const groups = useCheckGrouping(props);
 
-  const groupings = useMemo(
-    () =>
-      props.properties?.grouping ||
-      ([
-        { type: "benchmark" },
-        { type: "control" },
-        { type: "result" },
-      ] as CheckDisplayGroup[]),
-    [props.properties]
-  );
-
-  const benchmark = useMemo(() => {
-    if (!rootBenchmark) {
-      return null;
-    }
-
-    const b = new BenchmarkType(
-      groupings,
-      0,
-      rootBenchmark.group_id,
-      rootBenchmark.title,
-      rootBenchmark.description,
-      rootBenchmark.groups,
-      rootBenchmark.controls
-    );
-
-    console.log(
-      groupBy(b.all_control_results, (result) => {
-        const dimension = result.dimensions.find((d) => d.key === "region");
-        return dimension?.value || "Other";
-      })
-    );
-
-    return b;
-  }, [groupings, rootBenchmark]);
-
-  if (!benchmark) {
+  if (!groups) {
     return null;
   }
 
-  if (rootBenchmark.type === "table") {
-    return <BenchmarkTableView benchmark={benchmark} definition={props} />;
+  if (props.properties && props.properties.type === "table") {
+    return <BenchmarkTableView benchmark={groups} definition={props} />;
   }
 
-  return <Benchmark {...props} benchmark={benchmark} />;
+  return <Benchmark {...props} benchmark={groups} />;
 };
 
 export default BenchmarkWrapper;
