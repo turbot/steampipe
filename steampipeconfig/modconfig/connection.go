@@ -65,6 +65,23 @@ func (c *Connection) MigrateLegacy() {
 	c.Connections = c.LegacyConnections
 	c.Config = c.LegacyConfig
 	c.DeclRange = NewRange(c.LegacyDeclRange)
+	if c.LegacyOptions != nil {
+		c.Options = c.LegacyOptions
+		c.Options.MigrateLegacy()
+	}
+}
+
+// MaintainLegacy keeps the values of the legacy properties intact while
+// refreshing connections
+func (c *Connection) MaintainLegacy() {
+	c.LegacyName = c.Name
+	c.LegacyPlugin = c.Plugin
+	c.LegacyPluginShortName = c.PluginShortName
+	c.LegacyType = c.Type
+	c.LegacyConnectionNames = c.ConnectionNames
+	c.LegacyConnections = c.Connections
+	c.LegacyConfig = c.Config
+	c.LegacyDeclRange = c.DeclRange.GetLegacy()
 }
 
 // Range represents a span of characters between two positions in a source file.
@@ -76,6 +93,14 @@ type Range struct {
 	// Start and End represent the bounds of this range. Start is inclusive and End is exclusive.
 	Start Pos `json:"start,omitempty"`
 	End   Pos `json:"end,omitempty"`
+}
+
+func (r Range) GetLegacy() hcl.Range {
+	return hcl.Range{
+		Filename: r.Filename,
+		Start:    r.Start.GetLegacy(),
+		End:      r.End.GetLegacy(),
+	}
 }
 
 func NewRange(sourceRange hcl.Range) Range {
@@ -92,6 +117,14 @@ type Pos struct {
 	Line   int `json:"line"`
 	Column int `json:"column"`
 	Byte   int `json:"byte"`
+}
+
+func (r Pos) GetLegacy() hcl.Pos {
+	return hcl.Pos{
+		Line:   r.Line,
+		Column: r.Column,
+		Byte:   r.Byte,
+	}
 }
 
 func NewPos(sourcePos hcl.Pos) Pos {
