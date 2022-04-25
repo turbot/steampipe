@@ -184,6 +184,9 @@ const CheckPanel = ({ node, groupingConfig, rootSummary }: CheckPanelProps) => {
         children.push(child);
       }
     }
+    console.log(
+      groupingConfig ? groupingConfig[groupingConfig.length - 1] : "Not set"
+    );
     return [
       sortBy(children, "title"),
       results,
