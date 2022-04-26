@@ -3,16 +3,14 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/display"
-
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/workspace"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 //  Variable management commands

@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 )
@@ -33,35 +32,6 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 			m.DependencyVariables[mod.ShortName][buildVariableMapKey(k)] = v
 		}
 	}
-	// build map of all variables
-	m.AllVariables = m.buildCombinedMap()
-
-	return m
-}
-
-// NewModVariableMapFromExistingVariables builds a ModVariableMap
-func ModVariableMapFromVariableMap(mod *Mod, variablesMap map[string]map[string]*Variable, dependencyModNames []string) *ModVariableMap {
-	m := &ModVariableMap{
-		RootVariables:       variablesMap[mod.ShortName],
-		DependencyVariables: make(map[string]map[string]*Variable),
-	}
-
-	if mod.Require != nil {
-		for _, mod := range mod.Require.Mods {
-			fmt.Println(mod)
-		}
-	}
-	//// now add variables from dependency mods
-	for _, dependencyModName := range dependencyModNames {
-		m.DependencyVariables[dependencyModName] = variablesMap[dependencyModName]
-	}
-	//	// add variables into map, modifying th ekey to be the variable short name
-	//	m.DependencyVariables[mod.ShortName] = make(map[string]*Variable)
-	//	for k, v := range mod.ResourceMaps.Variables {
-	//		m.DependencyVariables[mod.ShortName][buildVariableMapKey(k)] = v
-	//	}
-	//}
-
 	// build map of all variables
 	m.AllVariables = m.buildCombinedMap()
 
