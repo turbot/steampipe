@@ -1,3 +1,5 @@
+import isEmpty from "lodash/isEmpty";
+import isObject from "lodash/isObject";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import {
   AlarmIcon,
@@ -20,7 +22,6 @@ import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
-import { isEmpty, isObject } from "lodash";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   RowRenderResult,

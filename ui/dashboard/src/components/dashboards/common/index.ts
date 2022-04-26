@@ -1,9 +1,9 @@
+import has from "lodash/has";
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
-import { FlowCategories, FlowProperties, FlowType } from "../flows";
-import { HierarchyProperties, HierarchyType } from "../hierarchies";
-import { getColumnIndex } from "../../../utils/data";
-import { has } from "lodash";
 import { CheckExecutionTree } from "../check/common";
+import { FlowCategories, FlowProperties, FlowType } from "../flows";
+import { getColumnIndex } from "../../../utils/data";
+import { HierarchyProperties, HierarchyType } from "../hierarchies";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 

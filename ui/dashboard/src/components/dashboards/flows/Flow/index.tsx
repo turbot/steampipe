@@ -1,5 +1,8 @@
 import ErrorPanel from "../../Error";
 import Flows, { FlowProperties, FlowProps, FlowType } from "../index";
+import get from "lodash/get";
+import merge from "lodash/merge";
+import set from "lodash/set";
 import {
   buildNodesAndEdges,
   buildSankeyDataInputs,
@@ -8,7 +11,6 @@ import {
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { get, merge, set } from "lodash";
 import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 

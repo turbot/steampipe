@@ -1,3 +1,5 @@
+import get from "lodash/get";
+import sortBy from "lodash/sortBy";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
@@ -9,7 +11,7 @@ import {
 import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { get, groupBy as lodashGroupBy, sortBy } from "lodash";
+import { default as lodashGroupBy } from "lodash/groupBy";
 import { stringToColour } from "../../utils/color";
 import { useParams } from "react-router-dom";
 

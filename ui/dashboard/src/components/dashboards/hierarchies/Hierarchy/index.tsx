@@ -1,8 +1,11 @@
 import ErrorPanel from "../../Error";
+import get from "lodash/get";
 import Hierarchies, {
   HierarchyProperties,
   HierarchyType,
 } from "../../hierarchies";
+import merge from "lodash/merge";
+import set from "lodash/set";
 import {
   buildNodesAndEdges,
   buildTreeDataInputs,
@@ -10,7 +13,6 @@ import {
   NodesAndEdges,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { get, merge, set } from "lodash";
 import { HierarchyProps } from "../index";
 import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";

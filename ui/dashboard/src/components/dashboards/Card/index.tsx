@@ -1,5 +1,9 @@
+import get from "lodash/get";
+import has from "lodash/has";
 import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
+import isNumber from "lodash/isNumber";
+import isObject from "lodash/isObject";
 import LoadingIndicator from "../LoadingIndicator";
 import Table from "../Table";
 import useDeepCompareEffect from "use-deep-compare-effect";
@@ -9,7 +13,6 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { get, has, isNumber, isObject } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
 import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";

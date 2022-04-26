@@ -1,9 +1,8 @@
 import IntegerDisplay from "../../../IntegerDisplay";
 import LoadingIndicator from "../../LoadingIndicator";
-import React from "react";
+import startCase from "lodash/startCase";
 import { classNames } from "../../../../utils/styles";
 import { getTextClasses, getWrapperClasses } from "../../Card";
-import { startCase } from "lodash";
 
 interface ControlCardProps {
   loading: boolean;

@@ -1,6 +1,6 @@
+import kebabCase from "lodash/kebabCase";
 import * as outlineIconExports from "@heroicons/react/outline";
 import * as solidIconExports from "@heroicons/react/solid";
-import { kebabCase } from "lodash";
 
 const icons = {};
 
