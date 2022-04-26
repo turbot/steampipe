@@ -33,14 +33,14 @@ type WorkspaceLock struct {
 
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the StructVersion is populated
-func (s WorkspaceLock) IsValid() bool {
-	return s.StructVersion > 0
+func (l WorkspaceLock) IsValid() bool {
+	return l.StructVersion > 0
 }
 
-func (s *WorkspaceLock) MigrateFrom() migrate.Migrateable {
-	s.StructVersion = WorkspaceLockStructVersion
+func (l *WorkspaceLock) MigrateFrom() migrate.Migrateable {
+	l.StructVersion = WorkspaceLockStructVersion
 
-	return s
+	return l
 }
 
 // EmptyWorkspaceLock creates a new empty workspace lock based,

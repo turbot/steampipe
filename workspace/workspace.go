@@ -57,6 +57,48 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
+	workspace, err := createShellWorkspace(workspacePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// load the workspace mod
+	if err := workspace.loadWorkspaceMod(ctx); err != nil {
+		return nil, err
+	}
+
+	// migrate legacy workspace lock files in the directory to use snake casing (migrated in v0.14.0)
+	if err := migrate.Migrate(&versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath)); err != nil {
+		return nil, fmt.Errorf("failed to migrate legacy workspace lock files: %s", err.Error())
+	}
+
+	// return context error so calling code can handle cancellations
+	return workspace, nil
+}
+
+// LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
+// this is use for the variable list command
+func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error) {
+	utils.LogTime("workspace.LoadVariables start")
+	defer utils.LogTime("workspace.LoadVariables end")
+
+	// create shell workspace
+	workspace, err := createShellWorkspace(workspacePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// we will NOT validate missing variables when loading
+	validateMissing := false
+	varMap, err := workspace.getAllVariables(ctx, validateMissing)
+	if err != nil {
+		return nil, err
+	}
+	// convert into a sorted array
+	return varMap.ToArray(), nil
+}
+
+func createShellWorkspace(workspacePath string) (*Workspace, error) {
 	// create shell workspace
 	workspace := &Workspace{
 		Path:           workspacePath,
@@ -71,48 +113,7 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	if err := workspace.loadExclusions(); err != nil {
 		return nil, err
 	}
-
-	// load the workspace mod
-	if err := workspace.loadWorkspaceMod(ctx); err != nil {
-		return nil, err
-	}
-
-	// migrate legacy workspace lock files in the directory to use snake casing (migrated in v0.14.0)
-	err := migrate.Migrate(&versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath))
-	utils.FailOnErrorWithMessage(err, "failed to migrate legacy workspace lock files")
-
-	// return context error so calling code can handle cancellations
 	return workspace, nil
-}
-
-// LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
-func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error) {
-	utils.LogTime("workspace.LoadVariables start")
-	defer utils.LogTime("workspace.LoadVariables end")
-
-	// create shell workspace
-	workspace := &Workspace{
-		Path:           workspacePath,
-		VariableValues: make(map[string]string),
-	}
-	// check whether the workspace contains a modfile
-	// this will determine whether we load files recursively, and create pseudo resources for sql files
-	workspace.setModfileExists()
-
-	// we will NOT validate missing variables when loading
-	validateMissing := false
-	varMap, err := workspace.getAllVariables(ctx, validateMissing)
-	if err != nil {
-		return nil, err
-	}
-	// convert into array
-	res := make([]*modconfig.Variable, len(varMap))
-	idx := 0
-	for _, v := range varMap {
-		res[idx] = v
-		idx++
-	}
-	return res, nil
 }
 
 // LoadResourceNames builds lists of all workspace resource names
@@ -252,8 +253,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// add variables to runContext
-	runCtx.AddVariables(inputVariables)
+	// add workspace mod variables to runContext
+	runCtx.AddInputVariables(inputVariables)
 
 	// now load the mod
 	m, err := steampipeconfig.LoadMod(w.Path, runCtx)

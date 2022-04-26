@@ -51,14 +51,24 @@ type RunContext struct {
 	BlockTypes []string
 	// if set, exclude these block types
 	BlockTypeExclusions []string
-	Variables           map[string]*modconfig.Variable
+
+	// Variables are populated in an initial parse pass top we store them on the run context
+	// so we can set them on the mod when we do the main parse
+
+	// Variables is a map of the variables in the current mod
+	// it is used to populate the variables property on the mod
+	Variables map[string]*modconfig.Variable
+	// DependencyVariables is a map of the variables in the dependency mods of the current mod
+	// it is used to populate the variables property on the dependency
+	DependencyVariables map[string]map[string]*modconfig.Variable
+	ParentRunCtx        *RunContext
 
 	// stack of parent resources for the currently parsed block
 	// (unqualified name)
 	parents []string
-	// map of resource children, keyed by parent unqualified name
-	blockChildMap map[string][]string
 
+	// map of resource children, keyed by parent unqualified name
+	blockChildMap   map[string][]string
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
@@ -126,14 +136,42 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 	return ret
 }
 
-// AddVariables adds variables to the run context.
-// We load and evaluate variables before loading the workspace
-func (r *RunContext) AddVariables(inputVariables map[string]*modconfig.Variable) {
-	r.Variables = inputVariables
-	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	r.referenceValues["local"]["var"] = VariableValueMap(inputVariables)
+// AddInputVariables adds variables to the run context.
+// This function is called for the root run context after loading all input variables
+func (r *RunContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
+	r.setRootVariables(inputVariables.RootVariables)
+	r.setDependencyVariables(inputVariables.DependencyVariables)
+
 	// do not reload variables as we already have them
 	r.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
+}
+
+// SetVariablesForDependencyMod adds variables to the run context.
+// This function is called for dependent mod run context
+func (r *RunContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
+	r.setRootVariables(dependencyVariablesMap[mod.ShortName])
+	r.setDependencyVariables(dependencyVariablesMap)
+}
+
+// setRootVariables sets the Variables property
+// and adds the variables to the referenceValues map (used to build the eval context)
+func (r *RunContext) setRootVariables(variables map[string]*modconfig.Variable) {
+	r.Variables = variables
+	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
+	r.referenceValues["local"]["var"] = VariableValueMap(variables)
+}
+
+// setDependencyVariables sets the DependencyVariables property
+// and adds the dependency variables to the referenceValues map (used to build the eval context
+func (r *RunContext) setDependencyVariables(dependencyVariables map[string]map[string]*modconfig.Variable) {
+	r.DependencyVariables = dependencyVariables
+	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
+	// add top level variables
+	// add dependency mod variables, scoped by mod name
+	for depModName, depVars := range r.DependencyVariables {
+		r.referenceValues[depModName] = make(ReferenceTypeValueMap)
+		r.referenceValues[depModName]["var"] = VariableValueMap(depVars)
+	}
 }
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
@@ -484,4 +522,12 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	}
 
 	return nil
+}
+
+func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
+	for k, v := range mods {
+		if _, alreadyLoaded := r.LoadedDependencyMods[k]; !alreadyLoaded {
+			r.LoadedDependencyMods[k] = v
+		}
+	}
 }

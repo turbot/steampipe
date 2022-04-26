@@ -42,9 +42,9 @@ type UnparsedVariableValue interface {
 // InputValues may be incomplete but will include the subset of variables
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*modconfig.Variable, validate bool) (InputValues, tfdiags.Diagnostics) {
+func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap map[string]*modconfig.Variable, validate bool) (InputValues, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
-	ret := make(InputValues, len(vv))
+	ret := make(InputValues, len(inputValuesUnparsed))
 
 	// Currently we're generating only warnings for undeclared variables
 	// defined in files (see below) but we only want to generate a few warnings
@@ -52,16 +52,16 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 	// the result can therefore be overwhelming.
 	seenUndeclaredInFile := 0
 
-	for name, rv := range vv {
+	for name, unparsedVal := range inputValuesUnparsed {
 		var mode var_config.VariableParsingMode
-		config, declared := decls[name]
+		config, declared := variablesMap[name]
 		if declared {
 			mode = config.ParsingMode
 		} else {
 			mode = var_config.VariableParseLiteral
 		}
 
-		val, valDiags := rv.ParseVariableValue(mode)
+		val, valDiags := unparsedVal.ParseVariableValue(mode)
 		diags = diags.Append(valDiags)
 		if valDiags.HasErrors() {
 			continue
@@ -122,7 +122,7 @@ func ParseVariableValues(vv map[string]UnparsedVariableValue, decls map[string]*
 	// from one of the many possible sources.
 	// We'll now populate any we haven't gathered as their defaults and fail if any of the
 	// missing ones are required.
-	for name, vc := range decls {
+	for name, vc := range variablesMap {
 		if _, defined := ret[name]; defined {
 			continue
 		}

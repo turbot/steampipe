@@ -334,7 +334,7 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	var params []*modconfig.ParamDef
 	for _, block := range content.Blocks {
-		// only paramdefs ar defined in the schema
+		// only paramdefs are defined in the schema
 		if block.Type != modconfig.BlockTypeParam {
 			panic(fmt.Sprintf("invalid child block type %s", block.Type))
 		}

@@ -23,10 +23,10 @@ type Variable struct {
 	Type           cty.Type  `column:"var_type,text"  json:"-"`
 	DescriptionSet bool      ` json:"-"`
 
-	TypeString    string      `json:"type"`
-	DefaultString string      `json:"value_default"`
-	ValueGo       interface{} `json:"value"`
-	ModName       string      `json:"mod_name"`
+	TypeString string      `json:"type"`
+	DefaultGo  interface{} `json:"value_default"`
+	ValueGo    interface{} `json:"value"`
+	ModName    string      `json:"mod_name"`
 
 	// set after value resolution `column:"value,jsonb"`
 	Value                      cty.Value                      `column:"value,jsonb" json:"-"`
@@ -45,9 +45,9 @@ type Variable struct {
 }
 
 func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
-	defaultString := ""
+	var defaultGo interface{} = nil
 	if !v.Default.IsNull() {
-		defaultString, _ = utils.CtyToString(v.Default)
+		defaultGo, _ = utils.CtyToGo(v.Default)
 	}
 
 	return &Variable{
@@ -61,7 +61,7 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 		Mod:             mod,
 		DeclRange:       v.DeclRange,
 		ModName:         mod.ShortName,
-		DefaultString:   defaultString,
+		DefaultGo:       defaultGo,
 		TypeString:      utils.CtyTypeToHclType(v.Type, v.Default.Type()),
 	}
 }

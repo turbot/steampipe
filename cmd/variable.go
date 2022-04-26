@@ -1,20 +1,16 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/turbot/steampipe/display"
-
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/workspace"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/workspace"
 )
 
 //  Variable management commands
@@ -83,25 +79,9 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	if viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON {
-		jsonVarList(vars)
+		display.ShowVarsListJson(vars)
 	} else {
 
-		tableVarList(vars)
+		display.ShowVarsListTable(vars)
 	}
-}
-
-func jsonVarList(vars []*modconfig.Variable) {
-	jsonOutput, err := json.MarshalIndent(vars, "", "  ")
-	utils.FailOnErrorWithMessage(err, "failed to marshal variables to JSON")
-
-	fmt.Println(string(jsonOutput))
-}
-
-func tableVarList(vars []*modconfig.Variable) {
-	headers := []string{"mod_name", "name", "description", "value", "value_default", "type"}
-	var rows = make([][]string, len(vars))
-	for i, v := range vars {
-		rows[i] = []string{v.ModName, v.ShortName, v.Description, fmt.Sprintf("%v", v.ValueGo), v.DefaultString, v.TypeString}
-	}
-	display.ShowWrappedTable(headers, rows, false)
 }
