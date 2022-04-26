@@ -63,7 +63,8 @@ class Benchmark implements CheckNode {
 
     const nestedBenchmarks: Benchmark[] = [];
     const benchmarksToAdd = benchmarks || [];
-    const lengthMaxBenchmarkIndex = benchmarksToAdd.toString().length - 1;
+    const lengthMaxBenchmarkIndex = (benchmarksToAdd.length - 1).toString()
+      .length;
     benchmarksToAdd.forEach((nestedBenchmark, benchmarkIndex) => {
       nestedBenchmarks.push(
         new Benchmark(
@@ -81,7 +82,7 @@ class Benchmark implements CheckNode {
     });
     const nestedControls: Control[] = [];
     const controlsToAdd = controls || [];
-    const lengthMaxControlIndex = controlsToAdd.toString().length - 1;
+    const lengthMaxControlIndex = (controlsToAdd.length - 1).toString().length;
     controlsToAdd.forEach((nestedControl, controlIndex) => {
       nestedControls.push(
         new Control(
