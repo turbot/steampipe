@@ -37,8 +37,8 @@ func (l WorkspaceLock) IsValid() bool {
 	return l.StructVersion > 0
 }
 
-func (s *WorkspaceLock) MigrateFrom() migrate.Migrateable {
-	s.StructVersion = WorkspaceLockStructVersion
+func (l *WorkspaceLock) MigrateFrom() migrate.Migrateable {
+	l.StructVersion = WorkspaceLockStructVersion
 
 	return l
 }
