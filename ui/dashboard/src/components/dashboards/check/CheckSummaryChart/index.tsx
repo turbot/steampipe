@@ -153,7 +153,10 @@ const ProgressBar = ({ className, percent }: ProgressBarProps) => {
   );
 };
 
-export const getControlSummaryChartPercent = (value, total) => {
+export const getCheckSummaryChartPercent = (value, total) => {
+  if (!value) {
+    return 0;
+  }
   const percentOfTotal = value / total;
   const rounded = Math.floor(percentOfTotal * 100);
   return Math.max(rounded, 3);
@@ -245,11 +248,11 @@ const CheckSummaryChart = ({
         <ProgressBarGroup className="flex-row-reverse">
           <ProgressBar
             className="bg-alert border border-alert"
-            percent={getControlSummaryChartPercent(summary.alarm, maxAlerts)}
+            percent={getCheckSummaryChartPercent(summary.alarm, maxAlerts)}
           />
           <ProgressBar
             className="border border-alert"
-            percent={getControlSummaryChartPercent(summary.error, maxAlerts)}
+            percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
           />
         </ProgressBarGroup>
       </div>
@@ -258,15 +261,15 @@ const CheckSummaryChart = ({
         <ProgressBarGroup>
           <ProgressBar
             className="bg-ok border border-ok"
-            percent={getControlSummaryChartPercent(summary.ok, maxNonAlerts)}
+            percent={getCheckSummaryChartPercent(summary.ok, maxNonAlerts)}
           />
           <ProgressBar
             className="bg-info border border-info"
-            percent={getControlSummaryChartPercent(summary.info, maxNonAlerts)}
+            percent={getCheckSummaryChartPercent(summary.info, maxNonAlerts)}
           />
           <ProgressBar
             className="bg-tbd border border-tbd"
-            percent={getControlSummaryChartPercent(summary.skip, maxNonAlerts)}
+            percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
           />
         </ProgressBarGroup>
       </div>
