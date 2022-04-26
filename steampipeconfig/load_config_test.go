@@ -1,8 +1,10 @@
 package steampipeconfig
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
@@ -49,7 +51,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:            "",
 					Config:          "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
 					DeclRange: modconfig.Range{
-						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/multiple_connections/config/connection1.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection1.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -87,7 +89,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:            "",
 					Config:          "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
 					DeclRange: modconfig.Range{
-						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/multiple_connections/config/connection2.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection2.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -135,7 +137,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:            "",
 					Config:          "",
 					DeclRange: modconfig.Range{
-						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection/config/connection1.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection/config/connection1.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -183,7 +185,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:            "",
 					Config:          "",
 					DeclRange: modconfig.Range{
-						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -256,7 +258,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:            "",
 					Config:          "",
 					DeclRange: modconfig.Range{
-						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -325,7 +327,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:            "",
 					Config:          "",
 					DeclRange: modconfig.Range{
-						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -396,7 +398,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 						LegacyCacheTTL: &ttlVal,
 					},
 					DeclRange: modconfig.Range{
-						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -487,6 +489,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 }
 
 func TestLoadConfig(t *testing.T) {
+	// get the current working directory of the test(used to build the DeclRange.Filename property)
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("failed to get current working directory")
+	}
+
 	for name, test := range testCasesLoadConfig {
 		// default workspoace to empty dir
 		workspaceDir := test.workspaceDir
@@ -521,6 +529,9 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 		expectedConfig := test.expected.(*SteampipeConfig)
+		for _, c := range expectedConfig.Connections {
+			c.DeclRange.Filename = strings.Replace(c.DeclRange.Filename, "$$test_pwd$$", pwd, 1)
+		}
 		if !SteampipeConfigEquals(config, expectedConfig) {
 			t.Errorf("Test: '%s'' FAILED : expected:\n%s\n\ngot:\n%s", name, expectedConfig, config)
 		}
@@ -536,7 +547,6 @@ func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
 	if !reflect.DeepEqual(left.Connections, right.Connections) {
 		return false
 	}
-	// return true
 
 	return reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) &&
 		reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) &&
