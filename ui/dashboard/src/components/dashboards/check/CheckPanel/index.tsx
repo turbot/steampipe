@@ -218,7 +218,7 @@ const CheckPanel = ({
           className={classNames(
             "bg-dashboard-panel shadow-sm rounded-md",
             can_be_expanded ? "cursor-pointer" : null,
-            expanded && node.children && node.children.length > 0
+            expanded && (error_nodes.length > 0 || result_nodes.length > 0)
               ? "rounded-b-none"
               : null,
             node.status !== "complete" && node.status !== "error"
