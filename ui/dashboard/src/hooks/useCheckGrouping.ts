@@ -122,7 +122,6 @@ const useCheckGrouping = (props: CheckProps) => {
 
     const result: CheckNode[] = [];
     const temp = { _: result };
-    console.log(b.all_control_errors);
     b.all_control_results.forEach(function (checkResult) {
       return groupingsConfig
         .filter((group) => group.type !== "control_result")
@@ -145,7 +144,6 @@ const useCheckGrouping = (props: CheckProps) => {
         }, temp)
         ._.push(new ControlResultNode(checkResult));
     });
-    console.log(temp);
     b.all_control_errors.forEach(function (checkError) {
       return groupingsConfig
         .filter((group) => group.type !== "control_result")
