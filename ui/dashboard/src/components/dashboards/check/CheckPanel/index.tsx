@@ -242,7 +242,6 @@ const CheckPanel = ({
               </div>
               <div className="flex-shrink-0 w-40 md:w-72 lg:w-96">
                 <CheckSummaryChart
-                  name={node.name}
                   summary={node.summary}
                   rootSummary={rootSummary}
                 />

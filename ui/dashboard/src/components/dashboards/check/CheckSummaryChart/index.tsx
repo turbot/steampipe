@@ -12,7 +12,6 @@ interface ProgressBarProps {
 }
 
 interface CheckSummaryChartProps {
-  name: string;
   summary: CheckSummary;
   rootSummary: CheckSummary;
 }
@@ -163,7 +162,6 @@ export const getCheckSummaryChartPercent = (value, total) => {
 };
 
 const CheckSummaryChart = ({
-  name,
   summary,
   rootSummary,
 }: CheckSummaryChartProps) => {
