@@ -55,7 +55,7 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 
 	// now serialise the connection state
 	// update required connections with the schema mode from the connection state and schema hash from the hash map
-	if err := steampipeconfig.SaveConnectionState(connectionUpdates.RequiredConnectionState); err != nil {
+	if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
 		res.Error = err
 		return res
 	}

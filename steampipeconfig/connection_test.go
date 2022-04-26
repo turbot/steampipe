@@ -529,7 +529,7 @@ func setupTestConfig(test getConnectionsToUpdateTest) {
 		}
 	}
 	os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
-	writeJson(test.current, filepaths.ConnectionStatePath())
+	test.current.Save()
 }
 
 func resetConfig(test getConnectionsToUpdateTest) {

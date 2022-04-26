@@ -8,8 +8,18 @@ import (
 // Connection is a struct representing connection options
 // json tags needed as this is stored in the connection state file
 type Connection struct {
-	Cache    *bool `hcl:"cache" json:"Cache,omitempty"`
-	CacheTTL *int  `hcl:"cache_ttl" json:"CacheTTL,omitempty"`
+	Cache    *bool `hcl:"cache" json:"cache,omitempty"`
+	CacheTTL *int  `hcl:"cache_ttl" json:"cache_ttl,omitempty"`
+
+	// legacy properties included for backwards compatibility with v0.13
+	LegacyCache    *bool `hcl:"cache" json:"Cache,omitempty"`
+	LegacyCacheTTL *int  `hcl:"cache_ttl" json:"CacheTTL,omitempty"`
+}
+
+// MigrateLegacy migrates the legacy properties into new properties
+func (c *Connection) MigrateLegacy() {
+	c.Cache = c.LegacyCache
+	c.CacheTTL = c.LegacyCacheTTL
 }
 
 func (c *Connection) ConfigMap() map[string]interface{} {

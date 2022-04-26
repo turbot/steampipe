@@ -16,12 +16,9 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/dashboard/dashboardserver"
-	"github.com/turbot/steampipe/db/db_local"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/statefile"
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -150,12 +147,10 @@ func migrateLegacyFiles() error {
 		return nil
 	}
 	return utils.CombineErrors(
-		migrate.Migrate(statefile.LegacyState{}, &statefile.State{}, filepaths.LegacyStateFilePath()),
-		migrate.Migrate(pluginmanager.LegacyPluginManagerState{}, &pluginmanager.PluginManagerState{}, filepaths.PluginManagerStateFilePath()),
-		migrate.Migrate(db_local.LegacyRunningDBInstanceInfo{}, &db_local.RunningDBInstanceInfo{}, filepaths.RunningInfoFilePath()),
-		migrate.Migrate(dashboardserver.LegacyDashboardServiceState{}, &dashboardserver.DashboardServiceState{}, filepaths.DashboardServiceStateFilePath()),
-		migrate.Migrate(versionfile.LegacyPluginVersionFile{}, &versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
-		migrate.Migrate(versionfile.LegacyDatabaseVersionFile{}, &versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
+		migrate.Migrate(&statefile.State{}, filepaths.LegacyStateFilePath()),
+		migrate.Migrate(&steampipeconfig.ConnectionDataMap{}, filepaths.ConnectionStatePath()),
+		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
+		migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
 	)
 }
 

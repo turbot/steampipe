@@ -68,12 +68,3 @@ func pruneConnectionState(connections ConnectionDataMap, schemaNames []string) C
 
 	return actualConnectionState
 }
-
-func SaveConnectionState(state ConnectionDataMap) error {
-	return writeJson(state, filepaths.ConnectionStatePath())
-}
-
-func writeJson(data interface{}, path string) error {
-	j, _ := json.MarshalIndent(data, "", " ")
-	return os.WriteFile(path, j, 0644)
-}

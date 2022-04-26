@@ -78,7 +78,7 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	}
 
 	// migrate legacy workspace lock files in the directory to use snake casing (migrated in v0.14.0)
-	err := migrate.Migrate(versionmap.DependencyVersionMap{}, &versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath))
+	err := migrate.Migrate(&versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath))
 	utils.FailOnErrorWithMessage(err, "failed to migrate legacy workspace lock files")
 
 	// return context error so calling code can handle cancellations

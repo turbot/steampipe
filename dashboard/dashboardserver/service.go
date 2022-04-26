@@ -16,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -27,17 +26,6 @@ const (
 	ServiceStateError         ServiceState = "error"
 	ServiceStateStructVersion              = 20220411
 )
-
-// LegacyDashboardServiceState is a struct used to migrate the
-// DashboardServiceState to serialize with snake case property names(migrated in v0.14.0)
-type LegacyDashboardServiceState struct {
-	State      ServiceState
-	Error      string
-	Pid        int
-	Port       int
-	ListenType string
-	Listen     []string
-}
 
 type DashboardServiceState struct {
 	State         ServiceState `json:"state"`
@@ -60,24 +48,6 @@ func loadServiceStateFile() (*DashboardServiceState, error) {
 	}
 	err = json.Unmarshal(stateBytes, state)
 	return state, err
-}
-
-// IsValid checks whether the struct was correctly deserialized, by checking if the StructVersion is populated
-func (s DashboardServiceState) IsValid() bool {
-	return s.StructVersion > 0
-}
-
-func (s *DashboardServiceState) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyDashboardServiceState)
-	s.StructVersion = ServiceStateStructVersion
-	s.State = legacyState.State
-	s.Error = legacyState.Error
-	s.Pid = legacyState.Pid
-	s.Port = legacyState.Port
-	s.ListenType = legacyState.ListenType
-	s.Listen = legacyState.Listen
-
-	return s
 }
 
 func (s *DashboardServiceState) Save() error {

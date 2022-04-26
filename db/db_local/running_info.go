@@ -10,24 +10,10 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/utils"
 )
 
 const RunningDBStructVersion = 20220411
-
-// LegacyRunningDBInstanceInfo is a struct used to migrate the
-// RunningDBInstanceInfo to serialize with snake case property names(migrated in v0.14.0)
-type LegacyRunningDBInstanceInfo struct {
-	Pid        int
-	Port       int
-	Listen     []string
-	ListenType StartListenType
-	Invoker    constants.Invoker
-	Password   string
-	User       string
-	Database   string
-}
 
 // RunningDBInstanceInfo contains data about the running process and it's credentials
 type RunningDBInstanceInfo struct {
@@ -40,27 +26,6 @@ type RunningDBInstanceInfo struct {
 	User          string            `json:"user"`
 	Database      string            `json:"database"`
 	StructVersion int64             `json:"struct_version"`
-}
-
-// IsValid checks whether the struct was correctly deserialized,
-// by checking if the StructVersion is populated
-func (r RunningDBInstanceInfo) IsValid() bool {
-	return r.StructVersion > 0
-}
-
-func (r *RunningDBInstanceInfo) MigrateFrom(prev interface{}) migrate.Migrateable {
-	legacyState := prev.(LegacyRunningDBInstanceInfo)
-	r.StructVersion = RunningDBStructVersion
-	r.Pid = legacyState.Pid
-	r.Port = legacyState.Port
-	r.Listen = legacyState.Listen
-	r.ListenType = legacyState.ListenType
-	r.Invoker = legacyState.Invoker
-	r.Password = legacyState.Password
-	r.User = legacyState.User
-	r.Database = legacyState.Database
-
-	return r
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) *RunningDBInstanceInfo {
