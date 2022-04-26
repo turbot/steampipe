@@ -14,9 +14,11 @@ import (
 const DatabaseStructVersion = 20220411
 
 type DatabaseVersionFile struct {
-	FdwExtension       InstalledVersion `json:"fdw_extension"`
-	EmbeddedDB         InstalledVersion `json:"embedded_db"`
-	StructVersion      int64            `json:"struct_version"`
+	FdwExtension  InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB    InstalledVersion `json:"embedded_db"`
+	StructVersion int64            `json:"struct_version"`
+
+	// legacy properties included for backwards compatibility with v0.13
 	LegacyFdwExtension InstalledVersion `json:"fdwExtension"`
 	LegacyEmbeddedDB   InstalledVersion `json:"embeddedDB"`
 }

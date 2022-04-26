@@ -17,11 +17,13 @@ const StateStructVersion = 20220411
 
 // State is a struct containing installation state
 type State struct {
-	LastCheck            string `json:"last_checked"`    // an RFC3339 encoded time stamp
-	InstallationID       string `json:"installation_id"` // a UUIDv4 string
-	StructVersion        int64  `json:"struct_version"`
-	LegacyLastCheck      string `json:"lastChecked"`    // an RFC3339 encoded time stamp
-	LegacyInstallationID string `json:"installationId"` // a UUIDv4 string
+	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
+	InstallationID string `json:"installation_id"` // a UUIDv4 string
+	StructVersion  int64  `json:"struct_version"`
+
+	// legacy properties included for backwards compatibility with v0.13
+	LegacyLastCheck      string `json:"lastChecked"`
+	LegacyInstallationID string `json:"installationId"`
 }
 
 func newState() State {

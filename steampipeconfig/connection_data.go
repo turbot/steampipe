@@ -27,7 +27,7 @@ type ConnectionData struct {
 	// the creation time of the plugin file (only used for local plugins)
 	ModTime time.Time `json:"mod_time"`
 
-	// legacy properties
+	// legacy properties included for backwards compatibility with v0.13
 	LegacyPlugin     string                `json:"Plugin,omitempty"`
 	LegacyConnection *modconfig.Connection `json:"Connection,omitempty"`
 	LegacySchemaMode string                `json:"SchemaMode,omitempty"`

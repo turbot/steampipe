@@ -43,16 +43,15 @@ type Connection struct {
 	Options   *options.Connection `json:"options,omitempty"`
 	DeclRange Range               `json:"decl_range,omitempty"`
 
-	// legacy properties
-	LegacyName            string                 `json:"Name,omitempty"`
-	LegacyPluginShortName string                 `json:"PluginShortName,omitempty"`
-	LegacyPlugin          string                 `json:"Plugin,omitempty"`
-	LegacyType            string                 `json:"Type,omitempty"`
-	LegacyConnectionNames []string               `json:"Connections,omitempty"`
-	LegacyConnections     map[string]*Connection `json:"-"`
-	LegacyConfig          string                 `json:"Config,omitempty"`
-	LegacyOptions         *options.Connection    `json:"Options,omitempty"`
-	LegacyDeclRange       hcl.Range              `json:"DeclRange,omitempty"`
+	// legacy properties included for backwards compatibility with v0.13
+	LegacyName            string              `json:"Name,omitempty"`
+	LegacyPluginShortName string              `json:"PluginShortName,omitempty"`
+	LegacyPlugin          string              `json:"Plugin,omitempty"`
+	LegacyType            string              `json:"Type,omitempty"`
+	LegacyConnectionNames []string            `json:"Connections,omitempty"`
+	LegacyConfig          string              `json:"Config,omitempty"`
+	LegacyOptions         *options.Connection `json:"Options,omitempty"`
+	LegacyDeclRange       hcl.Range           `json:"DeclRange,omitempty"`
 }
 
 // MigrateLegacy migrates the legacy properties into new properties
@@ -62,7 +61,6 @@ func (c *Connection) MigrateLegacy() {
 	c.PluginShortName = c.LegacyPluginShortName
 	c.Type = c.LegacyType
 	c.ConnectionNames = c.LegacyConnectionNames
-	c.Connections = c.LegacyConnections
 	c.Config = c.LegacyConfig
 	c.DeclRange = NewRange(c.LegacyDeclRange)
 	if c.LegacyOptions != nil {
@@ -79,7 +77,6 @@ func (c *Connection) MaintainLegacy() {
 	c.LegacyPluginShortName = c.PluginShortName
 	c.LegacyType = c.Type
 	c.LegacyConnectionNames = c.ConnectionNames
-	c.LegacyConnections = c.Connections
 	c.LegacyConfig = c.Config
 	c.LegacyDeclRange = c.DeclRange.GetLegacy()
 }
