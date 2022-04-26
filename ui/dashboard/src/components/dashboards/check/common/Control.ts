@@ -13,6 +13,7 @@ import { LeafNodeDataRow } from "../../common";
 import Benchmark from "./Benchmark";
 
 class Control implements CheckNode {
+  private readonly _sortIndex: string;
   private readonly _group_id: string;
   private readonly _group_title: string | undefined;
   private readonly _group_description: string | undefined;
@@ -26,6 +27,7 @@ class Control implements CheckNode {
   private readonly _run_error: string | undefined;
 
   constructor(
+    sortIndex: string,
     group_id: string,
     group_title: string | undefined,
     group_description: string | undefined,
@@ -41,6 +43,7 @@ class Control implements CheckNode {
     add_control_error: AddControlErrorAction,
     add_control_results: AddControlResultsAction
   ) {
+    this._sortIndex = sortIndex;
     this._group_id = group_id;
     this._group_title = group_title;
     this._group_description = group_description;
@@ -82,12 +85,16 @@ class Control implements CheckNode {
     return "unknown";
   }
 
+  get sort(): string {
+    return `${this._sortIndex}-${this.title}`;
+  }
+
   get name(): string {
     return this._name;
   }
 
-  get title(): string | undefined {
-    return this._title;
+  get title(): string {
+    return this._title || this._name;
   }
 
   get type(): CheckNodeType {

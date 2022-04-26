@@ -17,6 +17,10 @@ class ControlErrorNode implements CheckNode {
     this._error = check_error.error;
   }
 
+  get sort(): string {
+    return this.title;
+  }
+
   get name(): string {
     return this._name;
   }

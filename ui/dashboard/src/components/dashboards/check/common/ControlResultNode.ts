@@ -13,6 +13,10 @@ class ControlResultNode implements CheckNode {
     this._result = result;
   }
 
+  get sort(): string {
+    return "0";
+  }
+
   get name(): string {
     return this._result.resource;
   }

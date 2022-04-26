@@ -201,7 +201,7 @@ const CheckPanel = ({
         }
       }
       return [
-        sortBy(children, "title"),
+        sortBy(children, "sort"),
         errors,
         results,
         children.length > 0 ||

@@ -12,8 +12,9 @@ export type CheckNodeType =
   | "tag";
 
 export interface CheckNode {
+  sort: string;
   name: string;
-  title?: string;
+  title: string;
   type: CheckNodeType;
   status: CheckNodeStatus;
   summary: CheckSummary;

@@ -20,6 +20,7 @@ const addBenchmarkTrunkNode = (
 ) => {
   const currentNode = benchmark_trunk.length > 0 ? benchmark_trunk[0] : null;
   return new BenchmarkNode(
+    currentNode?.sort || "Other",
     currentNode?.name || "Other",
     currentNode?.title || "Other",
     benchmark_trunk.length > 1
@@ -112,6 +113,7 @@ const getCheckGroupingNode = (
       );
     case "control":
       return new ControlNode(
+        checkResult.control.sort,
         checkResult.control.name,
         checkResult.control.title,
         children
@@ -178,6 +180,7 @@ const useCheckGrouping = (props: CheckProps) => {
     }
 
     const b = new BenchmarkType(
+      "0",
       rootBenchmark.group_id,
       rootBenchmark.title,
       rootBenchmark.description,

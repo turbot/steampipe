@@ -6,14 +6,25 @@ import {
 } from "./index";
 
 class BenchmarkNode implements CheckNode {
+  private readonly _sort: string;
   private readonly _name: string;
   private readonly _title: string | undefined;
   private readonly _children: CheckNode[];
 
-  constructor(name: string, title: string | undefined, children?: CheckNode[]) {
+  constructor(
+    sort: string,
+    name: string,
+    title: string | undefined,
+    children?: CheckNode[]
+  ) {
+    this._sort = sort;
     this._name = name;
     this._title = title;
     this._children = children || [];
+  }
+
+  get sort(): string {
+    return this._sort;
   }
 
   get name(): string {
