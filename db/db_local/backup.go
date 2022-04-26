@@ -82,11 +82,15 @@ func errIfInstanceRunning(ctx context.Context, location string) error {
 	if err != nil {
 		return err
 	}
+
 	for _, p := range processes {
 		cmdLine, err := p.CmdlineWithContext(ctx)
 		if err != nil {
 			continue
 		}
+
+		// check if the name of the process is prefixed with the $STEAMPIPE_INSTALL_DIR
+		// that means this is a steampipe service from this installation directory
 		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
 			return errDbInstanceRunning
 		}
