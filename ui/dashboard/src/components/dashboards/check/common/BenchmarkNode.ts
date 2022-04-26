@@ -3,20 +3,17 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
-  CheckResult,
 } from "./index";
 
 class BenchmarkNode implements CheckNode {
   private readonly _name: string;
   private readonly _title: string | undefined;
   private readonly _children: CheckNode[];
-  private readonly _results: CheckResult[];
 
   constructor(name: string, title: string | undefined, children?: CheckNode[]) {
     this._name = name;
     this._title = title;
     this._children = children || [];
-    this._results = [];
   }
 
   get name(): string {
@@ -47,23 +44,6 @@ class BenchmarkNode implements CheckNode {
       summary.skip += nestedSummary.skip;
       summary.error += nestedSummary.error;
     }
-    for (const result of this._results) {
-      if (result.status === "alarm") {
-        summary.alarm += 1;
-      }
-      if (result.status === "error") {
-        summary.error += 1;
-      }
-      if (result.status === "ok") {
-        summary.ok += 1;
-      }
-      if (result.status === "info") {
-        summary.info += 1;
-      }
-      if (result.status === "skip") {
-        summary.skip += 1;
-      }
-    }
     return summary;
   }
 
@@ -87,10 +67,6 @@ class BenchmarkNode implements CheckNode {
 
   get children(): CheckNode[] {
     return this._children;
-  }
-
-  get results(): CheckResult[] {
-    return this._results;
   }
 }
 

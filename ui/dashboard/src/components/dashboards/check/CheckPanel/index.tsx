@@ -1,4 +1,5 @@
 import CheckSummaryChart from "../CheckSummaryChart";
+import ControlErrorNode from "../common/ControlErrorNode";
 import ControlResultNode from "../common/ControlResultNode";
 import sortBy from "lodash/sortBy";
 import {
@@ -31,8 +32,8 @@ interface CheckChildrenProps {
 }
 
 interface CheckResultsProps {
-  results: CheckResult[];
-  error?: string;
+  results: ControlResultNode[];
+  errors: ControlErrorNode[];
 }
 
 interface CheckPanelProps {
@@ -143,15 +144,15 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
       <div className="flex-shrink-0 mr-4">
         <CheckResultRowStatusIcon status="error" />
       </div>
-      <div className="flex-grow font-medium">{error}</div>
+      <div className="flex-grow">{error}</div>
     </div>
   );
 };
 
-const CheckResults = ({ error, results }: CheckResultsProps) => {
+const CheckResults = ({ errors, results }: CheckResultsProps) => {
   const { theme } = useTheme();
 
-  if (!results) {
+  if (!errors || !results) {
     return null;
   }
 
@@ -164,11 +165,13 @@ const CheckResults = ({ error, results }: CheckResultsProps) => {
           : "border-background"
       )}
     >
-      {error && <CheckErrorRow error={error} />}
-      {results.map((result) => (
+      {errors.map((errorNode) => (
+        <CheckErrorRow key={`${errorNode.name}`} error={errorNode.error} />
+      ))}
+      {results.map((resultNode) => (
         <CheckResultRow
-          key={`${result.control.name}-${result.resource}`}
-          result={result}
+          key={`${resultNode.result.control.name}-${resultNode.result.resource}`}
+          result={resultNode.result}
         />
       ))}
     </div>
@@ -183,29 +186,31 @@ const CheckPanel = ({
 }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
 
-  const [child_nodes, result_nodes, can_be_expanded] = useMemo(() => {
-    const children: CheckNode[] = [];
-    const results: CheckResult[] = [];
-    for (const child of node.children || []) {
-      if (child.type === "control_result") {
-        results.push((child as ControlResultNode).result);
-      } else {
-        children.push(child);
+  const [child_nodes, error_nodes, result_nodes, can_be_expanded] =
+    useMemo(() => {
+      const children: CheckNode[] = [];
+      const errors: ControlErrorNode[] = [];
+      const results: ControlResultNode[] = [];
+      for (const child of node.children || []) {
+        if (child.type === "control_error") {
+          errors.push(child as ControlErrorNode);
+        } else if (child.type === "control_result") {
+          results.push(child as ControlResultNode);
+        } else {
+          children.push(child);
+        }
       }
-    }
-    console.log(
-      groupingConfig ? groupingConfig[groupingConfig.length - 1] : "Not set"
-    );
-    return [
-      sortBy(children, "title"),
-      results,
-      node.error ||
+      return [
+        sortBy(children, "title"),
+        errors,
+        results,
         children.length > 0 ||
-        (groupingConfig &&
-          groupingConfig[groupingConfig.length - 1].type === "control_result" &&
-          results.length > 0),
-    ];
-  }, [groupingConfig, node]);
+          (groupingConfig &&
+            groupingConfig[groupingConfig.length - 1].type ===
+              "control_result" &&
+            (errors.length > 0 || results.length > 0)),
+      ];
+    }, [groupingConfig, node]);
 
   return (
     <>
@@ -214,7 +219,7 @@ const CheckPanel = ({
           className={classNames(
             "bg-dashboard-panel shadow-sm rounded-md",
             can_be_expanded ? "cursor-pointer" : null,
-            expanded && node.results && node.results.length > 0
+            expanded && node.children && node.children.length > 0
               ? "rounded-b-none"
               : null,
             node.status !== "complete" && node.status !== "error"
@@ -256,7 +261,9 @@ const CheckPanel = ({
         {expanded &&
           groupingConfig &&
           groupingConfig[groupingConfig.length - 1].type ===
-            "control_result" && <CheckResults results={result_nodes} />}
+            "control_result" && (
+            <CheckResults errors={error_nodes} results={result_nodes} />
+          )}
       </div>
       {expanded && (
         <CheckChildren

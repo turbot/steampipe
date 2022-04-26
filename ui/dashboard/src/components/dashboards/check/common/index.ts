@@ -6,6 +6,7 @@ export type CheckNodeType =
   | "root"
   | "benchmark"
   | "control"
+  | "control_error"
   | "control_result"
   | "dimension"
   | "tag";
@@ -76,14 +77,21 @@ interface CheckResultDimension {
 
 export type CheckResultStatus = "alarm" | "ok" | "info" | "skip" | "error";
 
-export interface CheckResult {
-  reason: string;
-  resource: string;
-  status: CheckResultStatus;
+export interface GroupableCheck {
   dimensions: CheckResultDimension[];
   tags: CheckTags;
   control: CheckNode;
   benchmark_trunk: Benchmark[];
+}
+
+export interface CheckError extends GroupableCheck {
+  error: string;
+}
+
+export interface CheckResult extends GroupableCheck {
+  reason: string;
+  resource: string;
+  status: CheckResultStatus;
 }
 
 export interface CheckControl {
@@ -151,6 +159,12 @@ export type BenchmarkTreeProps = BasePrimitiveProps &
       root_summary: CheckSummary;
     };
   };
+
+export type AddControlErrorAction = (
+  error: string,
+  control: Control,
+  benchmark_trunk: Benchmark[]
+) => void;
 
 export type AddControlResultsAction = (
   results: CheckResult[],

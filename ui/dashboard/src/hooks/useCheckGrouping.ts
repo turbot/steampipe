@@ -1,5 +1,6 @@
 import BenchmarkNode from "../components/dashboards/check/common/BenchmarkNode";
 import ControlNode from "../components/dashboards/check/common/ControlNode";
+import ControlErrorNode from "../components/dashboards/check/common/ControlErrorNode";
 import ControlResultNode from "../components/dashboards/check/common/ControlResultNode";
 import get from "lodash/get";
 import KeyValuePairNode from "../components/dashboards/check/common/KeyValuePairNode";
@@ -8,12 +9,29 @@ import {
   CheckDisplayGroup,
   CheckNode,
   CheckProps,
-  CheckResult,
+  GroupableCheck,
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
 
-const getCheckGroupingKey = (check: CheckResult, group: CheckDisplayGroup) => {
+const addBenchmarkTrunkNode = (
+  benchmark_trunk: BenchmarkType[],
+  children: CheckNode[]
+) => {
+  const currentNode = benchmark_trunk.length > 0 ? benchmark_trunk[0] : null;
+  return new BenchmarkNode(
+    currentNode?.name || "Other",
+    currentNode?.title || "Other",
+    benchmark_trunk.length > 1
+      ? [addBenchmarkTrunkNode(benchmark_trunk.slice(1), children)]
+      : children
+  );
+};
+
+const getCheckGroupingKey = (
+  check: GroupableCheck,
+  group: CheckDisplayGroup
+) => {
   switch (group.type) {
     case "dimension":
       const foundDimension = check.dimensions.find(
@@ -33,22 +51,8 @@ const getCheckGroupingKey = (check: CheckResult, group: CheckDisplayGroup) => {
   }
 };
 
-const addBenchmarkTrunkNode = (
-  benchmark_trunk: BenchmarkType[],
-  children: CheckNode[]
-) => {
-  const currentNode = benchmark_trunk.length > 0 ? benchmark_trunk[0] : null;
-  return new BenchmarkNode(
-    currentNode?.name || "Other",
-    currentNode?.title || "Other",
-    benchmark_trunk.length > 1
-      ? [addBenchmarkTrunkNode(benchmark_trunk.slice(1), children)]
-      : children
-  );
-};
-
 const getCheckGroupingNode = (
-  check: CheckResult,
+  check: GroupableCheck,
   group: CheckDisplayGroup,
   children: CheckNode[]
 ) => {
@@ -118,19 +122,12 @@ const useCheckGrouping = (props: CheckProps) => {
 
     const result: CheckNode[] = [];
     const temp = { _: result };
+    console.log(b.all_control_errors);
     b.all_control_results.forEach(function (checkResult) {
-      // reduced._ = [reduced._, ...checkResult];
       return groupingsConfig
         .filter((group) => group.type !== "control_result")
         .reduce(function (grouping, currentGroup) {
-          // const groupingNode = getCheckGroupingNode(a, current);
-          // const foundDimension = a.dimensions.find(
-          //   (d) => d.key === current.value
-          // );
-          // const dimension = foundDimension ? foundDimension.value : "Other";
           const groupKey = getCheckGroupingKey(checkResult, currentGroup);
-          // console.log({ groupKey, grouping });
-          // console.log({ key: groupKey, grouping, result });
           if (!grouping[groupKey]) {
             grouping[groupKey] = { _: [] };
             const groupingNode = getCheckGroupingNode(
@@ -139,66 +136,40 @@ const useCheckGrouping = (props: CheckProps) => {
               grouping[groupKey]._
             );
 
-            // if (currentIndex === groupingsConfig.length - 1) {
-            //   // console.log("Pushing to new group", {
-            //   //   key: groupKey,
-            //   //   groupingNode,
-            //   //   checkResult,
-            //   // });
-            //   groupingNode.results.push(checkResult);
-            // }
-
             if (groupingNode) {
               grouping._.push(groupingNode);
             }
-            // grouping._.push({
-            //   [current.value || current.type]: dimension,
-            //   ["children"]: grouping[dimension]._,
-            // });
           }
-          // else {
-          //   console.log({ groupKey, grouping, result, temp });
-          // }
-          // else if (currentIndex === groupingsConfig.length - 1) {
-          // console.log({ groupKey, grouping, result, temp });
-          // grouping._[0].results?.push(checkResult);
-          // }
-          //   // console.log("Pushing to existing group", {
-          //   //   key: groupKey,
-          //   //   group: grouping[groupKey],
-          //   //   checkResult,
-          //   // });
-          //   grouping[groupKey].results?.push(checkResult);
-          // }
-          // else {
-          //   console.log(
-          //     "Grouping exists",
-          //     currentIndex,
-          //     groupKey,
-          //     grouping[groupKey]
-          //   );
-          // }
 
           return grouping[groupKey];
         }, temp)
         ._.push(new ControlResultNode(checkResult));
-      // ._.push(
-      //   getCheckGroupingNode(
-      //     checkResult,
-      //     { type: "control" },
-      //     groupingsConfig.length,
-      //     []
-      //   )
-      // );
+    });
+    console.log(temp);
+    b.all_control_errors.forEach(function (checkError) {
+      return groupingsConfig
+        .filter((group) => group.type !== "control_result")
+        .reduce(function (grouping, currentGroup) {
+          const groupKey = getCheckGroupingKey(checkError, currentGroup);
+          if (!grouping[groupKey]) {
+            grouping[groupKey] = { _: [] };
+            const groupingNode = getCheckGroupingNode(
+              checkError,
+              currentGroup,
+              grouping[groupKey]._
+            );
+
+            if (groupingNode) {
+              grouping._.push(groupingNode);
+            }
+          }
+
+          return grouping[groupKey];
+        }, temp)
+        ._.push(new ControlErrorNode(checkError));
     });
 
-    // console.log(result);
-
-    // console.log(result);
-
     return new RootNode(result);
-
-    // return b;
   }, [groupingsConfig, rootBenchmark]);
 
   return [grouping, groupingsConfig] as const;
@@ -206,6 +177,7 @@ const useCheckGrouping = (props: CheckProps) => {
 
 export default useCheckGrouping;
 
+// https://stackoverflow.com/questions/50737098/multi-level-grouping-in-javascript
 // keys = ['level1', 'level2'],
 //     result = [],
 //     temp = { _: result };
