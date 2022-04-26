@@ -85,6 +85,32 @@ const getCheckGroupingNode = (
   }
 };
 
+const groupCheckItems = (
+  temp: { _: CheckNode[] },
+  group: GroupableCheck,
+  groupingsConfig: CheckDisplayGroup[]
+) => {
+  return groupingsConfig
+    .filter((groupConfig) => groupConfig.type !== "result")
+    .reduce(function (grouping, currentGroup) {
+      const groupKey = getCheckGroupingKey(group, currentGroup);
+      if (!grouping[groupKey]) {
+        grouping[groupKey] = { _: [] };
+        const groupingNode = getCheckGroupingNode(
+          group,
+          currentGroup,
+          grouping[groupKey]._
+        );
+
+        if (groupingNode) {
+          grouping._.push(groupingNode);
+        }
+      }
+
+      return grouping[groupKey];
+    }, temp);
+};
+
 const useCheckGrouping = (props: CheckProps) => {
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
 
@@ -97,11 +123,12 @@ const useCheckGrouping = (props: CheckProps) => {
         // { type: "result" },
         // { type: "dimension", value: "account_id" },
         { type: "dimension", value: "region" },
+        // { type: "dimension", value: "region" },
         { type: "tag", value: "service" },
         // { type: "tag", value: "cis_type" },
-        { type: "benchmark" },
-        { type: "control" },
-        { type: "control_result" },
+        // { type: "benchmark" },
+        // { type: "control" },
+        { type: "result" },
       ] as CheckDisplayGroup[]),
     [props.properties]
   );
@@ -122,50 +149,38 @@ const useCheckGrouping = (props: CheckProps) => {
 
     const result: CheckNode[] = [];
     const temp = { _: result };
-    b.all_control_results.forEach(function (checkResult) {
-      return groupingsConfig
-        .filter((group) => group.type !== "control_result")
-        .reduce(function (grouping, currentGroup) {
-          const groupKey = getCheckGroupingKey(checkResult, currentGroup);
-          if (!grouping[groupKey]) {
-            grouping[groupKey] = { _: [] };
-            const groupingNode = getCheckGroupingNode(
-              checkResult,
-              currentGroup,
-              grouping[groupKey]._
-            );
-
-            if (groupingNode) {
-              grouping._.push(groupingNode);
-            }
-          }
-
-          return grouping[groupKey];
-        }, temp)
-        ._.push(new ControlResultNode(checkResult));
-    });
-    b.all_control_errors.forEach(function (checkError) {
-      return groupingsConfig
-        .filter((group) => group.type !== "control_result")
-        .reduce(function (grouping, currentGroup) {
-          const groupKey = getCheckGroupingKey(checkError, currentGroup);
-          if (!grouping[groupKey]) {
-            grouping[groupKey] = { _: [] };
-            const groupingNode = getCheckGroupingNode(
-              checkError,
-              currentGroup,
-              grouping[groupKey]._
-            );
-
-            if (groupingNode) {
-              grouping._.push(groupingNode);
-            }
-          }
-
-          return grouping[groupKey];
-        }, temp)
-        ._.push(new ControlErrorNode(checkError));
-    });
+    b.all_control_results.forEach((checkResult) =>
+      groupCheckItems(temp, checkResult, groupingsConfig)._.push(
+        new ControlResultNode(checkResult)
+      )
+    );
+    b.all_control_errors.forEach((checkError) =>
+      groupCheckItems(temp, checkError, groupingsConfig)._.push(
+        new ControlErrorNode(checkError)
+      )
+    );
+    // b.all_control_errors.forEach(function (checkError) {
+    //   return groupingsConfig
+    //     .filter((group) => group.type !== "result")
+    //     .reduce(function (grouping, currentGroup) {
+    //       const groupKey = getCheckGroupingKey(checkError, currentGroup);
+    //       if (!grouping[groupKey]) {
+    //         grouping[groupKey] = { _: [] };
+    //         const groupingNode = getCheckGroupingNode(
+    //           checkError,
+    //           currentGroup,
+    //           grouping[groupKey]._
+    //         );
+    //
+    //         if (groupingNode) {
+    //           grouping._.push(groupingNode);
+    //         }
+    //       }
+    //
+    //       return grouping[groupKey];
+    //     }, temp)
+    //     ._.push(new ControlErrorNode(checkError));
+    // });
 
     return new RootNode(result);
   }, [groupingsConfig, rootBenchmark]);

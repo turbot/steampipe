@@ -6,8 +6,8 @@ export type CheckNodeType =
   | "root"
   | "benchmark"
   | "control"
-  | "control_error"
-  | "control_result"
+  | "error"
+  | "result"
   | "dimension"
   | "tag";
 
@@ -131,13 +131,7 @@ export interface CheckExecutionTree {
 type CheckType = "summary" | "table" | null;
 
 export interface CheckDisplayGroup {
-  type:
-    | "benchmark"
-    | "control"
-    | "control_result"
-    | "result"
-    | "tag"
-    | "dimension";
+  type: "benchmark" | "control" | "result" | "tag" | "dimension";
   value?: string;
 }
 
