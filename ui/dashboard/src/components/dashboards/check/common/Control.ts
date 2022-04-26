@@ -60,12 +60,10 @@ class Control implements CheckNode {
     this._run_error = run_error;
 
     if (this._run_error) {
-      add_control_error(this._run_error, this, benchmark_trunk);
+      add_control_error(this._run_error, benchmark_trunk, this);
     }
 
-    if (this._results) {
-      add_control_results(this._results, this, benchmark_trunk);
-    }
+    add_control_results(this._results, benchmark_trunk, this);
   }
 
   private static _getRunState(status: number): CheckNodeStatus {

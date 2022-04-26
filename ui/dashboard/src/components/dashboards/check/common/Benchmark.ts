@@ -99,8 +99,8 @@ class Benchmark implements CheckNode {
 
   private add_control_error = (
     error: string,
-    control: Control,
-    benchmark_trunk: Benchmark[]
+    benchmark_trunk: Benchmark[],
+    control: Control
   ) => {
     this._all_control_errors.push({
       error,
@@ -116,15 +116,15 @@ class Benchmark implements CheckNode {
 
   private add_control_results = (
     results: CheckResult[],
-    control: Control,
-    benchmark_trunk: Benchmark[]
+    benchmark_trunk: Benchmark[],
+    control: Control
   ) => {
     this._all_control_results.push(
       ...results.map((r) => ({
         ...r,
         tags: control.tags,
-        control,
         benchmark_trunk,
+        control,
       }))
     );
   };
