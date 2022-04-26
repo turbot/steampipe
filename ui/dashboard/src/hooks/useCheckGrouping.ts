@@ -3,17 +3,15 @@ import ControlNode from "../components/dashboards/check/common/node/ControlNode"
 import ControlErrorNode from "../components/dashboards/check/common/node/ControlErrorNode";
 import ControlResultNode from "../components/dashboards/check/common/node/ControlResultNode";
 import get from "lodash/get";
-import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
   CheckDisplayGroup,
   CheckNode,
   CheckProps,
-  CheckResult,
+  CheckSummary,
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
-import Control from "../components/dashboards/check/common/Control";
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
@@ -30,125 +28,125 @@ const addBenchmarkTrunkNode = (
   );
 };
 
-const getCheckGroupingKey = (
-  checkResult: CheckResult,
-  group: CheckDisplayGroup
-) => {
-  switch (group.type) {
-    case "dimension":
-      const foundDimension = checkResult.dimensions.find(
-        (d) => d.key === group.value
-      );
-      return foundDimension ? foundDimension.value : "Other";
-    case "tag":
-      return group.value ? checkResult.tags[group.value] || "Other" : "Other";
-    case "reason":
-      return checkResult.reason || "Other";
-    case "resource":
-      return checkResult.resource || "Other";
-    case "severity":
-      return checkResult.severity || "Other";
-    case "status":
-      return checkResult.status;
-    case "benchmark":
-      const root =
-        checkResult.benchmark_trunk.length > 1
-          ? checkResult.benchmark_trunk[1]
-          : null;
-      return root ? root.name : "Other";
-    case "control":
-      return checkResult.control.name;
-    default:
-      return "Other";
-  }
-};
+// const getCheckGroupingKey = (
+//   checkResult: CheckResult,
+//   group: CheckDisplayGroup
+// ) => {
+//   switch (group.type) {
+//     case "dimension":
+//       const foundDimension = checkResult.dimensions.find(
+//         (d) => d.key === group.value
+//       );
+//       return foundDimension ? foundDimension.value : "Other";
+//     case "tag":
+//       return group.value ? checkResult.tags[group.value] || "Other" : "Other";
+//     case "reason":
+//       return checkResult.reason || "Other";
+//     case "resource":
+//       return checkResult.resource || "Other";
+//     case "severity":
+//       return checkResult.severity || "Other";
+//     case "status":
+//       return checkResult.status;
+//     case "benchmark":
+//       const root =
+//         checkResult.benchmark_trunk.length > 1
+//           ? checkResult.benchmark_trunk[1]
+//           : null;
+//       return root ? root.name : "Other";
+//     case "control":
+//       return checkResult.control.name;
+//     default:
+//       return "Other";
+//   }
+// };
 
-const getCheckGroupingNode = (
-  checkResult: CheckResult,
-  group: CheckDisplayGroup,
-  children: CheckNode[]
-) => {
-  switch (group.type) {
-    case "dimension":
-      const foundDimension = checkResult.dimensions.find(
-        (d) => d.key === group.value
-      );
-      const dimensionValue = foundDimension ? foundDimension.value : "Other";
-      return new KeyValuePairNode(
-        group.value || "Other",
-        dimensionValue,
-        children
-      );
-    case "tag":
-      return new KeyValuePairNode(
-        group.value || "Other",
-        group.value ? checkResult.tags[group.value] || "Other" : "Other",
-        children
-      );
-    case "reason":
-      return new KeyValuePairNode(
-        "reason",
-        checkResult.reason || "Other",
-        children
-      );
-    case "resource":
-      return new KeyValuePairNode(
-        "resource",
-        checkResult.resource || "Other",
-        children
-      );
-    case "severity":
-      return new KeyValuePairNode(
-        "severity",
-        checkResult.severity || "Other",
-        children
-      );
-    case "status":
-      return new KeyValuePairNode("status", checkResult.status, children);
-    case "benchmark":
-      return addBenchmarkTrunkNode(
-        checkResult.benchmark_trunk.length > 1
-          ? checkResult.benchmark_trunk.slice(1)
-          : [],
-        children
-      );
-    case "control":
-      return new ControlNode(
-        checkResult.control.sort,
-        checkResult.control.name,
-        checkResult.control.title,
-        children
-      );
-    default:
-      throw new Error(`Unknown group type ${group.type}`);
-  }
-};
+// const getCheckGroupingNode = (
+//   checkResult: CheckResult,
+//   group: CheckDisplayGroup,
+//   children: CheckNode[]
+// ) => {
+//   switch (group.type) {
+//     case "dimension":
+//       const foundDimension = checkResult.dimensions.find(
+//         (d) => d.key === group.value
+//       );
+//       const dimensionValue = foundDimension ? foundDimension.value : "Other";
+//       return new KeyValuePairNode(
+//         group.value || "Other",
+//         dimensionValue,
+//         children
+//       );
+//     case "tag":
+//       return new KeyValuePairNode(
+//         group.value || "Other",
+//         group.value ? checkResult.tags[group.value] || "Other" : "Other",
+//         children
+//       );
+//     case "reason":
+//       return new KeyValuePairNode(
+//         "reason",
+//         checkResult.reason || "Other",
+//         children
+//       );
+//     case "resource":
+//       return new KeyValuePairNode(
+//         "resource",
+//         checkResult.resource || "Other",
+//         children
+//       );
+//     case "severity":
+//       return new KeyValuePairNode(
+//         "severity",
+//         checkResult.severity || "Other",
+//         children
+//       );
+//     case "status":
+//       return new KeyValuePairNode("status", checkResult.status, children);
+//     case "benchmark":
+//       return addBenchmarkTrunkNode(
+//         checkResult.benchmark_trunk.length > 1
+//           ? checkResult.benchmark_trunk.slice(1)
+//           : [],
+//         children
+//       );
+//     case "control":
+//       return new ControlNode(
+//         checkResult.control.sort,
+//         checkResult.control.name,
+//         checkResult.control.title,
+//         children
+//       );
+//     default:
+//       throw new Error(`Unknown group type ${group.type}`);
+//   }
+// };
 
-const groupCheckItems = (
-  temp: { _: CheckNode[] },
-  group: CheckResult,
-  groupingsConfig: CheckDisplayGroup[]
-) => {
-  return groupingsConfig
-    .filter((groupConfig) => groupConfig.type !== "result")
-    .reduce(function (grouping, currentGroup) {
-      const groupKey = getCheckGroupingKey(group, currentGroup);
-      if (!grouping[groupKey]) {
-        grouping[groupKey] = { _: [] };
-        const groupingNode = getCheckGroupingNode(
-          group,
-          currentGroup,
-          grouping[groupKey]._
-        );
-
-        if (groupingNode) {
-          grouping._.push(groupingNode);
-        }
-      }
-
-      return grouping[groupKey];
-    }, temp);
-};
+// const groupCheckItems = (
+//   temp: { _: CheckNode[] },
+//   group: CheckResult,
+//   groupingsConfig: CheckDisplayGroup[]
+// ) => {
+//   return groupingsConfig
+//     .filter((groupConfig) => groupConfig.type !== "result")
+//     .reduce(function (grouping, currentGroup) {
+//       const groupKey = getCheckGroupingKey(group, currentGroup);
+//       if (!grouping[groupKey]) {
+//         grouping[groupKey] = { _: [] };
+//         const groupingNode = getCheckGroupingNode(
+//           group,
+//           currentGroup,
+//           grouping[groupKey]._
+//         );
+//
+//         if (groupingNode) {
+//           grouping._.push(groupingNode);
+//         }
+//       }
+//
+//       return grouping[groupKey];
+//     }, temp);
+// };
 
 const addChildren = (node: CheckNode) => {
   const nodes: CheckNode[] = [];
@@ -185,7 +183,7 @@ const addChildren = (node: CheckNode) => {
           })
         );
       } else {
-        child.results?.forEach((result, index) => {
+        child.results?.forEach((result) => {
           controlChildren.push(
             new ControlResultNode({ ...result, control: child })
           );
@@ -202,15 +200,10 @@ const addChildren = (node: CheckNode) => {
     }
   });
   return nodes;
-  // const childNodes = b.
-  // return new BenchmarkNode(index.toString(), b.name, b.title, )
 };
 
-const buildClassicStructure = (benchmark: BenchmarkType) => {
-  // const topLevelBenchmarkNodes: BenchmarkNode[] = [];
-  const topLevelBenchmarks = addChildren(benchmark);
-  return new RootNode(topLevelBenchmarks);
-};
+const buildClassicStructure = (benchmark: BenchmarkType) =>
+  new RootNode(addChildren(benchmark));
 
 const useCheckGrouping = (props: CheckProps) => {
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
@@ -237,9 +230,9 @@ const useCheckGrouping = (props: CheckProps) => {
     [props.properties]
   );
 
-  const grouping = useMemo(() => {
+  const [grouping, firstChildSummaries] = useMemo(() => {
     if (!rootBenchmark) {
-      return null;
+      return [null, []];
     }
 
     const b = new BenchmarkType(
@@ -252,7 +245,13 @@ const useCheckGrouping = (props: CheckProps) => {
       []
     );
 
-    return buildClassicStructure(b);
+    const results = buildClassicStructure(b);
+    const firstChildSummaries: CheckSummary[] = [];
+    for (const child of b.children) {
+      firstChildSummaries.push(child.summary);
+    }
+
+    return [results, firstChildSummaries] as const;
 
     // const result: CheckNode[] = [];
     // const temp = { _: result };
@@ -270,7 +269,7 @@ const useCheckGrouping = (props: CheckProps) => {
     // return new RootNode(result);
   }, [groupingsConfig, rootBenchmark]);
 
-  return [grouping, groupingsConfig] as const;
+  return [grouping, groupingsConfig, firstChildSummaries] as const;
 };
 
 export default useCheckGrouping;
