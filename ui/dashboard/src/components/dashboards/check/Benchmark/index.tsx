@@ -200,8 +200,6 @@ const BenchmarkWrapper = (props: CheckProps) => {
     return null;
   }
 
-  console.log(grouping);
-
   // if (props.properties && props.properties.type === "table") {
   //   return <BenchmarkTableView benchmark={groups} definition={props} />;
   // }

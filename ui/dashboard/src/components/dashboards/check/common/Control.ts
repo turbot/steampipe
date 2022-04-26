@@ -1,4 +1,5 @@
 import {
+  AddControlErrorAction,
   AddControlResultsAction,
   CheckDynamicColsMap,
   CheckNode,
@@ -37,6 +38,7 @@ class Control implements CheckNode {
     status: number,
     run_error: string | undefined,
     benchmark_trunk: Benchmark[],
+    add_control_error: AddControlErrorAction,
     add_control_results: AddControlResultsAction
   ) {
     this._group_id = group_id;
@@ -56,6 +58,10 @@ class Control implements CheckNode {
     this._tags = tags || {};
     this._run_state = Control._getRunState(status);
     this._run_error = run_error;
+
+    if (this._run_error) {
+      add_control_error(this._run_error, this, benchmark_trunk);
+    }
 
     if (this._results) {
       add_control_results(this._results, this, benchmark_trunk);

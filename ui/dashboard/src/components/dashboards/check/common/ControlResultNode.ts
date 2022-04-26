@@ -56,21 +56,7 @@ class ControlResultNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
-    // for (const child of this._children) {
-    //   if (child.status === "error") {
-    //     return "error";
-    //   }
-    //   if (child.status === "unknown") {
-    //     return "unknown";
-    //   }
-    //   if (child.status === "ready") {
-    //     return "ready";
-    //   }
-    //   if (child.status === "started") {
-    //     return "started";
-    //   }
-    // }
-    return "complete";
+    return this._result.control.status;
   }
 }
 
