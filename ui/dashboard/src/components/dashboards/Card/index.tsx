@@ -113,7 +113,9 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
     loading: !!sql,
     label: properties.label || null,
-    value: properties.value || null,
+    value: isNumber(properties.value)
+      ? properties.value
+      : properties.value || null,
     type: properties.type || null,
     icon: getIconForType(properties.type, properties.icon),
     href: properties.href || null,
@@ -133,7 +135,9 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
       setCalculatedProperties({
         loading: false,
         label: properties.label || null,
-        value: properties.value || null,
+        value: isNumber(properties.value)
+          ? properties.value
+          : properties.value || null,
         type: properties.type || null,
         icon: getIconForType(properties.type, properties.icon),
         href: properties.href || null,
