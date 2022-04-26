@@ -1,5 +1,6 @@
 import Control from "./Control";
 import merge from "lodash/merge";
+import padStart from "lodash/padStart";
 import {
   AddControlErrorAction,
   AddControlResultsAction,
@@ -19,6 +20,7 @@ import {
 } from "../../common";
 
 class Benchmark implements CheckNode {
+  private readonly _sortIndex: string;
   private readonly _name: string;
   private readonly _title: string;
   private readonly _description?: string;
@@ -30,6 +32,7 @@ class Benchmark implements CheckNode {
   private readonly _all_control_results: CheckResult[];
 
   constructor(
+    sortIndex: string,
     name: string,
     title: string | undefined,
     description: string | undefined,
@@ -39,6 +42,7 @@ class Benchmark implements CheckNode {
     add_control_error?: AddControlErrorAction,
     add_control_results?: AddControlResultsAction
   ) {
+    this._sortIndex = sortIndex;
     this._all_control_errors = [];
     this._all_control_results = [];
     this._name = name;
@@ -58,9 +62,12 @@ class Benchmark implements CheckNode {
     }
 
     const nestedBenchmarks: Benchmark[] = [];
-    for (const nestedBenchmark of benchmarks || []) {
+    const benchmarksToAdd = benchmarks || [];
+    const lengthMaxBenchmarkIndex = benchmarksToAdd.toString().length - 1;
+    benchmarksToAdd.forEach((nestedBenchmark, benchmarkIndex) => {
       nestedBenchmarks.push(
         new Benchmark(
+          padStart(benchmarkIndex.toString(), lengthMaxBenchmarkIndex),
           nestedBenchmark.group_id,
           nestedBenchmark.title,
           nestedBenchmark.description,
@@ -71,11 +78,14 @@ class Benchmark implements CheckNode {
           this._add_control_results
         )
       );
-    }
+    });
     const nestedControls: Control[] = [];
-    for (const nestedControl of controls || []) {
+    const controlsToAdd = controls || [];
+    const lengthMaxControlIndex = controlsToAdd.toString().length - 1;
+    controlsToAdd.forEach((nestedControl, controlIndex) => {
       nestedControls.push(
         new Control(
+          padStart(controlIndex.toString(), lengthMaxControlIndex),
           this._name,
           this._title,
           this._description,
@@ -92,7 +102,7 @@ class Benchmark implements CheckNode {
           this._add_control_results
         )
       );
-    }
+    });
     this._benchmarks = nestedBenchmarks;
     this._controls = nestedControls;
   }
@@ -135,6 +145,10 @@ class Benchmark implements CheckNode {
 
   get all_control_results(): CheckResult[] {
     return this._all_control_results;
+  }
+
+  get sort(): string {
+    return `${this._sortIndex}-${this.title}`;
   }
 
   get name(): string {

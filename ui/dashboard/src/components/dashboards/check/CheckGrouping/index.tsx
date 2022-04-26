@@ -15,7 +15,7 @@ const CheckGrouping = ({
 }: CheckGroupingProps) => {
   return (
     <div className="space-y-4 md:space-y-6 col-span-12">
-      {sortBy(node.children, "title")?.map((child) => (
+      {sortBy(node.children, "sort")?.map((child) => (
         <CheckPanel
           key={child.name}
           depth={1}
