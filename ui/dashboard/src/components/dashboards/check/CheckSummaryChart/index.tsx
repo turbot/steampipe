@@ -263,8 +263,19 @@ const CheckSummaryChart = ({
             className="border border-alert"
             percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
           />
-          <span className="mr-2 text-alert text-right text-sm">
-            {summary.alarm > 0 ? <IntegerDisplay num={summary.alarm} /> : "-"}
+          <span
+            className="mr-2 text-alert text-right text-sm"
+            title={
+              summary.alarm > 0
+                ? `${summary.alarm.toLocaleString()} resources in alarm status`
+                : undefined
+            }
+          >
+            {summary.alarm > 0 ? (
+              <IntegerDisplay num={summary.alarm} withTitle={false} />
+            ) : (
+              "-"
+            )}
           </span>
         </ProgressBarGroup>
       </div>
@@ -283,8 +294,19 @@ const CheckSummaryChart = ({
             className="bg-tbd border border-tbd"
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
           />
-          <span className="ml-2 text-ok text-right text-sm">
-            {summary.ok > 0 ? <IntegerDisplay num={summary.ok} /> : "-"}
+          <span
+            className="ml-2 text-ok text-right text-sm"
+            title={
+              summary.ok > 0
+                ? `${summary.ok.toLocaleString()} resources in OK status`
+                : undefined
+            }
+          >
+            {summary.ok > 0 ? (
+              <IntegerDisplay num={summary.ok} withTitle={false} />
+            ) : (
+              "-"
+            )}
           </span>
         </ProgressBarGroup>
       </div>
