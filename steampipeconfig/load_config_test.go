@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/turbot/steampipe/steampipeconfig/options"
 )
 
@@ -38,23 +38,85 @@ var workspaceSearchPath = "bar,aws,gcp"
 var workspaceSearchPathPrefix = "foobar"
 
 var testCasesLoadConfig = map[string]loadConfigTest{
-	"multiple_connections": {
+	"multiple_connections": { // fixed
 		steampipeDir: "testdata/connection_config/multiple_connections",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"aws_dmi_001": {
-					Name:   "aws_dmi_001",
-					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
-					Config: `access_key = "aws_dmi_001_access_key"
-regions    = "- us-east-1\n-us-west-"
-secret_key = "aws_dmi_001_secret_key"`,
+					Name:            "aws_dmi_001",
+					PluginShortName: "aws",
+					Plugin:          "hub.steampipe.io/plugins/turbot/aws@latest",
+					Type:            "",
+					Config:          "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
+					DeclRange: modconfig.Range{
+						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/multiple_connections/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+					LegacyName:            "",
+					LegacyPluginShortName: "",
+					LegacyPlugin:          "",
+					LegacyType:            "",
+					LegacyConfig:          "",
+					LegacyDeclRange: hcl.Range{
+						Filename: "",
+						Start: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+						End: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+					},
 				},
 				"aws_dmi_002": {
-					Name:   "aws_dmi_002",
-					Plugin: "hub.steampipe.io/plugins/turbot/aws@latest",
-					Config: `access_key = "aws_dmi_002_access_key"
-regions    = "- us-east-1\n-us-west-"
-secret_key = "aws_dmi_002_secret_key"`,
+					Name:            "aws_dmi_002",
+					PluginShortName: "aws",
+					Plugin:          "hub.steampipe.io/plugins/turbot/aws@latest",
+					Type:            "",
+					Config:          "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
+					DeclRange: modconfig.Range{
+						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/multiple_connections/config/connection2.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+					LegacyName:            "",
+					LegacyPluginShortName: "",
+					LegacyPlugin:          "",
+					LegacyType:            "",
+					LegacyConfig:          "",
+					LegacyDeclRange: hcl.Range{
+						Filename: "",
+						Start: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+						End: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -62,14 +124,47 @@ secret_key = "aws_dmi_002_secret_key"`,
 				CacheTTL: &ttlVal,
 			}},
 	},
-	"single_connection": {
+	"single_connection": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
-					//Config: map[string]string{},
+					Name:            "a",
+					PluginShortName: "test_data/connection-test-1",
+					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:            "",
+					Config:          "",
+					DeclRange: modconfig.Range{
+						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+					LegacyName:            "",
+					LegacyPluginShortName: "",
+					LegacyPlugin:          "",
+					LegacyType:            "",
+					LegacyConfig:          "",
+					LegacyDeclRange: hcl.Range{
+						Filename: "",
+						Start: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+						End: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -77,18 +172,54 @@ secret_key = "aws_dmi_002_secret_key"`,
 				CacheTTL: &ttlVal,
 			}},
 	},
-	"single_connection_with_default_options": {
+	"single_connection_with_default_options": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
+					Name:            "a",
+					PluginShortName: "test_data/connection-test-1",
+					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:            "",
+					Config:          "",
+					DeclRange: modconfig.Range{
+						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+					LegacyName:            "",
+					LegacyPluginShortName: "",
+					LegacyPlugin:          "",
+					LegacyType:            "",
+					LegacyConfig:          "",
+					LegacyDeclRange: hcl.Range{
+						Filename: "",
+						Start: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+						End: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
+				Cache:          &trueVal,
+				CacheTTL:       &ttlVal,
+				LegacyCache:    &trueVal,
+				LegacyCacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -108,24 +239,60 @@ secret_key = "aws_dmi_002_secret_key"`,
 			},
 		},
 	},
-	"single_connection_with_default_options_and_workspace_invalid_options_block": {
+	"single_connection_with_default_options_and_workspace_invalid_options_block": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 		workspaceDir: "testdata/workspaces/invalid_options_block",
 		expected:     "ERROR",
 	},
-	"single_connection_with_default_options_and_workspace_search_path_prefix": {
+	"single_connection_with_default_options_and_workspace_search_path_prefix": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 		workspaceDir: "testdata/workspaces/search_path_prefix",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
+					Name:            "a",
+					PluginShortName: "test_data/connection-test-1",
+					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:            "",
+					Config:          "",
+					DeclRange: modconfig.Range{
+						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+					LegacyName:            "",
+					LegacyPluginShortName: "",
+					LegacyPlugin:          "",
+					LegacyType:            "",
+					LegacyConfig:          "",
+					LegacyDeclRange: hcl.Range{
+						Filename: "",
+						Start: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+						End: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
+				Cache:          &trueVal,
+				CacheTTL:       &ttlVal,
+				LegacyCache:    &trueVal,
+				LegacyCacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -146,19 +313,55 @@ secret_key = "aws_dmi_002_secret_key"`,
 			},
 		},
 	},
-	"single_connection_with_default_options_and_workspace_override_terminal_config": {
+	"single_connection_with_default_options_and_workspace_override_terminal_config": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 		workspaceDir: "testdata/workspaces/override_terminal_config",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
+					Name:            "a",
+					PluginShortName: "test_data/connection-test-1",
+					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:            "",
+					Config:          "",
+					DeclRange: modconfig.Range{
+						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+					LegacyName:            "",
+					LegacyPluginShortName: "",
+					LegacyPlugin:          "",
+					LegacyType:            "",
+					LegacyConfig:          "",
+					LegacyDeclRange: hcl.Range{
+						Filename: "",
+						Start: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+						End: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
+				Cache:          &trueVal,
+				CacheTTL:       &ttlVal,
+				LegacyCache:    &trueVal,
+				LegacyCacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -184,17 +387,52 @@ secret_key = "aws_dmi_002_secret_key"`,
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:   "a",
-					Plugin: "hub.steampipe.io/plugins/testdata/connection-test-1@latest",
+					Name:            "a",
+					PluginShortName: "test_data/connection-test-1",
+					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Config:          "",
 					Options: &options.Connection{
-						Cache:    &trueVal,
-						CacheTTL: &ttlVal,
+						LegacyCache:    &trueVal,
+						LegacyCacheTTL: &ttlVal,
+					},
+					DeclRange: modconfig.Range{
+						Filename: "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/steampipeconfig/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+					LegacyName:            "",
+					LegacyPluginShortName: "",
+					LegacyPlugin:          "",
+					LegacyType:            "",
+					LegacyConfig:          "",
+					LegacyDeclRange: hcl.Range{
+						Filename: "",
+						Start: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
+						End: hcl.Pos{
+							Line:   0,
+							Column: 0,
+							Byte:   0,
+						},
 					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
+				Cache:          &trueVal,
+				CacheTTL:       &ttlVal,
+				LegacyCache:    &trueVal,
+				LegacyCacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -214,12 +452,15 @@ secret_key = "aws_dmi_002_secret_key"`,
 			},
 		},
 	},
-	"options_only": {
+	"options_only": { // fixed
 		steampipeDir: "testdata/connection_config/options_only",
 		expected: &SteampipeConfig{
+			Connections: map[string]*modconfig.Connection{},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
+				Cache:          &trueVal,
+				CacheTTL:       &ttlVal,
+				LegacyCache:    &trueVal,
+				LegacyCacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -292,9 +533,10 @@ func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
 		return left == nil && right == nil
 	}
 
-	if reflect.DeepEqual(left.Connections, right.Connections) {
+	if !reflect.DeepEqual(left.Connections, right.Connections) {
 		return false
 	}
+	// return true
 
 	return reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) &&
 		reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) &&
