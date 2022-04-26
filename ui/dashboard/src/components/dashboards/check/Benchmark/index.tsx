@@ -9,6 +9,7 @@ import {
   CheckDisplayGroup,
   CheckNode,
   CheckProps,
+  CheckSummary,
 } from "../common";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { LeafNodeData } from "../../common";
@@ -24,6 +25,7 @@ type InnerCheckProps = CheckProps & {
   data?: LeafNodeData;
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
+  firstChildSummaries: CheckSummary[];
 };
 
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
@@ -52,7 +54,17 @@ const Benchmark = (props: InnerCheckProps) => {
     return null;
   }
 
-  const summary = props.grouping.summary;
+  const summary = props.firstChildSummaries.reduce(
+    (cumulative, current) => {
+      cumulative.error += current.error;
+      cumulative.alarm += current.alarm;
+      cumulative.ok += current.ok;
+      cumulative.info += current.info;
+      cumulative.skip += current.skip;
+      return cumulative;
+    },
+    { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 }
+  );
 
   return (
     <Container
@@ -132,7 +144,7 @@ const Benchmark = (props: InnerCheckProps) => {
                 properties: {
                   grouping: props.grouping,
                   grouping_config: props.groupingConfig,
-                  root_summary: summary,
+                  first_child_summaries: props.firstChildSummaries,
                 },
               },
             ],
@@ -152,7 +164,7 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
   //   return props.properties.benchmark.summary;
   // }, [props.properties.benchmark]);
 
-  if (!props.properties || !props.properties.root_summary) {
+  if (!props.properties || !props.properties.first_child_summaries) {
     return null;
   }
 
@@ -160,7 +172,7 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
     <CheckGrouping
       node={props.properties.grouping}
       groupingConfig={props.properties.grouping_config}
-      rootSummary={props.properties.root_summary}
+      firstChildSummaries={props.properties.first_child_summaries}
     />
   );
 };
@@ -194,7 +206,8 @@ const BenchmarkTableView = ({
 };
 
 const BenchmarkWrapper = (props: CheckProps) => {
-  const [grouping, groupingsConfig] = useCheckGrouping(props);
+  const [grouping, groupingsConfig, firstChildSummaries] =
+    useCheckGrouping(props);
 
   if (!grouping) {
     return null;
@@ -209,6 +222,7 @@ const BenchmarkWrapper = (props: CheckProps) => {
       {...props}
       grouping={grouping}
       groupingConfig={groupingsConfig}
+      firstChildSummaries={firstChildSummaries}
     />
   );
 };

@@ -28,7 +28,7 @@ interface CheckChildrenProps {
   depth: number;
   children: CheckNode[];
   groupingConfig: CheckDisplayGroup[];
-  rootSummary: CheckSummary;
+  firstChildSummaries: CheckSummary[];
 }
 
 interface CheckResultsProps {
@@ -40,7 +40,7 @@ interface CheckPanelProps {
   depth: number;
   node: CheckNode;
   groupingConfig: CheckDisplayGroup[];
-  rootSummary: CheckSummary;
+  firstChildSummaries: CheckSummary[];
 }
 
 interface CheckResultRowProps {
@@ -78,7 +78,7 @@ const CheckChildren = ({
   children,
   depth,
   groupingConfig,
-  rootSummary,
+  firstChildSummaries,
 }: CheckChildrenProps) => {
   if (!children) {
     return null;
@@ -92,7 +92,7 @@ const CheckChildren = ({
           depth={depth}
           node={child}
           groupingConfig={groupingConfig}
-          rootSummary={rootSummary}
+          firstChildSummaries={firstChildSummaries}
         />
       ))}
     </>
@@ -182,7 +182,7 @@ const CheckPanel = ({
   depth,
   node,
   groupingConfig,
-  rootSummary,
+  firstChildSummaries,
 }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -243,7 +243,7 @@ const CheckPanel = ({
               <div className="flex-shrink-0 w-40 md:w-72 lg:w-96">
                 <CheckSummaryChart
                   summary={node.summary}
-                  rootSummary={rootSummary}
+                  firstChildSummaries={firstChildSummaries}
                 />
               </div>
             </div>
@@ -267,7 +267,7 @@ const CheckPanel = ({
           children={child_nodes}
           depth={depth + 1}
           groupingConfig={groupingConfig}
-          rootSummary={rootSummary}
+          firstChildSummaries={firstChildSummaries}
         />
       )}
     </>

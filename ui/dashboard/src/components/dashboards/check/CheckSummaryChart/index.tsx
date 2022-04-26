@@ -13,7 +13,7 @@ interface ProgressBarProps {
 
 interface CheckSummaryChartProps {
   summary: CheckSummary;
-  rootSummary: CheckSummary;
+  firstChildSummaries: CheckSummary[];
 }
 
 const getWidth = (x, y) => {
@@ -163,10 +163,21 @@ export const getCheckSummaryChartPercent = (value, total) => {
 
 const CheckSummaryChart = ({
   summary,
-  rootSummary,
+  firstChildSummaries,
 }: CheckSummaryChartProps) => {
-  const maxAlerts = rootSummary.alarm + rootSummary.error;
-  const maxNonAlerts = rootSummary.ok + rootSummary.info + rootSummary.skip;
+  let maxAlerts = 0;
+  let maxNonAlerts = 0;
+  for (const firstChildSummary of firstChildSummaries) {
+    const currentMaxAlerts = firstChildSummary.error + firstChildSummary.alarm;
+    const currentMaxNonAlerts =
+      firstChildSummary.ok + firstChildSummary.info + firstChildSummary.skip;
+    if (currentMaxAlerts > maxAlerts) {
+      maxAlerts = currentMaxAlerts;
+    }
+    if (currentMaxNonAlerts > maxNonAlerts) {
+      maxNonAlerts = currentMaxNonAlerts;
+    }
+  }
   // const [alarm, error, ok, info, skip] = ensureMinPercentages(name, [
   //   summary.alarm,
   //   summary.error,

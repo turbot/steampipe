@@ -155,7 +155,7 @@ export type BenchmarkTreeProps = BasePrimitiveProps &
     properties: {
       grouping: CheckNode;
       grouping_config: CheckDisplayGroup[];
-      root_summary: CheckSummary;
+      first_child_summaries: CheckSummary[];
     };
   };
 

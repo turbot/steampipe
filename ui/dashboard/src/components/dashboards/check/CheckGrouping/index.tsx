@@ -5,13 +5,13 @@ import { CheckDisplayGroup, CheckNode, CheckSummary } from "../common";
 interface CheckGroupingProps {
   node: CheckNode;
   groupingConfig: CheckDisplayGroup[];
-  rootSummary: CheckSummary;
+  firstChildSummaries: CheckSummary[];
 }
 
 const CheckGrouping = ({
   node,
   groupingConfig,
-  rootSummary,
+  firstChildSummaries,
 }: CheckGroupingProps) => {
   return (
     <div className="space-y-4 md:space-y-6 col-span-12">
@@ -21,7 +21,7 @@ const CheckGrouping = ({
           depth={1}
           node={child}
           groupingConfig={groupingConfig}
-          rootSummary={rootSummary}
+          firstChildSummaries={firstChildSummaries}
         />
       ))}
     </div>
