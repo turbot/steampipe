@@ -5,7 +5,6 @@ import {
   AddControlResultsAction,
   CheckControl,
   CheckDynamicColsMap,
-  CheckError,
   CheckGroup,
   CheckNode,
   CheckNodeStatus,
@@ -27,7 +26,7 @@ class Benchmark implements CheckNode {
   private readonly _controls: Control[];
   private readonly _add_control_error: AddControlErrorAction;
   private readonly _add_control_results: AddControlResultsAction;
-  private readonly _all_control_errors: CheckError[];
+  private readonly _all_control_errors: CheckResult[];
   private readonly _all_control_results: CheckResult[];
 
   constructor(
@@ -108,6 +107,9 @@ class Benchmark implements CheckNode {
       dimensions: [],
       tags: control.tags,
       control,
+      reason: "",
+      resource: "",
+      status: "error",
       benchmark_trunk,
     });
   };
@@ -127,7 +129,7 @@ class Benchmark implements CheckNode {
     );
   };
 
-  get all_control_errors(): CheckError[] {
+  get all_control_errors(): CheckResult[] {
     return this._all_control_errors;
   }
 

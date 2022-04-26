@@ -77,21 +77,16 @@ interface CheckResultDimension {
 
 export type CheckResultStatus = "alarm" | "ok" | "info" | "skip" | "error";
 
-export interface GroupableCheck {
+export interface CheckResult {
   dimensions: CheckResultDimension[];
   tags: CheckTags;
   control: CheckNode;
   benchmark_trunk: Benchmark[];
-}
-
-export interface CheckError extends GroupableCheck {
-  error: string;
-}
-
-export interface CheckResult extends GroupableCheck {
+  status: CheckResultStatus;
   reason: string;
   resource: string;
-  status: CheckResultStatus;
+  severity?: string;
+  error?: string;
 }
 
 export interface CheckControl {
@@ -131,7 +126,16 @@ export interface CheckExecutionTree {
 type CheckType = "summary" | "table" | null;
 
 export interface CheckDisplayGroup {
-  type: "benchmark" | "control" | "result" | "tag" | "dimension";
+  type:
+    | "benchmark"
+    | "control"
+    | "result"
+    | "tag"
+    | "dimension"
+    | "reason"
+    | "resource"
+    | "severity"
+    | "status";
   value?: string;
 }
 

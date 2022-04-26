@@ -3,15 +3,15 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
-  CheckError,
+  CheckResult,
 } from "./index";
 
 class ControlErrorNode implements CheckNode {
   private readonly _name: string;
   private readonly _title: string | undefined;
-  private readonly _error: string;
+  private readonly _error: string | undefined;
 
-  constructor(check_error: CheckError) {
+  constructor(check_error: CheckResult) {
     this._name = check_error.control.name;
     this._title = check_error.control.title;
     this._error = check_error.error;
@@ -26,7 +26,7 @@ class ControlErrorNode implements CheckNode {
   }
 
   get error(): string {
-    return this._error;
+    return this._error || "Unknown error";
   }
 
   get type(): CheckNodeType {
