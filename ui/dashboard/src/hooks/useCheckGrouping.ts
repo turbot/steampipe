@@ -234,9 +234,9 @@ const useCheckGrouping = (props: CheckProps) => {
     [props.properties]
   );
 
-  const [grouping, firstChildSummaries] = useMemo(() => {
+  const [benchmark, grouping, firstChildSummaries] = useMemo(() => {
     if (!rootBenchmark) {
-      return [null, []];
+      return [null, null, []];
     }
 
     const b = new BenchmarkType(
@@ -255,7 +255,7 @@ const useCheckGrouping = (props: CheckProps) => {
       firstChildSummaries.push(child.summary);
     }
 
-    return [results, firstChildSummaries] as const;
+    return [b, results, firstChildSummaries] as const;
 
     // const result: CheckNode[] = [];
     // const temp = { _: result };
@@ -273,7 +273,7 @@ const useCheckGrouping = (props: CheckProps) => {
     // return new RootNode(result);
   }, [groupingsConfig, rootBenchmark]);
 
-  return [grouping, groupingsConfig, firstChildSummaries] as const;
+  return [benchmark, grouping, groupingsConfig, firstChildSummaries] as const;
 };
 
 export default useCheckGrouping;

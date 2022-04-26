@@ -12,7 +12,6 @@ import {
   CheckSummary,
 } from "../common";
 import { default as BenchmarkType } from "../common/Benchmark";
-import { LeafNodeData } from "../../common";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo } from "react";
 
@@ -22,7 +21,7 @@ interface BenchmarkTableViewProps {
 }
 
 type InnerCheckProps = CheckProps & {
-  data?: LeafNodeData;
+  benchmark: BenchmarkType;
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
@@ -39,16 +38,16 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 );
 
 const Benchmark = (props: InnerCheckProps) => {
-  // const benchmarkDataTable = useMemo(() => {
-  //   if (
-  //     !props.benchmark ||
-  //     (props.benchmark.status !== "complete" &&
-  //       props.benchmark.status !== "error")
-  //   ) {
-  //     return undefined;
-  //   }
-  //   return props.benchmark.get_data_table();
-  // }, [props.benchmark]);
+  const benchmarkDataTable = useMemo(() => {
+    if (
+      !props.benchmark ||
+      (props.benchmark.status !== "complete" &&
+        props.benchmark.status !== "error")
+    ) {
+      return undefined;
+    }
+    return props.benchmark.get_data_table();
+  }, [props.benchmark]);
 
   if (!props.grouping) {
     return null;
@@ -150,20 +149,13 @@ const Benchmark = (props: InnerCheckProps) => {
             ],
           },
         ],
-        // data: benchmarkDataTable,
+        data: benchmarkDataTable,
       }}
     />
   );
 };
 
 const BenchmarkTree = (props: BenchmarkTreeProps) => {
-  // const rootSummary = useMemo(() => {
-  //   if (!props.properties.benchmark) {
-  //     return null;
-  //   }
-  //   return props.properties.benchmark.summary;
-  // }, [props.properties.benchmark]);
-
   if (!props.properties || !props.properties.first_child_summaries) {
     return null;
   }
@@ -206,20 +198,21 @@ const BenchmarkTableView = ({
 };
 
 const BenchmarkWrapper = (props: CheckProps) => {
-  const [grouping, groupingsConfig, firstChildSummaries] =
+  const [benchmark, grouping, groupingsConfig, firstChildSummaries] =
     useCheckGrouping(props);
 
-  if (!grouping) {
+  if (!benchmark || !grouping) {
     return null;
   }
 
-  // if (props.properties && props.properties.type === "table") {
-  //   return <BenchmarkTableView benchmark={groups} definition={props} />;
-  // }
+  if (props.properties && props.properties.type === "table") {
+    return <BenchmarkTableView benchmark={benchmark} definition={props} />;
+  }
 
   return (
     <Benchmark
       {...props}
+      benchmark={benchmark}
       grouping={grouping}
       groupingConfig={groupingsConfig}
       firstChildSummaries={firstChildSummaries}
