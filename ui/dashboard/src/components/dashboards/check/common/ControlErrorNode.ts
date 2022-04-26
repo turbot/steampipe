@@ -30,7 +30,7 @@ class ControlErrorNode implements CheckNode {
   }
 
   get type(): CheckNodeType {
-    return "control_error";
+    return "error";
   }
 
   get summary(): CheckSummary {

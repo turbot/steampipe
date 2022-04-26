@@ -192,9 +192,9 @@ const CheckPanel = ({
       const errors: ControlErrorNode[] = [];
       const results: ControlResultNode[] = [];
       for (const child of node.children || []) {
-        if (child.type === "control_error") {
+        if (child.type === "error") {
           errors.push(child as ControlErrorNode);
-        } else if (child.type === "control_result") {
+        } else if (child.type === "result") {
           results.push(child as ControlResultNode);
         } else {
           children.push(child);
@@ -206,8 +206,7 @@ const CheckPanel = ({
         results,
         children.length > 0 ||
           (groupingConfig &&
-            groupingConfig[groupingConfig.length - 1].type ===
-              "control_result" &&
+            groupingConfig[groupingConfig.length - 1].type === "result" &&
             (errors.length > 0 || results.length > 0)),
       ];
     }, [groupingConfig, node]);
@@ -260,8 +259,7 @@ const CheckPanel = ({
         </section>
         {expanded &&
           groupingConfig &&
-          groupingConfig[groupingConfig.length - 1].type ===
-            "control_result" && (
+          groupingConfig[groupingConfig.length - 1].type === "result" && (
             <CheckResults errors={error_nodes} results={result_nodes} />
           )}
       </div>

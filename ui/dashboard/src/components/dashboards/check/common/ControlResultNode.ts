@@ -26,7 +26,7 @@ class ControlResultNode implements CheckNode {
   }
 
   get type(): CheckNodeType {
-    return "control_result";
+    return "result";
   }
 
   get summary(): CheckSummary {
