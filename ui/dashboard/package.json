@@ -14,7 +14,7 @@
     "build-storybook": "build-storybook -s public"
   },
   "dependencies": {
-    "@headlessui/react": "1.5.0",
+    "@headlessui/react": "1.6.0",
     "@heroicons/react": "1.0.6",
     "@supabase/sql-formatter": "4.0.3",
     "color-convert": "2.0.1",
