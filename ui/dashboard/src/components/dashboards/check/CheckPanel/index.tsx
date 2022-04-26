@@ -1,6 +1,6 @@
 import CheckSummaryChart from "../CheckSummaryChart";
-import ControlErrorNode from "../common/ControlErrorNode";
-import ControlResultNode from "../common/ControlResultNode";
+import ControlErrorNode from "../common/node/ControlErrorNode";
+import ControlResultNode from "../common/node/ControlResultNode";
 import sortBy from "lodash/sortBy";
 import {
   AlarmIcon,

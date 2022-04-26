@@ -3,40 +3,29 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
-} from "./index";
+} from "../index";
 
-class BenchmarkNode implements CheckNode {
-  private readonly _sort: string;
-  private readonly _name: string;
-  private readonly _title: string | undefined;
+class RootNode implements CheckNode {
   private readonly _children: CheckNode[];
 
-  constructor(
-    sort: string,
-    name: string,
-    title: string | undefined,
-    children?: CheckNode[]
-  ) {
-    this._sort = sort;
-    this._name = name;
-    this._title = title;
+  constructor(children?: CheckNode[]) {
     this._children = children || [];
   }
 
   get sort(): string {
-    return this._sort;
+    return this.title;
   }
 
   get name(): string {
-    return this._name;
+    return "root";
   }
 
   get title(): string {
-    return this._title || this._name;
+    return "Root";
   }
 
   get type(): CheckNodeType {
-    return "dimension";
+    return "root";
   }
 
   get summary(): CheckSummary {
@@ -59,21 +48,19 @@ class BenchmarkNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
+    let hasError = false;
     for (const child of this._children) {
-      if (child.status === "error") {
-        return "error";
-      }
-      if (child.status === "unknown") {
-        return "unknown";
-      }
       if (child.status === "ready") {
         return "ready";
       }
       if (child.status === "started") {
         return "started";
       }
+      if (child.status === "error") {
+        hasError = true;
+      }
     }
-    return "complete";
+    return hasError ? "error" : "complete";
   }
 
   get children(): CheckNode[] {
@@ -81,4 +68,4 @@ class BenchmarkNode implements CheckNode {
   }
 }
 
-export default BenchmarkNode;
+export default RootNode;

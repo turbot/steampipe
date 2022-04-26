@@ -1,10 +1,10 @@
-import BenchmarkNode from "../components/dashboards/check/common/BenchmarkNode";
-import ControlNode from "../components/dashboards/check/common/ControlNode";
-import ControlErrorNode from "../components/dashboards/check/common/ControlErrorNode";
-import ControlResultNode from "../components/dashboards/check/common/ControlResultNode";
+import BenchmarkNode from "../components/dashboards/check/common/node/BenchmarkNode";
+import ControlNode from "../components/dashboards/check/common/node/ControlNode";
+import ControlErrorNode from "../components/dashboards/check/common/node/ControlErrorNode";
+import ControlResultNode from "../components/dashboards/check/common/node/ControlResultNode";
 import get from "lodash/get";
-import KeyValuePairNode from "../components/dashboards/check/common/KeyValuePairNode";
-import RootNode from "../components/dashboards/check/common/RootNode";
+import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
+import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
   CheckDisplayGroup,
   CheckNode,

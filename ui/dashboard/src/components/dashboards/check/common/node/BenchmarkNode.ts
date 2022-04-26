@@ -3,29 +3,36 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
-} from "./index";
+} from "../index";
 
-class KeyValuePairNode implements CheckNode {
-  private readonly _key: string;
-  private readonly _value: string;
+class BenchmarkNode implements CheckNode {
+  private readonly _sort: string;
+  private readonly _name: string;
+  private readonly _title: string | undefined;
   private readonly _children: CheckNode[];
 
-  constructor(key: string, value: string, children?: CheckNode[]) {
-    this._key = key;
-    this._value = value;
+  constructor(
+    sort: string,
+    name: string,
+    title: string | undefined,
+    children?: CheckNode[]
+  ) {
+    this._sort = sort;
+    this._name = name;
+    this._title = title;
     this._children = children || [];
   }
 
   get sort(): string {
-    return this.title;
+    return this._sort;
   }
 
   get name(): string {
-    return `${this._key}=${this._value}`;
+    return this._name;
   }
 
   get title(): string {
-    return this._value;
+    return this._title || this._name;
   }
 
   get type(): CheckNodeType {
@@ -52,21 +59,19 @@ class KeyValuePairNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
+    let hasError = false;
     for (const child of this._children) {
-      if (child.status === "error") {
-        return "error";
-      }
-      if (child.status === "unknown") {
-        return "unknown";
-      }
       if (child.status === "ready") {
         return "ready";
       }
       if (child.status === "started") {
         return "started";
       }
+      if (child.status === "error") {
+        hasError = true;
+      }
     }
-    return "complete";
+    return hasError ? "error" : "complete";
   }
 
   get children(): CheckNode[] {
@@ -74,4 +79,4 @@ class KeyValuePairNode implements CheckNode {
   }
 }
 
-export default KeyValuePairNode;
+export default BenchmarkNode;

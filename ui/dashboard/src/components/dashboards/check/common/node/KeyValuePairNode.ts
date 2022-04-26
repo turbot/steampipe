@@ -3,12 +3,16 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
-} from "./index";
+} from "../index";
 
-class RootNode implements CheckNode {
+class KeyValuePairNode implements CheckNode {
+  private readonly _key: string;
+  private readonly _value: string;
   private readonly _children: CheckNode[];
 
-  constructor(children?: CheckNode[]) {
+  constructor(key: string, value: string, children?: CheckNode[]) {
+    this._key = key;
+    this._value = value;
     this._children = children || [];
   }
 
@@ -17,15 +21,15 @@ class RootNode implements CheckNode {
   }
 
   get name(): string {
-    return "root";
+    return `${this._key}=${this._value}`;
   }
 
   get title(): string {
-    return "Root";
+    return this._value;
   }
 
   get type(): CheckNodeType {
-    return "root";
+    return "dimension";
   }
 
   get summary(): CheckSummary {
@@ -48,21 +52,19 @@ class RootNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
+    let hasError = false;
     for (const child of this._children) {
-      if (child.status === "error") {
-        return "error";
-      }
-      if (child.status === "unknown") {
-        return "unknown";
-      }
       if (child.status === "ready") {
         return "ready";
       }
       if (child.status === "started") {
         return "started";
       }
+      if (child.status === "error") {
+        hasError = true;
+      }
     }
-    return "complete";
+    return hasError ? "error" : "complete";
   }
 
   get children(): CheckNode[] {
@@ -70,4 +72,4 @@ class RootNode implements CheckNode {
   }
 }
 
-export default RootNode;
+export default KeyValuePairNode;
