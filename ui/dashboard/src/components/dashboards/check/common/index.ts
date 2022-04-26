@@ -160,12 +160,12 @@ export type BenchmarkTreeProps = BasePrimitiveProps &
 
 export type AddControlErrorAction = (
   error: string,
-  control: Control,
-  benchmark_trunk: Benchmark[]
+  benchmark_trunk: Benchmark[],
+  control: Control
 ) => void;
 
 export type AddControlResultsAction = (
   results: CheckResult[],
-  control: Control,
-  benchmark_trunk: Benchmark[]
+  benchmark_trunk: Benchmark[],
+  control: Control
 ) => void;
