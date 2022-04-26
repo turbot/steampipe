@@ -1,9 +1,9 @@
+import sortBy from "lodash/sortBy";
 import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
 import { classNames } from "../../utils/styles";
 import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
-import { sortBy } from "lodash";
 import { useParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {

@@ -1,4 +1,6 @@
 import findPathDeep from "deepdash/findPathDeep";
+import get from "lodash/get";
+import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
 import React, {
   createContext,
@@ -8,11 +10,12 @@ import React, {
   useReducer,
   useState,
 } from "react";
+import set from "lodash/set";
+import sortBy from "lodash/sortBy";
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
 import { buildComponentsMap } from "../components";
 import { CheckExecutionTree } from "../components/dashboards/check/common";
-import { get, isEqual, set, sortBy } from "lodash";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData } from "../components/dashboards/common";
 import { noop } from "../utils/func";

@@ -1,3 +1,4 @@
+import get from "lodash/get";
 import Img from "react-cool-img";
 import Table from "../Table";
 import {
@@ -5,7 +6,6 @@ import {
   ExecutablePrimitiveProps,
   LeafNodeData,
 } from "../common";
-import { get } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
 import { useEffect, useState } from "react";
 

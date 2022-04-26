@@ -1,4 +1,5 @@
-import { isNil, isObject } from "lodash";
+import isNil from "lodash/isNil";
+import isObject from "lodash/isObject";
 
 interface IntegerDisplayProps {
   num: number | null;

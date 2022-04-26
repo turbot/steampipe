@@ -1,3 +1,4 @@
+import get from "lodash/get";
 import usePrevious from "./usePrevious";
 import {
   AvailableDashboard,
@@ -13,7 +14,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { get } from "lodash";
 import { useTheme } from "./useTheme";
 
 interface AnalyticsProperties {
