@@ -13,6 +13,7 @@ import {
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
+import Control from "../components/dashboards/check/common/Control";
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
@@ -149,6 +150,68 @@ const groupCheckItems = (
     }, temp);
 };
 
+const addChildren = (node: CheckNode) => {
+  const nodes: CheckNode[] = [];
+  node.children?.forEach((child, index) => {
+    if (child.type === "benchmark") {
+      nodes.push(
+        new BenchmarkNode(
+          index.toString(),
+          child.name,
+          child.title,
+          addChildren(child)
+        )
+      );
+    } else if (child.type === "control") {
+      const controlChildren: CheckNode[] = [];
+      if (child.error) {
+        controlChildren.push(
+          new ControlErrorNode({
+            benchmark_trunk: [],
+            dimensions: [],
+            reason: "",
+            resource: "",
+            status: "error",
+            tags: {},
+            control: {
+              name: child.name,
+              title: child.title,
+              type: "control",
+              status: "error",
+              sort: "0",
+              summary: { error: 1, alarm: 0, ok: 0, info: 0, skip: 0 },
+            },
+            error: child.error,
+          })
+        );
+      } else {
+        child.results?.forEach((result, index) => {
+          controlChildren.push(
+            new ControlResultNode({ ...result, control: child })
+          );
+        });
+      }
+      nodes.push(
+        new ControlNode(
+          index.toString(),
+          child.name,
+          child.title,
+          controlChildren
+        )
+      );
+    }
+  });
+  return nodes;
+  // const childNodes = b.
+  // return new BenchmarkNode(index.toString(), b.name, b.title, )
+};
+
+const buildClassicStructure = (benchmark: BenchmarkType) => {
+  // const topLevelBenchmarkNodes: BenchmarkNode[] = [];
+  const topLevelBenchmarks = addChildren(benchmark);
+  return new RootNode(topLevelBenchmarks);
+};
+
 const useCheckGrouping = (props: CheckProps) => {
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
 
@@ -189,20 +252,22 @@ const useCheckGrouping = (props: CheckProps) => {
       []
     );
 
-    const result: CheckNode[] = [];
-    const temp = { _: result };
-    b.all_control_results.forEach((checkResult) =>
-      groupCheckItems(temp, checkResult, groupingsConfig)._.push(
-        new ControlResultNode(checkResult)
-      )
-    );
-    b.all_control_errors.forEach((checkError) =>
-      groupCheckItems(temp, checkError, groupingsConfig)._.push(
-        new ControlErrorNode(checkError)
-      )
-    );
+    return buildClassicStructure(b);
 
-    return new RootNode(result);
+    // const result: CheckNode[] = [];
+    // const temp = { _: result };
+    // b.all_control_results.forEach((checkResult) =>
+    //   groupCheckItems(temp, checkResult, groupingsConfig)._.push(
+    //     new ControlResultNode(checkResult)
+    //   )
+    // );
+    // b.all_control_errors.forEach((checkError) =>
+    //   groupCheckItems(temp, checkError, groupingsConfig)._.push(
+    //     new ControlErrorNode(checkError)
+    //   )
+    // );
+    //
+    // return new RootNode(result);
   }, [groupingsConfig, rootBenchmark]);
 
   return [grouping, groupingsConfig] as const;
