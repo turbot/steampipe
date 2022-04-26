@@ -9,7 +9,7 @@ import {
   CheckDisplayGroup,
   CheckNode,
   CheckProps,
-  GroupableCheck,
+  CheckResult,
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
@@ -29,36 +29,46 @@ const addBenchmarkTrunkNode = (
 };
 
 const getCheckGroupingKey = (
-  check: GroupableCheck,
+  checkResult: CheckResult,
   group: CheckDisplayGroup
 ) => {
   switch (group.type) {
     case "dimension":
-      const foundDimension = check.dimensions.find(
+      const foundDimension = checkResult.dimensions.find(
         (d) => d.key === group.value
       );
       return foundDimension ? foundDimension.value : "Other";
     case "tag":
-      return group.value ? check.tags[group.value] || "Other" : "Other";
+      return group.value ? checkResult.tags[group.value] || "Other" : "Other";
+    case "reason":
+      return checkResult.reason || "Other";
+    case "resource":
+      return checkResult.resource || "Other";
+    case "severity":
+      return checkResult.severity || "Other";
+    case "status":
+      return checkResult.status;
     case "benchmark":
       const root =
-        check.benchmark_trunk.length > 1 ? check.benchmark_trunk[1] : null;
+        checkResult.benchmark_trunk.length > 1
+          ? checkResult.benchmark_trunk[1]
+          : null;
       return root ? root.name : "Other";
     case "control":
-      return check.control.name;
+      return checkResult.control.name;
     default:
       return "Other";
   }
 };
 
 const getCheckGroupingNode = (
-  check: GroupableCheck,
+  checkResult: CheckResult,
   group: CheckDisplayGroup,
   children: CheckNode[]
 ) => {
   switch (group.type) {
     case "dimension":
-      const foundDimension = check.dimensions.find(
+      const foundDimension = checkResult.dimensions.find(
         (d) => d.key === group.value
       );
       const dimensionValue = foundDimension ? foundDimension.value : "Other";
@@ -70,16 +80,42 @@ const getCheckGroupingNode = (
     case "tag":
       return new KeyValuePairNode(
         group.value || "Other",
-        group.value ? check.tags[group.value] || "Other" : "Other",
+        group.value ? checkResult.tags[group.value] || "Other" : "Other",
         children
       );
+    case "reason":
+      return new KeyValuePairNode(
+        "reason",
+        checkResult.reason || "Other",
+        children
+      );
+    case "resource":
+      return new KeyValuePairNode(
+        "resource",
+        checkResult.resource || "Other",
+        children
+      );
+    case "severity":
+      return new KeyValuePairNode(
+        "severity",
+        checkResult.severity || "Other",
+        children
+      );
+    case "status":
+      return new KeyValuePairNode("status", checkResult.status, children);
     case "benchmark":
       return addBenchmarkTrunkNode(
-        check.benchmark_trunk.length > 1 ? check.benchmark_trunk.slice(1) : [],
+        checkResult.benchmark_trunk.length > 1
+          ? checkResult.benchmark_trunk.slice(1)
+          : [],
         children
       );
     case "control":
-      return new ControlNode(check.control.name, check.control.title, children);
+      return new ControlNode(
+        checkResult.control.name,
+        checkResult.control.title,
+        children
+      );
     default:
       throw new Error(`Unknown group type ${group.type}`);
   }
@@ -87,7 +123,7 @@ const getCheckGroupingNode = (
 
 const groupCheckItems = (
   temp: { _: CheckNode[] },
-  group: GroupableCheck,
+  group: CheckResult,
   groupingsConfig: CheckDisplayGroup[]
 ) => {
   return groupingsConfig
@@ -122,12 +158,16 @@ const useCheckGrouping = (props: CheckProps) => {
         // { type: "control" },
         // { type: "result" },
         // { type: "dimension", value: "account_id" },
-        { type: "dimension", value: "region" },
+        // { type: "status" },
+        // { type: "reason" },
+        // { type: "resource" },
+        // { type: "severity" },
         // { type: "dimension", value: "region" },
-        { type: "tag", value: "service" },
+        // { type: "dimension", value: "region" },
+        // { type: "tag", value: "service" },
         // { type: "tag", value: "cis_type" },
-        // { type: "benchmark" },
-        // { type: "control" },
+        { type: "benchmark" },
+        { type: "control" },
         { type: "result" },
       ] as CheckDisplayGroup[]),
     [props.properties]
@@ -159,28 +199,6 @@ const useCheckGrouping = (props: CheckProps) => {
         new ControlErrorNode(checkError)
       )
     );
-    // b.all_control_errors.forEach(function (checkError) {
-    //   return groupingsConfig
-    //     .filter((group) => group.type !== "result")
-    //     .reduce(function (grouping, currentGroup) {
-    //       const groupKey = getCheckGroupingKey(checkError, currentGroup);
-    //       if (!grouping[groupKey]) {
-    //         grouping[groupKey] = { _: [] };
-    //         const groupingNode = getCheckGroupingNode(
-    //           checkError,
-    //           currentGroup,
-    //           grouping[groupKey]._
-    //         );
-    //
-    //         if (groupingNode) {
-    //           grouping._.push(groupingNode);
-    //         }
-    //       }
-    //
-    //       return grouping[groupKey];
-    //     }, temp)
-    //     ._.push(new ControlErrorNode(checkError));
-    // });
 
     return new RootNode(result);
   }, [groupingsConfig, rootBenchmark]);
