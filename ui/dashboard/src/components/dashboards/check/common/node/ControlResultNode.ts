@@ -4,7 +4,7 @@ import {
   CheckSummary,
   CheckNode,
   CheckResult,
-} from "./index";
+} from "../index";
 
 class ControlResultNode implements CheckNode {
   private readonly _result: CheckResult;

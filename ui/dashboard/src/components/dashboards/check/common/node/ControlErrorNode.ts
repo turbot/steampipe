@@ -4,7 +4,7 @@ import {
   CheckSummary,
   CheckNode,
   CheckResult,
-} from "./index";
+} from "../index";
 
 class ControlErrorNode implements CheckNode {
   private readonly _name: string;

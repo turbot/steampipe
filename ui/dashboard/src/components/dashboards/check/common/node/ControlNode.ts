@@ -3,7 +3,7 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
-} from "./index";
+} from "../index";
 
 class ControlNode implements CheckNode {
   private readonly _sort: string;
@@ -59,21 +59,19 @@ class ControlNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
+    let hasError = false;
     for (const child of this._children) {
-      if (child.status === "error") {
-        return "error";
-      }
-      if (child.status === "unknown") {
-        return "unknown";
-      }
       if (child.status === "ready") {
         return "ready";
       }
       if (child.status === "started") {
         return "started";
       }
+      if (child.status === "error") {
+        hasError = true;
+      }
     }
-    return "complete";
+    return hasError ? "error" : "complete";
   }
 
   get children(): CheckNode[] {
