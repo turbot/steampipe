@@ -49,8 +49,6 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 		}
 	}
 
-	//display.ShowVarsListTable(variableMap.ToArray())
-
 	return variableMap, nil
 }
 
@@ -110,7 +108,6 @@ func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 		if i < len(diags)-1 {
 			fmt.Println()
 		}
-		// TODO range if there is one
 	}
 }
 
