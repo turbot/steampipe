@@ -124,7 +124,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		fmt.Sprintf("--port=%d", config.port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
-	log.Println("[TRACE]", cmd.String())
+	log.Println("[TRACE] starting pg_restore command:", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] pg_dump process output:", string(output))
@@ -234,7 +234,7 @@ func restoreBackup(ctx context.Context) error {
 		return err
 	}
 
-	// partition the Table of Contents into separate lists (no refresh and only refresh)
+	// create separate TableOfContent files - one containing only DB OBJECT CREATION (with static data) instructions and another containing only REFRESH MATERIALIZED VIEW instructions
 	objectAndStaticDataListFile, matviewRefreshListFile, err := partitionTableOfContents(ctx, toc)
 	if err != nil {
 		return err
@@ -260,7 +260,7 @@ func restoreBackup(ctx context.Context) error {
 	// table names
 	//
 	// since 'pg_dump' always set a blank 'search_path', it will not be able to resolve the aforementioned transitive
-	// dependencies and will fail to refresh
+	// dependencies and will inevitably fail to refresh
 	//
 	err = runRestoreUsingList(ctx, runningInfo, matviewRefreshListFile)
 	if err != nil {
@@ -270,9 +270,6 @@ func restoreBackup(ctx context.Context) error {
 		// contain transitive references to unqualified table names
 		//
 		// WARN the user.
-		//
-		// TODO: We should try to refresh these separately using a Maintenance Client
-		// https://github.com/turbot/steampipe/issues/1934
 		//
 		log.Println("[WARN] Could not REFRESH Materialized Views while restoring data.")
 	}
@@ -322,19 +319,19 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 	log.Println("[TRACE]", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		log.Println("[TRACE] pg_restore process output:", string(output))
+		log.Println("[TRACE] runRestoreUsingList process:", string(output))
 		return err
 	}
 
 	return nil
 }
 
-// partitionTableOfContents writes back the TableOfContents into a two temporary files:
-// 1. without REFRESH MATERIALIZED VIEWS
-// 2. only REFRESH MATERIALIZED VIEWS
+// partitionTableOfContents writes back the TableOfContents into a two temporary TableOfContents files:
 //
-// This needs to be done because the BackUP will always set  a blank search path before commencing
-// and the MATERIALIZED VIEWS may have functions with unqualified table names
+// 1. without REFRESH MATERIALIZED VIEWS commands and 2. only REFRESH MATERIALIZED VIEWS commands
+//
+// This needs to be done because the pg_dump will always set a blank search path in the backup archive
+// and backed up MATERIALIZED VIEWS may have functions with unqualified table names
 func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []string) (string, string, error) {
 	onlyRefresh, withoutRefresh := utils.Partition(tableOfContentsOfBackup, func(v string) bool {
 		return strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
@@ -364,7 +361,7 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 		"--schema=public",
 		"--list",
 	)
-	log.Println("[TRACE]", cmd.String())
+	log.Println("[TRACE] TableOfContent extraction command: ", cmd.String())
 
 	b, err := cmd.Output()
 	if err != nil {
