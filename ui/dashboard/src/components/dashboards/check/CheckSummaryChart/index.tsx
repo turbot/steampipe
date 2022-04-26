@@ -175,7 +175,6 @@ const CheckSummaryChart = ({
   // ]);
   let alertsWidth = getWidth(maxAlerts, maxNonAlerts);
   let nonAlertsWidth = getWidth(maxNonAlerts, maxAlerts);
-  console.log({ maxAlerts, maxNonAlerts, alertsWidth, nonAlertsWidth });
   if (alertsWidth > nonAlertsWidth) {
     alertsWidth -= 2;
   } else {
