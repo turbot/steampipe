@@ -12,6 +12,7 @@ import {
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
+import padStart from "lodash/padStart";
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
@@ -150,11 +151,14 @@ const addBenchmarkTrunkNode = (
 
 const addChildren = (node: CheckNode) => {
   const nodes: CheckNode[] = [];
+  const lengthMaxIndex = node.children
+    ? (node.children?.length - 1).toString().length
+    : 0;
   node.children?.forEach((child, index) => {
     if (child.type === "benchmark") {
       nodes.push(
         new BenchmarkNode(
-          index.toString(),
+          padStart(index.toString(), lengthMaxIndex),
           child.name,
           child.title,
           addChildren(child)
@@ -191,7 +195,7 @@ const addChildren = (node: CheckNode) => {
       }
       nodes.push(
         new ControlNode(
-          index.toString(),
+          padStart(index.toString(), lengthMaxIndex),
           child.name,
           child.title,
           controlChildren
