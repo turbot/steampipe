@@ -145,7 +145,7 @@ func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
 		return err
 	}
 	// clear foreign schemas
-	c.foreignSchemaNames = nil
+	var foreignSchemaNames []string
 	var schema string
 	for res.Next() {
 		if err := res.Scan(&schema); err != nil {
@@ -153,10 +153,10 @@ func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
 		}
 		// ignore command schema
 		if schema != constants.CommandSchema {
-			c.foreignSchemaNames = append(c.foreignSchemaNames, schema)
+			foreignSchemaNames = append(foreignSchemaNames, schema)
 		}
 	}
-
+	c.foreignSchemaNames = foreignSchemaNames
 	return nil
 }
 
