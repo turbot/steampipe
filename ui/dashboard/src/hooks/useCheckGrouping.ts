@@ -50,7 +50,7 @@ const getCheckGroupingKey = (
     case "resource":
       return checkResult.resource || "Other";
     case "severity":
-      return checkResult.severity || "Other";
+      return checkResult.control.severity || "Other";
     case "status":
       return checkResult.status;
     case "benchmark":
@@ -108,7 +108,7 @@ const getCheckGroupingNode = (
       return new KeyValuePairNode(
         "severity",
         "severity",
-        checkResult.severity || "Other",
+        checkResult.control.severity || "Other",
         children
       );
     case "status":
@@ -191,9 +191,11 @@ const addChildren = (node: CheckNode) => {
             status: "error",
             tags: {},
             control: {
-              name: child.name,
-              title: child.title,
+              name: control.name,
+              title: control.title,
               type: "control",
+              severity: control.severity,
+              severity_summary: {},
               status: "complete",
               sort: "0",
               summary: { error: 1, alarm: 0, ok: 0, info: 0, skip: 0 },
@@ -204,7 +206,10 @@ const addChildren = (node: CheckNode) => {
       } else if (control.run_state === 4) {
         child.results?.forEach((result) => {
           controlChildren.push(
-            new ControlResultNode({ ...result, control: child })
+            new ControlResultNode({
+              ...result,
+              control: child,
+            })
           );
         });
       } else {

@@ -8,6 +8,8 @@ import {
   CheckNodeStatusRaw,
   CheckNodeType,
   CheckResult,
+  CheckSeverity,
+  CheckSeveritySummary,
   CheckSummary,
   CheckTags,
 } from "./index";
@@ -21,6 +23,7 @@ class Control implements CheckNode {
   private readonly _name: string;
   private readonly _title: string | undefined;
   private readonly _description: string | undefined;
+  private readonly _severity: CheckSeverity | undefined;
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _tags: CheckTags;
@@ -35,6 +38,7 @@ class Control implements CheckNode {
     name: string,
     title: string | undefined,
     description: string | undefined,
+    severity: CheckSeverity | undefined,
     results: CheckResult[] | undefined,
     summary: CheckSummary | undefined,
     tags: CheckTags | undefined,
@@ -51,6 +55,7 @@ class Control implements CheckNode {
     this._name = name;
     this._title = title;
     this._description = description;
+    this._severity = severity;
     this._results = results || [];
     this._summary = summary || {
       alarm: 0,
@@ -80,6 +85,14 @@ class Control implements CheckNode {
 
   get title(): string {
     return this._title || this._name;
+  }
+
+  get severity(): CheckSeverity | undefined {
+    return this._severity;
+  }
+
+  get severity_summary(): CheckSeveritySummary {
+    return {};
   }
 
   get type(): CheckNodeType {

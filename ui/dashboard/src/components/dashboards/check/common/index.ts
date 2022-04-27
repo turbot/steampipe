@@ -22,6 +22,8 @@ export interface CheckNode {
   title: string;
   type: CheckNodeType;
   status: CheckNodeStatus;
+  severity?: CheckSeverity;
+  severity_summary: CheckSeveritySummary;
   summary: CheckSummary;
   children?: CheckNode[];
   results?: CheckResult[];
@@ -48,6 +50,14 @@ export interface CheckNode {
 export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
 
 export type CheckNodeStatus = "running" | "complete";
+
+export type CheckSeverity = "none" | "low" | "medium" | "high" | "critical";
+
+export type CheckSeveritySummary =
+  | {}
+  | {
+      [key in CheckSeverity]: number;
+    };
 
 export interface CheckSummary {
   alarm: number;
@@ -88,7 +98,7 @@ export interface CheckResult {
   status: CheckResultStatus;
   reason: string;
   resource: string;
-  severity?: string;
+  severity?: CheckSeverity;
   error?: string;
 }
 
@@ -96,7 +106,7 @@ export interface CheckControl {
   control_id: string;
   title?: string;
   description?: string;
-  severity?: string;
+  severity?: CheckSeverity | undefined;
   tags?: CheckTags;
   results: CheckResult[];
   summary: CheckSummary;

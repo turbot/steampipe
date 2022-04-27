@@ -12,19 +12,21 @@ const CheckGrouping = ({
   node,
   groupingConfig,
   firstChildSummaries,
-}: CheckGroupingProps) => (
-  <div className="space-y-4 md:space-y-6 col-span-12">
-    {sortBy(node.children, "sort")?.map((child) => (
-      <CheckPanel
-        key={child.name}
-        depth={1}
-        node={child}
-        groupingConfig={groupingConfig}
-        firstChildSummaries={firstChildSummaries}
-      />
-    ))}
-  </div>
-);
+}: CheckGroupingProps) => {
+  return (
+    <div className="space-y-4 md:space-y-6 col-span-12">
+      {sortBy(node.children, "sort")?.map((child) => (
+        <CheckPanel
+          key={child.name}
+          depth={1}
+          node={child}
+          groupingConfig={groupingConfig}
+          firstChildSummaries={firstChildSummaries}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default CheckGrouping;
 

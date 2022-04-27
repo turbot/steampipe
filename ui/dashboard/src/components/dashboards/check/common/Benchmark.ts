@@ -11,6 +11,7 @@ import {
   CheckNodeStatus,
   CheckNodeType,
   CheckResult,
+  CheckSeveritySummary,
   CheckSummary,
 } from "./index";
 import {
@@ -93,6 +94,7 @@ class Benchmark implements CheckNode {
           nestedControl.control_id,
           nestedControl.title,
           nestedControl.description,
+          nestedControl.severity,
           nestedControl.results,
           nestedControl.summary,
           nestedControl.tags,
@@ -133,6 +135,7 @@ class Benchmark implements CheckNode {
     this._all_control_results.push(
       ...results.map((r) => ({
         ...r,
+        severity: control.severity,
         tags: control.tags,
         benchmark_trunk,
         control,
@@ -201,6 +204,10 @@ class Benchmark implements CheckNode {
       summary.error += nestedSummary.error;
     }
     return summary;
+  }
+
+  get severity_summary(): CheckSeveritySummary {
+    return {};
   }
 
   get status(): CheckNodeStatus {

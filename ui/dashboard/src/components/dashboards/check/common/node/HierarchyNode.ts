@@ -2,6 +2,7 @@ import {
   CheckNode,
   CheckNodeStatus,
   CheckNodeType,
+  CheckSeveritySummary,
   CheckSummary,
 } from "../index";
 
@@ -61,6 +62,21 @@ class HierarchyNode implements CheckNode {
       summary.info += nestedSummary.info;
       summary.skip += nestedSummary.skip;
       summary.error += nestedSummary.error;
+    }
+    return summary;
+  }
+
+  get severity_summary(): CheckSeveritySummary {
+    const summary = {};
+    for (const child of this._children) {
+      const childSummary = child.severity_summary;
+      for (const [severity, count] of Object.entries(child.severity_summary)) {
+        if (!summary[severity]) {
+          summary[severity] = count;
+        } else {
+          summary[severity] += count;
+        }
+      }
     }
     return summary;
   }

@@ -4,6 +4,7 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
+  CheckSeveritySummary,
 } from "../index";
 
 class ControlRunningNode implements CheckNode {
@@ -39,6 +40,10 @@ class ControlRunningNode implements CheckNode {
       skip: 0,
       error: 0,
     };
+  }
+
+  get severity_summary(): CheckSeveritySummary {
+    return {};
   }
 
   get status(): CheckNodeStatus {

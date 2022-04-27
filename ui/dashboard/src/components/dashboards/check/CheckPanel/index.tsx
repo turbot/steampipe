@@ -17,6 +17,8 @@ import {
   CheckNode,
   CheckResult,
   CheckResultStatus,
+  CheckSeverity,
+  CheckSeveritySummary,
   CheckSummary,
 } from "../common";
 import { classNames } from "../../../../utils/styles";
@@ -41,6 +43,15 @@ interface CheckPanelProps {
   node: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
+}
+
+interface CheckPanelSeverityProps {
+  severity_summary: CheckSeveritySummary;
+}
+
+interface CheckPanelSeverityBadgeProps {
+  label: string;
+  count: number;
 }
 
 interface CheckResultRowProps {
@@ -201,6 +212,39 @@ const CheckResults = ({ errors, results }: CheckResultsProps) => {
   );
 };
 
+const CheckPanelSeverityBadge = ({
+  label,
+  count,
+}: CheckPanelSeverityBadgeProps) => {
+  return (
+    <span>
+      {label} = {count}
+    </span>
+  );
+};
+
+const CheckPanelSeverity = ({ severity_summary }: CheckPanelSeverityProps) => {
+  const critical = severity_summary["critical"];
+  const high = severity_summary["high"];
+
+  if (critical === undefined && high === undefined) {
+    return null;
+  }
+
+  return null;
+
+  return (
+    <>
+      {critical !== undefined && (
+        <CheckPanelSeverityBadge label="Critical" count={critical} />
+      )}
+      {high !== undefined && (
+        <CheckPanelSeverityBadge label="High" count={high} />
+      )}
+    </>
+  );
+};
+
 const CheckPanel = ({
   depth,
   node,
@@ -251,7 +295,7 @@ const CheckPanel = ({
         >
           <div className="p-4 flex items-center space-x-6">
             <div className="flex flex-grow justify-between items-center space-x-6">
-              <div>
+              <div className="flex items-center space-x-4">
                 <h3
                   id={`${node.name}-title`}
                   className="mt-0"
@@ -259,6 +303,7 @@ const CheckPanel = ({
                 >
                   {node.title}
                 </h3>
+                <CheckPanelSeverity severity_summary={node.severity_summary} />
               </div>
               <div className="flex-shrink-0 w-40 md:w-72 lg:w-96">
                 <CheckSummaryChart

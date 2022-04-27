@@ -4,6 +4,8 @@ import {
   CheckSummary,
   CheckNode,
   CheckResult,
+  CheckSeverity,
+  CheckSeveritySummary,
 } from "../index";
 
 class ControlResultNode implements CheckNode {
@@ -62,6 +64,15 @@ class ControlResultNode implements CheckNode {
   get status(): CheckNodeStatus {
     // If we have results, this node is complete
     return "complete";
+  }
+
+  get severity_summary(): CheckSeveritySummary {
+    const summary = {};
+    if (this._result.control.severity) {
+      summary[this._result.control.severity] =
+        this._result.status === "alarm" ? 1 : 0;
+    }
+    return summary;
   }
 }
 
