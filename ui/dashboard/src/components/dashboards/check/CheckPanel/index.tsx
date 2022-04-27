@@ -219,7 +219,7 @@ const CheckPanel = ({
           errors.push(child as ControlErrorNode);
         } else if (child.type === "result") {
           results.push(child as ControlResultNode);
-        } else {
+        } else if (child.type !== "running") {
           children.push(child);
         }
       }
