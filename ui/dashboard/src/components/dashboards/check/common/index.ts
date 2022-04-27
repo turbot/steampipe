@@ -3,16 +3,17 @@ import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 import Benchmark from "./Benchmark";
 
 export type CheckNodeType =
-  | "root"
   | "benchmark"
   | "control"
+  | "dimension"
   | "error"
   | "reason"
   | "resource"
   | "result"
+  | "running"
+  | "root"
   | "severity"
   | "status"
-  | "dimension"
   | "tag";
 
 export interface CheckNode {

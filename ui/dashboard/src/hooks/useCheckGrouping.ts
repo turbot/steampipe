@@ -1,8 +1,11 @@
 import BenchmarkNode from "../components/dashboards/check/common/node/BenchmarkNode";
+import Control from "../components/dashboards/check/common/Control";
 import ControlNode from "../components/dashboards/check/common/node/ControlNode";
 import ControlErrorNode from "../components/dashboards/check/common/node/ControlErrorNode";
 import ControlResultNode from "../components/dashboards/check/common/node/ControlResultNode";
+import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
 import get from "lodash/get";
+import padStart from "lodash/padStart";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
   CheckDisplayGroup,
@@ -12,7 +15,6 @@ import {
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
-import padStart from "lodash/padStart";
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
@@ -170,8 +172,9 @@ const addChildren = (node: CheckNode) => {
         )
       );
     } else if (child.type === "control") {
+      const control = child as Control;
       const controlChildren: CheckNode[] = [];
-      if (child.error) {
+      if (control.error) {
         controlChildren.push(
           new ControlErrorNode({
             benchmark_trunk: [],
@@ -191,12 +194,14 @@ const addChildren = (node: CheckNode) => {
             error: child.error,
           })
         );
-      } else {
+      } else if (control.run_state === 4) {
         child.results?.forEach((result) => {
           controlChildren.push(
             new ControlResultNode({ ...result, control: child })
           );
         });
+      } else {
+        controlChildren.push(new ControlRunningNode(child as Control));
       }
       nodes.push(
         new ControlNode(

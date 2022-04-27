@@ -94,6 +94,10 @@ class Control implements CheckNode {
     return this._run_error;
   }
 
+  get run_state(): CheckNodeStatusRaw {
+    return this._run_state;
+  }
+
   get status(): CheckNodeStatus {
     switch (this._run_state) {
       case 1:
