@@ -27,7 +27,7 @@
     "jq-web": "0.5.1",
     "lodash": "4.17.21",
     "moment": "2.29.3",
-    "react": "18.0.0",
+    "react": "18.1.0",
     "react-cool-img": "1.2.12",
     "react-dom": "18.0.0",
     "react-hotkeys": "2.0.0",
