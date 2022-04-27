@@ -13,7 +13,7 @@ require (
 	github.com/containerd/containerd v1.4.12
 	github.com/deislabs/oras v0.8.1
 	github.com/fatih/color v1.13.0
-	github.com/fsnotify/fsnotify v1.5.1
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gertd/go-pluralize v0.2.0
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.7
@@ -23,7 +23,7 @@ require (
 	github.com/hashicorp/go-hclog v1.2.0
 	github.com/hashicorp/go-plugin v1.4.3
 	github.com/hashicorp/go-version v1.4.0
-	github.com/hashicorp/hcl/v2 v2.11.1
+	github.com/hashicorp/hcl/v2 v2.12.0
 	github.com/hashicorp/terraform v0.15.1
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/jedib0t/go-pretty/v6 v6.3.1
