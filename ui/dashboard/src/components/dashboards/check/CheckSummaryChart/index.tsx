@@ -18,19 +18,20 @@ interface CheckSummaryChartProps {
   firstChildSummaries: CheckSummary[];
 }
 
-interface AlertProgressBarGroupTotal {
+interface AlertProgressBarGroupTotalProps {
   className?: string;
   summary: CheckSummary;
 }
 
-interface NonAlertProgressBarGroupTotal {
+interface NonAlertProgressBarGroupTotalProps {
   className?: string;
   summary: CheckSummary;
 }
 
-interface ProgressBarGroupTotal {
+interface ProgressBarGroupTotalProps {
   className?: string;
-  summary: CheckSummary;
+  title: string;
+  total: number;
 }
 
 const getWidth = (x, y) => {
@@ -38,7 +39,11 @@ const getWidth = (x, y) => {
   return percent >= 0.5 ? Math.round(percent) : 1;
 };
 
-const ProgressBarGroupTotal = ({ className, title, total }) => (
+const ProgressBarGroupTotal = ({
+  className,
+  title,
+  total,
+}: ProgressBarGroupTotalProps) => (
   <span
     className={classNames(className, "text-right text-sm font-semibold")}
     title={title}
@@ -50,7 +55,7 @@ const ProgressBarGroupTotal = ({ className, title, total }) => (
 const AlertProgressBarGroupTotal = ({
   className,
   summary,
-}: AlertProgressBarGroupTotal) => {
+}: AlertProgressBarGroupTotalProps) => {
   const alertTotal = summary.error + summary.alarm;
   const newClassName = classNames(
     className,
@@ -66,7 +71,7 @@ const AlertProgressBarGroupTotal = ({
   return (
     <ProgressBarGroupTotal
       className={newClassName}
-      title={titleParts.join(". ")}
+      title={titleParts.join(". ") + "."}
       total={alertTotal}
     />
   );
@@ -75,13 +80,13 @@ const AlertProgressBarGroupTotal = ({
 const NonAlertProgressBarGroupTotal = ({
   className,
   summary,
-}: NonAlertProgressBarGroupTotal) => {
+}: NonAlertProgressBarGroupTotalProps) => {
   const nonAlertTotal = summary.ok + summary.info + summary.skip;
   let textClassName;
   if (nonAlertTotal === 0) {
     textClassName = "text-foreground-lightest";
   } else if (summary.skip > summary.info && summary.skip > summary.ok) {
-    textClassName = "text-tbd";
+    textClassName = "text-default";
   } else if (summary.info > summary.ok && summary.info >= summary.skip) {
     textClassName = "text-info";
   } else {
@@ -102,7 +107,7 @@ const NonAlertProgressBarGroupTotal = ({
   return (
     <ProgressBarGroupTotal
       className={newClassName}
-      title={titleParts.join(". ")}
+      title={titleParts.join(". ") + "."}
       total={nonAlertTotal}
     />
   );
