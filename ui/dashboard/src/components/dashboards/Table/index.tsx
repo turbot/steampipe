@@ -27,6 +27,7 @@ import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
+import { ThemeNames, useTheme } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
@@ -370,6 +371,7 @@ const TableView = ({
   hiddenColumns,
   hasTopBorder = false,
 }) => {
+  const { theme } = useTheme();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
@@ -411,10 +413,21 @@ const TableView = ({
         {...getTableProps()}
         className={classNames(
           "min-w-full divide-y divide-table-divide overflow-hidden",
-          hasTopBorder ? "border-t border-table-divide" : null
+          hasTopBorder
+            ? theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "border-t border-table-divide"
+              : "border-t border-background"
+            : null
         )}
       >
-        <thead className="bg-table-head text-table-head">
+        <thead
+          className={classNames(
+            "bg-table-head text-table-head",
+            theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "border-b border-table-divide"
+              : "border-b border-background"
+          )}
+        >
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column) => (
