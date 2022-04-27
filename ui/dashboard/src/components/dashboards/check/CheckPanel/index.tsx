@@ -243,8 +243,7 @@ const CheckPanel = ({
             can_be_expanded ? "cursor-pointer" : null,
             expanded && (error_nodes.length > 0 || result_nodes.length > 0)
               ? "rounded-b-none"
-              : null,
-            node.status !== "complete" ? "animate-pulse" : null
+              : null
           )}
           onClick={() =>
             can_be_expanded ? setExpanded((current) => !current) : null
@@ -263,6 +262,7 @@ const CheckPanel = ({
               </div>
               <div className="flex-shrink-0 w-40 md:w-72 lg:w-96">
                 <CheckSummaryChart
+                  status={node.status}
                   summary={node.summary}
                   firstChildSummaries={firstChildSummaries}
                 />
