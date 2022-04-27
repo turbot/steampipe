@@ -354,7 +354,7 @@ const CheckSummaryChart = ({
       <div
         className={classNames(
           "h-6 w-0 border-l border-black-scale-4",
-          status === "running" ? "animate-ping" : null
+          status === "running" ? "subtle-ping" : null
         )}
       />
       <div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>
