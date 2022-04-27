@@ -53,7 +53,7 @@ func getDataLocation() string {
 // tar file where the dump file will be stored, so that it can be later restored after connections
 // refresh in a new installation
 func databaseBackupFilePath() string {
-	return filepath.Join(filepaths.EnsureDatabaseDir(), "backup.tar")
+	return filepath.Join(filepaths.EnsureDatabaseDir(), "backup.bk")
 }
 
 func getRootCertLocation() string {

@@ -21,6 +21,8 @@ var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - an instance is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
 )
 
+const backupFormat = "custom"
+
 // pgRunningInfo represents a running pg instance that we need to startup to create the
 // backup archive and the name of the installed database
 type pgRunningInfo struct {
@@ -104,19 +106,9 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		ctx,
 		pgDumpBinaryExecutablePath(),
 		fmt.Sprintf("--file=%s", databaseBackupFilePath()),
-		// as a tar format
-		"--format=tar",
+		fmt.Sprintf("--format=%s", backupFormat),
 		// of the public schema only
 		"--schema=public",
-		// use 'insert' instead of 'copy'
-		"--inserts",
-		// Do not output commands to set TOAST compression methods.
-		// With this option, all columns will be restored with the default compression setting.
-		"--no-toast-compression",
-		// include large objects in the dump
-		"--blobs",
-		// Do not output commands to set ownership of objects to match the original database.
-		"--no-owner",
 		// only backup the database used by steampipe
 		fmt.Sprintf("--dbname=%s", config.dbName),
 		// connection parameters
@@ -299,8 +291,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		ctx,
 		pgRestoreBinaryExecutablePath(),
 		databaseBackupFilePath(),
-		// as a tar format
-		"--format=tar",
+		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
 		// Execute the restore as a single transaction (that is, wrap the emitted commands in BEGIN/COMMIT).
@@ -355,8 +346,7 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 		ctx,
 		pgRestoreBinaryExecutablePath(),
 		databaseBackupFilePath(),
-		// as a tar format
-		"--format=tar",
+		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
 		"--list",
