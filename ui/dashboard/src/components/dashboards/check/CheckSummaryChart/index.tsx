@@ -10,7 +10,6 @@ interface ProgressBarGroupProps {
 interface ProgressBarProps {
   className?: string;
   percent: number;
-  status: CheckNodeStatus;
 }
 
 interface CheckSummaryChartProps {
@@ -24,7 +23,7 @@ const getWidth = (x, y) => {
   return percent >= 0.5 ? Math.round(percent) : 1;
 };
 
-const ProgressBarGroupTotal = ({ className, title, total }) => (
+const ProgressBarGroupTotal = ({ className, states = [], title, total }) => (
   <span
     className={classNames(className, "text-right text-sm font-semibold")}
     title={title}
@@ -151,17 +150,13 @@ const ProgressBarGroup = ({ children, className }: ProgressBarGroupProps) => (
 //   return adjusted;
 // };
 
-const ProgressBar = ({ className, percent, status }: ProgressBarProps) => {
+const ProgressBar = ({ className, percent }: ProgressBarProps) => {
   if (!percent) {
     return null;
   }
   return (
     <div
-      className={classNames(
-        "h-3",
-        className,
-        status === "running" ? "animate-pulse" : null
-      )}
+      className={classNames("h-3", className)}
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
@@ -265,12 +260,10 @@ const CheckSummaryChart = ({
       <div className="my-auto px-0" style={{ width: `${alertsWidth}%` }}>
         <ProgressBarGroup className="flex-row-reverse">
           <ProgressBar
-            status={status}
             className="bg-alert border border-alert"
             percent={getCheckSummaryChartPercent(summary.alarm, maxAlerts)}
           />
           <ProgressBar
-            status={status}
             className="border border-alert"
             percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
           />
@@ -285,21 +278,23 @@ const CheckSummaryChart = ({
           />
         </ProgressBarGroup>
       </div>
-      <div className="h-6 w-0 border-l border-black-scale-4" />
+      <div
+        className={classNames(
+          "h-6 w-0 border-l border-black-scale-4",
+          status === "running" ? "animate-ping" : null
+        )}
+      />
       <div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>
         <ProgressBarGroup>
           <ProgressBar
-            status={status}
             className="bg-ok border border-ok"
             percent={getCheckSummaryChartPercent(summary.ok, maxNonAlerts)}
           />
           <ProgressBar
-            status={status}
             className="bg-info border border-info"
             percent={getCheckSummaryChartPercent(summary.info, maxNonAlerts)}
           />
           <ProgressBar
-            status={status}
             className="bg-tbd border border-tbd"
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
           />
