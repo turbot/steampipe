@@ -135,22 +135,24 @@ const getCheckResultRowIconTitle = (status: CheckResultStatus) => {
 
 const CheckResultRow = ({ result }: CheckResultRowProps) => {
   return (
-    <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
+    <div className="flex bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
       <div
         className="flex-shrink-0"
         title={getCheckResultRowIconTitle(result.status)}
       >
         <CheckResultRowStatusIcon status={result.status} />
       </div>
-      <div className="flex-grow">{result.reason}</div>
-      <div className="flex-wrap space-x-2">
-        {(result.dimensions || []).map((dimension) => (
-          <ControlDimension
-            key={dimension.key}
-            dimensionKey={dimension.key}
-            dimensionValue={dimension.value}
-          />
-        ))}
+      <div className="flex flex-col md:flex-row flex-grow">
+        <div className="md:flex-grow leading-4">{result.reason}</div>
+        <div className="flex space-x-2 mt-2 md:mt-0 md:text-right">
+          {(result.dimensions || []).map((dimension) => (
+            <ControlDimension
+              key={dimension.key}
+              dimensionKey={dimension.key}
+              dimensionValue={dimension.value}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -158,14 +160,14 @@ const CheckResultRow = ({ result }: CheckResultRowProps) => {
 
 const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
   return (
-    <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md">
+    <div className="flex bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
       <div
-        className="flex-shrink-0 mr-4"
+        className="flex-shrink-0"
         title={getCheckResultRowIconTitle("error")}
       >
         <CheckResultRowStatusIcon status="error" />
       </div>
-      <div className="flex-grow">{error}</div>
+      <div className="leading-4">{error}</div>
     </div>
   );
 };
