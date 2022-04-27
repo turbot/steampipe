@@ -28,6 +28,9 @@ WORKDIR /workspace
 # disable auto-update
 ENV STEAMPIPE_UPDATE_CHECK=false
 
+# disable telemetry
+ENV STEAMPIPE_TELEMETRY=none
+
 # Run steampipe service once
 RUN steampipe service start --dashboard
 # and stop it
