@@ -45,21 +45,99 @@ const Benchmark = (props: InnerCheckProps) => {
     return props.benchmark.get_data_table();
   }, [props.benchmark]);
 
+  const summary_cards = useMemo(() => {
+    if (!props.grouping) {
+      return [];
+    }
+
+    const totalSummary = props.firstChildSummaries.reduce(
+      (cumulative, current) => {
+        cumulative.error += current.error;
+        cumulative.alarm += current.alarm;
+        cumulative.ok += current.ok;
+        cumulative.info += current.info;
+        cumulative.skip += current.skip;
+        return cumulative;
+      },
+      { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 }
+    );
+    const summary_cards = [
+      {
+        node_type: "card",
+        name: `${props.name}.container.summary.ok-${totalSummary.ok}`,
+        width: 2,
+        properties: {
+          label: "OK",
+          value: totalSummary.ok,
+          type: "ok",
+        },
+      },
+      {
+        node_type: "card",
+        name: `${props.name}.container.summary.alarm-${totalSummary.alarm}`,
+        width: 2,
+        properties: {
+          label: "Alarm",
+          value: totalSummary.alarm,
+          type: totalSummary.alarm > 0 ? "alert" : null,
+          icon: "heroicons-solid:bell",
+        },
+      },
+      {
+        node_type: "card",
+        name: `${props.name}.container.summary.error-${totalSummary.error}`,
+        width: 2,
+        properties: {
+          label: "Error",
+          value: totalSummary.error,
+          type: totalSummary.error > 0 ? "alert" : null,
+          icon: "heroicons-solid:exclamation-circle",
+        },
+      },
+      {
+        node_type: "card",
+        name: `${props.name}.container.summary.info-${totalSummary.info}`,
+        width: 2,
+        properties: {
+          label: "Info",
+          value: totalSummary.info,
+          type: "info",
+        },
+      },
+      {
+        node_type: "card",
+        name: `${props.name}.container.summary.skip-${totalSummary.skip}`,
+        width: 2,
+        properties: {
+          label: "Skipped",
+          value: totalSummary.skip,
+          icon: "heroicons-solid:arrow-circle-right",
+        },
+      },
+    ];
+
+    const severity_summary = props.grouping.severity_summary;
+    const critical = severity_summary["critical"] || 0;
+    const high = severity_summary["high"] || 0;
+    const total = critical + high;
+    if (total > 0) {
+      summary_cards.push({
+        node_type: "card",
+        name: `${props.name}.container.summary.severity-${total}`,
+        width: 2,
+        properties: {
+          label: "Critical / High",
+          value: total,
+          type: "severity",
+        },
+      });
+    }
+    return summary_cards;
+  }, [props.firstChildSummaries, props.grouping]);
+
   if (!props.grouping) {
     return null;
   }
-
-  const summary = props.firstChildSummaries.reduce(
-    (cumulative, current) => {
-      cumulative.error += current.error;
-      cumulative.alarm += current.alarm;
-      cumulative.ok += current.ok;
-      cumulative.info += current.info;
-      cumulative.skip += current.skip;
-      return cumulative;
-    },
-    { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 }
-  );
 
   return (
     <Container
@@ -73,60 +151,7 @@ const Benchmark = (props: InnerCheckProps) => {
             name: `${props.name}.container.summary`,
             node_type: "container",
             allow_child_panel_expand: false,
-            children: [
-              {
-                node_type: "card",
-                name: `${props.name}.container.summary.ok-${summary.ok}`,
-                width: 2,
-                properties: {
-                  label: "OK",
-                  value: summary.ok,
-                  type: "ok",
-                },
-              },
-              {
-                node_type: "card",
-                name: `${props.name}.container.summary.alarm-${summary.alarm}`,
-                width: 2,
-                properties: {
-                  label: "Alarm",
-                  value: summary.alarm,
-                  type: summary.alarm > 0 ? "alert" : null,
-                  icon: "heroicons-solid:bell",
-                },
-              },
-              {
-                node_type: "card",
-                name: `${props.name}.container.summary.error-${summary.error}`,
-                width: 2,
-                properties: {
-                  label: "Error",
-                  value: summary.error,
-                  type: summary.error > 0 ? "alert" : null,
-                  icon: "heroicons-solid:exclamation-circle",
-                },
-              },
-              {
-                node_type: "card",
-                name: `${props.name}.container.summary.info-${summary.info}`,
-                width: 2,
-                properties: {
-                  label: "Info",
-                  value: summary.info,
-                  type: "info",
-                },
-              },
-              {
-                node_type: "card",
-                name: `${props.name}.container.summary.skip-${summary.skip}`,
-                width: 2,
-                properties: {
-                  label: "Skipped",
-                  value: summary.skip,
-                  icon: "heroicons-solid:arrow-circle-right",
-                },
-              },
-            ],
+            children: summary_cards,
           },
           {
             name: `${props.name}.container.tree`,

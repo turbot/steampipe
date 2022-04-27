@@ -28,6 +28,8 @@ const getWrapperClasses = (type) => {
       return "bg-info";
     case "ok":
       return "bg-ok";
+    case "severity":
+      return "bg-yellow";
     default:
       return "bg-dashboard-panel shadow-sm";
   }
@@ -38,6 +40,7 @@ const getIconClasses = (type) => {
     case "info":
     case "ok":
     case "alert":
+    case "severity":
       return "text-white opacity-40 text-3xl";
     default:
       return "text-black-scale-4 text-3xl";
@@ -52,6 +55,8 @@ const getTextClasses = (type) => {
       return "text-info-inverse";
     case "ok":
       return "text-ok-inverse";
+    case "severity":
+      return "text-white";
     default:
       return null;
   }
@@ -104,6 +109,8 @@ const getIconForType = (type, icon) => {
       return "heroicons-solid:check-circle";
     case "info":
       return "heroicons-solid:information-circle";
+    case "severity":
+      return "heroicons-solid:exclamation";
     default:
       return null;
   }
