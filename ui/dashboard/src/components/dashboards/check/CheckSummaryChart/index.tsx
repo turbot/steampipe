@@ -22,6 +22,15 @@ const getWidth = (x, y) => {
   return percent >= 0.5 ? Math.round(percent) : 1;
 };
 
+const ProgressBarGroupTotal = ({ className, title, total }) => (
+  <span
+    className={classNames(className, "text-right text-sm font-semibold")}
+    title={title}
+  >
+    {total > 0 ? <IntegerDisplay num={total} withTitle={false} /> : "0"}
+  </span>
+);
+
 const ProgressBarGroup = ({ children, className }: ProgressBarGroupProps) => (
   <div className={classNames("flex h-3 items-center", className)}>
     {children}
@@ -263,20 +272,15 @@ const CheckSummaryChart = ({
             className="border border-alert"
             percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
           />
-          <span
-            className="mr-2 text-alert text-right text-sm"
+          <ProgressBarGroupTotal
+            className="mr-2 text-alert"
             title={
               summary.alarm > 0
                 ? `${summary.alarm.toLocaleString()} resources in alarm status`
                 : undefined
             }
-          >
-            {summary.alarm > 0 ? (
-              <IntegerDisplay num={summary.alarm} withTitle={false} />
-            ) : (
-              "-"
-            )}
-          </span>
+            total={summary.alarm}
+          />
         </ProgressBarGroup>
       </div>
       <div className="h-6 w-0 border-l border-black-scale-4" />
@@ -294,20 +298,15 @@ const CheckSummaryChart = ({
             className="bg-tbd border border-tbd"
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
           />
-          <span
-            className="ml-2 text-ok text-right text-sm"
+          <ProgressBarGroupTotal
+            className="ml-2 text-ok"
             title={
               summary.ok > 0
                 ? `${summary.ok.toLocaleString()} resources in OK status`
                 : undefined
             }
-          >
-            {summary.ok > 0 ? (
-              <IntegerDisplay num={summary.ok} withTitle={false} />
-            ) : (
-              "-"
-            )}
-          </span>
+            total={summary.ok}
+          />
         </ProgressBarGroup>
       </div>
     </div>
