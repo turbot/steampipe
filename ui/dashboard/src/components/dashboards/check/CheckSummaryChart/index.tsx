@@ -10,6 +10,7 @@ interface ProgressBarGroupProps {
 interface ProgressBarProps {
   className?: string;
   percent: number;
+  title?: string;
 }
 
 interface CheckSummaryChartProps {
@@ -52,6 +53,30 @@ const ProgressBarGroupTotal = ({
   </span>
 );
 
+const getSummaryTitle = (summary: CheckSummary): string => {
+  const titleParts: string[] = [];
+  if (summary.error) {
+    titleParts.push(`Error: ${summary.error.toLocaleString()}`);
+  }
+  if (summary.alarm) {
+    titleParts.push(`Alarm: ${summary.alarm.toLocaleString()}`);
+  }
+  if (summary.ok) {
+    titleParts.push(`OK: ${summary.ok.toLocaleString()}`);
+  }
+  if (summary.info) {
+    titleParts.push(`Info: ${summary.info.toLocaleString()}`);
+  }
+  if (summary.skip) {
+    titleParts.push(`Skipped: ${summary.skip.toLocaleString()}`);
+  }
+  if (titleParts.length === 0) {
+    return "";
+  }
+  return titleParts.join(`
+`);
+};
+
 const AlertProgressBarGroupTotal = ({
   className,
   summary,
@@ -61,17 +86,10 @@ const AlertProgressBarGroupTotal = ({
     className,
     alertTotal > 0 ? "text-alert" : "text-foreground-lightest"
   );
-  const titleParts: string[] = [];
-  if (summary.error) {
-    titleParts.push(`${summary.error.toLocaleString()} errors`);
-  }
-  if (summary.alarm) {
-    titleParts.push(`${summary.alarm.toLocaleString()} alarms`);
-  }
   return (
     <ProgressBarGroupTotal
       className={newClassName}
-      title={titleParts.join(". ") + (alertTotal > 0 ? "." : "")}
+      title={getSummaryTitle(summary)}
       total={alertTotal}
     />
   );
@@ -94,20 +112,10 @@ const NonAlertProgressBarGroupTotal = ({
   }
 
   const newClassName = classNames(className, textClassName);
-  const titleParts: string[] = [];
-  if (summary.ok) {
-    titleParts.push(`${summary.ok.toLocaleString()} OK`);
-  }
-  if (summary.info) {
-    titleParts.push(`${summary.info.toLocaleString()} info`);
-  }
-  if (summary.skip) {
-    titleParts.push(`${summary.skip.toLocaleString()} skipped`);
-  }
   return (
     <ProgressBarGroupTotal
       className={newClassName}
-      title={titleParts.join(". ") + (nonAlertTotal > 0 ? "." : "")}
+      title={getSummaryTitle(summary)}
       total={nonAlertTotal}
     />
   );
@@ -231,10 +239,11 @@ const ProgressBarGroup = ({ children, className }: ProgressBarGroupProps) => (
 //   return adjusted;
 // };
 
-const ProgressBar = ({ className, percent }: ProgressBarProps) => {
+const ProgressBar = ({ className, percent, title }: ProgressBarProps) => {
   if (!percent) {
     return null;
   }
+
   return (
     <div
       className={classNames("h-3", className)}
@@ -242,6 +251,7 @@ const ProgressBar = ({ className, percent }: ProgressBarProps) => {
       aria-valuemin={0}
       aria-valuemax={100}
       style={{ display: "inline-block", width: `${percent}%` }}
+      title={title}
     />
   );
 };
@@ -343,10 +353,12 @@ const CheckSummaryChart = ({
           <ProgressBar
             className="bg-alert border border-alert"
             percent={getCheckSummaryChartPercent(summary.alarm, maxAlerts)}
+            title={`Alarm: ${summary.alarm.toLocaleString()}`}
           />
           <ProgressBar
             className="border border-alert"
             percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
+            title={`Error: ${summary.error.toLocaleString()}`}
           />
           <AlertProgressBarGroupTotal className="mr-2" summary={summary} />
         </ProgressBarGroup>
@@ -362,14 +374,17 @@ const CheckSummaryChart = ({
           <ProgressBar
             className="bg-ok border border-ok"
             percent={getCheckSummaryChartPercent(summary.ok, maxNonAlerts)}
+            title={`OK: ${summary.ok.toLocaleString()}`}
           />
           <ProgressBar
             className="bg-info border border-info"
             percent={getCheckSummaryChartPercent(summary.info, maxNonAlerts)}
+            title={`Info: ${summary.info.toLocaleString()}`}
           />
           <ProgressBar
             className="bg-skip border border-skip"
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
+            title={`Skip: ${summary.skip.toLocaleString()}`}
           />
           <NonAlertProgressBarGroupTotal className="ml-2" summary={summary} />
         </ProgressBarGroup>
