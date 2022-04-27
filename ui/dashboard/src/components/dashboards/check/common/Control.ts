@@ -137,7 +137,7 @@ class Control implements CheckNode {
     //     dimensionKeysMap[dimension.key] = true;
     //   }
     // }
-    for (const dimension of this._results[0].dimensions) {
+    for (const dimension of this._results[0].dimensions || []) {
       dimensionKeysMap.dimensions[dimension.key] = true;
     }
     return dimensionKeysMap;
