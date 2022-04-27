@@ -71,7 +71,7 @@ const AlertProgressBarGroupTotal = ({
   return (
     <ProgressBarGroupTotal
       className={newClassName}
-      title={titleParts.join(". ") + "."}
+      title={titleParts.join(". ") + (alertTotal > 0 ? "." : "")}
       total={alertTotal}
     />
   );
@@ -107,7 +107,7 @@ const NonAlertProgressBarGroupTotal = ({
   return (
     <ProgressBarGroupTotal
       className={newClassName}
-      title={titleParts.join(". ") + "."}
+      title={titleParts.join(". ") + (nonAlertTotal > 0 ? "." : "")}
       total={nonAlertTotal}
     />
   );
