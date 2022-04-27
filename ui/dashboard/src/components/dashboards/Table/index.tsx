@@ -197,7 +197,7 @@ const CellValue = ({
       case "skip":
         cellContent = (
           <span title="Status = Skipped">
-            <SkipIcon className="text-tbd w-5 h-5" />
+            <SkipIcon className="text-skip w-5 h-5" />
           </span>
         );
         break;

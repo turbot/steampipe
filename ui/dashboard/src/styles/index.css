@@ -15,8 +15,8 @@
   --color-ok-inverse: theme("colors.white");
   --color-info: #3185fc;
   --color-info-inverse: theme("colors.white");
-  --color-tbd: theme("colors.gray.300");
-  --color-tbd-inverse: theme("colors.white");
+  --color-skip: theme("colors.gray.400");
+  --color-skip-inverse: theme("colors.white");
 
   /* Primary colours */
   --color-success: #0070f3;
@@ -61,14 +61,14 @@
   --color-alert-inverse: theme("colors.white");
   --color-orange: #ff832b;
   --color-orange-inverse: theme("colors.white");
-  --color-yellow: #f1c21b;
+  --color-yellow: #bd960b;
   --color-yellow-inverse: theme("colors.white");
   --color-ok: #24a148;
   --color-ok-inverse: theme("colors.white");
   --color-info: #4589ff;
   --color-info-inverse: theme("colors.white");
-  --color-tbd: theme("colors.gray.400");
-  --color-tbd-inverse: theme("colors.white");
+  --color-skip: theme("colors.gray.400");
+  --color-skip-inverse: theme("colors.white");
 
   /* Primary colours */
   --color-success: #0070f3;

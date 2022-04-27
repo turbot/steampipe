@@ -123,9 +123,9 @@ const CheckResultRowStatusIcon = ({
     case "info":
       return <InfoIcon className="h-5 w-5 text-info" />;
     case "skip":
-      return <SkipIcon className="h-5 w-5 text-tbd" />;
+      return <SkipIcon className="h-5 w-5 text-skip" />;
     default:
-      return <UnknownIcon className="h-5 w-5 text-tbd" />;
+      return <UnknownIcon className="h-5 w-5 text-skip" />;
   }
 };
 
@@ -217,9 +217,18 @@ const CheckPanelSeverityBadge = ({
   count,
 }: CheckPanelSeverityBadgeProps) => {
   return (
-    <span>
-      {label} = {count}
-    </span>
+    <div
+      className={classNames(
+        "border rounded-md text-sm divide-x",
+        count > 0 ? "border-yellow" : "border-skip",
+        count > 0
+          ? "bg-yellow text-white divide-white"
+          : "text-skip divide-skip"
+      )}
+    >
+      <span className={classNames("px-2 py-px")}>{label}</span>
+      {count > 0 && <span className={classNames("px-2 py-px")}>{count}</span>}
+    </div>
   );
 };
 
@@ -230,8 +239,6 @@ const CheckPanelSeverity = ({ severity_summary }: CheckPanelSeverityProps) => {
   if (critical === undefined && high === undefined) {
     return null;
   }
-
-  return null;
 
   return (
     <>

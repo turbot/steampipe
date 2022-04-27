@@ -330,7 +330,7 @@ const CheckSummaryChart = ({
       {/*/>*/}
       {/*<ProgressBar*/}
       {/*  className={classNames(*/}
-      {/*    "bg-tbd border border-tbd",*/}
+      {/*    "bg-skip border border-skip",*/}
       {/*    error === 0 && alarm === 0 && ok === 0 && info === 0 && error > 0*/}
       {/*      ? "rounded-l-sm"*/}
       {/*      : null,*/}
@@ -368,7 +368,7 @@ const CheckSummaryChart = ({
             percent={getCheckSummaryChartPercent(summary.info, maxNonAlerts)}
           />
           <ProgressBar
-            className="bg-tbd border border-tbd"
+            className="bg-skip border border-skip"
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
           />
           <NonAlertProgressBarGroupTotal className="ml-2" summary={summary} />
