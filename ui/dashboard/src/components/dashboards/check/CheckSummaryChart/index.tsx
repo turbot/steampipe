@@ -18,12 +18,27 @@ interface CheckSummaryChartProps {
   firstChildSummaries: CheckSummary[];
 }
 
+interface AlertProgressBarGroupTotal {
+  className?: string;
+  summary: CheckSummary;
+}
+
+interface NonAlertProgressBarGroupTotal {
+  className?: string;
+  summary: CheckSummary;
+}
+
+interface ProgressBarGroupTotal {
+  className?: string;
+  summary: CheckSummary;
+}
+
 const getWidth = (x, y) => {
   const percent = (x / (x + y)) * 100;
   return percent >= 0.5 ? Math.round(percent) : 1;
 };
 
-const ProgressBarGroupTotal = ({ className, states = [], title, total }) => (
+const ProgressBarGroupTotal = ({ className, title, total }) => (
   <span
     className={classNames(className, "text-right text-sm font-semibold")}
     title={title}
@@ -31,6 +46,67 @@ const ProgressBarGroupTotal = ({ className, states = [], title, total }) => (
     {total > 0 ? <IntegerDisplay num={total} withTitle={false} /> : "0"}
   </span>
 );
+
+const AlertProgressBarGroupTotal = ({
+  className,
+  summary,
+}: AlertProgressBarGroupTotal) => {
+  const alertTotal = summary.error + summary.alarm;
+  const newClassName = classNames(
+    className,
+    alertTotal > 0 ? "text-alert" : "text-foreground-lightest"
+  );
+  const titleParts: string[] = [];
+  if (summary.error) {
+    titleParts.push(`${summary.error.toLocaleString()} errors`);
+  }
+  if (summary.alarm) {
+    titleParts.push(`${summary.alarm.toLocaleString()} alarms`);
+  }
+  return (
+    <ProgressBarGroupTotal
+      className={newClassName}
+      title={titleParts.join(". ")}
+      total={alertTotal}
+    />
+  );
+};
+
+const NonAlertProgressBarGroupTotal = ({
+  className,
+  summary,
+}: NonAlertProgressBarGroupTotal) => {
+  const nonAlertTotal = summary.ok + summary.info + summary.skip;
+  let textClassName;
+  if (nonAlertTotal === 0) {
+    textClassName = "text-foreground-lightest";
+  } else if (summary.skip > summary.info && summary.skip > summary.ok) {
+    textClassName = "text-tbd";
+  } else if (summary.info > summary.ok && summary.info >= summary.skip) {
+    textClassName = "text-info";
+  } else {
+    textClassName = "text-ok";
+  }
+
+  const newClassName = classNames(className, textClassName);
+  const titleParts: string[] = [];
+  if (summary.ok) {
+    titleParts.push(`${summary.ok.toLocaleString()} OK`);
+  }
+  if (summary.info) {
+    titleParts.push(`${summary.info.toLocaleString()} info`);
+  }
+  if (summary.skip) {
+    titleParts.push(`${summary.skip.toLocaleString()} skipped`);
+  }
+  return (
+    <ProgressBarGroupTotal
+      className={newClassName}
+      title={titleParts.join(". ")}
+      total={nonAlertTotal}
+    />
+  );
+};
 
 const ProgressBarGroup = ({ children, className }: ProgressBarGroupProps) => (
   <div className={classNames("flex h-3 items-center", className)}>
@@ -267,15 +343,7 @@ const CheckSummaryChart = ({
             className="border border-alert"
             percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
           />
-          <ProgressBarGroupTotal
-            className="mr-2 text-alert"
-            title={
-              summary.alarm > 0
-                ? `${summary.alarm.toLocaleString()} resources in alarm status`
-                : undefined
-            }
-            total={summary.alarm}
-          />
+          <AlertProgressBarGroupTotal className="mr-2" summary={summary} />
         </ProgressBarGroup>
       </div>
       <div
@@ -298,15 +366,7 @@ const CheckSummaryChart = ({
             className="bg-tbd border border-tbd"
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
           />
-          <ProgressBarGroupTotal
-            className="ml-2 text-ok"
-            title={
-              summary.ok > 0
-                ? `${summary.ok.toLocaleString()} resources in OK status`
-                : undefined
-            }
-            total={summary.ok}
-          />
+          <NonAlertProgressBarGroupTotal className="ml-2" summary={summary} />
         </ProgressBarGroup>
       </div>
     </div>
