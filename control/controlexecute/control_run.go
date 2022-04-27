@@ -200,13 +200,16 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 
 	// get a db connection
 	r.Lifecycle.Add("queued_for_session")
-	sessionResult := client.AcquireSession(ctx)
+	sessionResult := r.acquireSession(ctx, client)
 	if sessionResult.Error != nil {
 		if !utils.IsCancelledError(sessionResult.Error) {
+			log.Printf("[TRACE] controlRun %s execute failed to acquire session: %s", r.ControlId, sessionResult.Error)
 			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
+			r.setError(ctx, sessionResult.Error)
 		}
 		return
 	}
+
 	r.Lifecycle.Add("got_session")
 	dbSession := sessionResult.Session
 	defer func() {
@@ -282,6 +285,21 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] wait result for, %s\n", control.Name())
 	r.waitForResults(ctx)
 	log.Printf("[TRACE] finish result for, %s\n", control.Name())
+}
+
+// try to acquire a database session - retry up to 4 times if there is an error
+func (r *ControlRun) acquireSession(ctx context.Context, client db_common.Client) *db_common.AcquireSessionResult {
+	var sessionResult *db_common.AcquireSessionResult
+	for attempt := 0; attempt < 4; attempt++ {
+		sessionResult = client.AcquireSession(ctx)
+		if sessionResult.Error == nil || utils.IsCancelledError(sessionResult.Error) {
+			break
+		}
+
+		log.Printf("[TRACE] controlRun %s acquireSession failed with error: %s - retrying", r.ControlId, sessionResult.Error)
+	}
+
+	return sessionResult
 }
 
 // create a context with a deadline, and with status updates disabled (we do not want to show 'loading' results)
