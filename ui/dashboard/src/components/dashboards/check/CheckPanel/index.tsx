@@ -143,8 +143,8 @@ const CheckResultRow = ({ result }: CheckResultRowProps) => {
         <CheckResultRowStatusIcon status={result.status} />
       </div>
       <div className="flex flex-col md:flex-row flex-grow">
-        <div className="md:flex-grow leading-4">{result.reason}</div>
-        <div className="flex space-x-2 mt-2 md:mt-0 md:text-right">
+        <div className="md:flex-grow leading-4 mt-px">{result.reason}</div>
+        <div className="flex space-x-2 mt-2 md:mt-px md:text-right">
           {(result.dimensions || []).map((dimension) => (
             <ControlDimension
               key={dimension.key}
@@ -167,7 +167,7 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
       >
         <CheckResultRowStatusIcon status="error" />
       </div>
-      <div className="leading-4">{error}</div>
+      <div className="leading-4 mt-px">{error}</div>
     </div>
   );
 };
