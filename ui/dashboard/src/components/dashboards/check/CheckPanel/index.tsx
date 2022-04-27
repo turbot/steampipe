@@ -121,15 +121,15 @@ const CheckResultRowStatusIcon = ({
 const getCheckResultRowIconTitle = (status: CheckResultStatus) => {
   switch (status) {
     case "error":
-      return "Control in error status";
+      return "Error";
     case "alarm":
-      return "Control in alarm status";
+      return "Alarm";
     case "ok":
-      return "Control in OK status";
+      return "OK";
     case "info":
-      return "Control in info status";
+      return "Info";
     case "skip":
-      return "Control in skip status";
+      return "Skipped";
   }
 };
 
