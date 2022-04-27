@@ -118,10 +118,28 @@ const CheckResultRowStatusIcon = ({
   }
 };
 
+const getCheckResultRowIconTitle = (status: CheckResultStatus) => {
+  switch (status) {
+    case "error":
+      return "Control in error status";
+    case "alarm":
+      return "Control in alarm status";
+    case "ok":
+      return "Control in OK status";
+    case "info":
+      return "Control in info status";
+    case "skip":
+      return "Control in skip status";
+  }
+};
+
 const CheckResultRow = ({ result }: CheckResultRowProps) => {
   return (
     <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
-      <div className="flex-shrink-0">
+      <div
+        className="flex-shrink-0"
+        title={getCheckResultRowIconTitle(result.status)}
+      >
         <CheckResultRowStatusIcon status={result.status} />
       </div>
       <div className="flex-grow">{result.reason}</div>
@@ -141,7 +159,10 @@ const CheckResultRow = ({ result }: CheckResultRowProps) => {
 const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
   return (
     <div className="flex items-center bg-dashboard-panel p-4 last:rounded-b-md">
-      <div className="flex-shrink-0 mr-4">
+      <div
+        className="flex-shrink-0 mr-4"
+        title={getCheckResultRowIconTitle("error")}
+      >
         <CheckResultRowStatusIcon status="error" />
       </div>
       <div className="flex-grow">{error}</div>
