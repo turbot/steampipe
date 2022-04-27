@@ -1,10 +1,10 @@
 import Error from "../../Error";
+import get from "lodash/get";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts";
 import { CardProps } from "../../Card";
 import { CheckProps } from "../../check/common";
 import { classNames } from "../../../../utils/styles";
-import { get } from "lodash";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";

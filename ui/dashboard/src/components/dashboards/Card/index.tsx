@@ -1,5 +1,9 @@
+import get from "lodash/get";
+import has from "lodash/has";
 import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
+import isNumber from "lodash/isNumber";
+import isObject from "lodash/isObject";
 import LoadingIndicator from "../LoadingIndicator";
 import Table from "../Table";
 import useDeepCompareEffect from "use-deep-compare-effect";
@@ -9,7 +13,6 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { get, has, isNumber, isObject } from "lodash";
 import { getColumnIndex } from "../../../utils/data";
 import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
@@ -25,6 +28,8 @@ const getWrapperClasses = (type) => {
       return "bg-info";
     case "ok":
       return "bg-ok";
+    case "severity":
+      return "bg-yellow";
     default:
       return "bg-dashboard-panel shadow-sm";
   }
@@ -35,6 +40,7 @@ const getIconClasses = (type) => {
     case "info":
     case "ok":
     case "alert":
+    case "severity":
       return "text-white opacity-40 text-3xl";
     default:
       return "text-black-scale-4 text-3xl";
@@ -49,6 +55,8 @@ const getTextClasses = (type) => {
       return "text-info-inverse";
     case "ok":
       return "text-ok-inverse";
+    case "severity":
+      return "text-white";
     default:
       return null;
   }
@@ -101,6 +109,8 @@ const getIconForType = (type, icon) => {
       return "heroicons-solid:check-circle";
     case "info":
       return "heroicons-solid:information-circle";
+    case "severity":
+      return "heroicons-solid:exclamation";
     default:
       return null;
   }
@@ -110,7 +120,9 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
     loading: !!sql,
     label: properties.label || null,
-    value: properties.value || null,
+    value: isNumber(properties.value)
+      ? properties.value
+      : properties.value || null,
     type: properties.type || null,
     icon: getIconForType(properties.type, properties.icon),
     href: properties.href || null,
@@ -130,7 +142,9 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
       setCalculatedProperties({
         loading: false,
         label: properties.label || null,
-        value: properties.value || null,
+        value: isNumber(properties.value)
+          ? properties.value
+          : properties.value || null,
         type: properties.type || null,
         icon: getIconForType(properties.type, properties.icon),
         href: properties.href || null,
@@ -258,7 +272,7 @@ const Card = (props: CardProps) => {
   const card = (
     <div
       className={classNames(
-        "relative pt-4 px-3 pb-4 sm:px-4 m-0.5 rounded-md overflow-hidden",
+        "relative pt-4 px-3 pb-4 sm:px-4 rounded-md overflow-hidden",
         getWrapperClasses(state.type)
       )}
     >

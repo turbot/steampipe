@@ -1,9 +1,17 @@
 import Control from "./Control";
+import merge from "lodash/merge";
+import padStart from "lodash/padStart";
 import {
+  AddControlErrorAction,
+  AddControlResultsAction,
   CheckControl,
   CheckDynamicColsMap,
   CheckGroup,
-  CheckRunState,
+  CheckNode,
+  CheckNodeStatus,
+  CheckNodeType,
+  CheckResult,
+  CheckSeveritySummary,
   CheckSummary,
 } from "./index";
 import {
@@ -11,66 +19,156 @@ import {
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../../common";
-import merge from "lodash/merge";
 
-class Benchmark {
+class Benchmark implements CheckNode {
+  private readonly _sortIndex: string;
   private readonly _name: string;
-  private readonly _title?: string;
+  private readonly _title: string;
   private readonly _description?: string;
   private readonly _benchmarks: Benchmark[];
   private readonly _controls: Control[];
+  private readonly _add_control_error: AddControlErrorAction;
+  private readonly _add_control_results: AddControlResultsAction;
+  private readonly _all_control_errors: CheckResult[];
+  private readonly _all_control_results: CheckResult[];
 
   constructor(
+    sortIndex: string,
     name: string,
     title: string | undefined,
     description: string | undefined,
     benchmarks: CheckGroup[] | undefined,
-    controls: CheckControl[] | undefined
+    controls: CheckControl[] | undefined,
+    trunk: Benchmark[],
+    add_control_error?: AddControlErrorAction,
+    add_control_results?: AddControlResultsAction
   ) {
+    this._sortIndex = sortIndex;
+    this._all_control_errors = [];
+    this._all_control_results = [];
     this._name = name;
-    this._title = title;
+    this._title = title || name;
     this._description = description;
+
+    if (!add_control_error) {
+      this._add_control_error = this.add_control_error;
+    } else {
+      this._add_control_error = add_control_error;
+    }
+
+    if (!add_control_results) {
+      this._add_control_results = this.add_control_results;
+    } else {
+      this._add_control_results = add_control_results;
+    }
+
     const nestedBenchmarks: Benchmark[] = [];
-    for (const nestedBenchmark of benchmarks || []) {
+    const benchmarksToAdd = benchmarks || [];
+    const lengthMaxBenchmarkIndex = (benchmarksToAdd.length - 1).toString()
+      .length;
+    benchmarksToAdd.forEach((nestedBenchmark, benchmarkIndex) => {
       nestedBenchmarks.push(
         new Benchmark(
+          padStart(benchmarkIndex.toString(), lengthMaxBenchmarkIndex),
           nestedBenchmark.group_id,
           nestedBenchmark.title,
           nestedBenchmark.description,
           nestedBenchmark.groups,
-          nestedBenchmark.controls
+          nestedBenchmark.controls,
+          [...trunk, this],
+          this._add_control_error,
+          this._add_control_results
         )
       );
-    }
+    });
     const nestedControls: Control[] = [];
-    for (const nestedControl of controls || []) {
+    const controlsToAdd = controls || [];
+    const lengthMaxControlIndex = (controlsToAdd.length - 1).toString().length;
+    controlsToAdd.forEach((nestedControl, controlIndex) => {
       nestedControls.push(
         new Control(
+          padStart(controlIndex.toString(), lengthMaxControlIndex),
           this._name,
           this._title,
           this._description,
           nestedControl.control_id,
           nestedControl.title,
           nestedControl.description,
+          nestedControl.severity,
           nestedControl.results,
           nestedControl.summary,
           nestedControl.tags,
           nestedControl.run_status,
-          nestedControl.run_error
+          nestedControl.run_error,
+          [...trunk, this],
+          this._add_control_error,
+          this._add_control_results
         )
       );
-    }
+    });
     this._benchmarks = nestedBenchmarks;
     this._controls = nestedControls;
-    // this.execution_tree = execution_tree;
+  }
+
+  private add_control_error = (
+    error: string,
+    benchmark_trunk: Benchmark[],
+    control: Control
+  ) => {
+    this._all_control_errors.push({
+      error,
+      dimensions: [],
+      tags: control.tags,
+      control,
+      reason: "",
+      resource: "",
+      status: "error",
+      benchmark_trunk,
+    });
+  };
+
+  private add_control_results = (
+    results: CheckResult[],
+    benchmark_trunk: Benchmark[],
+    control: Control
+  ) => {
+    this._all_control_results.push(
+      ...results.map((r) => ({
+        ...r,
+        severity: control.severity,
+        tags: control.tags,
+        benchmark_trunk,
+        control,
+      }))
+    );
+  };
+
+  get all_control_errors(): CheckResult[] {
+    return this._all_control_errors;
+  }
+
+  get all_control_results(): CheckResult[] {
+    return this._all_control_results;
+  }
+
+  get sort(): string {
+    return `${this._sortIndex}-${this.title}`;
   }
 
   get name(): string {
     return this._name;
   }
 
-  get title(): string | undefined {
-    return this._title;
+  get title(): string {
+    return this._title || this._name;
+  }
+
+  get type(): CheckNodeType {
+    return "benchmark";
+  }
+
+  get children(): CheckNode[] {
+    return [...this._benchmarks, ...this._controls];
   }
 
   get benchmarks(): Benchmark[] {
@@ -108,35 +206,33 @@ class Benchmark {
     return summary;
   }
 
-  get run_state(): CheckRunState {
-    for (const benchmark of this._benchmarks) {
-      if (benchmark.run_state === "error") {
-        return "error";
-      }
-      if (benchmark.run_state === "unknown") {
-        return "unknown";
-      }
-      if (benchmark.run_state === "ready") {
-        return "ready";
-      }
-      if (benchmark.run_state === "started") {
-        return "started";
-      }
-    }
-    for (const control of this._controls) {
-      if (control.run_state === "error") {
-        return "error";
-      }
-      if (control.run_state === "unknown") {
-        return "unknown";
-      }
-      if (control.run_state === "ready") {
-        return "ready";
-      }
-      if (control.run_state === "started") {
-        return "started";
-      }
-    }
+  get severity_summary(): CheckSeveritySummary {
+    return {};
+  }
+
+  get status(): CheckNodeStatus {
+    // for (const benchmark of this._benchmarks) {
+    //   if (benchmark.status === "error") {
+    //     return "error";
+    //   }
+    //   if (benchmark.status === "ready") {
+    //     return "ready";
+    //   }
+    //   if (benchmark.status === "started") {
+    //     return "started";
+    //   }
+    // }
+    // for (const control of this._controls) {
+    //   if (control.status === "error") {
+    //     return "error";
+    //   }
+    //   if (control.status === "ready") {
+    //     return "ready";
+    //   }
+    //   if (control.status === "started") {
+    //     return "started";
+    //   }
+    // }
     return "complete";
   }
 

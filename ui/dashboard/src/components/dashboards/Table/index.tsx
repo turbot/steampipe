@@ -1,3 +1,5 @@
+import isEmpty from "lodash/isEmpty";
+import isObject from "lodash/isObject";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import {
   AlarmIcon,
@@ -20,12 +22,12 @@ import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
-import { isEmpty, isObject } from "lodash";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
+import { ThemeNames, useTheme } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
@@ -195,7 +197,7 @@ const CellValue = ({
       case "skip":
         cellContent = (
           <span title="Status = Skipped">
-            <SkipIcon className="text-tbd w-5 h-5" />
+            <SkipIcon className="text-skip w-5 h-5" />
           </span>
         );
         break;
@@ -210,7 +212,11 @@ const CellValue = ({
     cellContent = (
       <div className="space-x-2">
         {(value || []).map((dimension) => (
-          <ControlDimension key={dimension.key} value={dimension.value} />
+          <ControlDimension
+            key={dimension.key}
+            dimensionKey={dimension.key}
+            dimensionValue={dimension.value}
+          />
         ))}
       </div>
     );
@@ -365,6 +371,7 @@ const TableView = ({
   hiddenColumns,
   hasTopBorder = false,
 }) => {
+  const { theme } = useTheme();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
@@ -406,10 +413,21 @@ const TableView = ({
         {...getTableProps()}
         className={classNames(
           "min-w-full divide-y divide-table-divide overflow-hidden",
-          hasTopBorder ? "border-t border-table-divide" : null
+          hasTopBorder
+            ? theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "border-t border-table-divide"
+              : "border-t border-background"
+            : null
         )}
       >
-        <thead className="bg-table-head text-table-head">
+        <thead
+          className={classNames(
+            "bg-table-head text-table-head",
+            theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "border-b border-table-divide"
+              : "border-b border-background"
+          )}
+        >
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column) => (

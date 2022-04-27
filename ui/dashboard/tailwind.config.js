@@ -32,7 +32,7 @@ module.exports = {
         yellow: "var(--color-yellow)",
         ok: "var(--color-ok)",
         info: "var(--color-info)",
-        tbd: "var(--color-tbd)",
+        skip: "var(--color-skip)",
         link: "var(--color-link)",
         "table-border": "var(--color-table-border)",
         "table-divide": "var(--color-table-divide)",

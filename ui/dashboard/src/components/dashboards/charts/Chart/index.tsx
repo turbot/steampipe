@@ -7,8 +7,12 @@ import Charts, {
   ChartType,
 } from "../index";
 import ErrorPanel from "../../Error";
+import get from "lodash/get";
+import has from "lodash/has";
+import merge from "lodash/merge";
 import React, { useEffect, useRef, useState } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
+import set from "lodash/set";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import {
   BarChart,
@@ -33,7 +37,6 @@ import {
   TooltipComponent,
 } from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
-import { get, has, merge, set } from "lodash";
 import { FlowType } from "../../flows";
 import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";

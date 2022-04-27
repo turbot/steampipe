@@ -1,5 +1,34 @@
+import Control from "./Control";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 import Benchmark from "./Benchmark";
+
+export type CheckNodeType =
+  | "benchmark"
+  | "control"
+  | "dimension"
+  | "error"
+  | "reason"
+  | "resource"
+  | "result"
+  | "running"
+  | "root"
+  | "severity"
+  | "status"
+  | "tag";
+
+export interface CheckNode {
+  sort: string;
+  name: string;
+  title: string;
+  type: CheckNodeType;
+  status: CheckNodeStatus;
+  severity?: CheckSeverity;
+  severity_summary: CheckSeveritySummary;
+  summary: CheckSummary;
+  children?: CheckNode[];
+  results?: CheckResult[];
+  error?: string;
+}
 
 // export interface IControl {
 //   name: string;
@@ -18,12 +47,17 @@ import Benchmark from "./Benchmark";
 //   controls: IControl[];
 // }
 
-export type CheckRunState =
-  | "ready"
-  | "started"
-  | "complete"
-  | "error"
-  | "unknown";
+export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
+
+export type CheckNodeStatus = "running" | "complete";
+
+export type CheckSeverity = "none" | "low" | "medium" | "high" | "critical";
+
+export type CheckSeveritySummary =
+  | {}
+  | {
+      [key in CheckSeverity]: number;
+    };
 
 export interface CheckSummary {
   alarm: number;
@@ -54,22 +88,29 @@ interface CheckResultDimension {
   value: string;
 }
 
+export type CheckResultStatus = "alarm" | "ok" | "info" | "skip" | "error";
+
 export interface CheckResult {
+  dimensions: CheckResultDimension[];
+  tags: CheckTags;
+  control: CheckNode;
+  benchmark_trunk: Benchmark[];
+  status: CheckResultStatus;
   reason: string;
   resource: string;
-  status: "alarm" | "ok" | "info" | "skip" | "error";
-  dimensions: CheckResultDimension[];
+  severity?: CheckSeverity;
+  error?: string;
 }
 
 export interface CheckControl {
   control_id: string;
   title?: string;
   description?: string;
-  severity?: string;
+  severity?: CheckSeverity | undefined;
   tags?: CheckTags;
   results: CheckResult[];
   summary: CheckSummary;
-  run_status: number;
+  run_status: CheckNodeStatusRaw;
   run_error?: string;
 }
 
@@ -97,18 +138,47 @@ export interface CheckExecutionTree {
 
 type CheckType = "summary" | "table" | null;
 
+export interface CheckDisplayGroup {
+  type:
+    | "benchmark"
+    | "control"
+    | "result"
+    | "tag"
+    | "dimension"
+    | "reason"
+    | "resource"
+    | "severity"
+    | "status";
+  value?: string;
+}
+
 export type CheckProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     type?: CheckType;
     properties: {
       display: "all" | "none";
       type?: CheckType;
+      grouping?: CheckDisplayGroup[];
     };
   };
 
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
-      benchmark: Benchmark;
+      grouping: CheckNode;
+      grouping_config: CheckDisplayGroup[];
+      first_child_summaries: CheckSummary[];
     };
   };
+
+export type AddControlErrorAction = (
+  error: string,
+  benchmark_trunk: Benchmark[],
+  control: Control
+) => void;
+
+export type AddControlResultsAction = (
+  results: CheckResult[],
+  benchmark_trunk: Benchmark[],
+  control: Control
+) => void;

@@ -45,14 +45,14 @@ const Children = ({
           );
         case "benchmark_tree":
           return (
-            <Panel
-              key={child.name}
-              definition={child}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <BenchmarkTree {...child} />
-            </Panel>
+            // <Panel
+            //   key={child.name}
+            //   definition={child}
+            //   allowExpand={allowPanelExpand}
+            //   withTitle={withTitle}
+            // >
+            <BenchmarkTree key={child.name} {...child} />
+            // </Panel>
           );
         case "card":
           return (

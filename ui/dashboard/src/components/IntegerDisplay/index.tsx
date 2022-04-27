@@ -1,15 +1,18 @@
-import { isNil, isObject } from "lodash";
+import isNil from "lodash/isNil";
+import isObject from "lodash/isObject";
 
 interface IntegerDisplayProps {
   num: number | null;
   className?: string;
   startAt?: "k" | "m";
+  withTitle?: boolean;
 }
 
 const IntegerDisplay = ({
   num,
   className,
   startAt = "m",
+  withTitle = true,
 }: IntegerDisplayProps) => {
   const levels = { k: 1000, m: 1000000 };
   const numberFormatter = (num) => {
@@ -31,7 +34,10 @@ const IntegerDisplay = ({
     return num.toLocaleString();
   };
   return (
-    <span className={className} title={num ? num.toLocaleString() : undefined}>
+    <span
+      className={className}
+      title={withTitle && num ? num.toLocaleString() : undefined}
+    >
       {numberFormatter(num)}
     </span>
   );

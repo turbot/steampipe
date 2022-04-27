@@ -1,44 +1,61 @@
+import Benchmark from "./Benchmark";
 import {
+  AddControlErrorAction,
+  AddControlResultsAction,
   CheckDynamicColsMap,
+  CheckNode,
+  CheckNodeStatus,
+  CheckNodeStatusRaw,
+  CheckNodeType,
   CheckResult,
-  CheckRunState,
+  CheckSeverity,
+  CheckSeveritySummary,
   CheckSummary,
   CheckTags,
 } from "./index";
 import { LeafNodeDataRow } from "../../common";
 
-class Control {
+class Control implements CheckNode {
+  private readonly _sortIndex: string;
   private readonly _group_id: string;
   private readonly _group_title: string | undefined;
   private readonly _group_description: string | undefined;
   private readonly _name: string;
   private readonly _title: string | undefined;
   private readonly _description: string | undefined;
+  private readonly _severity: CheckSeverity | undefined;
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _tags: CheckTags;
-  private readonly _run_state: CheckRunState;
+  private readonly _run_state: CheckNodeStatusRaw;
   private readonly _run_error: string | undefined;
 
   constructor(
+    sortIndex: string,
     group_id: string,
     group_title: string | undefined,
     group_description: string | undefined,
     name: string,
     title: string | undefined,
     description: string | undefined,
+    severity: CheckSeverity | undefined,
     results: CheckResult[] | undefined,
     summary: CheckSummary | undefined,
     tags: CheckTags | undefined,
-    run_state: number,
-    run_error: string | undefined
+    status: CheckNodeStatusRaw,
+    run_error: string | undefined,
+    benchmark_trunk: Benchmark[],
+    add_control_error: AddControlErrorAction,
+    add_control_results: AddControlResultsAction
   ) {
+    this._sortIndex = sortIndex;
     this._group_id = group_id;
     this._group_title = group_title;
     this._group_description = group_description;
     this._name = name;
     this._title = title;
     this._description = description;
+    this._severity = severity;
     this._results = results || [];
     this._summary = summary || {
       alarm: 0,
@@ -48,48 +65,68 @@ class Control {
       error: 0,
     };
     this._tags = tags || {};
-    this._run_state = Control._getRunState(run_state);
+    this._run_state = status;
     this._run_error = run_error;
+
+    if (this._run_error) {
+      add_control_error(this._run_error, benchmark_trunk, this);
+    }
+
+    add_control_results(this._results, benchmark_trunk, this);
   }
 
-  private static _getRunState(run_state: number): CheckRunState {
-    if (run_state === 1) {
-      return "ready";
-    }
-    if (run_state === 2) {
-      return "started";
-    }
-    if (run_state === 4) {
-      return "complete";
-    }
-    if (run_state === 8) {
-      return "error";
-    }
-    return "unknown";
+  get sort(): string {
+    return `${this._sortIndex}-${this.title}`;
   }
 
   get name(): string {
     return this._name;
   }
 
-  get title(): string | undefined {
-    return this._title;
+  get title(): string {
+    return this._title || this._name;
+  }
+
+  get severity(): CheckSeverity | undefined {
+    return this._severity;
+  }
+
+  get severity_summary(): CheckSeveritySummary {
+    return {};
+  }
+
+  get type(): CheckNodeType {
+    return "control";
   }
 
   get summary(): CheckSummary {
     return this._summary;
   }
 
-  get run_error(): string | undefined {
+  get error(): string | undefined {
     return this._run_error;
   }
 
-  get run_state(): CheckRunState {
+  get run_state(): CheckNodeStatusRaw {
     return this._run_state;
+  }
+
+  get status(): CheckNodeStatus {
+    switch (this._run_state) {
+      case 1:
+      case 2:
+        return "running";
+      default:
+        return "complete";
+    }
   }
 
   get results(): CheckResult[] {
     return this._results;
+  }
+
+  get tags(): CheckTags {
+    return this._tags;
   }
 
   get_dynamic_cols(): CheckDynamicColsMap {
@@ -108,7 +145,7 @@ class Control {
     //     dimensionKeysMap[dimension.key] = true;
     //   }
     // }
-    for (const dimension of this._results[0].dimensions) {
+    for (const dimension of this._results[0].dimensions || []) {
       dimensionKeysMap.dimensions[dimension.key] = true;
     }
     return dimensionKeysMap;
