@@ -5,14 +5,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/viper"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/utils"
 )
 
 // CollectVariableValues inspects the various places that configuration input variable
@@ -22,7 +22,7 @@ import (
 // This method returns diagnostics relating to the collection of the values,
 // but the values themselves may produce additional diagnostics when finally
 // parsed.
-func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, tfdiags.Diagnostics) {
+func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, error) {
 	var diags tfdiags.Diagnostics
 	ret := map[string]UnparsedVariableValue{}
 
@@ -59,8 +59,11 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	// ending in .auto.spvars.
 	defaultVarsPath := filepaths.DefaultVarsFilePath(workspacePath)
 	if _, err := os.Stat(defaultVarsPath); err == nil {
-		moreDiags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
-		diags = diags.Append(moreDiags)
+		diags = addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
+		if diags.HasErrors() {
+			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", defaultVarsPath), diags)
+		}
+
 	}
 
 	if infos, err := os.ReadDir("."); err == nil {
@@ -70,17 +73,19 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 			if !isAutoVarFile(name) {
 				continue
 			}
-			moreDiags := addVarsFromFile(name, ValueFromAutoFile, ret)
-			diags = diags.Append(moreDiags)
+			diags = addVarsFromFile(name, ValueFromAutoFile, ret)
+			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", name), diags)
+
 		}
 	}
 
 	// Finally we process values given explicitly on the command line, either
 	// as individual literal settings or as additional files to read.
 	for _, fileArg := range variableFileArgs {
-		moreDiags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
-		diags = diags.Append(moreDiags)
+		diags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
+		return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", fileArg), diags)
 	}
+
 	for _, variableArg := range variablesArgs {
 		// Value should be in the form "name=value", where value is a
 		// raw string whose interpretation will depend on the variable's
@@ -105,6 +110,10 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 		}
 	}
 
+	if diags.HasErrors() {
+		return nil, utils.DiagsToError(fmt.Sprintf("failed to evaluate var args:"), diags)
+	}
+
 	// check viper for any interactively added variables
 	if varMap := viper.GetStringMap(constants.ConfigInteractiveVariables); varMap != nil {
 		for name, rawVal := range varMap {
@@ -120,7 +129,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 
 	// now map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
 	ret = transformVarNames(ret)
-	return ret, diags
+	return ret, diags.Err()
 }
 
 // map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
@@ -156,10 +165,25 @@ func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]
 		return diags
 	}
 
+	var depVarAliases = make(map[string]string)
 	var f *hcl.File
-
 	var hclDiags hcl.Diagnostics
+
+	// attempt to parse the config
 	f, hclDiags = hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
+	if hclDiags.HasErrors() {
+		// if there was a failure, it may have been because some variable values were specified using mod scoping,
+		// eg: aws_tags.var1 = "foo"
+		//
+		// attempt to sanitise variable names
+		// this returns the updated hcl as well as a map of the updated names -
+		// we use this to map back to thew original name
+		src, depVarAliases = sanitiseVariableNames(src, hclDiags)
+
+		// now try the parse again (any errors at this point and
+		f, hclDiags = hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
+	}
+
 	diags = diags.Append(hclDiags)
 	if f == nil || f.Body == nil {
 		return diags
@@ -200,12 +224,65 @@ func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]
 	diags = diags.Append(hclDiags)
 
 	for name, attr := range attrs {
+		// check for aliases
+		if alias, ok := depVarAliases[name]; ok {
+			name = alias
+		}
 		to[name] = unparsedVariableValueExpression{
 			expr:       attr.Expr,
 			sourceType: sourceType,
 		}
 	}
 	return diags
+}
+
+func sanitiseVariableNames(src []byte, hclDiags hcl.Diagnostics) ([]byte, map[string]string) {
+	var depVarAliases = make(map[string]string)
+	lines := strings.Split(string(src), "\n")
+	for _, diag := range hclDiags {
+		// determine whether this error was caused by the scoping of a variable, of the form
+		// aws_tags.var1 = "foo"
+
+		// get the failed line (note the line number in Range is 1-based)
+		lineIdx := diag.Subject.Start.Line - 1
+		failedLine := lines[lineIdx]
+
+		// the failed bytes would be the mod name
+		// - we expect the following char to be a '.'
+		// if it is not, this must be a different error which we cannot fix
+		endIdx := diag.Subject.End.Column - 1
+		if endIdx >= len(failedLine) || failedLine[endIdx] != '.' {
+			break
+		}
+
+		// where is the first index
+		equalsIdx := strings.Index(failedLine, "=")
+		// if there is no equals on the line, - this is also not valid hcl - give up trying to fix
+		if equalsIdx == -1 {
+			equalsIdx = len(failedLine) - 1
+		}
+
+		// get remainder of variable name
+		badVar := strings.TrimSpace(failedLine[:equalsIdx])
+
+		// failedBytes will be the mod name
+		modName := diag.Subject.SliceBytes(src)
+
+		fixedVar := strings.Replace(badVar,
+			fmt.Sprintf("%s.", string(modName)),
+			fmt.Sprintf("%s____mod_scope____", string(modName)),
+			1)
+
+		depVarAliases[fixedVar] = badVar
+		fixedLine := strings.Replace(failedLine, badVar, fixedVar, 1)
+
+		// replace the bad line
+		lines[lineIdx] = fixedLine
+	}
+
+	// now try again
+	src = []byte(strings.Join(lines, "\n"))
+	return src, depVarAliases
 }
 
 // unparsedVariableValueLiteral is a UnparsedVariableValue

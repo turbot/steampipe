@@ -74,9 +74,9 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
-	inputValuesUnparsed, diags := inputvars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
-	if diags.HasErrors() {
-		return nil, diags.Err()
+	inputValuesUnparsed, err := inputvars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
+	if err != nil {
+		return nil, err
 	}
 
 	if validate {

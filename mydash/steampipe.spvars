@@ -1,0 +1,13 @@
+aws_tags.mandatory_tags = [
+  "Password.ff = foo",
+  "Key"
+]
+foko
+
+aws_tags.mandatory_tags2= [
+"Password.ff = foo",
+"Key"
+]
+aws_tags.mandatory_tags3= ["Password.ff = foo","Key"]
+aws_tags.mandatory_tags4 =["Password.ff = foo","Key"]
+
