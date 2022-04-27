@@ -13,6 +13,7 @@ const CheckGrouping = ({
   groupingConfig,
   firstChildSummaries,
 }: CheckGroupingProps) => {
+  // console.log(node.status);
   return (
     <div className="space-y-4 md:space-y-6 col-span-12">
       {sortBy(node.children, "sort")?.map((child) => (

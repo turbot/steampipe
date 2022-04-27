@@ -39,11 +39,7 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 
 const Benchmark = (props: InnerCheckProps) => {
   const benchmarkDataTable = useMemo(() => {
-    if (
-      !props.benchmark ||
-      (props.benchmark.status !== "complete" &&
-        props.benchmark.status !== "error")
-    ) {
+    if (!props.benchmark || props.benchmark.status !== "complete") {
       return undefined;
     }
     return props.benchmark.get_data_table();

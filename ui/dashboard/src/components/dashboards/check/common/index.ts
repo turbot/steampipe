@@ -7,7 +7,11 @@ export type CheckNodeType =
   | "benchmark"
   | "control"
   | "error"
+  | "reason"
+  | "resource"
   | "result"
+  | "severity"
+  | "status"
   | "dimension"
   | "tag";
 
@@ -40,12 +44,9 @@ export interface CheckNode {
 //   controls: IControl[];
 // }
 
-export type CheckNodeStatus =
-  | "ready"
-  | "started"
-  | "complete"
-  | "error"
-  | "unknown";
+export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
+
+export type CheckNodeStatus = "running" | "complete";
 
 export interface CheckSummary {
   alarm: number;
@@ -98,7 +99,7 @@ export interface CheckControl {
   tags?: CheckTags;
   results: CheckResult[];
   summary: CheckSummary;
-  run_status: number;
+  run_status: CheckNodeStatusRaw;
   run_error?: string;
 }
 

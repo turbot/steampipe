@@ -244,9 +244,7 @@ const CheckPanel = ({
             expanded && (error_nodes.length > 0 || result_nodes.length > 0)
               ? "rounded-b-none"
               : null,
-            node.status !== "complete" && node.status !== "error"
-              ? "animate-pulse"
-              : null
+            node.status !== "complete" ? "animate-pulse" : null
           )}
           onClick={() =>
             can_be_expanded ? setExpanded((current) => !current) : null

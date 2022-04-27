@@ -204,34 +204,28 @@ class Benchmark implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
-    for (const benchmark of this._benchmarks) {
-      if (benchmark.status === "error") {
-        return "error";
-      }
-      if (benchmark.status === "unknown") {
-        return "unknown";
-      }
-      if (benchmark.status === "ready") {
-        return "ready";
-      }
-      if (benchmark.status === "started") {
-        return "started";
-      }
-    }
-    for (const control of this._controls) {
-      if (control.status === "error") {
-        return "error";
-      }
-      if (control.status === "unknown") {
-        return "unknown";
-      }
-      if (control.status === "ready") {
-        return "ready";
-      }
-      if (control.status === "started") {
-        return "started";
-      }
-    }
+    // for (const benchmark of this._benchmarks) {
+    //   if (benchmark.status === "error") {
+    //     return "error";
+    //   }
+    //   if (benchmark.status === "ready") {
+    //     return "ready";
+    //   }
+    //   if (benchmark.status === "started") {
+    //     return "started";
+    //   }
+    // }
+    // for (const control of this._controls) {
+    //   if (control.status === "error") {
+    //     return "error";
+    //   }
+    //   if (control.status === "ready") {
+    //     return "ready";
+    //   }
+    //   if (control.status === "started") {
+    //     return "started";
+    //   }
+    // }
     return "complete";
   }
 

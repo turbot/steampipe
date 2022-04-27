@@ -60,7 +60,8 @@ class ControlResultNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
-    return this._result.control.status;
+    // If we have results, this node is complete
+    return "complete";
   }
 }
 

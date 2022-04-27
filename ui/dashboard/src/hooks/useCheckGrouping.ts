@@ -74,36 +74,41 @@ const addBenchmarkTrunkNode = (
 //       );
 //       const dimensionValue = foundDimension ? foundDimension.value : "Other";
 //       return new KeyValuePairNode(
+//         "dimension"
 //         group.value || "Other",
 //         dimensionValue,
 //         children
 //       );
 //     case "tag":
 //       return new KeyValuePairNode(
+//         "tag"
 //         group.value || "Other",
 //         group.value ? checkResult.tags[group.value] || "Other" : "Other",
 //         children
 //       );
 //     case "reason":
 //       return new KeyValuePairNode(
+//         "reason"
 //         "reason",
 //         checkResult.reason || "Other",
 //         children
 //       );
 //     case "resource":
 //       return new KeyValuePairNode(
+//         "resource"
 //         "resource",
 //         checkResult.resource || "Other",
 //         children
 //       );
 //     case "severity":
 //       return new KeyValuePairNode(
+//         "severity"
 //         "severity",
 //         checkResult.severity || "Other",
 //         children
 //       );
 //     case "status":
-//       return new KeyValuePairNode("status", checkResult.status, children);
+//       return new KeyValuePairNode("status", "status", checkResult.status, children);
 //     case "benchmark":
 //       return addBenchmarkTrunkNode(
 //         checkResult.benchmark_trunk.length > 1
@@ -179,7 +184,7 @@ const addChildren = (node: CheckNode) => {
               name: child.name,
               title: child.title,
               type: "control",
-              status: "error",
+              status: "complete",
               sort: "0",
               summary: { error: 1, alarm: 0, ok: 0, info: 0, skip: 0 },
             },

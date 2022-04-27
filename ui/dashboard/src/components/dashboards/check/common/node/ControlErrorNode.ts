@@ -48,7 +48,8 @@ class ControlErrorNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
-    return "error";
+    // If a control has gone to error, this node is complete
+    return "complete";
   }
 }
 
