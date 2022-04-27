@@ -58,17 +58,17 @@ interface CheckResultRowStatusIconProps {
 const getMargin = (depth) => {
   switch (depth) {
     case 1:
-      return "md:ml-[24px]";
+      return "ml-[6px] md:ml-[24px]";
     case 2:
-      return "md:ml-[48px]";
+      return "ml-[12px] md:ml-[48px]";
     case 3:
-      return "md:ml-[72px]";
+      return "ml-[18px] md:ml-[72px]";
     case 4:
-      return "md:ml-[96px]";
+      return "ml-[24px] md:ml-[96px]";
     case 5:
-      return "md:ml-[120px]";
+      return "ml-[30px] md:ml-[120px]";
     case 6:
-      return "md:ml-[144px]";
+      return "ml-[36px] md:ml-[144px]";
     default:
       return "ml-0";
   }
