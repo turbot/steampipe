@@ -1,3 +1,4 @@
+import Benchmark from "./Benchmark";
 import {
   AddControlErrorAction,
   AddControlResultsAction,
@@ -11,7 +12,6 @@ import {
   CheckTags,
 } from "./index";
 import { LeafNodeDataRow } from "../../common";
-import Benchmark from "./Benchmark";
 
 class Control implements CheckNode {
   private readonly _sortIndex: string;
