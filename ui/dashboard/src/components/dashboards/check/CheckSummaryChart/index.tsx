@@ -92,7 +92,7 @@ const NonAlertProgressBarGroupTotal = ({
   if (nonAlertTotal === 0) {
     textClassName = "text-foreground-lightest";
   } else if (summary.skip > summary.info && summary.skip > summary.ok) {
-    textClassName = "text-default";
+    textClassName = "text-black-scale-5";
   } else if (summary.info > summary.ok && summary.info >= summary.skip) {
     textClassName = "text-info";
   } else {
