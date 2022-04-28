@@ -1,4 +1,3 @@
-import Control from "../Control";
 import {
   CheckNodeStatus,
   CheckNodeType,
@@ -11,7 +10,7 @@ class ControlRunningNode implements CheckNode {
   private readonly _name: string;
   private readonly _title: string | undefined;
 
-  constructor(control: Control) {
+  constructor(control: CheckNode) {
     this._name = `${control.name}-loading`;
     this._title = `${control.name}-loading`;
   }

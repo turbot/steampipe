@@ -213,7 +213,7 @@ const addChildren = (node: CheckNode) => {
           );
         });
       } else {
-        controlChildren.push(new ControlRunningNode(child as Control));
+        controlChildren.push(new ControlRunningNode(child));
       }
       nodes.push(
         new ControlNode(
@@ -283,12 +283,12 @@ const useCheckGrouping = (props: CheckProps) => {
       []
     );
 
-    const results = buildClassicStructure(b);
     const firstChildSummaries: CheckSummary[] = [];
     for (const child of b.children) {
       firstChildSummaries.push(child.summary);
     }
 
+    const results = buildClassicStructure(b);
     return [b, results, firstChildSummaries] as const;
 
     // const result: CheckNode[] = [];
@@ -301,6 +301,11 @@ const useCheckGrouping = (props: CheckProps) => {
     // b.all_control_errors.forEach((checkError) =>
     //   groupCheckItems(temp, checkError, groupingsConfig)._.push(
     //     new ControlErrorNode(checkError)
+    //   )
+    // );
+    // b.all_control_loadings.forEach((checkLoading) =>
+    //   groupCheckItems(temp, checkLoading, groupingsConfig)._.push(
+    //     new ControlRunningNode(checkLoading.control)
     //   )
     // );
     //

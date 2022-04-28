@@ -163,6 +163,11 @@ export type BenchmarkTreeProps = BasePrimitiveProps &
     };
   };
 
+export type AddControlLoadingAction = (
+  benchmark_trunk: Benchmark[],
+  control: Control
+) => void;
+
 export type AddControlErrorAction = (
   error: string,
   benchmark_trunk: Benchmark[],

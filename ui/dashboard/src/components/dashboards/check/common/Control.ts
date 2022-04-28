@@ -1,6 +1,7 @@
 import Benchmark from "./Benchmark";
 import {
   AddControlErrorAction,
+  AddControlLoadingAction,
   AddControlResultsAction,
   CheckDynamicColsMap,
   CheckNode,
@@ -45,6 +46,7 @@ class Control implements CheckNode {
     status: CheckNodeStatusRaw,
     run_error: string | undefined,
     benchmark_trunk: Benchmark[],
+    add_control_loading: AddControlLoadingAction,
     add_control_error: AddControlErrorAction,
     add_control_results: AddControlResultsAction
   ) {
@@ -70,9 +72,12 @@ class Control implements CheckNode {
 
     if (this._run_error) {
       add_control_error(this._run_error, benchmark_trunk, this);
+    } else if (this._results) {
+      add_control_results(this._results, benchmark_trunk, this);
+    } else {
+      // console.log("Adding loading node", this._name);
+      add_control_loading(benchmark_trunk, this);
     }
-
-    add_control_results(this._results, benchmark_trunk, this);
   }
 
   get sort(): string {

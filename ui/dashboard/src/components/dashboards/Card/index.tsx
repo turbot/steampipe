@@ -332,16 +332,7 @@ const Card = (props: CardProps) => {
             !isNumber(state.value) && <Label value={state.value} />}
           {isNumber(state.value) && (
             <>
-              <IntegerDisplay
-                className="md:hidden"
-                num={state.value}
-                startAt="k"
-              />
-              <IntegerDisplay
-                className="hidden md:inline"
-                num={state.value}
-                startAt="m"
-              />
+              <IntegerDisplay num={state.value} startAt="m" />
             </>
           )}
         </p>
