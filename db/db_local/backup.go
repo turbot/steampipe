@@ -263,7 +263,7 @@ func restoreBackup(ctx context.Context) error {
 		//
 		// WARN the user.
 		//
-		log.Println("[WARN] Could not REFRESH Materialized Views while restoring data.")
+		utils.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
 	}
 
 	if err := os.Remove(databaseBackupFilePath()); err != nil {
