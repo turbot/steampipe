@@ -69,7 +69,6 @@ class HierarchyNode implements CheckNode {
   get severity_summary(): CheckSeveritySummary {
     const summary = {};
     for (const child of this._children) {
-      const childSummary = child.severity_summary;
       for (const [severity, count] of Object.entries(child.severity_summary)) {
         if (!summary[severity]) {
           summary[severity] = count;

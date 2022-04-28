@@ -4,7 +4,6 @@ import {
   DashboardDefinition,
 } from "../../../../hooks/useDashboard";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
-import { useState } from "react";
 
 interface EventMap {
   [name: string]: any;

@@ -262,7 +262,7 @@ const sortDashboardSearchResults = (
         .map((t) => {
           const part = dashboardsMap[t];
           if (!part) {
-            return;
+            return null;
           }
           return part.title || part.short_name;
         })

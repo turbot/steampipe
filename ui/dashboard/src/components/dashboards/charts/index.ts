@@ -10,7 +10,6 @@ import {
   BasePrimitiveProps,
   ColorOverride,
   ExecutablePrimitiveProps,
-  Width,
 } from "../common";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;

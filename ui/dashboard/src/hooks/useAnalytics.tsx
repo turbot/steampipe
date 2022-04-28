@@ -16,6 +16,7 @@ import {
 } from "react";
 import { useTheme } from "./useTheme";
 
+// noinspection JSUnusedLocalSymbols
 interface AnalyticsProperties {
   [key: string]: any;
 }

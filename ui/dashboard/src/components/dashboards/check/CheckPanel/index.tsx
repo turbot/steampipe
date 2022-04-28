@@ -17,7 +17,6 @@ import {
   CheckNode,
   CheckResult,
   CheckResultStatus,
-  CheckSeverity,
   CheckSeveritySummary,
   CheckSummary,
 } from "../common";

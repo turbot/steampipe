@@ -4,7 +4,6 @@ import {
   CheckSummary,
   CheckNode,
   CheckResult,
-  CheckSeverity,
   CheckSeveritySummary,
 } from "../index";
 
