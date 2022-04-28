@@ -10,7 +10,6 @@ interface ProgressBarGroupProps {
 interface ProgressBarProps {
   className?: string;
   percent: number;
-  title?: string;
 }
 
 interface CheckSummaryChartProps {
@@ -31,7 +30,6 @@ interface NonAlertProgressBarGroupTotalProps {
 
 interface ProgressBarGroupTotalProps {
   className?: string;
-  title: string;
   total: number;
 }
 
@@ -42,13 +40,9 @@ const getWidth = (x, y) => {
 
 const ProgressBarGroupTotal = ({
   className,
-  title,
   total,
 }: ProgressBarGroupTotalProps) => (
-  <span
-    className={classNames(className, "text-right text-sm font-semibold")}
-    title={title}
-  >
+  <span className={classNames(className, "text-right text-sm font-semibold")}>
     {total > 0 ? <IntegerDisplay num={total} withTitle={false} /> : "0"}
   </span>
 );
@@ -86,13 +80,7 @@ const AlertProgressBarGroupTotal = ({
     className,
     alertTotal > 0 ? "text-alert" : "text-foreground-lightest"
   );
-  return (
-    <ProgressBarGroupTotal
-      className={newClassName}
-      title={getSummaryTitle(summary)}
-      total={alertTotal}
-    />
-  );
+  return <ProgressBarGroupTotal className={newClassName} total={alertTotal} />;
 };
 
 const NonAlertProgressBarGroupTotal = ({
@@ -113,11 +101,7 @@ const NonAlertProgressBarGroupTotal = ({
 
   const newClassName = classNames(className, textClassName);
   return (
-    <ProgressBarGroupTotal
-      className={newClassName}
-      title={getSummaryTitle(summary)}
-      total={nonAlertTotal}
-    />
+    <ProgressBarGroupTotal className={newClassName} total={nonAlertTotal} />
   );
 };
 
@@ -239,7 +223,7 @@ const ProgressBarGroup = ({ children, className }: ProgressBarGroupProps) => (
 //   return adjusted;
 // };
 
-const ProgressBar = ({ className, percent, title }: ProgressBarProps) => {
+const ProgressBar = ({ className, percent }: ProgressBarProps) => {
   if (!percent) {
     return null;
   }
@@ -251,7 +235,6 @@ const ProgressBar = ({ className, percent, title }: ProgressBarProps) => {
       aria-valuemin={0}
       aria-valuemax={100}
       style={{ display: "inline-block", width: `${percent}%` }}
-      title={title}
     />
   );
 };
@@ -299,7 +282,7 @@ const CheckSummaryChart = ({
   }
 
   return (
-    <div className="flex items-center">
+    <div className="flex items-center" title={getSummaryTitle(summary)}>
       {/*<ProgressBar*/}
       {/*  className={classNames(*/}
       {/*    "border border-alert",*/}
@@ -353,12 +336,10 @@ const CheckSummaryChart = ({
           <ProgressBar
             className="bg-alert border border-alert"
             percent={getCheckSummaryChartPercent(summary.alarm, maxAlerts)}
-            title={`Alarm: ${summary.alarm.toLocaleString()}`}
           />
           <ProgressBar
             className="border border-alert"
             percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
-            title={`Error: ${summary.error.toLocaleString()}`}
           />
           <AlertProgressBarGroupTotal className="mr-2" summary={summary} />
         </ProgressBarGroup>
@@ -374,17 +355,14 @@ const CheckSummaryChart = ({
           <ProgressBar
             className="bg-ok border border-ok"
             percent={getCheckSummaryChartPercent(summary.ok, maxNonAlerts)}
-            title={`OK: ${summary.ok.toLocaleString()}`}
           />
           <ProgressBar
             className="bg-info border border-info"
             percent={getCheckSummaryChartPercent(summary.info, maxNonAlerts)}
-            title={`Info: ${summary.info.toLocaleString()}`}
           />
           <ProgressBar
             className="bg-skip border border-skip"
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
-            title={`Skip: ${summary.skip.toLocaleString()}`}
           />
           <NonAlertProgressBarGroupTotal className="ml-2" summary={summary} />
         </ProgressBarGroup>
