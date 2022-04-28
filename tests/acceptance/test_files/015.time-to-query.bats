@@ -2,15 +2,12 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "time to query a chaos table" {
-  
-  # Skip for now
-  skip
 
   # using bash's built-in time, set the timeformat to seconds
   TIMEFORMAT=%R
 
   # find the query time
-  QUERY_TIME=$(time (run steampipe query "select time_now from chaos.chaos_cache_check where id=0" >/dev/null 2>&1) 2>&1)
+  QUERY_TIME=$(time (run steampipe query "select time_col from chaos.chaos_cache_check where id=0" >/dev/null 2>&1) 2>&1)
   echo $QUERY_TIME
   echo $TIME_TO_QUERY
 
@@ -19,15 +16,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "time to query a chaos table that does not exist" {
-  
-  # Skip for now
-  skip
 
   # using bash's built-in time, set the timeformat to seconds
   TIMEFORMAT=%R
 
   # find the time it takes to throw the error
-  QUERY_TIME=$(time (run steampipe query "select time_now from chaos.chaos_cache_check_2 where id=0" >/dev/null 2>&1) 2>&1)
+  QUERY_TIME=$(time (run steampipe query "select time_col from chaos.chaos_cache_check_2 where id=0" >/dev/null 2>&1) 2>&1)
   echo $QUERY_TIME
   echo $TIME_TO_QUERY
 
