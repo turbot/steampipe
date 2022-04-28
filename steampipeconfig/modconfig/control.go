@@ -417,6 +417,9 @@ func (c *Control) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	if c.Params == nil {
 		c.Params = c.Base.Params
 	}
+	if c.Width == nil {
+		c.Width = c.Base.Width
+	}
 	if c.Type == nil {
 		c.Type = c.Base.Type
 	}
