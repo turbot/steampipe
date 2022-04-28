@@ -39,7 +39,7 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 
 const Benchmark = (props: InnerCheckProps) => {
   const benchmarkDataTable = useMemo(() => {
-    if (!props.benchmark || props.benchmark.status !== "complete") {
+    if (!props.benchmark || props.grouping.status !== "complete") {
       return undefined;
     }
     return props.benchmark.get_data_table();
@@ -117,10 +117,14 @@ const Benchmark = (props: InnerCheckProps) => {
     ];
 
     const severity_summary = props.grouping.severity_summary;
-    const critical = severity_summary["critical"] || 0;
-    const high = severity_summary["high"] || 0;
-    const total = critical + high;
-    if (total > 0) {
+    const criticalRaw = severity_summary["critical"];
+    const highRaw = severity_summary["high"];
+    const critical = criticalRaw || 0;
+    const high = highRaw || 0;
+
+    // If we have at least 1 critical or undefined control defined in this run
+    if (criticalRaw !== undefined || highRaw !== undefined) {
+      const total = critical + high;
       summary_cards.push({
         node_type: "card",
         name: `${props.name}.container.summary.severity-${total}`,
@@ -128,7 +132,7 @@ const Benchmark = (props: InnerCheckProps) => {
         properties: {
           label: "Critical / High",
           value: total,
-          type: "severity",
+          type: total > 0 ? "severity" : "",
         },
       });
     }
