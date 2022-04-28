@@ -9,12 +9,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/version"
 )
 
 var (
@@ -54,6 +56,7 @@ const (
 func prepareBackup(ctx context.Context) (*string, error) {
 	found, location, err := findDifferentPgInstallation(ctx)
 	if err != nil {
+		log.Println("[TRACE] Error while finding different PG Version:", err)
 		return nil, err
 	}
 	// nothing found - nothing to do
@@ -61,11 +64,13 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		return nil, nil
 	}
 	// fail if there is an instance of the found installation running
-	if err := errIfInstanceRunning(ctx, location); err != nil {
-		return nil, err
-	}
+	// if err := errIfInstanceRunning(ctx, location); err != nil {
+	// 	log.Println("[TRACE] Error while checking for running services:", err)
+	// 	return nil, err
+	// }
 	runConfig, err := startDatabaseInLocation(ctx, location)
 	if err != nil {
+		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
 		return nil, err
 	}
 	defer runConfig.stop(ctx)
@@ -82,6 +87,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 func errIfInstanceRunning(ctx context.Context, location string) error {
 	processes, err := FindAllSteampipePostgresInstances(ctx)
 	if err != nil {
+		log.Println("[TRACE] FindAllSteampipePostgresInstances failed with", err)
 		return err
 	}
 
@@ -102,9 +108,8 @@ func errIfInstanceRunning(ctx context.Context, location string) error {
 
 // backup the old pg instance public schema using pg_dump
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
-	cmd := exec.CommandContext(
+	cmd := PgDumpCmd(
 		ctx,
-		pgDumpBinaryExecutablePath(),
 		fmt.Sprintf("--file=%s", databaseBackupFilePath()),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// of the public schema only
@@ -116,7 +121,8 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		fmt.Sprintf("--port=%d", config.port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
-	log.Println("[TRACE] starting pg_restore command:", cmd.String())
+	log.Println("[TRACE] starting pg_dump command:", cmd.String())
+	addDYLDPath(ctx, cmd)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] pg_dump process output:", string(output))
@@ -135,7 +141,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		ctx,
 		binaryLocation,
 		// by this time, we are sure that the port if free to listen to
 		"-p", fmt.Sprint(port),
@@ -287,9 +294,8 @@ func restoreBackup(ctx context.Context) error {
 }
 
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
-	cmd := exec.CommandContext(
+	cmd := PgRestoreCmd(
 		ctx,
-		pgRestoreBinaryExecutablePath(),
 		databaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
@@ -307,7 +313,9 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		fmt.Sprintf("--port=%d", info.Port),
 		fmt.Sprintf("--username=%s", info.User),
 	)
+
 	log.Println("[TRACE]", cmd.String())
+	addDYLDPath(ctx, cmd)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] runRestoreUsingList process:", string(output))
@@ -342,9 +350,8 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 // getTableOfContentsFromBackup uses pg_restore to read the TableOfContents from the
 // back archive
 func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
-	cmd := exec.CommandContext(
+	cmd := PgRestoreCmd(
 		ctx,
-		pgRestoreBinaryExecutablePath(),
 		databaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
@@ -352,6 +359,7 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 		"--list",
 	)
 	log.Println("[TRACE] TableOfContent extraction command: ", cmd.String())
+	addDYLDPath(ctx, cmd)
 
 	b, err := cmd.Output()
 	if err != nil {
@@ -375,4 +383,38 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	lines = append(lines, ";")
 
 	return lines, err
+}
+
+
+func PgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(
+		ctx,
+		pgDumpBinaryExecutablePath(),
+		args...,
+	)
+	log.Println("[TRACE] starting pg_dump command:", cmd.String())
+	addDYLDPath(ctx, cmd)
+	return cmd
+}
+
+func PgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(
+		ctx,
+		pgRestoreBinaryExecutablePath(),
+		args...,
+	)
+	log.Println("[TRACE] starting pg_restore command:", cmd.String())
+	addDYLDPath(ctx, cmd)
+	return cmd
+}
+
+func addDYLDPath(ctx context.Context, cmd *exec.Cmd) {
+	// currentEnv := cmd.Env
+	// for _, envTuple := range currentEnv {
+	// 	split := utils.SplitByRune(envTuple, '=')
+	// 	if split[0] == "DYLD_LIBRARY_PATH" {
+	// 		cmd.Env = append(cmd.Env)
+	// 	}
+	// }
+	cmd.Env = append(cmd.Env, fmt.Sprintf("DYLD_LIBRARY_PATH=%s", getDatabaseLibDirectory()))
 }
