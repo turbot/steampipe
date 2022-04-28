@@ -174,6 +174,8 @@ const Benchmark = (props: InnerCheckProps) => {
           },
         ],
         data: benchmarkDataTable,
+        title: props.title,
+        width: props.width,
       }}
     />
   );
@@ -222,14 +224,19 @@ const BenchmarkTableView = ({
 };
 
 const BenchmarkWrapper = (props: CheckProps) => {
-  const [benchmark, grouping, groupingsConfig, firstChildSummaries] =
-    useCheckGrouping(props);
+  const [
+    benchmark,
+    grouping,
+    groupingsConfig,
+    firstChildSummaries,
+    rootBenchmark,
+  ] = useCheckGrouping(props);
 
-  if (!benchmark || !grouping) {
+  if (!benchmark || !grouping || !rootBenchmark) {
     return null;
   }
 
-  if (props.properties && props.properties.type === "table") {
+  if (rootBenchmark.type === "table") {
     return <BenchmarkTableView benchmark={benchmark} definition={props} />;
   }
 

@@ -152,15 +152,7 @@ export interface CheckDisplayGroup {
   value?: string;
 }
 
-export type CheckProps = BasePrimitiveProps &
-  ExecutablePrimitiveProps & {
-    type?: CheckType;
-    properties: {
-      display: "all" | "none";
-      type?: CheckType;
-      grouping?: CheckDisplayGroup[];
-    };
-  };
+export type CheckProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {

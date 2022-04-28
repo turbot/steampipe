@@ -234,10 +234,18 @@ const buildClassicStructure = (benchmark: BenchmarkType) =>
 const useCheckGrouping = (props: CheckProps) => {
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
 
-  const groupingsConfig = useMemo(
-    () =>
-      props.properties?.grouping ||
-      ([
+  // & {
+  //     type?: CheckType;
+  //     properties: {
+  //       display: "all" | "none";
+  //       type?: CheckType;
+  //       grouping?: CheckDisplayGroup[];
+  //     };
+  //   }
+
+  const groupingsConfig = useMemo(() => {
+    if (!rootBenchmark || !rootBenchmark.grouping) {
+      return [
         // { type: "benchmark" },
         // { type: "control" },
         // { type: "result" },
@@ -254,9 +262,11 @@ const useCheckGrouping = (props: CheckProps) => {
         { type: "benchmark" },
         { type: "control" },
         { type: "result" },
-      ] as CheckDisplayGroup[]),
-    [props.properties]
-  );
+      ] as CheckDisplayGroup[];
+    }
+
+    return rootBenchmark.grouping;
+  }, [rootBenchmark]);
 
   const [benchmark, grouping, firstChildSummaries] = useMemo(() => {
     if (!rootBenchmark) {
@@ -298,7 +308,13 @@ const useCheckGrouping = (props: CheckProps) => {
     // return [b, results, firstChildSummaries] as const;
   }, [groupingsConfig, rootBenchmark]);
 
-  return [benchmark, grouping, groupingsConfig, firstChildSummaries] as const;
+  return [
+    benchmark,
+    grouping,
+    groupingsConfig,
+    firstChildSummaries,
+    rootBenchmark,
+  ] as const;
 };
 
 export default useCheckGrouping;
