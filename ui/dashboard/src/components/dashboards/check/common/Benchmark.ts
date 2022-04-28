@@ -274,6 +274,10 @@ class Benchmark implements CheckNode {
         name: "status",
         data_type_name: "TEXT",
       },
+      {
+        name: "severity",
+        data_type_name: "TEXT",
+      },
     ];
     const { dimensions, tags } = this.get_dynamic_cols();
     Object.keys(tags).forEach((tag) =>

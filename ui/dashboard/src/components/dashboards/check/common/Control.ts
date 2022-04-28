@@ -164,6 +164,7 @@ class Control implements CheckNode {
         result.reason,
         result.resource,
         result.status,
+        this._severity,
       ];
 
       tags.forEach((tag) => {
