@@ -93,8 +93,12 @@ func getDBSignatureLocation() string {
 	return loc
 }
 
+func getDatabaseLibDirectory() string {
+	return filepath.Join(getDatabaseLocation(), "lib")
+}
+
 func getFDWBinaryLocation() string {
-	return filepath.Join(getDatabaseLocation(), "lib", "postgresql", "steampipe_postgres_fdw.so")
+	return filepath.Join(getDatabaseLibDirectory(), "postgresql", "steampipe_postgres_fdw.so")
 }
 
 func getFDWSQLAndControlLocation() (string, string) {
