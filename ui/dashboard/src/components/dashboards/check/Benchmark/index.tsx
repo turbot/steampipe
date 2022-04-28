@@ -1,5 +1,6 @@
 import CheckGrouping from "../CheckGrouping";
 import Container from "../../layout/Container";
+import Error from "../../Error";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
 import useCheckGrouping from "../../../../hooks/useCheckGrouping";
@@ -236,19 +237,31 @@ const BenchmarkWrapper = (props: CheckProps) => {
     return null;
   }
 
-  if (rootBenchmark.type === "table") {
+  if (!rootBenchmark.type || rootBenchmark.type === "benchmark") {
+    return (
+      <Benchmark
+        {...props}
+        benchmark={benchmark}
+        grouping={grouping}
+        groupingConfig={groupingsConfig}
+        firstChildSummaries={firstChildSummaries}
+      />
+    );
+  } else if (rootBenchmark.type === "table") {
     return <BenchmarkTableView benchmark={benchmark} definition={props} />;
+  } else {
+    return (
+      <Panel
+        definition={{
+          name: props.name,
+          node_type: "benchmark",
+          width: props.width,
+        }}
+      >
+        <Error error={`Unsupported benchmark type ${rootBenchmark.type}`} />
+      </Panel>
+    );
   }
-
-  return (
-    <Benchmark
-      {...props}
-      benchmark={benchmark}
-      grouping={grouping}
-      groupingConfig={groupingsConfig}
-      firstChildSummaries={firstChildSummaries}
-    />
-  );
 };
 
 export default BenchmarkWrapper;
