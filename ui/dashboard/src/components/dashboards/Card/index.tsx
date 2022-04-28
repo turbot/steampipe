@@ -332,7 +332,7 @@ const Card = (props: CardProps) => {
             !isNumber(state.value) && <Label value={state.value} />}
           {isNumber(state.value) && (
             <>
-              <IntegerDisplay num={state.value} startAt="m" />
+              <IntegerDisplay num={state.value} startAt="100k" />
             </>
           )}
         </p>

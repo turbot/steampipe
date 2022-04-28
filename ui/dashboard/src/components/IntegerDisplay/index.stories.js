@@ -87,6 +87,40 @@ export const LevelKAndNumberUndefined = () => (
   <IntegerDisplay {...numberUndefined} startAt="k" />
 );
 
+export const Level100KAndLessThan1k = () => (
+  <IntegerDisplay {...lessThan1k} startAt="100k" />
+);
+export const Level100KAndMoreThan1k = () => (
+  <IntegerDisplay {...moreThan1k} startAt="100k" />
+);
+export const Level100KAndMoreThan10k = () => (
+  <IntegerDisplay {...moreThan10k} startAt="100k" />
+);
+export const Level100KAndMoreThan100k = () => (
+  <IntegerDisplay {...moreThan100k} startAt="100k" />
+);
+export const Level100KAndMoreThan1M = () => (
+  <IntegerDisplay {...moreThan1M} startAt="100k" />
+);
+export const Level100KAndMoreThan10M = () => (
+  <IntegerDisplay {...moreThan10M} startAt="100k" />
+);
+export const Level100KAndMoreThan1000M = () => (
+  <IntegerDisplay {...moreThan1000M} startAt="100k" />
+);
+export const Level100KAndNegativeNumber = () => (
+  <IntegerDisplay {...negativeNumber} startAt="100k" />
+);
+export const Level100KAndNumberAsString = () => (
+  <IntegerDisplay {...numberString} startAt="100k" />
+);
+export const Level100KAndNumberNull = () => (
+  <IntegerDisplay {...numberNull} startAt="100k" />
+);
+export const Level100KAndNumberUndefined = () => (
+  <IntegerDisplay {...numberUndefined} startAt="100k" />
+);
+
 export const LevelMAndLessThan1k = () => (
   <IntegerDisplay {...lessThan1k} startAt="m" />
 );
