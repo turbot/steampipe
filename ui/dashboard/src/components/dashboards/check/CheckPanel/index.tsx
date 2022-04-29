@@ -322,6 +322,7 @@ const CheckPanel = ({
         results,
         children.length > 0 ||
           (groupingConfig &&
+            groupingConfig.length > 0 &&
             groupingConfig[groupingConfig.length - 1].type === "result" &&
             (errors.length > 0 || empty.length > 0 || results.length > 0)),
       ];

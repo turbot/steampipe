@@ -19,7 +19,7 @@ class ControlResultNode implements CheckNode {
   }
 
   get name(): string {
-    return this._result.resource;
+    return `${this._result.control.name}-${this._result.resource}`;
   }
 
   get title(): string {

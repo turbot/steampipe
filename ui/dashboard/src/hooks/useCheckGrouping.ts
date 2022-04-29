@@ -52,11 +52,10 @@ const getCheckGroupingKey = (
     case "status":
       return checkResult.status;
     case "benchmark":
-      const root =
-        checkResult.benchmark_trunk.length > 1
-          ? checkResult.benchmark_trunk[1]
-          : null;
-      return root ? root.name : "Other";
+      if (checkResult.benchmark_trunk.length <= 1) {
+        return null;
+      }
+      return checkResult.benchmark_trunk[1].name;
     case "control":
       return checkResult.control.name;
     default:
@@ -115,12 +114,9 @@ const getCheckGroupingNode = (
         children
       );
     case "benchmark":
-      return addBenchmarkTrunkNode(
-        checkResult.benchmark_trunk.length > 1
-          ? checkResult.benchmark_trunk.slice(1)
-          : [],
-        children
-      );
+      return checkResult.benchmark_trunk.length > 1
+        ? addBenchmarkTrunkNode(checkResult.benchmark_trunk.slice(1), children)
+        : children;
     case "control":
       return new ControlNode(
         checkResult.control.sort,
@@ -142,6 +138,11 @@ const groupCheckItems = (
     .filter((groupConfig) => groupConfig.type !== "result")
     .reduce(function (grouping, currentGroup) {
       const groupKey = getCheckGroupingKey(group, currentGroup);
+
+      if (!groupKey) {
+        return grouping;
+      }
+
       if (!grouping[groupKey]) {
         grouping[groupKey] = { _: [] };
         const groupingNode = getCheckGroupingNode(
