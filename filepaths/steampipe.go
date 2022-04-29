@@ -60,6 +60,11 @@ func EnsureInternalDir() string {
 	return ensureSteampipeSubDir("internal")
 }
 
+// EnsureBackupsDir returns the path to the backups directory (creates if missing)
+func EnsureBackupsDir() string {
+	return ensureSteampipeSubDir(filepath.Join("backups"))
+}
+
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)
 func EnsureDatabaseDir() string {
 	return ensureSteampipeSubDir("db")

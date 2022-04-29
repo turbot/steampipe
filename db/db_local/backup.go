@@ -9,13 +9,16 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/version"
 )
 
 var (
@@ -271,8 +274,8 @@ func restoreBackup(ctx context.Context) error {
 		utils.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
 	}
 
-	if err := os.Remove(databaseBackupFilePath()); err != nil {
-		log.Printf("[WARN] Could not remove Backup data at %s.", databaseBackupFilePath())
+	if err := retainBackup(ctx); err != nil {
+		log.Printf("[WARN] Could not retain backup %s.", databaseBackupFilePath())
 	}
 
 	// get the location of the other instance which was backed up
@@ -405,4 +408,75 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd
+}
+
+// updateDynamicLibPath adds the 'libdir' as a priority in the LD_LIBRARY_PATH (DYLD_LIBRARY_PATH for darwin)
+// environment variable. This is done when we start 'pg_dump' and 'pg_restore' - so that these binaries always
+// prioritise libraries in the steampipe installation over system libraries.
+func updateDynamicLibPath(ctx context.Context, cmd *exec.Cmd) {
+	currentEnv := cmd.Env
+	envKey := ""
+	currentValue := ""
+
+	switch runtime.GOOS {
+	case constants.OSDarwin:
+		envKey = "DYLD_FALLBACK_LIBRARY_PATH"
+	case constants.OSLinux:
+		envKey = "LD_LIBRARY_PATH"
+	}
+
+	for _, envTuple := range currentEnv {
+		split := utils.SplitByRune(envTuple, '=')
+		if split[0] == envKey {
+			currentValue = strings.Join(split[1:], "=")
+		}
+	}
+	newValue := ""
+	if len(currentValue) == 0 {
+		// there's no value. set it to our libdir
+		newValue = getDatabaseLibDirectory()
+	} else {
+		// there's a value. prepend our libdir, so that it get preference
+		newValue = fmt.Sprintf("%s:%s", getDatabaseLibDirectory(), currentValue)
+	}
+
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", envKey, newValue))
+	log.Printf("[TRACE] %s set to %s in ENV", envKey, newValue)
+}
+
+// retainBackup creates a text dump of the backup binary and saves both in the $STEAMPIPE_INSTALL_DIR/backups directory
+// the binary backup is saved as
+func retainBackup(ctx context.Context) error {
+	now := time.Now()
+	backupBaseFileName := fmt.Sprintf(
+		"backup-%d-%d-%d-%s",
+		version.SteampipeVersion.Major(),
+		version.SteampipeVersion.Minor(),
+		version.SteampipeVersion.Patch(),
+		now.Format("2006-01-02-15-04-05"),
+	)
+	binaryBackupRetentionFileName := fmt.Sprintf("%s.dump", backupBaseFileName)
+	textBackupRetentionFileName := fmt.Sprintf("%s.sql", backupBaseFileName)
+
+	binaryBackupRetentionFilePath := filepath.Join(filepaths.EnsureDatabaseDir(), binaryBackupRetentionFileName)
+	textBackupRetentionFilePath := filepath.Join(filepaths.EnsureDatabaseDir(), textBackupRetentionFileName)
+
+	if err := os.Rename(databaseBackupFilePath(), binaryBackupRetentionFilePath); err != nil {
+		return err
+	}
+
+	txtConvertCmd := exec.CommandContext(
+		ctx,
+		pgRestoreBinaryExecutablePath(),
+		binaryBackupRetentionFilePath,
+		fmt.Sprintf("--file=%s", textBackupRetentionFilePath),
+	)
+	log.Println("[TRACE] starting pg_restore command:", txtConvertCmd.String())
+
+	if output, err := txtConvertCmd.CombinedOutput(); err != nil {
+		log.Println("[TRACE] pg_restore convertion process output:", string(output))
+		return err
+	}
+
+	return nil
 }
