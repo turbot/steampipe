@@ -121,7 +121,6 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
 	log.Println("[TRACE] starting pg_dump command:", cmd.String())
-	addLDPath(ctx, cmd)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] pg_dump process output:", string(output))
@@ -314,7 +313,6 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 	)
 
 	log.Println("[TRACE]", cmd.String())
-	addLDPath(ctx, cmd)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] runRestoreUsingList process:", string(output))
@@ -358,7 +356,6 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 		"--list",
 	)
 	log.Println("[TRACE] TableOfContent extraction command: ", cmd.String())
-	addLDPath(ctx, cmd)
 
 	b, err := cmd.Output()
 	if err != nil {
