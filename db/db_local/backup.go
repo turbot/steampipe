@@ -407,16 +407,31 @@ func PgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 }
 
 func addLDPath(ctx context.Context, cmd *exec.Cmd) {
-	// currentEnv := cmd.Env
-	// for _, envTuple := range currentEnv {
-	// 	split := utils.SplitByRune(envTuple, '=')
-	// 	if split[0] == "DYLD_LIBRARY_PATH" {
-	// 		cmd.Env = append(cmd.Env)
-	// 	}
-	// }
-	if runtime.GOOS == constants.OSDarwin {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("DYLD_LIBRARY_PATH=%s", getDatabaseLibDirectory()))
-	} else if runtime.GOOS == constants.OSLinux {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("LD_LIBRARY_PATH=%s", getDatabaseLibDirectory()))
+	currentEnv := cmd.Env
+	envKey := ""
+	currentValue := ""
+
+	switch runtime.GOOS {
+	case constants.OSDarwin:
+		envKey = "DYLD_LIBRARY_PATH"
+	case constants.OSLinux:
+		envKey = "LD_LIBRARY_PATH"
 	}
+
+	for _, envTuple := range currentEnv {
+		split := utils.SplitByRune(envTuple, '=')
+		if split[0] == envKey {
+			currentValue = strings.Join(split[1:], "=")
+		}
+	}
+	newValue := ""
+	if len(currentValue) == 0 {
+		// there's no value. set it to our libdir
+		newValue = getDatabaseLibDirectory()
+	} else {
+		// there's a value. prepend our libdir, so that it get preference
+		newValue = fmt.Sprintf("%s:%s", getDatabaseLibDirectory(), currentValue)
+	}
+
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", envKey, newValue))
 }
