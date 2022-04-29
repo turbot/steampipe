@@ -218,6 +218,10 @@ class Benchmark implements CheckNode {
         data_type_name: "TEXT",
       },
       {
+        name: "severity",
+        data_type_name: "TEXT",
+      },
+      {
         name: "reason",
         data_type_name: "TEXT",
       },
@@ -227,10 +231,6 @@ class Benchmark implements CheckNode {
       },
       {
         name: "status",
-        data_type_name: "TEXT",
-      },
-      {
-        name: "severity",
         data_type_name: "TEXT",
       },
     ];

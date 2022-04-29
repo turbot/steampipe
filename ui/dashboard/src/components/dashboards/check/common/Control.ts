@@ -161,10 +161,10 @@ class Control implements CheckNode {
         this._name,
         this._title ? this._title : null,
         this._description ? this._description : null,
+        this._severity ? this._severity : null,
         result.reason,
         result.resource,
         result.status,
-        this._severity,
       ];
 
       tags.forEach((tag) => {
