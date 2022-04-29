@@ -1,12 +1,11 @@
 import BenchmarkNode from "../components/dashboards/check/common/node/BenchmarkNode";
-import Control from "../components/dashboards/check/common/Control";
-import ControlNode from "../components/dashboards/check/common/node/ControlNode";
+import ControlEmptyResultNode from "../components/dashboards/check/common/node/ControlEmptyResultNode";
 import ControlErrorNode from "../components/dashboards/check/common/node/ControlErrorNode";
+import ControlNode from "../components/dashboards/check/common/node/ControlNode";
 import ControlResultNode from "../components/dashboards/check/common/node/ControlResultNode";
 import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
 import get from "lodash/get";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
-import padStart from "lodash/padStart";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
   CheckDisplayGroup,
@@ -160,69 +159,15 @@ const groupCheckItems = (
     }, temp);
 };
 
-const addChildren = (node: CheckNode) => {
-  const nodes: CheckNode[] = [];
-  const lengthMaxIndex = node.children
-    ? (node.children?.length - 1).toString().length
-    : 0;
-  node.children?.forEach((child, index) => {
-    if (child.type === "benchmark") {
-      nodes.push(
-        new BenchmarkNode(
-          padStart(index.toString(), lengthMaxIndex),
-          child.name,
-          child.title,
-          addChildren(child)
-        )
-      );
-    } else if (child.type === "control") {
-      const control = child as Control;
-      const controlChildren: CheckNode[] = [];
-      if (control.error) {
-        controlChildren.push(
-          new ControlErrorNode({
-            benchmark_trunk: [],
-            dimensions: [],
-            reason: "",
-            resource: "",
-            status: "error",
-            tags: {},
-            control: {
-              name: control.name,
-              title: control.title,
-              type: "control",
-              severity: control.severity,
-              severity_summary: {},
-              status: "complete",
-              sort: "0",
-              summary: { error: 1, alarm: 0, ok: 0, info: 0, skip: 0 },
-            },
-            error: child.error,
-          })
-        );
-      } else if (control.run_state === 4) {
-        child.results?.forEach((result) => {
-          controlChildren.push(
-            new ControlResultNode({
-              ...result,
-              control: child,
-            })
-          );
-        });
-      } else {
-        controlChildren.push(new ControlRunningNode(child));
-      }
-      nodes.push(
-        new ControlNode(
-          padStart(index.toString(), lengthMaxIndex),
-          child.name,
-          child.title,
-          controlChildren
-        )
-      );
-    }
-  });
-  return nodes;
+const getCheckResultNode = (checkResult: CheckResult) => {
+  if (checkResult.type === "loading") {
+    return new ControlRunningNode(checkResult);
+  } else if (checkResult.type === "error") {
+    return new ControlErrorNode(checkResult);
+  } else if (checkResult.type === "empty") {
+    return new ControlEmptyResultNode(checkResult);
+  }
+  return new ControlResultNode(checkResult);
 };
 
 const useCheckGrouping = (props: CheckProps) => {
@@ -231,24 +176,18 @@ const useCheckGrouping = (props: CheckProps) => {
   const groupingsConfig = useMemo(() => {
     if (!rootBenchmark || !rootBenchmark.grouping) {
       return [
-        // { type: "benchmark" },
-        // { type: "control" },
-        // { type: "result" },
         // { type: "status" },
         // { type: "reason" },
-        // { type: "tag", value: "service" },
+        // { type: "resource" },
         // { type: "status" },
-
         // { type: "severity" },
         // { type: "dimension", value: "account_id" },
-
+        // { type: "dimension", value: "region" },
         // { type: "tag", value: "service" },
         // { type: "tag", value: "cis_type" },
         // { type: "tag", value: "cis_level" },
         { type: "benchmark" },
         { type: "control" },
-        // { type: "dimension", value: "region" },
-        // { type: "resource" },
         { type: "result" },
       ] as CheckDisplayGroup[];
     }
@@ -271,30 +210,21 @@ const useCheckGrouping = (props: CheckProps) => {
       []
     );
 
-    const firstChildSummaries: CheckSummary[] = [];
-    for (const child of b.children) {
-      firstChildSummaries.push(child.summary);
-    }
-
     const result: CheckNode[] = [];
     const temp = { _: result };
     b.all_control_results.forEach((checkResult) =>
       groupCheckItems(temp, checkResult, groupingsConfig)._.push(
-        new ControlResultNode(checkResult)
-      )
-    );
-    b.all_control_errors.forEach((checkError) =>
-      groupCheckItems(temp, checkError, groupingsConfig)._.push(
-        new ControlErrorNode(checkError)
-      )
-    );
-    b.all_control_loadings.forEach((checkLoading) =>
-      groupCheckItems(temp, checkLoading, groupingsConfig)._.push(
-        new ControlRunningNode(checkLoading.control)
+        getCheckResultNode(checkResult)
       )
     );
 
     const results = new RootNode(result);
+
+    const firstChildSummaries: CheckSummary[] = [];
+    for (const child of results.children) {
+      firstChildSummaries.push(child.summary);
+    }
+
     return [b, results, firstChildSummaries] as const;
   }, [groupingsConfig, rootBenchmark]);
 

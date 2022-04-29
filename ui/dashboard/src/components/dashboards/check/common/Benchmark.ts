@@ -2,8 +2,6 @@ import Control from "./Control";
 import merge from "lodash/merge";
 import padStart from "lodash/padStart";
 import {
-  AddControlErrorAction,
-  AddControlLoadingAction,
   AddControlResultsAction,
   CheckControl,
   CheckDynamicColsMap,
@@ -28,11 +26,7 @@ class Benchmark implements CheckNode {
   private readonly _description?: string;
   private readonly _benchmarks: Benchmark[];
   private readonly _controls: Control[];
-  private readonly _add_control_loading: AddControlLoadingAction;
-  private readonly _add_control_error: AddControlErrorAction;
   private readonly _add_control_results: AddControlResultsAction;
-  private readonly _all_control_loadings: CheckResult[];
-  private readonly _all_control_errors: CheckResult[];
   private readonly _all_control_results: CheckResult[];
 
   constructor(
@@ -43,29 +37,13 @@ class Benchmark implements CheckNode {
     benchmarks: CheckGroup[] | undefined,
     controls: CheckControl[] | undefined,
     trunk: Benchmark[],
-    add_control_loading?: AddControlLoadingAction,
-    add_control_error?: AddControlErrorAction,
     add_control_results?: AddControlResultsAction
   ) {
     this._sortIndex = sortIndex;
-    this._all_control_loadings = [];
-    this._all_control_errors = [];
     this._all_control_results = [];
     this._name = name;
     this._title = title || name;
     this._description = description;
-
-    if (!add_control_loading) {
-      this._add_control_loading = this.add_control_loading;
-    } else {
-      this._add_control_loading = add_control_loading;
-    }
-
-    if (!add_control_error) {
-      this._add_control_error = this.add_control_error;
-    } else {
-      this._add_control_error = add_control_error;
-    }
 
     if (!add_control_results) {
       this._add_control_results = this.add_control_results;
@@ -87,8 +65,6 @@ class Benchmark implements CheckNode {
           nestedBenchmark.groups,
           nestedBenchmark.controls,
           [...trunk, this],
-          this._add_control_loading,
-          this._add_control_error,
           this._add_control_results
         )
       );
@@ -113,8 +89,6 @@ class Benchmark implements CheckNode {
           nestedControl.run_status,
           nestedControl.run_error,
           [...trunk, this],
-          this._add_control_loading,
-          this._add_control_error,
           this._add_control_results
         )
       );
@@ -123,61 +97,9 @@ class Benchmark implements CheckNode {
     this._controls = nestedControls;
   }
 
-  private add_control_loading = (
-    benchmark_trunk: Benchmark[],
-    control: Control
-  ) => {
-    this._all_control_loadings.push({
-      dimensions: [],
-      tags: control.tags,
-      control,
-      reason: "",
-      resource: "",
-      status: "ok",
-      benchmark_trunk,
-    });
+  private add_control_results = (results: CheckResult[]) => {
+    this._all_control_results.push(...results);
   };
-
-  private add_control_error = (
-    error: string,
-    benchmark_trunk: Benchmark[],
-    control: Control
-  ) => {
-    this._all_control_errors.push({
-      error,
-      dimensions: [],
-      tags: control.tags,
-      control,
-      reason: "",
-      resource: "",
-      status: "error",
-      benchmark_trunk,
-    });
-  };
-
-  private add_control_results = (
-    results: CheckResult[],
-    benchmark_trunk: Benchmark[],
-    control: Control
-  ) => {
-    this._all_control_results.push(
-      ...results.map((r) => ({
-        ...r,
-        severity: control.severity,
-        tags: control.tags,
-        benchmark_trunk,
-        control,
-      }))
-    );
-  };
-
-  get all_control_loadings(): CheckResult[] {
-    return this._all_control_loadings;
-  }
-
-  get all_control_errors(): CheckResult[] {
-    return this._all_control_errors;
-  }
 
   get all_control_results(): CheckResult[] {
     return this._all_control_results;

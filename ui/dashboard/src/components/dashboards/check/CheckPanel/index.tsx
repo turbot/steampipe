@@ -1,10 +1,12 @@
 import CheckSummaryChart from "../CheckSummaryChart";
+import ControlEmptyResultNode from "../common/node/ControlEmptyResultNode";
 import ControlErrorNode from "../common/node/ControlErrorNode";
 import ControlResultNode from "../common/node/ControlResultNode";
 import sortBy from "lodash/sortBy";
 import {
   AlarmIcon,
   CollapseBenchmarkIcon,
+  EmptyIcon,
   ErrorIcon,
   ExpandCheckNodeIcon,
   InfoIcon,
@@ -33,8 +35,9 @@ interface CheckChildrenProps {
 }
 
 interface CheckResultsProps {
-  results: ControlResultNode[];
+  empties: ControlEmptyResultNode[];
   errors: ControlErrorNode[];
+  results: ControlResultNode[];
 }
 
 interface CheckPanelProps {
@@ -51,6 +54,10 @@ interface CheckPanelSeverityProps {
 interface CheckPanelSeverityBadgeProps {
   label: string;
   count: number;
+}
+
+interface CheckEmptyResultRowProps {
+  node: ControlEmptyResultNode;
 }
 
 interface CheckResultRowProps {
@@ -123,6 +130,8 @@ const CheckResultRowStatusIcon = ({
       return <InfoIcon className="h-5 w-5 text-info" />;
     case "skip":
       return <SkipIcon className="h-5 w-5 text-skip" />;
+    case "empty":
+      return <EmptyIcon className="h-5 w-5 text-skip" />;
     default:
       return <UnknownIcon className="h-5 w-5 text-skip" />;
   }
@@ -140,6 +149,8 @@ const getCheckResultRowIconTitle = (status: CheckResultStatus) => {
       return "Info";
     case "skip":
       return "Skipped";
+    case "empty":
+      return "No results";
   }
 };
 
@@ -168,6 +179,20 @@ const CheckResultRow = ({ result }: CheckResultRowProps) => {
   );
 };
 
+const CheckEmptyResultRow = ({ node }: CheckEmptyResultRowProps) => {
+  return (
+    <div className="flex bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
+      <div
+        className="flex-shrink-0"
+        title={getCheckResultRowIconTitle("empty")}
+      >
+        <CheckResultRowStatusIcon status="empty" />
+      </div>
+      <div className="leading-4 mt-px">{node.title}</div>
+    </div>
+  );
+};
+
 const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
   return (
     <div className="flex bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
@@ -182,10 +207,10 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
   );
 };
 
-const CheckResults = ({ errors, results }: CheckResultsProps) => {
+const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
   const { theme } = useTheme();
 
-  if (!errors || !results) {
+  if (!empties || !errors || !results) {
     return null;
   }
 
@@ -198,6 +223,9 @@ const CheckResults = ({ errors, results }: CheckResultsProps) => {
           : "border-background"
       )}
     >
+      {empties.map((emptyNode) => (
+        <CheckEmptyResultRow key={`${emptyNode.name}`} node={emptyNode} />
+      ))}
       {errors.map((errorNode) => (
         <CheckErrorRow key={`${errorNode.name}`} error={errorNode.error} />
       ))}
@@ -259,28 +287,32 @@ const CheckPanel = ({
 }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
 
-  const [child_nodes, error_nodes, result_nodes, can_be_expanded] =
+  const [child_nodes, error_nodes, empty_nodes, result_nodes, can_be_expanded] =
     useMemo(() => {
       const children: CheckNode[] = [];
       const errors: ControlErrorNode[] = [];
+      const empty: ControlEmptyResultNode[] = [];
       const results: ControlResultNode[] = [];
       for (const child of node.children || []) {
         if (child.type === "error") {
           errors.push(child as ControlErrorNode);
         } else if (child.type === "result") {
           results.push(child as ControlResultNode);
+        } else if (child.type === "empty_result") {
+          empty.push(child as ControlEmptyResultNode);
         } else if (child.type !== "running") {
           children.push(child);
         }
       }
       return [
         sortBy(children, "sort"),
-        errors,
+        sortBy(errors, "sort"),
+        sortBy(empty, "sort"),
         results,
         children.length > 0 ||
           (groupingConfig &&
             groupingConfig[groupingConfig.length - 1].type === "result" &&
-            (errors.length > 0 || results.length > 0)),
+            (errors.length > 0 || empty.length > 0 || results.length > 0)),
       ];
     }, [groupingConfig, node]);
 
@@ -291,7 +323,10 @@ const CheckPanel = ({
           className={classNames(
             "bg-dashboard-panel shadow-sm rounded-md",
             can_be_expanded ? "cursor-pointer" : null,
-            expanded && (error_nodes.length > 0 || result_nodes.length > 0)
+            expanded &&
+              (empty_nodes.length > 0 ||
+                error_nodes.length > 0 ||
+                result_nodes.length > 0)
               ? "rounded-b-none"
               : null
           )}
@@ -331,7 +366,11 @@ const CheckPanel = ({
         {expanded &&
           groupingConfig &&
           groupingConfig[groupingConfig.length - 1].type === "result" && (
-            <CheckResults errors={error_nodes} results={result_nodes} />
+            <CheckResults
+              empties={empty_nodes}
+              errors={error_nodes}
+              results={result_nodes}
+            />
           )}
       </div>
       {expanded && (

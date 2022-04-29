@@ -7,7 +7,7 @@ import {
   CheckSeveritySummary,
 } from "../index";
 
-class ControlErrorNode implements CheckNode {
+class ControlEmptyResultNode implements CheckNode {
   private readonly _result: CheckResult;
 
   constructor(result: CheckResult) {
@@ -23,15 +23,15 @@ class ControlErrorNode implements CheckNode {
   }
 
   get title(): string {
-    return this._result.control.title || this.name;
+    return "No results";
   }
 
-  get error(): string {
-    return this._result.control.error || "Unknown error";
+  get result(): CheckResult {
+    return this._result;
   }
 
   get type(): CheckNodeType {
-    return "error";
+    return "empty_result";
   }
 
   get summary(): CheckSummary {
@@ -40,7 +40,7 @@ class ControlErrorNode implements CheckNode {
       ok: 0,
       info: 0,
       skip: 0,
-      error: 1,
+      error: 0,
     };
   }
 
@@ -54,9 +54,9 @@ class ControlErrorNode implements CheckNode {
   }
 
   get status(): CheckNodeStatus {
-    // If a control has gone to error, this node is complete
+    // If a control has no results, this node is complete
     return "complete";
   }
 }
 
-export default ControlErrorNode;
+export default ControlEmptyResultNode;

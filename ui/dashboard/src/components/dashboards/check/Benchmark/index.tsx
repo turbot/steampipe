@@ -141,7 +141,7 @@ const Benchmark = (props: InnerCheckProps) => {
       });
     }
     return summary_cards;
-  }, [props.firstChildSummaries, props.grouping]);
+  }, [props.firstChildSummaries, props.grouping, props.name]);
 
   if (!props.grouping) {
     return null;

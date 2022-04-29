@@ -3,16 +3,15 @@ import {
   CheckNodeType,
   CheckSummary,
   CheckNode,
+  CheckResult,
   CheckSeveritySummary,
 } from "../index";
 
 class ControlRunningNode implements CheckNode {
-  private readonly _name: string;
-  private readonly _title: string | undefined;
+  private readonly _result: CheckResult;
 
-  constructor(control: CheckNode) {
-    this._name = `${control.name}-loading`;
-    this._title = `${control.name}-loading`;
+  constructor(result: CheckResult) {
+    this._result = result;
   }
 
   get sort(): string {
@@ -20,11 +19,11 @@ class ControlRunningNode implements CheckNode {
   }
 
   get name(): string {
-    return this._name;
+    return this._result.control.name;
   }
 
   get title(): string {
-    return this._title || this._name;
+    return this._result.control.title || this.name;
   }
 
   get type(): CheckNodeType {
@@ -42,7 +41,12 @@ class ControlRunningNode implements CheckNode {
   }
 
   get severity_summary(): CheckSeveritySummary {
-    return {};
+    // Bubble up the node's severity - always zero though as we have no results
+    const summary = {};
+    if (this._result.control.severity) {
+      summary[this._result.control.severity] = 0;
+    }
+    return summary;
   }
 
   get status(): CheckNodeStatus {

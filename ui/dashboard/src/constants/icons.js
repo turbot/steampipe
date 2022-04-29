@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/outline";
 import {
   ArrowCircleRightIcon as ArrowCircleRightIconSolid,
+  BanIcon as BanIconSolid,
   BellIcon as BellIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
@@ -35,6 +36,7 @@ export const ExpandCheckNodeIcon = ChevronDownIconOutline;
 
 // Control
 export const AlarmIcon = BellIconSolid;
+export const EmptyIcon = BanIconSolid;
 export const InfoIcon = InformationCircleIconSolid;
 export const OKIcon = CheckCircleIconSolid;
 export const SkipIcon = ArrowCircleRightIconSolid;

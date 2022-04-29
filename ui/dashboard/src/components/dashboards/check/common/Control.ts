@@ -1,7 +1,5 @@
 import Benchmark from "./Benchmark";
 import {
-  AddControlErrorAction,
-  AddControlLoadingAction,
   AddControlResultsAction,
   CheckDynamicColsMap,
   CheckNode,
@@ -47,8 +45,6 @@ class Control implements CheckNode {
     status: CheckNodeStatusRaw,
     run_error: string | undefined,
     benchmark_trunk: Benchmark[],
-    add_control_loading: AddControlLoadingAction,
-    add_control_error: AddControlErrorAction,
     add_control_results: AddControlResultsAction
   ) {
     this._sortIndex = sortIndex;
@@ -72,11 +68,17 @@ class Control implements CheckNode {
     this._run_error = run_error;
 
     if (this._run_state === 1 || this._run_state === 2) {
-      add_control_loading(benchmark_trunk, this);
+      add_control_results([this._build_control_loading_node(benchmark_trunk)]);
     } else if (this._run_error) {
-      add_control_error(this._run_error, benchmark_trunk, this);
+      add_control_results([
+        this._build_control_error_node(benchmark_trunk, this._run_error),
+      ]);
+    } else if (!this._results || this._results.length === 0) {
+      add_control_results([this._build_control_empty_result(benchmark_trunk)]);
     } else {
-      add_control_results(this._results, benchmark_trunk, this);
+      add_control_results(
+        this._build_control_results(benchmark_trunk, this._results)
+      );
     }
   }
 
@@ -110,10 +112,6 @@ class Control implements CheckNode {
 
   get error(): string | undefined {
     return this._run_error;
-  }
-
-  get run_state(): CheckNodeStatusRaw {
-    return this._run_state;
   }
 
   get status(): CheckNodeStatus {
@@ -183,6 +181,68 @@ class Control implements CheckNode {
     });
     return rows;
   }
+
+  private _build_control_loading_node = (
+    benchmark_trunk: Benchmark[]
+  ): CheckResult => {
+    return {
+      type: "loading",
+      dimensions: [],
+      tags: this.tags,
+      control: this,
+      reason: "",
+      resource: "",
+      status: "ok",
+      benchmark_trunk,
+    };
+  };
+
+  private _build_control_error_node = (
+    benchmark_trunk: Benchmark[],
+    error: string
+  ): CheckResult => {
+    return {
+      type: "error",
+      error,
+      dimensions: [],
+      tags: this.tags,
+      control: this,
+      reason: "",
+      resource: "",
+      status: "error",
+      benchmark_trunk,
+    };
+  };
+
+  private _build_control_empty_result = (
+    benchmark_trunk: Benchmark[]
+  ): CheckResult => {
+    return {
+      type: "empty",
+      error: undefined,
+      dimensions: [],
+      tags: this.tags,
+      control: this,
+      reason: "",
+      resource: "",
+      status: "error",
+      benchmark_trunk,
+    };
+  };
+
+  private _build_control_results = (
+    benchmark_trunk: Benchmark[],
+    results: CheckResult[]
+  ): CheckResult[] => {
+    return results.map((r) => ({
+      ...r,
+      type: "result",
+      severity: this.severity,
+      tags: this.tags,
+      benchmark_trunk,
+      control: this,
+    }));
+  };
 }
 
 export default Control;

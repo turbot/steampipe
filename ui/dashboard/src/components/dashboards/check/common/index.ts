@@ -1,11 +1,11 @@
-import Control from "./Control";
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 import Benchmark from "./Benchmark";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
 
 export type CheckNodeType =
   | "benchmark"
   | "control"
   | "dimension"
+  | "empty_result"
   | "error"
   | "reason"
   | "resource"
@@ -29,23 +29,6 @@ export interface CheckNode {
   results?: CheckResult[];
   error?: string;
 }
-
-// export interface IControl {
-//   name: string;
-//   title: string;
-//   description?: string;
-//   summary: CheckSummary;
-//   results?: IControlResult[];
-// }
-
-// export interface IBenchmark {
-//   name: string;
-//   title: string;
-//   description?: string;
-//   summary: CheckSummary;
-//   benchmarks: IBenchmark[];
-//   controls: IControl[];
-// }
 
 export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
 
@@ -88,7 +71,15 @@ interface CheckResultDimension {
   value: string;
 }
 
-export type CheckResultStatus = "alarm" | "ok" | "info" | "skip" | "error";
+export type CheckResultStatus =
+  | "alarm"
+  | "ok"
+  | "info"
+  | "skip"
+  | "error"
+  | "empty";
+
+export type CheckResultType = "loading" | "error" | "empty" | "result";
 
 export interface CheckResult {
   dimensions: CheckResultDimension[];
@@ -100,6 +91,7 @@ export interface CheckResult {
   resource: string;
   severity?: CheckSeverity;
   error?: string;
+  type: CheckResultType;
 }
 
 export interface CheckControl {
@@ -163,22 +155,7 @@ export type BenchmarkTreeProps = BasePrimitiveProps &
     };
   };
 
-export type AddControlLoadingAction = (
-  benchmark_trunk: Benchmark[],
-  control: Control
-) => void;
-
-export type AddControlErrorAction = (
-  error: string,
-  benchmark_trunk: Benchmark[],
-  control: Control
-) => void;
-
-export type AddControlResultsAction = (
-  results: CheckResult[],
-  benchmark_trunk: Benchmark[],
-  control: Control
-) => void;
+export type AddControlResultsAction = (results: CheckResult[]) => void;
 
 export const findDimension = (
   dimensions?: CheckResultDimension[],
