@@ -13,6 +13,7 @@ import {
   CheckSeveritySummary,
   CheckSummary,
   CheckTags,
+  findDimension,
 } from "./index";
 import { LeafNodeDataRow } from "../../common";
 
@@ -145,13 +146,10 @@ class Control implements CheckNode {
     if (this._results.length === 0) {
       return dimensionKeysMap;
     }
-    // for (const result of this._results) {
-    //   for (const dimension of result.dimensions) {
-    //     dimensionKeysMap[dimension.key] = true;
-    //   }
-    // }
-    for (const dimension of this._results[0].dimensions || []) {
-      dimensionKeysMap.dimensions[dimension.key] = true;
+    for (const result of this._results) {
+      for (const dimension of result.dimensions || []) {
+        dimensionKeysMap.dimensions[dimension.key] = true;
+      }
     }
     return dimensionKeysMap;
   }
@@ -178,7 +176,7 @@ class Control implements CheckNode {
       });
 
       dimensions.forEach((dimension) => {
-        const val = result.dimensions.find((d) => d.key === dimension);
+        const val = findDimension(result.dimensions, dimension);
         row.push(val === undefined ? null : val.value);
       });
 

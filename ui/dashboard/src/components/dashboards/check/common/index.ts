@@ -179,3 +179,13 @@ export type AddControlResultsAction = (
   benchmark_trunk: Benchmark[],
   control: Control
 ) => void;
+
+export const findDimension = (
+  dimensions?: CheckResultDimension[],
+  key?: string
+) => {
+  if (!dimensions || !key) {
+    return undefined;
+  }
+  return dimensions.find((d) => d.key === key);
+};

@@ -14,6 +14,7 @@ import {
   CheckProps,
   CheckResult,
   CheckSummary,
+  findDimension,
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
@@ -39,9 +40,7 @@ const getCheckGroupingKey = (
 ) => {
   switch (group.type) {
     case "dimension":
-      const foundDimension = checkResult.dimensions.find(
-        (d) => d.key === group.value
-      );
+      const foundDimension = findDimension(checkResult.dimensions, group.value);
       return foundDimension ? foundDimension.value : "Other";
     case "tag":
       return group.value ? checkResult.tags[group.value] || "Other" : "Other";
@@ -73,9 +72,7 @@ const getCheckGroupingNode = (
 ) => {
   switch (group.type) {
     case "dimension":
-      const foundDimension = checkResult.dimensions.find(
-        (d) => d.key === group.value
-      );
+      const foundDimension = findDimension(checkResult.dimensions, group.value);
       const dimensionValue = foundDimension ? foundDimension.value : "Other";
       return new KeyValuePairNode(
         "dimension",
