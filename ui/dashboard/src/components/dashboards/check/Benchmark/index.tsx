@@ -39,11 +39,15 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 
 const Benchmark = (props: InnerCheckProps) => {
   const benchmarkDataTable = useMemo(() => {
-    if (!props.benchmark || props.grouping.status !== "complete") {
+    if (
+      !props.benchmark ||
+      !props.grouping ||
+      props.grouping.status !== "complete"
+    ) {
       return undefined;
     }
     return props.benchmark.get_data_table();
-  }, [props.benchmark]);
+  }, [props.benchmark, props.grouping]);
 
   const summary_cards = useMemo(() => {
     if (!props.grouping) {
