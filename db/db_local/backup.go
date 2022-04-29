@@ -107,7 +107,7 @@ func errIfInstanceRunning(ctx context.Context, location string) error {
 
 // backup the old pg instance public schema using pg_dump
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
-	cmd := PgDumpCmd(
+	cmd := pgDumpCmd(
 		ctx,
 		fmt.Sprintf("--file=%s", databaseBackupFilePath()),
 		fmt.Sprintf("--format=%s", backupFormat),
@@ -292,7 +292,7 @@ func restoreBackup(ctx context.Context) error {
 }
 
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
-	cmd := PgRestoreCmd(
+	cmd := pgRestoreCmd(
 		ctx,
 		databaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
@@ -347,7 +347,7 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 // getTableOfContentsFromBackup uses pg_restore to read the TableOfContents from the
 // back archive
 func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
-	cmd := PgRestoreCmd(
+	cmd := pgRestoreCmd(
 		ctx,
 		databaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
@@ -381,29 +381,32 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	return lines, err
 }
 
-func PgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
+func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
 		pgDumpBinaryExecutablePath(),
 		args...,
 	)
 	log.Println("[TRACE] pg_dump command:", cmd.String())
-	addLDPath(ctx, cmd)
+	updateDynamicLibPath(ctx, cmd)
 	return cmd
 }
 
-func PgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
+func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
 		pgRestoreBinaryExecutablePath(),
 		args...,
 	)
 	log.Println("[TRACE] pg_restore command:", cmd.String())
-	addLDPath(ctx, cmd)
+	updateDynamicLibPath(ctx, cmd)
 	return cmd
 }
 
-func addLDPath(ctx context.Context, cmd *exec.Cmd) {
+// updateDynamicLibPath adds the 'libdir' as a priority in the LD_LIBRARY_PATH (DYLD_LIBRARY_PATH for darwin)
+// environment variable. This is done when we start 'pg_dump' and 'pg_restore' - so that these binaries always
+// prioritise libraries in the steampipe installation over system libraries.
+func updateDynamicLibPath(ctx context.Context, cmd *exec.Cmd) {
 	currentEnv := cmd.Env
 	envKey := ""
 	currentValue := ""
@@ -431,4 +434,5 @@ func addLDPath(ctx context.Context, cmd *exec.Cmd) {
 	}
 
 	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", envKey, newValue))
+	log.Printf("[TRACE] %s set to %s in ENV", envKey, newValue)
 }
