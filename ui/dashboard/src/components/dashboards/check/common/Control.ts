@@ -71,13 +71,12 @@ class Control implements CheckNode {
     this._run_state = status;
     this._run_error = run_error;
 
-    if (this._run_error) {
-      add_control_error(this._run_error, benchmark_trunk, this);
-    } else if (this._results) {
-      add_control_results(this._results, benchmark_trunk, this);
-    } else {
-      // console.log("Adding loading node", this._name);
+    if (this._run_state === 1 || this._run_state === 2) {
       add_control_loading(benchmark_trunk, this);
+    } else if (this._run_error) {
+      add_control_error(this._run_error, benchmark_trunk, this);
+    } else {
+      add_control_results(this._results, benchmark_trunk, this);
     }
   }
 

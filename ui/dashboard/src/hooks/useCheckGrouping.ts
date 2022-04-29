@@ -225,20 +225,8 @@ const addChildren = (node: CheckNode) => {
   return nodes;
 };
 
-const buildClassicStructure = (benchmark: BenchmarkType) =>
-  new RootNode(addChildren(benchmark));
-
 const useCheckGrouping = (props: CheckProps) => {
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
-
-  // & {
-  //     type?: CheckType;
-  //     properties: {
-  //       display: "all" | "none";
-  //       type?: CheckType;
-  //       grouping?: CheckDisplayGroup[];
-  //     };
-  //   }
 
   const groupingsConfig = useMemo(() => {
     if (!rootBenchmark || !rootBenchmark.grouping) {
@@ -248,16 +236,19 @@ const useCheckGrouping = (props: CheckProps) => {
         // { type: "result" },
         // { type: "status" },
         // { type: "reason" },
-        // { type: "resource" },
+        // { type: "tag", value: "service" },
+        // { type: "status" },
+
         // { type: "severity" },
         // { type: "dimension", value: "account_id" },
-        // { type: "status" },
-        // { type: "dimension", value: "region" },
+
         // { type: "tag", value: "service" },
         // { type: "tag", value: "cis_type" },
         // { type: "tag", value: "cis_level" },
         { type: "benchmark" },
         { type: "control" },
+        // { type: "dimension", value: "region" },
+        // { type: "resource" },
         { type: "result" },
       ] as CheckDisplayGroup[];
     }
@@ -285,29 +276,26 @@ const useCheckGrouping = (props: CheckProps) => {
       firstChildSummaries.push(child.summary);
     }
 
-    const results = buildClassicStructure(b);
-    return [b, results, firstChildSummaries] as const;
+    const result: CheckNode[] = [];
+    const temp = { _: result };
+    b.all_control_results.forEach((checkResult) =>
+      groupCheckItems(temp, checkResult, groupingsConfig)._.push(
+        new ControlResultNode(checkResult)
+      )
+    );
+    b.all_control_errors.forEach((checkError) =>
+      groupCheckItems(temp, checkError, groupingsConfig)._.push(
+        new ControlErrorNode(checkError)
+      )
+    );
+    b.all_control_loadings.forEach((checkLoading) =>
+      groupCheckItems(temp, checkLoading, groupingsConfig)._.push(
+        new ControlRunningNode(checkLoading.control)
+      )
+    );
 
-    // const result: CheckNode[] = [];
-    // const temp = { _: result };
-    // b.all_control_results.forEach((checkResult) =>
-    //   groupCheckItems(temp, checkResult, groupingsConfig)._.push(
-    //     new ControlResultNode(checkResult)
-    //   )
-    // );
-    // b.all_control_errors.forEach((checkError) =>
-    //   groupCheckItems(temp, checkError, groupingsConfig)._.push(
-    //     new ControlErrorNode(checkError)
-    //   )
-    // );
-    // b.all_control_loadings.forEach((checkLoading) =>
-    //   groupCheckItems(temp, checkLoading, groupingsConfig)._.push(
-    //     new ControlRunningNode(checkLoading.control)
-    //   )
-    // );
-    //
-    // const results = new RootNode(result);
-    // return [b, results, firstChildSummaries] as const;
+    const results = new RootNode(result);
+    return [b, results, firstChildSummaries] as const;
   }, [groupingsConfig, rootBenchmark]);
 
   return [
