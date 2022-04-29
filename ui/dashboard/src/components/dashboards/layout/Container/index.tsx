@@ -14,6 +14,7 @@ interface ContainerProps {
   allowExpand?: boolean;
   definition: ContainerDefinition;
   withNarrowVertical?: boolean;
+  withTitle?: boolean;
 }
 
 const Container = ({
@@ -21,6 +22,7 @@ const Container = ({
   allowExpand = false,
   definition,
   withNarrowVertical,
+  withTitle,
 }: ContainerProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
   const { dispatch } = useDashboard();
@@ -43,6 +45,7 @@ const Container = ({
           : undefined,
       }}
       withNarrowVertical={withNarrowVertical}
+      withTitle={withTitle}
     >
       <>
         {showZoomIcon && (

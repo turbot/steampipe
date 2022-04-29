@@ -83,6 +83,7 @@ const Children = ({
               key={child.name}
               allowChildPanelExpand={child.allow_child_panel_expand}
               definition={child}
+              withTitle={withTitle}
             />
           );
         // case "control":
