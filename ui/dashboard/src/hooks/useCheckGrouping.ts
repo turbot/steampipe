@@ -9,6 +9,7 @@ import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValu
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
   CheckDisplayGroup,
+  CheckDisplayGroupType,
   CheckNode,
   CheckProps,
   CheckResult,
@@ -17,6 +18,7 @@ import {
 } from "../components/dashboards/check/common";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
@@ -173,9 +175,28 @@ const getCheckResultNode = (checkResult: CheckResult) => {
 
 const useCheckGrouping = (props: CheckProps) => {
   const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
+  const [searchParams] = useSearchParams();
 
   const groupingsConfig = useMemo(() => {
-    if (!rootBenchmark || !rootBenchmark.grouping) {
+    const rawGrouping = searchParams.get("grouping");
+    if (rawGrouping) {
+      const groupings: CheckDisplayGroup[] = [];
+      const groupingParts = rawGrouping.split(",");
+      for (const groupingPart of groupingParts) {
+        const typeValueParts = groupingPart.split("|");
+        if (typeValueParts.length > 1) {
+          groupings.push({
+            type: typeValueParts[0] as CheckDisplayGroupType,
+            value: typeValueParts[1],
+          });
+        } else {
+          groupings.push({
+            type: typeValueParts[0] as CheckDisplayGroupType,
+          });
+        }
+      }
+      return groupings;
+    } else {
       return [
         // { type: "status" },
         // { type: "reason" },
@@ -193,8 +214,26 @@ const useCheckGrouping = (props: CheckProps) => {
       ] as CheckDisplayGroup[];
     }
 
-    return rootBenchmark.grouping;
-  }, [rootBenchmark]);
+    // if (!rootBenchmark || !rootBenchmark.grouping) {
+    //   return [
+    //     // { type: "status" },
+    //     // { type: "reason" },
+    //     // { type: "resource" },
+    //     // { type: "status" },
+    //     // { type: "severity" },
+    //     // { type: "dimension", value: "account_id" },
+    //     // { type: "dimension", value: "region" },
+    //     // { type: "tag", value: "service" },
+    //     // { type: "tag", value: "cis_type" },
+    //     // { type: "tag", value: "cis_level" },
+    //     { type: "benchmark" },
+    //     { type: "control" },
+    //     { type: "result" },
+    //   ] as CheckDisplayGroup[];
+    // }
+
+    // return rootBenchmark.grouping;
+  }, [rootBenchmark, searchParams]);
 
   const [benchmark, grouping, firstChildSummaries] = useMemo(() => {
     if (!rootBenchmark) {

@@ -130,17 +130,19 @@ export interface CheckExecutionTree {
 
 type CheckType = "summary" | "table" | null;
 
+export type CheckDisplayGroupType =
+  | "benchmark"
+  | "control"
+  | "result"
+  | "tag"
+  | "dimension"
+  | "reason"
+  | "resource"
+  | "severity"
+  | "status";
+
 export interface CheckDisplayGroup {
-  type:
-    | "benchmark"
-    | "control"
-    | "result"
-    | "tag"
-    | "dimension"
-    | "reason"
-    | "resource"
-    | "severity"
-    | "status";
+  type: CheckDisplayGroupType;
   value?: string;
 }
 
