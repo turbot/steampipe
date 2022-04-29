@@ -8,15 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
-	"time"
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/version"
 )
 
 var (
@@ -122,7 +121,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
 	log.Println("[TRACE] starting pg_dump command:", cmd.String())
-	addDYLDPath(ctx, cmd)
+	addLDPath(ctx, cmd)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] pg_dump process output:", string(output))
@@ -315,7 +314,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 	)
 
 	log.Println("[TRACE]", cmd.String())
-	addDYLDPath(ctx, cmd)
+	addLDPath(ctx, cmd)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] runRestoreUsingList process:", string(output))
@@ -359,7 +358,7 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 		"--list",
 	)
 	log.Println("[TRACE] TableOfContent extraction command: ", cmd.String())
-	addDYLDPath(ctx, cmd)
+	addLDPath(ctx, cmd)
 
 	b, err := cmd.Output()
 	if err != nil {
@@ -385,15 +384,14 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	return lines, err
 }
 
-
 func PgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
 		pgDumpBinaryExecutablePath(),
 		args...,
 	)
-	log.Println("[TRACE] starting pg_dump command:", cmd.String())
-	addDYLDPath(ctx, cmd)
+	log.Println("[TRACE] pg_dump command:", cmd.String())
+	addLDPath(ctx, cmd)
 	return cmd
 }
 
@@ -403,12 +401,12 @@ func PgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 		pgRestoreBinaryExecutablePath(),
 		args...,
 	)
-	log.Println("[TRACE] starting pg_restore command:", cmd.String())
-	addDYLDPath(ctx, cmd)
+	log.Println("[TRACE] pg_restore command:", cmd.String())
+	addLDPath(ctx, cmd)
 	return cmd
 }
 
-func addDYLDPath(ctx context.Context, cmd *exec.Cmd) {
+func addLDPath(ctx context.Context, cmd *exec.Cmd) {
 	// currentEnv := cmd.Env
 	// for _, envTuple := range currentEnv {
 	// 	split := utils.SplitByRune(envTuple, '=')
@@ -416,5 +414,9 @@ func addDYLDPath(ctx context.Context, cmd *exec.Cmd) {
 	// 		cmd.Env = append(cmd.Env)
 	// 	}
 	// }
-	cmd.Env = append(cmd.Env, fmt.Sprintf("DYLD_LIBRARY_PATH=%s", getDatabaseLibDirectory()))
+	if runtime.GOOS == constants.OSDarwin {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("DYLD_LIBRARY_PATH=%s", getDatabaseLibDirectory()))
+	} else if runtime.GOOS == constants.OSLinux {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("LD_LIBRARY_PATH=%s", getDatabaseLibDirectory()))
+	}
 }
