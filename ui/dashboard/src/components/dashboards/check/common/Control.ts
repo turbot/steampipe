@@ -225,7 +225,7 @@ class Control implements CheckNode {
       control: this,
       reason: "",
       resource: "",
-      status: "error",
+      status: "empty",
       benchmark_trunk,
     };
   };

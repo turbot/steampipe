@@ -50,7 +50,7 @@ const getCheckGroupingKey = (
     case "severity":
       return checkResult.control.severity || "Other";
     case "status":
-      return checkResult.status;
+      return checkResult.status === "empty" ? "Other" : checkResult.status;
     case "benchmark":
       if (checkResult.benchmark_trunk.length <= 1) {
         return null;
@@ -110,7 +110,7 @@ const getCheckGroupingNode = (
       return new KeyValuePairNode(
         "status",
         "status",
-        checkResult.status,
+        checkResult.status === "empty" ? "Other" : checkResult.status,
         children
       );
     case "benchmark":
