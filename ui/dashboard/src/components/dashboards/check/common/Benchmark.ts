@@ -51,6 +51,7 @@ class Benchmark implements CheckNode {
       this._add_control_results = add_control_results;
     }
 
+    const thisTrunk = [...trunk, this];
     const nestedBenchmarks: Benchmark[] = [];
     const benchmarksToAdd = benchmarks || [];
     const lengthMaxBenchmarkIndex = (benchmarksToAdd.length - 1).toString()
@@ -64,7 +65,7 @@ class Benchmark implements CheckNode {
           nestedBenchmark.description,
           nestedBenchmark.groups,
           nestedBenchmark.controls,
-          [...trunk, this],
+          thisTrunk,
           this._add_control_results
         )
       );
@@ -88,7 +89,7 @@ class Benchmark implements CheckNode {
           nestedControl.tags,
           nestedControl.run_status,
           nestedControl.run_error,
-          [...trunk, this],
+          thisTrunk,
           this._add_control_results
         )
       );

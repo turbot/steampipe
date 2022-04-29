@@ -54,6 +54,7 @@ interface CheckPanelSeverityProps {
 interface CheckPanelSeverityBadgeProps {
   label: string;
   count: number;
+  title: string;
 }
 
 interface CheckEmptyResultRowProps {
@@ -240,8 +241,9 @@ const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
 };
 
 const CheckPanelSeverityBadge = ({
-  label,
   count,
+  label,
+  title,
 }: CheckPanelSeverityBadgeProps) => {
   return (
     <div
@@ -252,6 +254,7 @@ const CheckPanelSeverityBadge = ({
           ? "bg-yellow text-white divide-white"
           : "text-skip divide-skip"
       )}
+      title={title}
     >
       <span className={classNames("px-2 py-px")}>{label}</span>
       {count > 0 && <span className={classNames("px-2 py-px")}>{count}</span>}
@@ -270,10 +273,18 @@ const CheckPanelSeverity = ({ severity_summary }: CheckPanelSeverityProps) => {
   return (
     <>
       {critical !== undefined && (
-        <CheckPanelSeverityBadge label="Critical" count={critical} />
+        <CheckPanelSeverityBadge
+          label="Critical"
+          count={critical}
+          title={`${critical.toLocaleString()} critical severity results`}
+        />
       )}
       {high !== undefined && (
-        <CheckPanelSeverityBadge label="High" count={high} />
+        <CheckPanelSeverityBadge
+          label="High"
+          count={high}
+          title={`${high.toLocaleString()} high severity results`}
+        />
       )}
     </>
   );
