@@ -63,10 +63,10 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		return nil, nil
 	}
 	// fail if there is an instance of the found installation running
-	// if err := errIfInstanceRunning(ctx, location); err != nil {
-	// 	log.Println("[TRACE] Error while checking for running services:", err)
-	// 	return nil, err
-	// }
+	if err := errIfInstanceRunning(ctx, location); err != nil {
+		log.Println("[TRACE] Error while checking for running services:", err)
+		return nil, err
+	}
 	runConfig, err := startDatabaseInLocation(ctx, location)
 	if err != nil {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
