@@ -413,7 +413,7 @@ func updateDynamicLibPath(ctx context.Context, cmd *exec.Cmd) {
 
 	switch runtime.GOOS {
 	case constants.OSDarwin:
-		envKey = "DYLD_LIBRARY_PATH"
+		envKey = "DYLD_FALLBACK_LIBRARY_PATH"
 	case constants.OSLinux:
 		envKey = "LD_LIBRARY_PATH"
 	}
