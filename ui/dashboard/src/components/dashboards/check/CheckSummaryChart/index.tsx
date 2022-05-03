@@ -334,11 +334,17 @@ const CheckSummaryChart = ({
       <div className="my-auto px-0" style={{ width: `${alertsWidth}%` }}>
         <ProgressBarGroup className="flex-row-reverse">
           <ProgressBar
-            className="bg-alert border border-alert"
+            className={classNames(
+              "border border-alert",
+              status === "running" ? "summary-chart-alarm-animate" : "bg-alert"
+            )}
             percent={getCheckSummaryChartPercent(summary.alarm, maxAlerts)}
           />
           <ProgressBar
-            className="border border-alert"
+            className={classNames(
+              "border border-alert",
+              status === "running" ? "summary-chart-error-animate" : null
+            )}
             percent={getCheckSummaryChartPercent(summary.error, maxAlerts)}
           />
           <AlertProgressBarGroupTotal className="mr-2" summary={summary} />
@@ -353,15 +359,24 @@ const CheckSummaryChart = ({
       <div className="my-auto px-0" style={{ width: `${nonAlertsWidth}%` }}>
         <ProgressBarGroup>
           <ProgressBar
-            className="bg-ok border border-ok"
+            className={classNames(
+              "border border-ok",
+              status === "running" ? "summary-chart-ok-animate" : "bg-ok"
+            )}
             percent={getCheckSummaryChartPercent(summary.ok, maxNonAlerts)}
           />
           <ProgressBar
-            className="bg-info border border-info"
+            className={classNames(
+              "border border-info",
+              status === "running" ? "summary-chart-info-animate" : "bg-info"
+            )}
             percent={getCheckSummaryChartPercent(summary.info, maxNonAlerts)}
           />
           <ProgressBar
-            className="bg-skip border border-skip"
+            className={classNames(
+              "border border-skip",
+              status === "running" ? "summary-chart-skip-animate" : "bg-skip"
+            )}
             percent={getCheckSummaryChartPercent(summary.skip, maxNonAlerts)}
           />
           <NonAlertProgressBarGroupTotal className="ml-2" summary={summary} />
