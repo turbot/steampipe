@@ -1,7 +1,8 @@
 import jq from "jq-web";
 
-const interpolatedStringSplitter = /((?<!\\){(?<!\\){[^}]+(?<!\\)}(?<!\\)})/gm;
-const interpolatedMatcher = /(?<!\\){(?<!\\){([^}]+)(?<!\\)}(?<!\\)}/gm;
+const interpolatedStringSplitter = /({{.*?}})/gm;
+const interpolatedMatcher = /{{(.*?)}}/gm;
+const singleQuoteMatcher = /(?:^|[^\\])(')/gm;
 
 interface TemplatesMap {
   [key: string]: string;
@@ -18,50 +19,59 @@ export interface RowRenderResult {
   };
 }
 
-const renderInterpolatedTemplates = async (
-  templates: TemplatesMap,
-  data: DataMap[]
-): Promise<RowRenderResult[]> => {
+export const buildJQFilter = (template) => {
+  if (!template) {
+    return template;
+  }
+
+  const templateParts = template
+    .split(interpolatedStringSplitter)
+    .filter((p) => p);
+  const newTemplateParts: string[] = [];
+  // Iterate over each template part - we want to distinguish between regular strings and
+  // interpolated strings - we'll treat them differently.
+  for (const templatePart of templateParts) {
+    const interpolatedMatch = interpolatedMatcher.exec(templatePart);
+    // If it's a plain string, quote it
+    if (!interpolatedMatch) {
+      newTemplateParts.push(`"${templatePart}"`);
+    } else {
+      // If it's an interpolated string, replace the double curly braces with single parentheses
+      // to frame this particular jq sub-expression
+      let newInterpolatedTemplate = templatePart;
+      newInterpolatedTemplate =
+        "(" + newInterpolatedTemplate.substring(interpolatedMatch.index + 2);
+      newInterpolatedTemplate =
+        newInterpolatedTemplate.substring(0, interpolatedMatch[0].length - 3) +
+        ")";
+
+      // Replace any unescaped single quotes with jq-compatible double quotes
+      const singleQuoteMatches =
+        newInterpolatedTemplate.matchAll(singleQuoteMatcher);
+      for (const singleQuoteMatch of singleQuoteMatches) {
+        const matchPrefix = singleQuoteMatch[0]
+          .split(singleQuoteMatch[1])
+          .join("");
+        newInterpolatedTemplate =
+          newInterpolatedTemplate.substring(0, singleQuoteMatch.index) +
+          `${matchPrefix}"` +
+          newInterpolatedTemplate.substring(
+            singleQuoteMatch.index + singleQuoteMatch[0].length
+          );
+      }
+      newTemplateParts.push(newInterpolatedTemplate);
+    }
+  }
+
+  // Join all field parts with + and then quote the overall filter
+  return `(${newTemplateParts.join(" + ")})`;
+};
+
+const buildCombinedJQFilter = (templates: TemplatesMap) => {
   const filters: TemplatesMap = {};
   // Iterate over all the template fields
   for (const [field, template] of Object.entries(templates)) {
-    // First, we want to split the string, but unlike a normal string split where you wouldn't
-    // include the split char(s), here we want to split on interpolated expressions and include those
-    // in the split array - we can do that with a regex split that has a capturing group
-    const templateParts = template
-      .split(interpolatedStringSplitter)
-      .filter((p) => p);
-    const newTemplateParts: string[] = [];
-    // Iterate over each template part - we want to distinguish between regular strings and
-    // interpolated strings - we'll treat them differently.
-    for (const templatePart of templateParts) {
-      const interpolatedMatch = templatePart.match(interpolatedMatcher);
-      // If it's a plain string, quote it
-      if (!interpolatedMatch) {
-        newTemplateParts.push(`"${templatePart}"`);
-      } else {
-        // If it's an interpolated string, replace the double curly braces with single parenthese
-        // to frame this particular jq sub-expression
-        let newInterpolatedTemplate = templatePart;
-        newInterpolatedTemplate = newInterpolatedTemplate.replace(
-          /(?<!\\){(?<!\\){/,
-          "("
-        );
-        newInterpolatedTemplate = newInterpolatedTemplate.replace(
-          /(?<!\\)}(?<!\\)}/,
-          ")"
-        );
-        // Ensure that unescape single quotes are escaped to jq-compatible double quotes
-        const doubleQuotedFilter = (newInterpolatedTemplate || "").replace(
-          /(?<!\\)'/gm,
-          '"'
-        );
-        newTemplateParts.push(doubleQuotedFilter);
-      }
-    }
-
-    // Join all field parts with + and then quote the overall filter
-    filters[field] = `(${newTemplateParts.join(" + ")})`;
+    filters[field] = buildJQFilter(template);
   }
 
   // Now we want to include all fields with their filter - we're going to map the output to
@@ -72,8 +82,14 @@ const renderInterpolatedTemplates = async (
 
   // Finally, build the overall filter - which will iterate over all passed in rows of data, then turn
   // the result into an array of the object returned by the combined field filters
-  const finalFilter = `[ .[] | { ${allFieldsFilter} }]`;
+  return `[ .[] | { ${allFieldsFilter} }]`;
+};
 
+const renderInterpolatedTemplates = async (
+  templates: TemplatesMap,
+  data: DataMap[]
+): Promise<RowRenderResult[]> => {
+  const finalFilter = buildCombinedJQFilter(templates);
   try {
     const results = await jq.json(data, finalFilter);
     return results.map((result) => {
@@ -101,10 +117,21 @@ const renderInterpolatedTemplates = async (
 
           const templatePart = match[1];
 
-          const doubleQuotedString = (templatePart || "").replace(
-            /(?<!\\)'/gm,
-            '"'
-          );
+          const singleQuoteMatches = templatePart.matchAll(singleQuoteMatcher);
+          let doubleQuotedString = templatePart;
+
+          for (const singleQuoteMatch of singleQuoteMatches) {
+            const matchPrefix = singleQuoteMatch[0]
+              .split(singleQuoteMatch[1])
+              .join("");
+            doubleQuotedString =
+              doubleQuotedString.substring(0, singleQuoteMatch.index) +
+              `${matchPrefix}"` +
+              doubleQuotedString.substring(
+                singleQuoteMatch.index + singleQuoteMatch[0].length
+              );
+          }
+
           const rendered = await jq.json(testRow, doubleQuotedString);
 
           updatedTemplate = updatedTemplate.replace(match[0], rendered);
