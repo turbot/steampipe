@@ -31,7 +31,7 @@ export const buildJQFilter = (template) => {
   // Iterate over each template part - we want to distinguish between regular strings and
   // interpolated strings - we'll treat them differently.
   for (const templatePart of templateParts) {
-    const interpolatedMatch = templatePart.match(interpolatedMatcher);
+    const interpolatedMatch = interpolatedMatcher.exec(templatePart);
     // If it's a plain string, quote it
     if (!interpolatedMatch) {
       newTemplateParts.push(`"${templatePart}"`);
@@ -39,8 +39,11 @@ export const buildJQFilter = (template) => {
       // If it's an interpolated string, replace the double curly braces with single parentheses
       // to frame this particular jq sub-expression
       let newInterpolatedTemplate = templatePart;
-      newInterpolatedTemplate = newInterpolatedTemplate.replace("{{", "(");
-      newInterpolatedTemplate = newInterpolatedTemplate.replace("}}", ")");
+      newInterpolatedTemplate =
+        "(" + newInterpolatedTemplate.substring(interpolatedMatch.index + 2);
+      newInterpolatedTemplate =
+        newInterpolatedTemplate.substring(0, interpolatedMatch[0].length - 3) +
+        ")";
 
       // Replace any unescaped single quotes with jq-compatible double quotes
       const singleQuoteMatches =
