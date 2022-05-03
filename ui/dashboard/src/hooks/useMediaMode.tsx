@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
+type MediaMode = "screen" | "print";
+
 const useMediaMode = () => {
-  const [mediaMode, setMediaMode] = useState("screen");
+  const [mediaMode, setMediaMode] = useState<MediaMode>("screen");
   useEffect(() => {
     const mediaQuery = window.matchMedia("print");
     const changeHandler = (e) => {
