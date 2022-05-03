@@ -1,8 +1,8 @@
 import jq from "jq-web";
 
-const interpolatedStringSplitter = /({{.*?}})/gm;
-const interpolatedMatcher = /{{(.*?)}}/gm;
-const singleQuoteMatcher = /(?:^|[^\\])(')/gm;
+const interpolatedStringSplitter = /({{.*?}})/gs;
+const interpolatedMatcher = /{{(.*?)}}/gs;
+const singleQuoteMatcher = /(?:^|[^\\])(')/gs;
 
 interface TemplatesMap {
   [key: string]: string;
@@ -19,6 +19,13 @@ export interface RowRenderResult {
   };
 }
 
+const replaceSingleQuotesWithDoubleQuotes = (str) => {
+  if (!str) {
+    return str;
+  }
+  return str.replaceAll("'", '"');
+};
+
 export const buildJQFilter = (template) => {
   if (!template) {
     return template;
@@ -34,7 +41,7 @@ export const buildJQFilter = (template) => {
     const interpolatedMatch = interpolatedMatcher.exec(templatePart);
     // If it's a plain string, quote it
     if (!interpolatedMatch) {
-      newTemplateParts.push(`"${templatePart}"`);
+      newTemplateParts.push(JSON.stringify(templatePart));
     } else {
       // If it's an interpolated string, replace the double curly braces with single parentheses
       // to frame this particular jq sub-expression
@@ -45,26 +52,21 @@ export const buildJQFilter = (template) => {
         newInterpolatedTemplate.substring(0, interpolatedMatch[0].length - 3) +
         ")";
 
-      // Replace any unescaped single quotes with jq-compatible double quotes
-      const singleQuoteMatches =
-        newInterpolatedTemplate.matchAll(singleQuoteMatcher);
-      for (const singleQuoteMatch of singleQuoteMatches) {
-        const matchPrefix = singleQuoteMatch[0]
-          .split(singleQuoteMatch[1])
-          .join("");
-        newInterpolatedTemplate =
-          newInterpolatedTemplate.substring(0, singleQuoteMatch.index) +
-          `${matchPrefix}"` +
-          newInterpolatedTemplate.substring(
-            singleQuoteMatch.index + singleQuoteMatch[0].length
-          );
-      }
-      newTemplateParts.push(newInterpolatedTemplate);
+      // Replace any single quotes with jq-compatible double quotes
+      const doubleQuotedString = replaceSingleQuotesWithDoubleQuotes(
+        newInterpolatedTemplate
+      );
+
+      newTemplateParts.push(doubleQuotedString);
     }
   }
 
-  // Join all field parts with + and then quote the overall filter
-  return `(${newTemplateParts.join(" + ")})`;
+  // Join all field parts into an array and then use jq
+  // to join then into the final filter.
+  // This ensures that types are coerced
+  // e.g. (5 + " hello") would result in an error,
+  // whereas ([5, " hello"] | join("")) would give "5 hello"
+  return `([${newTemplateParts.join(", ")}] | join(""))`;
 };
 
 const buildCombinedJQFilter = (templates: TemplatesMap) => {
@@ -89,8 +91,8 @@ const renderInterpolatedTemplates = async (
   templates: TemplatesMap,
   data: DataMap[]
 ): Promise<RowRenderResult[]> => {
-  const finalFilter = buildCombinedJQFilter(templates);
   try {
+    const finalFilter = buildCombinedJQFilter(templates);
     const results = await jq.json(data, finalFilter);
     return results.map((result) => {
       const mapped = {};
@@ -102,7 +104,7 @@ const renderInterpolatedTemplates = async (
       return mapped;
     });
   } catch (err) {
-    const interpolatedMatcher = /\{\{([^}]+)}}/gm;
+    const interpolatedMatcher = /{{(.*?)}}/gs;
     const testRow = data[0];
     const fieldResults: RowRenderResult = {};
     for (const [field, template] of Object.entries(templates)) {
@@ -117,20 +119,9 @@ const renderInterpolatedTemplates = async (
 
           const templatePart = match[1];
 
-          const singleQuoteMatches = templatePart.matchAll(singleQuoteMatcher);
-          let doubleQuotedString = templatePart;
-
-          for (const singleQuoteMatch of singleQuoteMatches) {
-            const matchPrefix = singleQuoteMatch[0]
-              .split(singleQuoteMatch[1])
-              .join("");
-            doubleQuotedString =
-              doubleQuotedString.substring(0, singleQuoteMatch.index) +
-              `${matchPrefix}"` +
-              doubleQuotedString.substring(
-                singleQuoteMatch.index + singleQuoteMatch[0].length
-              );
-          }
+          // Replace any single quotes with jq-compatible double quotes
+          const doubleQuotedString =
+            replaceSingleQuotesWithDoubleQuotes(templatePart);
 
           const rendered = await jq.json(testRow, doubleQuotedString);
 
