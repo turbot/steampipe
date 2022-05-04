@@ -1,17 +1,5 @@
 name: Build and Publish DB Image
 
-## LINKS
-##   pg_dump
-##     pg14 darwin amd64 https://www.dropbox.com/s/1ga8bv3xjui6q4g/pg_dump_darwin_amd64?dl=0
-##     pg14 darwin arm64 https://www.dropbox.com/s/tccnneulg18kd57/pg_dump_darwin_arm64?dl=0
-##     pg14 linux amd64 https://www.dropbox.com/s/8ojapmxbopic3xm/pg_dump_linux_amd64?dl=0
-##     pg14 linux arm64 https://www.dropbox.com/s/whuwjpycf4atnny/pg_dump_linux_arm64?dl=0
-##   pg_restore
-##     pg14 darwin amd64 https://www.dropbox.com/s/7axroarzqkirvqx/pg_restore_darwin_amd64?dl=0
-##     pg14 darwin arm64 https://www.dropbox.com/s/ya7vy8yzr8a5irs/pg_restore_darwin_arm64?dl=0
-##     pg14 linux amd64 https://www.dropbox.com/s/ap9ikyyjwugcsty/pg_restore_linux_amd64?dl=0
-##     pg14 linux arm64 https://www.dropbox.com/s/bsfegf4tp1rckni/pg_restore_linux_arm64?dl=0
-
 # Controls when the action will run.
 on:
   workflow_dispatch:
