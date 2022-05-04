@@ -139,9 +139,8 @@ func CtyToGo(v cty.Value) (val interface{}, err error) {
 	switch {
 	case ty.IsTupleType(), ty.IsListType():
 		{
-
 			var array []string
-			if array, err = ctyTupleToArrayOfPgStrings(v); err == nil {
+			if array, err = ctyTupleToArrayOfStrings(v); err == nil {
 				val = array
 			}
 			return
@@ -238,6 +237,22 @@ func ctyTupleToArrayOfPgStrings(val cty.Value) ([]string, error) {
 		// decode the value into a postgres compatible
 		valStr, err := CtyToPostgresString(v)
 		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, valStr)
+	}
+	return res, nil
+}
+
+func ctyTupleToArrayOfStrings(val cty.Value) ([]string, error) {
+	var res []string
+	it := val.ElementIterator()
+	for it.Next() {
+		_, v := it.Element()
+
+		var valStr string
+		if err := gocty.FromCtyValue(v, &valStr); err != nil {
 			return nil, err
 		}
 
