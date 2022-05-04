@@ -526,8 +526,7 @@ function reducer(state, action) {
       };
     }
     case DashboardActions.EXECUTION_ERROR:
-      // console.error("Got execution error", action);
-      return state;
+      return { ...state, error: action.error };
     case DashboardActions.CONTROL_COMPLETE:
     case DashboardActions.CONTROL_ERROR:
       // We're not expecting execution events for this ID
