@@ -14,7 +14,7 @@
     "build-storybook": "build-storybook -s public"
   },
   "dependencies": {
-    "@headlessui/react": "1.6.0",
+    "@headlessui/react": "1.6.1",
     "@heroicons/react": "1.0.6",
     "@supabase/sql-formatter": "4.0.3",
     "color-convert": "2.0.1",
@@ -55,10 +55,10 @@
     "@storybook/preset-create-react-app": "4.1.0",
     "@storybook/react": "6.5.0-alpha.64",
     "@storybook/theming": "6.5.0-alpha.64",
-    "@tailwindcss/forms": "0.5.0",
+    "@tailwindcss/forms": "0.5.1",
     "@tailwindcss/typography": "0.5.2",
     "@testing-library/jest-dom": "5.16.4",
-    "@testing-library/react": "13.1.1",
+    "@testing-library/react": "13.2.0",
     "@tsconfig/create-react-app": "1.0.2",
     "@types/jest": "27.5.0",
     "@types/lodash": "4.14.182",
