@@ -3,6 +3,7 @@ import ControlEmptyResultNode from "../common/node/ControlEmptyResultNode";
 import ControlErrorNode from "../common/node/ControlErrorNode";
 import ControlResultNode from "../common/node/ControlResultNode";
 import sortBy from "lodash/sortBy";
+import useMediaMode from "../../../../hooks/useMediaMode";
 import {
   AlarmIcon,
   CollapseBenchmarkIcon,
@@ -25,7 +26,7 @@ import {
 import { classNames } from "../../../../utils/styles";
 import { ControlDimension } from "../Benchmark";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface CheckChildrenProps {
   depth: number;
@@ -297,6 +298,7 @@ const CheckPanel = ({
   firstChildSummaries,
 }: CheckPanelProps) => {
   const [expanded, setExpanded] = useState(false);
+  const mediaMode = useMediaMode();
 
   const [child_nodes, error_nodes, empty_nodes, result_nodes, can_be_expanded] =
     useMemo(() => {
@@ -327,6 +329,15 @@ const CheckPanel = ({
             (errors.length > 0 || empty.length > 0 || results.length > 0)),
       ];
     }, [groupingConfig, node]);
+
+  // useEffect(() => {
+  //   if (mediaMode === "print" && can_be_expanded) {
+  //     console.log("expanding");
+  //     setExpanded(true);
+  //   } else {
+  //     setExpanded(false);
+  //   }
+  // }, [can_be_expanded, mediaMode]);
 
   return (
     <>
@@ -366,16 +377,16 @@ const CheckPanel = ({
                 />
               </div>
             </div>
-            {can_be_expanded && !expanded && (
+            {can_be_expanded && !expanded && mediaMode !== "print" && (
               <ExpandCheckNodeIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
-            {expanded && (
+            {(expanded || (can_be_expanded && mediaMode === "print")) && (
               <CollapseBenchmarkIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
             {!can_be_expanded && <div className="w-5 md:w-7 h-5 md:h-7" />}
           </div>
         </section>
-        {expanded &&
+        {(expanded || (can_be_expanded && mediaMode === "print")) &&
           groupingConfig &&
           groupingConfig[groupingConfig.length - 1].type === "result" && (
             <CheckResults
@@ -385,7 +396,7 @@ const CheckPanel = ({
             />
           )}
       </div>
-      {expanded && (
+      {(expanded || (can_be_expanded && mediaMode === "print")) && (
         <CheckChildren
           children={child_nodes}
           depth={depth + 1}
