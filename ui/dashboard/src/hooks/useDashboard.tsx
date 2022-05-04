@@ -17,7 +17,7 @@ import usePrevious from "./usePrevious";
 import { buildComponentsMap } from "../components";
 import { CheckExecutionTree } from "../components/dashboards/check/common";
 import { GlobalHotKeys } from "react-hotkeys";
-import { LeafNodeData } from "../components/dashboards/common";
+import { LeafNodeData, Width } from "../components/dashboards/common";
 import { noop } from "../utils/func";
 import { Theme } from "./useTheme";
 import {
@@ -50,7 +50,7 @@ interface IDashboardContext {
   availableDashboardsLoaded: boolean;
 
   closePanelDetail(): void;
-  dispatch(DispatchAction): void;
+  dispatch(action: DashboardAction): void;
 
   error: any;
 
@@ -224,7 +224,7 @@ export interface PanelDefinition {
   name: string;
   node_type?: string;
   title?: string;
-  width?: number;
+  width?: Width;
   sql?: string;
   data?: LeafNodeData;
   source_definition?: string;

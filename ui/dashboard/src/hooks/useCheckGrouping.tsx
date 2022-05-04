@@ -10,15 +10,53 @@ import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
   CheckDisplayGroup,
   CheckDisplayGroupType,
+  CheckGroup,
   CheckNode,
-  CheckProps,
   CheckResult,
   CheckSummary,
   findDimension,
 } from "../components/dashboards/check/common";
+import { createContext, useContext, useMemo, useReducer } from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
-import { useMemo } from "react";
+import { ElementType, IActions, PanelDefinition } from "./useDashboard";
 import { useSearchParams } from "react-router-dom";
+
+const CheckGroupingActions: IActions = {
+  COLLAPSE_ALL_NODES: "collapse_all_nodes",
+  COLLAPSE_NODE: "collapse_node",
+  EXPAND_ALL_NODES: "expand_all_nodes",
+  EXPAND_NODE: "expand_node",
+};
+
+const checkGroupingActions = Object.values(CheckGroupingActions);
+
+type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
+
+export interface CheckGroupState {
+  expanded: boolean;
+}
+
+export interface CheckGroupStates {
+  [name: string]: CheckGroupState;
+}
+
+export interface CheckGroupingAction {
+  type: CheckGroupingActionType;
+  [key: string]: any;
+}
+
+interface ICheckGroupingContext {
+  benchmark: BenchmarkType | null;
+  definition: PanelDefinition;
+  grouping: CheckNode | null;
+  groupingsConfig: CheckDisplayGroup[];
+  firstChildSummaries: CheckSummary[];
+  nodeStates: CheckGroupStates;
+  rootBenchmark: CheckGroup;
+  dispatch(action: CheckGroupingAction): void;
+}
+
+const CheckGroupingContext = createContext<ICheckGroupingContext | null>(null);
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
@@ -192,8 +230,32 @@ const getCheckResultNode = (checkResult: CheckResult) => {
   return new ControlResultNode(checkResult);
 };
 
-const useCheckGrouping = (props: CheckProps) => {
-  const rootBenchmark = get(props, "execution_tree.root.groups[0]", null);
+const reducer = (state, action) => {
+  switch (action.type) {
+    case CheckGroupingActions.COLLAPSE_ALL_NODES:
+      return {
+        ...state,
+        nodes: state.nodes.map((node) => ({ ...node, expanded: false })),
+      };
+    case CheckGroupingActions.EXPAND_ALL_NODES:
+      return {
+        ...state,
+        nodes: state.nodes.map((node) => ({ ...node, expanded: true })),
+      };
+  }
+};
+
+interface CheckGroupingProviderProps {
+  children: null | JSX.Element | JSX.Element[];
+  definition: PanelDefinition;
+}
+
+const CheckGroupingProvider = ({
+  children,
+  definition,
+}: CheckGroupingProviderProps) => {
+  const [nodeStates, dispatch] = useReducer(reducer, {});
+  const rootBenchmark = get(definition, "execution_tree.root.groups[0]", null);
   const [searchParams] = useSearchParams();
 
   const groupingsConfig = useMemo(() => {
@@ -267,16 +329,40 @@ const useCheckGrouping = (props: CheckProps) => {
     return [b, results, firstChildSummaries] as const;
   }, [groupingsConfig, rootBenchmark]);
 
-  return [
-    benchmark,
-    grouping,
-    groupingsConfig,
-    firstChildSummaries,
-    rootBenchmark,
-  ] as const;
+  return (
+    <CheckGroupingContext.Provider
+      value={{
+        benchmark,
+        definition,
+        dispatch,
+        firstChildSummaries,
+        grouping,
+        groupingsConfig,
+        nodeStates,
+        rootBenchmark,
+      }}
+    >
+      {children}
+    </CheckGroupingContext.Provider>
+  );
 };
 
-export default useCheckGrouping;
+const useCheckGrouping = () => {
+  const context = useContext(CheckGroupingContext);
+  if (context === undefined) {
+    throw new Error(
+      "useCheckGrouping must be used within a CheckGroupingContext"
+    );
+  }
+  return context as ICheckGroupingContext;
+};
+
+export {
+  CheckGroupingActions,
+  CheckGroupingContext,
+  CheckGroupingProvider,
+  useCheckGrouping,
+};
 
 // https://stackoverflow.com/questions/50737098/multi-level-grouping-in-javascript
 // keys = ['level1', 'level2'],

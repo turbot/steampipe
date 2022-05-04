@@ -26,7 +26,7 @@ import {
 import { classNames } from "../../../../utils/styles";
 import { ControlDimension } from "../Benchmark";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 interface CheckChildrenProps {
   depth: number;

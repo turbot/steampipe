@@ -1,5 +1,9 @@
 import Benchmark from "./Benchmark";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
+import {
+  ContainerDefinition,
+  PanelDefinition,
+} from "../../../../hooks/useDashboard";
 
 export type CheckNodeType =
   | "benchmark"
@@ -107,11 +111,14 @@ export interface CheckControl {
   run_error?: string;
 }
 
+export type CheckGroupType = "benchmark" | "table";
+
 export interface CheckGroup {
   group_id: string;
   title?: string;
   description?: string;
   tags?: CheckTags;
+  type: CheckGroupType;
   summary: CheckLeafNodeDataGroupSummary;
   groups?: CheckGroup[];
   controls?: CheckControl[];
@@ -144,8 +151,6 @@ export interface CheckDisplayGroup {
   type: CheckDisplayGroupType;
   value?: string;
 }
-
-export type CheckProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {

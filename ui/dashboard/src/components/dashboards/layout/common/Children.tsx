@@ -33,7 +33,7 @@ const Children = ({
       switch (child.node_type) {
         case "benchmark":
           return (
-            <Benchmark key={child.name} {...child} />
+            <Benchmark key={child.name} {...(child as PanelDefinition)} />
             // <Panel
             //   key={child.name}
             //   definition={child}
