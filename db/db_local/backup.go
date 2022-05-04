@@ -449,7 +449,7 @@ func updateDynamicLibPath(ctx context.Context, cmd *exec.Cmd) {
 func retainBackup(ctx context.Context) error {
 	now := time.Now()
 	backupBaseFileName := fmt.Sprintf(
-		"backup-%d-%d-%d-%s",
+		"database-%d-%d-%d-%s",
 		version.SteampipeVersion.Major(),
 		version.SteampipeVersion.Minor(),
 		version.SteampipeVersion.Patch(),
@@ -458,16 +458,14 @@ func retainBackup(ctx context.Context) error {
 	binaryBackupRetentionFileName := fmt.Sprintf("%s.dump", backupBaseFileName)
 	textBackupRetentionFileName := fmt.Sprintf("%s.sql", backupBaseFileName)
 
-	binaryBackupRetentionFilePath := filepath.Join(filepaths.EnsureDatabaseDir(), binaryBackupRetentionFileName)
-	textBackupRetentionFilePath := filepath.Join(filepaths.EnsureDatabaseDir(), textBackupRetentionFileName)
+	binaryBackupRetentionFilePath := filepath.Join(filepaths.EnsureBackupsDir(), binaryBackupRetentionFileName)
+	textBackupRetentionFilePath := filepath.Join(filepaths.EnsureBackupsDir(), textBackupRetentionFileName)
 
 	if err := os.Rename(databaseBackupFilePath(), binaryBackupRetentionFilePath); err != nil {
 		return err
 	}
-
-	txtConvertCmd := exec.CommandContext(
+	txtConvertCmd := pgRestoreCmd(
 		ctx,
-		pgRestoreBinaryExecutablePath(),
 		binaryBackupRetentionFilePath,
 		fmt.Sprintf("--file=%s", textBackupRetentionFilePath),
 	)
