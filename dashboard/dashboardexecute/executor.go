@@ -34,9 +34,6 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 				Error:   err,
 				Session: sessionId,
 			}
-			if executionTree != nil {
-				errorEvent.ExecutionId = executionTree.id
-			}
 			workspace.PublishDashboardEvent(errorEvent)
 		}
 	}()
