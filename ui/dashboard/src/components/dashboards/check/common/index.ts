@@ -1,9 +1,5 @@
 import Benchmark from "./Benchmark";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
-import {
-  ContainerDefinition,
-  PanelDefinition,
-} from "../../../../hooks/useDashboard";
 
 export type CheckNodeType =
   | "benchmark"
@@ -156,7 +152,6 @@ export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
       grouping: CheckNode;
-      grouping_config: CheckDisplayGroup[];
       first_child_summaries: CheckSummary[];
     };
   };

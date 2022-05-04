@@ -175,7 +175,6 @@ const Benchmark = (props: InnerCheckProps) => {
                 node_type: "benchmark_tree",
                 properties: {
                   grouping: props.grouping,
-                  grouping_config: props.groupingConfig,
                   first_child_summaries: props.firstChildSummaries,
                 },
               },
@@ -186,6 +185,7 @@ const Benchmark = (props: InnerCheckProps) => {
         title: props.definition.title,
         width: props.definition.width,
       }}
+      expandDefinition={{ ...props.definition, data: benchmarkDataTable }}
     />
   );
 };

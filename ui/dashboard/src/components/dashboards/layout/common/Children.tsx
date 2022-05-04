@@ -4,7 +4,6 @@ import Container from "../Container";
 import ErrorPanel from "../../Error";
 import Image from "../../Image";
 import Panel from "../Panel";
-import React from "react";
 import Table from "../../Table";
 import Text from "../../Text";
 import {
@@ -27,167 +26,153 @@ const Children = ({
   children = [],
   allowPanelExpand = true,
   withTitle = true,
-}: ChildrenProps) => (
-  <>
-    {children.map((child) => {
-      switch (child.node_type) {
-        case "benchmark":
-          return (
-            <Benchmark key={child.name} {...(child as PanelDefinition)} />
-            // <Panel
-            //   key={child.name}
-            //   definition={child}
-            //   allowExpand={allowPanelExpand}
-            //   withTitle={withTitle}
-            // >
-            //   <Benchmark {...child.execution_tree} />
-            // </Panel>
-          );
-        case "benchmark_tree":
-          return (
-            // <Panel
-            //   key={child.name}
-            //   definition={child}
-            //   allowExpand={allowPanelExpand}
-            //   withTitle={withTitle}
-            // >
-            <BenchmarkTree key={child.name} {...child} />
-            // </Panel>
-          );
-        case "card":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <Card {...child} />
-            </Panel>
-          );
-        case "chart":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              ready={!!child.data}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <Chart {...child} />
-            </Panel>
-          );
-        case "container":
-          return (
-            <Container
-              key={child.name}
-              allowChildPanelExpand={child.allow_child_panel_expand}
-              definition={child}
-              withTitle={withTitle}
-            />
-          );
-        // case "control":
-        //   return (
-        //     <Panel
-        //       key={child.name}
-        //       definition={child}
-        //       allowExpand={allowPanelExpand}
-        //       withTitle={withTitle}
-        //     >
-        //       <Control {...child} />
-        //     </Panel>
-        //   );
-        case "dashboard":
-          return <Dashboard key={child.name} definition={child} />;
-        case "error":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <ErrorPanel error={child.error} />
-            </Panel>
-          );
-        case "flow":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              ready={!!child.data}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <Flow {...child} />
-            </Panel>
-          );
-        case "hierarchy":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              ready={!!child.data}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <Hierarchy {...child} />
-            </Panel>
-          );
-        case "image":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              ready={child.sql ? !!child.data : !!child.properties.src}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <Image {...child} />
-            </Panel>
-          );
-        case "input":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              allowExpand={
-                allowPanelExpand &&
-                (child.title || child.properties?.type === "table")
-              }
-              withTitle={withTitle}
-            >
-              <Input {...child} />
-            </Panel>
-          );
-        case "table":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              ready={!!child.data}
-              allowExpand={allowPanelExpand}
-              withTitle={withTitle}
-            >
-              <Table {...child} />
-            </Panel>
-          );
-        case "text":
-          return (
-            <Panel
-              key={child.name}
-              definition={child}
-              allowExpand={false}
-              withTitle={withTitle}
-            >
-              <Text {...child} />
-            </Panel>
-          );
-        default:
-          return null;
-      }
-    })}
-  </>
-);
+}: ChildrenProps) => {
+  return (
+    <>
+      {children.map((child) => {
+        switch (child.node_type) {
+          case "benchmark":
+            return (
+              <Benchmark key={child.name} {...(child as PanelDefinition)} />
+            );
+          case "benchmark_tree":
+            return <BenchmarkTree key={child.name} {...child} />;
+          case "card":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                <Card {...child} />
+              </Panel>
+            );
+          case "chart":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                ready={!!child.data}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                <Chart {...child} />
+              </Panel>
+            );
+          case "container":
+            return (
+              <Container
+                key={child.name}
+                allowChildPanelExpand={child.allow_child_panel_expand}
+                definition={child}
+                expandDefinition={child}
+                withTitle={withTitle}
+              />
+            );
+          // case "control":
+          //   return (
+          //     <Panel
+          //       key={child.name}
+          //       definition={child}
+          //       allowExpand={allowPanelExpand}
+          //       withTitle={withTitle}
+          //     >
+          //       <Control {...child} />
+          //     </Panel>
+          //   );
+          case "dashboard":
+            return <Dashboard key={child.name} definition={child} />;
+          case "error":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                <ErrorPanel error={child.error} />
+              </Panel>
+            );
+          case "flow":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                ready={!!child.data}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                <Flow {...child} />
+              </Panel>
+            );
+          case "hierarchy":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                ready={!!child.data}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                <Hierarchy {...child} />
+              </Panel>
+            );
+          case "image":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                ready={child.sql ? !!child.data : !!child.properties.src}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                <Image {...child} />
+              </Panel>
+            );
+          case "input":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                allowExpand={
+                  allowPanelExpand &&
+                  (child.title || child.properties?.type === "table")
+                }
+                withTitle={withTitle}
+              >
+                <Input {...child} />
+              </Panel>
+            );
+          case "table":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                ready={!!child.data}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                <Table {...child} />
+              </Panel>
+            );
+          case "text":
+            return (
+              <Panel
+                key={child.name}
+                definition={child}
+                allowExpand={false}
+                withTitle={withTitle}
+              >
+                <Text {...child} />
+              </Panel>
+            );
+          default:
+            return null;
+        }
+      })}
+    </>
+  );
+};
 
 export default Children;
