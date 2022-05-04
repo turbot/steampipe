@@ -3,7 +3,6 @@ import ControlEmptyResultNode from "../common/node/ControlEmptyResultNode";
 import ControlErrorNode from "../common/node/ControlErrorNode";
 import ControlResultNode from "../common/node/ControlResultNode";
 import sortBy from "lodash/sortBy";
-import useMediaMode from "../../../../hooks/useMediaMode";
 import {
   AlarmIcon,
   CollapseBenchmarkIcon,
@@ -16,23 +15,23 @@ import {
   UnknownIcon,
 } from "../../../../constants/icons";
 import {
-  CheckDisplayGroup,
+  CheckGroupingActions,
+  useCheckGrouping,
+} from "../../../../hooks/useCheckGrouping";
+import {
   CheckNode,
   CheckResult,
   CheckResultStatus,
   CheckSeveritySummary,
-  CheckSummary,
 } from "../common";
 import { classNames } from "../../../../utils/styles";
 import { ControlDimension } from "../Benchmark";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 interface CheckChildrenProps {
   depth: number;
   children: CheckNode[];
-  groupingConfig: CheckDisplayGroup[];
-  firstChildSummaries: CheckSummary[];
 }
 
 interface CheckResultsProps {
@@ -44,8 +43,6 @@ interface CheckResultsProps {
 interface CheckPanelProps {
   depth: number;
   node: CheckNode;
-  groupingConfig: CheckDisplayGroup[];
-  firstChildSummaries: CheckSummary[];
 }
 
 interface CheckPanelSeverityProps {
@@ -93,12 +90,7 @@ const getMargin = (depth) => {
   }
 };
 
-const CheckChildren = ({
-  children,
-  depth,
-  groupingConfig,
-  firstChildSummaries,
-}: CheckChildrenProps) => {
+const CheckChildren = ({ children, depth }: CheckChildrenProps) => {
   if (!children) {
     return null;
   }
@@ -106,13 +98,7 @@ const CheckChildren = ({
   return (
     <>
       {children.map((child) => (
-        <CheckPanel
-          key={child.name}
-          depth={depth}
-          node={child}
-          groupingConfig={groupingConfig}
-          firstChildSummaries={firstChildSummaries}
-        />
+        <CheckPanel key={child.name} depth={depth} node={child} />
       ))}
     </>
   );
@@ -158,7 +144,7 @@ const getCheckResultRowIconTitle = (status: CheckResultStatus) => {
 
 const CheckResultRow = ({ result }: CheckResultRowProps) => {
   return (
-    <div className="flex bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
+    <div className="flex bg-dashboard-panel print:bg-white p-4 last:rounded-b-md space-x-4">
       <div
         className="flex-shrink-0"
         title={getCheckResultRowIconTitle(result.status)}
@@ -183,7 +169,7 @@ const CheckResultRow = ({ result }: CheckResultRowProps) => {
 
 const CheckEmptyResultRow = ({ node }: CheckEmptyResultRowProps) => {
   return (
-    <div className="flex bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
+    <div className="flex bg-dashboard-panel print:bg-white p-4 last:rounded-b-md space-x-4">
       <div
         className="flex-shrink-0"
         title={getCheckResultRowIconTitle("empty")}
@@ -197,7 +183,7 @@ const CheckEmptyResultRow = ({ node }: CheckEmptyResultRowProps) => {
 
 const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
   return (
-    <div className="flex bg-dashboard-panel p-4 last:rounded-b-md space-x-4">
+    <div className="flex bg-dashboard-panel print:bg-white p-4 last:rounded-b-md space-x-4">
       <div
         className="flex-shrink-0"
         title={getCheckResultRowIconTitle("error")}
@@ -291,14 +277,13 @@ const CheckPanelSeverity = ({ severity_summary }: CheckPanelSeverityProps) => {
   );
 };
 
-const CheckPanel = ({
-  depth,
-  node,
-  groupingConfig,
-  firstChildSummaries,
-}: CheckPanelProps) => {
-  const [expanded, setExpanded] = useState(false);
-  const mediaMode = useMediaMode();
+const CheckPanel = ({ depth, node }: CheckPanelProps) => {
+  const { firstChildSummaries, dispatch, groupingsConfig, nodeStates } =
+    useCheckGrouping();
+  const expanded = nodeStates.nodes[node.name]
+    ? nodeStates.nodes[node.name].expanded
+    : false;
+  // console.log({ name: node.name, nodes: nodeStates.nodes, expanded });
 
   const [child_nodes, error_nodes, empty_nodes, result_nodes, can_be_expanded] =
     useMemo(() => {
@@ -323,28 +308,27 @@ const CheckPanel = ({
         sortBy(empty, "sort"),
         results,
         children.length > 0 ||
-          (groupingConfig &&
-            groupingConfig.length > 0 &&
-            groupingConfig[groupingConfig.length - 1].type === "result" &&
+          (groupingsConfig &&
+            groupingsConfig.length > 0 &&
+            groupingsConfig[groupingsConfig.length - 1].type === "result" &&
             (errors.length > 0 || empty.length > 0 || results.length > 0)),
       ];
-    }, [groupingConfig, node]);
-
-  // useEffect(() => {
-  //   if (mediaMode === "print" && can_be_expanded) {
-  //     console.log("expanding");
-  //     setExpanded(true);
-  //   } else {
-  //     setExpanded(false);
-  //   }
-  // }, [can_be_expanded, mediaMode]);
+    }, [groupingsConfig, node]);
 
   return (
     <>
-      <div id={node.name} className={getMargin(depth - 1)}>
+      <div
+        id={node.name}
+        className={classNames(
+          getMargin(depth - 1),
+          depth > 0 && node.type === "benchmark"
+            ? "print:break-before-page"
+            : null
+        )}
+      >
         <section
           className={classNames(
-            "bg-dashboard-panel shadow-sm rounded-md",
+            "bg-dashboard-panel print:bg-white shadow-sm rounded-md",
             can_be_expanded ? "cursor-pointer" : null,
             expanded &&
               (empty_nodes.length > 0 ||
@@ -354,7 +338,14 @@ const CheckPanel = ({
               : null
           )}
           onClick={() =>
-            can_be_expanded ? setExpanded((current) => !current) : null
+            can_be_expanded
+              ? dispatch({
+                  type: expanded
+                    ? CheckGroupingActions.COLLAPSE_NODE
+                    : CheckGroupingActions.EXPAND_NODE,
+                  name: node.name,
+                })
+              : null
           }
         >
           <div className="p-4 flex items-center space-x-6">
@@ -377,18 +368,19 @@ const CheckPanel = ({
                 />
               </div>
             </div>
-            {can_be_expanded && !expanded && mediaMode !== "print" && (
+            {can_be_expanded && !expanded && (
               <ExpandCheckNodeIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
-            {(expanded || (can_be_expanded && mediaMode === "print")) && (
+            {expanded && (
               <CollapseBenchmarkIcon className="w-5 md:w-7 h-5 md:h-7 flex-shrink-0 text-foreground-lightest" />
             )}
             {!can_be_expanded && <div className="w-5 md:w-7 h-5 md:h-7" />}
           </div>
         </section>
-        {(expanded || (can_be_expanded && mediaMode === "print")) &&
-          groupingConfig &&
-          groupingConfig[groupingConfig.length - 1].type === "result" && (
+        {can_be_expanded &&
+          expanded &&
+          groupingsConfig &&
+          groupingsConfig[groupingsConfig.length - 1].type === "result" && (
             <CheckResults
               empties={empty_nodes}
               errors={error_nodes}
@@ -396,13 +388,8 @@ const CheckPanel = ({
             />
           )}
       </div>
-      {(expanded || (can_be_expanded && mediaMode === "print")) && (
-        <CheckChildren
-          children={child_nodes}
-          depth={depth + 1}
-          groupingConfig={groupingConfig}
-          firstChildSummaries={firstChildSummaries}
-        />
+      {can_be_expanded && expanded && (
+        <CheckChildren children={child_nodes} depth={depth + 1} />
       )}
     </>
   );

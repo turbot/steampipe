@@ -195,13 +195,7 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
     return null;
   }
 
-  return (
-    <CheckGrouping
-      node={props.properties.grouping}
-      groupingConfig={props.properties.grouping_config}
-      firstChildSummaries={props.properties.first_child_summaries}
-    />
-  );
+  return <CheckGrouping node={props.properties.grouping} />;
 };
 
 const BenchmarkTableView = ({

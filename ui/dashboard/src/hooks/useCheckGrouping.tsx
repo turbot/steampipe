@@ -16,19 +16,16 @@ import {
   CheckSummary,
   findDimension,
 } from "../components/dashboards/check/common";
-import { createContext, useContext, useMemo, useReducer } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+} from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { ElementType, IActions, PanelDefinition } from "./useDashboard";
 import { useSearchParams } from "react-router-dom";
-
-const CheckGroupingActions: IActions = {
-  COLLAPSE_ALL_NODES: "collapse_all_nodes",
-  COLLAPSE_NODE: "collapse_node",
-  EXPAND_ALL_NODES: "expand_all_nodes",
-  EXPAND_NODE: "expand_node",
-};
-
-const checkGroupingActions = Object.values(CheckGroupingActions);
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
 
@@ -55,6 +52,16 @@ interface ICheckGroupingContext {
   rootBenchmark: CheckGroup;
   dispatch(action: CheckGroupingAction): void;
 }
+
+const CheckGroupingActions: IActions = {
+  COLLAPSE_ALL_NODES: "collapse_all_nodes",
+  COLLAPSE_NODE: "collapse_node",
+  EXPAND_ALL_NODES: "expand_all_nodes",
+  EXPAND_NODE: "expand_node",
+  UPDATE_NODES: "update_nodes",
+};
+
+const checkGroupingActions = Object.values(CheckGroupingActions);
 
 const CheckGroupingContext = createContext<ICheckGroupingContext | null>(null);
 
@@ -187,7 +194,8 @@ const addBenchmarkGroupingNode = (
 const groupCheckItems = (
   temp: { _: CheckNode[] },
   checkResult: CheckResult,
-  groupingsConfig: CheckDisplayGroup[]
+  groupingsConfig: CheckDisplayGroup[],
+  checkNodeStates: CheckGroupStates
 ) => {
   return groupingsConfig
     .filter((groupConfig) => groupConfig.type !== "result")
@@ -196,6 +204,19 @@ const groupCheckItems = (
 
       if (!groupKey) {
         return cumulativeGrouping;
+      }
+
+      if (currentGroupingConfig.type === "benchmark") {
+        checkResult.benchmark_trunk.forEach(
+          (benchmark) =>
+            (checkNodeStates[benchmark.name] = {
+              expanded: false,
+            })
+        );
+      } else {
+        checkNodeStates[groupKey] = {
+          expanded: false,
+        };
       }
 
       if (!cumulativeGrouping[groupKey]) {
@@ -230,18 +251,64 @@ const getCheckResultNode = (checkResult: CheckResult) => {
   return new ControlResultNode(checkResult);
 };
 
-const reducer = (state, action) => {
+const reducer = (state: CheckGroupStates, action) => {
   switch (action.type) {
-    case CheckGroupingActions.COLLAPSE_ALL_NODES:
+    case CheckGroupingActions.COLLAPSE_ALL_NODES: {
+      const newNodes = {};
+      for (const [name, node] of Object.entries(state.nodes)) {
+        newNodes[name] = {
+          ...node,
+          expanded: false,
+        };
+      }
       return {
         ...state,
-        nodes: state.nodes.map((node) => ({ ...node, expanded: false })),
+        nodes: newNodes,
       };
-    case CheckGroupingActions.EXPAND_ALL_NODES:
+    }
+    case CheckGroupingActions.COLLAPSE_NODE:
       return {
         ...state,
-        nodes: state.nodes.map((node) => ({ ...node, expanded: true })),
+        nodes: {
+          ...state.nodes,
+          [action.name]: {
+            ...state.nodes[action.name],
+            expanded: false,
+          },
+        },
       };
+    case CheckGroupingActions.EXPAND_ALL_NODES: {
+      const newNodes = {};
+      Object.entries(state.nodes).forEach(([name, node]) => {
+        newNodes[name] = {
+          ...node,
+          expanded: true,
+        };
+      });
+      return {
+        ...state,
+        nodes: newNodes,
+      };
+    }
+    case CheckGroupingActions.EXPAND_NODE: {
+      return {
+        ...state,
+        nodes: {
+          ...state.nodes,
+          [action.name]: {
+            ...state.nodes[action.name],
+            expanded: true,
+          },
+        },
+      };
+    }
+    case CheckGroupingActions.UPDATE_NODES:
+      return {
+        ...state,
+        nodes: action.nodes,
+      };
+    default:
+      return state;
   }
 };
 
@@ -254,7 +321,7 @@ const CheckGroupingProvider = ({
   children,
   definition,
 }: CheckGroupingProviderProps) => {
-  const [nodeStates, dispatch] = useReducer(reducer, {});
+  const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
   const rootBenchmark = get(definition, "execution_tree.root.groups[0]", null);
   const [searchParams] = useSearchParams();
 
@@ -296,38 +363,52 @@ const CheckGroupingProvider = ({
     }
   }, [rootBenchmark, searchParams]);
 
-  const [benchmark, grouping, firstChildSummaries] = useMemo(() => {
-    if (!rootBenchmark) {
-      return [null, null, []];
-    }
+  const [benchmark, grouping, firstChildSummaries, tempNodeStates] =
+    useMemo(() => {
+      if (!rootBenchmark) {
+        return [null, null, [], {}];
+      }
 
-    const b = new BenchmarkType(
-      "0",
-      rootBenchmark.group_id,
-      rootBenchmark.title,
-      rootBenchmark.description,
-      rootBenchmark.groups,
-      rootBenchmark.controls,
-      []
-    );
+      const b = new BenchmarkType(
+        "0",
+        rootBenchmark.group_id,
+        rootBenchmark.title,
+        rootBenchmark.description,
+        rootBenchmark.groups,
+        rootBenchmark.controls,
+        []
+      );
 
-    const result: CheckNode[] = [];
-    const temp = { _: result };
-    b.all_control_results.forEach((checkResult) =>
-      groupCheckItems(temp, checkResult, groupingsConfig)._.push(
-        getCheckResultNode(checkResult)
-      )
-    );
+      const checkNodeStates: CheckGroupStates = {};
+      const result: CheckNode[] = [];
+      const temp = { _: result };
+      b.all_control_results.forEach((checkResult) => {
+        const grouping = groupCheckItems(
+          temp,
+          checkResult,
+          groupingsConfig,
+          checkNodeStates
+        );
+        const node = getCheckResultNode(checkResult);
+        grouping._.push(node);
+      });
 
-    const results = new RootNode(result);
+      const results = new RootNode(result);
 
-    const firstChildSummaries: CheckSummary[] = [];
-    for (const child of results.children) {
-      firstChildSummaries.push(child.summary);
-    }
+      const firstChildSummaries: CheckSummary[] = [];
+      for (const child of results.children) {
+        firstChildSummaries.push(child.summary);
+      }
 
-    return [b, results, firstChildSummaries] as const;
-  }, [groupingsConfig, rootBenchmark]);
+      return [b, results, firstChildSummaries, checkNodeStates] as const;
+    }, [groupingsConfig, rootBenchmark]);
+
+  useEffect(() => {
+    dispatch({
+      type: CheckGroupingActions.UPDATE_NODES,
+      nodes: tempNodeStates,
+    });
+  }, [groupingsConfig]);
 
   return (
     <CheckGroupingContext.Provider

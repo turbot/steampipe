@@ -104,7 +104,7 @@ const Panel = ({
                 definition.node_type === "card" ||
                 definition.node_type === "input") &&
                 get(definition, "properties.type") === "table")
-              ? "bg-dashboard-panel shadow-sm rounded-md"
+              ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
               : null
           )}
         >
