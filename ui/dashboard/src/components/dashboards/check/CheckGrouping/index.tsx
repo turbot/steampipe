@@ -14,10 +14,44 @@ interface CheckGroupingProps {
 
 const CheckGrouping = ({ node }: CheckGroupingProps) => {
   const { dispatch, nodeStates } = useCheckGrouping();
+  // const [restoreNodeStates, setRestoreNodeStates] =
+  //   useState<CheckGroupStates | null>(null);
   const mediaMode = useMediaMode();
+
+  // @ts-ignore
+  // const previousStates = usePrevious({
+  //   mediaMode,
+  //   nodeStates,
+  //   restoreNodeStates,
+  // });
+
+  // useEffect(() => {
+  //   if (
+  //     // @ts-ignore
+  //     (!previousStates || previousStates.mediaMode === "screen") &&
+  //     mediaMode === "print"
+  //   ) {
+  //     // @ts-ignore
+  //     setRestoreNodeStates(previousStates.nodeStates);
+  //     dispatch({ type: CheckGroupingActions.EXPAND_ALL_NODES });
+  //   } else if (
+  //     previousStates &&
+  //     // @ts-ignore
+  //     previousStates.mediaMode === "print" &&
+  //     mediaMode === "screen"
+  //   ) {
+  //     // @ts-ignore
+  //     console.log(previousStates.restoreNodeStates);
+  //     dispatch({
+  //       type: CheckGroupingActions.UPDATE_NODES,
+  //       // @ts-ignore
+  //       nodes: previousStates.restoreNodeStates,
+  //     });
+  //   }
+  // }, [mediaMode, previousStates]);
+
   useEffect(() => {
     if (mediaMode === "print") {
-      console.log("expanding");
       dispatch({ type: CheckGroupingActions.EXPAND_ALL_NODES });
     }
   }, [mediaMode]);
