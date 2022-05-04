@@ -1,18 +1,6 @@
 name: Build and Publish DB Image
 
-## LINKS
-##   pg_dump
-##     pg14 darwin amd64 https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump_darwin_amd64?dl=0
-##     pg14 darwin arm64 https://www.dropbox.com/s/w5f6elrpco4c69t/pg_dump_darwin_arm64?dl=0
-##     pg14 linux amd64 https://www.dropbox.com/s/8ojapmxbopic3xm/pg_dump_linux_amd64?dl=0
-##     pg14 linux arm64 https://www.dropbox.com/s/whuwjpycf4atnny/pg_dump_linux_arm64?dl=0
-##   pg_restore
-##     pg14 darwin amd64 https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore_darwin_amd64?dl=0
-##     pg14 darwin arm64 https://www.dropbox.com/s/8m7geqpmjp5cbu6/pg_restore_darwin_arm64?dl=0
-##     pg14 linux amd64 https://www.dropbox.com/s/ap9ikyyjwugcsty/pg_restore_linux_amd64?dl=0
-##     pg14 linux arm64 https://www.dropbox.com/s/bsfegf4tp1rckni/pg_restore_linux_arm64?dl=0
-
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   workflow_dispatch:
     inputs:
@@ -24,7 +12,7 @@ on:
         default: 14.2.0
 
       postgres_version:
-        description: 'Postgres Version to package (eg 14.2.0)'
+        description: "Postgres Version to package (eg 14.2.0)"
         required: true
         default: 14.2.0
 
@@ -34,14 +22,13 @@ env:
   CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
-  VERSION:  ${{ github.event.inputs.version }}
+  VERSION: ${{ github.event.inputs.version }}
   PG_VERSION: ${{ github.event.inputs.postgres_version }}
   PATH_BASE: https://repo1.maven.org/maven2/io/zonky/test/postgres
   NAME_PREFIX: embedded-postgres-binaries
   STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
-
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
@@ -72,7 +59,7 @@ jobs:
             echo "Version already exists: $VERSION"
             exit 1
           fi
-      
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -92,10 +79,12 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -J https://www.dropbox.com/s/r3v1wv8spmjwrbk/pg_dump_darwin_amd64?dl=0 --output pg_dump
-          curl -L -J https://www.dropbox.com/s/lmsinq3wyi1xcy5/pg_restore_darwin_amd64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/1ga8bv3xjui6q4g/pg_dump?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/7axroarzqkirvqx/pg_restore?dl=0 --output pg_restore
+
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
+
           chmod +x $EXTRACT_DIR/bin/pg_dump
           chmod +x $EXTRACT_DIR/bin/pg_restore
 
@@ -113,10 +102,12 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -J https://www.dropbox.com/s/w5f6elrpco4c69t/pg_dump_darwin_arm64?dl=0 --output pg_dump
-          curl -L -J https://www.dropbox.com/s/8m7geqpmjp5cbu6/pg_restore_darwin_arm64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/tccnneulg18kd57/pg_dump?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/ya7vy8yzr8a5irs/pg_restore?dl=0 --output pg_restore
+
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
+
           chmod +x $EXTRACT_DIR/bin/pg_dump
           chmod +x $EXTRACT_DIR/bin/pg_restore
 
@@ -134,10 +125,14 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -J https://www.dropbox.com/s/8ojapmxbopic3xm/pg_dump_linux_amd64?dl=0 --output pg_dump
-          curl -L -J https://www.dropbox.com/s/ap9ikyyjwugcsty/pg_restore_linux_amd64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/3r1vzxiykcc34fu/pg_dump?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/u49d9s8e562sx1p/pg_restore?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/6wbrdw7eqg41mba/libpq.so.5.14.migrate?dl=0 --output libpq.so.5.14.migrate
+
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
+          mv libpq.so.5.14.migrate $EXTRACT_DIR/lib/libpq.so.5.14.migrate
+
           chmod +x $EXTRACT_DIR/bin/pg_dump
           chmod +x $EXTRACT_DIR/bin/pg_restore
 
@@ -155,10 +150,14 @@ jobs:
           mkdir $EXTRACT_DIR
           tar -xf $TGZ_FILE --directory $EXTRACT_DIR
 
-          curl -L -J https://www.dropbox.com/s/whuwjpycf4atnny/pg_dump_linux_arm64?dl=0 --output pg_dump
-          curl -L -J https://www.dropbox.com/s/bsfegf4tp1rckni/pg_restore_linux_arm64?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/e0e47d5env54to0/pg_dump?dl=0 --output pg_dump
+          curl -L -J https://www.dropbox.com/s/93762dck04wf4uv/pg_restore?dl=0 --output pg_restore
+          curl -L -J https://www.dropbox.com/s/smma4tvk1h6bpwc/libpq.so.5.14.migrate?dl=0 --output libpq.so.5.14.migrate
+
           mv pg_dump $EXTRACT_DIR/bin/pg_dump
           mv pg_restore $EXTRACT_DIR/bin/pg_restore
+          mv libpq.so.5.14.migrate $EXTRACT_DIR/lib/libpq.so.5.14.migrate
+
           chmod +x $EXTRACT_DIR/bin/pg_dump
           chmod +x $EXTRACT_DIR/bin/pg_restore
 
@@ -202,7 +201,7 @@ jobs:
           export_default_credentials: true
 
       - name: Setup GCloud CLI
-        run: |- 
+        run: |-
           echo ${{ secrets.STEAMPIPE_REGISTRY_SA_KEY }}
           gcloud config list
           gcloud components install beta
@@ -210,7 +209,7 @@ jobs:
           gcloud beta auth configure-docker us-docker.pkg.dev
 
       - name: Verify ORAS
-        run: |- 
+        run: |-
           oras version
 
       - name: Push to Registry
@@ -226,7 +225,7 @@ jobs:
               extracted-linux-arm64v8-${PG_VERSION}:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
 
       - name: Set version tags
-        uses: ./.github/actions/semver-tags 
+        uses: ./.github/actions/semver-tags
         id: semver
         with:
           image-to-tag: "${{ env.CORE_REPO }}/${{ env.IMAGE_NAME }}:${{ github.run_id  }}"

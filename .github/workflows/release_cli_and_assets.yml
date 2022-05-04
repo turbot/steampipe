@@ -311,7 +311,7 @@ jobs:
           exit 1
         fi
         echo "VERSION=${trim}" >> $GITHUB_ENV
-        
+
     - name: Checkout
       uses: actions/checkout@v3
       with:
