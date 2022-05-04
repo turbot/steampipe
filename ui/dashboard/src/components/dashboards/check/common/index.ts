@@ -28,6 +28,7 @@ export interface CheckNode {
   children?: CheckNode[];
   results?: CheckResult[];
   error?: string;
+  merge?: (other: CheckNode) => void;
 }
 
 export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
@@ -127,8 +128,6 @@ export interface CheckExecutionTree {
   progress: CheckLeafNodeProgress;
   root: CheckGroup;
 }
-
-type CheckType = "summary" | "table" | null;
 
 export type CheckDisplayGroupType =
   | "benchmark"

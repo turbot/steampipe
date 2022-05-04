@@ -57,7 +57,8 @@ const getCheckGroupingKey = (
       if (checkResult.benchmark_trunk.length <= 1) {
         return null;
       }
-      return checkResult.benchmark_trunk[1].name;
+      return checkResult.benchmark_trunk[checkResult.benchmark_trunk.length - 1]
+        .name;
     case "control":
       return checkResult.control.name;
     default:
@@ -69,7 +70,7 @@ const getCheckGroupingNode = (
   checkResult: CheckResult,
   group: CheckDisplayGroup,
   children: CheckNode[]
-) => {
+): CheckNode => {
   switch (group.type) {
     case "dimension":
       const foundDimension = findDimension(checkResult.dimensions, group.value);
@@ -131,34 +132,52 @@ const getCheckGroupingNode = (
   }
 };
 
+const addBenchmarkGroupingNode = (
+  existingGroups: CheckNode[],
+  groupingNode: CheckNode
+) => {
+  const existingGroup = existingGroups.find(
+    (existingGroup) => existingGroup.name === groupingNode.name
+  );
+  if (existingGroup) {
+    (existingGroup as BenchmarkNode).merge(groupingNode);
+  } else {
+    existingGroups.push(groupingNode);
+  }
+};
+
 const groupCheckItems = (
   temp: { _: CheckNode[] },
-  group: CheckResult,
+  checkResult: CheckResult,
   groupingsConfig: CheckDisplayGroup[]
 ) => {
   return groupingsConfig
     .filter((groupConfig) => groupConfig.type !== "result")
-    .reduce(function (grouping, currentGroup) {
-      const groupKey = getCheckGroupingKey(group, currentGroup);
+    .reduce(function (cumulativeGrouping, currentGroupingConfig) {
+      const groupKey = getCheckGroupingKey(checkResult, currentGroupingConfig);
 
       if (!groupKey) {
-        return grouping;
+        return cumulativeGrouping;
       }
 
-      if (!grouping[groupKey]) {
-        grouping[groupKey] = { _: [] };
+      if (!cumulativeGrouping[groupKey]) {
+        cumulativeGrouping[groupKey] = { _: [] };
         const groupingNode = getCheckGroupingNode(
-          group,
-          currentGroup,
-          grouping[groupKey]._
+          checkResult,
+          currentGroupingConfig,
+          cumulativeGrouping[groupKey]._
         );
 
         if (groupingNode) {
-          grouping._.push(groupingNode);
+          if (currentGroupingConfig.type === "benchmark") {
+            addBenchmarkGroupingNode(cumulativeGrouping._, groupingNode);
+          } else {
+            cumulativeGrouping._.push(groupingNode);
+          }
         }
       }
 
-      return grouping[groupKey];
+      return cumulativeGrouping[groupKey];
     }, temp);
 };
 
@@ -213,26 +232,6 @@ const useCheckGrouping = (props: CheckProps) => {
         { type: "result" },
       ] as CheckDisplayGroup[];
     }
-
-    // if (!rootBenchmark || !rootBenchmark.grouping) {
-    //   return [
-    //     // { type: "status" },
-    //     // { type: "reason" },
-    //     // { type: "resource" },
-    //     // { type: "status" },
-    //     // { type: "severity" },
-    //     // { type: "dimension", value: "account_id" },
-    //     // { type: "dimension", value: "region" },
-    //     // { type: "tag", value: "service" },
-    //     // { type: "tag", value: "cis_type" },
-    //     // { type: "tag", value: "cis_level" },
-    //     { type: "benchmark" },
-    //     { type: "control" },
-    //     { type: "result" },
-    //   ] as CheckDisplayGroup[];
-    // }
-
-    // return rootBenchmark.grouping;
   }, [rootBenchmark, searchParams]);
 
   const [benchmark, grouping, firstChildSummaries] = useMemo(() => {

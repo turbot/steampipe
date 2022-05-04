@@ -88,6 +88,27 @@ class HierarchyNode implements CheckNode {
     }
     return "complete";
   }
+
+  merge(other: CheckNode) {
+    // merge(other) -> iterate children of other -> if child exists on me, call me_child.merge(other_child), else add to end of children
+    for (const otherChild of other.children || []) {
+      // Check for existing child with this name
+      const matchingSelfChild = this.children.find(
+        (selfChild) => selfChild.name === otherChild.name
+      );
+
+      if (matchingSelfChild) {
+        if (!matchingSelfChild.merge) {
+          continue;
+        }
+        // If there's a matching child, merge that child in
+        matchingSelfChild.merge(otherChild);
+      } else {
+        // Else append to my children
+        this.children.push(otherChild);
+      }
+    }
+  }
 }
 
 export default HierarchyNode;
