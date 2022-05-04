@@ -183,14 +183,13 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 	return json.Marshal(payload)
 }
 
-//func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, error) {
-//	payload := ExecutionErrorPayload{
-//		Action:      "execution_error",
-//		Error:       event.Error.Error(),
-//		ExecutionId: event.ExecutionId,
-//	}
-//	return json.Marshal(payload)
-//}
+func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, error) {
+	payload := ExecutionErrorPayload{
+		Action: "execution_error",
+		Error:  event.Error.Error(),
+	}
+	return json.Marshal(payload)
+}
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
 	payload := ExecutionCompletePayload{
