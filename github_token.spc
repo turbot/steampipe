@@ -10,5 +10,5 @@ connection "github" {
   #  - `read:org`
   #  - `read:user`
   #  - `user:email`
-  token  = "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"           
+  token  = ""           
 }
