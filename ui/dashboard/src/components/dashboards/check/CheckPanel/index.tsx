@@ -205,7 +205,7 @@ const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
   return (
     <div
       className={classNames(
-        "border-t shadow-sm rounded-b-md divide-y divide-table-divide",
+        "border-t shadow-sm rounded-b-md divide-y divide-table-divide print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto",
         theme.name === ThemeNames.STEAMPIPE_DARK
           ? "border-table-divide"
           : "border-background"
@@ -321,8 +321,11 @@ const CheckPanel = ({ depth, node }: CheckPanelProps) => {
         id={node.name}
         className={classNames(
           getMargin(depth - 1),
-          depth > 0 && node.type === "benchmark"
+          depth === 1 && node.type === "benchmark"
             ? "print:break-before-page"
+            : null,
+          node.type === "benchmark" || node.type === "control"
+            ? "print:break-inside-avoid-page"
             : null
         )}
       >
