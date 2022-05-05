@@ -76,7 +76,7 @@ const ThemeWrapper = ({ children }) => {
   return (
     <div
       ref={setWrapperRef}
-      className={`theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground`}
+      className={`theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground print:text-black`}
     >
       {children}
     </div>
