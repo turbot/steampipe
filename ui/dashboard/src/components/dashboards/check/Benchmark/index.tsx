@@ -14,7 +14,7 @@ import {
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
-import { PanelDefinition } from "../../../../hooks/useDashboard";
+import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo } from "react";
 
@@ -29,6 +29,7 @@ type InnerCheckProps = {
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
+  withTitle: boolean;
 };
 
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
@@ -42,6 +43,7 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 );
 
 const Benchmark = (props: InnerCheckProps) => {
+  const { selectedDashboard } = useDashboard();
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
@@ -185,7 +187,12 @@ const Benchmark = (props: InnerCheckProps) => {
         title: props.definition.title,
         width: props.definition.width,
       }}
-      expandDefinition={{ ...props.definition, data: benchmarkDataTable }}
+      expandDefinition={{
+        ...props.definition,
+        title: props.definition.title || selectedDashboard?.title,
+        data: benchmarkDataTable,
+      }}
+      withTitle={props.withTitle}
     />
   );
 };
@@ -226,7 +233,7 @@ const BenchmarkTableView = ({
   );
 };
 
-const Inner = () => {
+const Inner = ({ withTitle }) => {
   const {
     benchmark,
     definition,
@@ -248,6 +255,7 @@ const Inner = () => {
         grouping={grouping}
         groupingConfig={groupingsConfig}
         firstChildSummaries={firstChildSummaries}
+        withTitle={withTitle}
       />
     );
   } else if (rootBenchmark.type === "table") {
@@ -267,10 +275,14 @@ const Inner = () => {
   }
 };
 
-const BenchmarkWrapper = (props: PanelDefinition) => {
+type BenchmarkProps = PanelDefinition & {
+  withTitle: boolean;
+};
+
+const BenchmarkWrapper = (props: BenchmarkProps) => {
   return (
     <CheckGroupingProvider definition={props}>
-      <Inner />
+      <Inner withTitle={props.withTitle} />
     </CheckGroupingProvider>
   );
 };
