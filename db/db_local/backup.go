@@ -273,6 +273,7 @@ func restoreBackup(ctx context.Context) error {
 	}
 
 	if err := retainBackup(ctx); err != nil {
+		utils.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
 		log.Printf("[WARN] Could not retain backup %s.", databaseBackupFilePath())
 	}
 
@@ -395,14 +396,15 @@ func retainBackup(ctx context.Context) error {
 	binaryBackupRetentionFileName := fmt.Sprintf("%s.dump", backupBaseFileName)
 	textBackupRetentionFileName := fmt.Sprintf("%s.sql", backupBaseFileName)
 
-	binaryBackupFilePath := filepath.Join(filepaths.EnsureBackupsDir(), binaryBackupRetentionFileName)
-	textBackupFilePath := filepath.Join(filepaths.EnsureBackupsDir(), textBackupRetentionFileName)
+	backupDir := filepaths.EnsureBackupsDir()
+	binaryBackupFilePath := filepath.Join(backupDir, binaryBackupRetentionFileName)
+	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
-	log.Println("[TRACE] moving back up to", binaryBackupFilePath)
+	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
 	if err := os.Rename(databaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
-	log.Println("[TRACE] converting back up to", textBackupFilePath)
+	log.Println("[TRACE] converting database back up to", textBackupFilePath)
 	txtConvertCmd := pgRestoreCmd(
 		ctx,
 		binaryBackupFilePath,
