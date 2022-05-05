@@ -423,6 +423,7 @@ func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 		pgDumpBinaryExecutablePath(),
 		args...,
 	)
+	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
 
 	log.Println("[TRACE] pg_dump command:", cmd.String())
 	return cmd
@@ -434,6 +435,7 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 		pgRestoreBinaryExecutablePath(),
 		args...,
 	)
+	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd
