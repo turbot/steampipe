@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -383,70 +382,10 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	return lines, err
 }
 
-func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(
-		ctx,
-		pgDumpBinaryExecutablePath(),
-		args...,
-	)
-	// set working directory top the binary path to ensure dynamic libs are resolved
-	cmd.Dir = path.Dir(pgDumpBinaryExecutablePath())
-
-	log.Println("[TRACE] pg_dump command:", cmd.String())
-	return cmd
-}
-
-func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(
-		ctx,
-		pgRestoreBinaryExecutablePath(),
-		args...,
-	)
-	// set working directory top the binary path to ensure dynamic libs are resolved
-	cmd.Dir = path.Dir(pgRestoreBinaryExecutablePath())
-
-	log.Println("[TRACE] pg_restore command:", cmd.String())
-	return cmd
-}
-
-// updateDynamicLibPath adds the 'libdir' as a priority in the LD_LIBRARY_PATH (DYLD_LIBRARY_PATH for darwin)
-// environment variable. This is done when we start 'pg_dump' and 'pg_restore' - so that these binaries always
-// prioritise libraries in the steampipe installation over system libraries.
-func updateDynamicLibPath(ctx context.Context, cmd *exec.Cmd) {
-	currentEnv := cmd.Env
-	envKey := ""
-	currentValue := ""
-
-	switch runtime.GOOS {
-	case constants.OSDarwin:
-		envKey = "DYLD_FALLBACK_LIBRARY_PATH"
-	case constants.OSLinux:
-		envKey = "LD_LIBRARY_PATH"
-	}
-
-	for _, envTuple := range currentEnv {
-		split := utils.SplitByRune(envTuple, '=')
-		if split[0] == envKey {
-			currentValue = strings.Join(split[1:], "=")
-		}
-	}
-	newValue := ""
-	if len(currentValue) == 0 {
-		// there's no value. set it to our libdir
-		newValue = getDatabaseLibDirectory()
-	} else {
-		// there's a value. prepend our libdir, so that it get preference
-		newValue = fmt.Sprintf("%s:%s", getDatabaseLibDirectory(), currentValue)
-	}
-
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", envKey, newValue))
-	log.Printf("[TRACE] %s set to %s in ENV", envKey, newValue)
-}
-
 // retainBackup creates a text dump of the backup binary and saves both in the $STEAMPIPE_INSTALL_DIR/backups directory
 // the backups are saved as:
-// binary: 'database-yyyy-MM-dd-hh-mm-ss.dump'
-// text:   'database-yyyy-MM-dd-hh-mm-ss.sql'
+// 		binary: 'database-yyyy-MM-dd-hh-mm-ss.dump'
+//		text:   'database-yyyy-MM-dd-hh-mm-ss.sql'
 func retainBackup(ctx context.Context) error {
 	now := time.Now()
 	backupBaseFileName := fmt.Sprintf(
@@ -476,4 +415,30 @@ func retainBackup(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(
+		ctx,
+		pgDumpBinaryExecutablePath(),
+		args...,
+	)
+	// set working directory top the binary path to ensure dynamic libs are resolved
+	cmd.Dir = path.Dir(pgDumpBinaryExecutablePath())
+
+	log.Println("[TRACE] pg_dump command:", cmd.String())
+	return cmd
+}
+
+func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(
+		ctx,
+		pgRestoreBinaryExecutablePath(),
+		args...,
+	)
+	// set working directory top the binary path to ensure dynamic libs are resolved
+	cmd.Dir = path.Dir(pgRestoreBinaryExecutablePath())
+
+	log.Println("[TRACE] pg_restore command:", cmd.String())
+	return cmd
 }
