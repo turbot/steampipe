@@ -4,13 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -427,7 +424,7 @@ func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 		args...,
 	)
 	// set working directory top the binary path to ensure dynamic libs are resolved
-	cmd.Dir = path.Dir(pgDumpBinaryExecutablePath())
+	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
 
 	log.Println("[TRACE] pg_dump command:", cmd.String())
 	return cmd
@@ -440,40 +437,8 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 		args...,
 	)
 	// set working directory top the binary path to ensure dynamic libs are resolved
-	cmd.Dir = path.Dir(pgRestoreBinaryExecutablePath())
+	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd
-}
-
-func TrimBackups() {
-	backupDir := filepaths.EnsureBackupsDir()
-	files, err := os.ReadDir(backupDir)
-	if err != nil {
-		log.Println("[TRACE] Could not list Backups directory")
-		return
-	}
-	if len(files) < constants.MaxBackups {
-		// nothing to do here
-		return
-	}
-
-	// filter out the dump files
-	files = utils.Filter(files, func(f fs.DirEntry) bool {
-		return filepath.Ext(f.Name()) == ".dump"
-	})
-
-	// sort them per ModTime
-	sort.SliceStable(files, func(i, j int) bool {
-		infoI, err := files[i].Info()
-		if err != nil {
-			return false
-		}
-		infoJ, err := files[j].Info()
-		if err != nil {
-			return false
-		}
-		return infoI.ModTime().Before(infoJ.ModTime())
-	})
-
 }
