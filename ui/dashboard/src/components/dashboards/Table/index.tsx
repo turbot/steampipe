@@ -27,7 +27,7 @@ import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
-import { ThemeNames, useTheme } from "../../../hooks/useTheme";
+import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
@@ -371,7 +371,9 @@ const TableView = ({
   hiddenColumns,
   hasTopBorder = false,
 }) => {
-  const { theme } = useTheme();
+  const {
+    themeContext: { theme },
+  } = useDashboard();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =

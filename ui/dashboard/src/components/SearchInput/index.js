@@ -1,7 +1,8 @@
 import { classNames } from "../../utils/styles";
 import { ClearIcon, SearchIcon } from "../../constants/icons";
 import { forwardRef } from "react";
-import { ThemeNames, useTheme } from "../../hooks/useTheme";
+import { ThemeNames } from "../../hooks/useTheme";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const SearchInput = forwardRef(
   (
@@ -15,7 +16,9 @@ const SearchInput = forwardRef(
     },
     ref
   ) => {
-    const { theme } = useTheme();
+    const {
+      themeContext: { theme },
+    } = useDashboard();
     return (
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-foreground-light text-sm">

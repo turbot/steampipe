@@ -3,13 +3,13 @@ import DashboardTagGroupSelect from "../DashboardTagGroupSelect";
 import SteampipeLogo from "./SteampipeLogo";
 import ThemeToggle from "../ThemeToggle";
 import { classNames } from "../../utils/styles";
-import { ThemeNames, useTheme } from "../../hooks/useTheme";
+import { ThemeNames } from "../../hooks/useTheme";
 import { useDashboard } from "../../hooks/useDashboard";
 
 const DashboardHeader = () => {
-  const { theme } = useTheme();
   const {
     components: { ExternalLink },
+    themeContext: { theme },
   } = useDashboard();
   return (
     <div
