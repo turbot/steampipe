@@ -29,12 +29,12 @@ import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
 
-export interface CheckGroupState {
+export interface CheckGroupNodeState {
   expanded: boolean;
 }
 
-export interface CheckGroupStates {
-  [name: string]: CheckGroupState;
+export interface CheckGroupNodeStates {
+  [name: string]: CheckGroupNodeState;
 }
 
 export interface CheckGroupingAction {
@@ -48,7 +48,7 @@ interface ICheckGroupingContext {
   grouping: CheckNode | null;
   groupingsConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
-  nodeStates: CheckGroupStates;
+  nodeStates: CheckGroupNodeStates;
   rootBenchmark: CheckGroup;
   dispatch(action: CheckGroupingAction): void;
 }
@@ -195,7 +195,7 @@ const groupCheckItems = (
   temp: { _: CheckNode[] },
   checkResult: CheckResult,
   groupingsConfig: CheckDisplayGroup[],
-  checkNodeStates: CheckGroupStates
+  checkNodeStates: CheckGroupNodeStates
 ) => {
   return groupingsConfig
     .filter((groupConfig) => groupConfig.type !== "result")
@@ -251,11 +251,11 @@ const getCheckResultNode = (checkResult: CheckResult) => {
   return new ControlResultNode(checkResult);
 };
 
-const reducer = (state: CheckGroupStates, action) => {
+const reducer = (state: CheckGroupNodeStates, action) => {
   switch (action.type) {
     case CheckGroupingActions.COLLAPSE_ALL_NODES: {
       const newNodes = {};
-      for (const [name, node] of Object.entries(state.nodes)) {
+      for (const [name, node] of Object.entries(state)) {
         newNodes[name] = {
           ...node,
           expanded: false,
@@ -269,44 +269,32 @@ const reducer = (state: CheckGroupStates, action) => {
     case CheckGroupingActions.COLLAPSE_NODE:
       return {
         ...state,
-        nodes: {
-          ...state.nodes,
-          [action.name]: {
-            ...state.nodes[action.name],
-            expanded: false,
-          },
+        [action.name]: {
+          ...(state[action.name] || {}),
+          expanded: false,
         },
       };
     case CheckGroupingActions.EXPAND_ALL_NODES: {
       const newNodes = {};
-      Object.entries(state.nodes).forEach(([name, node]) => {
+      Object.entries(state).forEach(([name, node]) => {
         newNodes[name] = {
           ...node,
           expanded: true,
         };
       });
-      return {
-        ...state,
-        nodes: newNodes,
-      };
+      return newNodes;
     }
     case CheckGroupingActions.EXPAND_NODE: {
       return {
         ...state,
-        nodes: {
-          ...state.nodes,
-          [action.name]: {
-            ...state.nodes[action.name],
-            expanded: true,
-          },
+        [action.name]: {
+          ...(state[action.name] || {}),
+          expanded: true,
         },
       };
     }
     case CheckGroupingActions.UPDATE_NODES:
-      return {
-        ...state,
-        nodes: action.nodes,
-      };
+      return action.nodes;
     default:
       return state;
   }
@@ -379,7 +367,7 @@ const CheckGroupingProvider = ({
         []
       );
 
-      const checkNodeStates: CheckGroupStates = {};
+      const checkNodeStates: CheckGroupNodeStates = {};
       const result: CheckNode[] = [];
       const temp = { _: result };
       b.all_control_results.forEach((checkResult) => {

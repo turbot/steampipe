@@ -1,12 +1,12 @@
 import CheckPanel from "../CheckPanel";
 import sortBy from "lodash/sortBy";
-import useMediaMode from "../../../../hooks/useMediaMode";
 import {
+  CheckGroupNodeStates,
   CheckGroupingActions,
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
 import { CheckNode } from "../common";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface CheckGroupingProps {
   node: CheckNode;
@@ -14,47 +14,29 @@ interface CheckGroupingProps {
 
 const CheckGrouping = ({ node }: CheckGroupingProps) => {
   const { dispatch, nodeStates } = useCheckGrouping();
-  // const [restoreNodeStates, setRestoreNodeStates] =
-  //   useState<CheckGroupStates | null>(null);
-  const mediaMode = useMediaMode();
+  const [restoreNodeStates, setRestoreNodeStates] =
+    useState<CheckGroupNodeStates | null>(null);
 
-  // @ts-ignore
-  // const previousStates = usePrevious({
-  //   mediaMode,
-  //   nodeStates,
-  //   restoreNodeStates,
-  // });
+  const expand = useCallback(() => {
+    // console.log("Capturing and expanding", nodeStates);
+    setRestoreNodeStates(nodeStates);
+    dispatch({ type: CheckGroupingActions.EXPAND_ALL_NODES });
+  }, [nodeStates]);
 
-  // useEffect(() => {
-  //   if (
-  //     // @ts-ignore
-  //     (!previousStates || previousStates.mediaMode === "screen") &&
-  //     mediaMode === "print"
-  //   ) {
-  //     // @ts-ignore
-  //     setRestoreNodeStates(previousStates.nodeStates);
-  //     dispatch({ type: CheckGroupingActions.EXPAND_ALL_NODES });
-  //   } else if (
-  //     previousStates &&
-  //     // @ts-ignore
-  //     previousStates.mediaMode === "print" &&
-  //     mediaMode === "screen"
-  //   ) {
-  //     // @ts-ignore
-  //     console.log(previousStates.restoreNodeStates);
-  //     dispatch({
-  //       type: CheckGroupingActions.UPDATE_NODES,
-  //       // @ts-ignore
-  //       nodes: previousStates.restoreNodeStates,
-  //     });
-  //   }
-  // }, [mediaMode, previousStates]);
+  const restore = useCallback(() => {
+    // console.log("Restoring", restoreNodeStates);
+    if (restoreNodeStates) {
+      dispatch({
+        type: CheckGroupingActions.UPDATE_NODES,
+        nodes: restoreNodeStates,
+      });
+    }
+  }, [restoreNodeStates]);
 
   useEffect(() => {
-    if (mediaMode === "print") {
-      dispatch({ type: CheckGroupingActions.EXPAND_ALL_NODES });
-    }
-  }, [mediaMode]);
+    window.onbeforeprint = expand;
+    window.onafterprint = restore;
+  }, [expand, restore]);
 
   return (
     <div className="space-y-4 md:space-y-6 col-span-12">

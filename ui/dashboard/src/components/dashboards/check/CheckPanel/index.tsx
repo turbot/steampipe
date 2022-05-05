@@ -280,10 +280,10 @@ const CheckPanelSeverity = ({ severity_summary }: CheckPanelSeverityProps) => {
 const CheckPanel = ({ depth, node }: CheckPanelProps) => {
   const { firstChildSummaries, dispatch, groupingsConfig, nodeStates } =
     useCheckGrouping();
-  const expanded = nodeStates.nodes[node.name]
-    ? nodeStates.nodes[node.name].expanded
+  const expanded = nodeStates[node.name]
+    ? nodeStates[node.name].expanded
     : false;
-  // console.log({ name: node.name, nodes: nodeStates.nodes, expanded });
+  // console.log({ name: node.name, nodes: nodeStates, expanded });
 
   const [child_nodes, error_nodes, empty_nodes, result_nodes, can_be_expanded] =
     useMemo(() => {
