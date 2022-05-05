@@ -19,3 +19,15 @@ func Partition[V any](elements []V, predicate func(V) bool) ([]V, []V) {
 
 	return leftPartition, rightPartition
 }
+
+func Filter[V any](elements []V, predicate func(V) bool) []V {
+	filtered := []V{}
+
+	for _, v := range elements {
+		if predicate(v) {
+			filtered = append(filtered, v)
+		}
+	}
+
+	return filtered
+}

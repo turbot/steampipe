@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
@@ -271,8 +271,8 @@ func restoreBackup(ctx context.Context) error {
 		utils.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
 	}
 
-	if err := os.Remove(databaseBackupFilePath()); err != nil {
-		log.Printf("[WARN] Could not remove Backup data at %s.", databaseBackupFilePath())
+	if err := retainBackup(ctx); err != nil {
+		utils.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
 	}
 
 	// get the location of the other instance which was backed up
@@ -381,14 +381,48 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	return lines, err
 }
 
+// retainBackup creates a text dump of the backup binary and saves both in the $STEAMPIPE_INSTALL_DIR/backups directory
+// the backups are saved as:
+// 		binary: 'database-yyyy-MM-dd-hh-mm-ss.dump'
+//		text:   'database-yyyy-MM-dd-hh-mm-ss.sql'
+func retainBackup(ctx context.Context) error {
+	now := time.Now()
+	backupBaseFileName := fmt.Sprintf(
+		"database-%s",
+		now.Format("2006-01-02-15-04-05"),
+	)
+	binaryBackupRetentionFileName := fmt.Sprintf("%s.dump", backupBaseFileName)
+	textBackupRetentionFileName := fmt.Sprintf("%s.sql", backupBaseFileName)
+
+	backupDir := filepaths.EnsureBackupsDir()
+	binaryBackupFilePath := filepath.Join(backupDir, binaryBackupRetentionFileName)
+	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
+
+	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
+	if err := utils.MoveFile(databaseBackupFilePath(), binaryBackupFilePath); err != nil {
+		return err
+	}
+	log.Println("[TRACE] converting database back up to", textBackupFilePath)
+	txtConvertCmd := pgRestoreCmd(
+		ctx,
+		binaryBackupFilePath,
+		fmt.Sprintf("--file=%s", textBackupFilePath),
+	)
+
+	if output, err := txtConvertCmd.CombinedOutput(); err != nil {
+		log.Println("[TRACE] pg_restore convertion process output:", string(output))
+		return err
+	}
+
+	return nil
+}
+
 func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
 		pgDumpBinaryExecutablePath(),
 		args...,
 	)
-	// set working directory top the binary path to ensure dynamic libs are resolved
-	cmd.Dir = path.Dir(pgDumpBinaryExecutablePath())
 
 	log.Println("[TRACE] pg_dump command:", cmd.String())
 	return cmd
@@ -400,8 +434,6 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 		pgRestoreBinaryExecutablePath(),
 		args...,
 	)
-	// set working directory top the binary path to ensure dynamic libs are resolved
-	cmd.Dir = path.Dir(pgRestoreBinaryExecutablePath())
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd
