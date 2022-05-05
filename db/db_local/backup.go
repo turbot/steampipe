@@ -274,7 +274,6 @@ func restoreBackup(ctx context.Context) error {
 
 	if err := retainBackup(ctx); err != nil {
 		utils.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
-		log.Printf("[WARN] Could not retain backup %s.", databaseBackupFilePath())
 	}
 
 	// get the location of the other instance which was backed up
