@@ -31,7 +31,7 @@ const getWrapperClasses = (type) => {
     case "severity":
       return "bg-yellow";
     default:
-      return "bg-dashboard-panel shadow-sm";
+      return "bg-dashboard-panel print:bg-white shadow-sm";
   }
 };
 

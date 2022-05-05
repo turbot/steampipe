@@ -2,7 +2,6 @@ import jq from "jq-web";
 
 const interpolatedStringSplitter = /({{.*?}})/gs;
 const interpolatedMatcher = /{{(.*?)}}/gs;
-const singleQuoteMatcher = /(?:^|[^\\])(')/gs;
 
 interface TemplatesMap {
   [key: string]: string;

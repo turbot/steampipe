@@ -107,11 +107,14 @@ export interface CheckControl {
   run_error?: string;
 }
 
+export type CheckGroupType = "benchmark" | "table";
+
 export interface CheckGroup {
   group_id: string;
   title?: string;
   description?: string;
   tags?: CheckTags;
+  type: CheckGroupType;
   summary: CheckLeafNodeDataGroupSummary;
   groups?: CheckGroup[];
   controls?: CheckControl[];
@@ -145,13 +148,10 @@ export interface CheckDisplayGroup {
   value?: string;
 }
 
-export type CheckProps = BasePrimitiveProps & ExecutablePrimitiveProps;
-
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {
       grouping: CheckNode;
-      grouping_config: CheckDisplayGroup[];
       first_child_summaries: CheckSummary[];
     };
   };

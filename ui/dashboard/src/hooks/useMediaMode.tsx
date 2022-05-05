@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-type MediaMode = "screen" | "print";
+export type MediaMode = "screen" | "print";
 
 const useMediaMode = () => {
   const [mediaMode, setMediaMode] = useState<MediaMode>("screen");

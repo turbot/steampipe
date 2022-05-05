@@ -3,28 +3,33 @@ import Container from "../../layout/Container";
 import Error from "../../Error";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
-import useCheckGrouping from "../../../../hooks/useCheckGrouping";
 import {
   BenchmarkTreeProps,
   CheckDisplayGroup,
   CheckNode,
-  CheckProps,
   CheckSummary,
 } from "../common";
+import {
+  CheckGroupingProvider,
+  useCheckGrouping,
+} from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
+import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo } from "react";
 
 interface BenchmarkTableViewProps {
   benchmark: BenchmarkType;
-  definition: CheckProps;
+  definition: PanelDefinition;
 }
 
-type InnerCheckProps = CheckProps & {
+type InnerCheckProps = {
   benchmark: BenchmarkType;
+  definition: PanelDefinition;
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
+  withTitle: boolean;
 };
 
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
@@ -38,6 +43,7 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 );
 
 const Benchmark = (props: InnerCheckProps) => {
+  const { selectedDashboard } = useDashboard();
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
@@ -68,7 +74,7 @@ const Benchmark = (props: InnerCheckProps) => {
     const summary_cards = [
       {
         node_type: "card",
-        name: `${props.name}.container.summary.ok-${totalSummary.ok}`,
+        name: `${props.definition.name}.container.summary.ok-${totalSummary.ok}`,
         width: 2,
         properties: {
           label: "OK",
@@ -78,7 +84,7 @@ const Benchmark = (props: InnerCheckProps) => {
       },
       {
         node_type: "card",
-        name: `${props.name}.container.summary.alarm-${totalSummary.alarm}`,
+        name: `${props.definition.name}.container.summary.alarm-${totalSummary.alarm}`,
         width: 2,
         properties: {
           label: "Alarm",
@@ -89,7 +95,7 @@ const Benchmark = (props: InnerCheckProps) => {
       },
       {
         node_type: "card",
-        name: `${props.name}.container.summary.error-${totalSummary.error}`,
+        name: `${props.definition.name}.container.summary.error-${totalSummary.error}`,
         width: 2,
         properties: {
           label: "Error",
@@ -100,7 +106,7 @@ const Benchmark = (props: InnerCheckProps) => {
       },
       {
         node_type: "card",
-        name: `${props.name}.container.summary.info-${totalSummary.info}`,
+        name: `${props.definition.name}.container.summary.info-${totalSummary.info}`,
         width: 2,
         properties: {
           label: "Info",
@@ -110,7 +116,7 @@ const Benchmark = (props: InnerCheckProps) => {
       },
       {
         node_type: "card",
-        name: `${props.name}.container.summary.skip-${totalSummary.skip}`,
+        name: `${props.definition.name}.container.summary.skip-${totalSummary.skip}`,
         width: 2,
         properties: {
           label: "Skipped",
@@ -131,7 +137,7 @@ const Benchmark = (props: InnerCheckProps) => {
       const total = critical + high;
       summary_cards.push({
         node_type: "card",
-        name: `${props.name}.container.summary.severity-${total}`,
+        name: `${props.definition.name}.container.summary.severity-${total}`,
         width: 2,
         properties: {
           label: "Critical / High",
@@ -141,7 +147,7 @@ const Benchmark = (props: InnerCheckProps) => {
       });
     }
     return summary_cards;
-  }, [props.firstChildSummaries, props.grouping, props.name]);
+  }, [props.firstChildSummaries, props.grouping, props.definition.name]);
 
   if (!props.grouping) {
     return null;
@@ -152,26 +158,25 @@ const Benchmark = (props: InnerCheckProps) => {
       allowChildPanelExpand={false}
       allowExpand={true}
       definition={{
-        name: props.name,
+        name: props.definition.name,
         node_type: "container",
         children: [
           {
-            name: `${props.name}.container.summary`,
+            name: `${props.definition.name}.container.summary`,
             node_type: "container",
             allow_child_panel_expand: false,
             children: summary_cards,
           },
           {
-            name: `${props.name}.container.tree`,
+            name: `${props.definition.name}.container.tree`,
             node_type: "container",
             allow_child_panel_expand: false,
             children: [
               {
-                name: `${props.name}.container.tree.results`,
+                name: `${props.definition.name}.container.tree.results`,
                 node_type: "benchmark_tree",
                 properties: {
                   grouping: props.grouping,
-                  grouping_config: props.groupingConfig,
                   first_child_summaries: props.firstChildSummaries,
                 },
               },
@@ -179,9 +184,15 @@ const Benchmark = (props: InnerCheckProps) => {
           },
         ],
         data: benchmarkDataTable,
-        title: props.title,
-        width: props.width,
+        title: props.definition.title,
+        width: props.definition.width,
       }}
+      expandDefinition={{
+        ...props.definition,
+        title: props.definition.title || selectedDashboard?.title,
+        data: benchmarkDataTable,
+      }}
+      withTitle={props.withTitle}
     />
   );
 };
@@ -191,13 +202,7 @@ const BenchmarkTree = (props: BenchmarkTreeProps) => {
     return null;
   }
 
-  return (
-    <CheckGrouping
-      node={props.properties.grouping}
-      groupingConfig={props.properties.grouping_config}
-      firstChildSummaries={props.properties.first_child_summaries}
-    />
-  );
+  return <CheckGrouping node={props.properties.grouping} />;
 };
 
 const BenchmarkTableView = ({
@@ -228,14 +233,15 @@ const BenchmarkTableView = ({
   );
 };
 
-const BenchmarkWrapper = (props: CheckProps) => {
-  const [
+const Inner = ({ withTitle }) => {
+  const {
     benchmark,
+    definition,
     grouping,
     groupingsConfig,
     firstChildSummaries,
     rootBenchmark,
-  ] = useCheckGrouping(props);
+  } = useCheckGrouping();
 
   if (!benchmark || !grouping || !rootBenchmark) {
     return null;
@@ -244,28 +250,41 @@ const BenchmarkWrapper = (props: CheckProps) => {
   if (!rootBenchmark.type || rootBenchmark.type === "benchmark") {
     return (
       <Benchmark
-        {...props}
         benchmark={benchmark}
+        definition={definition}
         grouping={grouping}
         groupingConfig={groupingsConfig}
         firstChildSummaries={firstChildSummaries}
+        withTitle={withTitle}
       />
     );
   } else if (rootBenchmark.type === "table") {
-    return <BenchmarkTableView benchmark={benchmark} definition={props} />;
+    return <BenchmarkTableView benchmark={benchmark} definition={definition} />;
   } else {
     return (
       <Panel
         definition={{
-          name: props.name,
+          name: definition.name,
           node_type: "benchmark",
-          width: props.width,
+          width: definition.width,
         }}
       >
         <Error error={`Unsupported benchmark type ${rootBenchmark.type}`} />
       </Panel>
     );
   }
+};
+
+type BenchmarkProps = PanelDefinition & {
+  withTitle: boolean;
+};
+
+const BenchmarkWrapper = (props: BenchmarkProps) => {
+  return (
+    <CheckGroupingProvider definition={props}>
+      <Inner withTitle={props.withTitle} />
+    </CheckGroupingProvider>
+  );
 };
 
 export default BenchmarkWrapper;

@@ -13,6 +13,7 @@ interface ContainerProps {
   allowChildPanelExpand?: boolean;
   allowExpand?: boolean;
   definition: ContainerDefinition;
+  expandDefinition: ContainerDefinition;
   withNarrowVertical?: boolean;
   withTitle?: boolean;
 }
@@ -21,6 +22,7 @@ const Container = ({
   allowChildPanelExpand = true,
   allowExpand = false,
   definition,
+  expandDefinition,
   withNarrowVertical,
   withTitle,
 }: ContainerProps) => {
@@ -57,7 +59,7 @@ const Container = ({
               e.stopPropagation();
               dispatch({
                 type: DashboardActions.SELECT_PANEL,
-                panel: { ...definition },
+                panel: { ...expandDefinition },
               });
             }}
           >

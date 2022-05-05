@@ -3,7 +3,6 @@ import get from "lodash/get";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts";
 import { CardProps } from "../../Card";
-import { CheckProps } from "../../check/common";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies";
@@ -26,7 +25,6 @@ interface PanelProps {
   definition:
     | BaseChartProps
     | CardProps
-    | CheckProps
     | HierarchyProps
     | ImageProps
     | InputProps
@@ -106,7 +104,7 @@ const Panel = ({
                 definition.node_type === "card" ||
                 definition.node_type === "input") &&
                 get(definition, "properties.type") === "table")
-              ? "bg-dashboard-panel shadow-sm rounded-md"
+              ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
               : null
           )}
         >

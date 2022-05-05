@@ -85,21 +85,9 @@ const FullHeightThemeWrapper = ({ children }) => {
     <div
       ref={setWrapperRef}
       className={classNames(
-        `min-h-screen flex flex-col theme-${theme.name} bg-dashboard print:bg-white text-foreground`,
+        `min-h-screen flex flex-col theme-${theme.name} bg-dashboard print:bg-white text-foreground print:text-black`,
         withFooterPadding ? "pb-8" : ""
       )}
-    >
-      {children}
-    </div>
-  );
-};
-
-const ThemeWrapper = ({ children }) => {
-  const { setWrapperRef, theme } = useTheme();
-  return (
-    <div
-      ref={setWrapperRef}
-      className={`theme-${theme.name} bg-dashboard print:bg-white text-foreground`}
     >
       {children}
     </div>
@@ -114,11 +102,4 @@ const useTheme = () => {
   return context;
 };
 
-export {
-  FullHeightThemeWrapper,
-  Themes,
-  ThemeNames,
-  ThemeProvider,
-  ThemeWrapper,
-  useTheme,
-};
+export { FullHeightThemeWrapper, Themes, ThemeNames, ThemeProvider, useTheme };
