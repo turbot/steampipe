@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/version"
 )
 
 var (
@@ -445,31 +444,31 @@ func updateDynamicLibPath(ctx context.Context, cmd *exec.Cmd) {
 }
 
 // retainBackup creates a text dump of the backup binary and saves both in the $STEAMPIPE_INSTALL_DIR/backups directory
-// the binary backup is saved as
+// the backups are saved as:
+// binary: 'database-yyyy-MM-dd-hh-mm-ss.dump'
+// text:   'database-yyyy-MM-dd-hh-mm-ss.sql'
 func retainBackup(ctx context.Context) error {
 	now := time.Now()
 	backupBaseFileName := fmt.Sprintf(
-		"database-%d-%d-%d-%s",
-		version.SteampipeVersion.Major(),
-		version.SteampipeVersion.Minor(),
-		version.SteampipeVersion.Patch(),
+		"database-%s",
 		now.Format("2006-01-02-15-04-05"),
 	)
 	binaryBackupRetentionFileName := fmt.Sprintf("%s.dump", backupBaseFileName)
 	textBackupRetentionFileName := fmt.Sprintf("%s.sql", backupBaseFileName)
 
-	binaryBackupRetentionFilePath := filepath.Join(filepaths.EnsureBackupsDir(), binaryBackupRetentionFileName)
-	textBackupRetentionFilePath := filepath.Join(filepaths.EnsureBackupsDir(), textBackupRetentionFileName)
+	binaryBackupFilePath := filepath.Join(filepaths.EnsureBackupsDir(), binaryBackupRetentionFileName)
+	textBackupFilePath := filepath.Join(filepaths.EnsureBackupsDir(), textBackupRetentionFileName)
 
-	if err := os.Rename(databaseBackupFilePath(), binaryBackupRetentionFilePath); err != nil {
+	log.Println("[TRACE] moving back up to", binaryBackupFilePath)
+	if err := os.Rename(databaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
+	log.Println("[TRACE] converting back up to", textBackupFilePath)
 	txtConvertCmd := pgRestoreCmd(
 		ctx,
-		binaryBackupRetentionFilePath,
-		fmt.Sprintf("--file=%s", textBackupRetentionFilePath),
+		binaryBackupFilePath,
+		fmt.Sprintf("--file=%s", textBackupFilePath),
 	)
-	log.Println("[TRACE] starting pg_restore command:", txtConvertCmd.String())
 
 	if output, err := txtConvertCmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] pg_restore convertion process output:", string(output))
