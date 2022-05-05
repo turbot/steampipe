@@ -116,14 +116,9 @@ const BenchmarkTitle = ({ benchmark, searchValue }) => {
       {parts.map((part, index) => (
         <Fragment key={part.full_name}>
           {!!index && (
-            <span
-              className="px-1 text-sm text-foreground-lighter"
-              key={index + "-separator"}
-            >
-              {">"}
-            </span>
+            <span className="px-1 text-sm text-foreground-lighter">{">"}</span>
           )}
-          <BenchmarkTitlePart key={part.full_name} benchmark={part} />
+          <BenchmarkTitlePart benchmark={part} />
         </Fragment>
       ))}
     </>
@@ -335,7 +330,13 @@ const DashboardList = () => {
       type: DashboardActions.SET_DASHBOARD_TAG_KEYS,
       keys: newDashboardTagKeys,
     });
-  }, [availableDashboardsLoaded, dashboards, dispatch, metadata]);
+  }, [
+    availableDashboardsLoaded,
+    dashboards,
+    dashboardsMap,
+    dispatch,
+    metadata,
+  ]);
 
   // Filter dashboards according to the search
   useEffect(() => {
