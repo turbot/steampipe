@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -400,7 +402,7 @@ func retainBackup(ctx context.Context) error {
 	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
 	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
-	if err := os.Rename(databaseBackupFilePath(), binaryBackupFilePath); err != nil {
+	if err := utils.MoveFile(databaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
 	log.Println("[TRACE] converting database back up to", textBackupFilePath)
@@ -442,4 +444,36 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd
+}
+
+func TrimBackups() {
+	backupDir := filepaths.EnsureBackupsDir()
+	files, err := os.ReadDir(backupDir)
+	if err != nil {
+		log.Println("[TRACE] Could not list Backups directory")
+		return
+	}
+	if len(files) < constants.MaxBackups {
+		// nothing to do here
+		return
+	}
+
+	// filter out the dump files
+	files = utils.Filter(files, func(f fs.DirEntry) bool {
+		return filepath.Ext(f.Name()) == ".dump"
+	})
+
+	// sort them per ModTime
+	sort.SliceStable(files, func(i, j int) bool {
+		infoI, err := files[i].Info()
+		if err != nil {
+			return false
+		}
+		infoJ, err := files[j].Info()
+		if err != nil {
+			return false
+		}
+		return infoI.ModTime().Before(infoJ.ModTime())
+	})
+
 }

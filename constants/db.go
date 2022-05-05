@@ -11,6 +11,9 @@ const (
 	// MaxParallelClientInits is the number of clients to initialize in parallel
 	// if we start initializing all clients together, it leads to bad performance on all
 	MaxParallelClientInits = 3
+
+	// MaxBackups is the maximum number of backups that will be retained
+	MaxBackups = 100
 )
 
 // DatabaseListenAddresses is an arrays is listen addresses which Steampipe accepts
