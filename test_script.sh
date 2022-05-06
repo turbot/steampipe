@@ -20,7 +20,7 @@ steampipe query "create materialized view m_repo_names_from_fn as select * from 
 
 steampipe service stop
 
-./install.sh v0.14.0-alpha.20
+./install.sh v0.14.0-rc.1
 
 steampipe service start
 
