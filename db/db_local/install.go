@@ -83,9 +83,10 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
-	dbName, err := prepareBackup(ctx)
+
 	// call prepareBackup to generate the db dump file if necessary
 	// NOTE: this returns the existing database name - we use this when creating the new database
+	dbName, err := prepareBackup(ctx)
 	if err != nil {
 		if errors.Is(err, errDbInstanceRunning) {
 			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
