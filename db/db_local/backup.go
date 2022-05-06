@@ -479,14 +479,13 @@ func TrimBackups() {
 		// remove the first element from the array
 		names = names[1:]
 
-		// the
+		// get back the names
 		dumpFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupDumpExtn))
 		textFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupTextExtn))
 
 		removeErr := utils.CombineErrors(os.Remove(dumpFilePath), os.Remove(textFilePath))
 		if removeErr != nil {
 			utils.ShowWarning(fmt.Sprintf("Could not remove backup: %s", trim))
-			break
 		}
 	}
 

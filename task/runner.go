@@ -57,6 +57,9 @@ func (r *Runner) Run() {
 		// remove log files older than 7 days
 		runJobAsync(func() { db_local.TrimLogs() }, &waitGroup)
 
+		// trim backup files
+		runJobAsync(func() { db_local.TrimBackups() }, &waitGroup)
+
 		// validate and regenerate service SSL certificates
 		runJobAsync(func() { validateServiceCertificates() }, &waitGroup)
 
