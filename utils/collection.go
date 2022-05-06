@@ -20,6 +20,10 @@ func Partition[V any](elements []V, predicate func(V) bool) ([]V, []V) {
 	return leftPartition, rightPartition
 }
 
+// Filter returns a new slice only containing the elements for which invoking the predicate
+// returned true
+//
+// The predicate is invoked with each element
 func Filter[V any](elements []V, predicate func(V) bool) []V {
 	filtered := []V{}
 
@@ -32,6 +36,9 @@ func Filter[V any](elements []V, predicate func(V) bool) []V {
 	return filtered
 }
 
+// Map returns a new slice where every value is mapped to a new value through the mapper
+//
+// The mapper is invoked with each element
 func Map[V any, M any](elements []V, mapper func(V) M) []M {
 	mapped := []M{}
 	for _, v := range elements {
