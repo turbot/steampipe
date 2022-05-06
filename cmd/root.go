@@ -102,10 +102,10 @@ func InitCmd() {
 	rootCmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for steampipe")
 	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "Version for steampipe")
 
-	hideFlags(constants.ArgSchemaComments)
+	hideRootFlags(constants.ArgSchemaComments)
 }
 
-func hideFlags(flags ...string) {
+func hideRootFlags(flags ...string) {
 	for _, flag := range flags {
 		rootCmd.Flag(flag).Hidden = true
 	}
