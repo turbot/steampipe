@@ -53,6 +53,7 @@ const (
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
 func prepareBackup(ctx context.Context) (*string, error) {
+
 	found, location, err := findDifferentPgInstallation(ctx)
 	if err != nil {
 		log.Println("[TRACE] Error while finding different PG Version:", err)
@@ -74,8 +75,10 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	}
 	defer runConfig.stop(ctx)
 
+	return &runConfig.dbName, fmt.Errorf("man made error")
+
 	if err := takeBackup(ctx, runConfig); err != nil {
-		return nil, err
+		return &runConfig.dbName, err
 	}
 
 	return &runConfig.dbName, nil
