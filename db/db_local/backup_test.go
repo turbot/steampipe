@@ -18,6 +18,8 @@ func TestTrimBackups(t *testing.T) {
 	backupDir := filepaths.EnsureBackupsDir()
 	filesCreated := []string{}
 	for i := 0; i < constants.MaxBackups; i++ {
+		// make sure the files that get created end up to really old
+		// this way we won't end up deleting any actual backup files
 		timeLastYear := time.Now().Add(12 * 30 * 24 * time.Hour)
 
 		fileName := fmt.Sprintf("database-%s-%2d", timeLastYear.Format("2006-01-02-15-04"), i)
