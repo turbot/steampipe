@@ -101,6 +101,14 @@ func InitCmd() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for steampipe")
 	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "Version for steampipe")
+
+	hideRootFlags(constants.ArgSchemaComments)
+}
+
+func hideRootFlags(flags ...string) {
+	for _, flag := range flags {
+		rootCmd.Flag(flag).Hidden = true
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.
