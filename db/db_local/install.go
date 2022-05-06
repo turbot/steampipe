@@ -27,10 +27,9 @@ var ensureMux sync.Mutex
 
 func noBackupWarning() string {
 	warningMessage := `
-the Steampipe database has been upgraded from Postgres 12 to Postgres 14. Data in the public schema has not been migrated.
+The Steampipe database has been upgraded from Postgres 12 to Postgres 14. Data in the public schema has not been migrated.
 
-If you want to restore the contents of your public schema, please contact Steampipe support.
-	`
+If you want to restore the contents of your public schema, please contact Steampipe support.`
 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
