@@ -25,9 +25,9 @@ var (
 )
 
 const (
-	backupFormat   = "custom"
-	backupDumpExtn = "dump"
-	backupTextExtn = "sql"
+	backupFormat            = "custom"
+	backupDumpFileExtension = "dump"
+	backupTextFileExtension = "sql"
 )
 
 // pgRunningInfo represents a running pg instance that we need to startup to create the
@@ -397,8 +397,8 @@ func retainBackup(ctx context.Context) error {
 		"database-%s",
 		now.Format("2006-01-02-15-04-05"),
 	)
-	binaryBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupDumpExtn)
-	textBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupTextExtn)
+	binaryBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupDumpFileExtension)
+	textBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupTextFileExtension)
 
 	backupDir := filepaths.EnsureBackupsDir()
 	binaryBackupFilePath := filepath.Join(backupDir, binaryBackupRetentionFileName)
@@ -461,7 +461,7 @@ func TrimBackups() {
 			return false
 		}
 		// retain only the .dump files
-		return strings.HasSuffix(v.Name(), backupDumpExtn)
+		return strings.HasSuffix(v.Name(), backupDumpFileExtension)
 	})
 
 	// map to the names of the backups, without extensions
@@ -480,8 +480,8 @@ func TrimBackups() {
 		names = names[1:]
 
 		// get back the names
-		dumpFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupDumpExtn))
-		textFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupTextExtn))
+		dumpFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupDumpFileExtension))
+		textFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupTextFileExtension))
 
 		removeErr := utils.CombineErrors(os.Remove(dumpFilePath), os.Remove(textFilePath))
 		if removeErr != nil {
