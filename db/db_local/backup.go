@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -467,6 +468,9 @@ func TrimBackups() {
 	names := utils.Map(files, func(v fs.DirEntry) string {
 		return strings.TrimSuffix(v.Name(), filepath.Ext(v.Name()))
 	})
+
+	// just sorting should work, since these names are suffixed by date of the format yyyy-MM-dd-hh-mm-ss
+	sort.Strings(names)
 
 	for len(names) > constants.MaxBackups {
 		// shift the first element
