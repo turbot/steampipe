@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
@@ -22,7 +23,11 @@ var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - an instance is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
 )
 
-const backupFormat = "custom"
+const (
+	backupFormat   = "custom"
+	backupDumpExtn = "dump"
+	backupTextExtn = "sql"
+)
 
 // pgRunningInfo represents a running pg instance that we need to startup to create the
 // backup archive and the name of the installed database
@@ -391,8 +396,8 @@ func retainBackup(ctx context.Context) error {
 		"database-%s",
 		now.Format("2006-01-02-15-04-05"),
 	)
-	binaryBackupRetentionFileName := fmt.Sprintf("%s.dump", backupBaseFileName)
-	textBackupRetentionFileName := fmt.Sprintf("%s.sql", backupBaseFileName)
+	binaryBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupDumpExtn)
+	textBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupTextExtn)
 
 	backupDir := filepaths.EnsureBackupsDir()
 	binaryBackupFilePath := filepath.Join(backupDir, binaryBackupRetentionFileName)
@@ -439,4 +444,46 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd
+}
+
+// TrimBackups trims the number of backups to the most recent constants.MaxBackups
+func TrimBackups() {
+	backupDir := filepaths.EnsureBackupsDir()
+	files, err := os.ReadDir(backupDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// retain only the .dump files (just to get the unique backups)
+	files = utils.Filter(files, func(v fs.DirEntry) bool {
+		if v.Type().IsDir() {
+			return false
+		}
+		// retain only the .dump files
+		return strings.HasSuffix(v.Name(), backupDumpExtn)
+	})
+
+	// map to the names of the backups, without extensions
+	names := utils.Map(files, func(v fs.DirEntry) string {
+		return strings.TrimSuffix(v.Name(), filepath.Ext(v.Name()))
+	})
+
+	for len(names) > constants.MaxBackups {
+		// shift the first element
+		trim := names[0]
+
+		// remove the first element from the array
+		names = names[1:]
+
+		// the
+		dumpFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupDumpExtn))
+		textFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupTextExtn))
+
+		removeErr := utils.CombineErrors(os.Remove(dumpFilePath), os.Remove(textFilePath))
+		if removeErr != nil {
+			utils.ShowWarning(fmt.Sprintf("Could not remove backup: %s", trim))
+			break
+		}
+	}
+
 }
