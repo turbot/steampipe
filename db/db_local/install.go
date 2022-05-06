@@ -27,11 +27,9 @@ var ensureMux sync.Mutex
 
 func noBackupWarning() string {
 	warningMessage := `
-Previous Steampipe service installation could not be backed up.
+the Steampipe database has been upgraded from Postgres 12 to Postgres 14. Data in the public schema has not been migrated.
 
-You may continue to use Steampipe, but any data in 'public' schema will not be accessible.
-
-If you want to restore the contents of your old public schema, please contact Steampipe Support.
+If you want to restore the contents of your public schema, please contact Steampipe support.
 	`
 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
@@ -94,6 +92,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 			os.RemoveAll(databaseInstanceDir())
 			return err
 		}
+		// ignore all other errors with the backup, displaying a warning instead
 		statushooks.Message(ctx, noBackupWarning())
 	}
 
