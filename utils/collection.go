@@ -31,3 +31,11 @@ func Filter[V any](elements []V, predicate func(V) bool) []V {
 
 	return filtered
 }
+
+func Map[V any, M any](elements []V, mapper func(V) M) []M {
+	mapped := []M{}
+	for _, v := range elements {
+		mapped = append(mapped, mapper(v))
+	}
+	return mapped
+}
