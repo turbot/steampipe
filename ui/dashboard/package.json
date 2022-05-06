@@ -57,8 +57,6 @@
     "@storybook/theming": "6.5.0-alpha.64",
     "@tailwindcss/forms": "0.5.1",
     "@tailwindcss/typography": "0.5.2",
-    "@testing-library/jest-dom": "5.16.4",
-    "@testing-library/react": "13.2.0",
     "@tsconfig/create-react-app": "1.0.2",
     "@types/jest": "27.5.0",
     "@types/lodash": "4.14.182",
