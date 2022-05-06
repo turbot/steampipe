@@ -75,8 +75,6 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	}
 	defer runConfig.stop(ctx)
 
-	return &runConfig.dbName, fmt.Errorf("man made error")
-
 	if err := takeBackup(ctx, runConfig); err != nil {
 		return &runConfig.dbName, err
 	}
