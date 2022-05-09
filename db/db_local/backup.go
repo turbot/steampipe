@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - an instance is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - a postgres instance is still running and Steampipe could not kill it. Please kill this manually and restart Steampipe")
 )
 
 const backupFormat = "custom"
@@ -62,11 +62,16 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	if !found {
 		return nil, nil
 	}
-	// fail if there is an instance of the found installation running
-	if err := errIfInstanceRunning(ctx, location); err != nil {
-		log.Println("[TRACE] Error while checking for running services:", err)
-		return nil, err
+
+	// ensure there is no orphaned instance of postgres running
+	// (if the service state file was in-tact, we would already have found it and
+	// failed before now with a suitable message
+	// - to get here the state file must be missing/invalid, so just kill the postgres process)
+	// ignore error - just proceed with installation
+	if err := killRunningDbInstance(ctx); err != nil {
+		return nil, errDbInstanceRunning
 	}
+
 	runConfig, err := startDatabaseInLocation(ctx, location)
 	if err != nil {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
@@ -81,9 +86,9 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	return &runConfig.dbName, nil
 }
 
-// errIfInstanceRunning returns an error (of type errDbInstanceRunning) if there an instance of the
-// installation located at 'location' is running. Other errors may also be returned.
-func errIfInstanceRunning(ctx context.Context, location string) error {
+// killRunningDbInstance searches for a postgres instance running in the install dir
+// and if found tries to kill it
+func killRunningDbInstance(ctx context.Context) error {
 	processes, err := FindAllSteampipePostgresInstances(ctx)
 	if err != nil {
 		log.Println("[TRACE] FindAllSteampipePostgresInstances failed with", err)
@@ -99,7 +104,11 @@ func errIfInstanceRunning(ctx context.Context, location string) error {
 		// check if the name of the process is prefixed with the $STEAMPIPE_INSTALL_DIR
 		// that means this is a steampipe service from this installation directory
 		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
-			return errDbInstanceRunning
+			log.Println("[TRACE] Terminating running postgres process")
+			if err := p.Kill(); err != nil {
+				utils.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
+				return err
+			}
 		}
 	}
 	return nil
