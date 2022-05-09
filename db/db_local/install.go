@@ -474,7 +474,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		// not logging here, since the password may get logged
 		// we don't want that
 		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
-			log.Printf("[TRACE] error executiong SQL: %s", err)
+			log.Printf("[TRACE] error executing SQL: %s", err)
 			return err
 		}
 		log.Printf("[TRACE] executed ok")
