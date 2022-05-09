@@ -69,7 +69,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	// - to get here the state file must be missing/invalid, so just kill the postgres process)
 	// ignore error - just proceed with installation
 	if err := killRunningDbInstance(ctx); err != nil {
-		return nil, errDbInstanceRunning
+		return nil, err
 	}
 
 	runConfig, err := startDatabaseInLocation(ctx, location)
@@ -107,7 +107,7 @@ func killRunningDbInstance(ctx context.Context) error {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
 				utils.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
-				return err
+				return errDbInstanceRunning
 			}
 		}
 	}
