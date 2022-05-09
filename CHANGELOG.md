@@ -2,8 +2,8 @@
 _What's new?_
 * Support real-time running and viewing of benchmarks in the dashboard UI with drill-down through benchmarks and controls to individual resource results. ([#1760](https://github.com/turbot/steampipe/issues/1760))
 * Update database version to Postgresql 14. ([#43](https://github.com/turbot/steampipe/issues/43))
-* Add support native support for Arm architecture machines. ([#253](https://github.com/turbot/steampipe/issues/253))
-* Update CLI version of Go to 1.18. ([#1783](https://github.com/turbot/steampipe/issues/1783))
+* Add native support for Arm architecture machines. ([#253](https://github.com/turbot/steampipe/issues/253))
+* Update Go to 1.18. ([#1783](https://github.com/turbot/steampipe/issues/1783))
 * Migrate all json config files to use snake case property names. ([#1730](https://github.com/turbot/steampipe/issues/1730))
 * Add `input` flag to disable interactive prompting for variables. ([#1839](https://github.com/turbot/steampipe/issues/1839))
 * Add `variable list` command. ([#1868](https://github.com/turbot/steampipe/issues/1868))
