@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -29,13 +30,15 @@ type Workspace struct {
 	ModInstallationPath string
 	Mod                 *modconfig.Mod
 
-	Mods          map[string]*modconfig.Mod
-	CloudMetadata *steampipeconfig.CloudMetadata
+	Mods map[string]*modconfig.Mod
+	// the input variables used in the parse
+	VariableValues map[string]string
 
-	watcher     *utils.FileWatcher
-	loadLock    sync.Mutex
-	exclusions  []string
-	modFilePath string
+	CloudMetadata *steampipeconfig.CloudMetadata
+	watcher       *utils.FileWatcher
+	loadLock      sync.Mutex
+	exclusions    []string
+	modFilePath   string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)
@@ -45,6 +48,8 @@ type Workspace struct {
 	// callback function to reset display after the file watche displays messages
 	onFileWatcherEventMessages func()
 	loadPseudoResources        bool
+	// channel used to send ashboard events to the handleDashbooardEvent goroutine
+	dashboardEventChan chan dashboardevents.DashboardEvent
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -52,9 +57,52 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
+	workspace, err := createShellWorkspace(workspacePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// load the workspace mod
+	if err := workspace.loadWorkspaceMod(ctx); err != nil {
+		return nil, err
+	}
+
+	// migrate legacy workspace lock files in the directory to use snake casing (migrated in v0.14.0)
+	if err := migrate.Migrate(&versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath)); err != nil {
+		return nil, fmt.Errorf("failed to migrate legacy workspace lock files: %s", err.Error())
+	}
+
+	// return context error so calling code can handle cancellations
+	return workspace, nil
+}
+
+// LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
+// this is use for the variable list command
+func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error) {
+	utils.LogTime("workspace.LoadVariables start")
+	defer utils.LogTime("workspace.LoadVariables end")
+
+	// create shell workspace
+	workspace, err := createShellWorkspace(workspacePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// we will NOT validate missing variables when loading
+	validateMissing := false
+	varMap, err := workspace.getAllVariables(ctx, validateMissing)
+	if err != nil {
+		return nil, err
+	}
+	// convert into a sorted array
+	return varMap.ToArray(), nil
+}
+
+func createShellWorkspace(workspacePath string) (*Workspace, error) {
 	// create shell workspace
 	workspace := &Workspace{
-		Path: workspacePath,
+		Path:           workspacePath,
+		VariableValues: make(map[string]string),
 	}
 
 	// check whether the workspace contains a modfile
@@ -65,13 +113,6 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	if err := workspace.loadExclusions(); err != nil {
 		return nil, err
 	}
-
-	// load the workspace mod
-	if err := workspace.loadWorkspaceMod(ctx); err != nil {
-		return nil, err
-	}
-
-	// return context error so calling code can handle cancellations
 	return workspace, nil
 }
 
@@ -142,6 +183,9 @@ func (w *Workspace) Close() {
 	if w.watcher != nil {
 		w.watcher.Close()
 	}
+	if w.dashboardEventChan != nil {
+		close(w.dashboardEventChan)
+	}
 }
 
 func (w *Workspace) ModfileExists() bool {
@@ -197,7 +241,9 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	// load and evaluate all variables
-	inputVariables, err := w.getAllVariables(ctx)
+	// we WILL validate missing variables when loading
+	validateMissing := true
+	inputVariables, err := w.getAllVariables(ctx, validateMissing)
 	if err != nil {
 		return err
 	}
@@ -207,8 +253,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// add variables to runContext
-	runCtx.AddVariables(inputVariables)
+	// add workspace mod variables to runContext
+	runCtx.AddInputVariables(inputVariables)
 
 	// now load the mod
 	m, err := steampipeconfig.LoadMod(w.Path, runCtx)

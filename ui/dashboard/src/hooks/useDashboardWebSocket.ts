@@ -1,5 +1,5 @@
-import { ElementType, IActions } from "./useDashboard";
 import { useCallback, useEffect, useRef } from "react";
+import { ElementType, IActions } from "./useDashboard";
 
 interface ReceivedSocketMessagePayload {
   action: string;
@@ -53,10 +53,17 @@ const getSocketServerUrl = () => {
   }
   // Otherwise, it's a production build, so use the URL details
   const url = new URL(window.location.toString());
-  return `ws://${url.host}/ws`;
+  return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws`
 };
 
-const useDashboardWebSocket = (dispatch): IWebSocket => {
+const createSocket = async (socketFactory): Promise<WebSocket> => {
+  if (socketFactory) {
+    return await socketFactory();
+  }
+  return new WebSocket(getSocketServerUrl());
+};
+
+const useDashboardWebSocket = (dispatch, socketFactory): IWebSocket => {
   const webSocket = useRef<WebSocket | null>(null);
 
   const onSocketError = (evt: any) => {
@@ -71,51 +78,57 @@ const useDashboardWebSocket = (dispatch): IWebSocket => {
   };
 
   useEffect(() => {
-    let keepAliveTimerId: NodeJS.Timeout;
-    webSocket.current = new WebSocket(getSocketServerUrl());
-    webSocket.current.onerror = onSocketError;
-    webSocket.current.onmessage = onSocketMessage;
-    webSocket.current.onopen = () => {
-      const keepAlive = () => {
-        if (!webSocket.current) {
+    const doConnect = async () => {
+      let keepAliveTimerId: NodeJS.Timeout;
+      webSocket.current = await createSocket(socketFactory);
+      webSocket.current.onerror = onSocketError;
+      webSocket.current.onmessage = onSocketMessage;
+      webSocket.current.onopen = () => {
+        const keepAlive = async () => {
+          if (!webSocket.current) {
+            return;
+          }
+
+          const timeout = 30000;
+          if (webSocket.current.readyState === webSocket.current.CLOSED) {
+            webSocket.current = await createSocket(socketFactory);
+            webSocket.current.onerror = onSocketError;
+            webSocket.current.onmessage = onSocketMessage;
+          }
+          if (webSocket.current.readyState === webSocket.current.OPEN) {
+            webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
+          }
+          keepAliveTimerId = setTimeout(keepAlive, timeout);
+        };
+
+        if (
+          !webSocket.current ||
+          webSocket.current.readyState !== webSocket.current.OPEN
+        ) {
           return;
         }
 
-        const timeout = 30000;
-        if (webSocket.current.readyState === webSocket.current.CLOSED) {
-          webSocket.current = new WebSocket(getSocketServerUrl());
-          webSocket.current.onerror = onSocketError;
-          webSocket.current.onmessage = onSocketMessage;
-        }
-        if (webSocket.current.readyState === webSocket.current.OPEN) {
-          webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
-        }
-        keepAliveTimerId = setTimeout(keepAlive, timeout);
+        // Send message to ask for dashboard metadata
+        webSocket.current.send(
+          JSON.stringify({
+            action: "get_dashboard_metadata",
+          })
+        );
+
+        // Send message to ask for available dashboards
+        webSocket.current.send(
+          JSON.stringify({
+            action: "get_available_dashboards",
+          })
+        );
+        keepAlive();
       };
-
-      if (!webSocket.current) {
-        return;
-      }
-
-      // Send message to ask for dashboard metadata
-      webSocket.current.send(
-        JSON.stringify({
-          action: "get_dashboard_metadata",
-        })
-      );
-
-      // Send message to ask for available dashboards
-      webSocket.current.send(
-        JSON.stringify({
-          action: "get_available_dashboards",
-        })
-      );
-      keepAlive();
+      return () => {
+        clearTimeout(keepAliveTimerId);
+        webSocket.current && webSocket.current.close();
+      };
     };
-    return () => {
-      clearTimeout(keepAliveTimerId);
-      webSocket.current && webSocket.current.close();
-    };
+    doConnect();
   }, []);
 
   const send = useCallback((message) => {

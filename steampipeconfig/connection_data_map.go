@@ -1,16 +1,52 @@
 package steampipeconfig
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
 type ConnectionDataMap map[string]*ConnectionData
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the ConnectionData StructVersion is populated
+func (s *ConnectionDataMap) IsValid() bool {
+	for _, v := range *s {
+		if !v.IsValid() {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *ConnectionDataMap) MigrateFrom() migrate.Migrateable {
+	for _, v := range *s {
+		v.MigrateLegacy()
+	}
+	return s
+}
+
+func (f *ConnectionDataMap) Save() error {
+	connFilePath := filepaths.ConnectionStatePath()
+	for _, v := range *f {
+		v.MaintainLegacy()
+	}
+	connFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("[ERROR]", "Error while writing state file", err)
+		return err
+	}
+	return os.WriteFile(connFilePath, connFileJSON, 0644)
+}
 
 func (m ConnectionDataMap) Equals(other ConnectionDataMap) bool {
 	if m != nil && other == nil {
@@ -57,7 +93,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 		remoteSchema := connection.Plugin
 		pluginPath, err := pluginmanager.GetPluginPath(connection.Plugin, connection.PluginShortName)
 		if err != nil {
-			err := fmt.Errorf("failed to load connection '%s': %v\n%s", connection.Name, err, connection.DeclRange)
+			err := fmt.Errorf("failed to load connection '%s': %v\n%v", connection.Name, err, connection.DeclRange)
 			return nil, nil, err
 		}
 		// if plugin is not installed, the path will be returned as empty

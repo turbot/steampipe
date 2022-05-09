@@ -47,7 +47,7 @@ The current mod is the working directory, or the directory specified by the --wo
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -99,11 +99,9 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	// shutdown the service on exit
 	defer initData.Cleanup(dashboardCtx)
 
-	if shouldExit, err := handleDashboardInitResult(dashboardCtx, initData); shouldExit {
-		// if there was an error, display it
-		utils.FailOnError(err)
-		return
-	}
+	err = handleDashboardInitResult(dashboardCtx, initData)
+	// if there was an error, display it
+	utils.FailOnError(err)
 
 	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
 	if err != nil {
@@ -125,30 +123,27 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 }
 
 // inspect the init result ands
-func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) (bool, error) {
+func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) error {
 	// if there is an error or cancellation we bomb out
 	if err := initData.Result.Error; err != nil {
 		setExitCodeForDashboardError(err)
-		return true, initData.Result.Error
+		return initData.Result.Error
 	}
 	// cancelled?
 	if ctx != nil && ctx.Err() != nil {
-		return true, ctx.Err()
+		return ctx.Err()
 	}
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
-	// if there is are any warnings, exit politely
-	shouldExit := len(initData.Result.Warnings) > 0
-
-	return shouldExit, nil
+	return nil
 }
 
 func setExitCodeForDashboardError(err error) {
 	if err == workspace.ErrorNoModDefinition {
 		exitCode = constants.ExitCodeNoModFile
 	} else {
-		exitCode = 1
+		exitCode = constants.ExitCodeUnknownErrorPanic
 	}
 }
 

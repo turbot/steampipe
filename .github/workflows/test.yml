@@ -20,9 +20,9 @@ jobs:
         run: git fetch
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.18
           
       - name: Fetching Go Cache Paths
         id: go-cache-paths
@@ -33,7 +33,7 @@ jobs:
       # used to speedup go test
       - name: Go Build Cache
         id: build-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
@@ -41,7 +41,7 @@ jobs:
       # Cache go mod cache, used to speedup builds
       - name: Go Mod Cache
         id: mod-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
@@ -76,14 +76,14 @@ jobs:
         run: ls -l ~/artifacts
 
       - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifact-linux
           path: ~/artifacts/linux.tar.gz
           if-no-files-found: error
 
       - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifact-darwin
           path: ~/artifacts/darwin.zip
@@ -94,7 +94,7 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        platform: [ubuntu-latest]
+        platform: [macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
@@ -108,14 +108,14 @@ jobs:
           mkdir ~/artifacts
 
       - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         with:
           name: build-artifact-linux
           path: ~/artifacts
 
       - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         if: ${{ matrix.platform == 'macos-latest' }}
         with:
           name: build-artifact-darwin
@@ -153,7 +153,7 @@ jobs:
           steampipe service stop --force
       
       - name: Save Test Suite Logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-logs
           path: ~/.steampipe/logs

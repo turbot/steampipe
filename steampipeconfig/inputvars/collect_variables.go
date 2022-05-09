@@ -117,7 +117,22 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 			}
 		}
 	}
+
+	// now map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
+	ret = transformVarNames(ret)
 	return ret, diags
+}
+
+// map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
+func transformVarNames(rawValues map[string]UnparsedVariableValue) map[string]UnparsedVariableValue {
+	ret := make(map[string]UnparsedVariableValue, len(rawValues))
+	for k, v := range rawValues {
+		if parts := strings.Split(k, "."); len(parts) == 2 {
+			k = fmt.Sprintf("%s.var.%s", parts[0], parts[1])
+		}
+		ret[k] = v
+	}
+	return ret
 }
 
 func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]UnparsedVariableValue) tfdiags.Diagnostics {

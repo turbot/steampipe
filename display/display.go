@@ -20,7 +20,7 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-// ShowOutput :: displays the output using the proper formatter as applicable
+// ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result) {
 	output := cmdconfig.Viper().GetString(constants.ArgOutput)
 	if output == constants.OutputFormatJSON {

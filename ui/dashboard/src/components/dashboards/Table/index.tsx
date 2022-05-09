@@ -1,5 +1,13 @@
-import ExternalLink from "../../ExternalLink";
+import isEmpty from "lodash/isEmpty";
+import isObject from "lodash/isObject";
 import useDeepCompareEffect from "use-deep-compare-effect";
+import {
+  AlarmIcon,
+  InfoIcon,
+  OKIcon,
+  SkipIcon,
+  UnknownIcon,
+} from "../../../constants/icons";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -8,17 +16,19 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { isEmpty, isObject } from "lodash";
-import { memo, useEffect, useMemo, useState } from "react";
-import {
-  RowRenderResult,
-  renderInterpolatedTemplates,
-} from "../../../utils/template";
+import { ControlDimension } from "../check/Benchmark";
 import {
   ErrorIcon,
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
+import { memo, useEffect, useMemo, useState } from "react";
+import {
+  RowRenderResult,
+  renderInterpolatedTemplates,
+} from "../../../utils/template";
+import { ThemeNames } from "../../../hooks/useTheme";
+import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
 type TableColumnDisplay = "all" | "none";
@@ -99,55 +109,6 @@ interface CellValueProps {
   showTitle?: boolean;
 }
 
-// // create a worker pool using an external worker script
-// const jqRenderPool = createPool("../../../workers/renderJqTemplate", {
-//   maxWorkers: 3,
-// });
-
-// const workers = [];
-// function getWorker(url, metaUrl) {
-//   var w;
-//   if (workers.length > 0) {
-//     w = workers.pop();
-//   } else {
-//     // @ts-ignore
-//     // w = new Worker(
-//     //   new URL("../../../workers/renderJqTemplate", import.meta.url)
-//     // );
-//     w = new Worker(url);
-//   }
-//   return w;
-// }
-//
-// const releaseWorker = (worker) => {
-//   // @ts-ignore
-//   workers.push(worker);
-// };
-//
-// function WorkerPool(url, metaUrl) {
-//   // @ts-ignore
-//   this.url = url;
-//   // @ts-ignore
-//   this.metaUrl = metaUrl;
-//   // @ts-ignore
-//   this.pool = [];
-// }
-// WorkerPool.prototype.getWorker = function () {
-//   var w;
-//   if (this.pool.length > 0) {
-//     w = this.pool.pop();
-//   } else {
-//     // @ts-ignore
-//     w = new Worker(new URL(this.url, this.metaUrl));
-//   }
-//   return w;
-// };
-// WorkerPool.prototype.releaseWorker = function (w) {
-//   this.pool.push(w);
-// };
-
-// var pool = new WorkerPool("../../../workers/renderJqTemplate", import.meta.url);
-
 const CellValue = ({
   column,
   rowIndex,
@@ -155,6 +116,9 @@ const CellValue = ({
   value,
   showTitle = false,
 }: CellValueProps) => {
+  const {
+    components: { ExternalLink },
+  } = useDashboard();
   const [href, setHref] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -199,6 +163,62 @@ const CellValue = ({
       >
         <>null</>
       </span>
+    );
+  } else if (dataType === "control_status") {
+    switch (value) {
+      case "alarm":
+        cellContent = (
+          <span title="Status = Alarm">
+            <AlarmIcon className="text-alert w-5 h-5" />
+          </span>
+        );
+        break;
+      case "error":
+        cellContent = (
+          <span title="Status = Error">
+            <AlarmIcon className="text-alert w-5 h-5" />
+          </span>
+        );
+        break;
+      case "ok":
+        cellContent = (
+          <span title="Status = OK">
+            <OKIcon className="text-ok w-5 h-5" />
+          </span>
+        );
+        break;
+      case "info":
+        cellContent = (
+          <span title="Status = Info">
+            <InfoIcon className="text-info w-5 h-5" />
+          </span>
+        );
+        break;
+      case "skip":
+        cellContent = (
+          <span title="Status = Skipped">
+            <SkipIcon className="text-skip w-5 h-5" />
+          </span>
+        );
+        break;
+      default:
+        cellContent = (
+          <span title="Status = Unknown">
+            <UnknownIcon className="text-foreground-light w-5 h-5" />
+          </span>
+        );
+    }
+  } else if (dataType === "control_dimensions") {
+    cellContent = (
+      <div className="space-x-2">
+        {(value || []).map((dimension) => (
+          <ControlDimension
+            key={dimension.key}
+            dimensionKey={dimension.key}
+            dimensionValue={dimension.value}
+          />
+        ))}
+      </div>
     );
   } else if (dataType === "bool") {
     // True should be
@@ -345,17 +365,17 @@ export type TableProps = BaseTableProps & {
   properties?: TableProperties;
 };
 
-// TODO retain full width on mobile, no padding
-const TableView = (props: TableProps) => {
+const TableView = ({
+  rowData,
+  columns,
+  hiddenColumns,
+  hasTopBorder = false,
+}) => {
+  const {
+    themeContext: { theme },
+  } = useDashboard();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
-  const { columns, hiddenColumns } = useMemo(
-    () => getColumns(props.data ? props.data.columns : [], props.properties),
-    [props.data, props.properties]
-  );
-  const rowData = useMemo(
-    () => getData(columns, props.data ? props.data.rows : []),
-    [columns, props.data]
-  );
+
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
     useTable(
       { columns, data: rowData, initialState: { hiddenColumns } },
@@ -389,16 +409,27 @@ const TableView = (props: TableProps) => {
     doRender();
   }, [columns, rows]);
 
-  return props.data ? (
+  return (
     <>
       <table
         {...getTableProps()}
         className={classNames(
           "min-w-full divide-y divide-table-divide overflow-hidden",
-          props.title ? "border-t border-table-divide" : null
+          hasTopBorder
+            ? theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "border-t border-table-divide"
+              : "border-t border-background"
+            : null
         )}
       >
-        <thead className="bg-table-head text-table-head">
+        <thead
+          className={classNames(
+            "bg-table-head text-table-head",
+            theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "border-b border-table-divide"
+              : "border-b border-background"
+          )}
+        >
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column) => (
@@ -430,7 +461,7 @@ const TableView = (props: TableProps) => {
           {...getTableBodyProps()}
           className="divide-y divide-table-divide"
         >
-          {props.data && rows.length === 0 && (
+          {rows.length === 0 && (
             <tr>
               <td
                 className="px-4 py-4 align-top content-center text-sm italic whitespace-nowrap"
@@ -471,6 +502,27 @@ const TableView = (props: TableProps) => {
         </tbody>
       </table>
     </>
+  );
+};
+
+// TODO retain full width on mobile, no padding
+const TableViewWrapper = (props: TableProps) => {
+  const { columns, hiddenColumns } = useMemo(
+    () => getColumns(props.data ? props.data.columns : [], props.properties),
+    [props.data, props.properties]
+  );
+  const rowData = useMemo(
+    () => getData(columns, props.data ? props.data.rows : []),
+    [columns, props.data]
+  );
+
+  return props.data ? (
+    <TableView
+      rowData={rowData}
+      columns={columns}
+      hiddenColumns={hiddenColumns}
+      hasTopBorder={!!props.title}
+    />
   ) : null;
 };
 
@@ -594,7 +646,9 @@ const Table = (props: TableProps) => {
   if (props.properties && props.properties.type === "line") {
     return <LineView {...props} />;
   }
-  return <TableView {...props} />;
+  return <TableViewWrapper {...props} />;
 };
 
 export default Table;
+
+export { TableView };

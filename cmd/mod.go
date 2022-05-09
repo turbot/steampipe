@@ -22,7 +22,29 @@ func modCmd() *cobra.Command {
 		Use:   "mod [command]",
 		Args:  cobra.NoArgs,
 		Short: "Steampipe mod management",
-		Long:  `Steampipe mod management.`,
+		Long: `Steampipe mod management.
+
+Mods enable you to run, build, and share dashboards, benchmarks and other resources.
+
+Find pre-built mods in the public registry at https://hub.steampipe.io.
+
+Examples:
+
+    # Create a new mod in the current directory
+    steampipe mod init
+
+    # Install a mod
+    steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
+    
+    # Update a mod
+    steampipe mod update github.com/turbot/steampipe-mod-aws-compliance
+    
+    # List installed mods
+    steampipe mod list
+    
+    # Uninstall a mod
+    steampipe mod uninstall github.com/turbot/steampipe-mod-aws-compliance
+	`,
 	}
 
 	cmd.AddCommand(modInstallCmd())
@@ -59,7 +81,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -95,7 +117,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -130,7 +152,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModUpdateCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -162,7 +184,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 		utils.LogTime("cmd.runModListCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 	opts := newInstallOpts(cmd)
@@ -196,7 +218,7 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInitCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)

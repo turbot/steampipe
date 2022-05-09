@@ -1,10 +1,11 @@
+import get from "lodash/get";
 import usePrevious from "./usePrevious";
 import {
   AvailableDashboard,
   CloudDashboardIdentityMetadata,
   CloudDashboardWorkspaceMetadata,
+  DashboardMetadata,
   ModDashboardMetadata,
-  useDashboard,
 } from "./useDashboard";
 import {
   createContext,
@@ -13,9 +14,9 @@ import {
   useEffect,
   useState,
 } from "react";
-import { get } from "lodash";
 import { useTheme } from "./useTheme";
 
+// noinspection JSUnusedLocalSymbols
 interface AnalyticsProperties {
   [key: string]: any;
 }
@@ -35,23 +36,31 @@ const AnalyticsContext = createContext<IAnalyticsContext>({
 });
 
 const useAnalyticsProvider = () => {
-  const { metadata, selectedDashboard } = useDashboard();
   const { localStorageTheme, theme } = useTheme();
   const [enabled, setEnabled] = useState<boolean>(true);
   const [identity, setIdentity] =
     useState<CloudDashboardIdentityMetadata | null>(null);
   const [workspace, setWorkspace] =
     useState<CloudDashboardWorkspaceMetadata | null>(null);
+  const [metadata, setMetadata] = useState<DashboardMetadata | null>(null);
+  const [selectedDashboard, setSelectedDashboard] =
+    useState<AvailableDashboard | null>(null);
   const [initialised, setInitialised] = useState(false);
 
   const identify = useCallback((actor) => {
     // @ts-ignore
-    window.heap && window.heap.identify(actor.id);
+    if (window.heap) {
+      // @ts-ignore
+      window.heap.identify(actor.id);
+    }
   }, []);
 
   const reset = useCallback(() => {
     // @ts-ignore
-    window.heap && window.heap.resetIdentity();
+    if (window.heap) {
+      // @ts-ignore
+      window.heap.resetIdentity();
+    }
   }, []);
 
   const track = useCallback(
@@ -79,7 +88,7 @@ const useAnalyticsProvider = () => {
       // @ts-ignore
       window.heap && window.heap.track(event, finalProperties);
     },
-    [enabled, initialised, identity, workspace, localStorageTheme, theme]
+    [enabled, initialised, identity, workspace, localStorageTheme, theme.name]
   );
 
   useEffect(() => {
@@ -87,19 +96,18 @@ const useAnalyticsProvider = () => {
       return;
     }
 
-    setEnabled(
-      metadata.telemetry === "info" && !!process.env.REACT_APP_HEAP_ID
-    );
+    const enabled =
+      process.env.NODE_ENV === "production" &&
+      metadata.telemetry === "info" &&
+      !!process.env.REACT_APP_HEAP_ID;
 
-    if (metadata.telemetry !== "info") {
-    } else {
+    // @ts-ignore
+    if (enabled && window.heap) {
       // @ts-ignore
-      if (window.heap) {
-        // @ts-ignore
-        window.heap.load(process.env.REACT_APP_HEAP_ID);
-      }
+      window.heap.load(process.env.REACT_APP_HEAP_ID);
     }
 
+    setEnabled(enabled);
     setInitialised(true);
   }, [metadata]);
 
@@ -169,6 +177,8 @@ const useAnalyticsProvider = () => {
 
   return {
     reset,
+    setMetadata,
+    setSelectedDashboard,
     track,
   };
 };

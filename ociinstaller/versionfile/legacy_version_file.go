@@ -9,14 +9,16 @@ import (
 	"github.com/turbot/steampipe/filepaths"
 )
 
-type LegacyVersionFile struct {
+// LegacyCompositeVersionFile is the composite version file used before v0.7.0, which contained
+// both db and plugin properties, now split into two different files
+type LegacyCompositeVersionFile struct {
 	Plugins      map[string]*InstalledVersion `json:"plugins"`
 	FdwExtension InstalledVersion             `json:"fdwExtension"`
 	EmbeddedDB   InstalledVersion             `json:"embeddedDB"`
 }
 
 // LoadLegacyVersionFile loads the legacy version file, or returns nil if it does not exist
-func LoadLegacyVersionFile() (*LegacyVersionFile, error) {
+func LoadLegacyVersionFile() (*LegacyCompositeVersionFile, error) {
 	versionFilePath := filepaths.LegacyVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readLegacyVersionFile(versionFilePath)
@@ -24,10 +26,10 @@ func LoadLegacyVersionFile() (*LegacyVersionFile, error) {
 	return nil, nil
 }
 
-func readLegacyVersionFile(path string) (*LegacyVersionFile, error) {
+func readLegacyVersionFile(path string) (*LegacyCompositeVersionFile, error) {
 	file, _ := os.ReadFile(path)
 
-	var data LegacyVersionFile
+	var data LegacyCompositeVersionFile
 
 	if err := json.Unmarshal([]byte(file), &data); err != nil {
 		log.Println("[ERROR]", "Error while reading version file", err)
@@ -77,19 +79,9 @@ func migrateVersionFiles() (*PluginVersionFile, *DatabaseVersionFile, error) {
 }
 
 // delete the file on disk if it exists
-func (f *LegacyVersionFile) delete() {
+func (f *LegacyCompositeVersionFile) delete() {
 	versionFilePath := filepaths.LegacyVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		os.Remove(versionFilePath)
 	}
-}
-
-func MigrateDatabaseVersionFile() (*DatabaseVersionFile, error) {
-	_, databaseVersionFile, err := migrateVersionFiles()
-	return databaseVersionFile, err
-}
-
-func MigratePluginVersionFile() (*PluginVersionFile, error) {
-	pluginVersionFile, _, err := migrateVersionFiles()
-	return pluginVersionFile, err
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
@@ -15,7 +16,7 @@ import (
 
 // DashboardExecutionTree is a structure representing the control result hierarchy
 type DashboardExecutionTree struct {
-	Root *DashboardRun
+	Root dashboardinterfaces.DashboardNodeRun
 
 	dashboardName string
 	sessionId     string
@@ -29,13 +30,14 @@ type DashboardExecutionTree struct {
 	inputDataSubscriptions map[string]map[*chan bool]struct{}
 	cancel                 context.CancelFunc
 	inputValues            map[string]interface{}
+	id                     string
 }
 
 // NewDashboardExecutionTree creates a result group from a ModTreeItem
-func NewDashboardExecutionTree(reportName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
+func NewDashboardExecutionTree(rootName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
 	// now populate the DashboardExecutionTree
 	executionTree := &DashboardExecutionTree{
-		dashboardName:          reportName,
+		dashboardName:          rootName,
 		sessionId:              sessionId,
 		client:                 client,
 		runs:                   make(map[string]dashboardinterfaces.DashboardNodeRun),
@@ -44,9 +46,10 @@ func NewDashboardExecutionTree(reportName string, sessionId string, client db_co
 		inputDataSubscriptions: make(map[string]map[*chan bool]struct{}),
 		inputValues:            make(map[string]interface{}),
 	}
+	executionTree.id = fmt.Sprintf("%p", executionTree)
 
 	// create the root run node (either a report run or a counter run)
-	root, err := executionTree.createRootItem(reportName)
+	root, err := executionTree.createRootItem(rootName)
 	if err != nil {
 		return nil, err
 	}
@@ -55,35 +58,59 @@ func NewDashboardExecutionTree(reportName string, sessionId string, client db_co
 	return executionTree, nil
 }
 
-func (e *DashboardExecutionTree) createRootItem(reportName string) (*DashboardRun, error) {
-	parsedName, err := modconfig.ParseResourceName(reportName)
+func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardinterfaces.DashboardNodeRun, error) {
+	parsedName, err := modconfig.ParseResourceName(rootName)
 	if err != nil {
 		return nil, err
 	}
-
-	if parsedName.ItemType != modconfig.BlockTypeDashboard {
+	switch parsedName.ItemType {
+	case modconfig.BlockTypeDashboard:
+		dashboard, ok := e.workspace.GetResourceMaps().Dashboards[rootName]
+		if !ok {
+			return nil, fmt.Errorf("dashboard '%s' does not exist in workspace", rootName)
+		}
+		return NewDashboardRun(dashboard, e, e)
+	case modconfig.BlockTypeBenchmark:
+		benchmark, ok := e.workspace.GetResourceMaps().Benchmarks[rootName]
+		if !ok {
+			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
+		}
+		return NewCheckRun(benchmark, e, e)
+	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
-	}
-	dashboard, ok := e.workspace.GetResourceMaps().Dashboards[reportName]
-	if !ok {
-		return nil, fmt.Errorf("report '%s' does not exist in workspace", reportName)
-	}
-	return NewDashboardRun(dashboard, e, e)
 
+	}
 }
 
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
+	startTime := time.Now()
+
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
 	workspace := e.workspace
+
+	// perform any necessary initialisation
+	// (e.g. check run creates the control execution tree)
+	e.Root.Initialise(ctx)
+	if e.Root.GetError() != nil {
+		return
+	}
+
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
-		Dashboard: e.Root,
-		Session:   e.sessionId,
+		Root:        e.Root,
+		Session:     e.sessionId,
+		ExecutionId: e.id,
 	})
 	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{
-		Dashboard: e.Root,
-		Session:   e.sessionId,
+		Root:        e.Root,
+		Session:     e.sessionId,
+		ExecutionId: e.id,
+		Inputs:      e.inputValues,
+		Variables:   e.workspace.VariableValues,
+		SearchPath:  e.client.GetRequiredSessionSearchPath(),
+		StartTime:   startTime,
+		EndTime:     time.Now(),
 	})
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
@@ -95,11 +122,8 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
-	// there is no strict need to run this async but it follows the pattern of child execution elsewhere
-	go e.Root.Execute(cancelCtx)
-	select {
-	case <-e.runComplete:
-	}
+	// execute synchronously
+	e.Root.Execute(cancelCtx)
 }
 
 // GetRunStatus returns the stats of the Root run
@@ -118,13 +142,12 @@ func (e *DashboardExecutionTree) GetName() string {
 	return e.workspace.Mod.ShortName
 }
 
-func (e *DashboardExecutionTree) SetInputs(inputValues map[string]interface{}) error {
+func (e *DashboardExecutionTree) SetInputs(inputValues map[string]interface{}) {
 	for name, value := range inputValues {
 		e.inputValues[name] = value
 		// now see if anyone needs to be notified about this input
 		e.notifyInputAvailable(name)
 	}
-	return nil
 }
 
 // ChildCompleteChan implements DashboardNodeParent
@@ -184,6 +207,11 @@ func (e *DashboardExecutionTree) Cancel() {
 		return
 	}
 	e.cancel()
+
+	// if there are any children, wait for the execution to complete
+	if !e.Root.RunComplete() {
+		<-e.runComplete
+	}
 }
 
 func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {

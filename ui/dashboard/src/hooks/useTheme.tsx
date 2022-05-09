@@ -1,13 +1,7 @@
-import addons, { mockChannel } from "@storybook/addons";
 import React, { createContext, useContext, useState } from "react";
 import useLocalStorage from "./useLocalStorage";
 import useMediaQuery from "./useMediaQuery";
 import { classNames } from "../utils/styles";
-import { useDarkMode } from "storybook-dark-mode";
-
-if (!addons.hasChannel()) {
-  addons.setChannel(mockChannel());
-}
 
 export interface Theme {
   name: string;
@@ -37,16 +31,16 @@ const Themes: IThemes = {
 interface IThemeContext {
   localStorageTheme: string | null;
   theme: Theme;
-  setTheme(theme: string): void;
-  setWrapperRef(element: any): void;
   withFooterPadding: boolean;
   wrapperRef: React.Ref<null>;
+  setTheme(theme: string): void;
   setWithFooterPadding(newValue: boolean): void;
+  setWrapperRef(element: any): void;
 }
 
 const ThemeContext = createContext<IThemeContext | undefined>(undefined);
 
-const ThemeProvider = ({ children, storyMode = false }) => {
+const ThemeProvider = ({ children }) => {
   const [withFooterPadding, setWithFooterPadding] = useState(true);
   const [localStorageTheme, setLocalStorageTheme] =
     useLocalStorage("steampipe.ui.theme");
@@ -54,25 +48,9 @@ const ThemeProvider = ({ children, storyMode = false }) => {
   const [wrapperRef, setWrapperRef] = useState(null);
   const doSetWrapperRef = (element) => setWrapperRef(() => element);
 
-  // useEffect(() => {
-  //   if (!themeConfig) {
-  //     return;
-  //   }
-  //   // console.log(themeConfig);
-  //   // console.log(themeConfig.theme.colors.foreground);
-  //   let foregroundVar = themeConfig.theme.colors.foreground.replace("var(", "");
-  //   foregroundVar = foregroundVar.replace(")", "");
-  //   console.log(foregroundVar);
-  //   console.log(document.documentElement.style.getPropertyValue(foregroundVar));
-  // }, [themeConfig]);
-
   let theme;
 
-  if (useDarkMode() && storyMode) {
-    theme = Themes[ThemeNames.STEAMPIPE_DARK];
-  } else if (storyMode) {
-    theme = Themes[ThemeNames.STEAMPIPE_DEFAULT];
-  } else if (
+  if (
     localStorageTheme &&
     (localStorageTheme === ThemeNames.STEAMPIPE_DEFAULT ||
       localStorageTheme === ThemeNames.STEAMPIPE_DARK)
@@ -101,37 +79,16 @@ const ThemeProvider = ({ children, storyMode = false }) => {
   );
 };
 
-const ThemeWrapper = ({ children }) => {
-  const { setWrapperRef, theme } = useTheme();
-  return (
-    <div
-      ref={setWrapperRef}
-      className={`theme-${theme.name} bg-background text-foreground`}
-    >
-      {children}
-    </div>
-  );
-};
-
 const FullHeightThemeWrapper = ({ children }) => {
   const { setWrapperRef, theme, withFooterPadding } = useTheme();
   return (
     <div
       ref={setWrapperRef}
       className={classNames(
-        `min-h-screen flex flex-col theme-${theme.name} bg-background text-foreground`,
+        `min-h-screen flex flex-col theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground print:text-black`,
         withFooterPadding ? "pb-8" : ""
       )}
     >
-      {children}
-    </div>
-  );
-};
-
-const ModalThemeWrapper = ({ children }) => {
-  const { setWrapperRef, theme } = useTheme();
-  return (
-    <div ref={setWrapperRef} className={`theme-${theme.name} text-foreground`}>
       {children}
     </div>
   );
@@ -145,12 +102,4 @@ const useTheme = () => {
   return context;
 };
 
-export {
-  FullHeightThemeWrapper,
-  ModalThemeWrapper,
-  Themes,
-  ThemeNames,
-  ThemeProvider,
-  ThemeWrapper,
-  useTheme,
-};
+export { FullHeightThemeWrapper, Themes, ThemeNames, ThemeProvider, useTheme };

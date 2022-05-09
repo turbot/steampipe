@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
@@ -15,7 +14,45 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.Variable, error) {
+func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modconfig.ModVariableMap, error) {
+	// load all variable definitions
+	variableMap, err := w.loadVariables()
+	if err != nil {
+		return nil, err
+	}
+
+	// now resolve all input variables
+
+	inputVariables, err := w.getInputVariables(variableMap.AllVariables, validate)
+	if err != nil {
+		return nil, err
+	}
+
+	if validate {
+		if err := validateVariables(ctx, variableMap.AllVariables, inputVariables); err != nil {
+			return nil, err
+		}
+	}
+
+	// now update the variables map with the input values
+	for name, inputValue := range inputVariables {
+		variable := variableMap.AllVariables[name]
+		variable.SetInputValue(
+			inputValue.Value,
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange)
+
+		// set variable value string in our workspace map
+		w.VariableValues[name], err = utils.CtyToString(inputValue.Value)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return variableMap, nil
+}
+
+func (w *Workspace) loadVariables() (*modconfig.ModVariableMap, error) {
 	// build options used to load workspace
 	runCtx, err := w.getRunContext()
 	if err != nil {
@@ -28,36 +65,12 @@ func (w *Workspace) getAllVariables(ctx context.Context) (map[string]*modconfig.
 		return nil, err
 	}
 
-	// TACTICAL - as the tf derived code builds a map keyed by the short variable name, do the same
-	variableMap := make(map[string]*modconfig.Variable)
-	for k, v := range mod.ResourceMaps.Variables {
-		name := strings.Split(k, ".")[1]
-		variableMap[name] = v
-	}
-
-	// if there is a steampipe variables file, load it
-	inputVariables, err := w.getInputVariables(variableMap)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := validateVariables(ctx, variableMap, inputVariables); err != nil {
-		return nil, err
-	}
-
-	// now update the variables map with the input values
-	for name, inputValue := range inputVariables {
-		variable := variableMap[name]
-		variable.SetInputValue(
-			inputValue.Value,
-			inputValue.SourceTypeString(),
-			inputValue.SourceRange)
-	}
+	variableMap := modconfig.NewModVariableMap(mod, runCtx.LoadedDependencyMods)
 
 	return variableMap, nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable) (inputvars.InputValues, error) {
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, validate bool) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -66,10 +79,12 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 		return nil, diags.Err()
 	}
 
-	if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
-		return nil, err
+	if validate {
+		if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
+			return nil, err
+		}
 	}
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
 
 	return parsedValues, diags.Err()
 }
@@ -93,7 +108,6 @@ func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 		if i < len(diags)-1 {
 			fmt.Println()
 		}
-		// TODO range if there is one
 	}
 }
 

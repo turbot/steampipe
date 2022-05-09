@@ -1,9 +1,8 @@
 import findPathDeep from "deepdash/findPathDeep";
+import get from "lodash/get";
+import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
-import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
-import usePrevious from "./usePrevious";
-import { CheckLeafNodeExecutionTree } from "../components/dashboards/check/common";
-import {
+import React, {
   createContext,
   useCallback,
   useContext,
@@ -11,11 +10,16 @@ import {
   useReducer,
   useState,
 } from "react";
-import { FullHeightThemeWrapper } from "./useTheme";
-import { get, isEqual, set, sortBy } from "lodash";
+import set from "lodash/set";
+import sortBy from "lodash/sortBy";
+import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
+import usePrevious from "./usePrevious";
+import { buildComponentsMap } from "../components";
+import { CheckExecutionTree } from "../components/dashboards/check/common";
 import { GlobalHotKeys } from "react-hotkeys";
-import { LeafNodeData } from "../components/dashboards/common";
+import { LeafNodeData, Width } from "../components/dashboards/common";
 import { noop } from "../utils/func";
+import { Theme } from "./useTheme";
 import {
   useLocation,
   useNavigate,
@@ -24,16 +28,34 @@ import {
   useSearchParams,
 } from "react-router-dom";
 
+interface IBreakpointContext {
+  currentBreakpoint: string | null;
+  maxBreakpoint(breakpointAndDown: string): boolean;
+  minBreakpoint(breakpointAndUp: string): boolean;
+  width: number;
+}
+
+interface IThemeContext {
+  theme: Theme;
+  setTheme(theme: string): void;
+  wrapperRef: React.Ref<null>;
+}
+
+export interface ComponentsMap {
+  [name: string]: any;
+}
+
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
 
   closePanelDetail(): void;
-  dispatch(DispatchAction): void;
+  dispatch(action: DashboardAction): void;
 
   error: any;
 
   dashboards: AvailableDashboard[];
+  dashboardsMap: AvailableDashboardsDictionary;
   dashboard: DashboardDefinition | null;
 
   selectedPanel: PanelDefinition | null;
@@ -46,6 +68,11 @@ interface IDashboardContext {
   dashboardTags: DashboardTags;
 
   search: DashboardSearch;
+
+  breakpointContext: IBreakpointContext;
+  themeContext: IThemeContext;
+
+  components: ComponentsMap;
 }
 
 export interface IActions {
@@ -55,6 +82,8 @@ export interface IActions {
 const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
   CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
+  CONTROL_COMPLETE: "control_complete",
+  CONTROL_ERROR: "control_error",
   DASHBOARD_METADATA: "dashboard_metadata",
   DELETE_DASHBOARD_INPUT: "delete_dashboard_input",
   EXECUTION_COMPLETE: "execution_complete",
@@ -102,7 +131,7 @@ export interface DashboardTags {
 }
 
 interface SelectedDashboardStates {
-  dashboardName: string | null;
+  dashboard_name: string | null;
   search: DashboardSearch;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
@@ -144,7 +173,7 @@ interface CloudDashboardMetadata {
   workspace: CloudDashboardWorkspaceMetadata;
 }
 
-interface DashboardMetadata {
+export interface DashboardMetadata {
   mod: ModDashboardMetadata;
   installed_mods?: InstalledModsDashboardMetadata;
   cloud?: CloudDashboardMetadata;
@@ -155,25 +184,29 @@ interface AvailableDashboardTags {
   [key: string]: string;
 }
 
+type AvailableDashboardType = "benchmark" | "dashboard";
+
 export interface AvailableDashboard {
   full_name: string;
   short_name: string;
   mod_full_name: string;
   tags: AvailableDashboardTags;
   title: string;
+  is_top_level: boolean;
+  type: AvailableDashboardType;
+  children?: AvailableDashboard[];
+  trunks?: string[][];
 }
 
-interface AvailableDashboardsForModDictionary {
+export interface AvailableDashboardsDictionary {
   [key: string]: AvailableDashboard;
-}
-
-interface DashboardsByModDictionary {
-  [key: string]: AvailableDashboardsForModDictionary;
 }
 
 export interface ContainerDefinition {
   name: string;
   node_type?: string;
+  allow_child_panel_expand?: boolean;
+  data?: LeafNodeData;
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
@@ -191,47 +224,77 @@ export interface PanelDefinition {
   name: string;
   node_type?: string;
   title?: string;
-  width?: number;
+  width?: Width;
   sql?: string;
   data?: LeafNodeData;
   source_definition?: string;
-  execution_tree?: CheckLeafNodeExecutionTree;
+  execution_tree?: CheckExecutionTree;
   error?: Error;
   properties?: PanelProperties;
   dashboard: string;
 }
 
 export interface DashboardDefinition {
+  artificial: boolean;
   name: string;
+  node_type: string;
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
   dashboard: string;
 }
 
-const buildDashboardsList = (
-  dashboards_by_mod: DashboardsByModDictionary
-): AvailableDashboard[] => {
-  const dashboards: AvailableDashboard[] = [];
-  for (const [mod_full_name, dashboards_for_mod] of Object.entries(
-    dashboards_by_mod
-  )) {
-    for (const [, dashboard] of Object.entries(dashboards_for_mod)) {
-      dashboards.push({
-        title: dashboard.title,
-        full_name: dashboard.full_name,
-        short_name: dashboard.short_name,
-        tags: dashboard.tags,
-        mod_full_name: mod_full_name,
-      });
-    }
+interface DashboardsCollection {
+  dashboards: AvailableDashboard[];
+  dashboardsMap: AvailableDashboardsDictionary;
+}
+
+const buildDashboards = (
+  dashboards: AvailableDashboardsDictionary,
+  benchmarks: AvailableDashboardsDictionary
+): DashboardsCollection => {
+  const dashboardsMap = {};
+  const builtDashboards: AvailableDashboard[] = [];
+
+  for (const [, dashboard] of Object.entries(dashboards)) {
+    const builtDashboard: AvailableDashboard = {
+      title: dashboard.title,
+      full_name: dashboard.full_name,
+      short_name: dashboard.short_name,
+      type: "dashboard",
+      tags: dashboard.tags,
+      mod_full_name: dashboard.mod_full_name,
+      is_top_level: true,
+    };
+    dashboardsMap[builtDashboard.full_name] = builtDashboard;
+    builtDashboards.push(builtDashboard);
   }
-  return sortBy(dashboards, [
-    (dashboard) =>
-      dashboard.title
-        ? dashboard.title.toLowerCase()
-        : dashboard.full_name.toLowerCase(),
-  ]);
+
+  for (const [, benchmark] of Object.entries(benchmarks)) {
+    const builtBenchmark: AvailableDashboard = {
+      title: benchmark.title,
+      full_name: benchmark.full_name,
+      short_name: benchmark.short_name,
+      type: "benchmark",
+      tags: benchmark.tags,
+      mod_full_name: benchmark.mod_full_name,
+      is_top_level: benchmark.is_top_level,
+      trunks: benchmark.trunks,
+      children: benchmark.children,
+    };
+    dashboardsMap[builtBenchmark.full_name] = builtBenchmark;
+    builtDashboards.push(builtBenchmark);
+  }
+
+  return {
+    dashboards: sortBy(builtDashboards, [
+      (dashboard) =>
+        dashboard.title
+          ? dashboard.title.toLowerCase()
+          : dashboard.full_name.toLowerCase(),
+    ]),
+    dashboardsMap,
+  };
 };
 
 const updateSelectedDashboard = (
@@ -286,6 +349,105 @@ function addDataToDashboard(
   return dashboard;
 }
 
+const wrapDefinitionInArtificialDashboard = (
+  definition: DashboardDefinition
+): DashboardDefinition => {
+  const { title, ...definitionWithoutTitle } = definition;
+  return {
+    artificial: true,
+    name: definition.name,
+    title: definition.title,
+    node_type: "dashboard",
+    children: [
+      {
+        ...definitionWithoutTitle,
+      },
+    ],
+    dashboard: definition.dashboard,
+  };
+};
+
+const updateCheckNode = (dashboardCheckNode, action) => {
+  let panelPath: string = findPathDeep(
+    dashboardCheckNode,
+    (v, k) => k === "control_id" && v === action.control.control_id
+  );
+
+  if (!panelPath) {
+    console.warn("Cannot find control to update", action.control.control_id);
+    return null;
+  }
+
+  panelPath = panelPath.replace(".control_id", "");
+
+  let newCheckNode = {
+    ...dashboardCheckNode,
+  };
+
+  return set(newCheckNode, panelPath, action.control);
+};
+
+const updateDashboardWithControlEvent = (dashboard, action) => {
+  if (dashboard.artificial) {
+    let updatedCheckNode = updateCheckNode(
+      get(dashboard, "children[0]"),
+      action
+    );
+
+    if (!updatedCheckNode) {
+      console.warn("Cannot find control to update", action.control.control_id);
+      return null;
+    }
+
+    const rootBenchmark = get(
+      updatedCheckNode,
+      "execution_tree.root.groups[0]",
+      {}
+    );
+
+    updatedCheckNode = set(updatedCheckNode, "execution_tree.root.groups[0]", {
+      ...rootBenchmark,
+    });
+
+    const newDashboard = {
+      ...dashboard,
+    };
+
+    return set(newDashboard, "children[0]", updatedCheckNode);
+  } else {
+    let nodePath: string = findPathDeep(
+      dashboard,
+      (v, k) => k === "name" && v === action.name
+    );
+
+    if (!nodePath) {
+      console.warn("Cannot find dashboard node to update", action.name);
+      return null;
+    }
+
+    nodePath = nodePath.replace(".name", "");
+
+    let node = get(dashboard, nodePath);
+
+    const rootBenchmark = get(node, "execution_tree.root.groups[0]", {});
+    node = set(node, "execution_tree.root.groups[0]", { ...rootBenchmark });
+
+    if (!node) {
+      console.warn("Cannot find dashboard node to update", action.name);
+      return null;
+    }
+
+    let updatedNode = updateCheckNode(node, action);
+
+    if (!updatedNode) {
+      console.warn("Cannot find control to update", action.control.control_id);
+      return null;
+    }
+
+    return set(dashboard, nodePath, updatedNode);
+  }
+};
+
 function reducer(state, action) {
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
@@ -294,7 +456,10 @@ function reducer(state, action) {
         metadata: action.metadata,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
-      const dashboards = buildDashboardsList(action.dashboards_by_mod);
+      const { dashboards, dashboardsMap } = buildDashboards(
+        action.dashboards,
+        action.benchmarks
+      );
       const selectedDashboard = updateSelectedDashboard(
         state.selectedDashboard,
         dashboards
@@ -304,6 +469,7 @@ function reducer(state, action) {
         error: null,
         availableDashboardsLoaded: true,
         dashboards,
+        dashboardsMap,
         selectedDashboard: updateSelectedDashboard(
           state.selectedDashboard,
           dashboards
@@ -314,33 +480,78 @@ function reducer(state, action) {
             ? state.dashboard
             : null,
       };
-    case DashboardActions.EXECUTION_STARTED:
-      const dashboardWithData = addDataToDashboard(
-        action.dashboard_node,
-        state.sqlDataMap
-      );
+    case DashboardActions.EXECUTION_STARTED: {
+      const originalDashboard = action.dashboard_node;
+      let dashboard;
+      // For benchmarks and controls that are run directly from a mod,
+      // we need to wrap these in an artificial dashboard so we can treat
+      // it just like any other dashboard
+      if (action.dashboard_node.node_type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+      } else {
+        dashboard = addDataToDashboard(action.dashboard_node, state.sqlDataMap);
+      }
       return {
         ...state,
         error: null,
-        dashboard: dashboardWithData,
+        dashboard,
+        execution_id: action.execution_id,
         state: "running",
       };
-    case DashboardActions.EXECUTION_COMPLETE:
+    }
+    case DashboardActions.EXECUTION_COMPLETE: {
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
+
+      const originalDashboard = action.dashboard_node;
+      let dashboard;
+
+      if (action.dashboard_node.type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+      } else {
+        dashboard = originalDashboard;
+      }
+
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(action.dashboard_node);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
         error: null,
-        dashboard: action.dashboard_node,
+        dashboard,
         sqlDataMap,
         state: "complete",
       };
+    }
     case DashboardActions.EXECUTION_ERROR:
-      // console.error("Got execution error", action);
-      return state;
-    case DashboardActions.LEAF_NODE_PROGRESS:
+      return { ...state, error: action.error };
+    case DashboardActions.CONTROL_COMPLETE:
+    case DashboardActions.CONTROL_ERROR:
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
+
+      const updatedDashboard = updateDashboardWithControlEvent(
+        state.dashboard,
+        action
+      );
+
+      if (!updatedDashboard) {
+        return state;
+      }
+
+      return {
+        ...state,
+        dashboard: updatedDashboard,
+      };
     case DashboardActions.LEAF_NODE_COMPLETE: {
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
       // Find the path to the name key that matches this panel and replace it
       const { dashboard_node } = action;
       let panelPath: string = findPathDeep(
@@ -373,6 +584,8 @@ function reducer(state, action) {
       return {
         ...state,
         dashboard: null,
+        execution_id: null,
+        state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
         lastChangedInput: null,
@@ -413,6 +626,10 @@ function reducer(state, action) {
         recordInputsHistory: !!action.recordInputsHistory,
       };
     case DashboardActions.INPUT_VALUES_CLEARED: {
+      // We're not expecting execution events for this ID
+      if (action.execution_id !== state.execution_id) {
+        return state;
+      }
       const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
       for (const input of action.cleared_inputs || []) {
         delete newSelectedDashboardInputs[input];
@@ -497,18 +714,34 @@ const getInitialState = (searchParams) => {
     },
 
     sqlDataMap: {},
+
+    execution_id: null,
   };
 };
 
 const DashboardContext = createContext<IDashboardContext | null>(null);
 
-const DashboardProvider = ({ children }) => {
+const DashboardProvider = ({
+  analyticsContext,
+  breakpointContext,
+  children,
+  componentOverrides = {},
+  socketFactory,
+  themeContext,
+}) => {
+  const components = buildComponentsMap(componentOverrides);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
-  const { dashboardName } = useParams();
-  const { ready: socketReady, send: sendSocketMessage } =
-    useDashboardWebSocket(dispatch);
+  const { dashboard_name } = useParams();
+  const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
+    dispatch,
+    socketFactory
+  );
+  const {
+    setMetadata: setAnalyticsMetadata,
+    setSelectedDashboard: setAnalyticsSelectedDashboard,
+  } = analyticsContext;
 
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -517,11 +750,20 @@ const DashboardProvider = ({ children }) => {
   const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
     usePrevious({
       searchParams,
-      dashboardName,
+      dashboard_name,
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
     });
+
+  // Alert analytics
+  useEffect(() => {
+    setAnalyticsMetadata(state.metadata);
+  }, [state.metadata, setAnalyticsMetadata]);
+
+  useEffect(() => {
+    setAnalyticsSelectedDashboard(state.selectedDashboard);
+  }, [state.selectedDashboard, setAnalyticsSelectedDashboard]);
 
   // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
@@ -536,10 +778,10 @@ const DashboardProvider = ({ children }) => {
     // as that will show the dashboard list, but we want to see the dashboard that we came from / went to previously.
     const goneFromDashboardToDashboard =
       // @ts-ignore
-      previousSelectedDashboardStates?.dashboardName &&
-      dashboardName &&
+      previousSelectedDashboardStates?.dashboard_name &&
+      dashboard_name &&
       // @ts-ignore
-      previousSelectedDashboardStates.dashboardName !== dashboardName;
+      previousSelectedDashboardStates.dashboard_name !== dashboard_name;
 
     const search = searchParams.get("search") || "";
     const groupBy = searchParams.get("group_by") || "tag";
@@ -560,7 +802,7 @@ const DashboardProvider = ({ children }) => {
       recordInputsHistory: false,
     });
   }, [
-    dashboardName,
+    dashboard_name,
     dispatch,
     location,
     navigationType,
@@ -573,7 +815,7 @@ const DashboardProvider = ({ children }) => {
     if (
       previousSelectedDashboardStates &&
       // @ts-ignore
-      previousSelectedDashboardStates?.dashboardName === dashboardName &&
+      previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
       // @ts-ignore
       previousSelectedDashboardStates.search.value === state.search.value &&
       // @ts-ignore
@@ -594,7 +836,7 @@ const DashboardProvider = ({ children }) => {
       groupBy: { value: groupByValue, tag },
     } = state.search;
 
-    if (dashboardName) {
+    if (dashboard_name) {
       // Only set group_by and tag if we have a search
       if (searchValue) {
         searchParams.set("search", searchValue);
@@ -635,7 +877,7 @@ const DashboardProvider = ({ children }) => {
     setSearchParams(searchParams, { replace: true });
   }, [
     previousSelectedDashboardStates,
-    dashboardName,
+    dashboard_name,
     searchParams,
     setSearchParams,
     state.search,
@@ -644,7 +886,7 @@ const DashboardProvider = ({ children }) => {
   useEffect(() => {
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
     // then clear both the inputs and the selected dashboard in state
-    if (!dashboardName && state.selectedDashboard) {
+    if (!dashboard_name && state.selectedDashboard) {
       dispatch({
         type: DashboardActions.CLEAR_DASHBOARD_INPUTS,
         recordInputsHistory: false,
@@ -658,9 +900,9 @@ const DashboardProvider = ({ children }) => {
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
     // select that dashboard
-    if (dashboardName && !state.selectedDashboard) {
+    if (dashboard_name && !state.selectedDashboard) {
       const dashboard = state.dashboards.find(
-        (dashboard) => dashboard.full_name === dashboardName
+        (dashboard) => dashboard.full_name === dashboard_name
       );
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
       return;
@@ -668,12 +910,12 @@ const DashboardProvider = ({ children }) => {
     // Else if we've changed to a different report in the URL then clear the inputs and select the
     // dashboard in state
     if (
-      dashboardName &&
+      dashboard_name &&
       state.selectedDashboard &&
-      dashboardName !== state.selectedDashboard.full_name
+      dashboard_name !== state.selectedDashboard.full_name
     ) {
       const dashboard = state.dashboards.find(
-        (dashboard) => dashboard.full_name === dashboardName
+        (dashboard) => dashboard.full_name === dashboard_name
       );
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
       const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
@@ -683,7 +925,7 @@ const DashboardProvider = ({ children }) => {
         recordInputsHistory: false,
       });
     }
-  }, [dashboardName, searchParams, state.dashboards, state.selectedDashboard]);
+  }, [dashboard_name, searchParams, state.dashboards, state.selectedDashboard]);
 
   useEffect(() => {
     // This effect will send events over websockets and depends on there being a dashboard selected
@@ -815,16 +1057,16 @@ const DashboardProvider = ({ children }) => {
   ]);
 
   useEffect(() => {
-    if (!state.availableDashboardsLoaded || !dashboardName) {
+    if (!state.availableDashboardsLoaded || !dashboard_name) {
       return;
     }
     // If the dashboard we're viewing no longer exists, go back to the main page
-    if (!state.dashboards.find((r) => r.full_name === dashboardName)) {
-      navigate("/", { replace: true });
+    if (!state.dashboards.find((r) => r.full_name === dashboard_name)) {
+      navigate("../", { replace: true });
     }
   }, [
     navigate,
-    dashboardName,
+    dashboard_name,
     state.availableDashboardsLoaded,
     state.dashboards,
   ]);
@@ -864,8 +1106,12 @@ const DashboardProvider = ({ children }) => {
     <DashboardContext.Provider
       value={{
         ...state,
+        analyticsContext,
+        breakpointContext,
+        components,
         dispatch,
         closePanelDetail,
+        themeContext,
       }}
     >
       <GlobalHotKeys
@@ -873,7 +1119,7 @@ const DashboardProvider = ({ children }) => {
         keyMap={hotKeysMap}
         handlers={hotKeysHandlers}
       />
-      <FullHeightThemeWrapper>{children}</FullHeightThemeWrapper>
+      {children}
     </DashboardContext.Provider>
   );
 };

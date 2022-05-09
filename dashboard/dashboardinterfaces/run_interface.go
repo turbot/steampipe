@@ -15,6 +15,7 @@ const (
 )
 
 type DashboardNodeRun interface {
+	Initialise(ctx context.Context)
 	Execute(ctx context.Context)
 	GetName() string
 	GetRunStatus() DashboardRunStatus
@@ -23,6 +24,7 @@ type DashboardNodeRun interface {
 	SetComplete()
 	RunComplete() bool
 	ChildrenComplete() bool
+	GetInputsDependingOn(changedInputName string) []string
 }
 
 type DashboardNodeParent interface {

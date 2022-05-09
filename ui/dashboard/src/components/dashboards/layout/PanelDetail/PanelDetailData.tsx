@@ -8,6 +8,7 @@ const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
       definition={definition}
       allowExpand={false}
       forceBackground={true}
+      withOverflow={true}
       withTitle={false}
     >
       <Table

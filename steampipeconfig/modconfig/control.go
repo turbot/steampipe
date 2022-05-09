@@ -26,7 +26,7 @@ type Control struct {
 	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"  json:"documentation,omitempty"`
 	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"  json:"search_path,omitempty"`
 	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"  json:"search_path_prefix,omitempty"`
-	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"  json:"search_path_prefix,omitempty"`
+	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"  json:"severity,omitempty"`
 	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
 	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"-"`
 
@@ -44,14 +44,15 @@ type Control struct {
 	Paths           []NodePath           `json:"-"`
 
 	// dashboard specific properties
-	Base  *Control `hcl:"base" json:"-"`
-	Width *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Base    *Control `hcl:"base" json:"-"`
+	Width   *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string  `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Display *string  `cty:"display" hcl:"display" json:"display,omitempty"`
 
 	parents []ModTreeItem
 }
 
 func NewControl(block *hcl.Block, mod *Mod, shortName string) *Control {
-
 	control := &Control{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
@@ -328,6 +329,11 @@ func (c *Control) GetWidth() int {
 	return *c.Width
 }
 
+// GetDisplay implements DashboardLeafNode
+func (c *Control) GetDisplay() *string {
+	return c.Display
+}
+
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (c *Control) GetUnqualifiedName() string {
 	return c.UnqualifiedName
@@ -410,6 +416,15 @@ func (c *Control) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	}
 	if c.Params == nil {
 		c.Params = c.Base.Params
+	}
+	if c.Width == nil {
+		c.Width = c.Base.Width
+	}
+	if c.Type == nil {
+		c.Type = c.Base.Type
+	}
+	if c.Display == nil {
+		c.Display = c.Base.Display
 	}
 	c.MergeRuntimeDependencies(c.Base)
 }

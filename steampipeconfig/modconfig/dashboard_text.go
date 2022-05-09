@@ -166,6 +166,11 @@ func (t *DashboardText) GetWidth() int {
 	return *t.Width
 }
 
+// GetDisplay implements DashboardLeafNode
+func (t *DashboardText) GetDisplay() *string {
+	return t.Display
+}
+
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (t *DashboardText) GetUnqualifiedName() string {
 	return t.UnqualifiedName
@@ -180,6 +185,9 @@ func (t *DashboardText) setBaseProperties() {
 	}
 	if t.Type == nil {
 		t.Type = t.Base.Type
+	}
+	if t.Display == nil {
+		t.Display = t.Base.Display
 	}
 	if t.Value == nil {
 		t.Value = t.Base.Value

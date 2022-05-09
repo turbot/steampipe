@@ -258,7 +258,7 @@ func decodeParam(block *hcl.Block, runCtx *RunContext, parentName string) (*modc
 
 		if !moreDiags.HasErrors() {
 			// convert the raw default into a postgres representation
-			if valStr, err := ctyToPostgresString(v); err == nil {
+			if valStr, err := utils.CtyToPostgresString(v); err == nil {
 				def.Default = utils.ToStringPointer(valStr)
 			} else {
 				diags = append(diags, &hcl.Diagnostic{
@@ -334,7 +334,7 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	var params []*modconfig.ParamDef
 	for _, block := range content.Blocks {
-		// only paramdefs ar defined in the schema
+		// only paramdefs are defined in the schema
 		if block.Type != modconfig.BlockTypeParam {
 			panic(fmt.Sprintf("invalid child block type %s", block.Type))
 		}
@@ -537,6 +537,12 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 	res.handleDecodeDiags(diags)
 
 	diags = decodeProperty(content, "title", &benchmark.Title, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "type", &benchmark.Type, runCtx)
+	res.handleDecodeDiags(diags)
+
+	diags = decodeProperty(content, "display", &benchmark.Display, runCtx)
 	res.handleDecodeDiags(diags)
 
 	// now add children

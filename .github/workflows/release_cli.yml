@@ -29,9 +29,9 @@ jobs:
         run: git fetch
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.18
 
       - name: Hook private repo
         run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
@@ -54,14 +54,14 @@ jobs:
         run: ls -l ~/artifacts
 
       - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifact-linux
           path: ~/artifacts/linux.tar.gz
           if-no-files-found: error
 
       - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifact-darwin
           path: ~/artifacts/darwin.zip
@@ -92,14 +92,14 @@ jobs:
           mkdir ~/artifacts
 
       - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         with:
           name: build-artifact-linux
           path: ~/artifacts
 
       - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         if: ${{ matrix.platform == 'macos-latest' }}
         with:
           name: build-artifact-darwin
@@ -179,9 +179,9 @@ jobs:
           ref: ${{ github.event.inputs.version }}
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.18
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -191,22 +191,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup GCloud CLI
-        uses: google-github-actions/setup-gcloud@v0.6.0
-        with:
-          service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-          project_id: ${{ env.PROJECT_ID }}
-          export_default_credentials: true
+      # - name: Setup GCloud CLI
+      #   uses: google-github-actions/setup-gcloud@v0.6.0
+      #   with:
+      #     service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+      #     project_id: ${{ env.PROJECT_ID }}
+      #     export_default_credentials: true
 
-      - name: Install GCloud Beta Components
-        run: |- 
-          gcloud config list
-          gcloud components install beta
+      # - name: Install GCloud Beta Components
+      #   run: |- 
+      #     gcloud config list
+      #     gcloud components install beta
 
-      - name: Upload rpm and deb packages to artifact registry
-        run: |
-          gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
-          gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
+      # - name: Upload rpm and deb packages to artifact registry
+      #   run: |
+      #     gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
+      #     gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
   clean_up:
     # let's clean up the artifacts.

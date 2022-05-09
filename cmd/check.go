@@ -20,7 +20,7 @@ import (
 	"github.com/turbot/steampipe/control"
 	"github.com/turbot/steampipe/control/controldisplay"
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/display"
 	"github.com/turbot/steampipe/statushooks"
 	"github.com/turbot/steampipe/utils"
@@ -76,7 +76,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
 		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
-		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check")
+		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check").
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts")
 
 	return cmd
 }
@@ -98,7 +99,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 
 		if initData.Client != nil {
@@ -124,11 +125,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	initData = initialiseCheck(ctx)
 
 	// check the init result - should we quit?
-	if shouldExit, err := handleCheckInitResult(ctx, initData); shouldExit {
+	if err := handleCheckInitResult(ctx, initData); err != nil {
 		initData.Cleanup(ctx)
 		// if there was an error, display it
 		utils.FailOnError(err)
-		return
 	}
 
 	// pull out useful properties
@@ -193,13 +193,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 // create the context for the check run - add a control status renderer
 func createCheckContext(ctx context.Context) context.Context {
-	var controlHooks controlhooks.ControlHooks = controlhooks.NullHooks
+	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		controlHooks = controlhooks.NewControlStatusHooks()
+		controlHooks = controlstatus.NewControlStatusHooks()
 	}
 
-	return controlhooks.AddControlHooksToContext(ctx, controlHooks)
+	return controlstatus.AddControlHooksToContext(ctx, controlHooks)
 }
 
 func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
@@ -209,7 +209,7 @@ func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return false
 	}
 	return true
@@ -232,23 +232,20 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	return initData
 }
 
-func handleCheckInitResult(ctx context.Context, initData *control.InitData) (bool, error) {
+func handleCheckInitResult(ctx context.Context, initData *control.InitData) error {
 	// if there is an error or cancellation we bomb out
 	if initData.Result.Error != nil {
-		return true, initData.Result.Error
+		return initData.Result.Error
 	}
 	// cancelled?
 	if ctx != nil && ctx.Err() != nil {
-		return true, ctx.Err()
+		return ctx.Err()
 	}
 
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
-	// if there is are any warnings, exit politely
-	shouldExit := len(initData.Result.Warnings) > 0
-
-	return shouldExit, nil
+	return nil
 }
 
 func printTiming(args []string, durations []time.Duration) {

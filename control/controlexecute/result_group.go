@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/db/db_common"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"golang.org/x/sync/semaphore"
-
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 const RootResultGroupName = "root_result_group"
@@ -31,8 +31,8 @@ type ResultGroup struct {
 	// child result groups
 	Groups []*ResultGroup `json:"groups"`
 	// child control runs
-	ControlRuns []*ControlRun            `json:"controls"`
-	Severity    map[string]StatusSummary `json:"-"`
+	ControlRuns []*ControlRun                          `json:"controls"`
+	Severity    map[string]controlstatus.StatusSummary `json:"-"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
@@ -41,17 +41,21 @@ type ResultGroup struct {
 	// a list of distinct dimension keys from descendant controls
 	DimensionKeys []string `json:"-"`
 
+	// fields used by dashboards
+	Type    *string `json:"type,omitempty"`
+	Display *string `json:"display,omitempty"`
+
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
 }
 
 type GroupSummary struct {
-	Status   StatusSummary            `json:"status"`
-	Severity map[string]StatusSummary `json:"-"`
+	Status   controlstatus.StatusSummary            `json:"status"`
+	Severity map[string]controlstatus.StatusSummary `json:"-"`
 }
 
 func NewGroupSummary() *GroupSummary {
-	return &GroupSummary{Severity: make(map[string]StatusSummary)}
+	return &GroupSummary{Severity: make(map[string]controlstatus.StatusSummary)}
 }
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
@@ -61,7 +65,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		Groups:     []*ResultGroup{},
 		Tags:       make(map[string]string),
 		Summary:    NewGroupSummary(),
-		Severity:   make(map[string]StatusSummary),
+		Severity:   make(map[string]controlstatus.StatusSummary),
 		updateLock: new(sync.Mutex),
 	}
 	for _, item := range rootItems {
@@ -97,8 +101,13 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 		Parent:      parent,
 		Groups:      []*ResultGroup{},
 		Summary:     NewGroupSummary(),
-		Severity:    make(map[string]StatusSummary),
+		Severity:    make(map[string]controlstatus.StatusSummary),
 		updateLock:  new(sync.Mutex),
+	}
+	// TACTICAL for dashboard - if roo item is a benchmark, pull up 'type' and 'display'
+	if benchmark, ok := treeItem.(*modconfig.Benchmark); ok {
+		group.Type = benchmark.Type
+		group.Display = benchmark.Display
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
@@ -186,6 +195,7 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 		r.Parent.addDimensionKeys(keys...)
 	}
 	r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
+	sort.Strings(r.DimensionKeys)
 }
 
 func (r *ResultGroup) addDuration(d time.Duration) {
@@ -198,7 +208,7 @@ func (r *ResultGroup) addDuration(d time.Duration) {
 	}
 }
 
-func (r *ResultGroup) updateSummary(summary StatusSummary) {
+func (r *ResultGroup) updateSummary(summary *controlstatus.StatusSummary) {
 	r.updateLock.Lock()
 	defer r.updateLock.Unlock()
 
@@ -213,13 +223,13 @@ func (r *ResultGroup) updateSummary(summary StatusSummary) {
 	}
 }
 
-func (r *ResultGroup) updateSeverityCounts(severity string, summary StatusSummary) {
+func (r *ResultGroup) updateSeverityCounts(severity string, summary *controlstatus.StatusSummary) {
 	r.updateLock.Lock()
 	defer r.updateLock.Unlock()
 
 	val, exists := r.Severity[severity]
 	if !exists {
-		val = StatusSummary{}
+		val = controlstatus.StatusSummary{}
 	}
 	val.Alarm += summary.Alarm
 	val.Error += summary.Error

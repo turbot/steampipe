@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -10,6 +11,7 @@ import (
 	"os/exec"
 	"sync"
 
+	"github.com/fatih/color"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
@@ -22,6 +24,16 @@ import (
 )
 
 var ensureMux sync.Mutex
+
+func noBackupWarning() string {
+	warningMessage := `Steampipe database has been upgraded from Postgres 12 to Postgres 14.
+
+Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory. 
+
+If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`
+
+	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
+}
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
 func EnsureDBInstalled(ctx context.Context) (err error) {
@@ -70,6 +82,21 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
 	}
 
+	statushooks.SetStatus(ctx, "Preparing backups...")
+
+	// call prepareBackup to generate the db dump file if necessary
+	// NOTE: this returns the existing database name - we use this when creating the new database
+	dbName, err := prepareBackup(ctx)
+	if err != nil {
+		if errors.Is(err, errDbInstanceRunning) {
+			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
+			os.RemoveAll(databaseInstanceDir())
+			return err
+		}
+		// ignore all other errors with the backup, displaying a warning instead
+		statushooks.Message(ctx, noBackupWarning())
+	}
+
 	_, err = installFDW(ctx, true)
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
@@ -77,7 +104,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// run the database installation
-	err = runInstall(ctx, true)
+	err = runInstall(ctx, true, dbName)
 	if err != nil {
 		return err
 	}
@@ -144,7 +171,7 @@ func prepareDb(ctx context.Context) error {
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes...")
 		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, false); err != nil {
+		if err := runInstall(ctx, false, nil); err != nil {
 			return err
 		}
 	}
@@ -192,7 +219,7 @@ func needsInit() bool {
 	return !helpers.FileExists(getPgHbaConfLocation())
 }
 
-func runInstall(ctx context.Context, firstInstall bool) error {
+func runInstall(ctx context.Context, firstInstall bool, oldDbName *string) error {
 	utils.LogTime("db_local.runInstall start")
 	defer utils.LogTime("db_local.runInstall end")
 
@@ -245,7 +272,7 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	}
 
 	// resolve the name of the database that is to be installed
-	databaseName := resolveDatabaseName()
+	databaseName := resolveDatabaseName(oldDbName)
 	// validate db name
 	firstCharacter := databaseName[0:1]
 	var ascii int
@@ -276,9 +303,12 @@ func runInstall(ctx context.Context, firstInstall bool) error {
 	return nil
 }
 
-func resolveDatabaseName() string {
+func resolveDatabaseName(oldDbName *string) string {
 	// resolve the name of the database that is to be installed
 	// use the application constant as default
+	if oldDbName != nil {
+		return *oldDbName
+	}
 	databaseName := constants.DatabaseName
 	if envValue, exists := os.LookupEnv(constants.EnvInstallDatabase); exists && len(envValue) > 0 {
 		// use whatever is supplied, if available

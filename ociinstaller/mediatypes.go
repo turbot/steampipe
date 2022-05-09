@@ -3,6 +3,9 @@ package ociinstaller
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/utils"
 )
 
 // Steampipe Media Types
@@ -47,22 +50,40 @@ const (
 )
 
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
-func MediaTypeForPlatform(imageType string) string {
-	// we do not (yet) support Arm for the database, FDW or plugins - on M1 macs Rosetta will emulate this for us
-	arch := "amd64"
+// and it's fallbacks in order of priority
+func MediaTypeForPlatform(imageType ImageType) ([]string, error) {
+	layerFmtGzip := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip"
+	layerFmtTar := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar"
+
+	arch := runtime.GOARCH
 	switch imageType {
-	case "db":
-		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar", imageType, runtime.GOOS, arch)
-	case "fdw":
-		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)
-	case "plugin":
-		return fmt.Sprintf("application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip", imageType, runtime.GOOS, arch)
+	case ImageTypeDatabase:
+		return []string{fmt.Sprintf(layerFmtTar, imageType, runtime.GOOS, arch)}, nil
+	case ImageTypeFdw:
+		// detect the underlying architecture(amd64/arm64)
+		// we have to do this rather than just using runtime.GOARCH, because runtime.GOARCH does not give us
+		// the actual underlying architecture of the system(GOARCH can be changed during runtime)
+		arch, err := utils.UnderlyingArch()
+		if err != nil {
+			return nil, err
+		}
+		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}, nil
+	case ImageTypePlugin:
+		pluginMediaTypes := []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
+		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
+			// add the amd64 layer as well, so that we can fall back to it
+			// this is required for plugins which don't have an arm64 build yet
+			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, constants.ArchAMD64))
+		}
+		return pluginMediaTypes, nil
 	}
-	return ""
+	// there are cases(dashboard commands) where we have a different imageType, we need to return empty
+	// in such cases and not return error
+	return []string{}, nil
 }
 
 // SharedMediaTypes returns media types that are NOT specific to the os and arch (readmes, control files, etc)
-func SharedMediaTypes(imageType string) []string {
+func SharedMediaTypes(imageType ImageType) []string {
 	switch imageType {
 	case ImageTypeAssets:
 		return []string{MediaTypeAssetReportLayer}

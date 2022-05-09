@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
+	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -172,10 +175,15 @@ Example:
 	return cmd
 }
 
-// exitCode=1 For unknown errors resulting in panics
-// exitCode=2 For insufficient/wrong arguments passed in the command
-// exitCode=3 For errors related to loading state, loading version data or an issue contacting the update server.
-// exitCode=4 For plugin listing failures
+var pluginInstallSteps = []string{
+	"Downloading",
+	"Installing Plugin",
+	"Installing Docs",
+	"Installing Config",
+	"Updating Steampipe",
+	"Done",
+}
+
 func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	ctx := cmd.Context()
 	utils.LogTime("runPluginInstallCmd install")
@@ -183,7 +191,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginInstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -191,7 +199,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// plugin names can be simple names ('aws') for "standard" plugins,
 	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-	installReports := make([]display.InstallReport, 0, len(plugins))
+	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
 		fmt.Println()
@@ -199,7 +207,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 
@@ -207,58 +215,65 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 
 	statusSpinner := statushooks.NewStatusSpinner()
+	progressBars := uiprogress.New()
+	installWaitGroup := &sync.WaitGroup{}
+	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
 
-	for _, p := range plugins {
-		isPluginExists, _ := plugin.Exists(p)
-		if isPluginExists {
-			installReports = append(installReports, display.InstallReport{
-				Plugin:         p,
-				Skipped:        true,
-				SkipReason:     constants.PluginAlreadyInstalled,
-				IsUpdateReport: false,
-			})
-			continue
-		}
-		statusSpinner.SetStatus(fmt.Sprintf("Installing plugin: %s", p))
-		image, err := plugin.Install(cmd.Context(), p)
-		if err != nil {
-			msg := ""
-			if strings.HasSuffix(err.Error(), "not found") {
-				msg = "Not found"
-			} else {
-				msg = err.Error()
-			}
-			installReports = append(installReports, display.InstallReport{
-				Skipped:        true,
-				Plugin:         p,
-				SkipReason:     msg,
-				IsUpdateReport: false,
-			})
-			continue
-		}
-		versionString := ""
-		if image.Config.Plugin.Version != "" {
-			versionString = " v" + image.Config.Plugin.Version
-		}
-		org := image.Config.Plugin.Organization
-		name := image.Config.Plugin.Name
-		docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-		installReports = append(installReports, display.InstallReport{
-			Skipped:        false,
-			Plugin:         p,
-			DocURL:         docURL,
-			Version:        versionString,
-			IsUpdateReport: false,
-		})
+	progressBars.Start()
+
+	for _, pluginName := range plugins {
+		installWaitGroup.Add(1)
+		bar := createProgressBar(pluginName, progressBars)
+		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, dataChannel)
+	}
+	go func() {
+		installWaitGroup.Wait()
+		close(dataChannel)
+	}()
+	for report := range dataChannel {
+		installReports = append(installReports, report)
 	}
 
+	progressBars.Stop()
+	statusSpinner.UpdateSpinnerMessage("Refreshing connections...")
+	refreshConnectionsIfNecessary(ctx, installReports, true)
 	statusSpinner.Done()
-
-	refreshConnectionsIfNecessary(cmd.Context(), installReports, true)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
+}
+
+func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+	var report *display.PluginInstallReport
+
+	pluginAlreadyInstalled, _ := plugin.Exists(pluginName)
+	if pluginAlreadyInstalled {
+		// set the bar to MAX
+		bar.Set(len(pluginInstallSteps))
+		// let the bar append itself with "Already Installed"
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			return strutil.Resize(constants.PluginAlreadyInstalled, 20)
+		})
+		report = &display.PluginInstallReport{
+			Plugin:         pluginName,
+			Skipped:        true,
+			SkipReason:     constants.PluginAlreadyInstalled,
+			IsUpdateReport: false,
+		}
+	} else {
+		// let the bar append itself with the current installation step
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			if report != nil && report.SkipReason == constants.PluginNotFound {
+				return strutil.Resize(constants.PluginNotFound, 20)
+			} else {
+				return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+			}
+		})
+		report = installPlugin(ctx, pluginName, false, bar)
+	}
+	returnChannel <- report
+	wg.Done()
 }
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
@@ -268,7 +283,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -282,14 +297,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 
 	state, err := statefile.LoadState()
 	if err != nil {
 		utils.ShowError(ctx, fmt.Errorf("could not load state"))
-		exitCode = 3
+		exitCode = constants.ExitCodeLoadingError
 		return
 	}
 
@@ -297,12 +312,12 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		utils.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
-		exitCode = 3
+		exitCode = constants.ExitCodeLoadingError
 		return
 	}
 
 	var runUpdatesFor []*versionfile.InstalledVersion
-	updateReports := make([]display.InstallReport, 0, len(plugins))
+	updateResults := make(display.PluginInstallReports, 0, len(plugins))
 
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
@@ -324,7 +339,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
-				updateReports = append(updateReports, display.InstallReport{
+				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
 					SkipReason:     constants.PluginNotInstalled,
@@ -334,15 +349,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if len(plugins) == len(updateReports) {
+	if len(plugins) == len(updateResults) {
 		// we have report for all
 		// this may happen if all given plugins are
 		// not installed
-		display.PrintInstallReports(updateReports, true)
+		display.PrintInstallReports(updateResults, true)
 		fmt.Println()
 		return
 	}
-
 	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
 	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
 	statusSpinner.Done()
@@ -350,62 +364,125 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
-		utils.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later"))
-		exitCode = 3
+		utils.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later."))
+		exitCode = constants.ExitCodeLoadingError
 		return
 	}
 
-	for _, report := range reports {
-		if report.Plugin.ImageDigest == report.CheckResponse.Digest {
-			updateReports = append(updateReports, display.InstallReport{
-				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
-				Skipped:        true,
-				SkipReason:     constants.PluginLatestAlreadyInstalled,
-				IsUpdateReport: true,
-			})
-			continue
-		}
+	updateWaitGroup := &sync.WaitGroup{}
+	dataChannel := make(chan *display.PluginInstallReport, len(reports))
+	progressBars := uiprogress.New()
+	progressBars.Start()
 
-		statusSpinner.SetStatus(fmt.Sprintf("Updating plugin %s...", report.CheckResponse.Name))
-		image, err := plugin.Install(cmd.Context(), report.Plugin.Name)
-		statusSpinner.Done()
-		if err != nil {
-			msg := ""
-			if strings.HasSuffix(err.Error(), "not found") {
-				msg = "Not found"
-			} else {
-				msg = err.Error()
-			}
-			updateReports = append(updateReports, display.InstallReport{
-				Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
-				Skipped:        true,
-				SkipReason:     msg,
-				IsUpdateReport: true,
-			})
-			continue
-		}
-
-		versionString := ""
-		if image.Config.Plugin.Version != "" {
-			versionString = " v" + image.Config.Plugin.Version
-		}
-		org := image.Config.Plugin.Organization
-		name := image.Config.Plugin.Name
-		docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-		updateReports = append(updateReports, display.InstallReport{
-			Plugin:         fmt.Sprintf("%s@%s", report.CheckResponse.Name, report.CheckResponse.Stream),
-			Skipped:        false,
-			Version:        versionString,
-			DocURL:         docURL,
-			IsUpdateReport: true,
-		})
+	sorted := utils.SortedStringKeys(reports)
+	for _, key := range sorted {
+		report := reports[key]
+		updateWaitGroup.Add(1)
+		bar := createProgressBar(report.ShortName(), progressBars)
+		go doPluginUpdate(ctx, bar, report, updateWaitGroup, dataChannel)
+	}
+	go func() {
+		updateWaitGroup.Wait()
+		close(dataChannel)
+	}()
+	for updateResult := range dataChannel {
+		updateResults = append(updateResults, updateResult)
 	}
 
-	refreshConnectionsIfNecessary(cmd.Context(), updateReports, false)
-	display.PrintInstallReports(updateReports, true)
+	refreshConnectionsIfNecessary(cmd.Context(), updateResults, false)
+	progressBars.Stop()
+	fmt.Println()
+	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
 	fmt.Println()
+}
+
+func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.VersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+	var report *display.PluginInstallReport
+
+	if skip, skipReason := plugin.SkipUpdate(pvr); skip {
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			// set the progress bar to append itself with "Already Installed"
+			return strutil.Resize(skipReason, 30)
+		})
+		// set the progress bar to the maximum
+		bar.Set(len(pluginInstallSteps))
+		report = &display.PluginInstallReport{
+			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Stream),
+			Skipped:        true,
+			SkipReason:     skipReason,
+			IsUpdateReport: true,
+		}
+	} else {
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			// set the progress bar to append itself  with the step underway
+			return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
+		})
+		report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
+	}
+	returnChannel <- report
+	wg.Done()
+}
+
+func createProgressBar(plugin string, parentProgressBars *uiprogress.Progress) *uiprogress.Bar {
+	bar := parentProgressBars.AddBar(len(pluginInstallSteps))
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(plugin, 20)
+	})
+	return bar
+}
+
+func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *uiprogress.Bar) *display.PluginInstallReport {
+	// start a channel for progress publications from plugin.Install
+	progress := make(chan struct{}, 5)
+	defer func() {
+		// close the progress channel
+		close(progress)
+	}()
+	go func() {
+		for {
+			// wait for a message on the progress channel
+			<-progress
+			// increment the progress bar
+			bar.Incr()
+		}
+	}()
+
+	image, err := plugin.Install(ctx, pluginName, progress)
+	if err != nil {
+		msg := ""
+		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
+		if isPluginNotFoundErr(err) {
+			msg = constants.PluginNotFound
+		} else {
+			msg = err.Error()
+		}
+		return &display.PluginInstallReport{
+			Plugin:         fmt.Sprintf("%s@%s", name, stream),
+			Skipped:        true,
+			SkipReason:     msg,
+			IsUpdateReport: isUpdate,
+		}
+	}
+
+	org, name, stream := image.ImageRef.GetOrgNameAndStream()
+	versionString := ""
+	if image.Config.Plugin.Version != "" {
+		versionString = " v" + image.Config.Plugin.Version
+	}
+	docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
+	return &display.PluginInstallReport{
+		Plugin:         fmt.Sprintf("%s@%s", name, stream),
+		Skipped:        false,
+		Version:        versionString,
+		DocURL:         docURL,
+		IsUpdateReport: isUpdate,
+	}
+}
+
+func isPluginNotFoundErr(err error) bool {
+	return strings.HasSuffix(err.Error(), "not found")
 }
 
 func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
@@ -424,7 +501,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports []display.InstallReport, shouldReload bool) error {
+func refreshConnectionsIfNecessary(ctx context.Context, reports display.PluginInstallReports, shouldReload bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -469,21 +546,21 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
 		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
-		exitCode = 4
+		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
 		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
-		exitCode = 4
+		exitCode = constants.ExitCodePluginListFailure
 	}
 	headers := []string{"Name", "Version", "Connections"}
 	rows := [][]string{}
@@ -501,7 +578,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginUninstallCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			exitCode = 1
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -511,22 +588,30 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = 2
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 
 	connectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		utils.ShowError(ctx, err)
-		exitCode = 4
+		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
+	reports := display.PluginRemoveReports{}
+	spinner := statushooks.NewStatusSpinner(statushooks.WithMessage(fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args)))))
 	for _, p := range args {
-		if err := plugin.Remove(ctx, p, connectionMap); err != nil {
+		spinner.SetStatus(fmt.Sprintf("Uninstalling %s", p))
+		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
 			utils.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
+		} else {
+			report.ShortName = p
+			reports = append(reports, *report)
 		}
 	}
+	spinner.Done()
+	reports.Print()
 }
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}

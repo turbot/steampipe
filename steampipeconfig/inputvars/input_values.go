@@ -3,10 +3,9 @@ package inputvars
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 )
@@ -94,9 +93,6 @@ type InputValues map[string]*InputValue
 // Override merges the given value maps with the receiver, overriding any
 // conflicting keys so that the latest definition wins.
 func (vv InputValues) Override(others ...InputValues) InputValues {
-	// FIXME: This should check to see if any of the values are maps and
-	// merge them if so, in order to preserve the behavior from prior to
-	// Terraform 0.12.
 	ret := make(InputValues)
 	for k, v := range vv {
 		ret[k] = v

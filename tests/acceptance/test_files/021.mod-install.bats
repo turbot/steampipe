@@ -69,6 +69,11 @@ local
 └── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
 }
 
+@test "install mod version should fail, since dependant mod has a requirement of different steampipe CLI version" {
+  run steampipe mod install github.com/pskrbasu/steampipe-mod-m4
+  assert_output --partial 'does not satisfy mod.m4 which requires version 10.99.99'
+}
+
 function teardown() {
   rm -rf .steampipe/
   rm -rf .mod.cache.json

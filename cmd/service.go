@@ -72,7 +72,15 @@ connection from any Postgres compatible database client.`,
 		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port.").
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
-		// Hidden flags for internal use
+
+		// flags relevant only if the --dashboard arg is used:
+		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
+		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV,
+		// where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
+
+		// hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
@@ -140,11 +148,11 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			if exitCode == 0 {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = 1
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -323,11 +331,11 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			if exitCode == 0 {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = 1
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -447,11 +455,11 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
-			if exitCode == 0 {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = 1
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -550,8 +558,7 @@ func showAllStatus(ctx context.Context) {
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
 	cmdLine, _ := process.CmdlineSlice()
-
-	installDir := strings.TrimSuffix(cmdLine[0], db_local.ServiceExecutableRelativeLocation)
+	installDir := strings.TrimSuffix(cmdLine[0], db_local.ServiceExecutableRelativeLocation())
 	var port string
 	var listenType db_local.StartListenType
 

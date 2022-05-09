@@ -194,6 +194,11 @@ func (h *DashboardFlow) GetWidth() int {
 	return *h.Width
 }
 
+// GetDisplay implements DashboardLeafNode
+func (h *DashboardFlow) GetDisplay() *string {
+	return h.Display
+}
+
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (h *DashboardFlow) GetUnqualifiedName() string {
 	return h.UnqualifiedName
@@ -260,6 +265,10 @@ func (h *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvid
 
 	if h.Type == nil {
 		h.Type = h.Base.Type
+	}
+
+	if h.Display == nil {
+		h.Display = h.Base.Display
 	}
 
 	if h.Width == nil {

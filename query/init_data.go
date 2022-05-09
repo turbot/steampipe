@@ -69,6 +69,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 			i.Result.Error = ctx.Err()
 		}
 		i.cancel = nil
+		// close loaded channel to indicate we are complete
 		close(i.Loaded)
 	}()
 
@@ -93,6 +94,12 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		return
 	}
 	i.Workspace = w
+
+	//validate steampipe version
+	if err = w.ValidateSteampipeVersion(); err != nil {
+		i.Result.Error = err
+		return
+	}
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	queries, preparedStatementSource, err := w.GetQueriesFromArgs(args)

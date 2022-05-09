@@ -12,6 +12,7 @@ import (
 )
 
 type DashboardExecutor struct {
+	// map of executions, keyed by session id
 	executions    map[string]*DashboardExecutionTree
 	executionLock sync.Mutex
 }
@@ -25,32 +26,33 @@ func newDashboardExecutor() *DashboardExecutor {
 var Executor = newDashboardExecutor()
 
 func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]interface{}, workspace *workspace.Workspace, client db_common.Client) (err error) {
+	var executionTree *DashboardExecutionTree
 	defer func() {
 		// if there was an error executing, send an ExecutionError event
 		if err != nil {
-			workspace.PublishDashboardEvent(&dashboardevents.ExecutionError{
+			errorEvent := &dashboardevents.ExecutionError{
 				Error:   err,
 				Session: sessionId,
-			})
+			}
+			workspace.PublishDashboardEvent(errorEvent)
 		}
 	}()
 
 	// reset any existing executions for this session
-	e.ClearDashboard(ctx, sessionId)
+	e.CancelExecutionForSession(ctx, sessionId)
 
 	// now create a new execution
-	executionTree, err := NewDashboardExecutionTree(dashboardName, sessionId, client, workspace)
+	executionTree, err = NewDashboardExecutionTree(dashboardName, sessionId, client, workspace)
 	if err != nil {
 		return err
 	}
+
 	// add to execution map
 	e.setExecution(sessionId, executionTree)
 
 	// if inputs have been passed, set them first
 	if len(inputs) > 0 {
-		if err := executionTree.SetInputs(inputs); err != nil {
-			return err
-		}
+		executionTree.SetInputs(inputs)
 	}
 
 	go executionTree.Execute(ctx)
@@ -73,6 +75,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 		event := &dashboardevents.InputValuesCleared{
 			ClearedInputs: clearedInputs,
 			Session:       executionTree.sessionId,
+			ExecutionId:   executionTree.id,
 		}
 		executionTree.workspace.PublishDashboardEvent(event)
 	}
@@ -89,22 +92,20 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	}
 
 	// set the inputs
-	if err := executionTree.SetInputs(inputs); err != nil {
-		return err
-	}
+	executionTree.SetInputs(inputs)
 
 	return nil
 }
 
-func (e *DashboardExecutor) clearDependentInputs(dashboard *DashboardRun, changedInput string, inputs map[string]interface{}) []string {
-	dependentInputs := dashboard.GetInputsDependingOn(changedInput)
+func (e *DashboardExecutor) clearDependentInputs(root dashboardinterfaces.DashboardNodeRun, changedInput string, inputs map[string]interface{}) []string {
+	dependentInputs := root.GetInputsDependingOn(changedInput)
 	clearedInputs := dependentInputs
 	if len(dependentInputs) > 0 {
 		for _, inputName := range dependentInputs {
 			if inputs[inputName] != nil {
 				// clear the input value
 				inputs[inputName] = nil
-				childDependentInputs := e.clearDependentInputs(dashboard, inputName, inputs)
+				childDependentInputs := e.clearDependentInputs(root, inputName, inputs)
 				clearedInputs = append(clearedInputs, childDependentInputs...)
 			}
 		}
@@ -113,7 +114,7 @@ func (e *DashboardExecutor) clearDependentInputs(dashboard *DashboardRun, change
 	return clearedInputs
 }
 
-func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) {
+func (e *DashboardExecutor) CancelExecutionForSession(_ context.Context, sessionId string) {
 	// find the execution
 	executionTree, found := e.getExecution(sessionId)
 	if !found {
@@ -123,11 +124,11 @@ func (e *DashboardExecutor) ClearDashboard(_ context.Context, sessionId string) 
 
 	// cancel if in progress
 	executionTree.Cancel()
-
 	// remove from execution tree
 	e.removeExecution(sessionId)
 }
 
+// find the execution for the given session id
 func (e *DashboardExecutor) getExecution(sessionId string) (*DashboardExecutionTree, bool) {
 	e.executionLock.Lock()
 	defer e.executionLock.Unlock()

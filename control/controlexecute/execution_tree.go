@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/statushooks"
@@ -23,10 +24,10 @@ import (
 type ExecutionTree struct {
 	Root *ResultGroup `json:"root"`
 	// flat list of all control runs
-	ControlRuns []*ControlRun                 `json:"control_runs"`
-	StartTime   time.Time                     `json:"start_time"`
-	EndTime     time.Time                     `json:"end_time"`
-	Progress    *controlhooks.ControlProgress `json:"progress"`
+	ControlRuns []*ControlRun                  `json:"-"`
+	StartTime   time.Time                      `json:"start_time"`
+	EndTime     time.Time                      `json:"end_time"`
+	Progress    *controlstatus.ControlProgress `json:"progress"`
 	// map of dimension property name to property value to color map
 	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
 
@@ -62,7 +63,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
-	executionTree.Progress = controlhooks.NewControlProgress(len(executionTree.ControlRuns))
+	executionTree.Progress = controlstatus.NewControlProgress(len(executionTree.ControlRuns))
 
 	return executionTree, nil
 }
@@ -104,16 +105,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 	// just execute the root - it will traverse the tree
 	e.Root.execute(ctx, e.client, parallelismLock)
 
-	executeFinishWaitCtx := ctx
-	if ctx.Err() != nil {
-		// use a Background context - since the original context has been cancelled
-		// this lets us wait for the active control queries to cancel
-		c, cancel := context.WithTimeout(context.Background(), constants.ControlQueryCancellationTimeoutSecs*time.Second)
-		executeFinishWaitCtx = c
-		defer cancel()
-	}
-	// wait till we can acquire all semaphores - meaning that all active runs have finished
-	parallelismLock.Acquire(executeFinishWaitCtx, maxParallelGoRoutines)
+	e.waitForActiveRunsToComplete(ctx, parallelismLock, maxParallelGoRoutines)
 
 	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
 
@@ -122,6 +114,20 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 	e.DimensionColorGenerator.populate(e)
 
 	return failures
+}
+
+func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) {
+	waitCtx := ctx
+	// if the context was already cancelled, we must creat ea new one to use  when waiting to acquire the lock
+	if ctx.Err() != nil {
+		// use a Background context - since the original context has been cancelled
+		// this lets us wait for the active control queries to cancel
+		c, cancel := context.WithTimeout(context.Background(), constants.ControlQueryCancellationTimeoutSecs*time.Second)
+		waitCtx = c
+		defer cancel()
+	}
+	// wait till we can acquire all semaphores - meaning that all active runs have finished
+	parallelismLock.Acquire(waitCtx, maxParallelGoRoutines)
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
@@ -284,5 +290,6 @@ func (e *ExecutionTree) GetAllTags() []string {
 			}
 		}
 	}
+	sort.Strings(tagColumns)
 	return tagColumns
 }

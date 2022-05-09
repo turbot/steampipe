@@ -1,10 +1,9 @@
 import Error from "../../Error";
+import get from "lodash/get";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts";
 import { CardProps } from "../../Card";
-import { CheckProps } from "../../check/common";
 import { classNames } from "../../../../utils/styles";
-import { get } from "lodash";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";
@@ -17,7 +16,7 @@ import {
 } from "../../../../hooks/useDashboard";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
-import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
+import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
 import { ZoomIcon } from "../../../../constants/icons";
 
@@ -26,7 +25,6 @@ interface PanelProps {
   definition:
     | BaseChartProps
     | CardProps
-    | CheckProps
     | HierarchyProps
     | ImageProps
     | InputProps
@@ -36,6 +34,7 @@ interface PanelProps {
   allowExpand?: boolean;
   forceBackground?: boolean;
   ready?: boolean;
+  withOverflow?: boolean;
   withTitle?: boolean;
 }
 
@@ -45,13 +44,16 @@ const Panel = ({
   allowExpand = true,
   forceBackground = false,
   ready = true,
+  withOverflow = false,
   withTitle = true,
 }: PanelProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
   const [zoomIconClassName, setZoomIconClassName] =
     useState("text-black-scale-4");
-  const { dispatch } = useDashboard();
-  const { theme } = useTheme();
+  const {
+    dispatch,
+    themeContext: { theme },
+  } = useDashboard();
 
   const baseStyles = classNames(
     "relative col-span-12",
@@ -102,7 +104,7 @@ const Panel = ({
                 definition.node_type === "card" ||
                 definition.node_type === "input") &&
                 get(definition, "properties.type") === "table")
-              ? "bg-background-panel shadow-sm rounded-md"
+              ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
               : null
           )}
         >
@@ -157,8 +159,9 @@ const Panel = ({
                       : "border-background"
                   )
                 : null,
-              (definition.node_type === "table" &&
-                get(definition, "properties.type") !== "line") ||
+              withOverflow ||
+                (definition.node_type === "table" &&
+                  get(definition, "properties.type") !== "line") ||
                 get(definition, "properties.type") === "table"
                 ? "overflow-x-auto"
                 : "overflow-x-hidden"

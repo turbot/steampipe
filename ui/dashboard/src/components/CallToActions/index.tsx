@@ -1,4 +1,4 @@
-import ExternalLink from "../ExternalLink";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const items = [
   {
@@ -24,30 +24,35 @@ const items = [
   },
 ];
 
-const CallToActions = () => (
-  <ul className="mt-4 md:mt-0 space-y-6">
-    {items.map((item, itemIdx) => (
-      <li key={itemIdx} className="flow-root">
-        <div className="p-3 flex items-center space-x-4 rounded-md hover:bg-background-panel focus-within:ring-2 focus-within:ring-blue-500">
-          <ExternalLink
-            to={item.href}
-            className="focus:outline-none"
-            withReferrer={item.withReferrer}
-          >
-            <span className="text-foreground">
-              <>{item.title}</>
-              <span aria-hidden="true" className="ml-1">
-                &rarr;
+const CallToActions = () => {
+  const {
+    components: { ExternalLink },
+  } = useDashboard();
+  return (
+    <ul className="mt-4 md:mt-0 space-y-6">
+      {items.map((item, itemIdx) => (
+        <li key={itemIdx} className="flow-root">
+          <div className="p-3 flex items-center space-x-4 rounded-md hover:bg-dashboard-panel focus-within:ring-2 focus-within:ring-blue-500">
+            <ExternalLink
+              to={item.href}
+              className="focus:outline-none"
+              withReferrer={item.withReferrer}
+            >
+              <span className="text-foreground">
+                <>{item.title}</>
+                <span aria-hidden="true" className="ml-1">
+                  &rarr;
+                </span>
               </span>
-            </span>
-            <p className="mt-1 text-sm text-foreground-light">
-              {item.description}
-            </p>
-          </ExternalLink>
-        </div>
-      </li>
-    ))}
-  </ul>
-);
+              <p className="mt-1 text-sm text-foreground-light">
+                {item.description}
+              </p>
+            </ExternalLink>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+};
 
 export default CallToActions;

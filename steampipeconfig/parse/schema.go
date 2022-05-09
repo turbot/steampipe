@@ -130,6 +130,12 @@ var DashboardBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeChart,
 		},
 		{
+			Type: modconfig.BlockTypeBenchmark,
+		},
+		{
+			Type: modconfig.BlockTypeControl,
+		},
+		{
 			Type: modconfig.BlockTypeFlow,
 		},
 		{
@@ -171,6 +177,12 @@ var DashboardContainerBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeChart,
 		},
 		{
+			Type: modconfig.BlockTypeBenchmark,
+		},
+		{
+			Type: modconfig.BlockTypeControl,
+		},
+		{
 			Type: modconfig.BlockTypeFlow,
 		},
 		{
@@ -198,6 +210,8 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 		// for report benchmark blocks
 		{Name: "width"},
 		{Name: "base"},
+		{Name: "type"},
+		{Name: "display"},
 	},
 }
 

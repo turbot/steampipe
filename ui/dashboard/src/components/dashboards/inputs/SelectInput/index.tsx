@@ -162,11 +162,11 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       !properties.placeholder
     ) {
       setInitialisedFromState(true);
-      setValue(options[0]);
+      setValue(multi ? [options[0]] : options[0]);
       dispatch({
         type: DashboardActions.SET_DASHBOARD_INPUT,
         name,
-        value: getValueForState(multi, options[0]),
+        value: getValueForState(multi, multi ? [options[0]] : options[0]),
         recordInputsHistory: false,
       });
     } else {

@@ -448,3 +448,10 @@ func (m *Mod) WalkResources(resourceFunc func(item HclResource) (bool, error)) e
 func (m *Mod) SetFilePath(modFilePath string) {
 	m.modFilePath = modFilePath
 }
+
+func (m *Mod) ValidateSteampipeVersion() error {
+	if m.Require == nil {
+		return nil
+	}
+	return m.Require.ValidateSteampipeVersion(m.Name())
+}

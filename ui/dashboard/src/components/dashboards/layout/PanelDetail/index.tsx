@@ -11,7 +11,6 @@ import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { saveAs } from "file-saver";
 import { useCallback, useMemo, useState } from "react";
 import { usePapaParse } from "react-papaparse";
-import { useBreakpoint } from "../../../../hooks/useBreakpoint";
 
 export type PanelDetailProps = {
   definition: PanelDefinition;
@@ -42,9 +41,12 @@ const Tabs = {
 
 const PanelDetail = ({ definition }: PanelDetailProps) => {
   const [selectedTab, setSelectedTab] = useState(Tabs.PREVIEW);
-  const { closePanelDetail, selectedDashboard } = useDashboard();
+  const {
+    breakpointContext: { minBreakpoint },
+    closePanelDetail,
+    selectedDashboard,
+  } = useDashboard();
   const { jsonToCSV } = usePapaParse();
-  const { minBreakpoint } = useBreakpoint();
   const isTablet = minBreakpoint("md");
 
   const availableTabs = useMemo(() => {
@@ -139,7 +141,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         <select
           id="tabs"
           name="tabs"
-          className="mt-2 block w-full pl-3 pr-10 py-2 bg-background text-foreground border-black-scale-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
+          className="mt-2 block w-full pl-3 pr-10 py-2 bg-dashboard print:bg-white text-foreground border-black-scale-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
           defaultValue={selectedTab.name}
           onChange={(e) =>
             setSelectedTab(

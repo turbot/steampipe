@@ -11,6 +11,9 @@ const (
 	// MaxParallelClientInits is the number of clients to initialize in parallel
 	// if we start initializing all clients together, it leads to bad performance on all
 	MaxParallelClientInits = 3
+
+	// MaxBackups is the maximum number of backups that will be retained
+	MaxBackups = 100
 )
 
 // DatabaseListenAddresses is an arrays is listen addresses which Steampipe accepts
@@ -27,15 +30,11 @@ const (
 
 // constants for installing db and fdw images
 const (
-	DatabaseVersion = "12.1.0"
-	FdwVersion      = "0.4.0"
+	DatabaseVersion = "14.2.0"
+	FdwVersion      = "1.0.0"
 
 	// PostgresImageRef is the OCI Image ref for the databse binaries
-	// The 12.1.0 image uses the older jar format 12.1.0-v2 is the same version of postgres,
-	// just packaged as gzipped tar files (consistent with oras, faster to unzip).  Once everyone is
-	// on a newer build, we can delete the old image move the 12.1.0 tag to the new image, and
-	// change this back for consistency
-	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:12.1.0-v2"
+	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
 	FdwImageRef      = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
 

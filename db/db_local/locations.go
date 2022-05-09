@@ -10,7 +10,9 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-const ServiceExecutableRelativeLocation = "/db/12.1.0/postgres/bin/postgres"
+func ServiceExecutableRelativeLocation() string {
+	return filepath.Join("db", constants.DatabaseVersion, "postgres", "bin", "postgres")
+}
 
 func databaseInstanceDir() string {
 	loc := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion)
@@ -47,6 +49,13 @@ func getDataLocation() string {
 	}
 	return loc
 }
+
+// tar file where the dump file will be stored, so that it can be later restored after connections
+// refresh in a new installation
+func databaseBackupFilePath() string {
+	return filepath.Join(filepaths.EnsureDatabaseDir(), "backup.bk")
+}
+
 func getRootCertLocation() string {
 	return filepath.Join(getDataLocation(), constants.RootCert)
 }
@@ -71,13 +80,25 @@ func getPostgresBinaryExecutablePath() string {
 	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PostgresExecutable)
 }
 
+func pgDumpBinaryExecutablePath() string {
+	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PgDumpExecutable)
+}
+
+func pgRestoreBinaryExecutablePath() string {
+	return filepath.Join(getDatabaseLocation(), "bin", platform.Paths.PgRestoreExecutable)
+}
+
 func getDBSignatureLocation() string {
 	loc := filepath.Join(getDatabaseLocation(), "signature")
 	return loc
 }
 
+func getDatabaseLibDirectory() string {
+	return filepath.Join(getDatabaseLocation(), "lib")
+}
+
 func getFDWBinaryLocation() string {
-	return filepath.Join(getDatabaseLocation(), "lib", "postgresql", "steampipe_postgres_fdw.so")
+	return filepath.Join(getDatabaseLibDirectory(), "postgresql", "steampipe_postgres_fdw.so")
 }
 
 func getFDWSQLAndControlLocation() (string, string) {

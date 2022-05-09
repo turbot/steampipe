@@ -11,6 +11,7 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	"github.com/turbot/steampipe/constants"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/statushooks"
@@ -20,21 +21,12 @@ import (
 
 const controlQueryTimeout = 240 * time.Second
 
-type ControlRunStatus uint32
-
-const (
-	ControlRunReady ControlRunStatus = 1 << iota
-	ControlRunStarted
-	ControlRunComplete
-	ControlRunError
-)
-
 // ControlRun is a struct representing the execution of a control run. It will contain one or more result items (i.e. for one or more resources).
 type ControlRun struct {
 	// the control being run
 	Control *modconfig.Control `json:"-"`
 	// control summary
-	Summary StatusSummary `json:"-"`
+	Summary *controlstatus.StatusSummary `json:"summary"`
 	// result rows
 	Rows []*ResultRow `json:"results"`
 	// a list of distinct dimension keys from the results of this control
@@ -54,13 +46,15 @@ type ControlRun struct {
 	// execution tree
 	Tree *ExecutionTree `json:"-"`
 	// used to trace the events within the duration of a control execution
-	Lifecycle *utils.LifecycleTimer `json:"-"`
+	Lifecycle *utils.LifecycleTimer          `json:"-"`
+	RunStatus controlstatus.ControlRunStatus `json:"run_status"`
+	// save run error as string for JSON export
+	RunErrorString string `json:"run_error"`
 
+	runError error
 	// the query result stream
 	queryResult *queryresult.Result
-	rowMap      map[string][]*ResultRow `json:"-"`
-	runStatus   ControlRunStatus
-	runError    error
+	rowMap      map[string][]*ResultRow
 	stateLock   sync.Mutex
 	doneChan    chan bool
 	attempts    int
@@ -81,11 +75,11 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		Title:       typehelpers.SafeString(control.Title),
 		Tags:        control.GetTags(),
 		rowMap:      make(map[string][]*ResultRow),
-
-		Lifecycle: utils.NewLifecycleTimer(),
+		Summary:     &controlstatus.StatusSummary{},
+		Lifecycle:   utils.NewLifecycleTimer(),
 
 		Tree:      executionTree,
-		runStatus: ControlRunReady,
+		RunStatus: controlstatus.ControlRunReady,
 
 		Group:    group,
 		doneChan: make(chan bool, 1),
@@ -94,15 +88,30 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	return res
 }
 
-func (r *ControlRun) GetRunStatus() ControlRunStatus {
+// GetControlId implements ControlRunStatusProvider
+func (r *ControlRun) GetControlId() string {
 	r.stateLock.Lock()
 	defer r.stateLock.Unlock()
-	return r.runStatus
+	return r.ControlId
+}
+
+// GetRunStatus implements ControlRunStatusProvider
+func (r *ControlRun) GetRunStatus() controlstatus.ControlRunStatus {
+	r.stateLock.Lock()
+	defer r.stateLock.Unlock()
+	return r.RunStatus
+}
+
+// GetStatusSummary implements ControlRunStatusProvider
+func (r *ControlRun) GetStatusSummary() *controlstatus.StatusSummary {
+	r.stateLock.Lock()
+	defer r.stateLock.Unlock()
+	return r.Summary
 }
 
 func (r *ControlRun) Finished() bool {
 	status := r.GetRunStatus()
-	return status == ControlRunComplete || status == ControlRunError
+	return status == controlstatus.ControlRunComplete || status == controlstatus.ControlRunError
 }
 
 // MatchTag returns the value corresponding to the input key. Returns 'false' if not found
@@ -119,15 +128,19 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
-	r.runError = utils.TransformErrorToSteampipe(err)
-
+	if r.runError == context.DeadlineExceeded {
+		r.runError = fmt.Errorf("control execution timed out")
+	} else {
+		r.runError = utils.TransformErrorToSteampipe(err)
+	}
+	r.RunErrorString = r.runError.Error()
 	// update error count
 	r.Summary.Error++
-	r.setRunStatus(ctx, ControlRunError)
+	r.setRunStatus(ctx, controlstatus.ControlRunError)
 }
 
 func (r *ControlRun) skip(ctx context.Context) {
-	r.setRunStatus(ctx, ControlRunComplete)
+	r.setRunStatus(ctx, controlstatus.ControlRunComplete)
 }
 
 // set search path for this control run
@@ -148,12 +161,7 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 		searchPathPrefix = strings.Split(*r.Control.SearchPathPrefix, ",")
 	}
 
-	currentPath, err := r.getCurrentSearchPath(ctx, session)
-	if err != nil {
-		return err
-	}
-
-	newSearchPath, err := client.ContructSearchPath(ctx, searchPath, searchPathPrefix, currentPath)
+	newSearchPath, err := client.ContructSearchPath(ctx, searchPath, searchPathPrefix)
 	if err != nil {
 		return err
 	}
@@ -162,26 +170,6 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
 	_, err = session.Connection.ExecContext(ctx, q)
 	return err
-}
-
-func (r *ControlRun) getCurrentSearchPath(ctx context.Context, session *db_common.DatabaseSession) ([]string, error) {
-	utils.LogTime("ControlRun.getCurrentSearchPath start")
-	defer utils.LogTime("ControlRun.getCurrentSearchPath end")
-
-	row := session.Connection.QueryRowContext(ctx, "show search_path")
-	pathAsString := ""
-	err := row.Scan(&pathAsString)
-	if err != nil {
-		return nil, err
-	}
-	currentSearchPath := strings.Split(pathAsString, ",")
-	// unescape search path
-	for idx, p := range currentSearchPath {
-		p = strings.Join(strings.Split(p, "\""), "")
-		p = strings.TrimSpace(p)
-		currentSearchPath[idx] = p
-	}
-	return currentSearchPath, nil
 }
 
 func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
@@ -212,13 +200,16 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 
 	// get a db connection
 	r.Lifecycle.Add("queued_for_session")
-	sessionResult := client.AcquireSession(ctx)
+	sessionResult := r.acquireSession(ctx, client)
 	if sessionResult.Error != nil {
 		if !utils.IsCancelledError(sessionResult.Error) {
+			log.Printf("[TRACE] controlRun %s execute failed to acquire session: %s", r.ControlId, sessionResult.Error)
 			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
+			r.setError(ctx, sessionResult.Error)
 		}
 		return
 	}
+
 	r.Lifecycle.Add("got_session")
 	dbSession := sessionResult.Session
 	defer func() {
@@ -227,11 +218,18 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	// set our status
-	r.runStatus = ControlRunStarted
+	r.RunStatus = controlstatus.ControlRunStarted
 
 	// update the current running control in the Progress renderer
-	r.Tree.Progress.OnControlStart(ctx, control)
-	defer r.Tree.Progress.OnControlFinish(ctx)
+	r.Tree.Progress.OnControlStart(ctx, r)
+	defer func() {
+		// update Progress
+		if r.GetRunStatus() == controlstatus.ControlRunError {
+			r.Tree.Progress.OnControlError(ctx, r)
+		} else {
+			r.Tree.Progress.OnControlComplete(ctx, r)
+		}
+	}()
 
 	// resolve the control query
 	r.Lifecycle.Add("query_resolution_start")
@@ -287,6 +285,21 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	log.Printf("[TRACE] wait result for, %s\n", control.Name())
 	r.waitForResults(ctx)
 	log.Printf("[TRACE] finish result for, %s\n", control.Name())
+}
+
+// try to acquire a database session - retry up to 4 times if there is an error
+func (r *ControlRun) acquireSession(ctx context.Context, client db_common.Client) *db_common.AcquireSessionResult {
+	var sessionResult *db_common.AcquireSessionResult
+	for attempt := 0; attempt < 4; attempt++ {
+		sessionResult = client.AcquireSession(ctx)
+		if sessionResult.Error == nil || utils.IsCancelledError(sessionResult.Error) {
+			break
+		}
+
+		log.Printf("[TRACE] controlRun %s acquireSession failed with error: %s - retrying", r.ControlId, sessionResult.Error)
+	}
+
+	return sessionResult
 }
 
 // create a context with a deadline, and with status updates disabled (we do not want to show 'loading' results)
@@ -350,7 +363,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			// nil row means control run is complete
 			if row == nil {
 				// nil row means we are done
-				r.setRunStatus(ctx, ControlRunComplete)
+				r.setRunStatus(ctx, controlstatus.ControlRunComplete)
 				r.createdOrderedResultRows()
 				return
 			}
@@ -404,19 +417,12 @@ func (r *ControlRun) createdOrderedResultRows() {
 	}
 }
 
-func (r *ControlRun) setRunStatus(ctx context.Context, status ControlRunStatus) {
+func (r *ControlRun) setRunStatus(ctx context.Context, status controlstatus.ControlRunStatus) {
 	r.stateLock.Lock()
-	r.runStatus = status
+	r.RunStatus = status
 	r.stateLock.Unlock()
 
 	if r.Finished() {
-		// update Progress
-		if status == ControlRunError {
-			r.Tree.Progress.OnControlError(ctx)
-		} else {
-			r.Tree.Progress.OnControlComplete(ctx)
-		}
-
 		r.doneChan <- true
 	}
 }

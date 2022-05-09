@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -55,11 +57,39 @@ type ErrorPayload struct {
 type ExecutionPayload struct {
 	Action        string                               `json:"action"`
 	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
+	ExecutionId   string                               `json:"execution_id"`
+}
+type ControlEventPayload struct {
+	Action      string                                 `json:"action"`
+	Control     controlstatus.ControlRunStatusProvider `json:"control"`
+	Name        string                                 `json:"name"`
+	Progress    *controlstatus.ControlProgress         `json:"progress"`
+	ExecutionId string                                 `json:"execution_id"`
+}
+
+var ExecutionCompleteSchemaVersion int64 = 20220411
+
+type ExecutionErrorPayload struct {
+	Action string `json:"action"`
+	Error  string `json:"error"`
+}
+
+type ExecutionCompletePayload struct {
+	SchemaVersion int64                                `json:"schema_version"`
+	Action        string                               `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
+	ExecutionId   string                               `json:"execution_id"`
+	Inputs        map[string]interface{}               `json:"inputs"`
+	Variables     map[string]string                    `json:"variables"`
+	SearchPath    []string                             `json:"search_path"`
+	StartTime     time.Time                            `json:"start_time"`
+	EndTime       time.Time                            `json:"end_time"`
 }
 
 type InputValuesClearedPayload struct {
 	Action        string   `json:"action"`
 	ClearedInputs []string `json:"cleared_inputs"`
+	ExecutionId   string   `json:"execution_id"`
 }
 
 type DashboardClientInfo struct {
@@ -84,15 +114,28 @@ type ClientRequest struct {
 }
 
 type ModAvailableDashboard struct {
-	Title     string            `json:"title,omitempty"`
-	FullName  string            `json:"full_name"`
-	ShortName string            `json:"short_name"`
-	Tags      map[string]string `json:"tags"`
+	Title       string            `json:"title,omitempty"`
+	FullName    string            `json:"full_name"`
+	ShortName   string            `json:"short_name"`
+	Tags        map[string]string `json:"tags"`
+	ModFullName string            `json:"mod_full_name"`
+}
+
+type ModAvailableBenchmark struct {
+	Title       string                  `json:"title,omitempty"`
+	FullName    string                  `json:"full_name"`
+	ShortName   string                  `json:"short_name"`
+	Tags        map[string]string       `json:"tags"`
+	IsTopLevel  bool                    `json:"is_top_level"`
+	Children    []ModAvailableBenchmark `json:"children,omitempty"`
+	Trunks      [][]string              `json:"trunks"`
+	ModFullName string                  `json:"mod_full_name"`
 }
 
 type AvailableDashboardsPayload struct {
-	Action          string                                      `json:"action"`
-	DashboardsByMod map[string]map[string]ModAvailableDashboard `json:"dashboards_by_mod"`
+	Action     string                           `json:"action"`
+	Dashboards map[string]ModAvailableDashboard `json:"dashboards"`
+	Benchmarks map[string]ModAvailableBenchmark `json:"benchmarks"`
 }
 
 type ModDashboardMetadata struct {

@@ -1,5 +1,8 @@
 import ErrorPanel from "../../Error";
 import Flows, { FlowProperties, FlowProps, FlowType } from "../index";
+import get from "lodash/get";
+import merge from "lodash/merge";
+import set from "lodash/set";
 import {
   buildNodesAndEdges,
   buildSankeyDataInputs,
@@ -8,10 +11,8 @@ import {
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { get, merge, set } from "lodash";
-import { PanelDefinition } from "../../../../hooks/useDashboard";
+import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
-import { useTheme } from "../../../../hooks/useTheme";
 
 const getCommonBaseOptions = () => ({
   animation: false,
@@ -131,7 +132,9 @@ const buildFlowOptions = (props: FlowProps, theme, themeWrapperRef) => {
 
 const FlowWrapper = (props: FlowProps) => {
   const [, setRandomVal] = useState(0);
-  const { theme, wrapperRef } = useTheme();
+  const {
+    themeContext: { theme, wrapperRef },
+  } = useDashboard();
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);

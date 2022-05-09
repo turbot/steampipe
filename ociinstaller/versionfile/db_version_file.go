@@ -8,30 +8,46 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 )
 
+const DatabaseStructVersion = 20220411
+
 type DatabaseVersionFile struct {
-	FdwExtension InstalledVersion `json:"fdwExtension"`
-	EmbeddedDB   InstalledVersion `json:"embeddedDB"`
+	FdwExtension  InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB    InstalledVersion `json:"embedded_db"`
+	StructVersion int64            `json:"struct_version"`
+
+	// legacy properties included for backwards compatibility with v0.13
+	LegacyFdwExtension InstalledVersion `json:"fdwExtension"`
+	LegacyEmbeddedDB   InstalledVersion `json:"embeddedDB"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
 	return &DatabaseVersionFile{
-		FdwExtension: InstalledVersion{},
-		EmbeddedDB:   InstalledVersion{},
+		FdwExtension:  InstalledVersion{},
+		EmbeddedDB:    InstalledVersion{},
+		StructVersion: DatabaseStructVersion,
 	}
 }
 
-type InstalledVersion struct {
-	Name            string `json:"name"`
-	Version         string `json:"version"`
-	ImageDigest     string `json:"imageDigest"`
-	InstalledFrom   string `json:"installedFrom"`
-	LastCheckedDate string `json:"lastCheckedDate"`
-	InstallDate     string `json:"installDate"`
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (s DatabaseVersionFile) IsValid() bool {
+	return s.StructVersion > 0
 }
 
-func databaseVersionFileFromLegacy(legacyFile *LegacyVersionFile) *DatabaseVersionFile {
+func (s *DatabaseVersionFile) MigrateFrom() migrate.Migrateable {
+	s.StructVersion = DatabaseStructVersion
+	s.FdwExtension = s.LegacyFdwExtension
+	s.FdwExtension.MigrateLegacy()
+	s.EmbeddedDB = s.LegacyEmbeddedDB
+	s.EmbeddedDB.MigrateLegacy()
+
+	return s
+}
+
+func databaseVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *DatabaseVersionFile {
 	return &DatabaseVersionFile{
 		FdwExtension: legacyFile.FdwExtension,
 		EmbeddedDB:   legacyFile.EmbeddedDB,
@@ -40,16 +56,6 @@ func databaseVersionFileFromLegacy(legacyFile *LegacyVersionFile) *DatabaseVersi
 
 // LoadDatabaseVersionFile migrates from the old version file format if necessary and loads the database version data
 func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
-	// first, see if a migration is necessary - if so, it will return the version data to us
-	migratedVersionFile, err := MigrateDatabaseVersionFile()
-	if err != nil {
-		return nil, err
-	}
-	if migratedVersionFile != nil {
-		log.Println("[TRACE] using migrated database version file")
-		return migratedVersionFile, nil
-	}
-
 	versionFilePath := filepaths.DatabaseVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readDatabaseVersionFile(versionFilePath)
@@ -77,6 +83,9 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 
 // Save writes the config
 func (f *DatabaseVersionFile) Save() error {
+	// set the struct version
+	f.StructVersion = DatabaseStructVersion
+
 	versionFilePath := filepaths.DatabaseVersionFilePath()
 	return f.write(versionFilePath)
 }

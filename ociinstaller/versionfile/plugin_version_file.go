@@ -7,19 +7,38 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 )
 
+const PluginStructVersion = 20220411
+
 type PluginVersionFile struct {
-	Plugins map[string]*InstalledVersion `json:"plugins"`
+	Plugins       map[string]*InstalledVersion `json:"plugins"`
+	StructVersion int64                        `json:"struct_version"`
+}
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (f PluginVersionFile) IsValid() bool {
+	return f.StructVersion > 0
+}
+
+func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
+	f.StructVersion = PluginStructVersion
+	for p := range f.Plugins {
+		f.Plugins[p].MigrateLegacy()
+	}
+	return f
 }
 
 func NewPluginVersionFile() *PluginVersionFile {
 	return &PluginVersionFile{
-		Plugins: map[string]*InstalledVersion{},
+		Plugins:       map[string]*InstalledVersion{},
+		StructVersion: PluginStructVersion,
 	}
 }
 
-func pluginVersionFileFromLegacy(legacyFile *LegacyVersionFile) *PluginVersionFile {
+func pluginVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *PluginVersionFile {
 	return &PluginVersionFile{
 		Plugins: legacyFile.Plugins,
 	}
@@ -27,21 +46,36 @@ func pluginVersionFileFromLegacy(legacyFile *LegacyVersionFile) *PluginVersionFi
 
 // LoadPluginVersionFile migrates from the old version file format if necessary and loads the plugin version data
 func LoadPluginVersionFile() (*PluginVersionFile, error) {
-	// first, see if a migration is necessary - if so, it will return the version data to us
-	migratedVersionFile, err := MigratePluginVersionFile()
-	if err != nil {
-		return nil, err
-	}
-	if migratedVersionFile != nil {
-		log.Println("[TRACE] using migrated plugin version file")
-		return migratedVersionFile, nil
-	}
-
 	versionFilePath := filepaths.PluginVersionFilePath()
 	if helpers.FileExists(versionFilePath) {
 		return readPluginVersionFile(versionFilePath)
 	}
 	return NewPluginVersionFile(), nil
+}
+
+// Save writes the config file to disk
+func (f *PluginVersionFile) Save() error {
+	// set struct version
+	f.StructVersion = PluginStructVersion
+	versionFilePath := filepaths.PluginVersionFilePath()
+	return f.write(versionFilePath)
+}
+
+func (f *PluginVersionFile) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("[ERROR]", "Error while writing version file", err)
+		return err
+	}
+	return os.WriteFile(path, versionFileJSON, 0644)
+}
+
+// delete the file on disk if it exists
+func (f *PluginVersionFile) delete() {
+	versionFilePath := filepaths.PluginVersionFilePath()
+	if helpers.FileExists(versionFilePath) {
+		os.Remove(versionFilePath)
+	}
 }
 
 func readPluginVersionFile(path string) (*PluginVersionFile, error) {
@@ -64,27 +98,4 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 	}
 
 	return &data, nil
-}
-
-// Save writes the config file to disk
-func (f *PluginVersionFile) Save() error {
-	versionFilePath := filepaths.PluginVersionFilePath()
-	return f.write(versionFilePath)
-}
-
-func (f *PluginVersionFile) write(path string) error {
-	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
-	if err != nil {
-		log.Println("[ERROR]", "Error while writing version file", err)
-		return err
-	}
-	return os.WriteFile(path, versionFileJSON, 0644)
-}
-
-// delete the file on disk if it exists
-func (f *PluginVersionFile) delete() {
-	versionFilePath := filepaths.PluginVersionFilePath()
-	if helpers.FileExists(versionFilePath) {
-		os.Remove(versionFilePath)
-	}
 }

@@ -23,31 +23,119 @@ const (
 // json tags needed as this is stored in the connection state file
 type Connection struct {
 	// connection name
-	Name string
+	Name string `json:"name,omitempty"`
 	// The name of plugin as mentioned in config
-	PluginShortName string
+	PluginShortName string `json:"plugin_short_name,omitempty"`
 	// The fully qualified name of the plugin. derived from the short name
-	Plugin string
+	Plugin string `json:"plugin,omitempty"`
 	// Type - supported values: "aggregator"
-	Type string `json:"Type,omitempty"`
+	Type string `json:"type,omitempty"`
 	// this is a list of names or wildcards which are resolved to connections
 	// (only valid for "aggregator" type)
-	ConnectionNames []string `json:"Connections,omitempty"`
+	ConnectionNames []string `json:"connections,omitempty"`
 	// a list of the resolved child connections
 	// (only valid for "aggregator" type)
 	Connections map[string]*Connection `json:"-"`
 	// unparsed HCL of plugin specific connection config
-	Config string `json:"Config,omitempty"`
+	Config string `json:"config,omitempty"`
 
 	// options
-	Options   *options.Connection `json:"Options,omitempty"`
-	DeclRange hcl.Range
+	Options   *options.Connection `json:"options,omitempty"`
+	DeclRange Range               `json:"decl_range,omitempty"`
+
+	// legacy properties included for backwards compatibility with v0.13
+	LegacyName            string              `json:"Name,omitempty"`
+	LegacyPluginShortName string              `json:"PluginShortName,omitempty"`
+	LegacyPlugin          string              `json:"Plugin,omitempty"`
+	LegacyType            string              `json:"Type,omitempty"`
+	LegacyConnectionNames []string            `json:"Connections,omitempty"`
+	LegacyConfig          string              `json:"Config,omitempty"`
+	LegacyOptions         *options.Connection `json:"Options,omitempty"`
+	LegacyDeclRange       hcl.Range           `json:"DeclRange,omitempty"`
+}
+
+// MigrateLegacy migrates the legacy properties into new properties
+func (c *Connection) MigrateLegacy() {
+	c.Name = c.LegacyName
+	c.Plugin = c.LegacyPlugin
+	c.PluginShortName = c.LegacyPluginShortName
+	c.Type = c.LegacyType
+	c.ConnectionNames = c.LegacyConnectionNames
+	c.Config = c.LegacyConfig
+	c.DeclRange = NewRange(c.LegacyDeclRange)
+	if c.LegacyOptions != nil {
+		c.Options = c.LegacyOptions
+		c.Options.MigrateLegacy()
+	}
+}
+
+// MaintainLegacy keeps the values of the legacy properties intact while
+// refreshing connections
+func (c *Connection) MaintainLegacy() {
+	c.LegacyName = c.Name
+	c.LegacyPlugin = c.Plugin
+	c.LegacyPluginShortName = c.PluginShortName
+	c.LegacyType = c.Type
+	c.LegacyConnectionNames = c.ConnectionNames
+	c.LegacyConfig = c.Config
+	c.LegacyDeclRange = c.DeclRange.GetLegacy()
+}
+
+// Range represents a span of characters between two positions in a source file.
+// This is a direct re-implementation of hcl.Range, allowing us to control JSON serialization
+type Range struct {
+	// Filename is the name of the file into which this range's positions point.
+	Filename string `json:"filename,omitempty"`
+
+	// Start and End represent the bounds of this range. Start is inclusive and End is exclusive.
+	Start Pos `json:"start,omitempty"`
+	End   Pos `json:"end,omitempty"`
+}
+
+func (r Range) GetLegacy() hcl.Range {
+	return hcl.Range{
+		Filename: r.Filename,
+		Start:    r.Start.GetLegacy(),
+		End:      r.End.GetLegacy(),
+	}
+}
+
+func NewRange(sourceRange hcl.Range) Range {
+	return Range{
+		Filename: sourceRange.Filename,
+		Start:    NewPos(sourceRange.Start),
+		End:      NewPos(sourceRange.End),
+	}
+}
+
+// Pos represents a single position in a source file
+// This is a direct re-implementation of hcl.Pos, allowing us to control JSON serialization
+type Pos struct {
+	Line   int `json:"line"`
+	Column int `json:"column"`
+	Byte   int `json:"byte"`
+}
+
+func (r Pos) GetLegacy() hcl.Pos {
+	return hcl.Pos{
+		Line:   r.Line,
+		Column: r.Column,
+		Byte:   r.Byte,
+	}
+}
+
+func NewPos(sourcePos hcl.Pos) Pos {
+	return Pos{
+		Line:   sourcePos.Line,
+		Column: sourcePos.Column,
+		Byte:   sourcePos.Byte,
+	}
 }
 
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
 		Name:      block.Labels[0],
-		DeclRange: block.TypeRange,
+		DeclRange: NewRange(block.TypeRange),
 	}
 }
 

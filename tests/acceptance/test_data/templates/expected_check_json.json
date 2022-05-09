@@ -15,6 +15,13 @@
   "groups": [],
   "controls": [
     {
+      "summary": {
+        "alarm": 5,
+        "ok": 10,
+        "info": 3,
+        "skip": 1,
+        "error": 2
+      },
       "results": [
         {
           "reason": "Resource has some error",
@@ -252,7 +259,9 @@
       "description": "Sample control that returns 10 OK, 5 ALARM, 2 ERROR, 1 SKIP and 3 INFO",
       "severity": "high",
       "tags": {},
-      "title": "Sample control with all possible statuses(severity=high)"
+      "title": "Sample control with all possible statuses(severity=high)",
+      "run_status": 4,
+      "run_error": ""
     }
   ]
 }

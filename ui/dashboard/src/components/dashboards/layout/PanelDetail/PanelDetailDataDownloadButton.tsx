@@ -1,5 +1,5 @@
 import NeutralButton from "../../../forms/NeutralButton";
-import { noop } from "lodash";
+import { noop } from "../../../../utils/func";
 import { useState } from "react";
 
 const PanelDetailDataDownloadButton = ({ downloadQueryData, size }) => {

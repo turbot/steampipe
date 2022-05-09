@@ -24,11 +24,8 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
-	// get a list of all existing schema names
-	schemaNames := c.client.ForeignSchemas()
-
 	// determine any necessary connection updates
-	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(schemaNames)
+	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames())
 	if res.Error != nil {
 		return res
 	}
@@ -58,14 +55,10 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 
 	// now serialise the connection state
 	// update required connections with the schema mode from the connection state and schema hash from the hash map
-	if err := steampipeconfig.SaveConnectionState(connectionUpdates.RequiredConnectionState); err != nil {
+	if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
 		res.Error = err
 		return res
 	}
-	// reload the database foreign schema names, since they have changed
-	// this is to ensure search paths are correctly updated
-	log.Println("[TRACE] RefreshConnections: reloading foreign schema names")
-	c.LoadForeignSchemaNames(ctx)
 
 	res.UpdatedConnections = true
 	return res

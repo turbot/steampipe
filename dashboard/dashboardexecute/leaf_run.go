@@ -88,6 +88,9 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 	return r, nil
 }
 
+// Initialise implements DashboardRunNode
+func (r *LeafRun) Initialise(ctx context.Context) {}
+
 // Execute implements DashboardRunNode
 func (r *LeafRun) Execute(ctx context.Context) {
 	// if there is nothing to do, return
@@ -149,8 +152,9 @@ func (r *LeafRun) SetError(err error) {
 	r.runStatus = dashboardinterfaces.DashboardRunError
 	// raise counter error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
-		LeafNode: r,
-		Session:  r.executionTree.sessionId,
+		LeafNode:    r,
+		Session:     r.executionTree.sessionId,
+		ExecutionId: r.executionTree.id,
 	})
 	r.parent.ChildCompleteChan() <- r
 }
@@ -165,8 +169,9 @@ func (r *LeafRun) SetComplete() {
 	r.runStatus = dashboardinterfaces.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
-		LeafNode: r,
-		Session:  r.executionTree.sessionId,
+		LeafNode:    r,
+		Session:     r.executionTree.sessionId,
+		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
@@ -181,6 +186,10 @@ func (r *LeafRun) RunComplete() bool {
 func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }
+
+// GetInputsDependingOn implements DashboardNodeRun
+//return nothing for LeafRun
+func (r *LeafRun) GetInputsDependingOn(changedInputName string) []string { return nil }
 
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.DashboardNode.Name())

@@ -681,7 +681,10 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 			res.Locals[k] = v
 		}
 		for k, v := range source.Variables {
-			res.Variables[k] = v
+			// NOTE: only include variables from root mod  - we add in the others separately
+			if v.Mod.FullName == m.Mod.FullName {
+				res.Variables[k] = v
+			}
 		}
 		for k, v := range source.Dashboards {
 			res.Dashboards[k] = v

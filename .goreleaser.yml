@@ -1,5 +1,4 @@
-# This is an example goreleaser.yaml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
+
 before:
   hooks:
     - go mod tidy
@@ -13,9 +12,7 @@ builds:
     goarch:
       - amd64
       - arm64
-    ignore:
-      - goos: linux
-        goarch: arm64
+
     id: "steampipe"
     binary:
       'steampipe'

@@ -38,8 +38,10 @@ if [ "$OS" = "Windows_NT" ]; then
 else
 	case $(uname -sm) in
 	"Darwin x86_64") target="darwin_amd64.zip" ;;
-	"Darwin arm64") echo "Error: ARM is not supported yet." 1>&2;exit 1 ;;
-	*) target="linux_amd64.tar.gz" ;;
+	"Darwin arm64") target="darwin_arm64.zip" ;;
+	"Linux x86_64") target="linux_amd64.tar.gz" ;;
+	"Linux aarch64") target="linux_arm64.tar.gz" ;;
+	*) echo "Error: '$(uname -sm)' is not supported yet." 1>&2;exit 1 ;;
 	esac
 fi
 
@@ -62,10 +64,10 @@ cd "$tmp_dir"
 # set a trap for a clean exit - even in failures
 trap 'rm -rf $tmp_dir' EXIT
 
-case $(uname -sm) in
-	"Darwin x86_64") zip_location="$tmp_dir/steampipe.zip" ;;
-	"Linux x86_64") zip_location="$tmp_dir/steampipe.tar.gz" ;;
-	*) echo "Error: steampipe is not supported on '$(uname -sm)' yet." 1>&2;exit 1 ;;
+case $(uname -s) in
+	"Darwin") zip_location="$tmp_dir/steampipe.zip" ;;
+	"Linux") zip_location="$tmp_dir/steampipe.tar.gz" ;;
+	*) echo "Error: steampipe is not supported on '$(uname -s)' yet." 1>&2;exit 1 ;;
 esac
 
 echo "Downloading from $steampipe_uri"

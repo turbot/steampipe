@@ -6,23 +6,25 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/turbot/steampipe/filepaths"
-
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/filepaths"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	"github.com/turbot/steampipe/utils"
 )
 
+const PluginManagerStructVersion = 20220411
+
 type PluginManagerState struct {
-	Protocol        plugin.Protocol
-	ProtocolVersion int
-	Addr            *pb.SimpleAddr
-	Pid             int
+	Protocol        plugin.Protocol `json:"protocol"`
+	ProtocolVersion int             `json:"protocol_version"`
+	Addr            *pb.SimpleAddr  `json:"addr"`
+	Pid             int             `json:"pid"`
 	// path to the steampipe executable
-	Executable string
+	Executable string `json:"executable"`
 	// is the plugin manager running
-	Running bool `json:"-"`
+	Running       bool  `json:"-"`
+	StructVersion int64 `json:"struct_version"`
 }
 
 func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *PluginManagerState {
@@ -32,7 +34,52 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 		ProtocolVersion: reattach.ProtocolVersion,
 		Addr:            pb.NewSimpleAddr(reattach.Addr),
 		Pid:             reattach.Pid,
+		StructVersion:   PluginManagerStructVersion,
 	}
+}
+
+func LoadPluginManagerState() (*PluginManagerState, error) {
+	// always return empty state
+	s := new(PluginManagerState)
+	if !helpers.FileExists(filepaths.PluginManagerStateFilePath()) {
+		log.Printf("[TRACE] plugin manager state file not found")
+		return s, nil
+	}
+
+	fileContent, err := os.ReadFile(filepaths.PluginManagerStateFilePath())
+	if err != nil {
+		return s, err
+	}
+	err = json.Unmarshal(fileContent, s)
+	if err != nil {
+		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", filepaths.PluginManagerStateFilePath(), err.Error())
+		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
+		s.delete()
+		return s, nil
+	}
+
+	// check is the manager is running - this deletes that state file if it is not running,
+	// and set the 'Running' property on the state if it is
+	pluginManagerRunning, err := s.verifyRunning()
+	if err != nil {
+		return s, err
+	}
+	// save the running status on the state struct
+	s.Running = pluginManagerRunning
+
+	// return error (which may be nil)
+	return s, err
+}
+
+func (s *PluginManagerState) Save() error {
+	// set struct version
+	s.StructVersion = PluginManagerStructVersion
+
+	content, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
 }
 
 func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
@@ -42,14 +89,6 @@ func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
 		Addr:            *s.Addr,
 		Pid:             s.Pid,
 	}
-}
-
-func (s *PluginManagerState) Save() error {
-	content, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
 }
 
 // check whether the plugin manager is running
@@ -85,37 +124,4 @@ func (s *PluginManagerState) kill() error {
 
 func (s *PluginManagerState) delete() {
 	os.Remove(filepaths.PluginManagerStateFilePath())
-}
-
-func LoadPluginManagerState() (*PluginManagerState, error) {
-	// always return empty state
-	s := new(PluginManagerState)
-	if !helpers.FileExists(filepaths.PluginManagerStateFilePath()) {
-		log.Printf("[TRACE] plugin manager state file not found")
-		return s, nil
-	}
-
-	fileContent, err := os.ReadFile(filepaths.PluginManagerStateFilePath())
-	if err != nil {
-		return s, err
-	}
-	err = json.Unmarshal(fileContent, s)
-	if err != nil {
-		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", filepaths.PluginManagerStateFilePath(), err.Error())
-		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
-		s.delete()
-		return s, nil
-	}
-
-	// check is the manager is running - this deletes that state file if it is not running,
-	// and set the 'Running' property on the state if it is
-	pluginManagerRunning, err := s.verifyRunning()
-	if err != nil {
-		return s, err
-	}
-	// save the running status on the state struct
-	s.Running = pluginManagerRunning
-
-	// return error (which may be nil)
-	return s, err
 }

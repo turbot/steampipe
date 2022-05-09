@@ -15,31 +15,41 @@ import (
 type Variable struct {
 	ResourceWithMetadataBase
 
-	ShortName string
-	FullName  string `column:"name,text"`
+	ShortName string `json:"name"`
+	FullName  string `column:"name,text" json:"-"`
 
-	Description    string    `column:"description,text"`
-	Default        cty.Value `column:"default_value,jsonb"`
-	Type           cty.Type  `column:"var_type,text"`
-	DescriptionSet bool
+	Description    string    `column:"description,text" json:"description"`
+	Default        cty.Value `column:"default_value,jsonb" json:"-"`
+	Type           cty.Type  `column:"var_type,text"  json:"-"`
+	DescriptionSet bool      ` json:"-"`
+
+	TypeString string      `json:"type"`
+	DefaultGo  interface{} `json:"value_default"`
+	ValueGo    interface{} `json:"value"`
+	ModName    string      `json:"mod_name"`
 
 	// set after value resolution `column:"value,jsonb"`
-	Value                      cty.Value `column:"value,jsonb"`
-	ValueSourceType            string    `column:"value_source,text"`
-	ValueSourceFileName        string    `column:"value_source_file_name,text"`
-	ValueSourceStartLineNumber int       `column:"value_source_start_line_number,integer"`
-	ValueSourceEndLineNumber   int       `column:"value_source_end_line_number,integer"`
-	DeclRange                  hcl.Range
-	ParsingMode                var_config.VariableParsingMode
-	Mod                        *Mod
+	Value                      cty.Value                      `column:"value,jsonb" json:"-"`
+	ValueSourceType            string                         `column:"value_source,text" json:"-"`
+	ValueSourceFileName        string                         `column:"value_source_file_name,text" json:"-"`
+	ValueSourceStartLineNumber int                            `column:"value_source_start_line_number,integer" json:"-"`
+	ValueSourceEndLineNumber   int                            `column:"value_source_end_line_number,integer" json:"-"`
+	DeclRange                  hcl.Range                      `json:"-"`
+	ParsingMode                var_config.VariableParsingMode `json:"-"`
+	Mod                        *Mod                           `json:"-"`
+	UnqualifiedName            string                         `json:"-"`
+	Paths                      []NodePath                     `column:"path,jsonb" json:"-"`
 
-	metadata        *ResourceMetadata
-	parents         []ModTreeItem
-	Paths           []NodePath `column:"path,jsonb"`
-	UnqualifiedName string
+	metadata *ResourceMetadata
+	parents  []ModTreeItem
 }
 
 func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
+	var defaultGo interface{} = nil
+	if !v.Default.IsNull() {
+		defaultGo, _ = utils.CtyToGo(v.Default)
+	}
+
 	return &Variable{
 		ShortName:       v.Name,
 		Description:     v.Description,
@@ -49,8 +59,10 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 		Type:            v.Type,
 		ParsingMode:     v.ParsingMode,
 		Mod:             mod,
-
-		DeclRange: v.DeclRange,
+		DeclRange:       v.DeclRange,
+		ModName:         mod.ShortName,
+		DefaultGo:       defaultGo,
+		TypeString:      utils.CtyTypeToHclType(v.Type, v.Default.Type()),
 	}
 }
 
@@ -112,6 +124,8 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
+	v.ValueGo, _ = utils.CtyToGo(value)
+	v.TypeString = utils.CtyTypeToHclType(value.Type())
 }
 
 // AddParent implements ModTreeItem

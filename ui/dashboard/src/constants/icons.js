@@ -1,20 +1,23 @@
 import {
-  // ArrowCircleDownIcon as ArrowCircleDownIconOutline,
   ArrowsExpandIcon as ArrowsExpandIconOutline,
-  // ChatAltIcon as ChatAltIconOutline,
+  ChevronDownIcon as ChevronDownIconOutline,
+  ChevronUpIcon as ChevronUpIconOutline,
   ClipboardListIcon as ClipboardListIconOutline,
-  ExclamationCircleIcon as ExclamationCircleIconOutline,
   SearchIcon as SearchIconOutline,
-  // TerminalIcon as TerminalIconOutline,
+  SaveIcon as SaveIconOutline,
   XIcon as XIconOutline,
 } from "@heroicons/react/outline";
 import {
-  CheckIcon as CheckIconSolid,
+  ArrowCircleRightIcon as ArrowCircleRightIconSolid,
+  BanIcon as BanIconSolid,
+  BellIcon as BellIconSolid,
+  CheckCircleIcon as CheckCircleIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
   ClipboardCheckIcon as ClipboardCheckIconSolid,
+  ExclamationCircleIcon as ExclamationCircleIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
-  XIcon as XIconSolid,
+  QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
 } from "@heroicons/react/solid";
 
 // General
@@ -22,19 +25,22 @@ export const ClearIcon = XIconOutline;
 export const CloseIcon = XIconOutline;
 export const CopyToClipboardIcon = ClipboardListIconOutline;
 export const CopyToClipboardSuccessIcon = ClipboardCheckIconSolid;
-export const ErrorIcon = ExclamationCircleIconOutline;
+export const ErrorIcon = ExclamationCircleIconSolid;
 export const SearchIcon = SearchIconOutline;
+export const SubmitIcon = SaveIconOutline;
 export const ZoomIcon = ArrowsExpandIconOutline;
 
-// Call to Action
-// export const BuildDashboardIcon = TerminalIconOutline;
-// export const CommunityIcon = ChatAltIconOutline;
-// export const InstallDashboardIcon = ArrowCircleDownIconOutline;
+// Check
+export const CollapseBenchmarkIcon = ChevronUpIconOutline;
+export const ExpandCheckNodeIcon = ChevronDownIconOutline;
 
 // Control
-export const AlarmIcon = XIconSolid;
+export const AlarmIcon = BellIconSolid;
+export const EmptyIcon = BanIconSolid;
 export const InfoIcon = InformationCircleIconSolid;
-export const OKIcon = CheckIconSolid;
+export const OKIcon = CheckCircleIconSolid;
+export const SkipIcon = ArrowCircleRightIconSolid;
+export const UnknownIcon = QuestionMarkCircleIconSolid;
 
 // Table
 export const SortAscendingIcon = ChevronUpIconSolid;

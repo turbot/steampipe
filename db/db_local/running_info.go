@@ -13,36 +13,46 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
+const RunningDBStructVersion = 20220411
+
 // RunningDBInstanceInfo contains data about the running process and it's credentials
 type RunningDBInstanceInfo struct {
-	Pid        int
-	Port       int
-	Listen     []string
-	ListenType StartListenType
-	Invoker    constants.Invoker
-	Password   string
-	User       string
-	Database   string
+	Pid           int               `json:"pid"`
+	Port          int               `json:"port"`
+	Listen        []string          `json:"listen"`
+	ListenType    StartListenType   `json:"listen_type"`
+	Invoker       constants.Invoker `json:"invoker"`
+	Password      string            `json:"password"`
+	User          string            `json:"user"`
+	Database      string            `json:"database"`
+	StructVersion int64             `json:"struct_version"`
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) *RunningDBInstanceInfo {
-	dbState := new(RunningDBInstanceInfo)
-	dbState.Pid = cmd.Process.Pid
-	dbState.Port = port
-	dbState.User = constants.DatabaseUser
-	dbState.Password = password
-	dbState.Database = databaseName
-	dbState.ListenType = listen
-	dbState.Invoker = invoker
-	dbState.Listen = constants.DatabaseListenAddresses
+	dbState := &RunningDBInstanceInfo{
+		Pid:           cmd.Process.Pid,
+		Port:          port,
+		User:          constants.DatabaseUser,
+		Password:      password,
+		Database:      databaseName,
+		ListenType:    listen,
+		Invoker:       invoker,
+		Listen:        constants.DatabaseListenAddresses,
+		StructVersion: RunningDBStructVersion,
+	}
 
 	if listen == ListenTypeNetwork {
 		addrs, _ := utils.LocalAddresses()
 		dbState.Listen = append(dbState.Listen, addrs...)
 	}
+
 	return dbState
 }
+
 func (r *RunningDBInstanceInfo) Save() error {
+	// set struct version
+	r.StructVersion = RunningDBStructVersion
+
 	content, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return err

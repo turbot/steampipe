@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/migrate"
 
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -17,6 +18,8 @@ import (
 	"github.com/turbot/steampipe/versionhelpers"
 )
 
+const WorkspaceLockStructVersion = 20220411
+
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
 type WorkspaceLock struct {
 	WorkspacePath   string
@@ -25,6 +28,19 @@ type WorkspaceLock struct {
 
 	ModInstallationPath string
 	installedMods       VersionListMap
+	StructVersion       int64
+}
+
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (l WorkspaceLock) IsValid() bool {
+	return l.StructVersion > 0
+}
+
+func (l *WorkspaceLock) MigrateFrom() migrate.Migrateable {
+	l.StructVersion = WorkspaceLockStructVersion
+
+	return l
 }
 
 // EmptyWorkspaceLock creates a new empty workspace lock based,
@@ -138,7 +154,7 @@ func (l *WorkspaceLock) setMissing() {
 				// get the mod name from the constraint (fullName includes the version)
 				name := resolvedConstraint.Name
 				// remove this item from the install cache and add into missing
-				l.MissingVersions.Add(name, resolvedConstraint.Version, resolvedConstraint.Constraint, parent)
+				l.MissingVersions.Add(name, resolvedConstraint.Alias, resolvedConstraint.Version, resolvedConstraint.Constraint, parent)
 				l.InstallCache[parent].Remove(name)
 			}
 		}

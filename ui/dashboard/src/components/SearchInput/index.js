@@ -1,6 +1,8 @@
 import { classNames } from "../../utils/styles";
 import { ClearIcon, SearchIcon } from "../../constants/icons";
 import { forwardRef } from "react";
+import { ThemeNames } from "../../hooks/useTheme";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const SearchInput = forwardRef(
   (
@@ -14,6 +16,9 @@ const SearchInput = forwardRef(
     },
     ref
   ) => {
+    const {
+      themeContext: { theme },
+    } = useDashboard();
     return (
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-foreground-light text-sm">
@@ -22,7 +27,10 @@ const SearchInput = forwardRef(
         <input
           className={classNames(
             className,
-            "flex-1 block w-full bg-background-panel rounded-md border border-table-divide px-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1"
+            "flex-1 block w-full bg-dashboard-panel rounded-md border px-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1",
+            theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "border-gray-700"
+              : "border-[#e7e9ed]"
           )}
           disabled={disabled}
           onChange={(e) => setValue(e.target.value)}

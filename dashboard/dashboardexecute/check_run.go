@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/turbot/steampipe/control/controlexecute"
-	"github.com/turbot/steampipe/control/controlhooks"
+	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -24,6 +24,7 @@ type CheckRun struct {
 	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
 	DashboardName        string                        `json:"dashboard"`
 	SourceDefinition     string                        `json:"source_definition"`
+	SessionId            string                        `json:"session_id"`
 	error                error
 	dashboardNode        modconfig.DashboardLeafNode
 	parent               dashboardinterfaces.DashboardNodeParent
@@ -42,10 +43,11 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		Name:             name,
 		Title:            resource.GetTitle(),
 		Width:            resource.GetWidth(),
-		dashboardNode:    resource,
 		DashboardName:    executionTree.dashboardName,
 		SourceDefinition: resource.GetMetadata().SourceDefinition,
+		SessionId:        executionTree.sessionId,
 		executionTree:    executionTree,
+		dashboardNode:    resource,
 		parent:           parent,
 
 		// set to complete, optimistically
@@ -70,18 +72,24 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 	return r, nil
 }
 
-// Execute implements DashboardRunNode
-func (r *CheckRun) Execute(ctx context.Context) {
+// Initialise implements DashboardRunNode
+func (r *CheckRun) Initialise(ctx context.Context) {
+	// build control execution tree during init, rather than in Execute, so that it is populated when the ExecutionStarted event is sent
 	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.dashboardNode.Name())
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)
 		return
 	}
-	// create a context with a ControlEventHooks to report control execution progress
-	ctx = controlhooks.AddControlHooksToContext(ctx, NewControlEventHooks(r))
 	r.ControlExecutionTree = executionTree
-	executionTree.Execute(ctx)
+}
+
+// Execute implements DashboardRunNode
+func (r *CheckRun) Execute(ctx context.Context) {
+
+	// create a context with a ControlEventHooks to report control execution progress
+	ctx = controlstatus.AddControlHooksToContext(ctx, NewControlEventHooks(r))
+	r.ControlExecutionTree.Execute(ctx)
 
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
@@ -106,9 +114,10 @@ func (r *CheckRun) SetError(err error) {
 	r.runStatus = dashboardinterfaces.DashboardRunError
 	// raise dashboard error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
-		LeafNode: r,
-		Session:  r.executionTree.sessionId,
-		Error:    err,
+		LeafNode:    r,
+		Session:     r.executionTree.sessionId,
+		Error:       err,
+		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
@@ -124,8 +133,9 @@ func (r *CheckRun) SetComplete() {
 	r.runStatus = dashboardinterfaces.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
-		LeafNode: r,
-		Session:  r.executionTree.sessionId,
+		LeafNode:    r,
+		Session:     r.executionTree.sessionId,
+		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
@@ -140,3 +150,7 @@ func (r *CheckRun) RunComplete() bool {
 func (r *CheckRun) ChildrenComplete() bool {
 	return r.RunComplete()
 }
+
+// GetInputsDependingOn implements DashboardNodeRun
+//return nothing for CheckRun
+func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }

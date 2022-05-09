@@ -1,15 +1,15 @@
+import sortBy from "lodash/sortBy";
 import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
 import { classNames } from "../../utils/styles";
 import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
-import { sortBy, startCase } from "lodash";
 import { useParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
   const { availableDashboardsLoaded, dashboardTags, dispatch, search } =
     useDashboard();
-  const { dashboardName } = useParams();
+  const { dashboard_name } = useParams();
 
   const options = useMemo(() => {
     const o = [
@@ -30,15 +30,15 @@ const DashboardTagGroupSelect = () => {
         label: "Type",
       },
     ];
-    for (const dashboardTagKey of dashboardTags.keys) {
-      if (!o.find((i) => i.tag === dashboardTagKey)) {
-        o.push({
-          groupBy: "tag",
-          tag: dashboardTagKey,
-          label: startCase(dashboardTagKey),
-        });
-      }
-    }
+    // for (const dashboardTagKey of dashboardTags.keys) {
+    //   if (!o.find((i) => i.tag === dashboardTagKey)) {
+    //     o.push({
+    //       groupBy: "tag",
+    //       tag: dashboardTagKey,
+    //       label: startCase(dashboardTagKey),
+    //     });
+    //   }
+    // }
     return sortBy(o, ["label"]);
   }, [dashboardTags.keys]);
 
@@ -71,7 +71,7 @@ const DashboardTagGroupSelect = () => {
   if (
     !availableDashboardsLoaded ||
     !value ||
-    (dashboardName && !search.value)
+    (dashboard_name && !search.value)
   ) {
     return null;
   }
@@ -81,7 +81,7 @@ const DashboardTagGroupSelect = () => {
       {({ open }) => (
         <>
           <div className="relative">
-            <Listbox.Button className="relative w-full bg-background-panel border border-table-border rounded-md pl-3 pr-7 md:pr-10 py-2 text-left text-sm md:text-base cursor-default focus:outline-none focus:ring-1">
+            <Listbox.Button className="relative w-full bg-dashboard-panel border border-table-border rounded-md pl-3 pr-7 md:pr-10 py-2 text-left text-sm md:text-base cursor-default focus:outline-none focus:ring-1">
               {/*@ts-ignore*/}
               <span className="block truncate">
                 <span className="hidden md:inline mr-1">Group by:</span>
@@ -102,7 +102,7 @@ const DashboardTagGroupSelect = () => {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <Listbox.Options className="absolute z-10 w-32 sm:w-full bg-background-panel shadow-lg max-h-60 rounded-md text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+              <Listbox.Options className="absolute z-10 w-32 sm:w-full bg-dashboard-panel shadow-lg max-h-60 rounded-md text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                 {options.map((option) => (
                   <Listbox.Option
                     key={`${option.groupBy}:${option.tag}`}

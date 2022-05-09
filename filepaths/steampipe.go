@@ -16,6 +16,8 @@ const (
 	databaseRunningInfoFileName  = "steampipe.json"
 	pluginManagerStateFileName   = "plugin_manager.json"
 	dashboardServerStateFileName = "dashboard_service.json"
+	stateFileName                = "update_check.json"
+	legacyStateFileName          = "update-check.json"
 )
 
 var SteampipeDir string
@@ -58,6 +60,11 @@ func EnsureInternalDir() string {
 	return ensureSteampipeSubDir("internal")
 }
 
+// EnsureBackupsDir returns the path to the backups directory (creates if missing)
+func EnsureBackupsDir() string {
+	return ensureSteampipeSubDir(filepath.Join("backups"))
+}
+
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)
 func EnsureDatabaseDir() string {
 	return ensureSteampipeSubDir("db")
@@ -69,7 +76,22 @@ func EnsureLogDir() string {
 }
 
 func EnsureDashboardAssetsDir() string {
-	return ensureSteampipeSubDir(filepath.Join("report", "assets"))
+	return ensureSteampipeSubDir(filepath.Join("dashboard", "assets"))
+}
+
+// LegacyDashboardAssetsDir returns the path to the legacy report assets folder
+func LegacyDashboardAssetsDir() string {
+	return steampipeSubDir("report")
+}
+
+// LegacyStateFilePath returns the path of the legacy update-check.json state file
+func LegacyStateFilePath() string {
+	return filepath.Join(EnsureInternalDir(), legacyStateFileName)
+}
+
+// StateFilePath returns the path of the update_check.json state file
+func StateFilePath() string {
+	return filepath.Join(EnsureInternalDir(), stateFileName)
 }
 
 // ConnectionStatePath returns the path of the connections state file
@@ -107,4 +129,8 @@ func PluginManagerStateFilePath() string {
 
 func DashboardServiceStateFilePath() string {
 	return filepath.Join(EnsureInternalDir(), dashboardServerStateFileName)
+}
+
+func StateFileName() string {
+	return stateFileName
 }

@@ -7,10 +7,7 @@ const PanelDetailDefinition = ({ definition }: PanelDetailProps) => {
     if (!definition.source_definition) {
       return null;
     }
-    const tabsToSpaces = definition.source_definition.replace(
-      /\t/g,
-      "&nbsp;&nbsp;"
-    );
+    const tabsToSpaces = definition.source_definition.replace(/\t/g, "  ");
     const initialSpaces = tabsToSpaces.search(/\S/);
     const spaceString = " ".repeat(initialSpaces);
     return tabsToSpaces

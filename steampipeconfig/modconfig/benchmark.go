@@ -32,15 +32,17 @@ type Benchmark struct {
 	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// dashboard specific properties
-	Base  *Benchmark `hcl:"base" json:"-"`
-	Width *int       `cty:"width" hcl:"width" column:"width,text"  json:"-"`
+	Base    *Benchmark `hcl:"base" json:"-"`
+	Width   *int       `cty:"width" hcl:"width" column:"width,text"`
+	Type    *string    `cty:"type" hcl:"type" column:"type,text"  `
+	Display *string    `cty:"display" hcl:"display" `
 
 	References []*ResourceReference
 	Mod        *Mod `cty:"mod"`
 	DeclRange  hcl.Range
 	Paths      []NodePath `column:"path,jsonb"`
 
-	parents []ModTreeItem
+	Parents []ModTreeItem
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) *Benchmark {
@@ -124,7 +126,7 @@ func (b *Benchmark) String() string {
 	}
 	// build list of parents names
 	var parents []string
-	for _, p := range b.parents {
+	for _, p := range b.Parents {
 		parents = append(parents, p.Name())
 	}
 	sort.Strings(children)
@@ -159,13 +161,13 @@ func (b *Benchmark) GetChildControls() []*Control {
 
 // AddParent implements ModTreeItem
 func (b *Benchmark) AddParent(parent ModTreeItem) error {
-	b.parents = append(b.parents, parent)
+	b.Parents = append(b.Parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
 func (b *Benchmark) GetParents() []ModTreeItem {
-	return b.parents
+	return b.Parents
 }
 
 // GetTitle implements ModTreeItem
@@ -203,7 +205,7 @@ func (b *Benchmark) GetPaths() []NodePath {
 
 // SetPaths implements ModTreeItem
 func (b *Benchmark) SetPaths() {
-	for _, parent := range b.parents {
+	for _, parent := range b.Parents {
 		for _, parentPath := range parent.GetPaths() {
 			b.Paths = append(b.Paths, append(parentPath, b.Name()))
 		}
@@ -222,6 +224,11 @@ func (b *Benchmark) GetWidth() int {
 		return 0
 	}
 	return *b.Width
+}
+
+// GetDisplay implements DashboardLeafNode
+func (b *Benchmark) GetDisplay() *string {
+	return b.Display
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
@@ -249,6 +256,10 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 				res.AddPropertyDiff("Tags")
 			}
 		}
+	}
+
+	if !utils.SafeStringsEqual(b.Type, other.Type) {
+		res.AddPropertyDiff("Type")
 	}
 
 	if len(b.ChildNameStrings) != len(other.ChildNameStrings) {
@@ -283,6 +294,14 @@ func (b *Benchmark) setBaseProperties(resourceMapProvider ModResourcesProvider) 
 
 	if b.Documentation == nil {
 		b.Documentation = b.Base.Documentation
+	}
+
+	if b.Type == nil {
+		b.Type = b.Base.Type
+	}
+
+	if b.Display == nil {
+		b.Display = b.Base.Display
 	}
 
 	b.Tags = utils.MergeStringMaps(b.Tags, b.Base.Tags)
