@@ -557,18 +557,18 @@ func killInstanceIfAny(ctx context.Context) bool {
 }
 
 func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
-	instances := []*psutils.Process{}
+	var instances []*psutils.Process
 	allProcesses, err := psutils.ProcessesWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range allProcesses {
-		if cmdLine, err := p.CmdlineSliceWithContext(ctx); err == nil {
-			if isSteampipePostgresProcess(ctx, cmdLine) {
-				instances = append(instances, p)
-			}
-		} else {
+		cmdLine, err := p.CmdlineSliceWithContext(ctx)
+		if err != nil {
 			return nil, err
+		}
+		if isSteampipePostgresProcess(ctx, cmdLine) {
+			instances = append(instances, p)
 		}
 	}
 	return instances, nil

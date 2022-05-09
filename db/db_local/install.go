@@ -57,6 +57,15 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		err := prepareDb(ctx)
 		return err
 	}
+	// handle the case that the previous db version may still be running
+	dbState, err := GetState()
+	if err != nil {
+		log.Println("[TRACE] Error while checking for prev version database state", err)
+		return err
+	}
+	if dbState != nil {
+		return fmt.Errorf("cannot start DB backup - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
