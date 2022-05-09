@@ -373,7 +373,7 @@ jobs:
 #
   create_release_tag:
     name: Tag Release
-    needs: [run_acceptance_tests]
+    needs: [create_test_build]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
