@@ -1,3 +1,9 @@
+## v0.14.1 [2022-05-09]
+_Bug fixes_
+* Check if a previous version of Steampipe has a service running, and fail gracefully if so.
+  If we fail to detect as service, but find a postgres process running in the install dir, kill it before migrating data. ([#2022](https://github.com/turbot/steampipe/issues/2022))
+
+
 ## v0.14.0 [2022-05-09]
 _What's new?_
 * Support real-time running and viewing of benchmarks in the dashboard UI with drill-down through benchmarks and controls to individual resource results. ([#1760](https://github.com/turbot/steampipe/issues/1760))
