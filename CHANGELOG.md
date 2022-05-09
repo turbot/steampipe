@@ -1,3 +1,34 @@
+## v0.14.0 [2022-05-09]
+_What's new?_
+* Support real-time running and viewing of benchmarks in the dashboard UI with drill-down through benchmarks and controls to individual resource results. ([#1760](https://github.com/turbot/steampipe/issues/1760))
+* Update database version to Postgresql 14. ([#43](https://github.com/turbot/steampipe/issues/43))
+* Add support native support for Arm architecture machines. ([#253](https://github.com/turbot/steampipe/issues/253))
+* Update CLI version of Go to 1.18. ([#1783](https://github.com/turbot/steampipe/issues/1783))
+* Migrate all json config files to use snake case property names. ([#1730](https://github.com/turbot/steampipe/issues/1730))
+* Add `input` flag to disable interactive prompting for variables. ([#1839](https://github.com/turbot/steampipe/issues/1839))
+* Add `variable list` command. ([#1868](https://github.com/turbot/steampipe/issues/1868))
+* Allow dependent mods to have the same variable name as the parent mod. ([#1922](https://github.com/turbot/steampipe/issues/1922))
+* Update Dockerfile for postgres 14, and to disable telemetry. ([#1941](https://github.com/turbot/steampipe/issues/1941))
+* Update the output and performance of plugin operations. ([#1780](https://github.com/turbot/steampipe/issues/1780), [#1778](https://github.com/turbot/steampipe/issues/1778), [#1777](https://github.com/turbot/steampipe/issues/1777), [#1776](https://github.com/turbot/steampipe/issues/1776)) 
+* Rename folder .steampipe/report/assets to .steampipe/dashboard/assets. ([#1751](https://github.com/turbot/steampipe/issues/1751))
+* Add `Alias` property to the dependencies listed in .mod.cache.json. ([#1731](https://github.com/turbot/steampipe/issues/1731))
+
+_Bug fixes_
+* Fix issue preventing dashboard UI from displaying in Safari ([#1984](https://github.com/turbot/steampipe/issues/1984))
+* Fix intermittent "relation not found errors", when running dashboards. ([#1919](https://github.com/turbot/steampipe/issues/1919))
+* Update 'check' and 'dashboard' command to NOT fail if any connection fails to load. ([#1885](https://github.com/turbot/steampipe/issues/1885))
+* Update mod parsing to pass variable values to dependent mods. ([#1694](https://github.com/turbot/steampipe/issues/1694))
+* Update control running to retry acquireSession in case of error, and report error in case of failure. ([#1951](https://github.com/turbot/steampipe/issues/1951))
+* Fix required Steampipe version in mod.sp not being respected when running query command. ([#1734](https://github.com/turbot/steampipe/issues/1734))
+* Fix dashboard cancellation is stalling when the dashboard has no children. ([#1837](https://github.com/turbot/steampipe/issues/1837))
+* Fix interactive query Initialisation hang when no plugins are installed. ([#1860](https://github.com/turbot/steampipe/issues/1860))
+* Escape quotes in all postgres object names. ([#1893](https://github.com/turbot/steampipe/issues/1893))
+* Fixes issue where plugin install crashes for non-existent plugins. ([#1896](https://github.com/turbot/steampipe/issues/1896))
+* Fix execution of dashboards causing a hang after a change or recovering from workspace error. ([#1907](https://github.com/turbot/steampipe/issues/1907))
+* Fix JSON data with \u0000 errors in Postgres with "unsupported Unicode escape sequence". ([#118](https://github.com/turbot/steampipe-postgres-fdw/issues/118))
+* Update dashboards to handle ExecutionError events. ([#1997](https://github.com/turbot/steampipe/issues/1997))
+* Fixes issue where `service stop` command outputs "service stopped" even if no services were actually running. ([#1456](https://github.com/turbot/steampipe/issues/1456))
+
 ## v0.13.6 [2022-04-14]
 _Bug fixes_
 * Update dashboard UI to use wss when the location protocol is https. ([#1717](https://github.com/turbot/steampipe/issues/1717))
