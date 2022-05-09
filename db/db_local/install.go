@@ -470,12 +470,17 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		fmt.Sprintf("grant %s to %s", constants.DatabaseUsersRole, constants.DatabaseUser),
 	}
 	for _, statement := range statements {
+		log.Printf("[TRACE] executing %s", statement)
 		// not logging here, since the password may get logged
 		// we don't want that
 		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
+			log.Printf("[TRACE] error executiong SQL: %s", err)
 			return err
 		}
+		log.Printf("[TRACE] executed ok")
 	}
+	log.Printf("[TRACE] calling writePgHbaContent")
+
 	return writePgHbaContent(databaseName, constants.DatabaseUser)
 }
 
