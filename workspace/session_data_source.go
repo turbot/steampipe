@@ -9,7 +9,6 @@ type SessionDataSource struct {
 	IntrospectionTableSource func() *modconfig.ModResources
 }
 
-// TODO [report] change this to accept a list of queries instead of and create the cut down preparedStatementSource here
 // NewSessionDataSource uses the workspace and (optionally) a separate the prepared statemeot source
 // and returns a SessionDataSource
 // NOTE: preparedStatementSource is only set if specific queries have ben passed to the query command
