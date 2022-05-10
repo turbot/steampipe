@@ -42,6 +42,14 @@ password_encryption=scram-sha-256
 random_page_cost=0.01
 seq_page_cost=0.01
 
+## experimental for WSL
+bgwriter_flush_after = 0                # measured in pages, 0 disables
+backend_flush_after = 0                # measured in pages, 0 disables
+wal_writer_flush_after = 0              # measured in pages, 0 disables
+checkpoint_flush_after = 0              # measured in pages, 0 disables
+data_sync_retry = true
+
+
 # If the shared buffers are too small then large tables in memory can create
 # "no unpinned buffers available" errors.
 #
