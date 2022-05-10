@@ -1,5 +1,9 @@
 ## v0.14.2 [2022-05-10]
 _Bug fixes_
+* Disable checking for updated db package of same Postgres version as data migration is not currently working for same-version Postgres upgrades.  ([#2034](https://github.com/turbot/steampipe/issues/2034))
+
+## v0.14.2 [2022-05-10]
+_Bug fixes_
 * When initialising the database, check whether the ImageRef of the currently installed database is correct and if not, reinstall. This provides a mechanism to force a db package update even if the Postgres version has not changed. ([#2026](https://github.com/turbot/steampipe/issues/2026))
 * Ensure `Digest` payload field is not empty when calling VersionCheck endpoint. This is to handle a potential config migration bug which can result in empty `image_digest` fields in the plugin versions state file. ([#2030](https://github.com/turbot/steampipe/issues/2030))
 * Fix prepared statement creation failure when installing a fresh db from a mod folder. ([#2028](https://github.com/turbot/steampipe/issues/2028))
