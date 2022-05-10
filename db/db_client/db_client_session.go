@@ -68,6 +68,13 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		return sessionResult
 	}
 
+	// update required session search path if needed
+	err = c.ensureSessionSearchPath(ctx, session)
+	if err != nil {
+		sessionResult.Error = err
+		return sessionResult
+	}
+
 	if !session.Initialized {
 		session.LifeCycle.Add("queued_for_init")
 
@@ -91,13 +98,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 		// if there is no error, mark session as initialized
 		session.Initialized = true
-	}
-
-	// update required session search path if needed
-	err = c.ensureSessionSearchPath(ctx, session)
-	if err != nil {
-		sessionResult.Error = err
-		return sessionResult
 	}
 
 	// now write back to the map
