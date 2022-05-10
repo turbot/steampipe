@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -22,7 +24,11 @@ var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - a postgres instance is still running and Steampipe could not kill it. Please kill this manually and restart Steampipe")
 )
 
-const backupFormat = "custom"
+const (
+	backupFormat            = "custom"
+	backupDumpFileExtension = "dump"
+	backupTextFileExtension = "sql"
+)
 
 // pgRunningInfo represents a running pg instance that we need to startup to create the
 // backup archive and the name of the installed database
@@ -400,8 +406,8 @@ func retainBackup(ctx context.Context) error {
 		"database-%s",
 		now.Format("2006-01-02-15-04-05"),
 	)
-	binaryBackupRetentionFileName := fmt.Sprintf("%s.dump", backupBaseFileName)
-	textBackupRetentionFileName := fmt.Sprintf("%s.sql", backupBaseFileName)
+	binaryBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupDumpFileExtension)
+	textBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupTextFileExtension)
 
 	backupDir := filepaths.EnsureBackupsDir()
 	binaryBackupFilePath := filepath.Join(backupDir, binaryBackupRetentionFileName)
@@ -448,4 +454,48 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd
+}
+
+// TrimBackups trims the number of backups to the most recent constants.MaxBackups
+func TrimBackups() {
+	backupDir := filepaths.EnsureBackupsDir()
+	files, err := os.ReadDir(backupDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// retain only the .dump files (just to get the unique backups)
+	files = utils.Filter(files, func(v fs.DirEntry) bool {
+		if v.Type().IsDir() {
+			return false
+		}
+		// retain only the .dump files
+		return strings.HasSuffix(v.Name(), backupDumpFileExtension)
+	})
+
+	// map to the names of the backups, without extensions
+	names := utils.Map(files, func(v fs.DirEntry) string {
+		return strings.TrimSuffix(v.Name(), filepath.Ext(v.Name()))
+	})
+
+	// just sorting should work, since these names are suffixed by date of the format yyyy-MM-dd-hh-mm-ss
+	sort.Strings(names)
+
+	for len(names) > constants.MaxBackups {
+		// shift the first element
+		trim := names[0]
+
+		// remove the first element from the array
+		names = names[1:]
+
+		// get back the names
+		dumpFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupDumpFileExtension))
+		textFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupTextFileExtension))
+
+		removeErr := utils.CombineErrors(os.Remove(dumpFilePath), os.Remove(textFilePath))
+		if removeErr != nil {
+			utils.ShowWarning(fmt.Sprintf("Could not remove backup: %s", trim))
+		}
+	}
+
 }
