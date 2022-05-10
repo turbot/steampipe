@@ -52,15 +52,24 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		close(doneChan)
 	}()
 
-	if IsInstalled() {
-		// check if the FDW need updating, and init the db id required
-		err := prepareDb(ctx)
+	// load the db version info file
+	utils.LogTime("db_local.LoadDatabaseVersionFile start")
+	versionInfo, err := versionfile.LoadDatabaseVersionFile()
+	utils.LogTime("db_local.LoadDatabaseVersionFile end")
+	if err != nil {
 		return err
 	}
+
+	if IsInstalled() && !dbNeedsUpdate(versionInfo) {
+		// check if the FDW need updating, and init the db id required
+		err := prepareDb(ctx, versionInfo)
+		return err
+	}
+
 	// handle the case that the previous db version may still be running
 	dbState, err := GetState()
 	if err != nil {
-		log.Println("[TRACE] Error while checking for prev version database state", err)
+		log.Println("[TRACE] Error while loading database state", err)
 		return err
 	}
 	if dbState != nil {
@@ -163,9 +172,9 @@ func IsInstalled() bool {
 }
 
 // prepareDb updates the FDW if needed, and inits the database if required
-func prepareDb(ctx context.Context) error {
+func prepareDb(ctx context.Context, versionInfo *versionfile.DatabaseVersionFile) error {
 	// check if FDW needs to be updated
-	if fdwNeedsUpdate() {
+	if fdwNeedsUpdate(versionInfo) {
 		_, err := installFDW(ctx, false)
 		if err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
@@ -187,17 +196,13 @@ func prepareDb(ctx context.Context) error {
 	return nil
 }
 
-func fdwNeedsUpdate() bool {
-	utils.LogTime("db_local.fdwNeedsUpdate start")
-	defer utils.LogTime("db_local.fdwNeedsUpdate end")
-
-	// check FDW version
-	versionInfo, err := versionfile.LoadDatabaseVersionFile()
-	if err != nil {
-		utils.FailOnError(fmt.Errorf("could not verify required FDW version"))
-	}
+func fdwNeedsUpdate(versionInfo *versionfile.DatabaseVersionFile) bool {
 	return versionInfo.FdwExtension.Version != constants.FdwVersion
 }
+
+func dbNeedsUpdate(versionInfo *versionfile.DatabaseVersionFile) bool {
+	return versionInfo.EmbeddedDB.ImageDigest != constants.PostgresImageDigest
+	When initialising db, check whether the ImageRef of the installed db is correct and if not, reinstall #2026}
 
 func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 	utils.LogTime("db_local.installFDW start")
