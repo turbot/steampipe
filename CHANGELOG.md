@@ -1,8 +1,16 @@
+## v0.14.2 [2022-05-10]
+_What's new?_
+* When initialising the database, check whether the ImageRef of the currently installed database is correct and if not, reinstall. This provides a mechanism to force a db package update even if the Postgres version has not changed. ([#2026](https://github.com/turbot/steampipe/issues/2026))
+* Limit the number of database backups as part of the daily cleanup. ([#2012](https://github.com/turbot/steampipe/issues/2012))
+
+_Bug fixes_
+* Ensure `Digest` payload field is not empty when calling VersionCheck endpoint. This is to handle a potential config migration bug which can result in empty `image_digest` fields in the plugin versions state file. ([#2030](https://github.com/turbot/steampipe/issues/2030))
+* Fix prepared statement creation failure when installing a fresh db from a mod folder. ([#2028](https://github.com/turbot/steampipe/issues/2028))
+
 ## v0.14.1 [2022-05-09]
 _Bug fixes_
 * Check if a previous version of Steampipe has a service running, and fail gracefully if so.
   If we fail to detect as service, but find a postgres process running in the install dir, kill it before migrating data. ([#2022](https://github.com/turbot/steampipe/issues/2022))
-
 
 ## v0.14.0 [2022-05-09]
 _What's new?_
