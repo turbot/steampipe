@@ -202,7 +202,7 @@ func fdwNeedsUpdate(versionInfo *versionfile.DatabaseVersionFile) bool {
 
 func dbNeedsUpdate(versionInfo *versionfile.DatabaseVersionFile) bool {
 	return versionInfo.EmbeddedDB.ImageDigest != constants.PostgresImageDigest
-	When initialising db, check whether the ImageRef of the installed db is correct and if not, reinstall #2026}
+}
 
 func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 	utils.LogTime("db_local.installFDW start")
