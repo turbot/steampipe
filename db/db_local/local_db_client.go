@@ -266,7 +266,6 @@ WHERE %s
 // local only functions
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
-
 	// NOTE: disable any status updates - we do not want 'loading' output from any queries
 	ctx = statushooks.DisableStatusHooks(ctx)
 
