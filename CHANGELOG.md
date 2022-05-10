@@ -1,4 +1,4 @@
-## v0.14.2 [2022-05-10]
+## v0.14.3 [2022-05-10]
 _Bug fixes_
 * Disable checking for updated db package of same Postgres version as data migration is not currently working for same-version Postgres upgrades.  ([#2034](https://github.com/turbot/steampipe/issues/2034))
 
