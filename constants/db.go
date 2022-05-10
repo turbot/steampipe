@@ -34,8 +34,10 @@ const (
 	FdwVersion      = "1.0.0"
 
 	// PostgresImageRef is the OCI Image ref for the databse binaries
-	PostgresImageRef = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
-	FdwImageRef      = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
+	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
+	PostgresImageDigest = "sha256:a75637209f1bc2fa9885216f7972dfa0d82010a25d3cbfc07baceba8d16f4a93"
+
+	FdwImageRef = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 )
 
 // schema names
