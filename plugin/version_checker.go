@@ -108,7 +108,7 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 		return fmt.Sprintf("%s/%s/%s", thisPayload.Org, thisPayload.Name, thisPayload.Stream)
 	}
 
-	requestPayload := []versionCheckRequestPayload{}
+	var requestPayload []versionCheckRequestPayload
 	reports := map[string]VersionCheckReport{}
 
 	for _, ref := range plugins {
@@ -149,6 +149,12 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 		Stream:  stream,
 		Version: plugin.Version,
 		Digest:  plugin.ImageDigest,
+	}
+	// if Digest field is missing, populate with dummy field
+	// - this will force and update an in doing so fix the versions.json
+	// https://github.com/turbot/steampipe/issues/2030
+	if payload.Digest == "" {
+		payload.Digest = "no digest"
 	}
 	return payload
 }
