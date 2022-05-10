@@ -60,7 +60,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 
-	if IsInstalled() && !dbNeedsUpdate(versionInfo) {
+	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
 		err := prepareDb(ctx, versionInfo)
 		return err
