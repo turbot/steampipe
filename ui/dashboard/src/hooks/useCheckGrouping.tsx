@@ -349,7 +349,7 @@ const CheckGroupingProvider = ({
         { type: "result" },
       ] as CheckDisplayGroup[];
     }
-  }, [rootBenchmark, searchParams]);
+  }, [searchParams]);
 
   const [benchmark, grouping, firstChildSummaries, tempNodeStates] =
     useMemo(() => {
