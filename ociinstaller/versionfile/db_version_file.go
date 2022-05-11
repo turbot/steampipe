@@ -85,6 +85,11 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 func (f *DatabaseVersionFile) Save() error {
 	// set the struct version
 	f.StructVersion = DatabaseStructVersion
+	// maintain the legacy properties for backward compatibility
+	f.LegacyFdwExtension = f.FdwExtension
+	f.LegacyFdwExtension.MaintainLegacy()
+	f.LegacyEmbeddedDB = f.EmbeddedDB
+	f.LegacyEmbeddedDB.MaintainLegacy()
 
 	versionFilePath := filepaths.DatabaseVersionFilePath()
 	return f.write(versionFilePath)
