@@ -5,7 +5,7 @@ const items = [
     title: "Find a Dashboard",
     description:
       "Steampipe Hub has hundreds of open source dashboards to get you started.",
-    href: "https://hub.steampipe.io/mods?objectives=dashboard",
+    href: "https://hub.steampipe.io/mods",
     withReferrer: true,
   },
   {
