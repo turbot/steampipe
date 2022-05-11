@@ -52,17 +52,9 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		close(doneChan)
 	}()
 
-	// load the db version info file
-	utils.LogTime("db_local.LoadDatabaseVersionFile start")
-	versionInfo, err := versionfile.LoadDatabaseVersionFile()
-	utils.LogTime("db_local.LoadDatabaseVersionFile end")
-	if err != nil {
-		return err
-	}
-
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
-		err := prepareDb(ctx, versionInfo)
+		err := prepareDb(ctx)
 		return err
 	}
 
@@ -73,7 +65,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 	if dbState != nil {
-		return fmt.Errorf("cannot start DB backup - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+		return fmt.Errorf("cannot install db - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
@@ -83,21 +75,12 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Cleanup any Steampipe processes... FAILED!")
 	}
 
-	log.Println("[TRACE] removing previous installation")
-	statushooks.SetStatus(ctx, "Prepare database install location...")
+	statushooks.SetStatus(ctx, "Installing database...")
 	defer statushooks.Done(ctx)
 
-	err = os.RemoveAll(getDatabaseLocation())
+	err = downloadAndInstallDbFiles(ctx, err)
 	if err != nil {
-		log.Printf("[TRACE] %v", err)
-		return fmt.Errorf("Prepare database install location... FAILED!")
-	}
-
-	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
-	_, err = ociinstaller.InstallDB(ctx, getDatabaseLocation())
-	if err != nil {
-		log.Printf("[TRACE] %v", err)
-		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
+		return err
 	}
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
@@ -115,6 +98,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		statushooks.Message(ctx, noBackupWarning())
 	}
 
+	// install the fdw
 	_, err = installFDW(ctx, true)
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
@@ -122,7 +106,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// run the database installation
-	err = runInstall(ctx, true, dbName)
+	err = runInstall(ctx, dbName)
 	if err != nil {
 		return err
 	}
@@ -136,6 +120,24 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
 
+	return nil
+}
+
+func downloadAndInstallDbFiles(ctx context.Context, err error) error {
+	statushooks.SetStatus(ctx, "Prepare database install location...")
+	// clear all db files
+	err = os.RemoveAll(getDatabaseLocation())
+	if err != nil {
+		log.Printf("[TRACE] %v", err)
+		return fmt.Errorf("Prepare database install location... FAILED!")
+	}
+
+	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
+	_, err = ociinstaller.InstallDB(ctx, getDatabaseLocation())
+	if err != nil {
+		log.Printf("[TRACE] %v", err)
+		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
+	}
 	return nil
 }
 
@@ -171,25 +173,54 @@ func IsInstalled() bool {
 	return true
 }
 
-// prepareDb updates the FDW if needed, and inits the database if required
-func prepareDb(ctx context.Context, versionInfo *versionfile.DatabaseVersionFile) error {
-	// check if FDW needs to be updated
-	if fdwNeedsUpdate(versionInfo) {
-		_, err := installFDW(ctx, false)
-		if err != nil {
+// prepareDb updates the db binaries and FDW if needed, and inits the database if required
+func prepareDb(ctx context.Context) error {
+	// load the db version info file
+	utils.LogTime("db_local.LoadDatabaseVersionFile start")
+	versionInfo, err := versionfile.LoadDatabaseVersionFile()
+	utils.LogTime("db_local.LoadDatabaseVersionFile end")
+	if err != nil {
+		return err
+	}
+
+	// check if db needs to be updated
+	// this means that the db version number has NOT changed but the package has changed
+	// we can just drop in the new binaries
+	if dbNeedsUpdate(versionInfo) {
+		statushooks.SetStatus(ctx, "Updating database...")
+		defer statushooks.Done(ctx)
+
+		// install new db binaries
+		if err = downloadAndInstallDbFiles(ctx, err); err != nil {
+			return err
+		}
+		// write a signature after everything gets done!
+		// so that we can check for this later on
+		statushooks.SetStatus(ctx, "Updating install records...")
+		if err = updateDownloadedBinarySignature(); err != nil {
+			log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
+			return fmt.Errorf("Updating install records... FAILED!")
+		}
+
+		// install fdw
+		if _, err := installFDW(ctx, false); err != nil {
+			log.Printf("[TRACE] installFDW failed: %v", err)
+			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
+		}
+	} else if fdwNeedsUpdate(versionInfo) {
+		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
 			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
 		}
 
 		fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
 		fmt.Println()
-
 	}
 
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes...")
 		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, false, nil); err != nil {
+		if err := runInstall(ctx, nil); err != nil {
 			return err
 		}
 	}
@@ -233,7 +264,7 @@ func needsInit() bool {
 	return !helpers.FileExists(getPgHbaConfLocation())
 }
 
-func runInstall(ctx context.Context, firstInstall bool, oldDbName *string) error {
+func runInstall(ctx context.Context, oldDbName *string) error {
 	utils.LogTime("db_local.runInstall start")
 	defer utils.LogTime("db_local.runInstall end")
 
