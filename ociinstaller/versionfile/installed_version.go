@@ -24,3 +24,12 @@ func (f *InstalledVersion) MigrateLegacy() {
 	f.InstallDate = f.LegacyInstallDate
 	f.LastCheckedDate = f.LegacyLastCheckedDate
 }
+
+// MaintainLegacy keeps the values of the legacy properties for backward
+// compatibility
+func (f *InstalledVersion) MaintainLegacy() {
+	f.LegacyImageDigest = f.ImageDigest
+	f.LegacyInstalledFrom = f.InstalledFrom
+	f.LegacyInstallDate = f.InstallDate
+	f.LegacyLastCheckedDate = f.LastCheckedDate
+}

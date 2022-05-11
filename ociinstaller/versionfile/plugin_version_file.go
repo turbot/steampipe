@@ -58,6 +58,10 @@ func (f *PluginVersionFile) Save() error {
 	// set struct version
 	f.StructVersion = PluginStructVersion
 	versionFilePath := filepaths.PluginVersionFilePath()
+	// maintain the legacy properties for backward compatibility
+	for _, v := range f.Plugins {
+		v.MaintainLegacy()
+	}
 	return f.write(versionFilePath)
 }
 

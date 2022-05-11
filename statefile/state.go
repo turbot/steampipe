@@ -65,6 +65,9 @@ func (s *State) Save() error {
 	s.StructVersion = StateStructVersion
 
 	s.LastCheck = nowTimeString()
+	s.LegacyLastCheck = nowTimeString()
+	// maintain the legacy properties for backward compatibility
+	s.MaintainLegacy()
 	// ensure internal dirs exists
 	_ = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
@@ -88,6 +91,13 @@ func (s *State) MigrateFrom() migrate.Migrateable {
 	s.InstallationID = s.LegacyInstallationID
 
 	return s
+}
+
+// MaintainLegacy keeps the values of the legacy properties for backward
+// compatibility
+func (s *State) MaintainLegacy() {
+	s.LegacyLastCheck = s.LastCheck
+	s.LegacyInstallationID = s.InstallationID
 }
 
 func newInstallationID() string {
