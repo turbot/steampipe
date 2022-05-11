@@ -81,7 +81,7 @@ const DashboardTagGroupSelect = () => {
       {({ open }) => (
         <>
           <div className="relative">
-            <Listbox.Button className="relative w-full bg-dashboard-panel border border-table-border rounded-md pl-3 pr-7 md:pr-10 py-2 text-left text-sm md:text-base cursor-default focus:outline-none focus:ring-1">
+            <Listbox.Button className="relative w-full bg-dashboard-panel border border-table-border rounded-md pl-3 pr-7 md:pr-10 py-2 text-left text-sm md:text-base cursor-default focus:ring-1 focus:ring-text-link">
               {/*@ts-ignore*/}
               <span className="block truncate">
                 <span className="hidden md:inline mr-1">Group by:</span>
