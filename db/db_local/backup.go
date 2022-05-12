@@ -500,5 +500,4 @@ func trimBackups() {
 			utils.ShowWarning(fmt.Sprintf("Could not remove backup: %s", trim))
 		}
 	}
-
 }
