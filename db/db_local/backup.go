@@ -464,7 +464,8 @@ func trimBackups() {
 	backupDir := filepaths.BackupsDir()
 	files, err := os.ReadDir(backupDir)
 	if err != nil {
-		log.Fatal(err)
+		utils.ShowWarning(fmt.Sprintf("Failed to trim backups folder: %s", err.Error()))
+		return
 	}
 
 	// retain only the .dump files (just to get the unique backups)
