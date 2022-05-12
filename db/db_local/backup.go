@@ -429,6 +429,9 @@ func retainBackup(ctx context.Context) error {
 		return err
 	}
 
+	// limit the number of old backups
+	trimBackups()
+
 	return nil
 }
 
@@ -456,12 +459,13 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 	return cmd
 }
 
-// TrimBackups trims the number of backups to the most recent constants.MaxBackups
-func TrimBackups() {
-	backupDir := filepaths.EnsureBackupsDir()
+// trimBackups trims the number of backups to the most recent constants.MaxBackups
+func trimBackups() {
+	backupDir := filepaths.BackupsDir()
 	files, err := os.ReadDir(backupDir)
 	if err != nil {
-		log.Fatal(err)
+		utils.ShowWarning(fmt.Sprintf("Failed to trim backups folder: %s", err.Error()))
+		return
 	}
 
 	// retain only the .dump files (just to get the unique backups)
@@ -497,5 +501,4 @@ func TrimBackups() {
 			utils.ShowWarning(fmt.Sprintf("Could not remove backup: %s", trim))
 		}
 	}
-
 }
