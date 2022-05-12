@@ -461,7 +461,7 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 
 // trimBackups trims the number of backups to the most recent constants.MaxBackups
 func trimBackups() {
-	backupDir := filepaths.EnsureBackupsDir()
+	backupDir := filepaths.BackupsDir()
 	files, err := os.ReadDir(backupDir)
 	if err != nil {
 		log.Fatal(err)
