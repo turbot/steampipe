@@ -1,3 +1,11 @@
+## v0.14.4 [2022-05-12]
+_Bug fixes_
+* Fix ctrl+c during dashboard execution causing a `panic: send on closed channel`. ([#2048](https://github.com/turbot/steampipe/issues/2048))
+* Fix backward compatibility issues in config file migration which could cause the plugin `versions.json` to become corrupted. ([#2042](https://github.com/turbot/steampipe/issues/2042))
+* Fix `backups` folder is being created even if no database backup is taken. ([#2049](https://github.com/turbot/steampipe/issues/2049))
+* If updated db package with same Postgres version is detected, install binaries without doing a full db install. ([#2038](https://github.com/turbot/steampipe/issues/2038))
+* Fix dashboard UI benchmark nodes collapsing during running. ([#2045](https://github.com/turbot/steampipe/issues/2045))
+
 ## v0.14.3 [2022-05-10]
 _Bug fixes_
 * Fix a regression in v0.14.2 that would prevent migration of public schema data during migration from v0.14.x versions.  ([#2034](https://github.com/turbot/steampipe/issues/2034))
