@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"time"
+	"log"
 
 	"github.com/turbot/steampipe/constants"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -12,7 +13,11 @@ import (
 // InstallDB :: Install Postgres files fom OCI image
 func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	tempDir := NewTempDir(dblocation)
-	defer tempDir.Delete()
+	defer func() {
+		if err := tempDir.Delete(); err != nil {
+			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing db files: %s", tempDir, err)
+		}
+	}()
 
 	imageDownloader := NewOciDownloader()
 

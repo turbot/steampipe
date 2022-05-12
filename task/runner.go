@@ -3,6 +3,7 @@ package task
 import (
 	"sync"
 	"time"
+	"fmt"
 
 	"github.com/turbot/steampipe/db/db_local"
 
@@ -70,7 +71,9 @@ func (r *Runner) Run() {
 		}
 
 		// save the state - this updates the last checked time
-		r.currentState.Save()
+		if err := r.currentState.Save(); err != nil {
+			utils.ShowWarning(fmt.Sprintf("Regular task runner failed to save state file: %s", err))
+		}
 	}
 }
 
