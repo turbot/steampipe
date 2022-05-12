@@ -13,8 +13,10 @@ import (
 )
 
 func (w *Workspace) PublishDashboardEvent(e dashboardevents.DashboardEvent) {
-	// send an event onto the event bus
-	w.dashboardEventChan <- e
+	if w.dashboardEventChan != nil {
+		// send an event onto the event bus
+		w.dashboardEventChan <- e
+	}
 }
 
 // RegisterDashboardEventHandler starts the event handler goroutine if necessary and
@@ -34,6 +36,7 @@ func (w *Workspace) handleDashboardEvent() {
 	for {
 		e := <-w.dashboardEventChan
 		if e == nil {
+			w.dashboardEventChan = nil
 			return
 		}
 
