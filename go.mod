@@ -177,4 +177,5 @@ require (
 	github.com/gosuri/uiprogress v0.0.1
 )
 
-replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20211124090719-0709bc8d8ce2
+//replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20211124090719-0709bc8d8ce2
+replace github.com/c-bata/go-prompt => /Users/kai/Dev/github/turbot/go-prompt
