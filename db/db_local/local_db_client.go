@@ -303,7 +303,8 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 		return res
 	}
 
-	if err := restoreBackup(ctx); err != nil {
+	// if there is an unprocessed db backup file, restore it now
+	if err := restoreDBBackup(ctx); err != nil {
 		res.Error = err
 		return res
 	}

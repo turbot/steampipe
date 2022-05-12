@@ -192,7 +192,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 // findDifferentPgInstallation checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
 // other than desired version.
 // it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
-// it's also called as part of `restoreBackup` for removal of the installation once restoration successfully completes
+// it's also called as part of `restoreDBBackup` for removal of the installation once restoration successfully completes
 func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
@@ -224,12 +224,14 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	return false, "", nil
 }
 
-// restoreBackup loads the back up file into the database
-func restoreBackup(ctx context.Context) error {
-	if !helpers.FileExists(databaseBackupFilePath()) {
+// restoreDBBackup loads the back up file into the database
+func restoreDBBackup(ctx context.Context) error {
+	backupFilePath := databaseBackupFilePath()
+	if !helpers.FileExists(backupFilePath) {
 		// nothing to do here
 		return nil
 	}
+	log.Printf("[TRACE] restoreDBBackup: backup file '%s' found, restoring", backupFilePath)
 
 	// load the db status
 	runningInfo, err := GetState()
