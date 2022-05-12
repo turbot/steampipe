@@ -29,7 +29,7 @@ func TestTrimBackups(t *testing.T) {
 		}
 	}
 
-	TrimBackups()
+	trimBackups()
 
 	for _, f := range filesCreated {
 		if helpers.FileExists(f) {
