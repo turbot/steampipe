@@ -16,6 +16,8 @@ import (
 	"github.com/turbot/steampipe/versionhelpers"
 )
 
+const WorkspaceLockStructVersion = 20220411
+
 // WorkspaceLock is a map of ModVersionMaps items keyed by the parent mod whose dependencies are installed
 type WorkspaceLock struct {
 	WorkspacePath   string
@@ -24,6 +26,7 @@ type WorkspaceLock struct {
 
 	ModInstallationPath string
 	installedMods       VersionListMap
+	StructVersion       int64
 }
 
 // EmptyWorkspaceLock creates a new empty workspace lock based,
@@ -153,6 +156,7 @@ func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVer
 }
 
 func (l *WorkspaceLock) Save() error {
+	l.StructVersion = WorkspaceLockStructVersion
 	if len(l.InstallCache) == 0 {
 		// ignore error
 		l.Delete()
