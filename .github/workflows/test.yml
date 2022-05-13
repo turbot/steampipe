@@ -94,7 +94,7 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        platform: [macos-latest]
+        platform: [macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
