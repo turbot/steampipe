@@ -16,10 +16,13 @@ type QueryHistory struct {
 }
 
 // New creates a new QueryHistory object
-func New() *QueryHistory {
+func New() (*QueryHistory, error) {
 	history := new(QueryHistory)
-	history.load()
-	return history
+	err := history.load()
+	if err != nil {
+		return history, err
+	}
+	return history, nil
 }
 
 // Push adds a string to the history queue trimming to maxHistorySize if necessary

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"log"
 
 	"github.com/turbot/steampipe/filepaths"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -23,7 +24,9 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*St
 	defer func() {
 		// send a last beacon to signal completion
 		sub <- struct{}{}
-		tempDir.Delete()
+		if err := tempDir.Delete(); err != nil {
+			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing plugin: %s", tempDir, err)
+		}
 	}()
 
 	ref := NewSteampipeImageRef(imageRef)

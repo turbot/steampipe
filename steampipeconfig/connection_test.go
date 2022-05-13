@@ -502,9 +502,18 @@ func setup(test getConnectionsToUpdateTest) {
 	os.RemoveAll(filepaths.EnsureConfigDir())
 	os.RemoveAll(filepaths.EnsureInternalDir())
 
-	os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
-	os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
-	os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
+	err := os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for _, plugin := range test.current {
 		copyPlugin(plugin.Plugin)
@@ -528,7 +537,10 @@ func setupTestConfig(test getConnectionsToUpdateTest) {
 			log.Fatal(err)
 		}
 	}
-	os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
+	err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
 	test.current.Save()
 }
 

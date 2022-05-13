@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"time"
+	"log"
 
 	"github.com/turbot/steampipe/constants"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -13,7 +14,11 @@ import (
 // InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
 func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	tempDir := NewTempDir(dbLocation)
-	defer tempDir.Delete()
+	defer func() {
+		if err := tempDir.Delete(); err != nil {
+			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing fdw: %s", tempDir, err)
+		}
+	}()
 
 	imageDownloader := NewOciDownloader()
 
