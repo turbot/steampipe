@@ -192,23 +192,27 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	}
 
 	// we may need to decode more than once as we gather dependencies as we go
-	const maxDecodes = 2
-	for attempt := 0; attempt < maxDecodes; attempt++ {
+	// continue decoding as long as the number of unresolved blocks decreases
+	prevUnresolvedBlocks := 0
+	for attempts := 0; ; attempts++ {
 		diags = decode(runCtx)
 		if diags.HasErrors() {
 			return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
 		}
 
-		// if eval is complete, we're done
-		if runCtx.EvalComplete() {
+		// if there are no unresolved blocks, we are done
+		unresolvedBlocks := len(runCtx.UnresolvedBlocks)
+		if unresolvedBlocks == 0 {
+			log.Printf("[TRACE] parse complete after %d decode passes", attempts+1)
 			break
 		}
-	}
-
-	// we failed to resolve dependencies
-	if !runCtx.EvalComplete() {
-		str := runCtx.FormatDependencies()
-		return nil, fmt.Errorf("failed to resolve mod dependencies\nDependencies:\n%s", str)
+		// if the number of unresolved blocks has NOT reduced, fail
+		if prevUnresolvedBlocks != 0 && unresolvedBlocks >= prevUnresolvedBlocks {
+			str := runCtx.FormatDependencies()
+			return nil, fmt.Errorf("failed to resolve mod dependencies after %d attempts\nDependencies:\n%s", attempts+1, str)
+		}
+		// update prevUnresolvedBlocks
+		prevUnresolvedBlocks = unresolvedBlocks
 	}
 
 	// now tell mod to build tree of controls.
