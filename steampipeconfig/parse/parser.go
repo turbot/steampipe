@@ -5,11 +5,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/json"
@@ -18,6 +18,7 @@ import (
 	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
+	"github.com/zclconf/go-cty/cty"
 	"sigs.k8s.io/yaml"
 )
 
@@ -93,8 +94,9 @@ func ModfileExists(modPath string) bool {
 	return true
 }
 
-// ParseModDefinition parses the modfile only
+// ParseModDefinition parses the modfile only, ignoring
 // it is expected the calling code will have verified the existence of the modfile by calling ModfileExists
+// this is called before parsing the workspace to, for example, identify dependency mods
 func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	// if there is no mod at this location, return error
 	modFilePath := filepaths.ModFilePath(modPath)
@@ -111,7 +113,7 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
 	}
 
-	content, diags := body.Content(ModBlockSchema)
+	workspaceContent, diags := body.Content(WorkspaceBlockSchema)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
@@ -119,33 +121,36 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	// build an eval context containing functions
 	evalCtx := &hcl.EvalContext{
 		Functions: ContextFunctions(modPath),
+		Variables: make(map[string]cty.Value),
 	}
 
-	for _, block := range content.Blocks {
-		if block.Type == modconfig.BlockTypeMod {
-			var defRange = block.DefRange
-			if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
-				defRange = hclBody.SrcRange
-			}
-			mod, err := modconfig.NewMod(block.Labels[0], modPath, defRange)
-			if err != nil {
-				return nil, err
-			}
-			diags = gohcl.DecodeBody(block.Body, evalCtx, mod)
-			if diags.HasErrors() {
-				return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
-			}
-			// call decode callback
-			if err := mod.OnDecoded(block, nil); err != nil {
-				return nil, err
-			}
-			// set modfilename
-			mod.SetFilePath(modFilePath)
-			return mod, nil
-		}
+	block := getFirstBlockOfType(workspaceContent.Blocks, modconfig.BlockTypeMod)
+	if block == nil {
+		return nil, fmt.Errorf("no mod definition found in %s", modPath)
 	}
+	var defRange = block.DefRange
+	if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
+		defRange = hclBody.SrcRange
+	}
+	mod := modconfig.NewMod(block.Labels[0], path.Dir(modFilePath), defRange)
+	// set modFilePath
+	mod.SetFilePath(modFilePath)
 
-	return nil, fmt.Errorf("no mod definition found in %s", modPath)
+	// create a temporary runContext to decode the mod definition
+	// note - this is not fully populated - the only properties which will be used are
+	var res *decodeResult
+	mod, res = decodeMod(block, evalCtx, mod)
+	if res.Diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to decode mod hcl file", diags)
+	}
+	// NOTE: IGNORE DEPENDENCY ERRORS
+	// TODO verify any dependency errors are for args only
+
+	// call decode callback
+	if err := mod.OnDecoded(block, nil); err != nil {
+		return nil, err
+	}
+	return mod, nil
 }
 
 // ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
@@ -156,7 +161,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
 	}
 
-	content, moreDiags := body.Content(ModBlockSchema)
+	content, moreDiags := body.Content(WorkspaceBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
@@ -307,7 +312,7 @@ func ParseModResourceNames(fileData map[string][]byte) (*modconfig.WorkspaceReso
 		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
 	}
 
-	content, moreDiags := body.Content(ModBlockSchema)
+	content, moreDiags := body.Content(WorkspaceBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return nil, plugin.DiagsToError("Failed to load mod", diags)

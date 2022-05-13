@@ -43,7 +43,7 @@ type Mod struct {
 	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// blocks
-	Require       *Require   `hcl:"require,block"`
+	Require       *Require   // `hcl:"require,block"`
 	LegacyRequire *Require   `hcl:"requires,block"`
 	OpenGraph     *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
@@ -63,11 +63,9 @@ type Mod struct {
 	ResourceMaps *ModResources
 }
 
-func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
-	require, err := NewRequire()
-	if err != nil {
-		return nil, err
-	}
+func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
+	require := NewRequire()
+
 	mod := &Mod{
 		ShortName: shortName,
 		FullName:  fmt.Sprintf("mod.%s", shortName),
@@ -80,7 +78,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) (*Mod, error) {
 	// try to derive mod version from the path
 	mod.setVersion()
 
-	return mod, nil
+	return mod
 }
 
 func (m *Mod) setVersion() {
@@ -149,14 +147,11 @@ func (m *Mod) Equals(other *Mod) bool {
 }
 
 // CreateDefaultMod creates a default mod created for a workspace with no mod definition
-func CreateDefaultMod(modPath string) (*Mod, error) {
-	m, err := NewMod(defaultModName, modPath, hcl.Range{})
-	if err != nil {
-		return nil, err
-	}
+func CreateDefaultMod(modPath string) *Mod {
+	m := NewMod(defaultModName, modPath, hcl.Range{})
 	folderName := filepath.Base(modPath)
 	m.Title = &folderName
-	return m, nil
+	return m
 }
 
 // IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition

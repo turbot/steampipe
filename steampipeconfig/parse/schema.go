@@ -40,8 +40,8 @@ var ConnectionBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// ModBlockSchema is the top level schema for all mod resources
-var ModBlockSchema = &hcl.BodySchema{
+// WorkspaceBlockSchema is the top level schema for all workspace resources
+var WorkspaceBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -103,6 +103,29 @@ var ModBlockSchema = &hcl.BodySchema{
 		{
 			Type: modconfig.BlockTypeLocals,
 		},
+	},
+}
+
+// schema for the mod blocks which must be manually decoded
+var ModBlockSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type: modconfig.BlockTypeRequire,
+		},
+	},
+}
+
+var RequireBlockSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       modconfig.BlockTypeMod,
+			LabelNames: []string{"name"},
+		},
+	},
+}
+var RequireModBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "args"},
 	},
 }
 

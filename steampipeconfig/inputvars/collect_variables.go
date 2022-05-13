@@ -23,7 +23,6 @@ import (
 // but the values themselves may produce additional diagnostics when finally
 // parsed.
 func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, error) {
-	var diags tfdiags.Diagnostics
 	ret := map[string]UnparsedVariableValue{}
 
 	// First we'll deal with environment variables, since they have the lowest
@@ -59,7 +58,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	// ending in .auto.spvars.
 	defaultVarsPath := filepaths.DefaultVarsFilePath(workspacePath)
 	if _, err := os.Stat(defaultVarsPath); err == nil {
-		diags = addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
+		diags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
 		if diags.HasErrors() {
 			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", defaultVarsPath), diags)
 		}
@@ -73,8 +72,10 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 			if !isAutoVarFile(name) {
 				continue
 			}
-			diags = addVarsFromFile(name, ValueFromAutoFile, ret)
-			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", name), diags)
+			diags := addVarsFromFile(name, ValueFromAutoFile, ret)
+			if diags.HasErrors() {
+				return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", name), diags)
+			}
 
 		}
 	}
@@ -83,9 +84,12 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	// as individual literal settings or as additional files to read.
 	for _, fileArg := range variableFileArgs {
 		diags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
-		return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", fileArg), diags)
+		if diags.HasErrors() {
+			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", fileArg), diags)
+		}
 	}
 
+	var diags tfdiags.Diagnostics
 	for _, variableArg := range variablesArgs {
 		// Value should be in the form "name=value", where value is a
 		// raw string whose interpretation will depend on the variable's
@@ -129,7 +133,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 
 	// now map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
 	ret = transformVarNames(ret)
-	return ret, diags.Err()
+	return ret, nil
 }
 
 // map any variable names of form <modname>.<variablename> to <modname>.var.<varname>

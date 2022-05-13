@@ -54,10 +54,8 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
 		}
 		// just create a default mod
-		mod, err = modconfig.CreateDefaultMod(modPath)
-		if err != nil {
-			return nil, err
-		}
+		mod = modconfig.CreateDefaultMod(modPath)
+
 	}
 
 	// load the mod dependencies

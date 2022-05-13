@@ -28,7 +28,7 @@ var testCasesLoadMod map[string]loadModTest
 
 func init() {
 	filepaths.SteampipeDir = "~/.steampipe"
-	require, _ := modconfig.NewRequire()
+	require := modconfig.NewRequire()
 	testCasesLoadMod = map[string]loadModTest{
 		"no_mod_sql_files": {
 			source: "testdata/mods/no_mod_sql_files",
