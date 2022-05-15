@@ -79,7 +79,7 @@ const Benchmark = (props: InnerCheckProps) => {
         properties: {
           label: "OK",
           value: totalSummary.ok,
-          type: "ok",
+          type: totalSummary.ok > 0 ? "ok" : null,
         },
       },
       {
@@ -111,7 +111,7 @@ const Benchmark = (props: InnerCheckProps) => {
         properties: {
           label: "Info",
           value: totalSummary.info,
-          type: "info",
+          type: totalSummary.info > 0 ? "info" : null,
         },
       },
       {
