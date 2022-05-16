@@ -11,15 +11,22 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-func PromptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable) error {
+func PromptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {
 	fmt.Println()
 	fmt.Println("Variables defined with no value set.")
 	for _, v := range missingVariables {
-		r, err := promptForVariable(ctx, v.ShortName, v.Description)
+		variableName := v.ShortName
+		variableDisplayName := fmt.Sprintf("var.%s", v.ShortName)
+		// if this variable is NOT part of the workspace mod, add the mod name to the variable name
+		if v.Mod.ModPath != workspacePath {
+			variableDisplayName = fmt.Sprintf("%s.var.%s", v.ModName, v.ShortName)
+			variableName = fmt.Sprintf("%s.%s", v.ModName, v.ShortName)
+		}
+		r, err := promptForVariable(ctx, variableDisplayName, v.Description)
 		if err != nil {
 			return err
 		}
-		addInteractiveVariableToViper(v.ShortName, r)
+		addInteractiveVariableToViper(variableName, r)
 	}
 	return nil
 }
@@ -27,8 +34,8 @@ func PromptForMissingVariables(ctx context.Context, missingVariables []*modconfi
 func promptForVariable(ctx context.Context, name, description string) (string, error) {
 	uiInput := &inputvars.UIInput{}
 	rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
-		Id:          fmt.Sprintf("var.%s", name),
-		Query:       fmt.Sprintf("var.%s", name),
+		Id:          name,
+		Query:       name,
 		Description: description,
 	})
 
