@@ -53,7 +53,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/bad_mod_with_dep_mod_version_require_not_met
 
   run steampipe query "select 1"
-  assert_output --partial 'Error: failed to load workspace: not all dependencies are installed'
+  assert_output --partial 'Error: failed to load workspace: 1 dependency failed to install'
 
   run steampipe mod install
   assert_output --partial 'Error: 1 dependency failed to install - no version of github.com/turbot/steampipe-mod-aws-compliance found satisfying version constraint: 99.21.0'
@@ -64,7 +64,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/bad_mod_with_dep_mod_version_require_not_met
 
   run steampipe check all
-  assert_output --partial 'Error: failed to load workspace: not all dependencies are installed'
+  assert_output --partial 'Error: failed to load workspace: 1 dependency failed to install'
 
   run steampipe mod install
   assert_output --partial 'Error: 1 dependency failed to install - no version of github.com/turbot/steampipe-mod-aws-compliance found satisfying version constraint: 99.21.0'
@@ -75,7 +75,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/bad_mod_with_dep_mod_version_require_not_met
 
   run steampipe dashboard
-  assert_output --partial 'Error: failed to load workspace: not all dependencies are installed'
+  assert_output --partial 'Error: failed to load workspace: 1 dependency failed to install'
 
   run steampipe mod install
   assert_output --partial 'Error: 1 dependency failed to install - no version of github.com/turbot/steampipe-mod-aws-compliance found satisfying version constraint: 99.21.0'
