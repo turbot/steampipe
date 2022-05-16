@@ -243,12 +243,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	},
 	"single_connection_with_default_options_and_workspace_invalid_options_block": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
-		workspaceDir: "testdata/workspaces/invalid_options_block",
+		workspaceDir: "testdata/load_config_test/invalid_options_block",
 		expected:     "ERROR",
 	},
 	"single_connection_with_default_options_and_workspace_search_path_prefix": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
-		workspaceDir: "testdata/workspaces/search_path_prefix",
+		workspaceDir: "testdata/load_config_test/search_path_prefix",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
@@ -317,7 +317,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	},
 	"single_connection_with_default_options_and_workspace_override_terminal_config": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
-		workspaceDir: "testdata/workspaces/override_terminal_config",
+		workspaceDir: "testdata/load_config_test/override_terminal_config",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
@@ -499,7 +499,7 @@ func TestLoadConfig(t *testing.T) {
 		// default workspoace to empty dir
 		workspaceDir := test.workspaceDir
 		if workspaceDir == "" {
-			workspaceDir = "testdata/workspaces/empty"
+			workspaceDir = "testdata/load_config_test/empty"
 		}
 		steampipeDir, err := filepath.Abs(test.steampipeDir)
 		if err != nil {
