@@ -19,19 +19,11 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
 
-// LoadMod parses all hcl files in modPath and returns a single mod
-// if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
-// NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
-// - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
-
+func LoadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod, error) {
+	var mod *modconfig.Mod
 	// verify the mod folder exists
-	if _, err := os.Stat(modPath); os.IsNotExist(err) {
+	_, err := os.Stat(modPath)
+	if os.IsNotExist(err) {
 		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
 	}
 
@@ -56,6 +48,24 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 		// just create a default mod
 		mod = modconfig.CreateDefaultMod(modPath)
 
+	}
+	return mod, nil
+}
+
+// LoadMod parses all hcl files in modPath and returns a single mod
+// if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
+// NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
+// - a default mod will be created assuming there are any resource files
+func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
+	}()
+
+	mod, err = LoadModDefinition(modPath, runCtx)
+	if err != nil {
+		return nil, err
 	}
 	// load the mod dependencies
 	if err := LoadModDependencies(mod, runCtx); err != nil {

@@ -262,18 +262,26 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
-	// build run context which we use to load the workspace
-	runCtx, err := w.getRunContext()
-	if err != nil {
-		return err
-	}
+
 
 	// load all mod defintion and variable definitions
 	variableMap, mod, err := w.loadVariableDefinitions()
 	if err != nil {
 		return err
 	}
-	// set th emod on the workspace
+
+	maybe just do it all in LoadMod, with flag to load vars???
+
+	// build run context which we use to load the workspace
+	runCtx, err := w.getRunContext()
+	if err != nil {
+		return err
+	}
+
+	mod, err = steampipeconfig.LoadModDefinition(w.Path, runCtx)
+	if err != nil {
+		return  err
+	}
 	w.Mod = mod
 
 	// TODO metadata is not set on mod.ResourceMaps.Mods[mod.m1]
