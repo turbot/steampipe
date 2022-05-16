@@ -50,7 +50,7 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send ashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
-	WorkspaceLock      *versionmap.WorkspaceLock
+	workspaceLock      *versionmap.WorkspaceLock
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -123,7 +123,7 @@ func (w *Workspace) loadWorkspaceLock() error {
 	if err != nil {
 		return fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
 	}
-	w.WorkspaceLock = lock
+	w.workspaceLock = lock
 	// if this is the old format, migrate by reinstalling dependencies
 	if lock.StructVersion != versionmap.WorkspaceLockStructVersion {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
@@ -131,7 +131,7 @@ func (w *Workspace) loadWorkspaceLock() error {
 		if err != nil {
 			return err
 		}
-		w.WorkspaceLock = installData.NewLock
+		w.workspaceLock = installData.NewLock
 	}
 	return nil
 }
@@ -306,7 +306,7 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 	}
 
 	runCtx := parse.NewRunContext(
-		w.WorkspaceLock,
+		w.workspaceLock,
 		w.Path,
 		parseFlag,
 		&filehelpers.ListOptions{
