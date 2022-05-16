@@ -57,11 +57,15 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 		mod = modconfig.CreateDefaultMod(modPath)
 
 	}
-
 	// load the mod dependencies
-	if err := loadModDependencies(mod, runCtx); err != nil {
+	if err := LoadModDependencies(mod, runCtx); err != nil {
 		return nil, err
 	}
+	return LoadModResources(modPath, runCtx, mod)
+}
+
+func LoadModResources(modPath string, runCtx *parse.RunContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
+
 	// now we have loaded dependencies, set the current mod on the run context
 	runCtx.CurrentMod = mod
 
@@ -70,6 +74,7 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
+	var err error
 	if runCtx.CreatePseudoResources() {
 		// now execute any pseudo-resource creations based on file mappings
 		pseudoResources, err = createPseudoResources(modPath, runCtx)
@@ -106,7 +111,7 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 	return mod, err
 }
 
-func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
+func LoadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 	var errors []error
 
 	if mod.Require != nil {

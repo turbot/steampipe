@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/turbot/steampipe/steampipeconfig/parse"
+
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -14,16 +16,11 @@ import (
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modconfig.ModVariableMap, error) {
-	// load all variable definitions
-	variableMap, err := w.loadVariables()
-	if err != nil {
-		return nil, err
-	}
+func (w *Workspace) getAllVariables(ctx context.Context, runCtx *parse.RunContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
 
 	// now resolve all input variables
 
-	inputVariables, err := w.getInputVariables(variableMap.AllVariables, validate)
+	inputVariables, err := w.getInputVariables(variableMap.AllVariables, validate, runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,25 +49,25 @@ func (w *Workspace) getAllVariables(ctx context.Context, validate bool) (*modcon
 	return variableMap, nil
 }
 
-func (w *Workspace) loadVariables() (*modconfig.ModVariableMap, error) {
+func (w *Workspace) loadVariableDefinitions() (*modconfig.ModVariableMap, *modconfig.Mod, error) {
 	// build options used to load workspace
 	runCtx, err := w.getRunContext()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	// only load variables blocks
+	// only load mod and variables blocks
 	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
 	mod, err := steampipeconfig.LoadMod(w.Path, runCtx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	variableMap := modconfig.NewModVariableMap(mod, runCtx.LoadedDependencyMods)
 
-	return variableMap, nil
+	return variableMap, mod, nil
 }
 
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, validate bool) (inputvars.InputValues, error) {
+func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, validate bool, runCtx *parse.RunContext) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -79,12 +76,18 @@ func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable
 		return nil, err
 	}
 
+	// build map of depedency mod variable values declared in the mod 'Require' section
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(w.Mod, runCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	if validate {
-		if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
+		if err := identifyMissingVariables(inputValuesUnparsed, variableMap, depModVarValues); err != nil {
 			return nil, err
 		}
 	}
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, depModVarValues, validate)
 
 	return parsedValues, diags.Err()
 }
@@ -111,14 +114,16 @@ func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 	}
 }
 
-func identifyMissingVariables(existing map[string]inputvars.UnparsedVariableValue, vcs map[string]*modconfig.Variable) error {
+func identifyMissingVariables(existing map[string]inputvars.UnparsedVariableValue, vcs map[string]*modconfig.Variable, depModVarValues inputvars.InputValues) error {
 	var needed []*modconfig.Variable
 
 	for name, vc := range vcs {
 		if !vc.Required() {
 			continue // We only prompt for required variables
 		}
-		if _, exists := existing[name]; !exists {
+		_, unparsedValExists := existing[name]
+		_, depModVarValueExists := depModVarValues[name]
+		if !unparsedValExists && !depModVarValueExists {
 			needed = append(needed, vc)
 		}
 	}

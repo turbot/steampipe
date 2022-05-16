@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// ModVariableMap is a struct containins maps of variable definitions
 type ModVariableMap struct {
 	RootVariables       map[string]*Variable
 	DependencyVariables map[string]map[string]*Variable
@@ -26,7 +27,7 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 	}
 	// now add variables from dependency mods
 	for _, mod := range dependencyMods {
-		// add variables into map, modifying th ekey to be the variable short name
+		// add variables into map, modifying the key to be the variable short name
 		m.DependencyVariables[mod.ShortName] = make(map[string]*Variable)
 		for k, v := range mod.ResourceMaps.Variables {
 			m.DependencyVariables[mod.ShortName][buildVariableMapKey(k)] = v

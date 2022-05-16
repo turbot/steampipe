@@ -3,7 +3,12 @@ package inputvars
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
+
+	"github.com/turbot/steampipe/steampipeconfig/parse"
+
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -25,8 +30,9 @@ import (
 func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, error) {
 	ret := map[string]UnparsedVariableValue{}
 
-	// First we'll deal with environment variables, since they have the lowest
-	// precedence.
+	// First we'll deal with environment variables
+	// since they have the lowest precedence.
+
 	{
 		env := os.Environ()
 		for _, raw := range env {
@@ -136,6 +142,47 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	return ret, nil
 }
 
+func CollectVariableValuesFromModRequire(mod *modconfig.Mod, runCtx *parse.RunContext) (InputValues, error) {
+	res := make(InputValues)
+	if mod.Require != nil {
+		for _, depModConstraint := range mod.Require.Mods {
+			// find the short name for this mod
+			depMod, ok := runCtx.LoadedDependencyMods[depModConstraint.Name]
+			if !ok {
+				return nil, fmt.Errorf("depency mod %s is not loaded", depMod.Name())
+			}
+
+			if args := depModConstraint.Args; args != nil {
+				for varName, varVal := range args {
+					varFullName := fmt.Sprintf("%s.var.%s", depMod.ShortName, varName)
+
+					sourceRange := tfdiags.SourceRange{
+						Filename: mod.Require.DeclRange.Filename,
+						Start: tfdiags.SourcePos{
+							Line:   mod.Require.DeclRange.Start.Line,
+							Column: mod.Require.DeclRange.Start.Column,
+							Byte:   mod.Require.DeclRange.Start.Byte,
+						},
+						End: tfdiags.SourcePos{
+							Line:   mod.Require.DeclRange.End.Line,
+							Column: mod.Require.DeclRange.End.Column,
+							Byte:   mod.Require.DeclRange.End.Byte,
+						},
+					}
+
+					res[varFullName] = &InputValue{
+						Value:       varVal,
+						SourceType:  ValueFromModFile,
+						SourceRange: sourceRange,
+					}
+
+				}
+			}
+		}
+	}
+	return res, nil
+}
+
 // map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
 func transformVarNames(rawValues map[string]UnparsedVariableValue) map[string]UnparsedVariableValue {
 	ret := make(map[string]UnparsedVariableValue, len(rawValues))
@@ -169,25 +216,14 @@ func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]
 		return diags
 	}
 
-	var depVarAliases = make(map[string]string)
+	// replace syntax `<modname>.<varname>=<var_value>` with `___steampipe_<modname>_<varname>=<var_value>
+	sanitisedSrc, depVarAliases := sanitiseVariableNames(src)
+
 	var f *hcl.File
 	var hclDiags hcl.Diagnostics
 
 	// attempt to parse the config
-	f, hclDiags = hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
-	if hclDiags.HasErrors() {
-		// if there was a failure, it may have been because some variable values were specified using mod scoping,
-		// eg: aws_tags.var1 = "foo"
-		//
-		// attempt to sanitise variable names
-		// this returns the updated hcl as well as a map of the updated names -
-		// we use this to map back to thew original name
-		src, depVarAliases = sanitiseVariableNames(src, hclDiags)
-
-		// now try the parse again (any errors at this point and
-		f, hclDiags = hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
-	}
-
+	f, hclDiags = hclsyntax.ParseConfig(sanitisedSrc, filename, hcl.Pos{Line: 1, Column: 1})
 	diags = diags.Append(hclDiags)
 	if f == nil || f.Body == nil {
 		return diags
@@ -240,48 +276,27 @@ func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]
 	return diags
 }
 
-func sanitiseVariableNames(src []byte, hclDiags hcl.Diagnostics) ([]byte, map[string]string) {
-	var depVarAliases = make(map[string]string)
+func sanitiseVariableNames(src []byte) ([]byte, map[string]string) {
+	// replace syntax `<modname>.<varname>=<var_value>` with `____steampipe_mod_<modname>_<varname>____=<var_value>
+
 	lines := strings.Split(string(src), "\n")
-	for _, diag := range hclDiags {
-		// determine whether this error was caused by the scoping of a variable, of the form
-		// aws_tags.var1 = "foo"
+	// make map of varname aliases
+	var depVarAliases = make(map[string]string)
 
-		// get the failed line (note the line number in Range is 1-based)
-		lineIdx := diag.Subject.Start.Line - 1
-		failedLine := lines[lineIdx]
+	for i, line := range lines {
 
-		// the failed bytes would be the mod name
-		// - we expect the following char to be a '.'
-		// if it is not, this must be a different error which we cannot fix
-		endIdx := diag.Subject.End.Column - 1
-		if endIdx >= len(failedLine) || failedLine[endIdx] != '.' {
-			break
+		r := regexp.MustCompile(`^ ?(([a-z0-9\-_]+)\.([a-z0-9\-_]+)) ?=`)
+		captureGroups := r.FindStringSubmatch(line)
+		if captureGroups != nil && len(captureGroups) == 4 {
+			fullVarName := captureGroups[1]
+			mod := captureGroups[2]
+			varName := captureGroups[3]
+
+			aliasedName := fmt.Sprintf("____steampipe_mod_%s_variable_%s____", mod, varName)
+			depVarAliases[aliasedName] = fullVarName
+			lines[i] = strings.Replace(line, fullVarName, aliasedName, 1)
+
 		}
-
-		// where is the first index
-		equalsIdx := strings.Index(failedLine, "=")
-		// if there is no equals on the line, - this is also not valid hcl - give up trying to fix
-		if equalsIdx == -1 {
-			equalsIdx = len(failedLine) - 1
-		}
-
-		// get remainder of variable name
-		badVar := strings.TrimSpace(failedLine[:equalsIdx])
-
-		// failedBytes will be the mod name
-		modName := diag.Subject.SliceBytes(src)
-
-		fixedVar := strings.Replace(badVar,
-			fmt.Sprintf("%s.", string(modName)),
-			fmt.Sprintf("%s____mod_scope____", string(modName)),
-			1)
-
-		depVarAliases[fixedVar] = badVar
-		fixedLine := strings.Replace(failedLine, badVar, fixedVar, 1)
-
-		// replace the bad line
-		lines[lineIdx] = fixedLine
 	}
 
 	// now try again

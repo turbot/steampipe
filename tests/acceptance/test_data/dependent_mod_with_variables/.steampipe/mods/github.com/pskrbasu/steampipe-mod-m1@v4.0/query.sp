@@ -1,3 +1,12 @@
+variable dep_mod_var1 {
+    type = string
+}
+
+
+variable dep_mod_var2 {
+    type = string
+}
+
 variable dupe_name_var {
     type = string
 }
