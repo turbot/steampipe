@@ -7,12 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
-
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/filepaths"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 	"github.com/turbot/steampipe/versionhelpers"
@@ -31,18 +29,6 @@ type WorkspaceLock struct {
 	StructVersion       int64
 }
 
-// IsValid checks whether the struct was correctly deserialized,
-// by checking if the StructVersion is populated
-func (l WorkspaceLock) IsValid() bool {
-	return l.StructVersion > 0
-}
-
-func (l *WorkspaceLock) MigrateFrom() migrate.Migrateable {
-	l.StructVersion = WorkspaceLockStructVersion
-
-	return l
-}
-
 // EmptyWorkspaceLock creates a new empty workspace lock based,
 // sharing workspace path and installedMods with 'existingLock'
 func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
@@ -59,7 +45,6 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	var installCache = make(DependencyVersionMap)
 	lockPath := filepaths.WorkspaceLockPath(workspacePath)
 	if helpers.FileExists(lockPath) {
-
 		fileContent, err := os.ReadFile(lockPath)
 		if err != nil {
 			log.Printf("[TRACE] error reading %s: %s\n", lockPath, err.Error())
@@ -171,6 +156,7 @@ func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVer
 }
 
 func (l *WorkspaceLock) Save() error {
+	l.StructVersion = WorkspaceLockStructVersion
 	if len(l.InstallCache) == 0 {
 		// ignore error
 		l.Delete()

@@ -17,7 +17,7 @@ import (
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/migrate"
+	"github.com/turbot/steampipe/modinstaller"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -50,6 +50,7 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send ashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
+	workspaceLock      *versionmap.WorkspaceLock
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -65,11 +66,6 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	// load the workspace mod
 	if err := workspace.loadWorkspaceMod(ctx); err != nil {
 		return nil, err
-	}
-
-	// migrate legacy workspace lock files in the directory to use snake casing (migrated in v0.14.0)
-	if err := migrate.Migrate(&versionmap.WorkspaceLock{}, filepaths.WorkspaceLockPath(workspacePath)); err != nil {
-		return nil, fmt.Errorf("failed to migrate legacy workspace lock files: %s", err.Error())
 	}
 
 	// return context error so calling code can handle cancellations
@@ -113,7 +109,31 @@ func createShellWorkspace(workspacePath string) (*Workspace, error) {
 	if err := workspace.loadExclusions(); err != nil {
 		return nil, err
 	}
+
+	// load the workspace lock
+	err := workspace.loadWorkspaceLock()
+	if err != nil {
+		return nil, err
+	}
 	return workspace, nil
+}
+
+func (w *Workspace) loadWorkspaceLock() error {
+	lock, err := versionmap.LoadWorkspaceLock(w.Path)
+	if err != nil {
+		return fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
+	}
+	w.workspaceLock = lock
+	// if this is the old format, migrate by reinstalling dependencies
+	if lock.StructVersion != versionmap.WorkspaceLockStructVersion {
+		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
+		installData, err := modinstaller.InstallWorkspaceDependencies(opts)
+		if err != nil {
+			return err
+		}
+		w.workspaceLock = installData.NewLock
+	}
+	return nil
 }
 
 // LoadResourceNames builds lists of all workspace resource names
@@ -284,14 +304,9 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
 	}
-	// load the workspace lock
-	workspaceLock, err := versionmap.LoadWorkspaceLock(w.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
-	}
 
 	runCtx := parse.NewRunContext(
-		workspaceLock,
+		w.workspaceLock,
 		w.Path,
 		parseFlag,
 		&filehelpers.ListOptions{
