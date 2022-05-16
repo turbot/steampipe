@@ -34,8 +34,10 @@ func ParseModFullName(fullName string) (modName string, modVersion *semver.Versi
 		return
 	}
 	modName = parts[0]
-	modVersion, err = semver.NewVersion(parts[1])
-	if err != nil {
+	versionString := parts[1]
+	modVersion, err = semver.NewVersion(versionString)
+	// NOTE: we expect the version to be in format 'vx.x.x', i.e. a smver with a preceding v
+	if !strings.HasPrefix(versionString, "v") || err != nil {
 		err = fmt.Errorf("mod file %s has invalid version", fullName)
 	}
 	return

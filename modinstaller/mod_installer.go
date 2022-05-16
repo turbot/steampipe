@@ -432,6 +432,9 @@ func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionC
 	if err != nil {
 		return nil, err
 	}
+	if modDef == nil {
+		return nil, fmt.Errorf("failed to load mod from %s", modPath)
+	}
 	if err := i.setModDependencyPath(modDef, modPath); err != nil {
 		return nil, err
 	}
