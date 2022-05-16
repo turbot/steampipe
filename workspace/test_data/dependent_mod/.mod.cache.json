@@ -1,9 +1,10 @@
 {
   "local": {
     "github.com/pskrbasu/steampipe-mod-m1": {
-      "Name": "github.com/pskrbasu/steampipe-mod-m1",
-      "Version": "4.0.0",
-      "Constraint": "4.0"
+      "name": "github.com/pskrbasu/steampipe-mod-m1",
+      "alias": "m1",
+      "version": "4.0.0",
+      "constraint": "4.0"
     }
   }
 }
