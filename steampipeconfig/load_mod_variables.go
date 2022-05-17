@@ -1,8 +1,9 @@
-package workspace
+package steampipeconfig
 
 import (
 	"context"
 	"fmt"
+
 	"sort"
 
 	"github.com/turbot/steampipe/steampipeconfig/parse"
@@ -10,17 +11,28 @@ import (
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
 )
 
-func (w *Workspace) getAllVariables(ctx context.Context, runCtx *parse.RunContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
+func LoadVariableDefinitions(variablePath string, runCtx *parse.RunContext) (*modconfig.ModVariableMap, error) {
+	// only load mod and variables blocks
+	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
+	mod, err := LoadMod(nil, variablePath, runCtx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	variableMap := modconfig.NewModVariableMap(mod, runCtx.LoadedDependencyMods)
+
+	return variableMap, nil
+}
+
+func GetVariableValues(ctx context.Context, runCtx *parse.RunContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
 
 	// now resolve all input variables
-
-	inputVariables, err := w.getInputVariables(variableMap.AllVariables, validate, runCtx)
+	inputVariables, err := getInputVariables(variableMap.AllVariables, validate, runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,44 +52,33 @@ func (w *Workspace) getAllVariables(ctx context.Context, runCtx *parse.RunContex
 			inputValue.SourceRange)
 
 		// set variable value string in our workspace map
-		w.VariableValues[name], err = utils.CtyToString(inputValue.Value)
+		variableMap.VariableValues[name], err = utils.CtyToString(inputValue.Value)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	// add workspace mod variables to runContext
+	runCtx.AddInputVariables(variableMap)
+
 	return variableMap, nil
 }
 
-func (w *Workspace) loadVariableDefinitions() (*modconfig.ModVariableMap, *modconfig.Mod, error) {
-	// build options used to load workspace
-	runCtx, err := w.getRunContext()
-	if err != nil {
-		return nil, nil, err
-	}
-	// only load mod and variables blocks
-	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, err := steampipeconfig.LoadMod(w.Path, runCtx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	variableMap := modconfig.NewModVariableMap(mod, runCtx.LoadedDependencyMods)
-
-	return variableMap, mod, nil
-}
-
-func (w *Workspace) getInputVariables(variableMap map[string]*modconfig.Variable, validate bool, runCtx *parse.RunContext) (inputvars.InputValues, error) {
+func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool, runCtx *parse.RunContext) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
-	inputValuesUnparsed, err := inputvars.CollectVariableValues(w.Path, variableFileArgs, variableArgs)
+	// get mod and mod path from run context
+	mod := runCtx.CurrentMod
+	path := mod.ModPath
+
+	inputValuesUnparsed, err := inputvars.CollectVariableValues(path, variableFileArgs, variableArgs)
 	if err != nil {
 		return nil, err
 	}
 
 	// build map of depedency mod variable values declared in the mod 'Require' section
-	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(w.Mod, runCtx)
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, runCtx)
 	if err != nil {
 		return nil, err
 	}

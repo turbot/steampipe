@@ -43,7 +43,7 @@ type Mod struct {
 	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
 
 	// blocks
-	Require       *Require   // `hcl:"require,block"`
+	Require       *Require
 	LegacyRequire *Require   `hcl:"requires,block"`
 	OpenGraph     *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 

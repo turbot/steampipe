@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -18,6 +19,39 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/parse"
 )
+
+// LoadMod parses all hcl files in modPath and returns a single mod
+// if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
+// NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
+// - a default mod will be created assuming there are any resource files
+func LoadMod(ctx context.Context, modPath string, runCtx *parse.RunContext, variableMap *modconfig.ModVariableMap) (mod *modconfig.Mod, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
+	}()
+
+	mod, err = LoadModDefinition(modPath, runCtx)
+	if err != nil {
+		return nil, err
+	}
+	// load the mod dependencies
+	if err := LoadModDependencies(mod, runCtx); err != nil {
+		return nil, err
+	}
+	// now we have loaded dependencies, set the current mod on the run context
+	runCtx.CurrentMod = mod
+
+	// id a variable map was passed in (i.e this is a workspace mpd load) evaluate the input variables
+	if variableMap != nil {
+		// we WILL validate missing variables when loading
+		validateMissing := true
+		if _, err = GetVariableValues(ctx, runCtx, variableMap, validateMissing); err != nil {
+			return nil, err
+		}
+	}
+	return LoadModResources(modPath, runCtx, mod)
+}
 
 func LoadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod, error) {
 	var mod *modconfig.Mod
@@ -52,32 +86,7 @@ func LoadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod
 	return mod, nil
 }
 
-// LoadMod parses all hcl files in modPath and returns a single mod
-// if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
-// NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
-// - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
-
-	mod, err = LoadModDefinition(modPath, runCtx)
-	if err != nil {
-		return nil, err
-	}
-	// load the mod dependencies
-	if err := LoadModDependencies(mod, runCtx); err != nil {
-		return nil, err
-	}
-	return LoadModResources(modPath, runCtx, mod)
-}
-
 func LoadModResources(modPath string, runCtx *parse.RunContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
-
-	// now we have loaded dependencies, set the current mod on the run context
-	runCtx.CurrentMod = mod
 
 	// now populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = runCtx.GetResourceMaps()
@@ -191,7 +200,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 	childRunCtx.BlockTypes = runCtx.BlockTypes
 	childRunCtx.ParentRunCtx = runCtx
 
-	mod, err := LoadMod(dependencyPath, childRunCtx)
+	mod, err := LoadMod(nil, dependencyPath, childRunCtx, nil)
 	if err != nil {
 		return err
 	}

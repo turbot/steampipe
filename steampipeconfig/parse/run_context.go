@@ -58,6 +58,9 @@ type RunContext struct {
 	// Variables is a map of the variables in the current mod
 	// it is used to populate the variables property on the mod
 	Variables map[string]*modconfig.Variable
+	// the input variables evaluated in the parse
+	VariableValues map[string]string
+
 	// DependencyVariables is a map of the variables in the dependency mods of the current mod
 	// it is used to populate the variables property on the dependency
 	DependencyVariables map[string]map[string]*modconfig.Variable
@@ -91,6 +94,9 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		},
 		blockChildMap: make(map[string][]string),
 		blockNameMap:  make(map[string]string),
+		// inisialise variable maps - even though we later overwrite them
+		Variables:      make(map[string]*modconfig.Variable),
+		VariableValues: make(map[string]string),
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
@@ -141,9 +147,8 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 func (r *RunContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
 	r.setRootVariables(inputVariables.RootVariables)
 	r.setDependencyVariables(inputVariables.DependencyVariables)
-
-	// do not reload variables as we already have them
-	r.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
+	// store the parsed input values
+	r.VariableValues = inputVariables.VariableValues
 }
 
 // SetVariablesForDependencyMod adds variables to the run context.
