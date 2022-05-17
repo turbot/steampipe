@@ -26,7 +26,6 @@ type WorkspaceLock struct {
 
 	ModInstallationPath string
 	installedMods       VersionListMap
-	StructVersion       int64
 }
 
 // EmptyWorkspaceLock creates a new empty workspace lock based,
@@ -156,7 +155,6 @@ func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVer
 }
 
 func (l *WorkspaceLock) Save() error {
-	l.StructVersion = WorkspaceLockStructVersion
 	if len(l.InstallCache) == 0 {
 		// ignore error
 		l.Delete()
@@ -291,4 +289,17 @@ func (l *WorkspaceLock) Incomplete() bool {
 // Empty returns whether the install cache is empty
 func (l *WorkspaceLock) Empty() bool {
 	return l == nil || len(l.InstallCache) == 0
+}
+
+// StructVersion returns the struct version of the workspace lock
+// because only the InstallCache is serialised, read the StructVersion from the first install cache entry
+func (l *WorkspaceLock) StructVersion() int {
+	for _, depVersionMap := range l.InstallCache {
+		for _, depVersion := range depVersionMap {
+			return depVersion.StructVersion
+		}
+	}
+	// we have no deps - just return the new struct version
+	return WorkspaceLockStructVersion
+
 }

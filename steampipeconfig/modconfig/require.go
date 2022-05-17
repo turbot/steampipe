@@ -13,21 +13,19 @@ import (
 
 // Require is a struct representing mod dependencies
 type Require struct {
-	SteampipeVersionString string `hcl:"steampipe,optional"`
 	SteampipeVersion       *semver.Version
-	Plugins                []*PluginVersion        `hcl:"plugin,block"`
-	Mods                   []*ModVersionConstraint `hcl:"mod,block"`
-	DeclRange              hcl.Range               `json:"-"`
+	SteampipeVersionString string           `hcl:"steampipe,optional"`
+	Plugins                []*PluginVersion `hcl:"plugin,block"`
+	Mods                   []*ModVersionConstraint
+	DeclRange              hcl.Range
 	// map keyed by name [and alias]
 	modMap map[string]*ModVersionConstraint
 }
 
-func NewRequire() (*Require, error) {
-	r := &Require{}
-	if err := r.initialise(); err != nil {
-		return nil, err
+func NewRequire() *Require {
+	return &Require{
+		modMap: make(map[string]*ModVersionConstraint),
 	}
-	return r, nil
 }
 
 func (r *Require) initialise() error {

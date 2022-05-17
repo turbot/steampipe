@@ -451,7 +451,8 @@ func (i *ModInstaller) setModDependencyPath(mod *modconfig.Mod, modPath string) 
 func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconfig.Mod, error) {
 	if !parse.ModfileExists(modPath) {
 		if createDefault {
-			return modconfig.CreateDefaultMod(i.workspacePath)
+			mod := modconfig.CreateDefaultMod(i.workspacePath)
+			return mod, nil
 		}
 		return nil, nil
 	}

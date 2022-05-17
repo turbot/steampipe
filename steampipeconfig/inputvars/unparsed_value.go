@@ -42,7 +42,7 @@ type UnparsedVariableValue interface {
 // InputValues may be incomplete but will include the subset of variables
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap map[string]*modconfig.Variable, validate bool) (InputValues, tfdiags.Diagnostics) {
+func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap map[string]*modconfig.Variable, depModVarValues InputValues, validate bool) (InputValues, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	ret := make(InputValues, len(inputValuesUnparsed))
 
@@ -117,6 +117,10 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 			Detail:   fmt.Sprintf("In addition to the other similar warnings shown, %d other variable(s) defined without being declared.", extras),
 		})
 	}
+
+	// depModVarValues are values of dependency mod variables which are set in the mod file.
+	// default the inputVariables to these values (last resourt)
+	ret.DefaultTo(depModVarValues)
 
 	// By this point we should've gathered all of the required variables
 	// from one of the many possible sources.

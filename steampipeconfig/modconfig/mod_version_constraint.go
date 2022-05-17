@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/versionhelpers"
+	"github.com/zclconf/go-cty/cty"
 )
 
 const filePrefix = "file:"
@@ -17,6 +18,8 @@ type ModVersionConstraint struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
 	Name          string `cty:"name" hcl:"name,label"`
 	VersionString string `cty:"version" hcl:"version"`
+	// variable values to be set on the dependency mod
+	Args map[string]cty.Value `cty:"args"`
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *versionhelpers.Constraints
 	// // NOTE: aliases will be supported in the future
@@ -29,17 +32,20 @@ type ModVersionConstraint struct {
 }
 
 func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) {
-	var m *ModVersionConstraint
+	m := &ModVersionConstraint{
+		Args: make(map[string]cty.Value),
+	}
+
 	// if name has `file:` prefix, just set the name and ignore version
 	if strings.HasPrefix(modFullName, filePrefix) {
-		m = &ModVersionConstraint{Name: modFullName}
+		m.Name = modFullName
 	} else {
 		// otherwise try to extract version from name
 		segments := strings.Split(modFullName, "@")
 		if len(segments) > 2 {
 			return nil, fmt.Errorf("invalid mod name %s", modFullName)
 		}
-		m = &ModVersionConstraint{Name: segments[0]}
+		m.Name = segments[0]
 		if len(segments) == 2 {
 			m.VersionString = segments[1]
 		}

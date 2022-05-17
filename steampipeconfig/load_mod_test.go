@@ -28,7 +28,7 @@ var testCasesLoadMod map[string]loadModTest
 
 func init() {
 	filepaths.SteampipeDir = "~/.steampipe"
-	require, _ := modconfig.NewRequire()
+	require := modconfig.NewRequire()
 	testCasesLoadMod = map[string]loadModTest{
 		"no_mod_sql_files": {
 			source: "testdata/mods/no_mod_sql_files",
@@ -1303,7 +1303,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	os.Chdir(modPath)
 	// change back to original directory
 	defer os.Chdir(wd)
-	actualMod, err := LoadMod(modPath, runCtx)
+	actualMod, err := LoadMod(nil, modPath, runCtx, nil)
 	if err != nil {
 		if test.expected != "ERROR" {
 			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
@@ -1414,7 +1414,7 @@ func TestLoadModResourceNames(t *testing.T) {
 				Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
 				Flags:   filehelpers.Files,
 			})
-		LoadMod(modPath, runCtx)
+		LoadMod(nil, modPath, runCtx, nil)
 		names, err := LoadModResourceNames(modPath, runCtx)
 
 		if err != nil {

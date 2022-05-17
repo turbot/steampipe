@@ -96,6 +96,11 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 		resources = append(resources, resource)
 	} else {
 		switch block.Type {
+		case modconfig.BlockTypeMod:
+			var mod *modconfig.Mod
+			// decodeMode has slightly different args as this code is shared with ParseModDefinition
+			mod, res = decodeMod(block, runCtx.EvalCtx, runCtx.CurrentMod)
+			resources = append(resources, mod)
 		case modconfig.BlockTypeLocals:
 			// special case decode logic for locals
 			var locals []*modconfig.Local

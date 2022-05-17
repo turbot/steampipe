@@ -83,15 +83,26 @@ func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Vari
 	if err != nil {
 		return nil, err
 	}
-
-	// we will NOT validate missing variables when loading
-	validateMissing := false
-	varMap, err := workspace.getAllVariables(ctx, validateMissing)
+	// build a run context just to use to load variable definitions
+	variablesRunCtx, err := workspace.getRunContext()
 	if err != nil {
 		return nil, err
 	}
+	// load variable definitions
+	variableMap, err := steampipeconfig.LoadVariableDefinitions(workspace.Path, variablesRunCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	validateMissing := false
+	if variableMap, err = steampipeconfig.GetVariableValues(ctx, variablesRunCtx, variableMap, validateMissing); err != nil {
+		return nil, err
+	}
+
 	// convert into a sorted array
-	return varMap.ToArray(), nil
+	return variableMap.ToArray(), nil
+
+	return nil, nil
 }
 
 func createShellWorkspace(workspacePath string) (*Workspace, error) {
@@ -124,8 +135,9 @@ func (w *Workspace) loadWorkspaceLock() error {
 		return fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
 	}
 	w.workspaceLock = lock
+
 	// if this is the old format, migrate by reinstalling dependencies
-	if lock.StructVersion != versionmap.WorkspaceLockStructVersion {
+	if lock.StructVersion() != versionmap.WorkspaceLockStructVersion {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		installData, err := modinstaller.InstallWorkspaceDependencies(opts)
 		if err != nil {
@@ -260,10 +272,14 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
-	// load and evaluate all variables
-	// we WILL validate missing variables when loading
-	validateMissing := true
-	inputVariables, err := w.getAllVariables(ctx, validateMissing)
+	// build a run context just to use to load variable definitions
+	variablesRunCtx, err := w.getRunContext()
+	if err != nil {
+		return err
+	}
+
+	// load variable definitions
+	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesRunCtx)
 	if err != nil {
 		return err
 	}
@@ -273,22 +289,22 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// add workspace mod variables to runContext
-	runCtx.AddInputVariables(inputVariables)
+	// do not reload variables as we already have them
+	runCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
-	// now load the mod
-	m, err := steampipeconfig.LoadMod(w.Path, runCtx)
+	// load the workspace mod, evaluating input variables in the process
+	m, err := steampipeconfig.LoadMod(ctx, w.Path, runCtx, variableMap)
 	if err != nil {
 		return err
 	}
 
+	// now set workspace properties
+	// populate the parsed variable values
+	w.VariableValues = runCtx.VariableValues
 	// populate the mod references map references
 	m.ResourceMaps.PopulateReferences()
-
-	// now set workspace properties
+	// set the mod
 	w.Mod = m
-
-	// set variables on workspace
 	w.Mods = runCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod

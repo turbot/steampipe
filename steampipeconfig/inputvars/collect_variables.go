@@ -3,16 +3,19 @@ package inputvars
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
-
-	"github.com/spf13/viper"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
+	"github.com/turbot/steampipe/utils"
 )
 
 // CollectVariableValues inspects the various places that configuration input variable
@@ -22,12 +25,12 @@ import (
 // This method returns diagnostics relating to the collection of the values,
 // but the values themselves may produce additional diagnostics when finally
 // parsed.
-func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, tfdiags.Diagnostics) {
-	var diags tfdiags.Diagnostics
+func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, error) {
 	ret := map[string]UnparsedVariableValue{}
 
-	// First we'll deal with environment variables, since they have the lowest
-	// precedence.
+	// First we'll deal with environment variables
+	// since they have the lowest precedence.
+	// (apart from values in the mod Require proeprty, which are handled separately later)
 	{
 		env := os.Environ()
 		for _, raw := range env {
@@ -59,8 +62,11 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	// ending in .auto.spvars.
 	defaultVarsPath := filepaths.DefaultVarsFilePath(workspacePath)
 	if _, err := os.Stat(defaultVarsPath); err == nil {
-		moreDiags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
-		diags = diags.Append(moreDiags)
+		diags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
+		if diags.HasErrors() {
+			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", defaultVarsPath), diags)
+		}
+
 	}
 
 	if infos, err := os.ReadDir("."); err == nil {
@@ -70,17 +76,24 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 			if !isAutoVarFile(name) {
 				continue
 			}
-			moreDiags := addVarsFromFile(name, ValueFromAutoFile, ret)
-			diags = diags.Append(moreDiags)
+			diags := addVarsFromFile(name, ValueFromAutoFile, ret)
+			if diags.HasErrors() {
+				return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", name), diags)
+			}
+
 		}
 	}
 
 	// Finally we process values given explicitly on the command line, either
 	// as individual literal settings or as additional files to read.
 	for _, fileArg := range variableFileArgs {
-		moreDiags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
-		diags = diags.Append(moreDiags)
+		diags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
+		if diags.HasErrors() {
+			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", fileArg), diags)
+		}
 	}
+
+	var diags tfdiags.Diagnostics
 	for _, variableArg := range variablesArgs {
 		// Value should be in the form "name=value", where value is a
 		// raw string whose interpretation will depend on the variable's
@@ -105,6 +118,10 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 		}
 	}
 
+	if diags.HasErrors() {
+		return nil, utils.DiagsToError(fmt.Sprintf("failed to evaluate var args:"), diags)
+	}
+
 	// check viper for any interactively added variables
 	if varMap := viper.GetStringMap(constants.ConfigInteractiveVariables); varMap != nil {
 		for name, rawVal := range varMap {
@@ -120,7 +137,48 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 
 	// now map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
 	ret = transformVarNames(ret)
-	return ret, diags
+	return ret, nil
+}
+
+func CollectVariableValuesFromModRequire(mod *modconfig.Mod, runCtx *parse.RunContext) (InputValues, error) {
+	res := make(InputValues)
+	if mod.Require != nil {
+		for _, depModConstraint := range mod.Require.Mods {
+			// find the short name for this mod
+			depMod, ok := runCtx.LoadedDependencyMods[depModConstraint.Name]
+			if !ok {
+				return nil, fmt.Errorf("depency mod %s is not loaded", depMod.Name())
+			}
+
+			if args := depModConstraint.Args; args != nil {
+				for varName, varVal := range args {
+					varFullName := fmt.Sprintf("%s.var.%s", depMod.ShortName, varName)
+
+					sourceRange := tfdiags.SourceRange{
+						Filename: mod.Require.DeclRange.Filename,
+						Start: tfdiags.SourcePos{
+							Line:   mod.Require.DeclRange.Start.Line,
+							Column: mod.Require.DeclRange.Start.Column,
+							Byte:   mod.Require.DeclRange.Start.Byte,
+						},
+						End: tfdiags.SourcePos{
+							Line:   mod.Require.DeclRange.End.Line,
+							Column: mod.Require.DeclRange.End.Column,
+							Byte:   mod.Require.DeclRange.End.Byte,
+						},
+					}
+
+					res[varFullName] = &InputValue{
+						Value:       varVal,
+						SourceType:  ValueFromModFile,
+						SourceRange: sourceRange,
+					}
+
+				}
+			}
+		}
+	}
+	return res, nil
 }
 
 // map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
@@ -156,10 +214,14 @@ func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]
 		return diags
 	}
 
-	var f *hcl.File
+	// replace syntax `<modname>.<varname>=<var_value>` with `___steampipe_<modname>_<varname>=<var_value>
+	sanitisedSrc, depVarAliases := sanitiseVariableNames(src)
 
+	var f *hcl.File
 	var hclDiags hcl.Diagnostics
-	f, hclDiags = hclsyntax.ParseConfig(src, filename, hcl.Pos{Line: 1, Column: 1})
+
+	// attempt to parse the config
+	f, hclDiags = hclsyntax.ParseConfig(sanitisedSrc, filename, hcl.Pos{Line: 1, Column: 1})
 	diags = diags.Append(hclDiags)
 	if f == nil || f.Body == nil {
 		return diags
@@ -200,12 +262,44 @@ func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]
 	diags = diags.Append(hclDiags)
 
 	for name, attr := range attrs {
+		// check for aliases
+		if alias, ok := depVarAliases[name]; ok {
+			name = alias
+		}
 		to[name] = unparsedVariableValueExpression{
 			expr:       attr.Expr,
 			sourceType: sourceType,
 		}
 	}
 	return diags
+}
+
+func sanitiseVariableNames(src []byte) ([]byte, map[string]string) {
+	// replace syntax `<modname>.<varname>=<var_value>` with `____steampipe_mod_<modname>_<varname>____=<var_value>
+
+	lines := strings.Split(string(src), "\n")
+	// make map of varname aliases
+	var depVarAliases = make(map[string]string)
+
+	for i, line := range lines {
+
+		r := regexp.MustCompile(`^ ?(([a-z0-9\-_]+)\.([a-z0-9\-_]+)) ?=`)
+		captureGroups := r.FindStringSubmatch(line)
+		if captureGroups != nil && len(captureGroups) == 4 {
+			fullVarName := captureGroups[1]
+			mod := captureGroups[2]
+			varName := captureGroups[3]
+
+			aliasedName := fmt.Sprintf("____steampipe_mod_%s_variable_%s____", mod, varName)
+			depVarAliases[aliasedName] = fullVarName
+			lines[i] = strings.Replace(line, fullVarName, aliasedName, 1)
+
+		}
+	}
+
+	// now try again
+	src = []byte(strings.Join(lines, "\n"))
+	return src, depVarAliases
 }
 
 // unparsedVariableValueLiteral is a UnparsedVariableValue

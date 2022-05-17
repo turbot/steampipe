@@ -56,6 +56,9 @@ const (
 	// ValueFromInput indicates that the value was provided at an interactive
 	// input prompt.
 	ValueFromInput ValueSourceType = 'I'
+
+	// ValueFromModFile indicates that the value was provided in the 'Require' section of a mod file
+	ValueFromModFile ValueSourceType = 'M'
 )
 
 func (v *InputValue) GoString() string {
@@ -211,6 +214,14 @@ func (vv InputValues) Identical(other InputValues) bool {
 	}
 
 	return true
+}
+
+func (vv InputValues) DefaultTo(other InputValues) {
+	for k, otherVal := range other {
+		if val, ok := vv[k]; !ok || !val.Value.IsKnown() {
+			vv[k] = otherVal
+		}
+	}
 }
 
 // CheckInputVariables ensures that variable values supplied at the UI conform
