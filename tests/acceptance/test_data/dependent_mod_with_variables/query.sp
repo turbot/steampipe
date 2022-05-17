@@ -6,6 +6,12 @@ variable local_set_in_file {
 
 }
 
+
+variable unset {
+  type = string
+  description = "ooh something or other"
+}
+
 variable dupe_name_var {
   type = string
 }
