@@ -174,7 +174,9 @@ func (r *RunContext) setDependencyVariables(dependencyVariables map[string]map[s
 	// add top level variables
 	// add dependency mod variables, scoped by mod name
 	for depModName, depVars := range r.DependencyVariables {
-		r.referenceValues[depModName] = make(ReferenceTypeValueMap)
+		if r.referenceValues[depModName] == nil {
+			r.referenceValues[depModName] = make(ReferenceTypeValueMap)
+		}
 		r.referenceValues[depModName]["var"] = VariableValueMap(depVars)
 	}
 }
