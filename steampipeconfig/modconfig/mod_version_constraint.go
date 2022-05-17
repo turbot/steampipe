@@ -16,9 +16,10 @@ type VersionConstrainCollection []*ModVersionConstraint
 
 type ModVersionConstraint struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
-	Name          string               `cty:"name" hcl:"name,label"`
-	VersionString string               `cty:"version" hcl:"version"`
-	Args          map[string]cty.Value `cty:"args"`
+	Name          string `cty:"name" hcl:"name,label"`
+	VersionString string `cty:"version" hcl:"version"`
+	// variable values to be set on the dependency mod
+	Args map[string]cty.Value `cty:"args"`
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *versionhelpers.Constraints
 	// // NOTE: aliases will be supported in the future

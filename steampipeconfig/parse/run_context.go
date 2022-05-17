@@ -94,7 +94,7 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		},
 		blockChildMap: make(map[string][]string),
 		blockNameMap:  make(map[string]string),
-		// inisialise variable maps - even though we later overwrite them
+		// initialise variable maps - even though we later overwrite them
 		Variables:      make(map[string]*modconfig.Variable),
 		VariableValues: make(map[string]string),
 	}
@@ -174,6 +174,7 @@ func (r *RunContext) setDependencyVariables(dependencyVariables map[string]map[s
 	// add top level variables
 	// add dependency mod variables, scoped by mod name
 	for depModName, depVars := range r.DependencyVariables {
+		// create map for this dependency if needed
 		if r.referenceValues[depModName] == nil {
 			r.referenceValues[depModName] = make(ReferenceTypeValueMap)
 		}

@@ -290,7 +290,6 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[string]bool, error) {
 	hclResources := make(map[string]bool)
 
-	// TODO update this to not have a single hardcoded pseudo resource type
 	for _, block := range content.Blocks {
 		// if this is a mod, build a shell mod struct (with just the name populated)
 		switch block.Type {

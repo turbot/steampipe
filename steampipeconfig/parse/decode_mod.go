@@ -18,16 +18,15 @@ func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (
 	content, remain, diags := block.Body.PartialContent(ModBlockSchema)
 	res.handleDecodeDiags(diags)
 
-	// decode the body into 'modContainer' to populate all properties that can be automatically decoded
+	// decode the body to populate all properties that can be automatically decoded
 	diags = gohcl.DecodeBody(remain, evalCtx, mod)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
-
 	if !res.Success() {
 		return mod, res
 	}
 
-	// now require block
+	// now decode the require block
 	require, requireRes := decodeRequireBlock(content, evalCtx)
 	res.Merge(requireRes)
 	if require != nil {
@@ -58,16 +57,16 @@ func decodeRequireBlock(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (*mo
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	mods, modRes := decodeRequireModBlocks(content, evalCtx)
+	modversionConstraints, modRes := decodeRequireModVersionConstraintBlocks(content, evalCtx)
 	res.Merge(modRes)
-	if mods != nil {
-		require.Mods = mods
+	if modversionConstraints != nil {
+		require.Mods = modversionConstraints
 	}
 	return require, res
 
 }
 
-func decodeRequireModBlocks(content *hcl.BodyContent, evalCtx *hcl.EvalContext) ([]*modconfig.ModVersionConstraint, *decodeResult) {
+func decodeRequireModVersionConstraintBlocks(content *hcl.BodyContent, evalCtx *hcl.EvalContext) ([]*modconfig.ModVersionConstraint, *decodeResult) {
 	var res = newDecodeResult()
 	var constraints []*modconfig.ModVersionConstraint
 
@@ -122,7 +121,6 @@ func decodeRequireModArgs(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (m
 
 func ctyObjectToCtyArgMap(val cty.Value) (map[string]cty.Value, error) {
 	res := make(map[string]cty.Value)
-
 	it := val.ElementIterator()
 	for it.Next() {
 		k, v := it.Element()

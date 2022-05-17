@@ -6,17 +6,15 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/turbot/steampipe/steampipeconfig/parse"
-
-	"github.com/turbot/steampipe/steampipeconfig/modconfig"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/steampipeconfig/parse"
 	"github.com/turbot/steampipe/utils"
 )
 
@@ -32,7 +30,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 
 	// First we'll deal with environment variables
 	// since they have the lowest precedence.
-
+	// (apart from values in the mod Require proeprty, which are handled separately later)
 	{
 		env := os.Environ()
 		for _, raw := range env {
