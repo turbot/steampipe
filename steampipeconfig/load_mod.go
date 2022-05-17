@@ -90,7 +90,6 @@ func LoadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod
 }
 
 func LoadModResources(modPath string, runCtx *parse.RunContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
-
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
 	var err error
