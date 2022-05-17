@@ -1,3 +1,11 @@
+## v0.14.5 [tbc]
+_Bug fixes_
+* Add support for setting dependent mod variable values using an spvars file or by setting the `Args` property in the mod `Require` block. ([#2076](https://github.com/turbot/steampipe/issues/2076), [#2077](https://github.com/turbot/steampipe/issues/2077))
+* Fix pasting a query during cli initialization causing it to be duplicated on the screen. ([#1980](https://github.com/turbot/steampipe/issues/1980))
+* Remove limit of 2 decodes - execute as many passes as needed (as long as the number of unresolved dependencies decreases). Fixes intermittent dependency error when loading steampipe-mod-ibm-insights. ([#2062](https://github.com/turbot/steampipe/issues/2062))
+* Workspace lock file is not being correctly migrated. ([#2069](https://github.com/turbot/steampipe/issues/2069))
+
+
 ## v0.14.4 [2022-05-12]
 _Bug fixes_
 * Fix ctrl+c during dashboard execution causing a `panic: send on closed channel`. ([#2048](https://github.com/turbot/steampipe/issues/2048))
