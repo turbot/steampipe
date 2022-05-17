@@ -42,6 +42,8 @@ func LoadMod(ctx context.Context, modPath string, runCtx *parse.RunContext, vari
 
 	// now we have loaded dependencies, set the current mod on the run context
 	runCtx.CurrentMod = mod
+	// populate the resource maps of the current mod using the dependency mods
+	mod.ResourceMaps = runCtx.GetResourceMaps()
 
 	// id a variable map was passed in (i.e this is a workspace mpd load) evaluate the input variables
 	if variableMap != nil {
@@ -160,8 +162,6 @@ func LoadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 			}
 		}
 	}
-	// populate the resource maps of the current mod using the dependency mods
-	mod.ResourceMaps = runCtx.GetResourceMaps()
 
 	return utils.CombineErrors(errors...)
 }
