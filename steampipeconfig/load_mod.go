@@ -30,24 +30,23 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 		}
 	}()
 
-	mod, err = LoadModDefinition(modPath, runCtx)
+	mod, err = loadModDefinition(modPath, runCtx)
 	if err != nil {
 		return nil, err
 	}
 	// load the mod dependencies
-	if err := LoadModDependencies(mod, runCtx); err != nil {
+	if err := loadModDependencies(mod, runCtx); err != nil {
 		return nil, err
 	}
-
 	// now we have loaded dependencies, set the current mod on the run context
 	runCtx.CurrentMod = mod
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = runCtx.GetResourceMaps()
-
-	return LoadModResources(modPath, runCtx, mod)
+	// now load the mod resource hcl
+	return loadModResources(modPath, runCtx, mod)
 }
 
-func LoadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod, error) {
+func loadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod, error) {
 	var mod *modconfig.Mod
 	// verify the mod folder exists
 	_, err := os.Stat(modPath)
@@ -80,47 +79,7 @@ func LoadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod
 	return mod, nil
 }
 
-func LoadModResources(modPath string, runCtx *parse.RunContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
-	// if flag is set, create pseudo resources by mapping files
-	var pseudoResources []modconfig.MappableResource
-	var err error
-	if runCtx.CreatePseudoResources() {
-		// now execute any pseudo-resource creations based on file mappings
-		pseudoResources, err = createPseudoResources(modPath, runCtx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// get the source files
-	sourcePaths, err := getSourcePaths(modPath, runCtx.ListOptions)
-	if err != nil {
-		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
-		return nil, err
-	}
-
-	// load the raw file data
-	fileData, diags := parse.LoadFileData(sourcePaths...)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
-	}
-
-	// parse all hcl files.
-	mod, err = parse.ParseMod(modPath, fileData, pseudoResources, runCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	// now add fully populated mod to the parent run context
-	if runCtx.ParentRunCtx != nil {
-		runCtx.ParentRunCtx.CurrentMod = mod
-		runCtx.ParentRunCtx.AddMod(mod)
-	}
-
-	return mod, err
-}
-
-func LoadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
+func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 	var errors []error
 
 	if mod.Require != nil {
@@ -208,6 +167,46 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 
 	return err
 
+}
+
+func loadModResources(modPath string, runCtx *parse.RunContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
+	// if flag is set, create pseudo resources by mapping files
+	var pseudoResources []modconfig.MappableResource
+	var err error
+	if runCtx.CreatePseudoResources() {
+		// now execute any pseudo-resource creations based on file mappings
+		pseudoResources, err = createPseudoResources(modPath, runCtx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// get the source files
+	sourcePaths, err := getSourcePaths(modPath, runCtx.ListOptions)
+	if err != nil {
+		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
+		return nil, err
+	}
+
+	// load the raw file data
+	fileData, diags := parse.LoadFileData(sourcePaths...)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
+	}
+
+	// parse all hcl files.
+	mod, err = parse.ParseMod(modPath, fileData, pseudoResources, runCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// now add fully populated mod to the parent run context
+	if runCtx.ParentRunCtx != nil {
+		runCtx.ParentRunCtx.CurrentMod = mod
+		runCtx.ParentRunCtx.AddMod(mod)
+	}
+
+	return mod, err
 }
 
 // search the parent folder for a mod installatio which satisfied the given mod dependency
