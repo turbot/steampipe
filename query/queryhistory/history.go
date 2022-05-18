@@ -20,7 +20,7 @@ func New() (*QueryHistory, error) {
 	history := new(QueryHistory)
 	err := history.load()
 	if err != nil {
-		return history, err
+		return nil, err
 	}
 	return history, nil
 }
@@ -88,7 +88,12 @@ func (q *QueryHistory) load() error {
 	file, err := os.Open(path)
 	if err != nil {
 		q.history = []string{}
+		// ignore not exists errors
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return err
+
 	}
 	defer file.Close()
 
