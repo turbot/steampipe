@@ -32,7 +32,7 @@ const SteampipeConfContent = `
 # see documentation on this behavior in the postgresql docs:
 # https://www.postgresql.org/docs/11/config-setting.html#CONFIG-INCLUDES
 
-autovacuum=off
+
 bgwriter_lru_maxpages=0
 effective_cache_size=64kB
 fsync=off
@@ -75,4 +75,35 @@ log_min_error_statement=error
 logging_collector=on
 log_filename='database-%Y-%m-%d.log'
 log_timezone=UTC
+
+
+#------------------------------------------------------------------------------
+# AUTOVACUUM PARAMETERS
+#------------------------------------------------------------------------------
+
+autovacuum = on                         	# Enable autovacuum subprocess?
+
+# all params left as default: 
+#autovacuum_analyze_scale_factor = 0.1  	# fraction of table size before analyze
+#autovacuum_analyze_threshold = 50      	# min number of row updates before analyze
+#autovacuum_freeze_max_age = 200000000  	# maximum XID age before forced vacuum
+#autovacuum_max_workers = 3         		# max number of autovacuum subprocesses
+#autovacuum_multixact_freeze_max_age = 400000000
+											# maximum multixact age
+											# before forced vacuum
+#autovacuum_naptime = 1min              	# time between autovacuum runs
+#autovacuum_vacuum_cost_delay = 2ms	    	# default vacuum cost delay for
+											# autovacuum, in milliseconds;
+											# -1 means use vacuum_cost_delay
+#autovacuum_vacuum_cost_limit = -1      	# default vacuum cost limit for
+											# autovacuum, -1 means use
+											# vacuum_cost_limit
+#autovacuum_vacuum_scale_factor = 0.2   	# fraction of table size before vacuum
+#autovacuum_vacuum_threshold = 50       	# min number of row updates before vacuum
+#autovacuum_work_mem = -1       			# qthe maximum memory to be used by each autovacuum worker process.        
+#log_autovacuum_min_duration = -1      		# -1 disables, 0 logs all actions and
+ 											# their durations, > 0 logs only
+											# actions running at least this number
+											# of milliseconds. 
+
 `
