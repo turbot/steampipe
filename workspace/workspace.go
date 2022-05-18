@@ -314,10 +314,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 		return nil, err
 	}
 
-	if variableMap, err = steampipeconfig.GetVariableValues(ctx, variablesRunCtx, variableMap, validateMissing); err != nil {
-		return nil, err
-	}
-	return variableMap, nil
+	return steampipeconfig.GetVariableValues(ctx, variablesRunCtx, variableMap, validateMissing)
 }
 
 // build options used to load workspace
