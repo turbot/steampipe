@@ -1,3 +1,7 @@
+## v0.15.0 [tbc]
+_What's new?_
+* Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
+
 ## v0.14.5 [tbc]
 _Bug fixes_
 * Add support for setting dependent mod variable values using an spvars file or by setting the `Args` property in the mod `Require` block. ([#2076](https://github.com/turbot/steampipe/issues/2076), [#2077](https://github.com/turbot/steampipe/issues/2077))
