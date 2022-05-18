@@ -1303,7 +1303,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 	os.Chdir(modPath)
 	// change back to original directory
 	defer os.Chdir(wd)
-	actualMod, err := LoadMod(nil, modPath, runCtx, nil)
+	actualMod, err := LoadMod(modPath, runCtx)
 	if err != nil {
 		if test.expected != "ERROR" {
 			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
@@ -1414,7 +1414,7 @@ func TestLoadModResourceNames(t *testing.T) {
 				Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
 				Flags:   filehelpers.Files,
 			})
-		LoadMod(nil, modPath, runCtx, nil)
+		LoadMod(modPath, runCtx)
 		names, err := LoadModResourceNames(modPath, runCtx)
 
 		if err != nil {
