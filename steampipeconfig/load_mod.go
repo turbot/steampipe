@@ -1,7 +1,6 @@
 package steampipeconfig
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -24,7 +23,7 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(ctx context.Context, modPath string, runCtx *parse.RunContext, variableMap *modconfig.ModVariableMap) (mod *modconfig.Mod, err error) {
+func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -45,14 +44,6 @@ func LoadMod(ctx context.Context, modPath string, runCtx *parse.RunContext, vari
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = runCtx.GetResourceMaps()
 
-	// id a variable map was passed in (i.e this is a workspace mpd load) evaluate the input variables
-	if variableMap != nil {
-		// we WILL validate missing variables when loading
-		validateMissing := true
-		if _, err = GetVariableValues(ctx, runCtx, variableMap, validateMissing); err != nil {
-			return nil, err
-		}
-	}
 	return LoadModResources(modPath, runCtx, mod)
 }
 
@@ -200,7 +191,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 	childRunCtx.BlockTypes = runCtx.BlockTypes
 	childRunCtx.ParentRunCtx = runCtx
 
-	mod, err := LoadMod(nil, dependencyPath, childRunCtx, nil)
+	mod, err := LoadMod(dependencyPath, childRunCtx)
 	if err != nil {
 		return err
 	}

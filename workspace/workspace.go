@@ -283,6 +283,13 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// we WILL validate missing variables when loading
+	validateMissing := true
+	if variableMap, err = steampipeconfig.GetVariableValues(ctx, variablesRunCtx, variableMap, validateMissing); err != nil {
+		return err
+	}
+	// populate the parsed variable values
+	w.VariableValues = variableMap.VariableValues
 
 	// build run context which we use to load the workspace
 	runCtx, err := w.getRunContext()
@@ -293,14 +300,12 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	runCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
 	// load the workspace mod, evaluating input variables in the process
-	m, err := steampipeconfig.LoadMod(ctx, w.Path, runCtx, variableMap)
+	m, err := steampipeconfig.LoadMod(w.Path, runCtx)
 	if err != nil {
 		return err
 	}
 
 	// now set workspace properties
-	// populate the parsed variable values
-	w.VariableValues = runCtx.VariableValues
 	// populate the mod references map references
 	m.ResourceMaps.PopulateReferences()
 	// set the mod

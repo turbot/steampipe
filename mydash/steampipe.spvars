@@ -1,0 +1,1 @@
+aws_tags.mandatory_tags = [ "Foo"]
