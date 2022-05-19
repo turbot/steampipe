@@ -4,8 +4,8 @@ _Bug fixes_
 * Add support for JSONB quals. ([#185](https://github.com/turbot/steampipe-postgres-fdw/issues/185))
 * Fix pasting a query during cli initialization causing it to be duplicated on the screen. ([#1980](https://github.com/turbot/steampipe/issues/1980))
 * Remove limit of 2 decodes - execute as many passes as needed (as long as the number of unresolved dependencies decreases). Fixes intermittent dependency error when loading steampipe-mod-ibm-insights. ([#2062](https://github.com/turbot/steampipe/issues/2062))
-* Workspace lock file is not being correctly migrated. ([#2069](https://github.com/turbot/steampipe/issues/2069))
-
+* Fix workspace lock file not being correctly migrated. ([#2069](https://github.com/turbot/steampipe/issues/2069))
+* Fix intermittent panic error on plugin install. ([#2069](https://github.com/turbot/steampipe/issues/2069))
 
 ## v0.14.4 [2022-05-12]
 _Bug fixes_
