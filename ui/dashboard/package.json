@@ -55,7 +55,7 @@
     "@storybook/preset-create-react-app": "4.1.0",
     "@storybook/react": "6.5.0-alpha.64",
     "@storybook/theming": "6.5.0-alpha.64",
-    "@tailwindcss/forms": "0.5.1",
+    "@tailwindcss/forms": "0.5.2",
     "@tailwindcss/typography": "0.5.2",
     "@tsconfig/create-react-app": "1.0.2",
     "@types/jest": "27.5.1",
