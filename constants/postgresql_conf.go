@@ -81,7 +81,8 @@ log_timezone=UTC
 # AUTOVACUUM PARAMETERS
 #------------------------------------------------------------------------------
 
-autovacuum = on                         	# Enable autovacuum subprocess?
+autovacuum = on                         	# Enable autovacuum subprocess
+track_counts = on
 
 # all params left as default: 
 #autovacuum_analyze_scale_factor = 0.1  	# fraction of table size before analyze
