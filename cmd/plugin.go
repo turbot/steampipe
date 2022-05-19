@@ -267,6 +267,10 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 			if report != nil && report.SkipReason == constants.PluginNotFound {
 				return strutil.Resize(constants.PluginNotFound, 20)
 			} else {
+				if b.Current() == 0 {
+					// no install step to display yet
+					return ""
+				}
 				return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
 			}
 		})
@@ -417,6 +421,10 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 	} else {
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			// set the progress bar to append itself  with the step underway
+			if b.Current() == 0 {
+				// no install step to display yet
+				return ""
+			}
 			return strutil.Resize(pluginInstallSteps[b.Current()-1], 20)
 		})
 		report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
