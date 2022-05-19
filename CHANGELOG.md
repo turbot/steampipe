@@ -1,6 +1,7 @@
 ## v0.15.0 [tbc]
 _What's new?_
 * Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
+* Add control severity in the check run CSV output. ([#1966](https://github.com/turbot/steampipe/issues/1966))
 
 ## v0.14.5 [tbc]
 _Bug fixes_
@@ -8,7 +9,8 @@ _Bug fixes_
 * Add support for JSONB quals. ([#185](https://github.com/turbot/steampipe-postgres-fdw/issues/185))
 * Fix pasting a query during cli initialization causing it to be duplicated on the screen. ([#1980](https://github.com/turbot/steampipe/issues/1980))
 * Remove limit of 2 decodes - execute as many passes as needed (as long as the number of unresolved dependencies decreases). Fixes intermittent dependency error when loading steampipe-mod-ibm-insights. ([#2062](https://github.com/turbot/steampipe/issues/2062))
-* Workspace lock file is not being correctly migrated. ([#2069](https://github.com/turbot/steampipe/issues/2069))
+* Fix workspace lock file not being correctly migrated. ([#2069](https://github.com/turbot/steampipe/issues/2069))
+* Fix intermittent panic error on plugin install. ([#2069](https://github.com/turbot/steampipe/issues/2069))
 
 
 ## v0.14.4 [2022-05-12]
