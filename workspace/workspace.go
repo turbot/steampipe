@@ -50,7 +50,6 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send ashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
-	workspaceLock      *versionmap.WorkspaceLock
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -111,31 +110,7 @@ func createShellWorkspace(workspacePath string) (*Workspace, error) {
 		return nil, err
 	}
 
-	// load the workspace lock
-	err := workspace.loadWorkspaceLock()
-	if err != nil {
-		return nil, err
-	}
 	return workspace, nil
-}
-
-func (w *Workspace) loadWorkspaceLock() error {
-	lock, err := versionmap.LoadWorkspaceLock(w.Path)
-	if err != nil {
-		return fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
-	}
-	w.workspaceLock = lock
-
-	// if this is the old format, migrate by reinstalling dependencies
-	if lock.StructVersion() != versionmap.WorkspaceLockStructVersion {
-		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
-		installData, err := modinstaller.InstallWorkspaceDependencies(opts)
-		if err != nil {
-			return err
-		}
-		w.workspaceLock = installData.NewLock
-	}
-	return nil
 }
 
 // LoadResourceNames builds lists of all workspace resource names
@@ -324,9 +299,12 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
 	}
-
+	workspaceLock, err := w.loadWorkspaceLock()
+	if err != nil {
+		return nil, err
+	}
 	runCtx := parse.NewRunContext(
-		w.workspaceLock,
+		workspaceLock,
 		w.Path,
 		parseFlag,
 		&filehelpers.ListOptions{
@@ -338,6 +316,25 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 		})
 
 	return runCtx, nil
+}
+
+// load the workspace lock, migrating it if necessary
+func (w *Workspace) loadWorkspaceLock() (*versionmap.WorkspaceLock, error) {
+	workspaceLock, err := versionmap.LoadWorkspaceLock(w.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
+	}
+
+	// if this is the old format, migrate by reinstalling dependencies
+	if workspaceLock.StructVersion() != versionmap.WorkspaceLockStructVersion {
+		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
+		installData, err := modinstaller.InstallWorkspaceDependencies(opts)
+		if err != nil {
+			return nil, err
+		}
+		workspaceLock = installData.NewLock
+	}
+	return workspaceLock, nil
 }
 
 func (w *Workspace) loadExclusions() error {
