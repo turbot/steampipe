@@ -1,6 +1,6 @@
 {{ define "output" }}
 {{- if render_context.Config.RenderHeader -}}
-group_id,title,description,control_id,control_title,control_description,reason,resource,status,severity{{ range .Data.Root.DimensionKeys }},{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }},{{ . }}{{ end }}
+group_id,title,description,control_id,control_title,control_description,reason,resource,status{{ range .Data.Root.DimensionKeys }},{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }},{{ . }}{{ end }}
 {{ end -}}
 {{ template "result_group_template" .Data.Root }}
 {{ end }}
@@ -18,7 +18,7 @@ group_id,title,description,control_id,control_title,control_description,reason,r
 {{ end }}{{ end }}
 
 {{ define "control_row_template" -}}
-  {{- template "group_details" . }},{{ template "control_details" . }},{{ template "reason_resource_status" . }},{{ template "control_severity" . }}{{ template "dimensions" . }}{{ template "tags" . -}}
+  {{- template "group_details" . }},{{ template "control_details" . }},{{ template "reason_resource_status" . }}{{ template "dimensions" . }}{{ template "tags" . -}}
 {{- end }}
 
 {{ define "group_details" -}}
@@ -27,10 +27,6 @@ group_id,title,description,control_id,control_title,control_description,reason,r
 
 {{ define "control_details" -}}
   {{ toCsvCell .Run.ControlId }},{{ toCsvCell .Run.Title }},{{ toCsvCell .Run.Description -}}
-{{- end }}
-
-{{ define "control_severity" -}}
-  {{ toCsvCell .Run.Severity -}}
 {{- end }}
 
 {{ define "reason_resource_status" -}}
