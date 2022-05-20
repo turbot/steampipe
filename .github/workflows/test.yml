@@ -108,14 +108,14 @@ jobs:
           mkdir ~/artifacts
 
       - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         with:
           name: build-artifact-linux
           path: ~/artifacts
 
       - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         if: ${{ matrix.platform == 'macos-latest' }}
         with:
           name: build-artifact-darwin
