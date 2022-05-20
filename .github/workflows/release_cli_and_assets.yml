@@ -85,6 +85,7 @@ jobs:
       run: |-
         [ $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length') -eq 0 ]
 
+
   build_and_release_assets:
     name: Build and Release Assets
     needs: [verify_input,verify_asset_unreleased]
@@ -290,89 +291,90 @@ jobs:
         path: ~/artifacts/darwin.zip
         if-no-files-found: error
 
-  run_acceptance_tests:
-    name: Run CLI Acceptance tests
-    needs: [create_test_build,build_and_release_assets]
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-    runs-on: ${{ matrix.platform }}
-    steps:
-    - name: Trim asset version prefix and Validate
-      run: |-
-        echo $VERSION
-        trim=${VERSION#"v"}
-        echo $trim
-        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-          echo "Version OK: $trim"
-        else
-          echo "Invalid version: $trim"
-          exit 1
-        fi
-        echo "VERSION=${trim}" >> $GITHUB_ENV
-        
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        submodules: true
-        ref: ${{ github.event.inputs.branch }}
+#  run_acceptance_tests:
+#    name: Run CLI Acceptance tests
+#    needs: [create_test_build,build_and_release_assets]
+#    strategy:
+#      matrix:
+#        platform: [ubuntu-latest]
+#    runs-on: ${{ matrix.platform }}
+#    steps:
+#    - name: Trim asset version prefix and Validate
+#      run: |-
+#        echo $VERSION
+#        trim=${VERSION#"v"}
+#        echo $trim
+#        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+#          echo "Version OK: $trim"
+#        else
+#          echo "Invalid version: $trim"
+#          exit 1
+#        fi
+#        echo "VERSION=${trim}" >> $GITHUB_ENV
+#
+#    - name: Checkout
+#      uses: actions/checkout@v3
+#      with:
+#        submodules: true
+#        ref: ${{ github.event.inputs.branch }}
+#
+#    - name: Setup BATS
+#      uses: mig4/setup-bats@v1
+#      with:
+#        bats-version: 1.2.1
+#
+#    - name: Prepare for downloads
+#      id: prepare-for-downloads
+#      run: |
+#        mkdir ~/artifacts
+#
+#    - name: Download Linux Build Artifacts
+#      uses: actions/download-artifact@v2
+#      if: ${{ matrix.platform == 'ubuntu-latest' }}
+#      with:
+#        name: build-artifact-linux
+#        path: ~/artifacts
+#
+#    - name: Download Darwin Build Artifacts
+#      uses: actions/download-artifact@v2
+#      if: ${{ matrix.platform == 'macos-latest' }}
+#      with:
+#        name: build-artifact-darwin
+#        path: ~/artifacts
+#
+#    - name: Extract Darwin Artifacts and Install Binary
+#      if: ${{ matrix.platform == 'macos-latest' }}
+#      run: |
+#        mkdir ~/build
+#        unzip ~/artifacts/darwin.zip -d ~/build
+#
+#    - name: Extract Ubuntu Artifacts and Install Binary
+#      if: ${{ matrix.platform == 'ubuntu-latest' }}
+#      run: |
+#        mkdir ~/build
+#        tar -xf ~/artifacts/linux.tar.gz -C ~/build
+#
+#    - name: Set PATH
+#      run: |
+#        echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+#
+#    - name: Install DB
+#      run: |
+#        steampipe service start
+#        steampipe plugin install chaos
+#        steampipe service stop --force
+#
+#    - name: Run Test Suite
+#      timeout-minutes: 5
+#      run: |
+#        chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+#        $GITHUB_WORKSPACE/tests/acceptance/run.sh
+#        steampipe service stop --force
+#
 
-    - name: Setup BATS
-      uses: mig4/setup-bats@v1
-      with:
-        bats-version: 1.2.1
-
-    - name: Prepare for downloads
-      id: prepare-for-downloads
-      run: |
-        mkdir ~/artifacts
-
-    - name: Download Linux Build Artifacts
-      uses: actions/download-artifact@v2
-      if: ${{ matrix.platform == 'ubuntu-latest' }}
-      with:
-        name: build-artifact-linux
-        path: ~/artifacts
-
-    - name: Download Darwin Build Artifacts
-      uses: actions/download-artifact@v2
-      if: ${{ matrix.platform == 'macos-latest' }}
-      with:
-        name: build-artifact-darwin
-        path: ~/artifacts
-
-    - name: Extract Darwin Artifacts and Install Binary
-      if: ${{ matrix.platform == 'macos-latest' }}
-      run: |
-        mkdir ~/build
-        unzip ~/artifacts/darwin.zip -d ~/build
-
-    - name: Extract Ubuntu Artifacts and Install Binary
-      if: ${{ matrix.platform == 'ubuntu-latest' }}
-      run: |
-        mkdir ~/build
-        tar -xf ~/artifacts/linux.tar.gz -C ~/build
-
-    - name: Set PATH
-      run: |
-        echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
-
-    - name: Install DB
-      run: |
-        steampipe service start
-        steampipe plugin install chaos
-        steampipe service stop --force
-
-    - name: Run Test Suite
-      timeout-minutes: 5
-      run: |
-        chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-        $GITHUB_WORKSPACE/tests/acceptance/run.sh
-        steampipe service stop --force
-  
   create_release_tag:
     name: Tag Release
-    needs: [run_acceptance_tests]
+    needs: [create_test_build,build_and_release_assets]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
@@ -402,6 +404,7 @@ jobs:
         git config user.email noreply@github.com
         git tag ${{ github.event.inputs.version }}
         git push origin ${{ github.event.inputs.version }}
+
 
   build_and_release_cli:
     name: Release CLI
