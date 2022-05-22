@@ -92,6 +92,7 @@ const CodeBlock = ({
           }
           onClick={() => setDoCopy(true)}
         >
+          {/*@ts-ignore*/}
           <SyntaxHighlighter
             language={language}
             style={styles}
