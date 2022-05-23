@@ -36,9 +36,17 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 	switch {
 	case ty.IsTupleType(), ty.IsListType():
 		{
-
 			var array []string
 			if array, err = ctyTupleToArrayOfPgStrings(v); err == nil {
+				if len(array) == 0 {
+					postgresType := ""
+					// cast the empty array to the appropriate type
+					switch v.Type().GoString() {
+					case "string":
+						postgresType = "text"
+					case "float"
+					}
+				}
 				valStr = fmt.Sprintf("array[%s]", strings.Join(array, ","))
 			}
 			return
