@@ -1,7 +1,7 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-if [[ -z "$(steampipe query 'select 1 as val')" ]]; then
+if [[ -z "$(steampipe query 'select a')" ]]; then
     echo "Steampipe installation failed" >&2
     return 1
 fi
