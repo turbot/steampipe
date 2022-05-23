@@ -210,7 +210,13 @@ func CtyTypeToHclType(types ...cty.Type) string {
 		return convertedName
 	}
 	if friendlyName == "tuple" {
-		underlyingType := t.TupleElementTypes()[0]
+		elementTypes := t.TupleElementTypes()
+		if len(elementTypes) == 0 {
+			// we cannot determine the eleemnt type
+			return "list"
+		}
+		// if there are element types, use the first one (assume homogeneous)
+		underlyingType := elementTypes[0]
 		return fmt.Sprintf("list(%s)", CtyTypeToHclType(underlyingType))
 	}
 	if friendlyName == "dynamic" {
