@@ -6,6 +6,8 @@ _Bug fixes_
 * Remove limit of 2 decodes - execute as many passes as needed (as long as the number of unresolved dependencies decreases). Fixes intermittent dependency error when loading steampipe-mod-ibm-insights. ([#2062](https://github.com/turbot/steampipe/issues/2062))
 * Fix workspace lock file not being correctly migrated. ([#2069](https://github.com/turbot/steampipe/issues/2069))
 * Fix intermittent panic error on plugin install. ([#2069](https://github.com/turbot/steampipe/issues/2069))
+* Fix nil pointer error when an empty array passed as variable value. ([#2094](https://github.com/turbot/steampipe/issues/2094))
+* When running `steampipe service start --dashboard`, ensure `--workspace-chdir` arg is respected. ([#2103](https://github.com/turbot/steampipe/issues/2103))
 
 ## v0.14.4 [2022-05-12]
 _Bug fixes_
