@@ -3,7 +3,7 @@ _What's new?_
 * Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
 * Add control severity in the check run CSV output. ([#1966](https://github.com/turbot/steampipe/issues/1966))
 
-## v0.14.5 [tbc]
+## v0.14.5 [2022-05-23]
 _Bug fixes_
 * Add support for setting dependent mod variable values using an spvars file or by setting the `Args` property in the mod `Require` block. ([#2076](https://github.com/turbot/steampipe/issues/2076), [#2077](https://github.com/turbot/steampipe/issues/2077))
 * Add support for JSONB quals. ([#185](https://github.com/turbot/steampipe-postgres-fdw/issues/185))
