@@ -164,7 +164,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
-	github.com/turbot/steampipe-plugin-sdk/v3 v3.1.0
+	github.com/turbot/steampipe-plugin-sdk/v3 v3.2.0
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/mod v0.5.1 // indirect
