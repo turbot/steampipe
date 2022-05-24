@@ -3,14 +3,13 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty/convert"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/convert"
 )
 
 // Variable is a struct representing a Variable resource
@@ -131,7 +130,8 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 		v.Type = v.Default.Type()
 	}
 
-	if value.Type().Equals(cty.Tuple(nil)) {
+	// if the valuer type is a tuple with no elem type, and we have an elem type, set it
+	if value.Type().Equals(cty.Tuple(nil)) && !v.Type.Equals(cty.DynamicPseudoType) {
 		var err error
 		value, err = convert.Convert(value, v.Type)
 		if err != nil {
