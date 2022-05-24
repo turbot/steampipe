@@ -22,15 +22,15 @@ const Tabs = {
     label: "Preview",
     Component: PanelDetailPreview,
   },
-  DEFINITION: {
-    name: "definition",
-    label: "Definition",
-    Component: PanelDetailDefinition,
-  },
   QUERY: {
     name: "query",
     label: "Query",
     Component: PanelDetailQuery,
+  },
+  DEFINITION: {
+    name: "definition",
+    label: "Definition",
+    Component: PanelDetailDefinition,
   },
   DATA: {
     name: "data",
@@ -56,16 +56,16 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         selected: selectedTab.name === Tabs.PREVIEW.name,
       },
     ];
-    if (definition.source_definition) {
-      tabs.push({
-        ...Tabs.DEFINITION,
-        selected: selectedTab.name === Tabs.DEFINITION.name,
-      });
-    }
     if (definition.sql) {
       tabs.push({
         ...Tabs.QUERY,
         selected: selectedTab.name === Tabs.QUERY.name,
+      });
+    }
+    if (definition.source_definition) {
+      tabs.push({
+        ...Tabs.DEFINITION,
+        selected: selectedTab.name === Tabs.DEFINITION.name,
       });
     }
     if (definition.data) {
