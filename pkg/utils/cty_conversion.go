@@ -31,26 +31,10 @@ func CtyToJSON(val cty.Value) (string, error) {
 
 // CtyToPostgresString convert a cty value into a postgres representation of the value
 func CtyToPostgresString(v cty.Value) (valStr string, err error) {
-
 	ty := v.Type()
-	switch {
-	case ty.IsTupleType(), ty.IsListType():
-		{
-			var array []string
-			if array, err = ctyTupleToArrayOfPgStrings(v); err == nil {
-				if len(array) == 0 {
-					postgresType := ""
-					// cast the empty array to the appropriate type
-					switch v.Type().GoString() {
-					case "string":
-						postgresType = "text"
-					case "float"
-					}
-				}
-				valStr = fmt.Sprintf("array[%s]", strings.Join(array, ","))
-			}
-			return
-		}
+
+	if ty.IsTupleType() || ty.IsListType() {
+		return ctyListToPostgresString(v, ty)
 	}
 
 	switch ty {
@@ -67,7 +51,7 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 		} else {
 			var targetf float64
 			if err = gocty.FromCtyValue(v, &targetf); err == nil {
-				valStr = fmt.Sprintf("%d", target)
+				valStr = fmt.Sprintf("%f", targetf)
 			}
 		}
 	case cty.String:
@@ -82,10 +66,36 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 		if json, err = CtyToJSON(v); err == nil {
 			valStr = fmt.Sprintf("'%s'::jsonb", json)
 		}
-
 	}
 
 	return valStr, err
+}
+
+func ctyListToPostgresString(v cty.Value, ty cty.Type) (string, error) {
+	var valStr string
+	array, err := ctyTupleToArrayOfPgStrings(v)
+	if err != nil {
+		return "", err
+	}
+
+	suffix := ""
+	if len(array) == 0 {
+		postgresType := ""
+		t := ty.ElementType()
+		// cast the empty array to the appropriate type
+		switch t.FriendlyName() {
+		case "string":
+			postgresType = "text"
+		case "bool":
+			postgresType = "bool"
+		case "number":
+			postgresType = "numeric"
+		}
+		suffix = fmt.Sprintf("::%s[]", postgresType)
+	}
+	valStr = fmt.Sprintf("array[%s]%s", strings.Join(array, ","), suffix)
+
+	return valStr, nil
 }
 
 // CtyToString convert a cty value into a string representation of the value
