@@ -59,6 +59,7 @@ seq_page_cost=0.01
 temp_buffers=800kB
 timezone=UTC
 track_activities=off
+track_counts = on
 wal_buffers=32kB
 work_mem=64kB
 jit=off
@@ -81,7 +82,6 @@ log_timezone=UTC
 #------------------------------------------------------------------------------
 
 autovacuum = on                             # Enable autovacuum subprocess
-track_counts = on
 
 # all params left as default: 
 #autovacuum_analyze_scale_factor = 0.1      # fraction of table size before analyze
