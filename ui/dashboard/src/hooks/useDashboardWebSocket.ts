@@ -1,5 +1,5 @@
+import { DashboardActionType, ElementType, IActions } from "./useDashboard";
 import { useCallback, useEffect, useRef } from "react";
-import { ElementType, IActions } from "./useDashboard";
 
 interface ReceivedSocketMessagePayload {
   action: string;
@@ -8,6 +8,10 @@ interface ReceivedSocketMessagePayload {
 
 interface ReceivedSocketMessage {
   data: string;
+}
+
+export interface EventHooks {
+  [type: DashboardActionType]: (event: any) => Promise<void>;
 }
 
 interface IWebSocket {
@@ -53,7 +57,7 @@ const getSocketServerUrl = () => {
   }
   // Otherwise, it's a production build, so use the URL details
   const url = new URL(window.location.toString());
-  return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws`
+  return `${url.protocol === "https:" ? "wss" : "ws"}://${url.host}/ws`;
 };
 
 const createSocket = async (socketFactory): Promise<WebSocket> => {
@@ -63,7 +67,11 @@ const createSocket = async (socketFactory): Promise<WebSocket> => {
   return new WebSocket(getSocketServerUrl());
 };
 
-const useDashboardWebSocket = (dispatch, socketFactory): IWebSocket => {
+const useDashboardWebSocket = (
+  dispatch,
+  socketFactory,
+  eventHooks: EventHooks
+): IWebSocket => {
   const webSocket = useRef<WebSocket | null>(null);
 
   const onSocketError = (evt: any) => {
@@ -75,6 +83,10 @@ const useDashboardWebSocket = (dispatch, socketFactory): IWebSocket => {
       message.data
     );
     dispatch({ type: action, ...rest });
+    const hookHandler = eventHooks[action];
+    if (hookHandler) {
+      hookHandler(message.data);
+    }
   };
 
   useEffect(() => {

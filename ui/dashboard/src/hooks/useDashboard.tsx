@@ -107,7 +107,8 @@ const dashboardActions = Object.values(DashboardActions);
 // https://github.com/microsoft/TypeScript/issues/28046
 export type ElementType<T extends ReadonlyArray<unknown>> =
   T extends ReadonlyArray<infer ElementType> ? ElementType : never;
-type DashboardActionType = ElementType<typeof dashboardActions>;
+
+export type DashboardActionType = ElementType<typeof dashboardActions>;
 
 export interface DashboardAction {
   type: DashboardActionType;
@@ -726,6 +727,7 @@ const DashboardProvider = ({
   breakpointContext,
   children,
   componentOverrides = {},
+  eventHooks = {},
   socketFactory,
   themeContext,
 }) => {
@@ -736,7 +738,8 @@ const DashboardProvider = ({
   const { dashboard_name } = useParams();
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
-    socketFactory
+    socketFactory,
+    eventHooks
   );
   const {
     setMetadata: setAnalyticsMetadata,
