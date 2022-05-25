@@ -48,7 +48,7 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 	return bytes.NewBuffer(jsonStr)
 }
 
-// SendRequest makers a http call to the given URL
+// SendRequest makes a http call to the given URL
 func SendRequest(signature string, method string, sendRequestTo url.URL, payload *bytes.Buffer, timeout time.Duration) (*http.Response, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	req, err := http.NewRequest(method, sendRequestTo.String(), payload)
