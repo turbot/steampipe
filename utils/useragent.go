@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/steampipe/version"
 )
 
-const httpTimeout = 5 * time.Second
+const httpTimeout = 10 * time.Second
 
 func getUserAgent() string {
 	return fmt.Sprintf("Turbot Steampipe/%s (+https://steampipe.io)", version.SteampipeVersion.String())

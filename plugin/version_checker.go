@@ -124,7 +124,7 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 
 	serverResponse, err := v.requestServerForLatest(requestPayload)
 	if err != nil {
-		log.Printf("[TRACE] PluginVersionChecker getLatestVersionsForPlugins returned error: %S", err.Error())
+		log.Printf("[TRACE] PluginVersionChecker getLatestVersionsForPlugins returned error: %s", err.Error())
 		// return a blank map
 		return map[string]VersionCheckReport{}
 	}
@@ -182,7 +182,7 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPay
 
 	if resp.StatusCode == 204 {
 		log.Println("[TRACE] Got 204")
-		return nil, fmt.Errorf("requestServerForLatest failed - SendRequest retned 204")
+		return nil, fmt.Errorf("requestServerForLatest failed - SendRequest returned 204")
 	}
 
 	if resp.StatusCode != 200 {
