@@ -71,17 +71,17 @@ func installFdwFiles(image *SteampipeImage, tempdir string, dest string) error {
 	if isM1 {
 		// TACTICAL: when installing the FDW for Mac M1, it is necessary to do a shell copy of the unzipped file
 		if _, err := ungzip(sourcePath, tempdir); err != nil {
-			return fmt.Errorf("could not unzip %s to %s", sourcePath, tempdir)
+			return fmt.Errorf("could not unzip %s to %s: %s", sourcePath, tempdir, err.Error())
 		}
-		unzippedSoPath := filepath.Join(tempdir)
+		unzippedSoPath := filepath.Join(tempdir, constants.FdwBinaryFileName)
 		var cpCmd = exec.Command("cp", unzippedSoPath, hubBinPath)
 		if _, err := cpCmd.Output(); err != nil {
-			return fmt.Errorf("could not copy extracted file %s to %s", unzippedSoPath, tempdir)
+			return fmt.Errorf("could not copy extracted file %s to %s: %s", unzippedSoPath, hubBinPath, err.Error())
 		}
 	} else {
 		// for other platforms, unzip directly into the destination
 		if _, err := ungzip(sourcePath, hubBinPath); err != nil {
-			return fmt.Errorf("could not unzip %s to %s", sourcePath, hubBinPath)
+			return fmt.Errorf("could not unzip %s to %s: %s", sourcePath, hubBinPath, err.Error())
 		}
 	}
 
