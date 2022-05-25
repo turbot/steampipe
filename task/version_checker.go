@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"time"
 
 	SemVer "github.com/Masterminds/semver"
 	"github.com/fatih/color"
@@ -107,8 +108,8 @@ func displayUpdateNotification(notificationLines []string) {
 func (c *versionChecker) doCheckRequest() {
 	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
 	sendRequestTo := c.versionCheckURL()
-
-	resp, err := utils.SendRequest(c.signature, "POST", sendRequestTo, payload)
+	timeout := 5 * time.Second
+	resp, err := utils.SendRequest(c.signature, "POST", sendRequestTo, payload, timeout)
 	if err != nil {
 		return
 	}

@@ -3,6 +3,7 @@ package task
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/constants"
@@ -16,7 +17,8 @@ func checkPluginVersions(installationID string) []string {
 		return notificationLines
 	}
 
-	updateReport := plugin.GetAllUpdateReport(installationID)
+	timeout := 5 * time.Second
+	updateReport := plugin.GetAllUpdateReport(installationID, timeout)
 
 	var pluginsToUpdate []plugin.VersionCheckReport
 
