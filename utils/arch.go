@@ -38,6 +38,6 @@ func IsMacM1() (bool, error) {
 		return false, err
 	}
 	myOs := runtime.GOOS
-	isM1 := arch == "arm64" && myOs == constants.OSDarwin
+	isM1 := arch == constants.ArchARM64 && myOs == constants.OSDarwin
 	return isM1, nil
 }
