@@ -85,7 +85,7 @@ const useDashboardWebSocket = (
     dispatch({ type: action, ...rest });
     const hookHandler = eventHooks[action];
     if (hookHandler) {
-      hookHandler(message.data);
+      hookHandler({ action, ...rest });
     }
   };
 
