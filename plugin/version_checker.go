@@ -122,9 +122,9 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 		}
 	}
 
-	serverResponse := v.requestServerForLatest(requestPayload)
-	if serverResponse == nil {
-		log.Println("[TRACE]", "PluginVersionChecker", "getLatestVersionsForPlugins", "response nil")
+	serverResponse, err := v.requestServerForLatest(requestPayload)
+	if err != nil {
+		log.Printf("[TRACE] PluginVersionChecker getLatestVersionsForPlugins returned error: %S", err.Error())
 		// return a blank map
 		return map[string]VersionCheckReport{}
 	}
@@ -167,7 +167,7 @@ func (v *VersionChecker) getVersionCheckURL() url.URL {
 	return u
 }
 
-func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPayload) []versionCheckResponsePayload {
+func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPayload) ([]versionCheckResponsePayload, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	sendRequestTo := v.getVersionCheckURL()
 	requestBody := utils.BuildRequestPayload(v.signature, map[string]interface{}{
@@ -177,23 +177,23 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPay
 	resp, err := utils.SendRequest(v.signature, "POST", sendRequestTo, requestBody)
 	if err != nil {
 		log.Printf("[TRACE] Could not send request")
-		return nil
+		return nil, err
 	}
 
 	if resp.StatusCode == 204 {
 		log.Println("[TRACE] Got 204")
-		return nil
+		return nil, fmt.Errorf("requestServerForLatest failed - SendRequest retned 204")
 	}
 
 	if resp.StatusCode != 200 {
 		log.Printf("[TRACE] Unknown response during version check: %d\n", resp.StatusCode)
-		return nil
+		return nil, fmt.Errorf("requestServerForLatest failed - SendRequest returned %d", resp.StatusCode)
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("[TRACE] Error reading body stream")
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -202,8 +202,8 @@ func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPay
 	err = json.Unmarshal(bodyBytes, &responseData)
 	if err != nil {
 		log.Println("[TRACE] Error in unmarshalling plugin update response", err)
-		return nil
+		return nil, err
 	}
 
-	return responseData
+	return responseData, nil
 }
