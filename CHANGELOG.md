@@ -1,3 +1,8 @@
+## v0.14.6 [2022-05-25]
+_Bug fixes_
+* Fix update check failing for large numbers of plugins, with little or no feedback on the error. ([#2118](https://github.com/turbot/steampipe/issues/2118))
+* Fix EOF error after updating FDW on Mac M1. ([#2116](https://github.com/turbot/steampipe/issues/2116))
+
 ## v0.14.5 [2022-05-23]
 _Bug fixes_
 * Add support for setting dependent mod variable values using an spvars file or by setting the `Args` property in the mod `Require` block. ([#2076](https://github.com/turbot/steampipe/issues/2076), [#2077](https://github.com/turbot/steampipe/issues/2077))
