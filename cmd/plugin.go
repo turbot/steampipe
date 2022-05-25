@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
@@ -362,7 +363,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
-	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor)
+	// long timeout - we are happy to wait
+	timeout := 30 * time.Second
+	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor, timeout)
 	statusSpinner.Done()
 
 	if len(reports) == 0 {

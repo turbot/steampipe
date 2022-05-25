@@ -32,7 +32,7 @@ type VersionChecker struct {
 }
 
 // GetUpdateReport looks up and reports the updated version of selective turbot plugins which are listed in versions.json
-func GetUpdateReport(installationID string, check []*versionfile.InstalledVersion) map[string]VersionCheckReport {
+func GetUpdateReport(installationID string, check []*versionfile.InstalledVersion, timeout time.Duration) map[string]VersionCheckReport {
 	versionChecker := new(VersionChecker)
 	versionChecker.signature = installationID
 
@@ -42,11 +42,11 @@ func GetUpdateReport(installationID string, check []*versionfile.InstalledVersio
 		}
 	}
 
-	return versionChecker.reportPluginUpdates()
+	return versionChecker.reportPluginUpdates(timeout)
 }
 
 // GetAllUpdateReport looks up and reports the updated version of all turbot plugins which are listed in versions.json
-func GetAllUpdateReport(installationID string) map[string]VersionCheckReport {
+func GetAllUpdateReport(installationID string, timeout time.Duration) map[string]VersionCheckReport {
 	versionChecker := new(VersionChecker)
 	versionChecker.signature = installationID
 	versionChecker.pluginsToCheck = []*versionfile.InstalledVersion{}
@@ -63,10 +63,10 @@ func GetAllUpdateReport(installationID string) map[string]VersionCheckReport {
 		}
 	}
 
-	return versionChecker.reportPluginUpdates()
+	return versionChecker.reportPluginUpdates(timeout)
 }
 
-func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
+func (v *VersionChecker) reportPluginUpdates(timeout time.Duration) map[string]VersionCheckReport {
 	versionFileData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
@@ -77,7 +77,7 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 		// there's no plugin installed. no point continuing
 		return nil
 	}
-	reports := v.getLatestVersionsForPlugins(v.pluginsToCheck)
+	reports := v.getLatestVersionsForPlugins(v.pluginsToCheck, timeout)
 
 	// remove elements from `reports` which have empty strings in CheckResponse
 	// this happens if we have sent a plugin to the API which doesn't exist
@@ -102,7 +102,7 @@ func (v *VersionChecker) reportPluginUpdates() map[string]VersionCheckReport {
 	return reports
 }
 
-func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.InstalledVersion) map[string]VersionCheckReport {
+func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.InstalledVersion, timeout time.Duration) map[string]VersionCheckReport {
 
 	getMapKey := func(thisPayload versionCheckRequestPayload) string {
 		return fmt.Sprintf("%s/%s/%s", thisPayload.Org, thisPayload.Name, thisPayload.Stream)
@@ -122,7 +122,7 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 		}
 	}
 
-	serverResponse, err := v.requestServerForLatest(requestPayload)
+	serverResponse, err := v.requestServerForLatest(requestPayload, timeout)
 	if err != nil {
 		log.Printf("[TRACE] PluginVersionChecker getLatestVersionsForPlugins returned error: %s", err.Error())
 		// return a blank map
@@ -167,22 +167,17 @@ func (v *VersionChecker) getVersionCheckURL() url.URL {
 	return u
 }
 
-func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPayload) ([]versionCheckResponsePayload, error) {
+func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPayload, timeout time.Duration) ([]versionCheckResponsePayload, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	sendRequestTo := v.getVersionCheckURL()
 	requestBody := utils.BuildRequestPayload(v.signature, map[string]interface{}{
 		"plugins": payload,
 	})
 
-	resp, err := utils.SendRequest(v.signature, "POST", sendRequestTo, requestBody)
+	resp, err := utils.SendRequest(v.signature, "POST", sendRequestTo, requestBody, timeout)
 	if err != nil {
 		log.Printf("[TRACE] Could not send request")
 		return nil, err
-	}
-
-	if resp.StatusCode == 204 {
-		log.Println("[TRACE] Got 204")
-		return nil, fmt.Errorf("requestServerForLatest failed - SendRequest returned 204")
 	}
 
 	if resp.StatusCode != 200 {
