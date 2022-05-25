@@ -3,7 +3,10 @@ package utils
 import (
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
+
+	"github.com/turbot/steampipe/constants"
 )
 
 // UnderlyingArch detects the underlying architecture(amd64/arm64) of the system
@@ -19,11 +22,22 @@ func UnderlyingArch() (string, error) {
 	switch underlyingArch {
 	// darwin and linux systems return "x86_64"
 	case "x86_64", "amd64":
-		return "amd64", nil
+		return constants.ArchAMD64, nil
 	// linux systems return "aarch64"
 	case "aarch64", "arm64":
-		return "arm64", nil
+		return constants.ArchARM64, nil
 	default:
 		return "", fmt.Errorf("Unsupported architecture: %s", underlyingArch)
 	}
+}
+
+// IsMacM1 returns whether the system is a Mac M1 machine
+func IsMacM1() (bool, error) {
+	arch, err := UnderlyingArch()
+	if err != nil {
+		return false, err
+	}
+	myOs := runtime.GOOS
+	isM1 := arch == constants.ArchARM64 && myOs == constants.OSDarwin
+	return isM1, nil
 }
