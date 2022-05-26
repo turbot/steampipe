@@ -2,7 +2,7 @@
 _Bug fixes_
 * Fix update check failing for large numbers of plugins, with little or no feedback on the error. ([#2118](https://github.com/turbot/steampipe/issues/2118))
 * Fix database startup failure with `EOF` error on Mac M1 after updating FDW. ([#2116](https://github.com/turbot/steampipe/issues/2116))
-* Fix intermittent `Unrecognized remote plugin message` error on Mac M1 after updating a plugin which has been locally built. Closes ([#2123](https://github.com/turbot/steampipe/issues/2123))
+* Fix intermittent `Unrecognized remote plugin message` error on Mac M1 after updating a plugin which has been locally built. ([#2123](https://github.com/turbot/steampipe/issues/2123))
 
 ## v0.14.5 [2022-05-23]
 _Bug fixes_
