@@ -61,8 +61,9 @@ func installFdwFiles(image *SteampipeImage, tempdir string, dest string) error {
 	fdwBinFileSourcePath := filepath.Join(tempdir, image.Fdw.BinaryFile)
 	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
 
-	// NOTE: first remove the existing so file - this is necessary for M1 machines where
-	// not doing this can cause failure to start the db
+	// NOTE: for Mac M1 machines, if the fdw binary is updated in place without deleting the existing file,
+	// the updated fdw may crash on execution - for an undetermined reason
+	// to avoid this, first remove the existing .so file
 	os.Remove(fdwBinFileDestPath)
 	// now unzip the fdw file
 	if _, err := ungzip(fdwBinFileSourcePath, fdwBinDir); err != nil {

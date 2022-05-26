@@ -93,38 +93,30 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 }
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {
+	sourcePath := filepath.Join(tempdir, image.Plugin.BinaryFile)
 	destDir := pluginInstallDir(image.ImageRef)
-	// check if system is M1
+
+	// check if system is M1 - if so we need some special handling
 	isM1, err := utils.IsMacM1()
 	if err != nil {
 		return fmt.Errorf("failed to detect system architecture")
 	}
-
-	// install the binary file
-	fileName := image.Plugin.BinaryFile
-	sourcePath := filepath.Join(tempdir, fileName)
-
 	if isM1 {
-		// NOTE: first remove the existing plugin folder and re-create it - this is necessary
-		// for M1 machines where not doing this can cause plugin operations to fail
-		err = os.RemoveAll(destDir)
-		if err != nil {
+		// NOTE: for Mac M1 machines, if the binary is updated in place without deleting the existing file,
+		// the updated plugin binary may crash on execution - for an undetermined reason
+		// to avoid this, remove the existing plugin folder and re-create it
+		if err := os.RemoveAll(destDir); err != nil {
 			return fmt.Errorf("could not remove plugin folder")
 		}
-		err = os.MkdirAll(destDir, 0755)
-		if err != nil {
+		if err := os.MkdirAll(destDir, 0755); err != nil {
 			return fmt.Errorf("could not create plugin folder")
 		}
-		// now unzip the file
-		if _, err := ungzip(sourcePath, destDir); err != nil {
-			return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
-		}
 	}
-	// unzip the file
+
+	// unzip the file into the plugin folder
 	if _, err := ungzip(sourcePath, destDir); err != nil {
 		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
 	}
-
 	return nil
 }
 
