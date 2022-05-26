@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os/exec"
+	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/turbot/steampipe/constants"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/utils"
 )
 
 // InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
@@ -58,43 +57,33 @@ func updateVersionFileFdw(image *SteampipeImage) error {
 }
 
 func installFdwFiles(image *SteampipeImage, tempdir string, dest string) error {
-	hubBinPath := filepath.Join(dest, "lib", "postgresql")
-	hubControlPath := filepath.Join(dest, "share", "postgresql", "extension")
-	hubSQLPath := filepath.Join(dest, "share", "postgresql", "extension")
-	fileName := image.Fdw.BinaryFile
-	sourcePath := filepath.Join(tempdir, fileName)
+	fdwBinDir := filepath.Join(dest, "lib", "postgresql")
+	fdwBinFileSourcePath := filepath.Join(tempdir, image.Fdw.BinaryFile)
+	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
 
-	isM1, err := utils.IsMacM1()
-	if err != nil {
-		return fmt.Errorf("failed to detect system architecture")
-	}
-	if isM1 {
-		// TACTICAL: when installing the FDW for Mac M1, it is necessary to do a shell copy of the unzipped file
-		if _, err := ungzip(sourcePath, tempdir); err != nil {
-			return fmt.Errorf("could not unzip %s to %s: %s", sourcePath, tempdir, err.Error())
-		}
-		unzippedSoPath := filepath.Join(tempdir, constants.FdwBinaryFileName)
-		var cpCmd = exec.Command("cp", unzippedSoPath, hubBinPath)
-		if _, err := cpCmd.Output(); err != nil {
-			return fmt.Errorf("could not copy extracted file %s to %s: %s", unzippedSoPath, hubBinPath, err.Error())
-		}
-	} else {
-		// for other platforms, unzip directly into the destination
-		if _, err := ungzip(sourcePath, hubBinPath); err != nil {
-			return fmt.Errorf("could not unzip %s to %s: %s", sourcePath, hubBinPath, err.Error())
-		}
+	// NOTE: first remove the existing so file - this is necessary for M1 machines where
+	// not doing this can cause failure to start the db
+	os.Remove(fdwBinFileDestPath)
+	// now unzip the fdw file
+	if _, err := ungzip(fdwBinFileSourcePath, fdwBinDir); err != nil {
+		return fmt.Errorf("could not unzip %s to %s: %s", fdwBinFileSourcePath, fdwBinDir, err.Error())
 	}
 
-	fileName = image.Fdw.ControlFile
-	sourcePath = filepath.Join(tempdir, fileName)
-	if err := moveFileWithinPartition(sourcePath, filepath.Join(hubControlPath, fileName)); err != nil {
-		return fmt.Errorf("could not install %s to %s", sourcePath, hubControlPath)
+	fdwControlDir := filepath.Join(dest, "share", "postgresql", "extension")
+	controlFileName := image.Fdw.ControlFile
+	controlFileSourcePath := filepath.Join(tempdir, controlFileName)
+	controlFileDestPath := filepath.Join(fdwControlDir, image.Fdw.ControlFile)
+
+	if err := moveFileWithinPartition(controlFileSourcePath, controlFileDestPath); err != nil {
+		return fmt.Errorf("could not install %s to %s", controlFileSourcePath, fdwControlDir)
 	}
 
-	fileName = image.Fdw.SqlFile
-	sourcePath = filepath.Join(tempdir, fileName)
-	if err := moveFileWithinPartition(sourcePath, filepath.Join(hubSQLPath, fileName)); err != nil {
-		return fmt.Errorf("could not install %s to %s", sourcePath, hubSQLPath)
+	fdwSQLDir := filepath.Join(dest, "share", "postgresql", "extension")
+	sqlFileName := image.Fdw.SqlFile
+	sqlFileSourcePath := filepath.Join(tempdir, sqlFileName)
+	sqlFileDestPath := filepath.Join(fdwSQLDir, sqlFileName)
+	if err := moveFileWithinPartition(sqlFileSourcePath, sqlFileDestPath); err != nil {
+		return fmt.Errorf("could not install %s to %s", sqlFileSourcePath, fdwSQLDir)
 	}
 	return nil
 }
