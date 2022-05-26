@@ -103,11 +103,10 @@ func installPluginBinary(image *SteampipeImage, tempdir string) error {
 	// install the binary file
 	fileName := image.Plugin.BinaryFile
 	sourcePath := filepath.Join(tempdir, fileName)
-	destPath := filepath.Join(destDir, fileName)
 
-	// NOTE: first remove the existing plugin folder and re-create it - this is necessary
-	// for M1 machines where not doing this can cause plugin operations to fail
 	if isM1 {
+		// NOTE: first remove the existing plugin folder and re-create it - this is necessary
+		// for M1 machines where not doing this can cause plugin operations to fail
 		err = os.RemoveAll(destDir)
 		if err != nil {
 			return fmt.Errorf("could not remove plugin folder")
@@ -116,18 +115,14 @@ func installPluginBinary(image *SteampipeImage, tempdir string) error {
 		if err != nil {
 			return fmt.Errorf("could not create plugin folder")
 		}
-		_, err = os.Stat(destPath)
-		log.Printf("[TRACE] destination path exists: %v", !os.IsNotExist(err))
-
 		// now unzip the file
 		if _, err := ungzip(sourcePath, destDir); err != nil {
 			return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
 		}
-	} else {
-		// now unzip the file
-		if _, err := ungzip(sourcePath, destDir); err != nil {
-			return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
-		}
+	}
+	// unzip the file
+	if _, err := ungzip(sourcePath, destDir); err != nil {
+		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
 	}
 
 	return nil
