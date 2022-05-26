@@ -5,13 +5,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
-	"log"
 
 	"github.com/turbot/steampipe/filepaths"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -93,15 +93,30 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 }
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {
-	installTo := pluginInstallDir(image.ImageRef)
+	sourcePath := filepath.Join(tempdir, image.Plugin.BinaryFile)
+	destDir := pluginInstallDir(image.ImageRef)
 
-	// install the binary file
-	fileName := image.Plugin.BinaryFile
-	sourcePath := filepath.Join(tempdir, fileName)
-	if _, err := ungzip(sourcePath, installTo); err != nil {
-		return fmt.Errorf("could not unzip %s to %s", sourcePath, installTo)
+	// check if system is M1 - if so we need some special handling
+	isM1, err := utils.IsMacM1()
+	if err != nil {
+		return fmt.Errorf("failed to detect system architecture")
+	}
+	if isM1 {
+		// NOTE: for Mac M1 machines, if the binary is updated in place without deleting the existing file,
+		// the updated plugin binary may crash on execution - for an undetermined reason
+		// to avoid this, remove the existing plugin folder and re-create it
+		if err := os.RemoveAll(destDir); err != nil {
+			return fmt.Errorf("could not remove plugin folder")
+		}
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			return fmt.Errorf("could not create plugin folder")
+		}
 	}
 
+	// unzip the file into the plugin folder
+	if _, err := ungzip(sourcePath, destDir); err != nil {
+		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
+	}
 	return nil
 }
 
