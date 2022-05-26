@@ -61,6 +61,7 @@ interface IDashboardContext {
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
+  selectedSnapshot: DashboardSnapshot | null;
   lastChangedInput: string | null;
 
   sqlDataMap: SQLDataMap;
@@ -142,6 +143,10 @@ interface DashboardInputs {
   [name: string]: string;
 }
 
+interface DashboardVariables {
+  [name: string]: any;
+}
+
 export interface ModDashboardMetadata {
   title: string;
   full_name: string;
@@ -179,6 +184,18 @@ export interface DashboardMetadata {
   installed_mods?: InstalledModsDashboardMetadata;
   cloud?: CloudDashboardMetadata;
   telemetry: "info" | "none";
+}
+
+export interface DashboardSnapshot {
+  id: string;
+  dashboard_name: string;
+  start_time: string;
+  end_time: string;
+  lineage: string;
+  schema_version: string;
+  search_path: string;
+  variables: DashboardVariables;
+  inputs: DashboardInputs;
 }
 
 interface AvailableDashboardTags {
@@ -704,6 +721,7 @@ const getInitialState = (searchParams) => {
     selectedDashboard: null,
     selectedDashboardInputs:
       buildSelectedDashboardInputsFromSearchParams(searchParams),
+    selectedSnapshot: null,
     lastChangedInput: null,
 
     search: {
