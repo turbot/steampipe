@@ -5,13 +5,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
-	"log"
 
 	"github.com/turbot/steampipe/filepaths"
 	versionfile "github.com/turbot/steampipe/ociinstaller/versionfile"
@@ -93,13 +93,29 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 }
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {
-	installTo := pluginInstallDir(image.ImageRef)
+	destDir := pluginInstallDir(image.ImageRef)
 
 	// install the binary file
 	fileName := image.Plugin.BinaryFile
 	sourcePath := filepath.Join(tempdir, fileName)
-	if _, err := ungzip(sourcePath, installTo); err != nil {
-		return fmt.Errorf("could not unzip %s to %s", sourcePath, installTo)
+	destPath := filepath.Join(destDir, fileName)
+
+	// NOTE: first remove the existing plugin folder and re-create it - this is necessary
+	// for M1 machines where not doing this can cause plugin operations to fail
+	err := os.RemoveAll(destDir)
+	if err != nil {
+		return fmt.Errorf("could not remove plugin folder")
+	}
+	err = os.MkdirAll(destDir, 0755)
+	if err != nil {
+		return fmt.Errorf("could not create plugin folder")
+	}
+	_, err = os.Stat(destPath)
+	log.Printf("[TRACE] destination path exists: %v", !os.IsNotExist(err))
+
+	// now unzip the file
+	if _, err := ungzip(sourcePath, destDir); err != nil {
+		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
 	}
 
 	return nil
