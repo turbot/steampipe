@@ -3,6 +3,12 @@ _What's new?_
 * Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
 * Add control severity in the check run CSV output. ([#1966](https://github.com/turbot/steampipe/issues/1966))
 
+## v0.14.6 [2022-05-25]
+_Bug fixes_
+* Fix update check failing for large numbers of plugins, with little or no feedback on the error. ([#2118](https://github.com/turbot/steampipe/issues/2118))
+* Fix database startup failure with `EOF` error on Mac M1 after updating FDW. ([#2116](https://github.com/turbot/steampipe/issues/2116))
+* Fix intermittent `Unrecognized remote plugin message` error on Mac M1 after updating a plugin which has been locally built. Closes ([#2123](https://github.com/turbot/steampipe/issues/2123))
+
 ## v0.14.5 [2022-05-23]
 _Bug fixes_
 * Add support for setting dependent mod variable values using an spvars file or by setting the `Args` property in the mod `Require` block. ([#2076](https://github.com/turbot/steampipe/issues/2076), [#2077](https://github.com/turbot/steampipe/issues/2077))
