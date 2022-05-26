@@ -130,7 +130,7 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 		v.Type = v.Default.Type()
 	}
 
-	// if the valuer type is a tuple with no elem type, and we have an elem type, set it
+	// if the value type is a tuple with no elem type, and we have a type, set the variable to have our type
 	if value.Type().Equals(cty.Tuple(nil)) && !v.Type.Equals(cty.DynamicPseudoType) {
 		var err error
 		value, err = convert.Convert(value, v.Type)
@@ -145,6 +145,7 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
 	v.ValueGo, _ = utils.CtyToGo(value)
+	// if type string is not set, derive from the type of value
 	if v.TypeString == "" {
 		v.TypeString = utils.CtyTypeToHclType(value.Type())
 	}

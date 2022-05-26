@@ -80,18 +80,16 @@ func ctyListToPostgresString(v cty.Value, ty cty.Type) (string, error) {
 
 	suffix := ""
 	if len(array) == 0 {
-		postgresType := ""
 		t := ty.ElementType()
 		// cast the empty array to the appropriate type
 		switch t.FriendlyName() {
 		case "string":
-			postgresType = "text"
+			suffix = "::text[]"
 		case "bool":
-			postgresType = "bool"
+			suffix = "::bool[]"
 		case "number":
-			postgresType = "numeric"
+			suffix = "::numeric[]"
 		}
-		suffix = fmt.Sprintf("::%s[]", postgresType)
 	}
 	valStr = fmt.Sprintf("array[%s]%s", strings.Join(array, ","), suffix)
 
