@@ -1,10 +1,11 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "steampipe install" {
-    run steampipe query "select 1 as val"
-    assert_success
-}
+# If the installation fails, using 'return 1' from the global scope will halt the entire test suite.
+if [[ -z "$(steampipe query 'select 1 as val')" ]]; then
+    echo "Steampipe installation failed" >&2
+    return 1
+fi
 
 @test "steampipe plugin help is displayed when no sub command given" {
     run steampipe plugin
