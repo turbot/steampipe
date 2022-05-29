@@ -80,6 +80,7 @@ const Benchmark = (props: InnerCheckProps) => {
           label: "OK",
           value: totalSummary.ok,
           type: totalSummary.ok > 0 ? "ok" : null,
+          icon: "heroicons-solid:check-circle",
         },
       },
       {
@@ -112,6 +113,7 @@ const Benchmark = (props: InnerCheckProps) => {
           label: "Info",
           value: totalSummary.info,
           type: totalSummary.info > 0 ? "info" : null,
+          icon: "heroicons-solid:information-circle",
         },
       },
       {
@@ -143,6 +145,7 @@ const Benchmark = (props: InnerCheckProps) => {
           label: "Critical / High",
           value: total,
           type: total > 0 ? "severity" : "",
+          icon: "heroicons-solid:exclamation",
         },
       });
     }
