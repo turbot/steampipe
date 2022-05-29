@@ -5,6 +5,7 @@ const PanelDetailPreview = ({ definition }: PanelDetailProps) => (
   <Children
     children={[{ ...definition, width: 12 }]}
     allowPanelExpand={false}
+    isExpanded={true}
     withTitle={false}
   />
 );

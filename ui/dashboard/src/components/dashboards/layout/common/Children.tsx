@@ -1,4 +1,7 @@
-import Benchmark, { BenchmarkTree } from "../../check/Benchmark";
+import Benchmark, {
+  BenchmarkTitle,
+  BenchmarkTree,
+} from "../../check/Benchmark";
 import Card from "../../Card";
 import Container from "../Container";
 import ErrorPanel from "../../Error";
@@ -19,12 +22,14 @@ import { RenderInput as Input } from "../../inputs/Input";
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
   allowPanelExpand?: boolean;
+  isExpanded?: boolean;
   withTitle?: boolean;
 }
 
 const Children = ({
   children = [],
   allowPanelExpand = true,
+  isExpanded = false,
   withTitle = true,
 }: ChildrenProps) => {
   return (
@@ -36,9 +41,12 @@ const Children = ({
               <Benchmark
                 key={child.name}
                 {...(child as PanelDefinition)}
+                isExpanded={isExpanded}
                 withTitle={withTitle}
               />
             );
+          case "benchmark_title":
+            return <BenchmarkTitle key={child.name} {...child} />;
           case "benchmark_tree":
             return <BenchmarkTree key={child.name} {...child} />;
           case "card":
@@ -69,8 +77,10 @@ const Children = ({
               <Container
                 key={child.name}
                 allowChildPanelExpand={child.allow_child_panel_expand}
+                className={child.className}
                 definition={child}
                 expandDefinition={child}
+                withPadding={child.with_padding}
                 withTitle={withTitle}
               />
             );

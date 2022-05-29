@@ -13,13 +13,15 @@ interface DashboardProps {
 
 // TODO allow full-screen of a panel
 const Dashboard = ({ definition, withPadding = false }: DashboardProps) => (
-  <LayoutPanel
-    definition={definition}
-    isDashboard={true}
-    withPadding={withPadding}
-  >
-    <Children children={definition.children} />
-  </LayoutPanel>
+  <>
+    <LayoutPanel
+      definition={definition}
+      isDashboard={true}
+      withPadding={withPadding}
+    >
+      <Children children={definition.children} />
+    </LayoutPanel>
+  </>
 );
 
 const DashboardWrapper = () => {
@@ -34,7 +36,9 @@ const DashboardWrapper = () => {
     return <PanelDetail definition={selectedPanel} />;
   }
 
-  return <Dashboard definition={dashboard} withPadding={true} />;
+  return (
+    <Dashboard definition={dashboard} withPadding={!dashboard.artificial} />
+  );
 };
 
 export default DashboardWrapper;

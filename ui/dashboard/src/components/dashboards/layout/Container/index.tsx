@@ -12,18 +12,22 @@ import { ZoomIcon } from "../../../../constants/icons";
 interface ContainerProps {
   allowChildPanelExpand?: boolean;
   allowExpand?: boolean;
+  className?: string;
   definition: ContainerDefinition;
   expandDefinition: ContainerDefinition;
   withNarrowVertical?: boolean;
+  withPadding?: boolean;
   withTitle?: boolean;
 }
 
 const Container = ({
   allowChildPanelExpand = true,
   allowExpand = false,
+  className,
   definition,
   expandDefinition,
   withNarrowVertical,
+  withPadding = false,
   withTitle,
 }: ContainerProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
@@ -31,7 +35,7 @@ const Container = ({
   return (
     <LayoutPanel
       allowExpand={allowExpand}
-      className="relative"
+      className={classNames("relative", className)}
       definition={definition}
       events={{
         onMouseEnter: allowExpand
@@ -47,6 +51,7 @@ const Container = ({
           : undefined,
       }}
       withNarrowVertical={withNarrowVertical}
+      withPadding={withPadding}
       withTitle={withTitle}
     >
       <>

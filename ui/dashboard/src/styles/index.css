@@ -220,6 +220,19 @@
   animation: barberpole 10s linear infinite;
 }
 
+.summary-chart-loading-animate {
+  background-image:
+          repeating-linear-gradient(
+                  -45deg,
+                  theme('colors.gray.200'),
+                  theme('colors.gray.200') 0.5rem,
+                  theme('colors.gray.100') 0.5rem,
+                  theme('colors.gray.100') 1.25rem
+          );
+  background-size: 200% 200%;
+  animation: barberpole 10s linear infinite;
+}
+
 @keyframes barberpole {
   100% {
     background-position: 100% 100%;

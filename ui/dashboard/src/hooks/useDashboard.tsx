@@ -209,7 +209,9 @@ export interface ContainerDefinition {
   data?: LeafNodeData;
   title?: string;
   width?: number;
+  with_padding?: boolean;
   children?: (ContainerDefinition | PanelDefinition)[];
+  className?: string;
 }
 
 export interface PanelProperties {
@@ -356,7 +358,6 @@ const wrapDefinitionInArtificialDashboard = (
   return {
     artificial: true,
     name: definition.name,
-    title: definition.title,
     node_type: "dashboard",
     children: [
       {
