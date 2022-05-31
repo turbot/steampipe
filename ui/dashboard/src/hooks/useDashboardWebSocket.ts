@@ -1,6 +1,10 @@
 import { DashboardActionType, ElementType, IActions } from "./useDashboard";
 import { useCallback, useEffect, useRef } from "react";
 
+export interface EventHooks {
+  [type: DashboardActionType]: (event: any) => Promise<void>;
+}
+
 interface ReceivedSocketMessagePayload {
   action: string;
   [key: string]: any;
@@ -8,10 +12,6 @@ interface ReceivedSocketMessagePayload {
 
 interface ReceivedSocketMessage {
   data: string;
-}
-
-export interface EventHooks {
-  [type: DashboardActionType]: (event: any) => Promise<void>;
 }
 
 interface IWebSocket {
@@ -79,13 +79,11 @@ const useDashboardWebSocket = (
   };
 
   const onSocketMessage = (message: ReceivedSocketMessage) => {
-    const { action, ...rest }: ReceivedSocketMessagePayload = JSON.parse(
-      message.data
-    );
-    dispatch({ type: action, ...rest });
-    const hookHandler = eventHooks[action];
+    const parsed: ReceivedSocketMessagePayload = JSON.parse(message.data);
+    dispatch({ type: parsed.action, ...parsed });
+    const hookHandler = eventHooks[parsed.action];
     if (hookHandler) {
-      hookHandler({ action, ...rest });
+      hookHandler(parsed);
     }
   };
 
@@ -94,7 +92,6 @@ const useDashboardWebSocket = (
       let keepAliveTimerId: NodeJS.Timeout;
       webSocket.current = await createSocket(socketFactory);
       webSocket.current.onerror = onSocketError;
-      webSocket.current.onmessage = onSocketMessage;
       webSocket.current.onopen = () => {
         const keepAlive = async () => {
           if (!webSocket.current) {
@@ -105,7 +102,6 @@ const useDashboardWebSocket = (
           if (webSocket.current.readyState === webSocket.current.CLOSED) {
             webSocket.current = await createSocket(socketFactory);
             webSocket.current.onerror = onSocketError;
-            webSocket.current.onmessage = onSocketMessage;
           }
           if (webSocket.current.readyState === webSocket.current.OPEN) {
             webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
@@ -142,6 +138,13 @@ const useDashboardWebSocket = (
     };
     doConnect();
   }, []);
+
+  useEffect(() => {
+    if (!webSocket.current) {
+      return;
+    }
+    webSocket.current.onmessage = onSocketMessage;
+  }, [eventHooks, webSocket.current]);
 
   const send = useCallback((message) => {
     // TODO log this?
