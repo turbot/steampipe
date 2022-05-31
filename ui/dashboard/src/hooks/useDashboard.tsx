@@ -95,6 +95,7 @@ const DashboardActions: IActions = {
   LEAF_NODE_PROGRESS: "leaf_node_progress",
   SELECT_DASHBOARD: "select_dashboard",
   SELECT_PANEL: "select_panel",
+  SELECT_SNAPSHOT: "select_snapshot",
   SET_DASHBOARD_INPUT: "set_dashboard_input",
   SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
   SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
@@ -598,6 +599,8 @@ function reducer(state, action) {
     }
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
+    case DashboardActions.SELECT_SNAPSHOT:
+      return { ...state, selectedSnapshot: action.snapshot };
     case DashboardActions.SELECT_DASHBOARD:
       return {
         ...state,
@@ -606,6 +609,7 @@ function reducer(state, action) {
         state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
+        selectedSnapshot: null,
         lastChangedInput: null,
       };
     case DashboardActions.CLEAR_DASHBOARD_INPUTS:
