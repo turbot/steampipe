@@ -136,8 +136,11 @@ func serviceRestartCmd() *cobra.Command {
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service restart").
-		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports")
-
+		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports").
+		// dashboard server
+		AddBoolFlag(constants.ArgDashboard, "", false, "Run the dashboard webserver with the service").
+		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
+		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port.")
 	return cmd
 }
 
@@ -348,10 +351,6 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// along with the current dashboard state - maybe nil
-	currentDashboardState, err := dashboardserver.GetDashboardServiceState()
-	utils.FailOnError(err)
-
 	// stop db
 	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants.ArgForce), constants.InvokerService)
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
@@ -386,6 +385,10 @@ to force a restart.
 	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
 	utils.FailOnError(err)
 
+	// along with the current dashboard state - maybe nil
+	currentDashboardState, err := dashboardserver.GetDashboardServiceState()
+	utils.FailOnError(err)
+
 	// if the dashboard was running, start it
 	if currentDashboardState != nil {
 		err = dashboardserver.RunForService(ctx, dashboardserver.ListenType(currentDashboardState.ListenType), dashboardserver.ListenPort(currentDashboardState.Port))
@@ -394,6 +397,16 @@ to force a restart.
 		// reload the state
 		currentDashboardState, err = dashboardserver.GetDashboardServiceState()
 		utils.FailOnError(err)
+	}
+
+	// if the dashboard was not running, but needs to be started, start it
+	if currentDashboardState == nil && viper.GetBool(constants.ArgDashboard) {
+		currentDashboardState, err = startDashboardServer(ctx)
+		if err != nil {
+			db_local.StopServices(ctx, false, constants.InvokerService)
+			utils.ShowError(ctx, err)
+			return
+		}
 	}
 
 	printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
