@@ -83,6 +83,7 @@ export interface IActions {
 const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
   CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
+  CLEAR_SNAPSHOT: "clear_snapshot",
   CONTROL_COMPLETE: "control_complete",
   CONTROL_ERROR: "control_error",
   DASHBOARD_METADATA: "dashboard_metadata",
@@ -101,6 +102,7 @@ const DashboardActions: IActions = {
   SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
   SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
   SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
+  SET_SNAPSHOT: "set_snapshot",
   WORKSPACE_ERROR: "workspace_error",
 };
 
