@@ -11,6 +11,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
+@test "steampipe service restart --dashboard" {
+    run steampipe service restart --dashboard
+    assert_success
+}
+
 @test "steampipe service stop" {
     run steampipe service stop
     assert_success
