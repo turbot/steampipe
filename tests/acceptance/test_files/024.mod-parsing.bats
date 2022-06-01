@@ -8,7 +8,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # install steampipe-mod-aws-compliance
   steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
-
   # go to the mod directory and run steampipe query to verify parsing
   cd .steampipe/mods/github.com/turbot/steampipe-mod-aws-compliance@*
   run steampipe query "select 1"
@@ -17,7 +16,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # install steampipe-mod-aws-thrifty
   steampipe mod install github.com/turbot/steampipe-mod-aws-thrifty
-
   # go to the mod directory and run steampipe query to verify parsing
   cd .steampipe/mods/github.com/turbot/steampipe-mod-aws-thrifty@*
   run steampipe query "select 1"
@@ -26,7 +24,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # install steampipe-mod-ibm-insights
   steampipe mod install github.com/turbot/steampipe-mod-ibm-insights
-
   # go to the mod directory and run steampipe query to verify parsing
   cd .steampipe/mods/github.com/turbot/steampipe-mod-ibm-insights@*
   run steampipe query "select 1"
@@ -35,7 +32,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # install steampipe-mod-oci-compliance
   steampipe mod install github.com/turbot/steampipe-mod-oci-compliance
-
   # go to the mod directory and run steampipe query to verify parsing
   cd .steampipe/mods/github.com/turbot/steampipe-mod-oci-compliance@*
   run steampipe query "select 1"
@@ -44,7 +40,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # install steampipe-mod-azure-compliance
   steampipe mod install github.com/turbot/steampipe-mod-azure-compliance
-
   # go to the mod directory and run steampipe query to verify parsing
   cd .steampipe/mods/github.com/turbot/steampipe-mod-azure-compliance@*
   run steampipe query "select 1"
