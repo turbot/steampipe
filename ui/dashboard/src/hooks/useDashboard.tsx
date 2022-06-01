@@ -45,12 +45,17 @@ export interface ComponentsMap {
   [name: string]: any;
 }
 
+export type DashboardDataMode = "live" | "snapshot";
+
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
 
   closePanelDetail(): void;
   dispatch(action: DashboardAction): void;
+
+  dataMode: DashboardDataMode;
+  refetchDashboard: boolean;
 
   error: any;
 
@@ -97,11 +102,14 @@ const DashboardActions: IActions = {
   SELECT_DASHBOARD: "select_dashboard",
   SELECT_PANEL: "select_panel",
   SELECT_SNAPSHOT: "select_snapshot",
+  SET_DASHBOARD: "set_dashboard",
   SET_DASHBOARD_INPUT: "set_dashboard_input",
   SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
   SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
   SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
   SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
+  SET_DATA_MODE: "set_data_mode",
+  SET_REFETCH_DASHBOARD: "set_refetch_dashboard",
   SET_SNAPSHOT: "set_snapshot",
   WORKSPACE_ERROR: "workspace_error",
 };
@@ -137,9 +145,11 @@ export interface DashboardTags {
 
 interface SelectedDashboardStates {
   dashboard_name: string | null;
+  refetchDashboard: boolean;
   search: DashboardSearch;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
+  selectedSnapshot: DashboardSnapshot;
 }
 
 interface DashboardInputs {
@@ -497,6 +507,7 @@ function reducer(state, action) {
         ),
         dashboard:
           selectedDashboard &&
+          state.dashboard &&
           state.dashboard.name === selectedDashboard.full_name
             ? state.dashboard
             : null,
@@ -517,12 +528,16 @@ function reducer(state, action) {
         error: null,
         dashboard,
         execution_id: action.execution_id,
+        refetchDashboard: false,
         state: "running",
       };
     }
     case DashboardActions.EXECUTION_COMPLETE: {
-      // We're not expecting execution events for this ID
-      if (action.execution_id !== state.execution_id) {
+      // If we're in live mode and not expecting execution events for this ID
+      if (
+        state.dataMode === "live" &&
+        action.execution_id !== state.execution_id
+      ) {
         return state;
       }
 
@@ -601,11 +616,33 @@ function reducer(state, action) {
     }
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
+    case DashboardActions.CLEAR_SNAPSHOT:
+      return { ...state, selectedSnapshot: null, dataMode: "live" };
     case DashboardActions.SELECT_SNAPSHOT:
-      return { ...state, selectedSnapshot: action.snapshot };
+      return {
+        ...state,
+        selectedSnapshot: action.snapshot,
+        dataMode: "snapshot",
+      };
+    case DashboardActions.SET_DATA_MODE:
+      return {
+        ...state,
+        dataMode: action.mode,
+      };
+    case DashboardActions.SET_REFETCH_DASHBOARD:
+      return {
+        ...state,
+        refetchDashboard: true,
+      };
+    case DashboardActions.SET_DASHBOARD:
+      return {
+        ...state,
+        dashboard: action.dashboard,
+      };
     case DashboardActions.SELECT_DASHBOARD:
       return {
         ...state,
+        dataMode: "live",
         dashboard: null,
         execution_id: null,
         state: null,
@@ -720,6 +757,8 @@ const getInitialState = (searchParams) => {
     dashboardTags: {
       keys: [],
     },
+    dataMode: "live",
+    refetchDashboard: false,
     error: null,
 
     dashboard: null,
@@ -781,7 +820,16 @@ const DashboardProvider = ({
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
+      selectedSnapshot: state.selectedSnapshot,
     });
+
+  console.log({
+    selectedDashboard: state.selectedDashboard,
+    selectedSnapshot: state.selectedSnapshot,
+    dashboard: state.dashboard,
+    dataMode: state.dataMode,
+    refetchDashboard: state.refetchDashboard,
+  });
 
   // Alert analytics
   useEffect(() => {
@@ -964,12 +1012,16 @@ const DashboardProvider = ({
     // to a report, or it's first load), or the selected dashboard has been changed, select that
     // report over the socket
     if (
-      !previousSelectedDashboardStates ||
-      // @ts-ignore
-      !previousSelectedDashboardStates.selectedDashboard ||
-      state.selectedDashboard.full_name !==
+      state.dataMode === "live" &&
+      (!previousSelectedDashboardStates ||
         // @ts-ignore
-        previousSelectedDashboardStates.selectedDashboard.full_name
+        !previousSelectedDashboardStates.selectedDashboard ||
+        state.selectedDashboard.full_name !==
+          // @ts-ignore
+          previousSelectedDashboardStates.selectedDashboard.full_name ||
+        // @ts-ignore
+        (!previousSelectedDashboardStates.refetchDashboard &&
+          state.refetchDashboard))
     ) {
       sendSocketMessage({
         action: SocketActions.CLEAR_DASHBOARD,
@@ -988,6 +1040,7 @@ const DashboardProvider = ({
     // Else if we did previously have a dashboard selected in state and the
     // inputs have changed, then update the inputs over the socket
     if (
+      state.dataMode === "live" &&
       previousSelectedDashboardStates &&
       // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard &&
@@ -1015,6 +1068,8 @@ const DashboardProvider = ({
     state.selectedDashboard,
     state.selectedDashboardInputs,
     state.lastChangedInput,
+    state.dataMode,
+    state.refetchDashboard,
   ]);
 
   useEffect(() => {
