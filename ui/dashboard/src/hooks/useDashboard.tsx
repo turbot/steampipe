@@ -823,13 +823,13 @@ const DashboardProvider = ({
       selectedSnapshot: state.selectedSnapshot,
     });
 
-  console.log({
-    selectedDashboard: state.selectedDashboard,
-    selectedSnapshot: state.selectedSnapshot,
-    dashboard: state.dashboard,
-    dataMode: state.dataMode,
-    refetchDashboard: state.refetchDashboard,
-  });
+  // console.log({
+  //   selectedDashboard: state.selectedDashboard,
+  //   selectedSnapshot: state.selectedSnapshot,
+  //   dashboard: state.dashboard,
+  //   dataMode: state.dataMode,
+  //   refetchDashboard: state.refetchDashboard,
+  // });
 
   // Alert analytics
   useEffect(() => {
