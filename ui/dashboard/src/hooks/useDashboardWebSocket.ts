@@ -93,10 +93,18 @@ const useDashboardWebSocket = (
   };
 
   useEffect(() => {
+    if (!webSocket.current) {
+      return;
+    }
+    webSocket.current.onmessage = onSocketMessage;
+  }, [eventHooks, webSocket.current]);
+
+  useEffect(() => {
     const doConnect = async () => {
       let keepAliveTimerId: NodeJS.Timeout;
       webSocket.current = await createSocket(socketFactory);
       webSocket.current.onerror = onSocketError;
+      webSocket.current.onmessage = onSocketMessage;
       webSocket.current.onopen = () => {
         const keepAlive = async () => {
           if (!webSocket.current) {
@@ -107,6 +115,7 @@ const useDashboardWebSocket = (
           if (webSocket.current.readyState === webSocket.current.CLOSED) {
             webSocket.current = await createSocket(socketFactory);
             webSocket.current.onerror = onSocketError;
+            webSocket.current.onmessage = onSocketMessage;
           }
           if (webSocket.current.readyState === webSocket.current.OPEN) {
             webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
@@ -143,13 +152,6 @@ const useDashboardWebSocket = (
     };
     doConnect();
   }, []);
-
-  useEffect(() => {
-    if (!webSocket.current) {
-      return;
-    }
-    webSocket.current.onmessage = onSocketMessage;
-  }, [eventHooks, webSocket.current]);
 
   const send = useCallback((message) => {
     // TODO log this?
