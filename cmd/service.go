@@ -163,7 +163,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
-		panic("Invalid db port - must be within range (1:65535)")
+		panic("Invalid port - must be within range (1:65535)")
 	}
 
 	serviceListen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
