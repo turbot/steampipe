@@ -517,10 +517,6 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
 	}
 
-	// if len(plugins) > 0 && !(cmdconfig.Viper().GetBool("all")) && plugins[0] == "all" {
-	// 	// improve the response to "steampipe plugin install all"
-	// 	return nil, fmt.Errorf("Did you mean %s?", constants.Bold("--all"))
-	// }
 	return plugins, nil
 }
 
