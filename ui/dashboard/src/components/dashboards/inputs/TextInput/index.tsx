@@ -4,7 +4,7 @@ import { IInput, InputProps } from "../index";
 import { useEffect, useState } from "react";
 
 const TextInput = (props: InputProps) => {
-  const { dispatch, selectedDashboardInputs } = useDashboard();
+  const { dataMode, dispatch, selectedDashboardInputs } = useDashboard();
   const stateValue = selectedDashboardInputs[props.name];
   const [value, setValue] = useState<string>(() => {
     return stateValue || "";
@@ -70,6 +70,7 @@ const TextInput = (props: InputProps) => {
             submit();
           }}
           placeholder={props.properties.placeholder}
+          readOnly={dataMode === "snapshot"}
           value={value}
         />
         {value && isDirty && (
