@@ -138,9 +138,7 @@ func serviceRestartCmd() *cobra.Command {
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service restart").
 		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports").
 		// dashboard server
-		AddBoolFlag(constants.ArgDashboard, "", false, "Run the dashboard webserver with the service").
-		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
-		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port.")
+		AddBoolFlag(constants.ArgDashboard, "", false, "Run the dashboard webserver with the service")
 	return cmd
 }
 
@@ -165,7 +163,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
-		panic("Invalid port - must be within range (1:65535)")
+		panic("Invalid db port - must be within range (1:65535)")
 	}
 
 	serviceListen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
@@ -351,6 +349,10 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// along with the current dashboard state - maybe nil
+	currentDashboardState, err := dashboardserver.GetDashboardServiceState()
+	utils.FailOnError(err)
+
 	// stop db
 	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants.ArgForce), constants.InvokerService)
 	utils.FailOnErrorWithMessage(err, "could not stop current instance")
@@ -383,10 +385,6 @@ to force a restart.
 
 	// refresh connections
 	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
-	utils.FailOnError(err)
-
-	// along with the current dashboard state - maybe nil
-	currentDashboardState, err := dashboardserver.GetDashboardServiceState()
 	utils.FailOnError(err)
 
 	// if the dashboard was running, start it
