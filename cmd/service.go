@@ -326,8 +326,11 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 				}
 			}
 			fmt.Println("Stopping Steampipe service.")
-			tryToStopServices(ctx)
-			fmt.Println("Steampipe service stopped.")
+			if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
+				utils.ShowError(ctx, err)
+			} else {
+				fmt.Println("Steampipe service stopped.")
+			}
 			return
 		}
 	}
