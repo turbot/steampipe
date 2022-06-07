@@ -283,7 +283,7 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 
 func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runPluginUpdateCmd install")
+	utils.LogTime("runPluginUpdateCmd start")
 	defer func() {
 		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {

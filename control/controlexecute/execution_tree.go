@@ -77,6 +77,9 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 		controlRun := NewControlRun(control, group, e)
 		// add it into the group
 		group.ControlRuns = append(group.ControlRuns, controlRun)
+		// also add to group children
+		group.Children = append(group.Children, controlRun)
+
 		// also add it into the execution tree control run list
 		e.ControlRuns = append(e.ControlRuns, controlRun)
 	}

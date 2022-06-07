@@ -1,12 +1,12 @@
 package controlstatus
 
-type ControlRunStatus uint32
+type ControlRunStatus string
 
 const (
-	ControlRunReady ControlRunStatus = 1 << iota
-	ControlRunStarted
-	ControlRunComplete
-	ControlRunError
+	ControlRunReady    ControlRunStatus = "ready"
+	ControlRunStarted  ControlRunStatus = "started"
+	ControlRunComplete ControlRunStatus = "complete"
+	ControlRunError    ControlRunStatus = "error"
 )
 
 // StatusSummary is a struct containing the counts of each possible control status

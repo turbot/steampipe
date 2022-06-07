@@ -130,16 +130,3 @@ func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListIt
 
 	return items, nil
 }
-
-// function that returns an unique map of strings
-func Unique(m map[int]string) map[int]string {
-	n := make(map[int]string, len(m))
-	ref := make(map[string]bool, len(m))
-	for k, v := range m {
-		if _, ok := ref[v]; !ok {
-			ref[v] = true
-			n[k] = v
-		}
-	}
-	return n
-}

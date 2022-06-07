@@ -23,10 +23,21 @@ const controlQueryTimeout = 240 * time.Second
 
 // ControlRun is a struct representing the execution of a control run. It will contain one or more result items (i.e. for one or more resources).
 type ControlRun struct {
+	// properties from control
+	ControlId   string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Severity    string            `json:"severity,omitempty"`
+	Tags        map[string]string `json:"tags,omitempty"`
+	Title       string            `json:"title,omitempty"`
+
+	// "control"
+	NodeType string `json:"node_type"`
+
 	// the control being run
 	Control *modconfig.Control `json:"-"`
 	// control summary
-	Summary *controlstatus.StatusSummary `json:"summary"`
+	Summary   *controlstatus.StatusSummary   `json:"summary"`
+	RunStatus controlstatus.ControlRunStatus `json:"status"`
 	// result rows
 	Rows []*ResultRow `json:"results"`
 	// a list of distinct dimension keys from the results of this control
@@ -34,24 +45,15 @@ type ControlRun struct {
 	// execution duration
 	Duration time.Duration `json:"-"`
 
-	// properties from control
-	ControlId   string            `json:"control_id"`
-	Description string            `json:"description"`
-	Severity    string            `json:"severity"`
-	Tags        map[string]string `json:"tags"`
-	Title       string            `json:"title"`
-
 	// parent result group
 	Group *ResultGroup `json:"-"`
 	// execution tree
 	Tree *ExecutionTree `json:"-"`
 	// used to trace the events within the duration of a control execution
-	Lifecycle *utils.LifecycleTimer          `json:"-"`
-	RunStatus controlstatus.ControlRunStatus `json:"run_status"`
+	Lifecycle *utils.LifecycleTimer `json:"-"`
 	// save run error as string for JSON export
-	RunErrorString string `json:"run_error"`
-
-	runError error
+	RunErrorString string `json:"error,omitempty"`
+	runError       error
 	// the query result stream
 	queryResult *queryresult.Result
 	rowMap      map[string][]*ResultRow
@@ -82,6 +84,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		RunStatus: controlstatus.ControlRunReady,
 
 		Group:    group,
+		NodeType: "control_run",
 		doneChan: make(chan bool, 1),
 	}
 	res.Lifecycle.Add("constructed")

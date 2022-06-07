@@ -22,17 +22,21 @@ const RootResultGroupName = "root_result_group"
 // ResultGroup is a struct representing a grouping of control results
 // It may correspond to a Benchmark, or some other arbitrary grouping
 type ResultGroup struct {
-	GroupId     string            `json:"group_id" csv:"group_id"`
-	Title       string            `json:"title" csv:"title"`
-	Description string            `json:"description" csv:"description"`
-	Tags        map[string]string `json:"tags"`
+	GroupId     string            `json:"name" csv:"group_id"`
+	Title       string            `json:"title,omitempty" csv:"title"`
+	Description string            `json:"description,omitempty" csv:"description"`
+	Tags        map[string]string `json:"tags,omitempty"`
 	// the overall summary of the group
 	Summary *GroupSummary `json:"summary"`
 	// child result groups
-	Groups []*ResultGroup `json:"groups"`
+	Groups []*ResultGroup `json:"-"`
 	// child control runs
-	ControlRuns []*ControlRun                          `json:"controls"`
-	Severity    map[string]controlstatus.StatusSummary `json:"-"`
+	ControlRuns []*ControlRun `json:"-"`
+	// child groups and control runs
+	Children []ExecutionTreeNode                    `json:"children,omitempty"`
+	Severity map[string]controlstatus.StatusSummary `json:"-"`
+
+	NodeType string `json:"node_type"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
@@ -67,6 +71,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		Summary:    NewGroupSummary(),
 		Severity:   make(map[string]controlstatus.StatusSummary),
 		updateLock: new(sync.Mutex),
+		NodeType:   "benchmark",
 	}
 	for _, item := range rootItems {
 		// if root item is a benchmark, create new result group with root as parent
@@ -77,6 +82,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 			// create a result group for this item
 			itemGroup := NewResultGroup(ctx, executionTree, item, root)
 			root.Groups = append(root.Groups, itemGroup)
+			root.Children = append(root.Children, itemGroup)
 		}
 	}
 	return root
@@ -103,6 +109,7 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 		Summary:     NewGroupSummary(),
 		Severity:    make(map[string]controlstatus.StatusSummary),
 		updateLock:  new(sync.Mutex),
+		NodeType:    "benchmark_run",
 	}
 	// TACTICAL for dashboard - if roo item is a benchmark, pull up 'type' and 'display'
 	if benchmark, ok := treeItem.(*modconfig.Benchmark); ok {
@@ -118,6 +125,7 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 			if benchmarkGroup.ControlRunCount() > 0 {
 				// create a new result group with 'group' as the parent
 				group.Groups = append(group.Groups, benchmarkGroup)
+				group.Children = append(group.Children, benchmarkGroup)
 			}
 		}
 		if control, ok := c.(*modconfig.Control); ok {
