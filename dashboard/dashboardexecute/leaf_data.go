@@ -34,9 +34,7 @@ func NewLeafData(result *queryresult.SyncQueryResult) *LeafData {
 	}
 	for rowIdx, row := range result.Rows {
 		rowData := make([]interface{}, len(result.ColTypes))
-		for columnIdx, columnVal := range row.(*queryresult.RowResult).Data {
-			rowData[columnIdx] = columnVal
-		}
+		copy(rowData, row.(*queryresult.RowResult).Data)
 		leafData.Rows[rowIdx] = rowData
 	}
 	return leafData

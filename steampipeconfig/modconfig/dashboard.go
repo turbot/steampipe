@@ -324,7 +324,14 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
 		// continue walking
 		return true, nil
 	}
-	d.WalkResources(resourceFunc)
+	if err := d.WalkResources(resourceFunc); err != nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("Dashboard '%s' WalkResources failed", d.Name()),
+			Detail:   err.Error(),
+			Subject:  &d.DeclRange,
+		}}
+	}
 
 	if len(duplicates) > 0 {
 		return hcl.Diagnostics{&hcl.Diagnostic{

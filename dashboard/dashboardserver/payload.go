@@ -52,9 +52,7 @@ func addBenchmarkChildren(benchmark *modconfig.Benchmark, recordTrunk bool, trun
 		switch t := child.(type) {
 		case *modconfig.Benchmark:
 			childTrunk := make([]string, len(trunk)+1)
-			for i := 0; i < len(trunk); i++ {
-				childTrunk[i] = trunk[i]
-			}
+			copy(childTrunk, trunk)
 			childTrunk[len(childTrunk)-1] = t.FullName
 			if recordTrunk {
 				trunks[t.FullName] = append(trunks[t.FullName], childTrunk)

@@ -44,30 +44,6 @@ func fileExists(filePath string) bool {
 	return true
 }
 
-func copyFile(sourcePath, destPath string) error {
-	inputFile, err := os.Open(sourcePath)
-	if err != nil {
-		return fmt.Errorf("couldn't open source file: %s", err)
-	}
-	defer inputFile.Close()
-
-	outputFile, err := os.Create(destPath)
-	if err != nil {
-		return fmt.Errorf("couldn't open dest file: %s", err)
-	}
-	defer outputFile.Close()
-
-	if _, err = io.Copy(outputFile, inputFile); err != nil {
-		return fmt.Errorf("writing to output file failed: %s", err)
-	}
-
-	// copy over the permissions and modes
-	inputStat, _ := os.Stat(sourcePath)
-	outputFile.Chmod(inputStat.Mode())
-
-	return nil
-}
-
 // moves a file within an fs partition. panics if movement is attempted between partitions
 // this is done separately to achieve performance benefits of os.Rename over reading and writing content
 func moveFileWithinPartition(sourcePath, destPath string) error {

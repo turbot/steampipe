@@ -114,7 +114,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	defer server.Shutdown()
 
 	// server has started - update state file/start browser, as required
-	onServerStarted(serverPort, serverListen, err)
+	onServerStarted(serverPort, serverListen)
 
 	// wait for API server to terminate
 	<-doneChan
@@ -147,15 +147,15 @@ func setExitCodeForDashboardError(err error) {
 	}
 }
 
-// execute any required actions after successfult server startup
-func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType, err error) {
+// execute any required actions after successful server startup
+func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType) {
 	if isRunningAsService() {
 		// for service mode only, save the state
 		saveDashboardState(serverPort, serverListen)
 	} else {
 		// start browser if required
 		if viper.GetBool(constants.ArgBrowser) {
-			if err = dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort)); err != nil {
+			if err := dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort)); err != nil {
 				log.Println("[TRACE] dashboard server started but failed to start client", err)
 			}
 		}

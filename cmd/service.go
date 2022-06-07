@@ -206,8 +206,11 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		// do
 		err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
 		if err != nil {
-			db_local.StopServices(ctx, false, constants.InvokerService)
-			utils.FailOnError(err)
+			_, err1 := db_local.StopServices(ctx, false, constants.InvokerService)
+			if err1 != nil {
+				utils.ShowError(ctx, err1)
+			}
+		utils.FailOnError(err)
 		}
 	}
 
@@ -217,14 +220,14 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	if viper.GetBool(constants.ArgDashboard) {
 		dashboardState, err = dashboardserver.GetDashboardServiceState()
 		if err != nil {
-			db_local.StopServices(ctx, false, constants.InvokerService)
+			tryToStopServices(ctx)
 			utils.ShowError(ctx, err)
 			return
 		}
 		if dashboardState == nil {
 			dashboardState, err = startDashboardServer(ctx)
 			if err != nil {
-				db_local.StopServices(ctx, false, constants.InvokerService)
+				tryToStopServices(ctx)
 				utils.ShowError(ctx, err)
 				return
 			}
@@ -236,6 +239,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	if viper.GetBool(constants.ArgForeground) {
 		runServiceInForeground(ctx, invoker)
+	}
+}
+
+func tryToStopServices(ctx context.Context){
+	if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
+		utils.ShowError(ctx, err)
 	}
 }
 
@@ -317,8 +326,11 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 				}
 			}
 			fmt.Println("Stopping Steampipe service.")
-			db_local.StopServices(ctx, false, invoker)
-			fmt.Println("Steampipe service stopped.")
+			if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
+				utils.ShowError(ctx, err)
+			} else {
+				fmt.Println("Steampipe service stopped.")
+			}
 			return
 		}
 	}
@@ -469,6 +481,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		dashboardStopError := dashboardserver.StopDashboardService(ctx)
 		status, dbStopError = db_local.StopServices(ctx, force, constants.InvokerService)
 		dbStopError = utils.CombineErrors(dbStopError, dashboardStopError)
+		utils.FailOnError(dbStopError)
 	} else {
 		dbState, dbStopError = db_local.GetState()
 		utils.FailOnErrorWithMessage(dbStopError, "could not stop Steampipe service")
@@ -501,11 +514,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 
 		status, err = db_local.StopServices(ctx, false, constants.InvokerService)
-	}
-
-	if dbStopError != nil {
-		utils.ShowError(ctx, dbStopError)
-		return
+		utils.FailOnErrorWithMessage(err, "error during service stop")
 	}
 
 	switch status {
