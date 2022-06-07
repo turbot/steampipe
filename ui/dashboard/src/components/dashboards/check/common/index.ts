@@ -31,7 +31,7 @@ export interface CheckNode {
   merge?: (other: CheckNode) => void;
 }
 
-export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
+export type CheckNodeStatusRaw = "ready" | "started" | "complete" | "error";
 
 export type CheckNodeStatus = "running" | "complete";
 
@@ -95,29 +95,30 @@ export interface CheckResult {
   type: CheckResultType;
 }
 
-export interface CheckControl {
-  control_id: string;
+export interface CheckControlRun {
+  name: string;
   title?: string;
   description?: string;
+  node_type: "control_run";
   severity?: CheckSeverity | undefined;
   tags?: CheckTags;
   results: CheckResult[];
   summary: CheckSummary;
-  run_status: CheckNodeStatusRaw;
-  run_error?: string;
+  status: CheckNodeStatusRaw;
+  error?: string;
 }
 
 export type CheckGroupType = "benchmark" | "table";
 
-export interface CheckGroup {
-  group_id: string;
+export interface CheckBenchmarkRun {
+  name: string;
   title?: string;
   description?: string;
+  node_type: "benchmark";
   tags?: CheckTags;
   type: CheckGroupType;
   summary: CheckLeafNodeDataGroupSummary;
-  groups?: CheckGroup[];
-  controls?: CheckControl[];
+  children?: CheckBenchmarkRun[] | CheckControlRun[];
 }
 
 interface CheckLeafNodeProgress {
@@ -127,9 +128,9 @@ interface CheckLeafNodeProgress {
 export interface CheckExecutionTree {
   start_time: string;
   end_time: string;
-  control_runs: CheckControl[];
+  control_runs: CheckControlRun[];
   progress: CheckLeafNodeProgress;
-  root: CheckGroup;
+  root: CheckBenchmarkRun;
 }
 
 export type CheckDisplayGroupType =

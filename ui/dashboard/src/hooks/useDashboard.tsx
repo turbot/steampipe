@@ -417,15 +417,15 @@ const wrapDefinitionInArtificialDashboard = (
 const updateCheckNode = (dashboardCheckNode, action) => {
   let panelPath: string = findPathDeep(
     dashboardCheckNode,
-    (v, k) => k === "control_id" && v === action.control.control_id
+    (v, k) => k === "name" && v === action.control.name
   );
 
   if (!panelPath) {
-    console.warn("Cannot find control to update", action.control.control_id);
+    console.warn("Cannot find control to update", action.control.name);
     return null;
   }
 
-  panelPath = panelPath.replace(".control_id", "");
+  panelPath = panelPath.replace(".name", "");
 
   let newCheckNode = {
     ...dashboardCheckNode,
@@ -442,19 +442,23 @@ const updateDashboardWithControlEvent = (dashboard, action) => {
     );
 
     if (!updatedCheckNode) {
-      console.warn("Cannot find control to update", action.control.control_id);
+      console.warn("Cannot find control to update", action.control.name);
       return null;
     }
 
     const rootBenchmark = get(
       updatedCheckNode,
-      "execution_tree.root.groups[0]",
+      "execution_tree.root.children[0]",
       {}
     );
 
-    updatedCheckNode = set(updatedCheckNode, "execution_tree.root.groups[0]", {
-      ...rootBenchmark,
-    });
+    updatedCheckNode = set(
+      updatedCheckNode,
+      "execution_tree.root.children[0]",
+      {
+        ...rootBenchmark,
+      }
+    );
 
     const newDashboard = {
       ...dashboard,
@@ -476,8 +480,8 @@ const updateDashboardWithControlEvent = (dashboard, action) => {
 
     let node = get(dashboard, nodePath);
 
-    const rootBenchmark = get(node, "execution_tree.root.groups[0]", {});
-    node = set(node, "execution_tree.root.groups[0]", { ...rootBenchmark });
+    const rootBenchmark = get(node, "execution_tree.root.children[0]", {});
+    node = set(node, "execution_tree.root.children[0]", { ...rootBenchmark });
 
     if (!node) {
       console.warn("Cannot find dashboard node to update", action.name);
@@ -487,7 +491,7 @@ const updateDashboardWithControlEvent = (dashboard, action) => {
     let updatedNode = updateCheckNode(node, action);
 
     if (!updatedNode) {
-      console.warn("Cannot find control to update", action.control.control_id);
+      console.warn("Cannot find control to update", action.control.name);
       return null;
     }
 

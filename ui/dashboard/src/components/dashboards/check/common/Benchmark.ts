@@ -3,9 +3,9 @@ import merge from "lodash/merge";
 import padStart from "lodash/padStart";
 import {
   AddControlResultsAction,
-  CheckControl,
+  CheckBenchmarkRun,
+  CheckControlRun,
   CheckDynamicColsMap,
-  CheckGroup,
   CheckNode,
   CheckNodeStatus,
   CheckNodeType,
@@ -34,8 +34,8 @@ class Benchmark implements CheckNode {
     name: string,
     title: string | undefined,
     description: string | undefined,
-    benchmarks: CheckGroup[] | undefined,
-    controls: CheckControl[] | undefined,
+    benchmarks: CheckBenchmarkRun[] | undefined,
+    controls: CheckControlRun[] | undefined,
     trunk: Benchmark[],
     add_control_results?: AddControlResultsAction
   ) {
@@ -57,14 +57,22 @@ class Benchmark implements CheckNode {
     const lengthMaxBenchmarkIndex = (benchmarksToAdd.length - 1).toString()
       .length;
     benchmarksToAdd.forEach((nestedBenchmark, benchmarkIndex) => {
+      // @ts-ignore
+      const benchmarks = nestedBenchmark.children?.filter(
+        (child) => child.node_type === "benchmark_run"
+      );
+      // @ts-ignore
+      const controls = nestedBenchmark.children?.filter(
+        (child) => child.node_type === "control_run"
+      );
       nestedBenchmarks.push(
         new Benchmark(
           padStart(benchmarkIndex.toString(), lengthMaxBenchmarkIndex),
-          nestedBenchmark.group_id,
+          nestedBenchmark.name,
           nestedBenchmark.title,
           nestedBenchmark.description,
-          nestedBenchmark.groups,
-          nestedBenchmark.controls,
+          benchmarks,
+          controls,
           thisTrunk,
           this._add_control_results
         )
@@ -80,15 +88,15 @@ class Benchmark implements CheckNode {
           this._name,
           this._title,
           this._description,
-          nestedControl.control_id,
+          nestedControl.name,
           nestedControl.title,
           nestedControl.description,
           nestedControl.severity,
           nestedControl.results,
           nestedControl.summary,
           nestedControl.tags,
-          nestedControl.run_status,
-          nestedControl.run_error,
+          nestedControl.status,
+          nestedControl.error,
           thisTrunk,
           this._add_control_results
         )

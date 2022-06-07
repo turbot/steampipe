@@ -27,8 +27,8 @@ class Control implements CheckNode {
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _tags: CheckTags;
-  private readonly _run_state: CheckNodeStatusRaw;
-  private readonly _run_error: string | undefined;
+  private readonly _status: CheckNodeStatusRaw;
+  private readonly _error: string | undefined;
 
   constructor(
     sortIndex: string,
@@ -43,7 +43,7 @@ class Control implements CheckNode {
     summary: CheckSummary | undefined,
     tags: CheckTags | undefined,
     status: CheckNodeStatusRaw,
-    run_error: string | undefined,
+    error: string | undefined,
     benchmark_trunk: Benchmark[],
     add_control_results: AddControlResultsAction
   ) {
@@ -64,14 +64,14 @@ class Control implements CheckNode {
       error: 0,
     };
     this._tags = tags || {};
-    this._run_state = status;
-    this._run_error = run_error;
+    this._status = status;
+    this._error = error;
 
-    if (this._run_state === 1 || this._run_state === 2) {
+    if (this._status === "ready" || this._status === "started") {
       add_control_results([this._build_control_loading_node(benchmark_trunk)]);
-    } else if (this._run_error) {
+    } else if (this._error) {
       add_control_results([
-        this._build_control_error_node(benchmark_trunk, this._run_error),
+        this._build_control_error_node(benchmark_trunk, this._error),
       ]);
     } else if (!this._results || this._results.length === 0) {
       add_control_results([this._build_control_empty_result(benchmark_trunk)]);
@@ -111,13 +111,13 @@ class Control implements CheckNode {
   }
 
   get error(): string | undefined {
-    return this._run_error;
+    return this._error;
   }
 
   get status(): CheckNodeStatus {
-    switch (this._run_state) {
-      case 1:
-      case 2:
+    switch (this._status) {
+      case "ready":
+      case "started":
         return "running";
       default:
         return "complete";

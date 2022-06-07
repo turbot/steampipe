@@ -8,9 +8,9 @@ import get from "lodash/get";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
+  CheckBenchmarkRun,
   CheckDisplayGroup,
   CheckDisplayGroupType,
-  CheckGroup,
   CheckNode,
   CheckResult,
   CheckSummary,
@@ -49,7 +49,7 @@ interface ICheckGroupingContext {
   groupingsConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
   nodeStates: CheckGroupNodeStates;
-  rootBenchmark: CheckGroup;
+  rootBenchmark: CheckBenchmarkRun;
   dispatch(action: CheckGroupingAction): void;
 }
 
@@ -310,7 +310,11 @@ const CheckGroupingProvider = ({
   definition,
 }: CheckGroupingProviderProps) => {
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
-  const rootBenchmark = get(definition, "execution_tree.root.groups[0]", null);
+  const rootBenchmark = get(
+    definition,
+    "execution_tree.root.children[0]",
+    null
+  );
   const [searchParams] = useSearchParams();
 
   const groupingsConfig = useMemo(() => {
@@ -357,13 +361,22 @@ const CheckGroupingProvider = ({
         return [null, null, [], {}];
       }
 
+      // @ts-ignore
+      const nestedBenchmarks = rootBenchmark.children?.filter(
+        (child) => child.node_type === "benchmark_run"
+      );
+      // @ts-ignore
+      const nestedControls = rootBenchmark.children?.filter(
+        (child) => child.node_type === "control_run"
+      );
+
       const b = new BenchmarkType(
         "0",
-        rootBenchmark.group_id,
+        rootBenchmark.name,
         rootBenchmark.title,
         rootBenchmark.description,
-        rootBenchmark.groups,
-        rootBenchmark.controls,
+        nestedBenchmarks,
+        nestedControls,
         []
       );
 

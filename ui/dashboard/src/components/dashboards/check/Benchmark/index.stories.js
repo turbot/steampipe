@@ -32,7 +32,7 @@ Empty.args = {
 export const SimpleDataFormat = Template.bind({});
 SimpleDataFormat.args = {
   data: {
-    group_id: "root_result_group",
+    name: "root_result_group",
     title: "",
     description: "",
     tags: {},
@@ -48,7 +48,7 @@ SimpleDataFormat.args = {
     groups: [],
     controls: [
       {
-        control_id: "control.cis_v140_1_5",
+        name: "control.cis_v140_1_5",
         description:
           "The 'root' user account is the most privileged user in an AWS account. Multi-factor Authentication (MFA) adds an extra layer of protection on top of a username and password. With MFA enabled, when a user signs in to an AWS website, they will be prompted for their username and password as well as for an authentication code from their AWS MFA device.",
         severity: "",
