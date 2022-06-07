@@ -833,6 +833,16 @@ const DashboardProvider = ({
   //   refetchDashboard: state.refetchDashboard,
   // });
 
+  // Initial sync into URL
+  useEffect(() => {
+    if (searchParams.has("mode")) {
+      return;
+    }
+    searchParams.set("mode", state.dataMode);
+    console.log("setting in init", searchParams.toString());
+    setSearchParams(searchParams, { replace: true });
+  }, []);
+
   // Alert analytics
   useEffect(() => {
     setAnalyticsMetadata(state.metadata);
@@ -863,6 +873,7 @@ const DashboardProvider = ({
     const search = searchParams.get("search") || "";
     const groupBy = searchParams.get("group_by") || "tag";
     const tag = searchParams.get("tag") || "service";
+    const dataMode = searchParams.get("mode") || "live";
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
@@ -877,6 +888,10 @@ const DashboardProvider = ({
       type: DashboardActions.SET_DASHBOARD_INPUTS,
       value: inputs,
       recordInputsHistory: false,
+    });
+    dispatch({
+      type: DashboardActions.SET_DATA_MODE,
+      dataMode,
     });
   }, [
     dashboard_name,
@@ -893,6 +908,8 @@ const DashboardProvider = ({
       previousSelectedDashboardStates &&
       // @ts-ignore
       previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
+      // @ts-ignore
+      previousSelectedDashboardStates.dataMode === state.dataMode &&
       // @ts-ignore
       previousSelectedDashboardStates.search.value === state.search.value &&
       // @ts-ignore
@@ -951,12 +968,15 @@ const DashboardProvider = ({
       }
     }
 
+    searchParams.set("mode", state.dataMode);
+    console.log("setting in search & group by", searchParams.toString());
     setSearchParams(searchParams, { replace: true });
   }, [
     previousSelectedDashboardStates,
     dashboard_name,
     searchParams,
     setSearchParams,
+    state.dataMode,
     state.search,
   ]);
 
@@ -1127,14 +1147,22 @@ const DashboardProvider = ({
       previousSelectedDashboardStates.selectedDashboard.full_name ===
         state.selectedDashboard.full_name;
 
+    console.log("setting in inputs", state.dataMode);
     // Sync params into the URL
-    setSearchParams(state.selectedDashboardInputs, {
-      replace: !shouldRecordHistory,
-    });
+    setSearchParams(
+      {
+        ...state.selectedDashboardInputs,
+        mode: state.dataMode,
+      },
+      {
+        replace: !shouldRecordHistory,
+      }
+    );
   }, [
     navigationType,
     previousSelectedDashboardStates,
     setSearchParams,
+    state.dataMode,
     state.recordInputsHistory,
     state.selectedDashboard,
     state.selectedDashboardInputs,
