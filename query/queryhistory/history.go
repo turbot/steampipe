@@ -2,6 +2,7 @@ package queryhistory
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,7 +18,7 @@ type QueryHistory struct {
 
 // New creates a new QueryHistory object
 func New() (*QueryHistory, error) {
-	history := new(QueryHistory)
+	history := &QueryHistory{history: []string{}}
 	err := history.load()
 	if err != nil {
 		return nil, err
@@ -87,7 +88,6 @@ func (q *QueryHistory) load() error {
 	path := filepath.Join(filepaths.EnsureInternalDir(), constants.HistoryFile)
 	file, err := os.Open(path)
 	if err != nil {
-		q.history = []string{}
 		// ignore not exists errors
 		if os.IsNotExist(err) {
 			return nil
@@ -98,5 +98,10 @@ func (q *QueryHistory) load() error {
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	return decoder.Decode(&q.history)
+	err = decoder.Decode(&q.history)
+	// ignore EOF (caused by empty file)
+	if err == io.EOF {
+		return nil
+	}
+	return err
 }
