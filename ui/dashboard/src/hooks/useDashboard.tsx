@@ -436,35 +436,18 @@ const updateCheckNode = (dashboardCheckNode, action) => {
 
 const updateDashboardWithControlEvent = (dashboard, action) => {
   if (dashboard.artificial) {
-    let updatedCheckNode = updateCheckNode(
-      get(dashboard, "children[0]"),
-      action
-    );
+    let rootBenchmark = updateCheckNode(get(dashboard, "children[0]"), action);
 
-    if (!updatedCheckNode) {
-      console.warn("Cannot find control to update", action.control.name);
+    if (!rootBenchmark) {
+      console.warn("Cannot find benchmark to update", action.control.name);
       return null;
     }
-
-    const rootBenchmark = get(
-      updatedCheckNode,
-      "execution_tree.root.children[0]",
-      {}
-    );
-
-    updatedCheckNode = set(
-      updatedCheckNode,
-      "execution_tree.root.children[0]",
-      {
-        ...rootBenchmark,
-      }
-    );
 
     const newDashboard = {
       ...dashboard,
     };
 
-    return set(newDashboard, "children[0]", updatedCheckNode);
+    return set(newDashboard, "children[0]", rootBenchmark);
   } else {
     let nodePath: string = findPathDeep(
       dashboard,
@@ -479,10 +462,6 @@ const updateDashboardWithControlEvent = (dashboard, action) => {
     nodePath = nodePath.replace(".name", "");
 
     let node = get(dashboard, nodePath);
-
-    const rootBenchmark = get(node, "execution_tree.root.children[0]", {});
-    node = set(node, "execution_tree.root.children[0]", { ...rootBenchmark });
-
     if (!node) {
       console.warn("Cannot find dashboard node to update", action.name);
       return null;
