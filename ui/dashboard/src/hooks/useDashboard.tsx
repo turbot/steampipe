@@ -55,6 +55,8 @@ interface IDashboardContext {
   dispatch(action: DashboardAction): void;
 
   dataMode: DashboardDataMode;
+  snapshotId: string | null;
+
   refetchDashboard: boolean;
 
   error: any;
@@ -646,6 +648,7 @@ function reducer(state, action) {
         dataMode: "live",
         dashboard: null,
         execution_id: null,
+        snapshotId: null,
         state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
@@ -759,6 +762,9 @@ const getInitialState = (searchParams) => {
       keys: [],
     },
     dataMode: searchParams.get("mode") || "live",
+    snapshotId: searchParams.has("snapshot_id")
+      ? searchParams.get("snapshot_id")
+      : null,
     refetchDashboard: false,
     error: null,
 
@@ -819,19 +825,12 @@ const DashboardProvider = ({
       searchParams,
       dashboard_name,
       dataMode: state.dataMode,
+      refetchDashboard: state.refetchDashboard,
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
       selectedSnapshot: state.selectedSnapshot,
     });
-
-  // console.log({
-  //   selectedDashboard: state.selectedDashboard,
-  //   selectedSnapshot: state.selectedSnapshot,
-  //   dashboard: state.dashboard,
-  //   dataMode: state.dataMode,
-  //   refetchDashboard: state.refetchDashboard,
-  // });
 
   // Initial sync into URL
   useEffect(() => {
@@ -841,6 +840,14 @@ const DashboardProvider = ({
     searchParams.set("mode", state.dataMode);
     setSearchParams(searchParams, { replace: true });
   }, []);
+
+  useEffect(() => {
+    if (state.selectedSnapshot) {
+      searchParams.set("snapshot_id", state.selectedSnapshot.id);
+    } else {
+      searchParams.delete("snapshot_id");
+    }
+  }, [searchParams, setSearchParams, state.selectedSnapshot]);
 
   // Alert analytics
   useEffect(() => {
