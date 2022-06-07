@@ -4,7 +4,6 @@ import ControlErrorNode from "../components/dashboards/check/common/node/Control
 import ControlNode from "../components/dashboards/check/common/node/ControlNode";
 import ControlResultNode from "../components/dashboards/check/common/node/ControlResultNode";
 import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
-import get from "lodash/get";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import {
@@ -24,7 +23,7 @@ import {
   useReducer,
 } from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
-import { ElementType, IActions, PanelDefinition } from "./useDashboard";
+import { BenchmarkDefinition, ElementType, IActions } from "./useDashboard";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
@@ -44,12 +43,11 @@ export interface CheckGroupingAction {
 
 interface ICheckGroupingContext {
   benchmark: BenchmarkType | null;
-  definition: PanelDefinition;
+  definition: BenchmarkDefinition;
   grouping: CheckNode | null;
   groupingsConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
   nodeStates: CheckGroupNodeStates;
-  rootBenchmark: CheckBenchmarkRun;
   dispatch(action: CheckGroupingAction): void;
 }
 
@@ -302,7 +300,7 @@ const reducer = (state: CheckGroupNodeStates, action) => {
 
 interface CheckGroupingProviderProps {
   children: null | JSX.Element | JSX.Element[];
-  definition: PanelDefinition;
+  definition: BenchmarkDefinition;
 }
 
 const CheckGroupingProvider = ({
@@ -310,11 +308,6 @@ const CheckGroupingProvider = ({
   definition,
 }: CheckGroupingProviderProps) => {
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
-  const rootBenchmark = get(
-    definition,
-    "execution_tree.root.children[0]",
-    null
-  );
   const [searchParams] = useSearchParams();
 
   const groupingsConfig = useMemo(() => {
@@ -357,24 +350,24 @@ const CheckGroupingProvider = ({
 
   const [benchmark, grouping, firstChildSummaries, tempNodeStates] =
     useMemo(() => {
-      if (!rootBenchmark) {
+      if (!definition) {
         return [null, null, [], {}];
       }
 
       // @ts-ignore
-      const nestedBenchmarks = rootBenchmark.children?.filter(
-        (child) => child.node_type === "benchmark_run"
+      const nestedBenchmarks = definition.children?.filter(
+        (child) => child.node_type === "benchmark"
       );
       // @ts-ignore
-      const nestedControls = rootBenchmark.children?.filter(
-        (child) => child.node_type === "control_run"
+      const nestedControls = definition.children?.filter(
+        (child) => child.node_type === "control"
       );
 
       const b = new BenchmarkType(
         "0",
-        rootBenchmark.name,
-        rootBenchmark.title,
-        rootBenchmark.description,
+        definition.name,
+        definition.title,
+        definition.description,
         nestedBenchmarks,
         nestedControls,
         []
@@ -402,7 +395,7 @@ const CheckGroupingProvider = ({
       }
 
       return [b, results, firstChildSummaries, checkNodeStates] as const;
-    }, [groupingsConfig, rootBenchmark]);
+    }, [definition, groupingsConfig]);
 
   useEffect(() => {
     dispatch({
@@ -421,7 +414,6 @@ const CheckGroupingProvider = ({
         grouping,
         groupingsConfig,
         nodeStates,
-        rootBenchmark,
       }}
     >
       {children}

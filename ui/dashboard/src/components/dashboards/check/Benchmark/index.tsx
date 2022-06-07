@@ -14,7 +14,11 @@ import {
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import {
+  BenchmarkDefinition,
+  PanelDefinition,
+  useDashboard,
+} from "../../../../hooks/useDashboard";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo } from "react";
 
@@ -25,7 +29,7 @@ interface BenchmarkTableViewProps {
 
 type InnerCheckProps = {
   benchmark: BenchmarkType;
-  definition: PanelDefinition;
+  definition: BenchmarkDefinition;
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
@@ -190,6 +194,7 @@ const Benchmark = (props: InnerCheckProps) => {
         title: props.definition.title,
         width: props.definition.width,
       }}
+      // @ts-ignore
       expandDefinition={{
         ...props.definition,
         title: props.definition.title || selectedDashboard?.title,
@@ -243,14 +248,14 @@ const Inner = ({ withTitle }) => {
     grouping,
     groupingsConfig,
     firstChildSummaries,
-    rootBenchmark,
   } = useCheckGrouping();
 
-  if (!benchmark || !grouping || !rootBenchmark) {
+  if (!definition || !benchmark || !grouping) {
     return null;
   }
 
-  if (!rootBenchmark.type || rootBenchmark.type === "benchmark") {
+  // @ts-ignore
+  if (!definition.type || definition.type === "benchmark") {
     return (
       <Benchmark
         benchmark={benchmark}
@@ -261,20 +266,26 @@ const Inner = ({ withTitle }) => {
         withTitle={withTitle}
       />
     );
-  } else if (rootBenchmark.type === "table") {
-    return <BenchmarkTableView benchmark={benchmark} definition={definition} />;
   } else {
-    return (
-      <Panel
-        definition={{
-          name: definition.name,
-          node_type: "benchmark",
-          width: definition.width,
-        }}
-      >
-        <Error error={`Unsupported benchmark type ${rootBenchmark.type}`} />
-      </Panel>
-    );
+    // @ts-ignore
+    if (definition.type === "table") {
+      return (
+        <BenchmarkTableView benchmark={benchmark} definition={definition} />
+      );
+    } else {
+      return (
+        <Panel
+          definition={{
+            name: definition.name,
+            node_type: "benchmark",
+            width: definition.width,
+          }}
+        >
+          {/*@ts-ignore*/}
+          <Error error={`Unsupported benchmark type ${definition.type}`} />
+        </Panel>
+      );
+    }
   }
 };
 

@@ -99,7 +99,7 @@ export interface CheckControlRun {
   name: string;
   title?: string;
   description?: string;
-  node_type: "control_run";
+  node_type: "control";
   severity?: CheckSeverity | undefined;
   tags?: CheckTags;
   results: CheckResult[];
@@ -117,20 +117,10 @@ export interface CheckBenchmarkRun {
   node_type: "benchmark";
   tags?: CheckTags;
   type: CheckGroupType;
+  session_id: string;
+  source_definition: string;
   summary: CheckLeafNodeDataGroupSummary;
   children?: CheckBenchmarkRun[] | CheckControlRun[];
-}
-
-interface CheckLeafNodeProgress {
-  summary: CheckSummary;
-}
-
-export interface CheckExecutionTree {
-  start_time: string;
-  end_time: string;
-  control_runs: CheckControlRun[];
-  progress: CheckLeafNodeProgress;
-  root: CheckBenchmarkRun;
 }
 
 export type CheckDisplayGroupType =

@@ -1,6 +1,5 @@
 import has from "lodash/has";
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
-import { CheckExecutionTree } from "../check/common";
 import { FlowCategories, FlowProperties, FlowType } from "../flows";
 import { getColumnIndex } from "../../../utils/data";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
@@ -43,7 +42,6 @@ export interface LeafNodeData {
 export interface ExecutablePrimitiveProps {
   sql?: string;
   data?: LeafNodeData;
-  execution_tree?: CheckExecutionTree;
   error?: Error;
 }
 

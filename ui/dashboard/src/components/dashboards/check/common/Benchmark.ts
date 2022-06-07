@@ -59,11 +59,11 @@ class Benchmark implements CheckNode {
     benchmarksToAdd.forEach((nestedBenchmark, benchmarkIndex) => {
       // @ts-ignore
       const benchmarks = nestedBenchmark.children?.filter(
-        (child) => child.node_type === "benchmark_run"
+        (child) => child.node_type === "benchmark"
       );
       // @ts-ignore
       const controls = nestedBenchmark.children?.filter(
-        (child) => child.node_type === "control_run"
+        (child) => child.node_type === "control"
       );
       nestedBenchmarks.push(
         new Benchmark(
