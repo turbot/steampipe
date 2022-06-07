@@ -25,10 +25,10 @@ const controlQueryTimeout = 240 * time.Second
 type ControlRun struct {
 	// properties from control
 	ControlId   string            `json:"name"`
+	Title       string            `json:"title,omitempty"`
 	Description string            `json:"description,omitempty"`
 	Severity    string            `json:"severity,omitempty"`
 	Tags        map[string]string `json:"tags,omitempty"`
-	Title       string            `json:"title,omitempty"`
 
 	// "control"
 	NodeType string `json:"node_type"`

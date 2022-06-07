@@ -36,6 +36,7 @@ type ResultGroup struct {
 	Children []ExecutionTreeNode                    `json:"children,omitempty"`
 	Severity map[string]controlstatus.StatusSummary `json:"-"`
 
+	// "benchmark"
 	NodeType string `json:"node_type"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
