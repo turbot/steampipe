@@ -839,7 +839,6 @@ const DashboardProvider = ({
       return;
     }
     searchParams.set("mode", state.dataMode);
-    console.log("setting in init", searchParams.toString());
     setSearchParams(searchParams, { replace: true });
   }, []);
 
@@ -969,7 +968,6 @@ const DashboardProvider = ({
     }
 
     searchParams.set("mode", state.dataMode);
-    console.log("setting in search & group by", searchParams.toString());
     setSearchParams(searchParams, { replace: true });
   }, [
     previousSelectedDashboardStates,
@@ -1147,7 +1145,6 @@ const DashboardProvider = ({
       previousSelectedDashboardStates.selectedDashboard.full_name ===
         state.selectedDashboard.full_name;
 
-    console.log("setting in inputs", state.dataMode);
     // Sync params into the URL
     setSearchParams(
       {
