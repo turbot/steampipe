@@ -511,7 +511,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 
 		status, err = db_local.StopServices(ctx, false, constants.InvokerService)
-		utils.FailOnErrorWithMessage(err, "could not stop db_local")
+		utils.FailOnErrorWithMessage(err, "error during service stop")
 	}
 
 	switch status {
