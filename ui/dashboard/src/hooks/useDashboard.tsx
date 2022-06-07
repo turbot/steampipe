@@ -645,7 +645,7 @@ function reducer(state, action) {
     case DashboardActions.SELECT_DASHBOARD:
       return {
         ...state,
-        dataMode: "live",
+        dataMode: action.dataMode || "live",
         dashboard: null,
         execution_id: null,
         snapshotId: null,
@@ -804,7 +804,14 @@ const DashboardProvider = ({
   const components = buildComponentsMap(componentOverrides);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
+  const [state, dispatchInner] = useReducer(
+    reducer,
+    getInitialState(searchParams)
+  );
+  const dispatch = (action) => {
+    console.log(action.type, action);
+    dispatchInner(action);
+  };
   const { dashboard_name } = useParams();
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
@@ -844,10 +851,16 @@ const DashboardProvider = ({
   useEffect(() => {
     if (state.selectedSnapshot) {
       searchParams.set("snapshot_id", state.selectedSnapshot.id);
-    } else {
-      searchParams.delete("snapshot_id");
+      setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams, state.selectedSnapshot]);
+
+  useEffect(() => {
+    if (state.dataMode === "live" && searchParams.has("snapshot_id")) {
+      searchParams.delete("snapshot_id");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, state.dataMode]);
 
   // Alert analytics
   useEffect(() => {
@@ -1006,7 +1019,11 @@ const DashboardProvider = ({
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboard_name
       );
-      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
+      dispatch({
+        type: DashboardActions.SELECT_DASHBOARD,
+        dashboard,
+        dataMode: state.dataMode,
+      });
       return;
     }
     // Else if we've changed to a different report in the URL then clear the inputs and select the
@@ -1027,7 +1044,13 @@ const DashboardProvider = ({
         recordInputsHistory: false,
       });
     }
-  }, [dashboard_name, searchParams, state.dashboards, state.selectedDashboard]);
+  }, [
+    dashboard_name,
+    searchParams,
+    state.dashboards,
+    state.dataMode,
+    state.selectedDashboard,
+  ]);
 
   useEffect(() => {
     // This effect will send events over websockets and depends on there being a dashboard selected
