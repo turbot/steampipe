@@ -72,7 +72,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		Summary:    NewGroupSummary(),
 		Severity:   make(map[string]controlstatus.StatusSummary),
 		updateLock: new(sync.Mutex),
-		NodeType:   "benchmark",
+		NodeType:   modconfig.BlockTypeBenchmark,
 	}
 	for _, item := range rootItems {
 		// if root item is a benchmark, create new result group with root as parent
@@ -110,9 +110,9 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 		Summary:     NewGroupSummary(),
 		Severity:    make(map[string]controlstatus.StatusSummary),
 		updateLock:  new(sync.Mutex),
-		NodeType:    "benchmark_run",
+		NodeType:    modconfig.BlockTypeBenchmark,
 	}
-	// TACTICAL for dashboard - if roo item is a benchmark, pull up 'type' and 'display'
+	// TACTICAL for dashboard - if root item is a benchmark, pull up 'type' and 'display'
 	if benchmark, ok := treeItem.(*modconfig.Benchmark); ok {
 		group.Type = benchmark.Type
 		group.Display = benchmark.Display

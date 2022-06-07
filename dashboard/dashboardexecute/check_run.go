@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
@@ -12,19 +13,24 @@ import (
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
-// TODO [dashboard]: not supported yet
-
 // CheckRun is a struct representing the execution of a leaf dashboard node
 type CheckRun struct {
-	Name                 string                        `json:"name"`
-	Title                string                        `json:"title,omitempty"`
-	Width                int                           `json:"width,omitempty"`
-	ErrorString          string                        `json:"error,omitempty"`
-	NodeType             string                        `json:"node_type"`
-	ControlExecutionTree *controlexecute.ExecutionTree `json:"execution_tree"`
-	DashboardName        string                        `json:"dashboard"`
-	SourceDefinition     string                        `json:"source_definition"`
-	SessionId            string                        `json:"session_id"`
+	Name             string                             `json:"name"`
+	Title            string                             `json:"title,omitempty"`
+	Width            int                                `json:"width,omitempty"`
+	ErrorString      string                             `json:"error,omitempty"`
+	NodeType         string                             `json:"node_type"`
+	DashboardName    string                             `json:"dashboard"`
+	SourceDefinition string                             `json:"source_definition"`
+	SessionId        string                             `json:"session_id"`
+	Children         []controlexecute.ExecutionTreeNode `json:"children"`
+	Description      string                             `json:"description,omitempty" `
+	Tags             map[string]string                  `json:"tags,omitempty"`
+	Summary          *controlexecute.GroupSummary       `json:"summary"`
+	Type             string                             `json:"type,omitempty"`
+	Display          string                             `json:"display,omitempty"`
+
+	controlExecutionTree *controlexecute.ExecutionTree `json:"-"`
 	error                error
 	dashboardNode        modconfig.DashboardLeafNode
 	parent               dashboardinterfaces.DashboardNodeParent
@@ -39,7 +45,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 	// so FOR NOW it is safe to use the node name directly as the run name
 	name := resource.Name()
 
-	r := &CheckRun{
+	c := &CheckRun{
 		Name:             name,
 		Title:            resource.GetTitle(),
 		Width:            resource.GetWidth(),
@@ -55,21 +61,29 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		runStatus: dashboardinterfaces.DashboardRunComplete,
 	}
 	// verify node type
-	switch resource.(type) {
+	switch r := resource.(type) {
 	case *modconfig.Control:
-		r.NodeType = modconfig.BlockTypeControl
+		c.NodeType = modconfig.BlockTypeControl
+		c.Description = typehelpers.SafeString(r.Description)
+		c.Type = typehelpers.SafeString(r.Type)
+		c.Display = typehelpers.SafeString(r.Display)
+		c.Tags = r.Tags
 	case *modconfig.Benchmark:
-		r.NodeType = modconfig.BlockTypeBenchmark
+		c.NodeType = modconfig.BlockTypeBenchmark
+		c.Description = typehelpers.SafeString(r.Description)
+		c.Type = typehelpers.SafeString(r.Type)
+		c.Display = typehelpers.SafeString(r.Display)
+		c.Tags = r.Tags
 	default:
 		return nil, fmt.Errorf("check run instantiated with invalid node type %s", reflect.TypeOf(resource).Name())
 	}
 
 	//  set status to ready
-	r.runStatus = dashboardinterfaces.DashboardRunReady
+	c.runStatus = dashboardinterfaces.DashboardRunReady
 
 	// add r into execution tree
-	executionTree.runs[r.Name] = r
-	return r, nil
+	executionTree.runs[c.Name] = c
+	return c, nil
 }
 
 // Initialise implements DashboardRunNode
@@ -81,7 +95,11 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 		r.SetError(err)
 		return
 	}
-	r.ControlExecutionTree = executionTree
+	r.controlExecutionTree = executionTree
+	// if we are executing a benchmark, set children
+	if rootBenchmark, ok := executionTree.Root.Children[0].(*controlexecute.ResultGroup); ok {
+		r.Children = rootBenchmark.Children
+	}
 }
 
 // Execute implements DashboardRunNode
@@ -89,10 +107,14 @@ func (r *CheckRun) Execute(ctx context.Context) {
 
 	// create a context with a ControlEventHooks to report control execution progress
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewControlEventHooks(r))
-	r.ControlExecutionTree.Execute(ctx)
+	r.controlExecutionTree.Execute(ctx)
+
+	// set the summary on the CeckRun
+	r.Summary = r.controlExecutionTree.Root.Summary
 
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
+
 }
 
 // GetName implements DashboardNodeRun

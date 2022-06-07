@@ -84,7 +84,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		RunStatus: controlstatus.ControlRunReady,
 
 		Group:    group,
-		NodeType: "control_run",
+		NodeType: modconfig.BlockTypeControl,
 		doneChan: make(chan bool, 1),
 	}
 	res.Lifecycle.Add("constructed")
