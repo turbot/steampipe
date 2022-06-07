@@ -145,6 +145,7 @@ export interface DashboardTags {
 
 interface SelectedDashboardStates {
   dashboard_name: string | null;
+  dataMode: DashboardDataMode;
   refetchDashboard: boolean;
   search: DashboardSearch;
   selectedDashboard: AvailableDashboard | null;
@@ -817,6 +818,7 @@ const DashboardProvider = ({
     usePrevious({
       searchParams,
       dashboard_name,
+      dataMode: state.dataMode,
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
