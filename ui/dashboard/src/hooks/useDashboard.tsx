@@ -517,7 +517,7 @@ function reducer(state, action) {
       const originalDashboard = action.dashboard_node;
       let dashboard;
       // For benchmarks and controls that are run directly from a mod,
-      // we need to wrap these in an artificial dashboard so we can treat
+      // we need to wrap these in an artificial dashboard, so we can treat
       // it just like any other dashboard
       if (action.dashboard_node.node_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
@@ -758,7 +758,7 @@ const getInitialState = (searchParams) => {
     dashboardTags: {
       keys: [],
     },
-    dataMode: "live",
+    dataMode: searchParams.get("mode") || "live",
     refetchDashboard: false,
     error: null,
 
