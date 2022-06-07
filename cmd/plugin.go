@@ -306,6 +306,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool("all")) && plugins[0] == "all" {
+		// improve the response to wrong argument "steampipe plugin update all"
+		fmt.Println()
+		utils.ShowError(ctx, fmt.Errorf("Did you mean %s?", constants.Bold("--all")))
+		fmt.Println()
+		return
+	}
+
 	state, err := statefile.LoadState()
 	if err != nil {
 		utils.ShowError(ctx, fmt.Errorf("could not load state"))
@@ -508,6 +516,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 		// we can't allow update and install at the same time
 		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
 	}
+
 	return plugins, nil
 }
 
