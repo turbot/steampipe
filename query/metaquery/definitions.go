@@ -89,7 +89,7 @@ func init() {
 			title:       constants.CmdOutput,
 			handler:     setViperConfigFromArg(constants.ArgOutput),
 			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants.CmdOutput)),
-			description: "Set output format: csv, json or table",
+			description: "Set output format: csv, json, table or line",
 			args: []metaQueryArg{
 				{value: constants.OutputFormatJSON, description: "Set output to JSON"},
 				{value: constants.OutputFormatCSV, description: "Set output to CSV"},
