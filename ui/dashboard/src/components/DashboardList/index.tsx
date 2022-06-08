@@ -330,13 +330,7 @@ const DashboardList = () => {
       type: DashboardActions.SET_DASHBOARD_TAG_KEYS,
       keys: newDashboardTagKeys,
     });
-  }, [
-    availableDashboardsLoaded,
-    dashboards,
-    dashboardsMap,
-    dispatch,
-    metadata,
-  ]);
+  }, [availableDashboardsLoaded, dashboards, dashboardsMap, metadata]);
 
   // Filter dashboards according to the search
   useEffect(() => {
