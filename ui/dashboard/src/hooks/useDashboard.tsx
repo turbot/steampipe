@@ -804,14 +804,11 @@ const DashboardProvider = ({
   const components = buildComponentsMap(componentOverrides);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [state, dispatchInner] = useReducer(
-    reducer,
-    getInitialState(searchParams)
-  );
-  const dispatch = (action) => {
-    console.log(action.type, action);
-    dispatchInner(action);
-  };
+  const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
+  // const dispatch = (action) => {
+  //   console.log(action.type, action);
+  //   dispatchInner(action);
+  // };
   const { dashboard_name } = useParams();
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,

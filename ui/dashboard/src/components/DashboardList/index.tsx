@@ -10,8 +10,8 @@ import {
 } from "../../hooks/useDashboard";
 import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
-import { Fragment, useEffect, useMemo, useState } from "react";
 import { default as lodashGroupBy } from "lodash/groupBy";
+import { Fragment, useEffect, useState } from "react";
 import { stringToColour } from "../../utils/color";
 import { useParams } from "react-router-dom";
 
@@ -43,34 +43,29 @@ const DashboardTag = ({
   tagValue,
   dispatch,
   searchValue,
-}: DashboardTagProps) => {
-  const searchWithTag = useMemo(() => {
-    const existingSearch = searchValue.trim();
-    return existingSearch
-      ? existingSearch.indexOf(tagValue) < 0
-        ? `${existingSearch} ${tagValue}`
-        : existingSearch
-      : tagValue;
-  }, [tagValue, searchValue]);
+}: DashboardTagProps) => (
+  <span
+    className="cursor-pointer rounded-md text-xs"
+    onClick={() => {
+      const existingSearch = searchValue.trim();
+      const searchWithTag = existingSearch
+        ? existingSearch.indexOf(tagValue) < 0
+          ? `${existingSearch} ${tagValue}`
+          : existingSearch
+        : tagValue;
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+        value: searchWithTag,
+      });
+    }}
+    style={{ color: stringToColour(tagValue) }}
+    title={`${tagKey} = ${tagValue}`}
+  >
+    {tagValue}
+  </span>
+);
 
-  return (
-    <span
-      className="cursor-pointer rounded-md text-xs"
-      onClick={() =>
-        dispatch({
-          type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-          value: searchWithTag,
-        })
-      }
-      style={{ color: stringToColour(tagValue) }}
-      title={`${tagKey} = ${tagValue}`}
-    >
-      {tagValue}
-    </span>
-  );
-};
-
-const BenchmarkTitlePart = ({ benchmark }) => {
+const TitlePart = ({ part }) => {
   const {
     components: { ExternalLink },
   } = useDashboard();
@@ -78,9 +73,9 @@ const BenchmarkTitlePart = ({ benchmark }) => {
   return (
     <ExternalLink
       className="link-highlight hover:underline"
-      to={`/${benchmark.full_name}`}
+      to={`/${part.full_name}`}
     >
-      {benchmark.title || benchmark.short_name}
+      {part.title || part.short_name}
     </ExternalLink>
   );
 };
@@ -118,25 +113,10 @@ const BenchmarkTitle = ({ benchmark, searchValue }) => {
           {!!index && (
             <span className="px-1 text-sm text-foreground-lighter">{">"}</span>
           )}
-          <BenchmarkTitlePart benchmark={part} />
+          <TitlePart part={part} />
         </Fragment>
       ))}
     </>
-  );
-};
-
-const DashboardTitle = ({ dashboard }) => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
-
-  return (
-    <ExternalLink
-      className="link-highlight hover:underline"
-      to={`/${dashboard.full_name}`}
-    >
-      {dashboard.title || dashboard.short_name}
-    </ExternalLink>
   );
 };
 
@@ -152,9 +132,7 @@ const Section = ({
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            {dashboard.type === "dashboard" && (
-              <DashboardTitle dashboard={dashboard} />
-            )}
+            {dashboard.type === "dashboard" && <TitlePart part={dashboard} />}
             {dashboard.type === "benchmark" && (
               <BenchmarkTitle benchmark={dashboard} searchValue={searchValue} />
             )}
