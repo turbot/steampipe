@@ -12,19 +12,18 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	Name string `json:"name"`
-
-	Title               string `json:"title,omitempty"`
-	Width               int    `json:"width,omitempty"`
-	executeSQL          string
+	Name                string                      `json:"name"`
+	Title               string                      `json:"title,omitempty"`
+	Width               int                         `json:"width,omitempty"`
 	RawSQL              string                      `json:"sql,omitempty"`
 	Args                []string                    `json:"args,omitempty"`
 	Data                *LeafData                   `json:"data,omitempty"`
 	ErrorString         string                      `json:"error,omitempty"`
-	DashboardNode       modconfig.DashboardLeafNode `json:"properties"`
+	DashboardNode       modconfig.DashboardLeafNode `json:"properties,omitempty"`
 	NodeType            string                      `json:"node_type"`
 	DashboardName       string                      `json:"dashboard"`
 	SourceDefinition    string                      `json:"source_definition"`
+	executeSQL          string
 	error               error
 	parent              dashboardinterfaces.DashboardNodeParent
 	runStatus           dashboardinterfaces.DashboardRunStatus

@@ -24,8 +24,8 @@ const RootResultGroupName = "root_result_group"
 type ResultGroup struct {
 	GroupId     string            `json:"name" csv:"group_id"`
 	Title       string            `json:"title,omitempty" csv:"title"`
-	Description string            `json:"description,omitempty" csv:"description"`
-	Tags        map[string]string `json:"tags,omitempty"`
+	Description string            `json:"-" csv:"description"`
+	Tags        map[string]string `json:"-"`
 	// the overall summary of the group
 	Summary *GroupSummary `json:"summary"`
 	// child result groups
@@ -40,15 +40,11 @@ type ResultGroup struct {
 	NodeType string `json:"node_type"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ModTreeItem `json:"-"`
+	GroupItem modconfig.ModTreeItem `json:"properties"`
 	Parent    *ResultGroup          `json:"-"`
 	Duration  time.Duration         `json:"-"`
 	// a list of distinct dimension keys from descendant controls
 	DimensionKeys []string `json:"-"`
-
-	// fields used by dashboards
-	Type    *string `json:"type,omitempty"`
-	Display *string `json:"display,omitempty"`
 
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
@@ -112,11 +108,7 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 		updateLock:  new(sync.Mutex),
 		NodeType:    modconfig.BlockTypeBenchmark,
 	}
-	// TACTICAL for dashboard - if root item is a benchmark, pull up 'type' and 'display'
-	if benchmark, ok := treeItem.(*modconfig.Benchmark); ok {
-		group.Type = benchmark.Type
-		group.Display = benchmark.Display
-	}
+
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
 		if benchmark, ok := c.(*modconfig.Benchmark); ok {

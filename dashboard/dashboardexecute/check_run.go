@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
@@ -23,19 +22,16 @@ type CheckRun struct {
 	DashboardName    string                             `json:"dashboard"`
 	SourceDefinition string                             `json:"source_definition"`
 	SessionId        string                             `json:"session_id"`
+	DashboardNode    modconfig.DashboardLeafNode        `json:"properties,omitempty"`
 	Children         []controlexecute.ExecutionTreeNode `json:"children"`
-	Description      string                             `json:"description,omitempty" `
-	Tags             map[string]string                  `json:"tags,omitempty"`
 	Summary          *controlexecute.GroupSummary       `json:"summary"`
-	Type             string                             `json:"type,omitempty"`
-	Display          string                             `json:"display,omitempty"`
 
-	controlExecutionTree *controlexecute.ExecutionTree `json:"-"`
+	controlExecutionTree *controlexecute.ExecutionTree
 	error                error
-	dashboardNode        modconfig.DashboardLeafNode
-	parent               dashboardinterfaces.DashboardNodeParent
-	runStatus            dashboardinterfaces.DashboardRunStatus
-	executionTree        *DashboardExecutionTree
+
+	parent        dashboardinterfaces.DashboardNodeParent
+	runStatus     dashboardinterfaces.DashboardRunStatus
+	executionTree *DashboardExecutionTree
 }
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
@@ -53,7 +49,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		SourceDefinition: resource.GetMetadata().SourceDefinition,
 		SessionId:        executionTree.sessionId,
 		executionTree:    executionTree,
-		dashboardNode:    resource,
+		DashboardNode:    resource,
 		parent:           parent,
 
 		// set to complete, optimistically
@@ -61,19 +57,11 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		runStatus: dashboardinterfaces.DashboardRunComplete,
 	}
 	// verify node type
-	switch r := resource.(type) {
+	switch resource.(type) {
 	case *modconfig.Control:
 		c.NodeType = modconfig.BlockTypeControl
-		c.Description = typehelpers.SafeString(r.Description)
-		c.Type = typehelpers.SafeString(r.Type)
-		c.Display = typehelpers.SafeString(r.Display)
-		c.Tags = r.Tags
 	case *modconfig.Benchmark:
 		c.NodeType = modconfig.BlockTypeBenchmark
-		c.Description = typehelpers.SafeString(r.Description)
-		c.Type = typehelpers.SafeString(r.Type)
-		c.Display = typehelpers.SafeString(r.Display)
-		c.Tags = r.Tags
 	default:
 		return nil, fmt.Errorf("check run instantiated with invalid node type %s", reflect.TypeOf(resource).Name())
 	}
@@ -89,7 +77,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 // Initialise implements DashboardRunNode
 func (r *CheckRun) Initialise(ctx context.Context) {
 	// build control execution tree during init, rather than in Execute, so that it is populated when the ExecutionStarted event is sent
-	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.dashboardNode.Name())
+	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.DashboardNode.Name())
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(err)

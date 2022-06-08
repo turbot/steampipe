@@ -20,7 +20,7 @@ type DashboardContainerRun struct {
 	Children         []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
 	NodeType         string                                 `json:"node_type"`
 	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
-	DashboardName    string                                 `json:"report"`
+	DashboardName    string                                 `json:"dashboard"`
 	SourceDefinition string                                 `json:"source_definition"`
 	error            error
 	dashboardNode    *modconfig.DashboardContainer

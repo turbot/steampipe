@@ -16,33 +16,33 @@ import (
 type Benchmark struct {
 	ResourceWithMetadataBase
 
-	ShortName       string
-	FullName        string `cty:"name"`
-	UnqualifiedName string
+	ShortName       string `json:"-"`
+	FullName        string `cty:"name" json:"-"`
+	UnqualifiedName string `json:"-"`
 
 	// child names as NamedItem structs - used to allow setting children via the 'children' property
-	ChildNames NamedItemList `cty:"child_names"`
+	ChildNames NamedItemList `cty:"child_names" json:"-"`
 	// used for introspection tables
-	ChildNameStrings []string `cty:"child_name_strings" column:"children,jsonb"`
+	ChildNameStrings []string `cty:"child_name_strings" column:"children,jsonb" json:"-"`
 	// the actual children
-	Children      []ModTreeItem
-	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
-	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
+	Children      []ModTreeItem     `json:"-"`
+	Description   *string           `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
+	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"tags,omitempty"`
+	Title         *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
 
 	// dashboard specific properties
 	Base    *Benchmark `hcl:"base" json:"-"`
-	Width   *int       `cty:"width" hcl:"width" column:"width,text"`
-	Type    *string    `cty:"type" hcl:"type" column:"type,text"  `
-	Display *string    `cty:"display" hcl:"display" `
+	Width   *int       `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string    `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
+	Display *string    `cty:"display" hcl:"display" json:"display,omitempty"`
 
-	References []*ResourceReference
-	Mod        *Mod `cty:"mod"`
-	DeclRange  hcl.Range
-	Paths      []NodePath `column:"path,jsonb"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
-	Parents []ModTreeItem
+	Parents []ModTreeItem `json:"-"`
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) *Benchmark {

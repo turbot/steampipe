@@ -26,15 +26,15 @@ type ControlRun struct {
 	// properties from control
 	ControlId   string            `json:"name"`
 	Title       string            `json:"title,omitempty"`
-	Description string            `json:"description,omitempty"`
-	Severity    string            `json:"severity,omitempty"`
-	Tags        map[string]string `json:"tags,omitempty"`
+	Description string            `json:"-"`
+	Severity    string            `json:"-"`
+	Tags        map[string]string `json:"-"`
 
 	// "control"
 	NodeType string `json:"node_type"`
 
 	// the control being run
-	Control *modconfig.Control `json:"-"`
+	Control *modconfig.Control `json:"properties"`
 	// control summary
 	Summary   *controlstatus.StatusSummary   `json:"summary"`
 	RunStatus controlstatus.ControlRunStatus `json:"status"`
@@ -75,7 +75,6 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		Description: typehelpers.SafeString(control.Description),
 		Severity:    typehelpers.SafeString(control.Severity),
 		Title:       typehelpers.SafeString(control.Title),
-		Tags:        control.GetTags(),
 		rowMap:      make(map[string][]*ResultRow),
 		Summary:     &controlstatus.StatusSummary{},
 		Lifecycle:   utils.NewLifecycleTimer(),
@@ -119,7 +118,7 @@ func (r *ControlRun) Finished() bool {
 
 // MatchTag returns the value corresponding to the input key. Returns 'false' if not found
 func (r *ControlRun) MatchTag(key string, value string) bool {
-	val, found := r.Tags[key]
+	val, found := r.Control.GetTags()[key]
 	return found && (val == value)
 }
 
