@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -24,11 +25,13 @@ type DashboardRun struct {
 	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName    string                                 `json:"dashboard"`
 	SourceDefinition string                                 `json:"source_definition"`
-	error            error
-	dashboardNode    *modconfig.Dashboard
-	parent           dashboardinterfaces.DashboardNodeParent
-	executionTree    *DashboardExecutionTree
-	childComplete    chan dashboardinterfaces.DashboardNodeRun
+	Display          string                                 `json:"display,omitempty"`
+
+	error         error
+	dashboardNode *modconfig.Dashboard
+	parent        dashboardinterfaces.DashboardNodeParent
+	executionTree *DashboardExecutionTree
+	childComplete chan dashboardinterfaces.DashboardNodeRun
 }
 
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
@@ -43,15 +46,16 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 		Name:             name,
 		NodeType:         modconfig.BlockTypeDashboard,
 		DashboardName:    executionTree.dashboardName,
-		SourceDefinition: dashboard.GetMetadata().SourceDefinition,
+		Display:          typehelpers.SafeString(dashboard.Display),
+		Documentation:    typehelpers.SafeString(dashboard.Documentation),
 		Tags:             dashboard.Tags,
-		executionTree:    executionTree,
-		parent:           parent,
-		dashboardNode:    dashboard,
-
+		SourceDefinition: dashboard.GetMetadata().SourceDefinition,
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
 		Status:        dashboardinterfaces.DashboardRunComplete,
+		executionTree: executionTree,
+		parent:        parent,
+		dashboardNode: dashboard,
 		childComplete: make(chan dashboardinterfaces.DashboardNodeRun, len(children)),
 	}
 	if dashboard.Title != nil {

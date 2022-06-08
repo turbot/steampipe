@@ -21,16 +21,17 @@ type DashboardCard struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	// these properties are JSON serialised by the parent LeafRun
-	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
 	Label   *string        `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
 	Value   *string        `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
-	Type    *string        `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
 	Icon    *string        `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
 	HREF    *string        `cty:"href" hcl:"href" json:"href,omitempty"`
-	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+
+	// these properties are JSON serialised by the parent LeafRun
+	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string `cty:"display" hcl:"display" json:"-"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
@@ -196,8 +197,18 @@ func (c *DashboardCard) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (c *DashboardCard) GetDisplay() *string {
-	return c.Display
+func (c *DashboardCard) GetDisplay() string {
+	return typehelpers.SafeString(c.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (c *DashboardCard) GetDocumentation() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (c *DashboardCard) GetType() string {
+	return typehelpers.SafeString(c.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode

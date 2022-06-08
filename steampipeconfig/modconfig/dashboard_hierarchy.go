@@ -23,14 +23,15 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	// these properties are JSON serialised by the parent LeafRun
-	Title        *string                                `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width        *int                                   `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type         *string                                `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	CategoryList DashboardHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardHierarchyCategory `cty:"categories" json:"categories"`
-	Display      *string                                `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks      []*DashboardOn                         `cty:"on" hcl:"on,block" json:"on,omitempty"`
+
+	// these properties are JSON serialised by the parent LeafRun
+	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string `cty:"display" hcl:"display" json:"-"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
@@ -195,8 +196,18 @@ func (h *DashboardHierarchy) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (h *DashboardHierarchy) GetDisplay() *string {
-	return h.Display
+func (h *DashboardHierarchy) GetDisplay() string {
+	return typehelpers.SafeString(h.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (h *DashboardHierarchy) GetDocumentation() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (h *DashboardHierarchy) GetType() string {
+	return typehelpers.SafeString(h.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

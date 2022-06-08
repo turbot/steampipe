@@ -26,16 +26,16 @@ type Benchmark struct {
 	ChildNameStrings []string `cty:"child_name_strings" column:"children,jsonb" json:"-"`
 	// the actual children
 	Children      []ModTreeItem     `json:"-"`
-	Description   *string           `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
-	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"tags,omitempty"`
+	Description   *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
+	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
 	Title         *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
 
 	// dashboard specific properties
 	Base    *Benchmark `hcl:"base" json:"-"`
 	Width   *int       `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type    *string    `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
-	Display *string    `cty:"display" hcl:"display" json:"display,omitempty"`
+	Type    *string    `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string    `cty:"display" hcl:"display" json:"-"`
 
 	References []*ResourceReference `json:"-"`
 	Mod        *Mod                 `cty:"mod" json:"-"`
@@ -175,12 +175,12 @@ func (b *Benchmark) GetTitle() string {
 	return typehelpers.SafeString(b.Title)
 }
 
-// GetDescription implements ModTreeItem
+// GetDescription implements ModTreeItem, DashboardLeafNode
 func (b *Benchmark) GetDescription() string {
 	return typehelpers.SafeString(b.Description)
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements ModTreeItem, DashboardLeafNode
 func (b *Benchmark) GetTags() map[string]string {
 	if b.Tags != nil {
 		return b.Tags
@@ -227,8 +227,18 @@ func (b *Benchmark) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (b *Benchmark) GetDisplay() *string {
-	return b.Display
+func (b *Benchmark) GetDisplay() string {
+	return typehelpers.SafeString(b.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (b *Benchmark) GetDocumentation() string {
+	return typehelpers.SafeString(b.Documentation)
+}
+
+// GetType implements DashboardLeafNode
+func (b *Benchmark) GetType() string {
+	return typehelpers.SafeString(b.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

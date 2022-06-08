@@ -24,17 +24,22 @@ const controlQueryTimeout = 240 * time.Second
 // ControlRun is a struct representing the execution of a control run. It will contain one or more result items (i.e. for one or more resources).
 type ControlRun struct {
 	// properties from control
-	ControlId   string            `json:"name"`
-	Title       string            `json:"title,omitempty"`
-	Description string            `json:"-"`
-	Severity    string            `json:"-"`
-	Tags        map[string]string `json:"-"`
+	ControlId     string            `json:"name"`
+	Title         string            `json:"title,omitempty"`
+	Description   string            `json:"description,omitempty"`
+	Documentation string            `json:"documentation,omitempty"`
+	Tags          map[string]string `json:"tags,omitempty"`
+	Display       string            `json:"display,omitempty"`
+	Type          string            `json:"type,omitempty"`
+
+	// this will be serialised under 'properties'
+	Severity string `json:"-"`
 
 	// "control"
 	NodeType string `json:"node_type"`
 
 	// the control being run
-	Control *modconfig.Control `json:"properties"`
+	Control *modconfig.Control `json:"properties,omitempty"`
 	// control summary
 	Summary   *controlstatus.StatusSummary   `json:"summary"`
 	RunStatus controlstatus.ControlRunStatus `json:"status"`
@@ -42,9 +47,9 @@ type ControlRun struct {
 	Rows []*ResultRow `json:"results"`
 	// a list of distinct dimension keys from the results of this control
 	DimensionKeys []string `json:"-"`
+
 	// execution duration
 	Duration time.Duration `json:"-"`
-
 	// parent result group
 	Group *ResultGroup `json:"-"`
 	// execution tree
@@ -70,14 +75,19 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	}
 
 	res := &ControlRun{
-		Control:     control,
-		ControlId:   controlId,
-		Description: typehelpers.SafeString(control.Description),
-		Severity:    typehelpers.SafeString(control.Severity),
-		Title:       typehelpers.SafeString(control.Title),
-		rowMap:      make(map[string][]*ResultRow),
-		Summary:     &controlstatus.StatusSummary{},
-		Lifecycle:   utils.NewLifecycleTimer(),
+		Control:       control,
+		ControlId:     controlId,
+		Description:   control.GetDescription(),
+		Documentation: control.GetDocumentation(),
+		Tags:          control.GetTags(),
+		Display:       control.GetDisplay(),
+		Type:          control.GetType(),
+
+		Severity:  typehelpers.SafeString(control.Severity),
+		Title:     typehelpers.SafeString(control.Title),
+		rowMap:    make(map[string][]*ResultRow),
+		Summary:   &controlstatus.StatusSummary{},
+		Lifecycle: utils.NewLifecycleTimer(),
 
 		Tree:      executionTree,
 		RunStatus: controlstatus.ControlRunReady,

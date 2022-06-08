@@ -12,9 +12,12 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	Name                string                      `json:"name"`
-	Title               string                      `json:"title,omitempty"`
-	Width               int                         `json:"width,omitempty"`
+	Name    string `json:"name"`
+	Title   string `json:"title,omitempty"`
+	Width   int    `json:"width,omitempty"`
+	Type    string `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
+	Display string `cty:"display" hcl:"display" json:"display,omitempty"`
+
 	RawSQL              string                      `json:"sql,omitempty"`
 	Args                []string                    `json:"args,omitempty"`
 	Data                *LeafData                   `json:"data,omitempty"`
@@ -41,6 +44,8 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		Name:                name,
 		Title:               resource.GetTitle(),
 		Width:               resource.GetWidth(),
+		Type:                resource.GetType(),
+		Display:             resource.GetDisplay(),
 		DashboardNode:       resource,
 		DashboardName:       executionTree.dashboardName,
 		SourceDefinition:    resource.GetMetadata().SourceDefinition,

@@ -17,14 +17,21 @@ type CheckRun struct {
 	Name             string                             `json:"name"`
 	Title            string                             `json:"title,omitempty"`
 	Width            int                                `json:"width,omitempty"`
+	Description      string                             `json:"description,omitempty"`
+	Documentation    string                             `json:"documentation,omitempty"`
+	Display          string                             `json:"display,omitempty"`
+	Type             string                             `json:"type,omitempty"`
+	Tags             map[string]string                  `json:"tags,omitempty"`
 	ErrorString      string                             `json:"error,omitempty"`
 	NodeType         string                             `json:"node_type"`
 	DashboardName    string                             `json:"dashboard"`
 	SourceDefinition string                             `json:"source_definition"`
 	SessionId        string                             `json:"session_id"`
-	DashboardNode    modconfig.DashboardLeafNode        `json:"properties,omitempty"`
 	Children         []controlexecute.ExecutionTreeNode `json:"children"`
 	Summary          *controlexecute.GroupSummary       `json:"summary"`
+	// if the dashboard node is a control, serialise to json as 'properties'
+	Control       *modconfig.Control          `json:"properties,omitempty"`
+	DashboardNode modconfig.DashboardLeafNode `json:"-"`
 
 	controlExecutionTree *controlexecute.ExecutionTree
 	error                error
@@ -45,6 +52,11 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		Name:             name,
 		Title:            resource.GetTitle(),
 		Width:            resource.GetWidth(),
+		Description:      resource.GetDescription(),
+		Documentation:    resource.GetDocumentation(),
+		Display:          resource.GetDisplay(),
+		Type:             resource.GetType(),
+		Tags:             resource.GetTags(),
 		DashboardName:    executionTree.dashboardName,
 		SourceDefinition: resource.GetMetadata().SourceDefinition,
 		SessionId:        executionTree.sessionId,
@@ -57,9 +69,10 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 		runStatus: dashboardinterfaces.DashboardRunComplete,
 	}
 	// verify node type
-	switch resource.(type) {
+	switch t := resource.(type) {
 	case *modconfig.Control:
 		c.NodeType = modconfig.BlockTypeControl
+		c.Control = t
 	case *modconfig.Benchmark:
 		c.NodeType = modconfig.BlockTypeBenchmark
 	default:

@@ -22,10 +22,14 @@ const RootResultGroupName = "root_result_group"
 // ResultGroup is a struct representing a grouping of control results
 // It may correspond to a Benchmark, or some other arbitrary grouping
 type ResultGroup struct {
-	GroupId     string            `json:"name" csv:"group_id"`
-	Title       string            `json:"title,omitempty" csv:"title"`
-	Description string            `json:"-" csv:"description"`
-	Tags        map[string]string `json:"-"`
+	GroupId       string            `json:"name" csv:"group_id"`
+	Title         string            `json:"title,omitempty" csv:"title"`
+	Description   string            `json:"description,omitempty" csv:"description"`
+	Tags          map[string]string `json:"tags,omitempty"`
+	Documentation string            `json:"documentation,omitempty"`
+	Display       string            `json:"display,omitempty"`
+	Type          string            `json:"type,omitempty"`
+
 	// the overall summary of the group
 	Summary *GroupSummary `json:"summary"`
 	// child result groups
@@ -40,7 +44,7 @@ type ResultGroup struct {
 	NodeType string `json:"node_type"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
-	GroupItem modconfig.ModTreeItem `json:"properties"`
+	GroupItem modconfig.ModTreeItem `json:"-"`
 	Parent    *ResultGroup          `json:"-"`
 	Duration  time.Duration         `json:"-"`
 	// a list of distinct dimension keys from descendant controls
@@ -109,6 +113,17 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 		NodeType:    modconfig.BlockTypeBenchmark,
 	}
 
+	// populate additional properties (this avoids adding GetDocumentation, GetDisplay and GetType to all ModTreeItems)
+	switch t := treeItem.(type) {
+	case *modconfig.Benchmark:
+		group.Documentation = t.GetDocumentation()
+		group.Display = t.GetDisplay()
+		group.Type = t.GetType()
+	case *modconfig.Control:
+		group.Documentation = t.GetDocumentation()
+		group.Display = t.GetDisplay()
+		group.Type = t.GetType()
+	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
 		if benchmark, ok := c.(*modconfig.Benchmark); ok {

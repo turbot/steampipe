@@ -23,14 +23,15 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	// these properties are JSON serialised by the parent LeafRun
-	Title        *string                           `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width        *int                              `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type         *string                           `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
 	CategoryList DashboardFlowCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardFlowCategory `cty:"categories" json:"categories"`
-	Display      *string                           `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks      []*DashboardOn                    `cty:"on" hcl:"on,block" json:"on,omitempty"`
+
+	// these properties are JSON serialised by the parent LeafRun
+	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string `cty:"display" hcl:"display" json:"-"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
@@ -60,242 +61,252 @@ func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) *DashboardFl
 	return h
 }
 
-func (h *DashboardFlow) Equals(other *DashboardFlow) bool {
-	diff := h.Diff(other)
+func (f *DashboardFlow) Equals(other *DashboardFlow) bool {
+	diff := f.Diff(other)
 	return !diff.HasChanges()
 }
 
 // CtyValue implements HclResource
-func (h *DashboardFlow) CtyValue() (cty.Value, error) {
-	return getCtyValue(h)
+func (f *DashboardFlow) CtyValue() (cty.Value, error) {
+	return getCtyValue(f)
 }
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'
-func (h *DashboardFlow) Name() string {
-	return h.FullName
+func (f *DashboardFlow) Name() string {
+	return f.FullName
 }
 
 // OnDecoded implements HclResource
-func (h *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
-	h.setBaseProperties(resourceMapProvider)
+func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+	f.setBaseProperties(resourceMapProvider)
 	// populate categories map
-	if len(h.CategoryList) > 0 {
-		h.Categories = make(map[string]*DashboardFlowCategory, len(h.CategoryList))
-		for _, c := range h.CategoryList {
-			h.Categories[c.Name] = c
+	if len(f.CategoryList) > 0 {
+		f.Categories = make(map[string]*DashboardFlowCategory, len(f.CategoryList))
+		for _, c := range f.CategoryList {
+			f.Categories[c.Name] = c
 		}
 	}
 	return nil
 }
 
 // AddReference implements HclResource
-func (h *DashboardFlow) AddReference(ref *ResourceReference) {
-	h.References = append(h.References, ref)
+func (f *DashboardFlow) AddReference(ref *ResourceReference) {
+	f.References = append(f.References, ref)
 }
 
 // GetReferences implements HclResource
-func (h *DashboardFlow) GetReferences() []*ResourceReference {
-	return h.References
+func (f *DashboardFlow) GetReferences() []*ResourceReference {
+	return f.References
 }
 
 // GetMod implements HclResource
-func (h *DashboardFlow) GetMod() *Mod {
-	return h.Mod
+func (f *DashboardFlow) GetMod() *Mod {
+	return f.Mod
 }
 
 // GetDeclRange implements HclResource
-func (h *DashboardFlow) GetDeclRange() *hcl.Range {
-	return &h.DeclRange
+func (f *DashboardFlow) GetDeclRange() *hcl.Range {
+	return &f.DeclRange
 }
 
 // AddParent implements ModTreeItem
-func (h *DashboardFlow) AddParent(parent ModTreeItem) error {
-	h.parents = append(h.parents, parent)
+func (f *DashboardFlow) AddParent(parent ModTreeItem) error {
+	f.parents = append(f.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (h *DashboardFlow) GetParents() []ModTreeItem {
-	return h.parents
+func (f *DashboardFlow) GetParents() []ModTreeItem {
+	return f.parents
 }
 
 // GetChildren implements ModTreeItem
-func (h *DashboardFlow) GetChildren() []ModTreeItem {
+func (f *DashboardFlow) GetChildren() []ModTreeItem {
 	return nil
 }
 
 // GetTitle implements ModTreeItem
-func (h *DashboardFlow) GetTitle() string {
-	return typehelpers.SafeString(h.Title)
+func (f *DashboardFlow) GetTitle() string {
+	return typehelpers.SafeString(f.Title)
 }
 
 // GetDescription implements ModTreeItem
-func (h *DashboardFlow) GetDescription() string {
+func (f *DashboardFlow) GetDescription() string {
 	return ""
 }
 
 // GetTags implements ModTreeItem
-func (h *DashboardFlow) GetTags() map[string]string {
+func (f *DashboardFlow) GetTags() map[string]string {
 	return nil
 }
 
 // GetPaths implements ModTreeItem
-func (h *DashboardFlow) GetPaths() []NodePath {
+func (f *DashboardFlow) GetPaths() []NodePath {
 	// lazy load
-	if len(h.Paths) == 0 {
-		h.SetPaths()
+	if len(f.Paths) == 0 {
+		f.SetPaths()
 	}
 
-	return h.Paths
+	return f.Paths
 }
 
 // SetPaths implements ModTreeItem
-func (h *DashboardFlow) SetPaths() {
-	for _, parent := range h.parents {
+func (f *DashboardFlow) SetPaths() {
+	for _, parent := range f.parents {
 		for _, parentPath := range parent.GetPaths() {
-			h.Paths = append(h.Paths, append(parentPath, h.Name()))
+			f.Paths = append(f.Paths, append(parentPath, f.Name()))
 		}
 	}
 }
 
-func (h *DashboardFlow) Diff(other *DashboardFlow) *DashboardTreeItemDiffs {
+func (f *DashboardFlow) Diff(other *DashboardFlow) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
-		Item: h,
-		Name: h.Name(),
+		Item: f,
+		Name: f.Name(),
 	}
 
-	if !utils.SafeStringsEqual(h.Type, other.Type) {
+	if !utils.SafeStringsEqual(f.Type, other.Type) {
 		res.AddPropertyDiff("Type")
 	}
 
-	if len(h.CategoryList) != len(other.CategoryList) {
+	if len(f.CategoryList) != len(other.CategoryList) {
 		res.AddPropertyDiff("Categories")
 	} else {
-		for i, c := range h.Categories {
+		for i, c := range f.Categories {
 			if !c.Equals(other.Categories[i]) {
 				res.AddPropertyDiff("Categories")
 			}
 		}
 	}
 
-	res.populateChildDiffs(h, other)
-	res.queryProviderDiff(h, other)
-	res.dashboardLeafNodeDiff(h, other)
+	res.populateChildDiffs(f, other)
+	res.queryProviderDiff(f, other)
+	res.dashboardLeafNodeDiff(f, other)
 
 	return res
 }
 
 // GetWidth implements DashboardLeafNode
-func (h *DashboardFlow) GetWidth() int {
-	if h.Width == nil {
+func (f *DashboardFlow) GetWidth() int {
+	if f.Width == nil {
 		return 0
 	}
-	return *h.Width
+	return *f.Width
 }
 
 // GetDisplay implements DashboardLeafNode
-func (h *DashboardFlow) GetDisplay() *string {
-	return h.Display
+func (f *DashboardFlow) GetDisplay() string {
+	return typehelpers.SafeString(f.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (f *DashboardFlow) GetDocumentation() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (f *DashboardFlow) GetType() string {
+	return typehelpers.SafeString(f.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (h *DashboardFlow) GetUnqualifiedName() string {
-	return h.UnqualifiedName
+func (f *DashboardFlow) GetUnqualifiedName() string {
+	return f.UnqualifiedName
 }
 
 // GetParams implements QueryProvider
-func (h *DashboardFlow) GetParams() []*ParamDef {
-	return h.Params
+func (f *DashboardFlow) GetParams() []*ParamDef {
+	return f.Params
 }
 
 // GetArgs implements QueryProvider
-func (h *DashboardFlow) GetArgs() *QueryArgs {
-	return h.Args
+func (f *DashboardFlow) GetArgs() *QueryArgs {
+	return f.Args
 }
 
 // GetSQL implements QueryProvider
-func (h *DashboardFlow) GetSQL() *string {
-	return h.SQL
+func (f *DashboardFlow) GetSQL() *string {
+	return f.SQL
 }
 
 // GetQuery implements QueryProvider
-func (h *DashboardFlow) GetQuery() *Query {
-	return h.Query
+func (f *DashboardFlow) GetQuery() *Query {
+	return f.Query
 }
 
 // SetArgs implements QueryProvider
-func (h *DashboardFlow) SetArgs(args *QueryArgs) {
-	h.Args = args
+func (f *DashboardFlow) SetArgs(args *QueryArgs) {
+	f.Args = args
 }
 
 // SetParams implements QueryProvider
-func (h *DashboardFlow) SetParams(params []*ParamDef) {
-	h.Params = params
+func (f *DashboardFlow) SetParams(params []*ParamDef) {
+	f.Params = params
 }
 
 // GetPreparedStatementName implements QueryProvider
-func (h *DashboardFlow) GetPreparedStatementName() string {
-	if h.PreparedStatementName != "" {
-		return h.PreparedStatementName
+func (f *DashboardFlow) GetPreparedStatementName() string {
+	if f.PreparedStatementName != "" {
+		return f.PreparedStatementName
 	}
-	h.PreparedStatementName = h.buildPreparedStatementName(h.ShortName, h.Mod.NameWithVersion(), constants.PreparedStatementFlowSuffix)
-	return h.PreparedStatementName
+	f.PreparedStatementName = f.buildPreparedStatementName(f.ShortName, f.Mod.NameWithVersion(), constants.PreparedStatementFlowSuffix)
+	return f.PreparedStatementName
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (h *DashboardFlow) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (f *DashboardFlow) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return h.getPreparedStatementExecuteSQL(h, runtimeArgs)
+	return f.getPreparedStatementExecuteSQL(f, runtimeArgs)
 }
 
-func (h *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(h.Base, resourceMapProvider); !resolved {
+	if base, resolved := resolveBase(f.Base, resourceMapProvider); !resolved {
 		return
 	} else {
-		h.Base = base.(*DashboardFlow)
+		f.Base = base.(*DashboardFlow)
 	}
 
-	if h.Title == nil {
-		h.Title = h.Base.Title
+	if f.Title == nil {
+		f.Title = f.Base.Title
 	}
 
-	if h.Type == nil {
-		h.Type = h.Base.Type
+	if f.Type == nil {
+		f.Type = f.Base.Type
 	}
 
-	if h.Display == nil {
-		h.Display = h.Base.Display
+	if f.Display == nil {
+		f.Display = f.Base.Display
 	}
 
-	if h.Width == nil {
-		h.Width = h.Base.Width
+	if f.Width == nil {
+		f.Width = f.Base.Width
 	}
 
-	if h.SQL == nil {
-		h.SQL = h.Base.SQL
+	if f.SQL == nil {
+		f.SQL = f.Base.SQL
 	}
 
-	if h.Query == nil {
-		h.Query = h.Base.Query
+	if f.Query == nil {
+		f.Query = f.Base.Query
 	}
 
-	if h.Args == nil {
-		h.Args = h.Base.Args
+	if f.Args == nil {
+		f.Args = f.Base.Args
 	}
 
-	if h.Params == nil {
-		h.Params = h.Base.Params
+	if f.Params == nil {
+		f.Params = f.Base.Params
 	}
 
-	if h.CategoryList == nil {
-		h.CategoryList = h.Base.CategoryList
+	if f.CategoryList == nil {
+		f.CategoryList = f.Base.CategoryList
 	} else {
-		h.CategoryList.Merge(h.Base.CategoryList)
+		f.CategoryList.Merge(f.Base.CategoryList)
 	}
 
-	h.MergeRuntimeDependencies(h.Base)
+	f.MergeRuntimeDependencies(f.Base)
 }

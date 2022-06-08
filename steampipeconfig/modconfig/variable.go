@@ -20,7 +20,7 @@ type Variable struct {
 
 	Description    string    `column:"description,text" json:"description"`
 	Default        cty.Value `column:"default_value,jsonb" json:"-"`
-	Type           cty.Type  `column:"var_type,text"  json:"-"`
+	Type           cty.Type  `column:"var_type,text" json:"-"`
 	DescriptionSet bool      ` json:"-"`
 
 	TypeString string      `json:"type"`

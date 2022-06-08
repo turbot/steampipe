@@ -20,15 +20,16 @@ type DashboardInput struct {
 	UnqualifiedName string `cty:"unqualified_name" json:"name"`
 	DashboardName   string `column:"dashboard,text" json:"dashboard"`
 
-	// these properties are JSON serialised by the parent LeafRun
-	Title       *string                 `cty:"title" hcl:"title" column:"title,text" json:"title"`
-	Width       *int                    `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type        *string                 `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Label       *string                 `cty:"label" hcl:"label" column:"label,text"  json:"label,omitempty"`
+	Label       *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
 	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
-	Display     *string                 `cty:"display" hcl:"display" json:"display,omitempty"`
 	OnHooks     []*DashboardOn          `cty:"on" hcl:"on,block" json:"on,omitempty"`
 	Options     []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
+
+	// these properties are JSON serialised by the parent LeafRun
+	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string `cty:"display" hcl:"display" json:"-"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
@@ -224,8 +225,18 @@ func (i *DashboardInput) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (i *DashboardInput) GetDisplay() *string {
-	return i.Display
+func (i *DashboardInput) GetDisplay() string {
+	return typehelpers.SafeString(i.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (*DashboardInput) GetDocumentation() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (i *DashboardInput) GetType() string {
+	return typehelpers.SafeString(i.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
