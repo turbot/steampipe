@@ -185,7 +185,6 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       }
     }
   }, [
-    dispatch,
     initialisedFromState,
     multi,
     name,
@@ -215,7 +214,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       value: getValueForState(multi, value),
       recordInputsHistory: true,
     });
-  }, [dispatch, initialisedFromState, multi, name, value]);
+  }, [initialisedFromState, multi, name, value]);
 
   const styles = useSelectInputStyles();
 

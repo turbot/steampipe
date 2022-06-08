@@ -283,6 +283,17 @@ interface DashboardsCollection {
   dashboardsMap: AvailableDashboardsDictionary;
 }
 
+interface DashboardProviderProps {
+  analyticsContext: any;
+  breakpointContext: any;
+  children: null | JSX.Element | JSX.Element[];
+  componentOverrides: {};
+  eventHooks: {};
+  featureFlags: string[];
+  socketFactory: () => WebSocket;
+  themeContext: any;
+}
+
 const buildDashboards = (
   dashboards: AvailableDashboardsDictionary,
   benchmarks: AvailableDashboardsDictionary
@@ -630,7 +641,7 @@ function reducer(state, action) {
     case DashboardActions.SET_DATA_MODE:
       return {
         ...state,
-        dataMode: action.mode,
+        dataMode: action.dataMode,
       };
     case DashboardActions.SET_REFETCH_DASHBOARD:
       return {
@@ -798,17 +809,21 @@ const DashboardProvider = ({
   children,
   componentOverrides = {},
   eventHooks = {},
+  featureFlags = [],
   socketFactory,
   themeContext,
-}) => {
+}: DashboardProviderProps) => {
   const components = buildComponentsMap(componentOverrides);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
-  // const dispatch = (action) => {
-  //   console.log(action.type, action);
-  //   dispatchInner(action);
-  // };
+  const [state, dispatchInner] = useReducer(
+    reducer,
+    getInitialState(searchParams)
+  );
+  const dispatch = useCallback((action) => {
+    console.log(action.type, action);
+    dispatchInner(action);
+  }, []);
   const { dashboard_name } = useParams();
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
@@ -838,22 +853,29 @@ const DashboardProvider = ({
 
   // Initial sync into URL
   useEffect(() => {
-    if (searchParams.has("mode")) {
+    if (
+      !featureFlags.includes("snapshots") ||
+      (searchParams.has("mode") && searchParams.get("mode") === state.dataMode)
+    ) {
       return;
     }
     searchParams.set("mode", state.dataMode);
     setSearchParams(searchParams, { replace: true });
-  }, []);
+  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
 
   useEffect(() => {
-    if (state.selectedSnapshot) {
+    if (featureFlags.includes("snapshots") && state.selectedSnapshot) {
       searchParams.set("snapshot_id", state.selectedSnapshot.id);
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams, state.selectedSnapshot]);
 
   useEffect(() => {
-    if (state.dataMode === "live" && searchParams.has("snapshot_id")) {
+    if (
+      featureFlags.includes("snapshots") &&
+      state.dataMode === "live" &&
+      searchParams.has("snapshot_id")
+    ) {
       searchParams.delete("snapshot_id");
       setSearchParams(searchParams, { replace: true });
     }
@@ -889,7 +911,9 @@ const DashboardProvider = ({
     const search = searchParams.get("search") || "";
     const groupBy = searchParams.get("group_by") || "tag";
     const tag = searchParams.get("tag") || "service";
-    const dataMode = searchParams.get("mode") || "live";
+    const dataMode = searchParams.has("mode")
+      ? searchParams.get("mode")
+      : "live";
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
@@ -905,13 +929,15 @@ const DashboardProvider = ({
       value: inputs,
       recordInputsHistory: false,
     });
-    dispatch({
-      type: DashboardActions.SET_DATA_MODE,
-      dataMode,
-    });
+    if (featureFlags.includes("snapshots")) {
+      dispatch({
+        type: DashboardActions.SET_DATA_MODE,
+        dataMode,
+      });
+    }
   }, [
     dashboard_name,
-    dispatch,
+    featureFlags,
     location,
     navigationType,
     previousSelectedDashboardStates,
@@ -984,11 +1010,14 @@ const DashboardProvider = ({
       }
     }
 
-    searchParams.set("mode", state.dataMode);
+    if (featureFlags.includes("snapshots")) {
+      searchParams.set("mode", state.dataMode);
+    }
     setSearchParams(searchParams, { replace: true });
   }, [
-    previousSelectedDashboardStates,
     dashboard_name,
+    featureFlags,
+    previousSelectedDashboardStates,
     searchParams,
     setSearchParams,
     state.dataMode,
@@ -1173,15 +1202,15 @@ const DashboardProvider = ({
         state.selectedDashboard.full_name;
 
     // Sync params into the URL
-    setSearchParams(
-      {
-        ...state.selectedDashboardInputs,
-        mode: state.dataMode,
-      },
-      {
-        replace: !shouldRecordHistory,
-      }
-    );
+    const newParams = {
+      ...state.selectedDashboardInputs,
+    };
+    if (featureFlags.includes("snapshots")) {
+      newParams.mode = state.dataMode;
+    }
+    setSearchParams(newParams, {
+      replace: !shouldRecordHistory,
+    });
   }, [
     navigationType,
     previousSelectedDashboardStates,
