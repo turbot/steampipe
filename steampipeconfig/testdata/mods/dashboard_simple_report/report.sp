@@ -5,14 +5,10 @@ dashboard "simple_report" {
     value = "a simple report"
   }
 
-  container {
-      chart "c1"{
-        title = "a simple query"
-        sql = "select 1"
-      }
-      chart "c1"{
-        title = "a simple query"
-        sql = "select 1"
-      }
+  chart {
+    title = "a simple query"
+    sql = "select 1"
   }
+
+
 }

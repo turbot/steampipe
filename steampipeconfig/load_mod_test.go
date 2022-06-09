@@ -2,11 +2,11 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
-	"log"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/filepaths"
@@ -1246,8 +1246,121 @@ func init() {
 			source:   "testdata/mods/anonymous_top_level_resource",
 			expected: "ERROR",
 		},
-		"dashboard_with_named_child_res": {
-			source:   "testdata/mods/dashboard_with_named_child_res",
+		"dashboard_with_named_children": {
+			source: "testdata/mods/dashboard_with_named_children",
+			expected: &modconfig.Mod{
+				ShortName:   "dashboard_with_children",
+				FullName:    "mod.dashboard_with_children",
+				Require:     require,
+				Description: toStringPointer("This mod contains a dashboard with all possible child resources"),
+				Title:       toStringPointer("dashboard with all possible child resources"),
+				ResourceMaps: &modconfig.ModResources{
+					Dashboards: map[string]*modconfig.Dashboard{
+						"dashboard_with_children.dashboard.dashboard_with_child_res": {
+							ShortName:       "dashboard_with_child_res",
+							FullName:        "dashboard_with_children.dashboard.dashboard_with_child_res",
+							UnqualifiedName: "dashboard.dashboard_with_child_res",
+							Title:           toStringPointer("dashboard with child resources"),
+							ChildNames: []string{
+								"dashboard_with_children.container.cnt1",
+								"dashboard_with_children.chart.c1",
+								"dashboard_with_children.card.crd1",
+								"dashboard_with_children.flow.f1",
+								"dashboard_with_children.hierarchy.h1",
+								"dashboard_with_children.image.i1",
+								"dashboard_with_children.input.ip1",
+								"dashboard_with_children.table.t1",
+								"dashboard_with_children.text.txt1"},
+							HclType: "dashboard",
+						},
+					},
+					DashboardContainers: map[string]*modconfig.DashboardContainer{
+						"dashboard_with_children.container.cnt1": {
+							ShortName:       "cnt1",
+							FullName:        "dashboard_with_children.container.cnt1",
+							UnqualifiedName: "container.cnt1",
+							Title:           toStringPointer("example container"),
+						},
+					},
+					DashboardCards: map[string]*modconfig.DashboardCard{
+						"dashboard_with_children.card.crd1": {
+							FullName:        "dashboard_with_children.card.crd1",
+							ShortName:       "crd1",
+							UnqualifiedName: "card.crd1",
+							Title:           toStringPointer("example card"),
+							Type:            toStringPointer("ok"),
+							SQL:             toStringPointer("select 1"),
+						},
+					},
+					DashboardCharts: map[string]*modconfig.DashboardChart{
+						"dashboard_with_children.chart.c1": {
+							FullName:        "dashboard_with_children.chart.c1",
+							ShortName:       "c1",
+							UnqualifiedName: "chart.c1",
+							Title:           toStringPointer("example chart"),
+							SQL:             toStringPointer("select 1"),
+						},
+					},
+					DashboardFlows: map[string]*modconfig.DashboardFlow{
+						"dashboard_with_children.flow.f1": {
+							FullName:        "dashboard_with_children.flow.f1",
+							ShortName:       "f1",
+							UnqualifiedName: "flow.f1",
+							Title:           toStringPointer("example flow"),
+							Type:            toStringPointer("sankey"),
+						},
+					},
+					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
+						"dashboard_with_children.hierarchy.h1": {
+							FullName:        "dashboard_with_children.hierarchy.h1",
+							ShortName:       "h1",
+							UnqualifiedName: "hierarchy.h1",
+							Title:           toStringPointer("example hierarchy"),
+							Type:            toStringPointer("graph"),
+						},
+					},
+					DashboardImages: map[string]*modconfig.DashboardImage{
+						"dashboard_with_children.image.i1": {
+							FullName:        "dashboard_with_children.image.i1",
+							ShortName:       "i1",
+							UnqualifiedName: "image.i1",
+							Title:           toStringPointer("example image"),
+							Src:             toStringPointer("https://steampipe.io/images/logo.png"),
+							Alt:             toStringPointer("steampipe"),
+						},
+					},
+					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
+						"dashboard_with_children.dashboard.dashboard_with_child_res": {
+							"dashboard_with_children.input.ip1": {
+								FullName:        "dashboard_with_children.input.ip1",
+								ShortName:       "ip1",
+								UnqualifiedName: "input.ip1",
+								Title:           toStringPointer("example input"),
+							},
+						},
+					},
+					DashboardTables: map[string]*modconfig.DashboardTable{
+						"dashboard_with_children.table.t1": {
+							FullName:        "dashboard_with_children.table.t1",
+							ShortName:       "t1",
+							UnqualifiedName: "table.t1",
+							Title:           toStringPointer("example table"),
+							SQL:             toStringPointer("select 1"),
+						},
+					},
+					DashboardTexts: map[string]*modconfig.DashboardText{
+						"dashboard_with_children.text.txt1": {
+							FullName:        "dashboard_with_children.text.txt1",
+							ShortName:       "txt1",
+							UnqualifiedName: "text.txt1",
+							Value:           toStringPointer("example text"),
+						},
+					},
+				},
+			},
+		},
+		"dashboard_with_duplicate_named_children": {
+			source:   "testdata/mods/dashboard_with_duplicate_named_children",
 			expected: "ERROR",
 		},
 		"anonymous_input": {
@@ -1311,7 +1424,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 			log.Printf("[TRACE] Failed change back to original directory '%s': %s", wd, err)
 		}
 	}()
-		
+
 	actualMod, err := LoadMod(modPath, runCtx)
 	if err != nil {
 		if test.expected != "ERROR" {
