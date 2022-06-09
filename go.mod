@@ -2,6 +2,7 @@ module github.com/turbot/steampipe
 
 go 1.18
 
+replace github.com/turbot/steampipe-plugin-sdk/v3 =>  /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver v1.5.0
@@ -90,6 +91,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.5.2 // indirect
