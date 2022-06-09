@@ -9,4 +9,6 @@ dashboard "simple_report" {
     title = "a simple query"
     sql = "select 1"
   }
+
+
 }

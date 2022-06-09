@@ -377,9 +377,8 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 	res := newDecodeResult()
 	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
 
-	// do a partial decode using QueryProviderBlockSchema
-	// this will be used to pull out attributes which need manual decoding
-	content, remain, diags := block.Body.PartialContent(DashboardBlockSchema)
+	// do a partial decode using an empty schema - use to pull out all body content in the remain block
+	_, remain, diags := block.Body.PartialContent(&hcl.BodySchema{})
 	res.handleDecodeDiags(diags)
 
 	// handle invalid block types
@@ -405,15 +404,16 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 	}
 
 	// now decode child blocks
-	if len(content.Blocks) > 0 {
-		blocksRes := decodeDashboardBlocks(content, dashboard, runCtx)
+	body := remain.(*hclsyntax.Body)
+	if len(body.Blocks) > 0 {
+		blocksRes := decodeDashboardBlocks(body, dashboard, runCtx)
 		res.Merge(blocksRes)
 	}
 
 	return dashboard, res
 }
 
-func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashboard, runCtx *RunContext) *decodeResult {
+func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboard, runCtx *RunContext) *decodeResult {
 	var res = newDecodeResult()
 	var inputs []*modconfig.DashboardInput
 
@@ -425,7 +425,7 @@ func decodeDashboardBlocks(content *hcl.BodyContent, dashboard *modconfig.Dashbo
 
 	for _, b := range content.Blocks {
 		// decode block
-		resources, blockRes := decodeBlock(b, runCtx)
+		resources, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
@@ -460,9 +460,8 @@ func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.
 	res := newDecodeResult()
 	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
 
-	// do a partial decode using QueryProviderBlockSchema
-	// this will be used to pull out attributes which need manual decoding
-	content, remain, diags := block.Body.PartialContent(DashboardContainerBlockSchema)
+	// do a partial decode using an empty schema - use to pull out all body content in the remain block
+	_, remain, diags := block.Body.PartialContent(&hcl.BodySchema{})
 	res.handleDecodeDiags(diags)
 	if !res.Success() {
 		return nil, res
@@ -477,15 +476,17 @@ func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.
 	res.handleDecodeDiags(diags)
 
 	// now decode child blocks
-	if len(content.Blocks) > 0 {
-		blocksRes := decodeDashboardContainerBlocks(content, container, runCtx)
+	body := remain.(*hclsyntax.Body)
+
+	if len(body.Blocks) > 0 {
+		blocksRes := decodeDashboardContainerBlocks(body, container, runCtx)
 		res.Merge(blocksRes)
 	}
 
 	return container, res
 }
 
-func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
+func decodeDashboardContainerBlocks(content *hclsyntax.Body, dashboardContainer *modconfig.DashboardContainer, runCtx *RunContext) *decodeResult {
 	var res = newDecodeResult()
 
 	// set container as parent on the run context - this is used when generating names for anonymous blocks
@@ -495,7 +496,7 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 	}()
 
 	for _, b := range content.Blocks {
-		resources, blockRes := decodeBlock(b, runCtx)
+		resources, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
@@ -511,7 +512,7 @@ func decodeDashboardContainerBlocks(content *hcl.BodyContent, dashboardContainer
 
 			} else {
 				// for all other children, add to mod and children
-				addResourcesToMod(runCtx, resource)
+				res.addDiags(addResourcesToMod(runCtx, resource))
 				if child, ok := resource.(modconfig.ModTreeItem); ok {
 					dashboardContainer.AddChild(child)
 				}
