@@ -1,3 +1,69 @@
 {{ define "output" -}}
-	{{ toPrettyJson .Data.Root }}
+	{{ template "root_template" .Data.Root }}
 {{ end }}
+
+{{ define "root_template" }}
+{
+	"group_id": "root_result_group",
+	"title": "",
+	"description": "",
+	"tags": "",
+	"summary": {{ toPrettyJson .Summary }},
+	"groups": {{ if .Groups }}[
+		{{- range .Groups -}}
+			{{- template "result_group_template" . -}}
+		{{ end }}
+	], {{ else }} null, {{ end -}}
+	"controls": {{ if .ControlRuns }}[
+		{{- range .ControlRuns -}}
+			{{- template "control_run_template" . -}}
+		{{ end }}
+	] {{ else }} null {{ end -}}
+} {{ end -}}
+
+{{/* sub template for result groups */}}
+{{ define "result_group_template" }}
+{
+	"group_id": "{{ .GroupId }}",
+	"title": "{{ .Title }}",
+	"description": "{{ .Description }}",
+	"tags": {{ toPrettyJson .Tags }},
+	"summary": {{ toPrettyJson .Summary }},
+	"groups": {{ if .Groups }}[
+		{{- range .Groups -}}
+			{{- template "result_group_template" . -}}
+		{{ end }}
+	], {{ else }} null, {{ end }}
+	"controls": {{ if .ControlRuns }}[
+		{{- range .ControlRuns -}}
+			{{- template "control_run_template" . -}}
+		{{ end }}
+	] {{ else }} null {{ end }}
+}, {{ end -}}
+
+{{/* sub template for control runs */}}
+{{ define "control_run_template" }}
+{
+	"summary": {{ toPrettyJson .Summary }},
+	"results": {{ if .Rows }}[
+		{{- range .Rows -}}
+			{{- template "control_row_template" . -}}
+		{{ end }}
+	], {{ else }} null, {{ end }}
+	"control_id": "{{ .ControlId }}",
+	"description": "{{ .Description }}",
+	"severity": "{{ .Severity }}",
+	"tags": {{ toPrettyJson .Tags }},
+	"title": "{{ .Title }}",
+	"run_status": "{{ .RunStatus }}",
+	"run_error": {{ toPrettyJson .RunErrorString }}
+}, {{- end -}}
+
+{{/* sub template for control rows */}}
+{{ define "control_row_template" }}
+{
+	"reason": "{{ .Reason }}",
+	"resource": "{{ .Resource }}",
+	"status": "{{ .Status }}",
+	"dimensions": {{ toPrettyJson .Dimensions }}
+}, {{ end -}}
