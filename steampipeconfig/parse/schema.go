@@ -130,7 +130,52 @@ var RequireModBlockSchema = &hcl.BodySchema{
 }
 
 // DashboardBlockSchema contains the Dashboard attributes which cannot be automatically decoded
-var DashboardBlockSchema = &hcl.BodySchema{
+var DashboardBlockSchemaPartial = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "args"},
+	},
+	//Blocks: []hcl.BlockHeaderSchema{
+	//	{
+	//		Type:       modconfig.BlockTypeInput,
+	//		LabelNames: []string{"name"},
+	//	},
+	//	{
+	//		Type:       modconfig.BlockTypeParam,
+	//		LabelNames: []string{"name"},
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeContainer,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeCard,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeChart,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeBenchmark,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeControl,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeFlow,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeHierarchy,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeImage,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeTable,
+	//	},
+	//	{
+	//		Type: modconfig.BlockTypeText,
+	//	},
+	//},
+}
+var DashboardBlockSchemaFull = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
 	},
@@ -177,7 +222,12 @@ var DashboardBlockSchema = &hcl.BodySchema{
 }
 
 // DashboardContainerBlockSchema contains the DashboardContainer attributes which cannot be automatically decoded
-var DashboardContainerBlockSchema = &hcl.BodySchema{
+var DashboardContainerBlockSchemaPartial = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "args"},
+	},
+}
+var DashboardContainerBlockSchemaFull = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
 	},
