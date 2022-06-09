@@ -98,7 +98,7 @@ const findOptions = (options, multi, value) => {
 };
 
 const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
-  const { dispatch, selectedDashboardInputs } = useDashboard();
+  const { dataMode, dispatch, selectedDashboardInputs } = useDashboard();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
@@ -169,20 +169,12 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         value: getValueForState(multi, multi ? [options[0]] : options[0]),
         recordInputsHistory: false,
       });
-    } else {
-      if (
-        initialisedFromState &&
-        stateValue &&
-        value &&
-        // @ts-ignore
-        stateValue !== value.value
-      ) {
-        const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-        const foundOptions = findOptions(options, multi, parsedUrlValue);
-        setValue(foundOptions || null);
-      } else if (initialisedFromState && !stateValue) {
-        setValue(null);
-      }
+    } else if (initialisedFromState && stateValue) {
+      const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
+      const foundOptions = findOptions(options, multi, parsedUrlValue);
+      setValue(foundOptions || null);
+    } else if (initialisedFromState && !stateValue) {
+      setValue(null);
     }
   }, [
     dispatch,
@@ -248,7 +240,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         }}
         menuPortalTarget={document.body}
         inputId={`${name}.input`}
-        isDisabled={!properties.options && !data}
+        isDisabled={(!properties.options && !data) || dataMode === "snapshot"}
         isLoading={!properties.options && !data}
         isClearable={!!properties.placeholder}
         isRtl={false}

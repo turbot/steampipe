@@ -37,6 +37,8 @@ export const PanelStoryDecorator = ({
         },
         availableDashboardsLoaded: true,
         closePanelDetail: noop,
+        dataMode: "live",
+        snapshotId: null,
         dispatch: () => {},
         error: null,
         dashboards: [],
@@ -99,6 +101,8 @@ export const PanelStoryDecorator = ({
         },
 
         components: buildComponentsMap(),
+        selectedSnapshot: null,
+        refetchDashboard: false,
       }}
     >
       <Dashboard />

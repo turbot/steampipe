@@ -45,12 +45,19 @@ export interface ComponentsMap {
   [name: string]: any;
 }
 
+export type DashboardDataMode = "live" | "snapshot";
+
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
 
   closePanelDetail(): void;
   dispatch(action: DashboardAction): void;
+
+  dataMode: DashboardDataMode;
+  snapshotId: string | null;
+
+  refetchDashboard: boolean;
 
   error: any;
 
@@ -61,6 +68,7 @@ interface IDashboardContext {
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
+  selectedSnapshot: DashboardSnapshot | null;
   lastChangedInput: string | null;
 
   sqlDataMap: SQLDataMap;
@@ -82,6 +90,7 @@ export interface IActions {
 const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
   CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
+  CLEAR_SNAPSHOT: "clear_snapshot",
   CONTROL_COMPLETE: "control_complete",
   CONTROL_ERROR: "control_error",
   DASHBOARD_METADATA: "dashboard_metadata",
@@ -94,11 +103,16 @@ const DashboardActions: IActions = {
   LEAF_NODE_PROGRESS: "leaf_node_progress",
   SELECT_DASHBOARD: "select_dashboard",
   SELECT_PANEL: "select_panel",
+  SELECT_SNAPSHOT: "select_snapshot",
+  SET_DASHBOARD: "set_dashboard",
   SET_DASHBOARD_INPUT: "set_dashboard_input",
   SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
   SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
   SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
   SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
+  SET_DATA_MODE: "set_data_mode",
+  SET_REFETCH_DASHBOARD: "set_refetch_dashboard",
+  SET_SNAPSHOT: "set_snapshot",
   WORKSPACE_ERROR: "workspace_error",
 };
 
@@ -107,7 +121,8 @@ const dashboardActions = Object.values(DashboardActions);
 // https://github.com/microsoft/TypeScript/issues/28046
 export type ElementType<T extends ReadonlyArray<unknown>> =
   T extends ReadonlyArray<infer ElementType> ? ElementType : never;
-type DashboardActionType = ElementType<typeof dashboardActions>;
+
+export type DashboardActionType = ElementType<typeof dashboardActions>;
 
 export interface DashboardAction {
   type: DashboardActionType;
@@ -132,13 +147,20 @@ export interface DashboardTags {
 
 interface SelectedDashboardStates {
   dashboard_name: string | null;
+  dataMode: DashboardDataMode;
+  refetchDashboard: boolean;
   search: DashboardSearch;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
+  selectedSnapshot: DashboardSnapshot;
 }
 
 interface DashboardInputs {
   [name: string]: string;
+}
+
+interface DashboardVariables {
+  [name: string]: any;
 }
 
 export interface ModDashboardMetadata {
@@ -178,6 +200,18 @@ export interface DashboardMetadata {
   installed_mods?: InstalledModsDashboardMetadata;
   cloud?: CloudDashboardMetadata;
   telemetry: "info" | "none";
+}
+
+export interface DashboardSnapshot {
+  id: string;
+  dashboard_name: string;
+  start_time: string;
+  end_time: string;
+  lineage: string;
+  schema_version: string;
+  search_path: string;
+  variables: DashboardVariables;
+  inputs: DashboardInputs;
 }
 
 interface AvailableDashboardTags {
@@ -247,6 +281,17 @@ export interface DashboardDefinition {
 interface DashboardsCollection {
   dashboards: AvailableDashboard[];
   dashboardsMap: AvailableDashboardsDictionary;
+}
+
+interface DashboardProviderProps {
+  analyticsContext: any;
+  breakpointContext: any;
+  children: null | JSX.Element | JSX.Element[];
+  componentOverrides?: {};
+  eventHooks?: {};
+  featureFlags?: string[];
+  socketFactory?: () => WebSocket;
+  themeContext: any;
 }
 
 const buildDashboards = (
@@ -476,6 +521,7 @@ function reducer(state, action) {
         ),
         dashboard:
           selectedDashboard &&
+          state.dashboard &&
           state.dashboard.name === selectedDashboard.full_name
             ? state.dashboard
             : null,
@@ -484,7 +530,7 @@ function reducer(state, action) {
       const originalDashboard = action.dashboard_node;
       let dashboard;
       // For benchmarks and controls that are run directly from a mod,
-      // we need to wrap these in an artificial dashboard so we can treat
+      // we need to wrap these in an artificial dashboard, so we can treat
       // it just like any other dashboard
       if (action.dashboard_node.node_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
@@ -496,12 +542,16 @@ function reducer(state, action) {
         error: null,
         dashboard,
         execution_id: action.execution_id,
+        refetchDashboard: false,
         state: "running",
       };
     }
     case DashboardActions.EXECUTION_COMPLETE: {
-      // We're not expecting execution events for this ID
-      if (action.execution_id !== state.execution_id) {
+      // If we're in live mode and not expecting execution events for this ID
+      if (
+        state.dataMode === "live" &&
+        action.execution_id !== state.execution_id
+      ) {
         return state;
       }
 
@@ -580,14 +630,40 @@ function reducer(state, action) {
     }
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
+    case DashboardActions.CLEAR_SNAPSHOT:
+      return { ...state, selectedSnapshot: null, dataMode: "live" };
+    case DashboardActions.SELECT_SNAPSHOT:
+      return {
+        ...state,
+        selectedSnapshot: action.snapshot,
+        dataMode: "snapshot",
+      };
+    case DashboardActions.SET_DATA_MODE:
+      return {
+        ...state,
+        dataMode: action.dataMode,
+      };
+    case DashboardActions.SET_REFETCH_DASHBOARD:
+      return {
+        ...state,
+        refetchDashboard: true,
+      };
+    case DashboardActions.SET_DASHBOARD:
+      return {
+        ...state,
+        dashboard: action.dashboard,
+      };
     case DashboardActions.SELECT_DASHBOARD:
       return {
         ...state,
+        dataMode: action.dataMode || "live",
         dashboard: null,
         execution_id: null,
+        snapshotId: null,
         state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
+        selectedSnapshot: null,
         lastChangedInput: null,
       };
     case DashboardActions.CLEAR_DASHBOARD_INPUTS:
@@ -696,6 +772,11 @@ const getInitialState = (searchParams) => {
     dashboardTags: {
       keys: [],
     },
+    dataMode: searchParams.get("mode") || "live",
+    snapshotId: searchParams.has("snapshot_id")
+      ? searchParams.get("snapshot_id")
+      : null,
+    refetchDashboard: false,
     error: null,
 
     dashboard: null,
@@ -703,6 +784,7 @@ const getInitialState = (searchParams) => {
     selectedDashboard: null,
     selectedDashboardInputs:
       buildSelectedDashboardInputsFromSearchParams(searchParams),
+    selectedSnapshot: null,
     lastChangedInput: null,
 
     search: {
@@ -726,17 +808,27 @@ const DashboardProvider = ({
   breakpointContext,
   children,
   componentOverrides = {},
+  eventHooks = {},
+  featureFlags = [],
   socketFactory,
   themeContext,
-}) => {
+}: DashboardProviderProps) => {
   const components = buildComponentsMap(componentOverrides);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [state, dispatch] = useReducer(reducer, getInitialState(searchParams));
+  const [state, dispatchInner] = useReducer(
+    reducer,
+    getInitialState(searchParams)
+  );
+  const dispatch = useCallback((action) => {
+    console.log(action.type, action);
+    dispatchInner(action);
+  }, []);
   const { dashboard_name } = useParams();
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
-    socketFactory
+    socketFactory,
+    eventHooks
   );
   const {
     setMetadata: setAnalyticsMetadata,
@@ -751,10 +843,43 @@ const DashboardProvider = ({
     usePrevious({
       searchParams,
       dashboard_name,
+      dataMode: state.dataMode,
+      refetchDashboard: state.refetchDashboard,
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
+      selectedSnapshot: state.selectedSnapshot,
     });
+
+  // Initial sync into URL
+  useEffect(() => {
+    if (
+      !featureFlags.includes("snapshots") ||
+      (searchParams.has("mode") && searchParams.get("mode") === state.dataMode)
+    ) {
+      return;
+    }
+    searchParams.set("mode", state.dataMode);
+    setSearchParams(searchParams, { replace: true });
+  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
+
+  useEffect(() => {
+    if (featureFlags.includes("snapshots") && state.selectedSnapshot) {
+      searchParams.set("snapshot_id", state.selectedSnapshot.id);
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [featureFlags, searchParams, setSearchParams, state.selectedSnapshot]);
+
+  useEffect(() => {
+    if (
+      featureFlags.includes("snapshots") &&
+      state.dataMode === "live" &&
+      searchParams.has("snapshot_id")
+    ) {
+      searchParams.delete("snapshot_id");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
 
   // Alert analytics
   useEffect(() => {
@@ -786,6 +911,9 @@ const DashboardProvider = ({
     const search = searchParams.get("search") || "";
     const groupBy = searchParams.get("group_by") || "tag";
     const tag = searchParams.get("tag") || "service";
+    const dataMode = searchParams.has("mode")
+      ? searchParams.get("mode")
+      : "live";
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
@@ -801,9 +929,16 @@ const DashboardProvider = ({
       value: inputs,
       recordInputsHistory: false,
     });
+    if (featureFlags.includes("snapshots")) {
+      dispatch({
+        type: DashboardActions.SET_DATA_MODE,
+        dataMode,
+      });
+    }
   }, [
     dashboard_name,
     dispatch,
+    featureFlags,
     location,
     navigationType,
     previousSelectedDashboardStates,
@@ -816,6 +951,8 @@ const DashboardProvider = ({
       previousSelectedDashboardStates &&
       // @ts-ignore
       previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
+      // @ts-ignore
+      previousSelectedDashboardStates.dataMode === state.dataMode &&
       // @ts-ignore
       previousSelectedDashboardStates.search.value === state.search.value &&
       // @ts-ignore
@@ -874,12 +1011,17 @@ const DashboardProvider = ({
       }
     }
 
+    if (featureFlags.includes("snapshots")) {
+      searchParams.set("mode", state.dataMode);
+    }
     setSearchParams(searchParams, { replace: true });
   }, [
-    previousSelectedDashboardStates,
     dashboard_name,
+    featureFlags,
+    previousSelectedDashboardStates,
     searchParams,
     setSearchParams,
+    state.dataMode,
     state.search,
   ]);
 
@@ -904,7 +1046,11 @@ const DashboardProvider = ({
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboard_name
       );
-      dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
+      dispatch({
+        type: DashboardActions.SELECT_DASHBOARD,
+        dashboard,
+        dataMode: state.dataMode,
+      });
       return;
     }
     // Else if we've changed to a different report in the URL then clear the inputs and select the
@@ -925,7 +1071,14 @@ const DashboardProvider = ({
         recordInputsHistory: false,
       });
     }
-  }, [dashboard_name, searchParams, state.dashboards, state.selectedDashboard]);
+  }, [
+    dashboard_name,
+    dispatch,
+    searchParams,
+    state.dashboards,
+    state.dataMode,
+    state.selectedDashboard,
+  ]);
 
   useEffect(() => {
     // This effect will send events over websockets and depends on there being a dashboard selected
@@ -937,12 +1090,16 @@ const DashboardProvider = ({
     // to a report, or it's first load), or the selected dashboard has been changed, select that
     // report over the socket
     if (
-      !previousSelectedDashboardStates ||
-      // @ts-ignore
-      !previousSelectedDashboardStates.selectedDashboard ||
-      state.selectedDashboard.full_name !==
+      state.dataMode === "live" &&
+      (!previousSelectedDashboardStates ||
         // @ts-ignore
-        previousSelectedDashboardStates.selectedDashboard.full_name
+        !previousSelectedDashboardStates.selectedDashboard ||
+        state.selectedDashboard.full_name !==
+          // @ts-ignore
+          previousSelectedDashboardStates.selectedDashboard.full_name ||
+        // @ts-ignore
+        (!previousSelectedDashboardStates.refetchDashboard &&
+          state.refetchDashboard))
     ) {
       sendSocketMessage({
         action: SocketActions.CLEAR_DASHBOARD,
@@ -961,6 +1118,7 @@ const DashboardProvider = ({
     // Else if we did previously have a dashboard selected in state and the
     // inputs have changed, then update the inputs over the socket
     if (
+      state.dataMode === "live" &&
       previousSelectedDashboardStates &&
       // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard &&
@@ -988,6 +1146,8 @@ const DashboardProvider = ({
     state.selectedDashboard,
     state.selectedDashboardInputs,
     state.lastChangedInput,
+    state.dataMode,
+    state.refetchDashboard,
   ]);
 
   useEffect(() => {
@@ -1044,13 +1204,21 @@ const DashboardProvider = ({
         state.selectedDashboard.full_name;
 
     // Sync params into the URL
-    setSearchParams(state.selectedDashboardInputs, {
+    const newParams = {
+      ...state.selectedDashboardInputs,
+    };
+    if (featureFlags.includes("snapshots")) {
+      newParams.mode = state.dataMode;
+    }
+    setSearchParams(newParams, {
       replace: !shouldRecordHistory,
     });
   }, [
+    featureFlags,
     navigationType,
     previousSelectedDashboardStates,
     setSearchParams,
+    state.dataMode,
     state.recordInputsHistory,
     state.selectedDashboard,
     state.selectedDashboardInputs,
@@ -1094,7 +1262,7 @@ const DashboardProvider = ({
       type: DashboardActions.SELECT_PANEL,
       panel: null,
     });
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     setHotKeysHandlers({
