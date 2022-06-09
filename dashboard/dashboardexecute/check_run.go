@@ -14,21 +14,21 @@ import (
 
 // CheckRun is a struct representing the execution of a leaf dashboard node
 type CheckRun struct {
-	Name             string                             `json:"name"`
-	Title            string                             `json:"title,omitempty"`
-	Width            int                                `json:"width,omitempty"`
-	Description      string                             `json:"description,omitempty"`
-	Documentation    string                             `json:"documentation,omitempty"`
-	Display          string                             `json:"display,omitempty"`
-	Type             string                             `json:"type,omitempty"`
-	Tags             map[string]string                  `json:"tags,omitempty"`
-	ErrorString      string                             `json:"error,omitempty"`
-	NodeType         string                             `json:"node_type"`
-	DashboardName    string                             `json:"dashboard"`
-	SourceDefinition string                             `json:"source_definition"`
-	SessionId        string                             `json:"session_id"`
-	Children         []controlexecute.ExecutionTreeNode `json:"children"`
-	Summary          *controlexecute.GroupSummary       `json:"summary"`
+	Name             string                       `json:"name"`
+	Title            string                       `json:"title,omitempty"`
+	Width            int                          `json:"width,omitempty"`
+	Description      string                       `json:"description,omitempty"`
+	Documentation    string                       `json:"documentation,omitempty"`
+	Display          string                       `json:"display,omitempty"`
+	Type             string                       `json:"type,omitempty"`
+	Tags             map[string]string            `json:"tags,omitempty"`
+	ErrorString      string                       `json:"error,omitempty"`
+	NodeType         string                       `json:"node_type"`
+	DashboardName    string                       `json:"dashboard"`
+	SourceDefinition string                       `json:"source_definition"`
+	SessionId        string                       `json:"session_id"`
+	Children         []*controlexecute.TreeNode   `json:"children"`
+	Summary          *controlexecute.GroupSummary `json:"summary"`
 	// if the dashboard node is a control, serialise to json as 'properties'
 	Control       *modconfig.Control          `json:"properties,omitempty"`
 	DashboardNode modconfig.DashboardLeafNode `json:"-"`
@@ -98,9 +98,8 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 	}
 	r.controlExecutionTree = executionTree
 	// if we are executing a benchmark, set children
-	if rootBenchmark, ok := executionTree.Root.Children[0].(*controlexecute.ResultGroup); ok {
-		r.Children = rootBenchmark.Children
-	}
+	r.Children = executionTree.Root.Children[0].Children
+
 }
 
 // Execute implements DashboardRunNode

@@ -37,7 +37,7 @@ type ResultGroup struct {
 	// child control runs
 	ControlRuns []*ControlRun `json:"-"`
 	// child groups and control runs
-	Children []ExecutionTreeNode                    `json:"children,omitempty"`
+	Children []*TreeNode                            `json:"children,omitempty"`
 	Severity map[string]controlstatus.StatusSummary `json:"-"`
 
 	// "benchmark"
@@ -82,8 +82,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		} else {
 			// create a result group for this item
 			itemGroup := NewResultGroup(ctx, executionTree, item, root)
-			root.Groups = append(root.Groups, itemGroup)
-			root.Children = append(root.Children, itemGroup)
+			root.addResultGroup(itemGroup)
 		}
 	}
 	return root
@@ -132,8 +131,7 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 			// if the group has any control runs, add to tree
 			if benchmarkGroup.ControlRunCount() > 0 {
 				// create a new result group with 'group' as the parent
-				group.Groups = append(group.Groups, benchmarkGroup)
-				group.Children = append(group.Children, benchmarkGroup)
+				group.addResultGroup(benchmarkGroup)
 			}
 		}
 		if control, ok := c.(*modconfig.Control); ok {
@@ -201,6 +199,18 @@ func (r *ResultGroup) ControlRunCount() int {
 		count += g.ControlRunCount()
 	}
 	return count
+}
+
+// add result group into our list, and also add a tree node into our child list
+func (r *ResultGroup) addResultGroup(group *ResultGroup) {
+	r.Groups = append(r.Groups, group)
+	r.Children = append(r.Children, &TreeNode{Name: group.GroupId, Children: group.Children})
+}
+
+// add control into our list, and also add a tree node into our child list
+func (r *ResultGroup) addControl(controlRun *ControlRun) {
+	r.ControlRuns = append(r.ControlRuns, controlRun)
+	r.Children = append(r.Children, &TreeNode{Name: controlRun.ControlId})
 }
 
 func (r *ResultGroup) addDimensionKeys(keys ...string) {
