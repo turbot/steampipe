@@ -377,13 +377,12 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 	res := newDecodeResult()
 	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
 
-	// do a partial decode using QueryProviderBlockSchema
-	// this will be used to pull out attributes which need manual decoding
-	_, remain, diags := block.Body.PartialContent(DashboardBlockSchemaPartial)
+	// do a partial decode using an empty schema - use to pull out all body content in the remain block
+	_, remain, diags := block.Body.PartialContent(&hcl.BodySchema{})
 	res.handleDecodeDiags(diags)
 
 	// handle invalid block types
-	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), DashboardBlockSchemaFull, dashboard))
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), DashboardBlockSchema, dashboard))
 	if !res.Success() {
 		return nil, res
 	}
@@ -461,16 +460,15 @@ func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.
 	res := newDecodeResult()
 	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
 
-	// do a partial decode using QueryProviderBlockSchema
-	// this will be used to pull out attributes which need manual decoding
-	_, remain, diags := block.Body.PartialContent(DashboardContainerBlockSchemaPartial)
+	// do a partial decode using an empty schema - use to pull out all body content in the remain block
+	_, remain, diags := block.Body.PartialContent(&hcl.BodySchema{})
 	res.handleDecodeDiags(diags)
 	if !res.Success() {
 		return nil, res
 	}
 
 	// handle invalid block types
-	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), DashboardContainerBlockSchemaFull, container))
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), DashboardContainerBlockSchema, container))
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
 	diags = gohcl.DecodeBody(remain, runCtx.EvalCtx, container)
@@ -514,7 +512,7 @@ func decodeDashboardContainerBlocks(content *hclsyntax.Body, dashboardContainer 
 
 			} else {
 				// for all other children, add to mod and children
-				addResourcesToMod(runCtx, resource)
+				res.addDiags(addResourcesToMod(runCtx, resource))
 				if child, ok := resource.(modconfig.ModTreeItem); ok {
 					dashboardContainer.AddChild(child)
 				}
