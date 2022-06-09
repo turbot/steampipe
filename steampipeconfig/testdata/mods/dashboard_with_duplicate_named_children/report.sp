@@ -1,6 +1,4 @@
-// this dashboard contains all possible child resources
-// we are testing the parsing of all possible child resources
-// TODO add input block in dashboard
+// dashboard with duplicate named child block
 
 dashboard dashboard_with_child_res {
   title = "dashboard with child resources"
