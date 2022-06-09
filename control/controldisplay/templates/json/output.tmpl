@@ -23,6 +23,8 @@
 
 {{/* sub template for result groups */}}
 {{ define "result_group_template" }}
+{{- $first_group_rendered := false -}}
+{{- $first_control_rendered := false -}}
 {
 	"group_id": "{{ .GroupId }}",
 	"title": "{{ .Title }}",
@@ -31,23 +33,30 @@
 	"summary": {{ toPrettyJson .Summary }},
 	"groups": {{ if .Groups }}[
 		{{- range .Groups -}}
+			{{ if $first_group_rendered -}},{{- end -}}
 			{{- template "result_group_template" . -}}
+			{{- $first_group_rendered = true -}}
 		{{ end }}
 	], {{ else }} null, {{ end }}
 	"controls": {{ if .ControlRuns }}[
 		{{- range .ControlRuns -}}
+			{{ if $first_control_rendered -}},{{- end -}}
 			{{- template "control_run_template" . -}}
+			{{- $first_control_rendered = true -}}
 		{{ end }}
 	] {{ else }} null {{ end }}
-}, {{ end -}}
+} {{ end -}}
 
 {{/* sub template for control runs */}}
 {{ define "control_run_template" }}
+{{- $first_row_rendered := false -}}
 {
 	"summary": {{ toPrettyJson .Summary }},
 	"results": {{ if .Rows }}[
 		{{- range .Rows -}}
+			{{ if $first_row_rendered -}},{{- end -}}
 			{{- template "control_row_template" . -}}
+			{{- $first_row_rendered = true -}}
 		{{ end }}
 	], {{ else }} null, {{ end }}
 	"control_id": "{{ .ControlId }}",
@@ -57,7 +66,7 @@
 	"title": "{{ .Title }}",
 	"run_status": "{{ .RunStatus }}",
 	"run_error": {{ toPrettyJson .RunErrorString }}
-}, {{- end -}}
+} {{- end -}}
 
 {{/* sub template for control rows */}}
 {{ define "control_row_template" }}
@@ -66,4 +75,4 @@
 	"resource": "{{ .Resource }}",
 	"status": "{{ .Status }}",
 	"dimensions": {{ toPrettyJson .Dimensions }}
-}, {{ end -}}
+} {{ end -}}
