@@ -119,7 +119,7 @@
     font-size: 14px;
   }
 
-  [type='text'] {
+  [type="text"] {
     background-color: var(--color-dashboard-panel);
   }
 }
@@ -156,66 +156,61 @@
 }
 
 .summary-chart-error-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-alert),
-                  var(--color-alert) 0.5rem,
-                  var(--color-alert-animate) 0.5rem,
-                  var(--color-alert-animate) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-alert),
+    var(--color-alert) 0.5rem,
+    var(--color-alert-animate) 0.5rem,
+    var(--color-alert-animate) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-alarm-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-alert-animate),
-                  var(--color-alert-animate) 0.5rem,
-                  var(--color-alert) 0.5rem,
-                  var(--color-alert) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-alert-animate),
+    var(--color-alert-animate) 0.5rem,
+    var(--color-alert) 0.5rem,
+    var(--color-alert) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-ok-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-ok-animate),
-                  var(--color-ok-animate) 0.5rem,
-                  var(--color-ok) 0.5rem,
-                  var(--color-ok) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-ok-animate),
+    var(--color-ok-animate) 0.5rem,
+    var(--color-ok) 0.5rem,
+    var(--color-ok) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-info-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-info-animate),
-                  var(--color-info-animate) 0.5rem,
-                  var(--color-info) 0.5rem,
-                  var(--color-info) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-info-animate),
+    var(--color-info-animate) 0.5rem,
+    var(--color-info) 0.5rem,
+    var(--color-info) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-skip-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-skip-animate),
-                  var(--color-skip-animate) 0.5rem,
-                  var(--color-skip) 0.5rem,
-                  var(--color-skip) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-skip-animate),
+    var(--color-skip-animate) 0.5rem,
+    var(--color-skip) 0.5rem,
+    var(--color-skip) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
@@ -227,7 +222,8 @@
 }
 
 @keyframes ping {
-  75%, 100% {
+  75%,
+  100% {
     transform: scale(1.75);
     opacity: 0;
   }
