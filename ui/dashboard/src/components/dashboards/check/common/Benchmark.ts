@@ -18,6 +18,7 @@ import {
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../../common";
+import { PanelsMap } from "../../../../hooks/useDashboard";
 
 class Benchmark implements CheckNode {
   private readonly _sortIndex: string;
@@ -36,6 +37,7 @@ class Benchmark implements CheckNode {
     description: string | undefined,
     benchmarks: CheckBenchmarkRun[] | undefined,
     controls: CheckControlRun[] | undefined,
+    panelsMap: PanelsMap,
     trunk: Benchmark[],
     add_control_results?: AddControlResultsAction
   ) {
@@ -73,6 +75,7 @@ class Benchmark implements CheckNode {
           nestedBenchmark.description,
           benchmarks,
           controls,
+          panelsMap,
           thisTrunk,
           this._add_control_results
         )
@@ -82,21 +85,24 @@ class Benchmark implements CheckNode {
     const controlsToAdd = controls || [];
     const lengthMaxControlIndex = (controlsToAdd.length - 1).toString().length;
     controlsToAdd.forEach((nestedControl, controlIndex) => {
+      // @ts-ignore
+      const control = panelsMap[nestedControl.name] as CheckControlRun;
       nestedControls.push(
         new Control(
           padStart(controlIndex.toString(), lengthMaxControlIndex),
           this._name,
           this._title,
           this._description,
-          nestedControl.name,
-          nestedControl.title,
-          nestedControl.description,
-          nestedControl.severity,
-          nestedControl.results,
-          nestedControl.summary,
-          nestedControl.tags,
-          nestedControl.status,
-          nestedControl.error,
+          control.name,
+          control.title,
+          control.description,
+          control.severity,
+          control.results,
+          control.summary,
+          control.tags,
+          control.status,
+          control.error,
+          panelsMap,
           thisTrunk,
           this._add_control_results
         )

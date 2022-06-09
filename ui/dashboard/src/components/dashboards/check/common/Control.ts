@@ -14,6 +14,7 @@ import {
   findDimension,
 } from "./index";
 import { LeafNodeDataRow } from "../../common";
+import { PanelsMap } from "../../../../hooks/useDashboard";
 
 class Control implements CheckNode {
   private readonly _sortIndex: string;
@@ -44,6 +45,7 @@ class Control implements CheckNode {
     tags: CheckTags | undefined,
     status: CheckNodeStatusRaw,
     error: string | undefined,
+    panelsMap: PanelsMap,
     benchmark_trunk: Benchmark[],
     add_control_results: AddControlResultsAction
   ) {

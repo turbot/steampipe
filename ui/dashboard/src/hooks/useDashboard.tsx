@@ -1,4 +1,3 @@
-import findPathDeep from "deepdash/findPathDeep";
 import get from "lodash/get";
 import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
@@ -46,6 +45,10 @@ export interface ComponentsMap {
   [name: string]: any;
 }
 
+export interface PanelsMap {
+  [name: string]: PanelDefinition;
+}
+
 export type DashboardDataMode = "live" | "snapshot";
 
 interface IDashboardContext {
@@ -61,6 +64,8 @@ interface IDashboardContext {
   refetchDashboard: boolean;
 
   error: any;
+
+  panelsMap: PanelsMap;
 
   dashboards: AvailableDashboard[];
   dashboardsMap: AvailableDashboardsDictionary;
@@ -361,15 +366,16 @@ const updateSelectedDashboard = (
   }
 };
 
-function buildSqlDataMap(dashboard: DashboardDefinition): SQLDataMap {
-  const sqlPaths = paths(dashboard, { leavesOnly: true }).filter((path) =>
+function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
+  const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
   const sqlDataMap = {};
   for (const sqlPath of sqlPaths) {
-    const sql = get(dashboard, sqlPath);
+    // @ts-ignore
+    const sql: string = get(panels, sqlPath);
     const dataPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}.data`;
-    const data = get(dashboard, dataPath);
+    const data = get(panels, dataPath);
     if (!sqlDataMap[sql]) {
       sqlDataMap[sql] = data;
     }
@@ -377,29 +383,29 @@ function buildSqlDataMap(dashboard: DashboardDefinition): SQLDataMap {
   return sqlDataMap;
 }
 
-function addDataToDashboard(
-  dashboard: DashboardDefinition,
-  sqlDataMap: SQLDataMap
-): DashboardDefinition {
-  const sqlPaths = paths(dashboard, { leavesOnly: true }).filter((path) =>
+function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
+  const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
   for (const sqlPath of sqlPaths) {
-    const sql = get(dashboard, sqlPath);
+    // @ts-ignore
+    const sql: string = get(panels, sqlPath);
     const data = sqlDataMap[sql];
     if (!data) {
       continue;
     }
     const dataPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}.data`;
-    set(dashboard, dataPath, data);
+    set(panels, dataPath, data);
   }
-  return dashboard;
+  return panels;
 }
 
 const wrapDefinitionInArtificialDashboard = (
-  definition: DashboardDefinition
+  definition: DashboardDefinition,
+  layout: any
 ): DashboardDefinition => {
-  const { title, ...definitionWithoutTitle } = definition;
+  const { title: defTitle, ...definitionWithoutTitle } = definition;
+  const { title: layoutTitle, ...layoutWithoutTitle } = layout;
   return {
     artificial: true,
     name: definition.name,
@@ -408,74 +414,18 @@ const wrapDefinitionInArtificialDashboard = (
     children: [
       {
         ...definitionWithoutTitle,
+        ...layoutWithoutTitle,
       },
     ],
     dashboard: definition.dashboard,
   };
 };
 
-const updateCheckNode = (dashboardCheckNode, action) => {
-  let panelPath: string = findPathDeep(
-    dashboardCheckNode,
-    (v, k) => k === "name" && v === action.control.name
-  );
-
-  if (!panelPath) {
-    console.warn("Cannot find control to update", action.control.name);
-    return null;
-  }
-
-  panelPath = panelPath.replace(".name", "");
-
-  let newCheckNode = {
-    ...dashboardCheckNode,
+const updatePanelsMapWithControlEvent = (panelsMap, action) => {
+  return {
+    ...panelsMap,
+    [action.control.name]: action.control,
   };
-
-  return set(newCheckNode, panelPath, action.control);
-};
-
-const updateDashboardWithControlEvent = (dashboard, action) => {
-  if (dashboard.artificial) {
-    let rootBenchmark = updateCheckNode(get(dashboard, "children[0]"), action);
-
-    if (!rootBenchmark) {
-      console.warn("Cannot find benchmark to update", action.control.name);
-      return null;
-    }
-
-    const newDashboard = {
-      ...dashboard,
-    };
-
-    return set(newDashboard, "children[0]", rootBenchmark);
-  } else {
-    let nodePath: string = findPathDeep(
-      dashboard,
-      (v, k) => k === "name" && v === action.name
-    );
-
-    if (!nodePath) {
-      console.warn("Cannot find dashboard node to update", action.name);
-      return null;
-    }
-
-    nodePath = nodePath.replace(".name", "");
-
-    let node = get(dashboard, nodePath);
-    if (!node) {
-      console.warn("Cannot find dashboard node to update", action.name);
-      return null;
-    }
-
-    let updatedNode = updateCheckNode(node, action);
-
-    if (!updatedNode) {
-      console.warn("Cannot find control to update", action.control.name);
-      return null;
-    }
-
-    return set(dashboard, nodePath, updatedNode);
-  }
 };
 
 function reducer(state, action) {
@@ -518,13 +468,21 @@ function reducer(state, action) {
       // we need to wrap these in an artificial dashboard, so we can treat
       // it just like any other dashboard
       if (action.dashboard_node.node_type !== "dashboard") {
-        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+        dashboard = wrapDefinitionInArtificialDashboard(
+          originalDashboard,
+          action.layout
+        );
       } else {
-        dashboard = addDataToDashboard(action.dashboard_node, state.sqlDataMap);
+        dashboard = {
+          ...originalDashboard,
+          ...action.layout,
+        };
       }
+
       return {
         ...state,
         error: null,
+        panelsMap: addDataToPanels(action.leaf_nodes, state.sqlDataMap),
         dashboard,
         execution_id: action.execution_id,
         refetchDashboard: false,
@@ -543,18 +501,25 @@ function reducer(state, action) {
       const originalDashboard = action.dashboard_node;
       let dashboard;
 
-      if (action.dashboard_node.type !== "dashboard") {
-        dashboard = wrapDefinitionInArtificialDashboard(originalDashboard);
+      if (action.dashboard_node.node_type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(
+          originalDashboard,
+          action.layout
+        );
       } else {
-        dashboard = originalDashboard;
+        dashboard = {
+          ...originalDashboard,
+          ...action.layout,
+        };
       }
 
       // Build map of SQL to data
-      const sqlDataMap = buildSqlDataMap(action.dashboard_node);
+      const sqlDataMap = buildSqlDataMap(action.leaf_nodes);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
         error: null,
+        panelsMap: action.leaf_nodes,
         dashboard,
         sqlDataMap,
         state: "complete",
@@ -569,48 +534,35 @@ function reducer(state, action) {
         return state;
       }
 
-      const updatedDashboard = updateDashboardWithControlEvent(
-        state.dashboard,
+      const updatedPanelsMap = updatePanelsMapWithControlEvent(
+        state.panelsMap,
         action
       );
 
-      if (!updatedDashboard) {
+      if (!updatedPanelsMap) {
         return state;
       }
 
       return {
         ...state,
-        dashboard: updatedDashboard,
+        panelsMap: updatedPanelsMap,
       };
     case DashboardActions.LEAF_NODE_COMPLETE: {
       // We're not expecting execution events for this ID
       if (action.execution_id !== state.execution_id) {
         return state;
       }
-      // Find the path to the name key that matches this panel and replace it
+
       const { dashboard_node } = action;
-      let panelPath: string = findPathDeep(
-        state.dashboard,
-        (v, k) => k === "name" && v === dashboard_node.name
-      );
 
-      if (!panelPath) {
-        console.warn(
-          "Cannot find dashboard panel to update",
-          dashboard_node.name
-        );
-        return state;
-      }
-
-      panelPath = panelPath.replace(".name", "");
-      let newDashboard = {
-        ...state.dashboard,
+      const panelsMap = {
+        ...state.panelsMap,
+        [dashboard_node.name]: dashboard_node,
       };
-      newDashboard = set(newDashboard, panelPath, dashboard_node);
 
       return {
         ...state,
-        dashboard: newDashboard,
+        panelsMap,
       };
     }
     case DashboardActions.SELECT_PANEL:
@@ -764,6 +716,7 @@ const getInitialState = (searchParams, defaults = {}) => {
     refetchDashboard: false,
     error: null,
 
+    panelsMap: {},
     dashboard: null,
     selectedPanel: null,
     selectedDashboard: null,

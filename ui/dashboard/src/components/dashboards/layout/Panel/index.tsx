@@ -38,147 +38,192 @@ interface PanelProps {
   withTitle?: boolean;
 }
 
-const Panel = ({
-  children,
-  definition,
-  allowExpand = true,
-  forceBackground = false,
-  ready = true,
-  withOverflow = false,
-  withTitle = true,
-}: PanelProps) => {
-  const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const [zoomIconClassName, setZoomIconClassName] =
-    useState("text-black-scale-4");
-  const {
-    dispatch,
-    themeContext: { theme },
-  } = useDashboard();
+interface PanelWrapperProps {
+  children: (definition: PanelDefinition) => null | JSX.Element | JSX.Element[];
+  layoutDefinition:
+    | BaseChartProps
+    | CardProps
+    | HierarchyProps
+    | ImageProps
+    | InputProps
+    | PanelDefinition
+    | TableProps
+    | TextProps;
+  allowExpand?: boolean;
+  forceBackground?: boolean;
+  ready?: (PanelDefinition) => boolean;
+  withOverflow?: boolean;
+  withTitle?: boolean;
+}
 
-  const baseStyles = classNames(
-    "relative col-span-12",
-    getResponsivePanelWidthClass(definition.width),
-    "overflow-auto"
-  );
+const Panel = memo(
+  ({
+    children,
+    definition,
+    allowExpand = true,
+    forceBackground = false,
+    ready = true,
+    withOverflow = false,
+    withTitle = true,
+  }: PanelProps) => {
+    const [showZoomIcon, setShowZoomIcon] = useState(false);
+    const [zoomIconClassName, setZoomIconClassName] =
+      useState("text-black-scale-4");
+    const {
+      dispatch,
+      themeContext: { theme },
+    } = useDashboard();
 
-  const ErrorComponent = Error;
-  const PlaceholderComponent = Placeholder.component;
+    const baseStyles = classNames(
+      "relative col-span-12",
+      getResponsivePanelWidthClass(definition.width),
+      "overflow-auto"
+    );
 
-  return (
-    <PanelProvider
-      definition={definition}
-      allowExpand={allowExpand}
-      setZoomIconClassName={setZoomIconClassName}
-    >
-      <div
-        id={definition.name}
-        className={baseStyles}
-        onMouseEnter={
-          allowExpand
-            ? () => {
-                setShowZoomIcon(true);
-              }
-            : undefined
-        }
-        onMouseLeave={
-          allowExpand
-            ? () => {
-                setShowZoomIcon(false);
-              }
-            : undefined
-        }
+    const ErrorComponent = Error;
+    const PlaceholderComponent = Placeholder.component;
+
+    return (
+      <PanelProvider
+        definition={definition}
+        allowExpand={allowExpand}
+        setZoomIconClassName={setZoomIconClassName}
       >
-        <section
-          aria-labelledby={
-            withTitle && definition.title
-              ? `${definition.name}-title`
+        <div
+          id={definition.name}
+          className={baseStyles}
+          onMouseEnter={
+            allowExpand
+              ? () => {
+                  setShowZoomIcon(true);
+                }
               : undefined
           }
-          className={classNames(
-            "col-span-12 m-0.5",
-            forceBackground ||
-              (definition.node_type !== "image" &&
-                definition.node_type !== "card" &&
-                definition.node_type !== "input") ||
-              ((definition.node_type === "image" ||
-                definition.node_type === "card" ||
-                definition.node_type === "input") &&
-                get(definition, "properties.type") === "table")
-              ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
-              : null
-          )}
+          onMouseLeave={
+            allowExpand
+              ? () => {
+                  setShowZoomIcon(false);
+                }
+              : undefined
+          }
         >
-          {showZoomIcon && (
-            <div
-              className={classNames(
-                "absolute cursor-pointer z-50 right-1 top-1",
-                zoomIconClassName
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                dispatch({
-                  type: DashboardActions.SELECT_PANEL,
-                  panel: { ...definition },
-                });
-              }}
-            >
-              <ZoomIcon className="h-5 w-5" />
-            </div>
-          )}
-          {withTitle && definition.title && (
-            <div
-              className={classNames(
-                definition.node_type === "input" &&
-                  get(definition, "properties.type") !== "table"
-                  ? "pl-0 pr-2 sm:pr-4 py-2"
-                  : "px-4 py-4"
-              )}
-            >
-              <h3
-                id={`${definition.name}-title`}
-                className="truncate"
-                title={definition.title}
-              >
-                {definition.title}
-              </h3>
-            </div>
-          )}
-
-          <div
+          <section
+            aria-labelledby={
+              withTitle && definition.title
+                ? `${definition.name}-title`
+                : undefined
+            }
             className={classNames(
-              withTitle &&
-                definition.title &&
-                ((definition.node_type !== "input" &&
-                  definition.node_type !== "table") ||
-                  (definition.node_type === "table" &&
-                    get(definition, "properties.type") === "line"))
-                ? classNames(
-                    "border-t",
-                    theme.name === ThemeNames.STEAMPIPE_DARK
-                      ? "border-table-divide"
-                      : "border-background"
-                  )
-                : null,
-              withOverflow ||
-                (definition.node_type === "table" &&
-                  get(definition, "properties.type") !== "line") ||
-                get(definition, "properties.type") === "table"
-                ? "overflow-x-auto"
-                : "overflow-x-hidden"
+              "col-span-12 m-0.5",
+              forceBackground ||
+                (definition.node_type !== "image" &&
+                  definition.node_type !== "card" &&
+                  definition.node_type !== "input") ||
+                ((definition.node_type === "image" ||
+                  definition.node_type === "card" ||
+                  definition.node_type === "input") &&
+                  get(definition, "properties.type") === "table")
+                ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
+                : null
             )}
           >
-            <PlaceholderComponent
-              animate={!!children}
-              ready={ready || !!definition.error}
+            {showZoomIcon && (
+              <div
+                className={classNames(
+                  "absolute cursor-pointer z-50 right-1 top-1",
+                  zoomIconClassName
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch({
+                    type: DashboardActions.SELECT_PANEL,
+                    panel: { ...definition },
+                  });
+                }}
+              >
+                <ZoomIcon className="h-5 w-5" />
+              </div>
+            )}
+            {withTitle && definition.title && (
+              <div
+                className={classNames(
+                  definition.node_type === "input" &&
+                    get(definition, "properties.type") !== "table"
+                    ? "pl-0 pr-2 sm:pr-4 py-2"
+                    : "px-4 py-4"
+                )}
+              >
+                <h3
+                  id={`${definition.name}-title`}
+                  className="truncate"
+                  title={definition.title}
+                >
+                  {definition.title}
+                </h3>
+              </div>
+            )}
+
+            <div
+              className={classNames(
+                withTitle &&
+                  definition.title &&
+                  ((definition.node_type !== "input" &&
+                    definition.node_type !== "table") ||
+                    (definition.node_type === "table" &&
+                      get(definition, "properties.type") === "line"))
+                  ? classNames(
+                      "border-t",
+                      theme.name === ThemeNames.STEAMPIPE_DARK
+                        ? "border-table-divide"
+                        : "border-background"
+                    )
+                  : null,
+                withOverflow ||
+                  (definition.node_type === "table" &&
+                    get(definition, "properties.type") !== "line") ||
+                  get(definition, "properties.type") === "table"
+                  ? "overflow-x-auto"
+                  : "overflow-x-hidden"
+              )}
             >
-              <ErrorComponent error={definition.error} />
-              <>{!definition.error ? children : null}</>
-            </PlaceholderComponent>
-          </div>
-        </section>
-      </div>
-    </PanelProvider>
+              <PlaceholderComponent
+                animate={!!children}
+                ready={ready || !!definition.error}
+              >
+                <ErrorComponent error={definition.error} />
+                <>{!definition.error ? children : null}</>
+              </PlaceholderComponent>
+            </div>
+          </section>
+        </div>
+      </PanelProvider>
+    );
+  }
+);
+
+const PanelWrapper = ({
+  children,
+  allowExpand = true,
+  forceBackground = false,
+  layoutDefinition,
+  ready = () => true,
+  withOverflow = false,
+  withTitle = true,
+}: PanelWrapperProps) => {
+  const { panelsMap } = useDashboard();
+  const panel = panelsMap[layoutDefinition.name];
+  return (
+    <Panel
+      allowExpand={allowExpand}
+      definition={panel || layoutDefinition}
+      forceBackground={forceBackground}
+      ready={ready(panel || layoutDefinition)}
+      withOverflow={withOverflow}
+      withTitle={withTitle}
+    >
+      {children(panel || layoutDefinition)}
+    </Panel>
   );
 };
 
-export default memo(Panel);
+export default PanelWrapper;

@@ -14,15 +14,13 @@ const PanelProvider = ({
   definition,
   allowExpand,
   setZoomIconClassName,
-}) => {
-  return (
-    <PanelContext.Provider
-      value={{ definition, allowExpand, setZoomIconClassName }}
-    >
-      {children}
-    </PanelContext.Provider>
-  );
-};
+}) => (
+  <PanelContext.Provider
+    value={{ definition, allowExpand, setZoomIconClassName }}
+  >
+    {children}
+  </PanelContext.Provider>
+);
 
 const usePanel = () => {
   const context = useContext(PanelContext);

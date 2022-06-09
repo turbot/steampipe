@@ -224,19 +224,21 @@ const BenchmarkTableView = ({
 
   return (
     <Panel
-      definition={{
+      layoutDefinition={{
         name: definition.name,
         node_type: "table",
         width: definition.width,
         data: benchmarkDataTable,
       }}
-      ready={!!benchmarkDataTable}
+      ready={() => !!benchmarkDataTable}
     >
-      <Table
-        name={`${definition.name}.table`}
-        node_type="table"
-        data={benchmarkDataTable}
-      />
+      {() => (
+        <Table
+          name={`${definition.name}.table`}
+          node_type="table"
+          data={benchmarkDataTable}
+        />
+      )}
     </Panel>
   );
 };
@@ -266,26 +268,22 @@ const Inner = ({ withTitle }) => {
         withTitle={withTitle}
       />
     );
-  } else {
     // @ts-ignore
-    if (definition.type === "table") {
-      return (
-        <BenchmarkTableView benchmark={benchmark} definition={definition} />
-      );
-    } else {
-      return (
-        <Panel
-          definition={{
-            name: definition.name,
-            node_type: "benchmark",
-            width: definition.width,
-          }}
-        >
-          {/*@ts-ignore*/}
-          <Error error={`Unsupported benchmark type ${definition.type}`} />
-        </Panel>
-      );
-    }
+  } else if (definition.type === "table") {
+    return <BenchmarkTableView benchmark={benchmark} definition={definition} />;
+  } else {
+    return (
+      <Panel
+        layoutDefinition={{
+          name: definition.name,
+          node_type: "benchmark",
+          width: definition.width,
+        }}
+      >
+        {/*@ts-ignore*/}
+        <Error error={`Unsupported benchmark type ${definition.type}`} />
+      </Panel>
+    );
   }
 };
 

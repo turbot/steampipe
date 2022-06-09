@@ -23,6 +23,17 @@ export const PanelStoryDecorator = ({
 }: PanelStoryDecoratorProps) => {
   const { properties, ...rest } = definition;
 
+  const newPanel = {
+    name: `${nodeType}.story`,
+    node_type: nodeType,
+    ...rest,
+    properties: {
+      ...(properties || {}),
+      ...additionalProperties,
+    },
+    sql: "storybook",
+  };
+
   return (
     <DashboardContext.Provider
       value={{
@@ -55,21 +66,13 @@ export const PanelStoryDecorator = ({
         },
         selectedDashboardInputs: {},
         lastChangedInput: null,
+        panelsMap: {
+          [newPanel.name]: newPanel,
+        },
         dashboard: {
           artificial: false,
           name: "storybook.dashboard.storybook_dashboard_wrapper",
-          children: [
-            {
-              name: `${nodeType}.story`,
-              node_type: nodeType,
-              ...rest,
-              properties: {
-                ...(properties || {}),
-                ...additionalProperties,
-              },
-              sql: "storybook",
-            },
-          ],
+          children: [newPanel],
           node_type: "dashboard",
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
