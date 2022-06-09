@@ -200,12 +200,14 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
 		LeafNodes:     event.LeafNodes,
+		Layout:        event.Root.AsTreeNode(),
 		Inputs:        event.Inputs,
 		Variables:     event.Variables,
 		SearchPath:    event.SearchPath,
 		StartTime:     event.StartTime,
 		EndTime:       event.EndTime,
 	}
+
 	return json.Marshal(payload)
 }
 

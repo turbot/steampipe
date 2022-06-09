@@ -13,31 +13,34 @@ import (
 
 // DashboardContainerRun is a struct representing a container run
 type DashboardContainerRun struct {
-	Name                 string                                  `json:"name"`
-	Title                string                                  `json:"title,omitempty"`
-	Width                int                                     `json:"width,omitempty"`
-	ErrorString          string                                  `json:"error,omitempty"`
-	Children             []dashboardinterfaces.DashboardNodeRun  `json:"-"`
-	SerializableChildren []*dashboardinterfaces.SnapshotTreeNode `json:"children,omitempty"`
-	NodeType             string                                  `json:"node_type"`
-	Status               dashboardinterfaces.DashboardRunStatus  `json:"status"`
-	DashboardName        string                                  `json:"dashboard"`
-	SourceDefinition     string                                  `json:"source_definition"`
-	error                error
-	dashboardNode        *modconfig.DashboardContainer
-	parent               dashboardinterfaces.DashboardNodeParent
-	executionTree        *DashboardExecutionTree
-	childComplete        chan dashboardinterfaces.DashboardNodeRun
+	Name             string                                 `json:"name"`
+	Title            string                                 `json:"title,omitempty"`
+	Width            int                                    `json:"width,omitempty"`
+	ErrorString      string                                 `json:"error,omitempty"`
+	Children         []dashboardinterfaces.DashboardNodeRun `json:"-"`
+	NodeType         string                                 `json:"node_type"`
+	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
+	DashboardName    string                                 `json:"dashboard"`
+	SourceDefinition string                                 `json:"source_definition"`
+	error            error
+	dashboardNode    *modconfig.DashboardContainer
+	parent           dashboardinterfaces.DashboardNodeParent
+	executionTree    *DashboardExecutionTree
+	childComplete    chan dashboardinterfaces.DashboardNodeRun
 }
 
 func (r *DashboardContainerRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
-	return &dashboardinterfaces.SnapshotTreeNode{
+	res := &dashboardinterfaces.SnapshotTreeNode{
 		Name:     r.Name,
-		Children: r.SerializableChildren,
 		NodeType: r.NodeType,
 		Width:    r.Width,
 		Title:    r.Title,
+		Children: make([]*dashboardinterfaces.SnapshotTreeNode, len(r.Children)),
 	}
+	for i, c := range r.Children {
+		res.Children[i] = c.AsTreeNode()
+	}
+	return res
 }
 
 func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {

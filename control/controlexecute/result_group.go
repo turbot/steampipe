@@ -7,11 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlstatus"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -38,11 +39,8 @@ type ResultGroup struct {
 	// child control runs
 	ControlRuns []*ControlRun `json:"-"`
 	// list of children stored as controlexecute.ExecutionTreeNode
-	Children []ExecutionTreeNode `json:"-"`
-	// list of children, represented as TreeNodes
-	// used for snapshot serialisation
-	SerializableChildren []*dashboardinterfaces.SnapshotTreeNode `json:"children,omitempty"`
-	Severity             map[string]controlstatus.StatusSummary  `json:"-"`
+	Children []ExecutionTreeNode                    `json:"-"`
+	Severity map[string]controlstatus.StatusSummary `json:"-"`
 
 	// "benchmark"
 	NodeType string `json:"node_type"`
@@ -217,30 +215,31 @@ func (r *ResultGroup) GetChildren() []ExecutionTreeNode { return r.Children }
 // GetName implements ExecutionTreeNode
 func (r *ResultGroup) GetName() string { return r.GroupId }
 
+// AsTreeNode implements ExecutionTreeNode
+func (r *ResultGroup) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
+	res := &dashboardinterfaces.SnapshotTreeNode{
+		Name:     r.GroupId,
+		Children: make([]*dashboardinterfaces.SnapshotTreeNode, len(r.Children)),
+		NodeType: r.NodeType,
+		Display:  r.Display,
+		Title:    r.Title,
+	}
+	for i, c := range r.Children {
+		res.Children[i] = c.AsTreeNode()
+	}
+	return res
+}
+
 // add result group into our list, and also add a tree node into our child list
 func (r *ResultGroup) addResultGroup(group *ResultGroup) {
 	r.Groups = append(r.Groups, group)
 	r.Children = append(r.Children, group)
-	r.SerializableChildren = append(r.SerializableChildren, &dashboardinterfaces.SnapshotTreeNode{
-		Name:     group.GroupId,
-		Children: group.SerializableChildren,
-		NodeType: "benchmark",
-		Display:  group.Display,
-		Title:    group.Title,
-	})
 }
 
 // add control into our list, and also add a tree node into our child list
 func (r *ResultGroup) addControl(controlRun *ControlRun) {
 	r.ControlRuns = append(r.ControlRuns, controlRun)
 	r.Children = append(r.Children, controlRun)
-	r.SerializableChildren = append(r.SerializableChildren, &dashboardinterfaces.SnapshotTreeNode{
-		Name:     controlRun.ControlId,
-		Children: nil,
-		NodeType: "control",
-		Display:  controlRun.Display,
-		Title:    controlRun.Title,
-	})
 }
 
 func (r *ResultGroup) addDimensionKeys(keys ...string) {

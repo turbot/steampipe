@@ -28,16 +28,12 @@ type CheckRun struct {
 	SourceDefinition string            `json:"source_definition"`
 	SessionId        string            `json:"session_id"`
 
-	// list of children stored as controlexecute.ExecutionTreeNode
-	Children []controlexecute.ExecutionTreeNode `json:"-"`
-	// list of children, represented as TreeNodes
-	// used for snapshot serialisation
-	SerializableChildren []*dashboardinterfaces.SnapshotTreeNode `json:"children"`
-	Summary              *controlexecute.GroupSummary            `json:"summary"`
+	Summary *controlexecute.GroupSummary `json:"summary"`
 	// if the dashboard node is a control, serialise to json as 'properties'
 	Control       *modconfig.Control          `json:"properties,omitempty"`
 	DashboardNode modconfig.DashboardLeafNode `json:"-"`
 
+	root                 controlexecute.ExecutionTreeNode
 	controlExecutionTree *controlexecute.ExecutionTree
 	error                error
 	parent               dashboardinterfaces.DashboardNodeParent
@@ -46,14 +42,7 @@ type CheckRun struct {
 }
 
 func (r *CheckRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
-	return &dashboardinterfaces.SnapshotTreeNode{
-		Name:     r.Name,
-		Children: r.SerializableChildren,
-		NodeType: r.NodeType,
-		Display:  r.Display,
-		Width:    r.Width,
-		Title:    r.Title,
-	}
+	return r.root.AsTreeNode()
 }
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
@@ -112,10 +101,7 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 		return
 	}
 	r.controlExecutionTree = executionTree
-	// if we are executing a benchmark, set children
-	r.SerializableChildren = executionTree.Root.SerializableChildren[0].Children
-	r.Children = executionTree.Root.Children[0].GetChildren()
-
+	r.root = executionTree.Root.Children[0]
 }
 
 // Execute implements DashboardRunNode
@@ -125,7 +111,7 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewControlEventHooks(r))
 	r.controlExecutionTree.Execute(ctx)
 
-	// set the summary on the CeckRun
+	// set the summary on the CheckRun
 	r.Summary = r.controlExecutionTree.Root.Summary
 
 	// set complete status on counter - this will raise counter complete event
@@ -200,14 +186,7 @@ func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { retu
 
 // custom implementation of buildSnapshotLeafNodes - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
 func (r *CheckRun) buildSnapshotLeafNodes(leafNodeMap map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {
-	for _, c := range r.Children {
-		// if this node is a snapshot node, add to map
-		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotLeafNode); ok {
-			leafNodeMap[c.GetName()] = snapshotNode
-		}
-		leafNodeMap = r.buildSnapshotLeafNodesUnder(c, leafNodeMap)
-	}
-	return leafNodeMap
+	return r.buildSnapshotLeafNodesUnder(r.root, leafNodeMap)
 }
 
 func (r *CheckRun) buildSnapshotLeafNodesUnder(parent controlexecute.ExecutionTreeNode, res map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {

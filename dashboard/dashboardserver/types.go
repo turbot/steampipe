@@ -85,6 +85,7 @@ type ExecutionCompletePayload struct {
 	SearchPath    []string                                        `json:"search_path"`
 	StartTime     time.Time                                       `json:"start_time"`
 	EndTime       time.Time                                       `json:"end_time"`
+	Layout        *dashboardinterfaces.SnapshotTreeNode           `json:"layout"`
 }
 
 type InputValuesClearedPayload struct {

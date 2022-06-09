@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	"github.com/turbot/steampipe/constants"
@@ -147,6 +149,17 @@ func (*ControlRun) GetChildren() []ExecutionTreeNode { return nil }
 
 // GetName implements ExecutionTreeNode
 func (r *ControlRun) GetName() string { return r.ControlId }
+
+// AsTreeNode implements ExecutionTreeNode
+func (r *ControlRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
+	res := &dashboardinterfaces.SnapshotTreeNode{
+		Name:     r.ControlId,
+		NodeType: r.NodeType,
+		Display:  r.Display,
+		Title:    r.Title,
+	}
+	return res
+}
 
 func (r *ControlRun) setError(ctx context.Context, err error) {
 	if err == nil {
