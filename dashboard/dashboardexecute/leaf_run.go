@@ -34,6 +34,15 @@ type LeafRun struct {
 	runtimeDependencies map[string]*ResolvedRuntimeDependency
 }
 
+func (r *LeafRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
+	return &dashboardinterfaces.SnapshotTreeNode{
+		Name:     r.Name,
+		NodeType: r.NodeType,
+		Width:    r.Width,
+		Title:    r.Title,
+	}
+}
+
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
 	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
@@ -186,10 +195,18 @@ func (r *LeafRun) RunComplete() bool {
 	return r.runStatus == dashboardinterfaces.DashboardRunComplete || r.runStatus == dashboardinterfaces.DashboardRunError
 }
 
+// GetChildren implements DashboardNodeRun
+func (r *LeafRun) GetChildren() []dashboardinterfaces.DashboardNodeRun {
+	return nil
+}
+
 // ChildrenComplete implements DashboardNodeRun
 func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }
+
+// IsSnapshotNode implements SnapshotLeafNode
+func (*LeafRun) IsSnapshotLeafNode() {}
 
 // GetInputsDependingOn implements DashboardNodeRun
 //return nothing for LeafRun

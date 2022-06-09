@@ -136,6 +136,18 @@ func (r *ControlRun) GetError() error {
 	return r.runError
 }
 
+// IsSnapshotLeafNode implements SnapshotNode
+func (*ControlRun) IsSnapshotLeafNode() {}
+
+// IsExecutionTreeNode implements ExecutionTreeNode
+func (*ControlRun) IsExecutionTreeNode() {}
+
+// GetChildren implements ExecutionTreeNode
+func (*ControlRun) GetChildren() []ExecutionTreeNode { return nil }
+
+// GetName implements ExecutionTreeNode
+func (r *ControlRun) GetName() string { return r.ControlId }
+
 func (r *ControlRun) setError(ctx context.Context, err error) {
 	if err == nil {
 		return

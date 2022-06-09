@@ -13,25 +13,38 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
-	Name             string                                 `json:"name"`
-	Title            string                                 `json:"title,omitempty"`
-	Width            int                                    `json:"width,omitempty"`
-	Description      string                                 `json:"description,omitempty"`
-	Documentation    string                                 `json:"documentation,omitempty"`
-	Tags             map[string]string                      `json:"tags,omitempty"`
-	ErrorString      string                                 `json:"error,omitempty"`
-	Children         []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
-	NodeType         string                                 `json:"node_type"`
-	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
-	DashboardName    string                                 `json:"dashboard"`
-	SourceDefinition string                                 `json:"source_definition"`
-	Display          string                                 `json:"display,omitempty"`
+	Name          string            `json:"name"`
+	Title         string            `json:"title,omitempty"`
+	Width         int               `json:"width,omitempty"`
+	Description   string            `json:"description,omitempty"`
+	Documentation string            `json:"documentation,omitempty"`
+	Tags          map[string]string `json:"tags,omitempty"`
+	ErrorString   string            `json:"error,omitempty"`
+
+	// stripped down child nodes used to serialize in the snapshot
+	SerializableChildren []*dashboardinterfaces.SnapshotTreeNode `json:"children,omitempty"`
+	Children             []dashboardinterfaces.DashboardNodeRun  `json:"-"`
+	NodeType             string                                  `json:"node_type"`
+	Status               dashboardinterfaces.DashboardRunStatus  `json:"status"`
+	DashboardName        string                                  `json:"dashboard"`
+	SourceDefinition     string                                  `json:"source_definition"`
+	Display              string                                  `json:"display,omitempty"`
 
 	error         error
 	dashboardNode *modconfig.Dashboard
 	parent        dashboardinterfaces.DashboardNodeParent
 	executionTree *DashboardExecutionTree
 	childComplete chan dashboardinterfaces.DashboardNodeRun
+}
+
+func (r *DashboardRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
+	return &dashboardinterfaces.SnapshotTreeNode{
+		Name:     r.Name,
+		Display:  r.Display,
+		NodeType: r.NodeType,
+		Width:    r.Width,
+		Title:    r.Title,
+	}
 }
 
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
@@ -120,6 +133,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardinterfaces.
 			r.Status = dashboardinterfaces.DashboardRunReady
 		}
 		r.Children = append(r.Children, childRun)
+		r.SerializableChildren = append(r.SerializableChildren, childRun.AsTreeNode())
 	}
 
 	// add r into execution tree
@@ -215,6 +229,11 @@ func (r *DashboardRun) SetComplete() {
 // RunComplete implements DashboardNodeRun
 func (r *DashboardRun) RunComplete() bool {
 	return r.Status == dashboardinterfaces.DashboardRunComplete || r.Status == dashboardinterfaces.DashboardRunError
+}
+
+// GetChildren implements DashboardNodeRun
+func (r *DashboardRun) GetChildren() []dashboardinterfaces.DashboardNodeRun {
+	return r.Children
 }
 
 // ChildrenComplete implements DashboardNodeRun

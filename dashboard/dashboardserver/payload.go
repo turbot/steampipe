@@ -199,6 +199,7 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		Action:        "execution_complete",
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
+		LeafNodes:     event.LeafNodes,
 		Inputs:        event.Inputs,
 		Variables:     event.Variables,
 		SearchPath:    event.SearchPath,

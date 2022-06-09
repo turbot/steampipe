@@ -1,9 +1,8 @@
 package controlexecute
 
-// empty interface implemented by execution tree nodes
+// ExecutionTreeNode is implemented by all control execution tree nodes
 type ExecutionTreeNode interface {
-	IsExecutionTreeNode() bool
+	IsExecutionTreeNode()
+	GetChildren() []ExecutionTreeNode
+	GetName() string
 }
-
-func (*ControlRun) IsExecutionTreeNode() bool  { return true }
-func (*ResultGroup) IsExecutionTreeNode() bool { return true }

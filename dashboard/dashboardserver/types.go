@@ -75,15 +75,16 @@ type ExecutionErrorPayload struct {
 }
 
 type ExecutionCompletePayload struct {
-	SchemaVersion int64                                `json:"schema_version"`
-	Action        string                               `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
-	ExecutionId   string                               `json:"execution_id"`
-	Inputs        map[string]interface{}               `json:"inputs"`
-	Variables     map[string]string                    `json:"variables"`
-	SearchPath    []string                             `json:"search_path"`
-	StartTime     time.Time                            `json:"start_time"`
-	EndTime       time.Time                            `json:"end_time"`
+	SchemaVersion int64                                           `json:"schema_version"`
+	Action        string                                          `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun            `json:"dashboard_node"`
+	LeafNodes     map[string]dashboardinterfaces.SnapshotLeafNode `json:"leaf_nodes"`
+	ExecutionId   string                                          `json:"execution_id"`
+	Inputs        map[string]interface{}                          `json:"inputs"`
+	Variables     map[string]string                               `json:"variables"`
+	SearchPath    []string                                        `json:"search_path"`
+	StartTime     time.Time                                       `json:"start_time"`
+	EndTime       time.Time                                       `json:"end_time"`
 }
 
 type InputValuesClearedPayload struct {

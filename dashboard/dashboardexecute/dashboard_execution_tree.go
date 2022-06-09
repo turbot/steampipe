@@ -102,16 +102,20 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		Session:     e.sessionId,
 		ExecutionId: e.id,
 	})
-	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{
-		Root:        e.Root,
-		Session:     e.sessionId,
-		ExecutionId: e.id,
-		Inputs:      e.inputValues,
-		Variables:   e.workspace.VariableValues,
-		SearchPath:  e.client.GetRequiredSessionSearchPath(),
-		StartTime:   startTime,
-		EndTime:     time.Now(),
-	})
+	defer func() {
+		e := &dashboardevents.ExecutionComplete{
+			Root:        e.Root,
+			Session:     e.sessionId,
+			ExecutionId: e.id,
+			LeafNodes:   e.buildSnapshotLeafNodes(),
+			Inputs:      e.inputValues,
+			Variables:   e.workspace.VariableValues,
+			SearchPath:  e.client.GetRequiredSessionSearchPath(),
+			StartTime:   startTime,
+			EndTime:     time.Now(),
+		}
+		workspace.PublishDashboardEvent(e)
+	}()
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end DashboardExecutionTree.Execute")
@@ -216,4 +220,23 @@ func (e *DashboardExecutionTree) Cancel() {
 
 func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
 	return e.inputValues[name]
+}
+
+func (e *DashboardExecutionTree) buildSnapshotLeafNodes() map[string]dashboardinterfaces.SnapshotLeafNode {
+	res := map[string]dashboardinterfaces.SnapshotLeafNode{}
+	return e.buildSnapshotLeafNodesUnder(e.Root, res)
+}
+
+func (e *DashboardExecutionTree) buildSnapshotLeafNodesUnder(parent dashboardinterfaces.DashboardNodeRun, res map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {
+	if checkRun, ok := parent.(*CheckRun); ok {
+		return checkRun.buildSnapshotLeafNodes(res)
+	}
+	for _, c := range parent.GetChildren() {
+		// if this node is a snapshot node, add to map
+		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotLeafNode); ok {
+			res[c.GetName()] = snapshotNode
+		}
+		res = e.buildSnapshotLeafNodesUnder(c, res)
+	}
+	return res
 }

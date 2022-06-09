@@ -24,7 +24,6 @@ type DashboardChart struct {
 	UnqualifiedName string `json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`

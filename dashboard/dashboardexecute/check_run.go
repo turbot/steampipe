@@ -14,31 +14,46 @@ import (
 
 // CheckRun is a struct representing the execution of a leaf dashboard node
 type CheckRun struct {
-	Name             string                       `json:"name"`
-	Title            string                       `json:"title,omitempty"`
-	Width            int                          `json:"width,omitempty"`
-	Description      string                       `json:"description,omitempty"`
-	Documentation    string                       `json:"documentation,omitempty"`
-	Display          string                       `json:"display,omitempty"`
-	Type             string                       `json:"type,omitempty"`
-	Tags             map[string]string            `json:"tags,omitempty"`
-	ErrorString      string                       `json:"error,omitempty"`
-	NodeType         string                       `json:"node_type"`
-	DashboardName    string                       `json:"dashboard"`
-	SourceDefinition string                       `json:"source_definition"`
-	SessionId        string                       `json:"session_id"`
-	Children         []*controlexecute.TreeNode   `json:"children"`
-	Summary          *controlexecute.GroupSummary `json:"summary"`
+	Name             string            `json:"name"`
+	Title            string            `json:"title,omitempty"`
+	Width            int               `json:"width,omitempty"`
+	Description      string            `json:"description,omitempty"`
+	Documentation    string            `json:"documentation,omitempty"`
+	Display          string            `json:"display,omitempty"`
+	Type             string            `json:"type,omitempty"`
+	Tags             map[string]string `json:"tags,omitempty"`
+	ErrorString      string            `json:"error,omitempty"`
+	NodeType         string            `json:"node_type"`
+	DashboardName    string            `json:"dashboard"`
+	SourceDefinition string            `json:"source_definition"`
+	SessionId        string            `json:"session_id"`
+
+	// list of children stored as controlexecute.ExecutionTreeNode
+	Children []controlexecute.ExecutionTreeNode `json:"-"`
+	// list of children, represented as TreeNodes
+	// used for snapshot serialisation
+	SerializableChildren []*dashboardinterfaces.SnapshotTreeNode `json:"children"`
+	Summary              *controlexecute.GroupSummary            `json:"summary"`
 	// if the dashboard node is a control, serialise to json as 'properties'
 	Control       *modconfig.Control          `json:"properties,omitempty"`
 	DashboardNode modconfig.DashboardLeafNode `json:"-"`
 
 	controlExecutionTree *controlexecute.ExecutionTree
 	error                error
+	parent               dashboardinterfaces.DashboardNodeParent
+	runStatus            dashboardinterfaces.DashboardRunStatus
+	executionTree        *DashboardExecutionTree
+}
 
-	parent        dashboardinterfaces.DashboardNodeParent
-	runStatus     dashboardinterfaces.DashboardRunStatus
-	executionTree *DashboardExecutionTree
+func (r *CheckRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
+	return &dashboardinterfaces.SnapshotTreeNode{
+		Name:     r.Name,
+		Children: r.SerializableChildren,
+		NodeType: r.NodeType,
+		Display:  r.Display,
+		Width:    r.Width,
+		Title:    r.Title,
+	}
 }
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
@@ -98,7 +113,8 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 	}
 	r.controlExecutionTree = executionTree
 	// if we are executing a benchmark, set children
-	r.Children = executionTree.Root.Children[0].Children
+	r.SerializableChildren = executionTree.Root.SerializableChildren[0].Children
+	r.Children = executionTree.Root.Children[0].GetChildren()
 
 }
 
@@ -114,7 +130,6 @@ func (r *CheckRun) Execute(ctx context.Context) {
 
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
-
 }
 
 // GetName implements DashboardNodeRun
@@ -168,6 +183,12 @@ func (r *CheckRun) RunComplete() bool {
 	return r.runStatus == dashboardinterfaces.DashboardRunComplete || r.runStatus == dashboardinterfaces.DashboardRunError
 }
 
+// GetChildren implements DashboardNodeRun
+func (r *CheckRun) GetChildren() []dashboardinterfaces.DashboardNodeRun {
+	// we have children, but they are not part of the dashboard execution tree, so return nil
+	return nil
+}
+
 // ChildrenComplete implements DashboardNodeRun
 func (r *CheckRun) ChildrenComplete() bool {
 	return r.RunComplete()
@@ -176,3 +197,26 @@ func (r *CheckRun) ChildrenComplete() bool {
 // GetInputsDependingOn implements DashboardNodeRun
 //return nothing for CheckRun
 func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }
+
+// custom implementation of buildSnapshotLeafNodes - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
+func (r *CheckRun) buildSnapshotLeafNodes(leafNodeMap map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {
+	for _, c := range r.Children {
+		// if this node is a snapshot node, add to map
+		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotLeafNode); ok {
+			leafNodeMap[c.GetName()] = snapshotNode
+		}
+		leafNodeMap = r.buildSnapshotLeafNodesUnder(c, leafNodeMap)
+	}
+	return leafNodeMap
+}
+
+func (r *CheckRun) buildSnapshotLeafNodesUnder(parent controlexecute.ExecutionTreeNode, res map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {
+	for _, c := range parent.GetChildren() {
+		// if this node is a snapshot node, add to map
+		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotLeafNode); ok {
+			res[c.GetName()] = snapshotNode
+		}
+		res = r.buildSnapshotLeafNodesUnder(c, res)
+	}
+	return res
+}
