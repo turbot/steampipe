@@ -55,9 +55,11 @@ type ErrorPayload struct {
 }
 
 type ExecutionPayload struct {
-	Action        string                               `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
-	ExecutionId   string                               `json:"execution_id"`
+	Action        string                                          `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun            `json:"dashboard_node"`
+	ExecutionId   string                                          `json:"execution_id"`
+	LeafNodes     map[string]dashboardinterfaces.SnapshotLeafNode `json:"leaf_nodes,omitempty"`
+	Layout        *dashboardinterfaces.SnapshotTreeNode           `json:"layout,omitempty"`
 }
 type ControlEventPayload struct {
 	Action      string                                 `json:"action"`

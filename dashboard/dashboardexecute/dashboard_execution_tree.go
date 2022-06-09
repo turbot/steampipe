@@ -97,17 +97,19 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
+	leafNodes := e.buildSnapshotLeafNodes()
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
+		LeafNodes:   leafNodes,
 	})
 	defer func() {
 		e := &dashboardevents.ExecutionComplete{
 			Root:        e.Root,
 			Session:     e.sessionId,
 			ExecutionId: e.id,
-			LeafNodes:   e.buildSnapshotLeafNodes(),
+			LeafNodes:   leafNodes,
 			Inputs:      e.inputValues,
 			Variables:   e.workspace.VariableValues,
 			SearchPath:  e.client.GetRequiredSessionSearchPath(),

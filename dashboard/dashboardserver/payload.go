@@ -181,6 +181,8 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 		Action:        "execution_started",
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
+		LeafNodes:     event.LeafNodes,
+		Layout:        event.Root.AsTreeNode(),
 	}
 	return json.Marshal(payload)
 }
