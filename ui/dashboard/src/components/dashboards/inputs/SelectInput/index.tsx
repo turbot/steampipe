@@ -169,22 +169,15 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         value: getValueForState(multi, multi ? [options[0]] : options[0]),
         recordInputsHistory: false,
       });
-    } else {
-      if (
-        initialisedFromState &&
-        stateValue &&
-        value &&
-        // @ts-ignore
-        stateValue !== value.value
-      ) {
-        const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-        const foundOptions = findOptions(options, multi, parsedUrlValue);
-        setValue(foundOptions || null);
-      } else if (initialisedFromState && !stateValue) {
-        setValue(null);
-      }
+    } else if (initialisedFromState && stateValue) {
+      const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
+      const foundOptions = findOptions(options, multi, parsedUrlValue);
+      setValue(foundOptions || null);
+    } else if (initialisedFromState && !stateValue) {
+      setValue(null);
     }
   }, [
+    dispatch,
     initialisedFromState,
     multi,
     name,
@@ -214,7 +207,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       value: getValueForState(multi, value),
       recordInputsHistory: true,
     });
-  }, [initialisedFromState, multi, name, value]);
+  }, [dispatch, initialisedFromState, multi, name, value]);
 
   const styles = useSelectInputStyles();
 

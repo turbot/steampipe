@@ -287,10 +287,10 @@ interface DashboardProviderProps {
   analyticsContext: any;
   breakpointContext: any;
   children: null | JSX.Element | JSX.Element[];
-  componentOverrides: {};
-  eventHooks: {};
-  featureFlags: string[];
-  socketFactory: () => WebSocket;
+  componentOverrides?: {};
+  eventHooks?: {};
+  featureFlags?: string[];
+  socketFactory?: () => WebSocket;
   themeContext: any;
 }
 
@@ -868,7 +868,7 @@ const DashboardProvider = ({
       searchParams.set("snapshot_id", state.selectedSnapshot.id);
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, state.selectedSnapshot]);
+  }, [featureFlags, searchParams, setSearchParams, state.selectedSnapshot]);
 
   useEffect(() => {
     if (
@@ -879,7 +879,7 @@ const DashboardProvider = ({
       searchParams.delete("snapshot_id");
       setSearchParams(searchParams, { replace: true });
     }
-  }, [searchParams, setSearchParams, state.dataMode]);
+  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
 
   // Alert analytics
   useEffect(() => {
@@ -937,6 +937,7 @@ const DashboardProvider = ({
     }
   }, [
     dashboard_name,
+    dispatch,
     featureFlags,
     location,
     navigationType,
@@ -1072,6 +1073,7 @@ const DashboardProvider = ({
     }
   }, [
     dashboard_name,
+    dispatch,
     searchParams,
     state.dashboards,
     state.dataMode,
@@ -1212,6 +1214,7 @@ const DashboardProvider = ({
       replace: !shouldRecordHistory,
     });
   }, [
+    featureFlags,
     navigationType,
     previousSelectedDashboardStates,
     setSearchParams,
@@ -1259,7 +1262,7 @@ const DashboardProvider = ({
       type: DashboardActions.SELECT_PANEL,
       panel: null,
     });
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     setHotKeysHandlers({

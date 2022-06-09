@@ -12,7 +12,6 @@ const Dashboards = ({ analyticsContext, breakpointContext, themeContext }) => (
   <DashboardProvider
     analyticsContext={analyticsContext}
     breakpointContext={breakpointContext}
-    socketFactory={null}
     themeContext={themeContext}
   >
     <DashboardHeader />
