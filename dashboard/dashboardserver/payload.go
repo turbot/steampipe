@@ -201,7 +201,7 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		Action:        "execution_complete",
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
-		LeafNodes:     event.LeafNodes,
+		Panels:        event.LeafNodes,
 		Layout:        event.Root.AsTreeNode(),
 		Inputs:        event.Inputs,
 		Variables:     event.Variables,
