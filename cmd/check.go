@@ -293,17 +293,10 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	}
 	// tactical solution to prettify the json output
 	if output == "json" {
-		b, err := io.ReadAll(reader)
+		reader, err = prettifyJsonFromReader(reader)
 		if err != nil {
 			return err
 		}
-		var prettyJSON bytes.Buffer
-
-		err = json.Indent(&prettyJSON, b, "", "  ")
-		if err != nil {
-			return err
-		}
-		reader = &prettyJSON
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	return err
@@ -337,19 +330,11 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 		}
 		// tactical solution to prettify the json output
 		if exportFormat == "json" {
-			b, err := io.ReadAll(dataToExport)
+			dataToExport, err = prettifyJsonFromReader(dataToExport)
 			if err != nil {
 				errors = append(errors, err)
-				return errors
+				continue
 			}
-			var prettyJSON bytes.Buffer
-
-			err = json.Indent(&prettyJSON, b, "", "  ")
-			if err != nil {
-				errors = append(errors, err)
-				return errors
-			}
-			dataToExport = &prettyJSON
 		}
 
 		_, err = io.Copy(destination, dataToExport)
@@ -361,6 +346,21 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 	}
 
 	return errors
+}
+
+func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
+	b, err := io.ReadAll(dataToExport)
+	if err != nil {
+		return nil, err
+	}
+	var prettyJSON bytes.Buffer
+
+	err = json.Indent(&prettyJSON, b, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	dataToExport = &prettyJSON
+	return dataToExport, nil
 }
 
 func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, error) {
