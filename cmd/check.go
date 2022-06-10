@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -279,7 +281,8 @@ func exportCheckResult(ctx context.Context, d *control.ExportData) {
 }
 
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
-	formatter, _, err := parseOutputArg(viper.GetString(constants.ArgOutput))
+	output := viper.GetString(constants.ArgOutput)
+	formatter, _, err := parseOutputArg(output)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -287,6 +290,19 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	reader, err := formatter.Format(ctx, executionTree)
 	if err != nil {
 		return err
+	}
+	if output == "json" {
+		b, err := io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+		var prettyJSON bytes.Buffer
+
+		err = json.Indent(&prettyJSON, b, "", "  ")
+		if err != nil {
+			return err
+		}
+		reader = &prettyJSON
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	return err
