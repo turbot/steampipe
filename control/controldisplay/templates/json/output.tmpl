@@ -1,5 +1,5 @@
 {{ define "output" -}}
-	{{ template "root_template" .Data.Root }}
+	{{- template "root_template" .Data.Root -}}
 {{ end }}
 
 {{ define "root_template" }}
@@ -26,9 +26,9 @@
 {{- $first_group_rendered := false -}}
 {{- $first_control_rendered := false -}}
 {
-	"group_id": "{{ .GroupId }}",
-	"title": "{{ .Title }}",
-	"description": "{{ .Description }}",
+	"group_id": {{ toPrettyJson .GroupId }},
+	"title": {{ toPrettyJson .Title }},
+	"description": {{ toPrettyJson .Description }},
 	"tags": {{ toPrettyJson .Tags }},
 	"summary": {{ toPrettyJson .Summary }},
 	"groups": {{ if .Groups }}[
@@ -59,11 +59,11 @@
 			{{- $first_row_rendered = true -}}
 		{{ end }}
 	], {{ else }} null, {{ end }}
-	"control_id": "{{ .ControlId }}",
-	"description": "{{ .Description }}",
-	"severity": "{{ .Severity }}",
+	"control_id": {{ toPrettyJson .ControlId }},
+	"description": {{ toPrettyJson .Description }},
+	"severity": {{ toPrettyJson .Severity }},
 	"tags": {{ toPrettyJson .Tags }},
-	"title": "{{ .Title }}",
+	"title": {{ toPrettyJson .Title }},
 	"run_status": {{ toPrettyJson .RunStatus }},
 	"run_error": {{ toPrettyJson .RunErrorString }}
 } {{- end -}}
@@ -71,8 +71,8 @@
 {{/* sub template for control rows */}}
 {{ define "control_row_template" }}
 {
-	"reason": "{{ .Reason }}",
-	"resource": "{{ .Resource }}",
-	"status": "{{ .Status }}",
+	"reason": {{ toPrettyJson .Reason }},
+	"resource": {{ toPrettyJson .Resource }},
+	"status": {{ toPrettyJson .Status }},
 	"dimensions": {{ toPrettyJson .Dimensions }}
 } {{ end }}
