@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -279,7 +281,8 @@ func exportCheckResult(ctx context.Context, d *control.ExportData) {
 }
 
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
-	formatter, _, err := parseOutputArg(viper.GetString(constants.ArgOutput))
+	output := viper.GetString(constants.ArgOutput)
+	formatter, _, err := parseOutputArg(output)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -288,11 +291,19 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	if err != nil {
 		return err
 	}
+	// tactical solution to prettify the json output
+	if output == "json" {
+		reader, err = prettifyJsonFromReader(reader)
+		if err != nil {
+			return err
+		}
+	}
 	_, err = io.Copy(os.Stdout, reader)
 	return err
 }
 
 func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []controldisplay.CheckExportTarget) []error {
+	exportFormat := viper.GetString(constants.ArgExport)
 	errors := []error{}
 	for _, target := range targets {
 		if utils.IsContextCancelled(ctx) {
@@ -317,6 +328,15 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			errors = append(errors, err)
 			continue
 		}
+		// tactical solution to prettify the json output
+		if exportFormat == "json" {
+			dataToExport, err = prettifyJsonFromReader(dataToExport)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+		}
+
 		_, err = io.Copy(destination, dataToExport)
 		if err != nil {
 			errors = append(errors, err)
@@ -326,6 +346,21 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 	}
 
 	return errors
+}
+
+func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
+	b, err := io.ReadAll(dataToExport)
+	if err != nil {
+		return nil, err
+	}
+	var prettyJSON bytes.Buffer
+
+	err = json.Indent(&prettyJSON, b, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	dataToExport = &prettyJSON
+	return dataToExport, nil
 }
 
 func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, error) {
