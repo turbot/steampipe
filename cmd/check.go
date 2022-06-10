@@ -310,6 +310,7 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 }
 
 func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []controldisplay.CheckExportTarget) []error {
+	exportFormat := viper.GetString(constants.ArgExport)
 	errors := []error{}
 	for _, target := range targets {
 		if utils.IsContextCancelled(ctx) {
@@ -334,6 +335,23 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			errors = append(errors, err)
 			continue
 		}
+		// tactical solution to prettify the json output
+		if exportFormat == "json" {
+			b, err := io.ReadAll(dataToExport)
+			if err != nil {
+				errors = append(errors, err)
+				return errors
+			}
+			var prettyJSON bytes.Buffer
+
+			err = json.Indent(&prettyJSON, b, "", "  ")
+			if err != nil {
+				errors = append(errors, err)
+				return errors
+			}
+			dataToExport = &prettyJSON
+		}
+
 		_, err = io.Copy(destination, dataToExport)
 		if err != nil {
 			errors = append(errors, err)
