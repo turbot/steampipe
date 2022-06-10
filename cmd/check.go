@@ -291,6 +291,7 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	if err != nil {
 		return err
 	}
+	// tactical solution to prettify the json output
 	if output == "json" {
 		b, err := io.ReadAll(reader)
 		if err != nil {
