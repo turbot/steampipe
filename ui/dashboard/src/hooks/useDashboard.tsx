@@ -2,19 +2,20 @@ import findPathDeep from "deepdash/findPathDeep";
 import get from "lodash/get";
 import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
-import React, {
+import set from "lodash/set";
+import sortBy from "lodash/sortBy";
+import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
+import usePrevious from "./usePrevious";
+import { buildComponentsMap } from "../components";
+import {
   createContext,
+  Ref,
   useCallback,
   useContext,
   useEffect,
   useReducer,
   useState,
 } from "react";
-import set from "lodash/set";
-import sortBy from "lodash/sortBy";
-import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
-import usePrevious from "./usePrevious";
-import { buildComponentsMap } from "../components";
 import { CheckExecutionTree } from "../components/dashboards/check/common";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData, Width } from "../components/dashboards/common";
@@ -38,7 +39,7 @@ interface IBreakpointContext {
 interface IThemeContext {
   theme: Theme;
   setTheme(theme: string): void;
-  wrapperRef: React.Ref<null>;
+  wrapperRef: Ref<null>;
 }
 
 export interface ComponentsMap {
@@ -291,6 +292,7 @@ interface DashboardProviderProps {
   eventHooks?: {};
   featureFlags?: string[];
   socketFactory?: () => WebSocket;
+  stateDefaults?: {};
   themeContext: any;
 }
 
@@ -764,7 +766,7 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   return selectedDashboardInputs;
 };
 
-const getInitialState = (searchParams) => {
+const getInitialState = (searchParams, defaults = {}) => {
   return {
     availableDashboardsLoaded: false,
     metadata: null,
@@ -790,8 +792,12 @@ const getInitialState = (searchParams) => {
     search: {
       value: searchParams.get("search") || "",
       groupBy: {
-        value: searchParams.get("group_by") || "tag",
-        tag: searchParams.get("tag") || "service",
+        value:
+          searchParams.get("group_by") ||
+          get(defaults, "search.groupBy.value", "tag"),
+        tag:
+          searchParams.get("tag") ||
+          get(defaults, "search.groupBy.value", "service"),
       },
     },
 
@@ -811,6 +817,7 @@ const DashboardProvider = ({
   eventHooks = {},
   featureFlags = [],
   socketFactory,
+  stateDefaults = {},
   themeContext,
 }: DashboardProviderProps) => {
   const components = buildComponentsMap(componentOverrides);
@@ -818,7 +825,7 @@ const DashboardProvider = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatchInner] = useReducer(
     reducer,
-    getInitialState(searchParams)
+    getInitialState(searchParams, stateDefaults)
   );
   const dispatch = useCallback((action) => {
     // console.log(action.type, action);
@@ -909,8 +916,12 @@ const DashboardProvider = ({
       previousSelectedDashboardStates.dashboard_name !== dashboard_name;
 
     const search = searchParams.get("search") || "";
-    const groupBy = searchParams.get("group_by") || "tag";
-    const tag = searchParams.get("tag") || "service";
+    const groupBy =
+      searchParams.get("group_by") ||
+      get(stateDefaults, "search.groupBy.value", "tag");
+    const tag =
+      searchParams.get("tag") ||
+      get(stateDefaults, "search.groupBy.tag", "service");
     const dataMode = searchParams.has("mode")
       ? searchParams.get("mode")
       : "live";
@@ -943,6 +954,7 @@ const DashboardProvider = ({
     navigationType,
     previousSelectedDashboardStates,
     searchParams,
+    stateDefaults,
   ]);
 
   useEffect(() => {
