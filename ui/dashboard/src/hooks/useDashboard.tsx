@@ -15,7 +15,6 @@ import {
   useReducer,
   useState,
 } from "react";
-import { CheckExecutionTree } from "../components/dashboards/check/common";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData, Width } from "../components/dashboards/common";
 import { noop } from "../utils/func";
@@ -268,11 +267,17 @@ export interface PanelDefinition {
   sql?: string;
   data?: LeafNodeData;
   source_definition?: string;
-  execution_tree?: CheckExecutionTree;
   error?: Error;
   properties?: PanelProperties;
   dashboard: string;
 }
+
+export interface BenchmarkDefinition extends PanelDefinition {
+  children?: BenchmarkDefinition | ControlDefinition[];
+  description?: string;
+}
+
+export interface ControlDefinition extends PanelDefinition {}
 
 export interface DashboardDefinition {
   artificial: boolean;
@@ -482,7 +487,10 @@ function reducer(state, action) {
       return {
         ...state,
         error: null,
-        panelsMap: addDataToPanels(action.leaf_nodes, state.sqlDataMap),
+        panelsMap: addDataToPanels(
+          action.panels || action.leaf_nodes,
+          state.sqlDataMap
+        ),
         dashboard,
         execution_id: action.execution_id,
         refetchDashboard: false,
@@ -514,12 +522,12 @@ function reducer(state, action) {
       }
 
       // Build map of SQL to data
-      const sqlDataMap = buildSqlDataMap(action.leaf_nodes);
+      const sqlDataMap = buildSqlDataMap(action.panels);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
         error: null,
-        panelsMap: action.leaf_nodes,
+        panelsMap: action.panels,
         dashboard,
         sqlDataMap,
         state: "complete",
