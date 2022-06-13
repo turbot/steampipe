@@ -66,6 +66,8 @@ connection from any Postgres compatible database client.`,
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
 		AddStringFlag(constants.ArgListenAddress, "", string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (postgres)").
 		AddStringFlag(constants.ArgServicePassword, "", "", "Set the database password for this session").
+		// default is false and hides the database user password from service start prompt
+		AddBoolFlag(constants.ArgServiceShowPassword, "", false, "View password for connection from another machine").
 		// dashboard server
 		AddBoolFlag(constants.ArgDashboard, "", false, "Run the dashboard webserver with the service").
 		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
@@ -606,6 +608,9 @@ Managing the Steampipe service:
 
   # Get status of the service
   steampipe service status
+	 
+  # View password for connection from another machine
+  steampipe service status --show-password
   
   # Restart the service
   steampipe service restart
@@ -613,6 +618,29 @@ Managing the Steampipe service:
   # Stop the service
   steampipe service stop
 `
+
+	var connectionStr string
+	var password string
+	if viper.IsSet(constants.ArgServiceShowPassword) {
+		connectionStr = fmt.Sprintf(
+			"postgres://%v:%v@%v:%v/%v",
+			dbState.User,
+			dbState.Password,
+			dbState.Listen[0],
+			dbState.Port,
+			dbState.Database,
+		)
+		password = dbState.Password
+	} else {
+		connectionStr = fmt.Sprintf(
+			"postgres://%v@%v:%v/%v",
+			dbState.User,
+			dbState.Listen[0],
+			dbState.Port,
+			dbState.Database,
+		)
+		password = "********* [use --show-password to reveal]"
+	}
 
 	postgresFmt := `
 Database:
@@ -622,7 +650,7 @@ Database:
   Database:           %v
   User:               %v
   Password:           %v
-  Connection string:  postgres://%v:%v@%v:%v/%v
+  Connection string:  %v
 `
 	postgresMsg := fmt.Sprintf(
 		postgresFmt,
@@ -630,12 +658,8 @@ Database:
 		dbState.Port,
 		dbState.Database,
 		dbState.User,
-		dbState.Password,
-		dbState.User,
-		dbState.Password,
-		dbState.Listen[0],
-		dbState.Port,
-		dbState.Database,
+		password,
+		connectionStr,
 	)
 
 	dashboardMsg := ""
