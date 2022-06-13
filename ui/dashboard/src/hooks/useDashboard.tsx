@@ -50,6 +50,8 @@ export interface PanelsMap {
 
 export type DashboardDataMode = "live" | "snapshot";
 
+export type DashboardRunState = "running" | "complete";
+
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
@@ -86,6 +88,8 @@ interface IDashboardContext {
   themeContext: IThemeContext;
 
   components: ComponentsMap;
+
+  state: DashboardRunState;
 }
 
 export interface IActions {
@@ -534,7 +538,7 @@ function reducer(state, action) {
       };
     }
     case DashboardActions.EXECUTION_ERROR:
-      return { ...state, error: action.error };
+      return { ...state, error: action.error, state: "error" };
     case DashboardActions.CONTROL_COMPLETE:
     case DashboardActions.CONTROL_ERROR:
       // We're not expecting execution events for this ID
@@ -608,7 +612,6 @@ function reducer(state, action) {
         state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
-        selectedSnapshot: null,
         lastChangedInput: null,
       };
     case DashboardActions.CLEAR_DASHBOARD_INPUTS:
@@ -772,7 +775,7 @@ const DashboardProvider = ({
     getInitialState(searchParams, stateDefaults)
   );
   const dispatch = useCallback((action) => {
-    // console.log(action.type, action);
+    console.log(action.type, action);
     dispatchInner(action);
   }, []);
   const { dashboard_name } = useParams();
