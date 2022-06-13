@@ -520,7 +520,9 @@ func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
 func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 	commandSchemaStatements := []string{
 		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
-		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CacheCommandTable),
+		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableCache),
+		fmt.Sprintf("grant select on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
+		fmt.Sprintf("grant delete on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
 	}
 
 	for _, statement := range commandSchemaStatements {

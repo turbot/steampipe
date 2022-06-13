@@ -48,12 +48,15 @@ const (
 	FunctionSchema = "internal"
 
 	// CommandSchema is the schema which is used to send commands to the FDW
-	CommandSchema               = "steampipe_command"
-	CacheCommandTable           = "cache"
-	CacheCommandOperationColumn = "operation"
-	CommandCacheOn              = "cache_on"
-	CommandCacheOff             = "cache_off"
-	CommandCacheClear           = "cache_clear"
+	CommandSchema = "steampipe_command"
+
+	CommandTableCache                = "cache"
+	CommandTableCacheOperationColumn = "operation"
+	CommandCacheOn                   = "cache_on"
+	CommandCacheOff                  = "cache_off"
+	CommandCacheClear                = "cache_clear"
+
+	CommandTableScanMetadata = "scan_metadata"
 )
 
 // Functions :: a list of SQLFunc objects that are installed in the db 'internal' schema startup
