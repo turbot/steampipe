@@ -775,7 +775,7 @@ const DashboardProvider = ({
     getInitialState(searchParams, stateDefaults)
   );
   const dispatch = useCallback((action) => {
-    console.log(action.type, action);
+    // console.log(action.type, action);
     dispatchInner(action);
   }, []);
   const { dashboard_name } = useParams();
