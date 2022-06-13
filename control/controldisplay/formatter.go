@@ -35,6 +35,7 @@ func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
 type Formatter interface {
 	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
 	FileExtension() string
+	GetFormatName() string
 }
 
 func GetTemplateExportFormatter(arg string, allowFilenameEvaluation bool) (Formatter, string, error) {
@@ -60,6 +61,11 @@ func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.Executi
 }
 
 func (j *NullFormatter) FileExtension() string {
+	// will not be called
+	return ""
+}
+
+func (j *NullFormatter) GetFormatName() string {
 	// will not be called
 	return ""
 }

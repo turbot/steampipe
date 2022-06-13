@@ -83,6 +83,10 @@ func (tf TemplateFormatter) FileExtension() string {
 	}
 }
 
+func (tf TemplateFormatter) GetFormatName() string {
+	return tf.exportFormat.FormatName
+}
+
 func NewTemplateFormatter(input ExportTemplate) (*TemplateFormatter, error) {
 	templateFuncs := templateFuncs()
 
