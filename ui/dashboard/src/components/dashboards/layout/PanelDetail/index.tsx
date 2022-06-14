@@ -92,11 +92,17 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     for (const row of data.rows) {
       // Deep copy the row or else it will update
       // the values in query output
-      const temp = JSON.parse(JSON.stringify(row));
-      for (const jsobColIndex of jsonbColIndices) {
-        temp[jsobColIndex] = JSON.stringify(temp[jsobColIndex]);
-      }
-      csvRows.push(temp);
+      // const temp = JSON.parse(JSON.stringify(row));
+      const csvRow: any[] = [];
+      colNames.forEach((col, index) => {
+        csvRow[index] = jsonbColIndices.includes(index)
+          ? JSON.stringify(row[col])
+          : row[col];
+      });
+      // for (const jsobColIndex of jsonbColIndices) {
+      //   temp[jsobColIndex] = JSON.stringify(temp[jsobColIndex]);
+      // }
+      csvRows.push(csvRow);
     }
 
     const csv = jsonToCSV([colNames, ...csvRows]);
