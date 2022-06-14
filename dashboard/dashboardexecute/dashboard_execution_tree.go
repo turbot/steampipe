@@ -102,7 +102,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
-		LeafNodes:   panels,
+		Panels:      panels,
 	})
 	defer func() {
 		e := &dashboardevents.ExecutionComplete{

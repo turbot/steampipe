@@ -54,13 +54,23 @@ type ErrorPayload struct {
 	Error  string `json:"error"`
 }
 
-type ExecutionPayload struct {
+var ExecutionStartedSchemaVersion int64 = 20220614
+
+type ExecutionStartedPayload struct {
+	SchemaVersion string                                  `json:"schema_version"`
 	Action        string                                  `json:"action"`
 	DashboardNode dashboardtypes.DashboardNodeRun         `json:"dashboard_node"`
 	ExecutionId   string                                  `json:"execution_id"`
-	LeafNodes     map[string]dashboardtypes.SnapshotPanel `json:"leaf_nodes,omitempty"`
-	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout,omitempty"`
+	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`
+	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout"`
 }
+
+type LeafNodeCompletePayload struct {
+	Action        string                          `json:"action"`
+	DashboardNode dashboardtypes.DashboardNodeRun `json:"dashboard_node"`
+	ExecutionId   string                          `json:"execution_id"`
+}
+
 type ControlEventPayload struct {
 	Action      string                                 `json:"action"`
 	Control     controlstatus.ControlRunStatusProvider `json:"control"`
@@ -69,15 +79,15 @@ type ControlEventPayload struct {
 	ExecutionId string                                 `json:"execution_id"`
 }
 
-var ExecutionCompleteSchemaVersion int64 = 20220411
-
 type ExecutionErrorPayload struct {
 	Action string `json:"action"`
 	Error  string `json:"error"`
 }
 
+var ExecutionCompleteSchemaVersion int64 = 20220614
+
 type ExecutionCompletePayload struct {
-	SchemaVersion int64                                   `json:"schema_version"`
+	SchemaVersion string                                  `json:"schema_version"`
 	Action        string                                  `json:"action"`
 	DashboardNode dashboardtypes.DashboardNodeRun         `json:"dashboard_node"`
 	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`

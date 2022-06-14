@@ -4,7 +4,7 @@ import "github.com/turbot/steampipe/dashboard/dashboardtypes"
 
 type ExecutionStarted struct {
 	Root        dashboardtypes.DashboardNodeRun `json:"dashboard"`
-	LeafNodes   map[string]dashboardtypes.SnapshotPanel
+	Panels      map[string]dashboardtypes.SnapshotPanel
 	Session     string
 	ExecutionId string
 }
