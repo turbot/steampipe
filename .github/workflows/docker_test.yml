@@ -11,6 +11,7 @@ jobs:
 
   acceptance_test:
     name: Acceptance tests
+    needs: first-job
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
