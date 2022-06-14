@@ -1,3 +1,4 @@
+name: ">>>> Docker testing"
 on: push
 jobs:
   first-job:
@@ -6,3 +7,4 @@ jobs:
     steps:
       - run: steampipe -v
       - run: steampipe -h
+      - run: steampipe query "select 1"
