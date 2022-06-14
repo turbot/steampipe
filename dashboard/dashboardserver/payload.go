@@ -156,6 +156,7 @@ func buildControlCompletePayload(event *dashboardevents.ControlComplete) ([]byte
 	}
 	return json.Marshal(payload)
 }
+
 func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, error) {
 	payload := ControlEventPayload{
 		Action:      "control_error",
@@ -201,7 +202,7 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		Action:        "execution_complete",
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
-		Panels:        event.LeafNodes,
+		Panels:        event.Panels,
 		Layout:        event.Root.AsTreeNode(),
 		Inputs:        event.Inputs,
 		Variables:     event.Variables,

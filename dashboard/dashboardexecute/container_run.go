@@ -18,7 +18,7 @@ type DashboardContainerRun struct {
 	Width            int                                    `json:"width,omitempty"`
 	ErrorString      string                                 `json:"error,omitempty"`
 	Children         []dashboardinterfaces.DashboardNodeRun `json:"-"`
-	NodeType         string                                 `json:"node_type"`
+	NodeType         string                                 `json:"panel_type"`
 	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName    string                                 `json:"dashboard"`
 	SourceDefinition string                                 `json:"source_definition"`
@@ -33,8 +33,6 @@ func (r *DashboardContainerRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNo
 	res := &dashboardinterfaces.SnapshotTreeNode{
 		Name:     r.Name,
 		NodeType: r.NodeType,
-		Width:    r.Width,
-		Title:    r.Title,
 		Children: make([]*dashboardinterfaces.SnapshotTreeNode, len(r.Children)),
 	}
 	for i, c := range r.Children {
@@ -121,6 +119,9 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	executionTree.runs[r.Name] = r
 	return r, nil
 }
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*DashboardContainerRun) IsSnapshotPanel() {}
 
 // Initialise implements DashboardRunNode
 func (r *DashboardContainerRun) Initialise(ctx context.Context) {

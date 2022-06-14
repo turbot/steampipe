@@ -10,7 +10,7 @@ type ExecutionComplete struct {
 	Root        dashboardinterfaces.DashboardNodeRun
 	Session     string
 	ExecutionId string
-	LeafNodes   map[string]dashboardinterfaces.SnapshotLeafNode
+	Panels      map[string]dashboardinterfaces.SnapshotPanel
 	Inputs      map[string]interface{}
 	Variables   map[string]string
 	SearchPath  []string

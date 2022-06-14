@@ -13,16 +13,15 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
-	Name          string            `json:"name"`
-	Title         string            `json:"title,omitempty"`
-	Width         int               `json:"width,omitempty"`
-	Description   string            `json:"description,omitempty"`
-	Documentation string            `json:"documentation,omitempty"`
-	Tags          map[string]string `json:"tags,omitempty"`
-	ErrorString   string            `json:"error,omitempty"`
-
+	Name             string                                 `json:"name"`
+	Title            string                                 `json:"title,omitempty"`
+	Width            int                                    `json:"width,omitempty"`
+	Description      string                                 `json:"description,omitempty"`
+	Documentation    string                                 `json:"documentation,omitempty"`
+	Tags             map[string]string                      `json:"tags,omitempty"`
+	ErrorString      string                                 `json:"error,omitempty"`
 	Children         []dashboardinterfaces.DashboardNodeRun `json:"-"`
-	NodeType         string                                 `json:"node_type"`
+	NodeType         string                                 `json:"panel_type"`
 	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
 	DashboardName    string                                 `json:"dashboard"`
 	SourceDefinition string                                 `json:"source_definition"`
@@ -38,10 +37,7 @@ type DashboardRun struct {
 func (r *DashboardRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
 	res := &dashboardinterfaces.SnapshotTreeNode{
 		Name:     r.Name,
-		Display:  r.Display,
 		NodeType: r.NodeType,
-		Width:    r.Width,
-		Title:    r.Title,
 		Children: make([]*dashboardinterfaces.SnapshotTreeNode, len(r.Children)),
 	}
 	for i, c := range r.Children {
@@ -183,6 +179,9 @@ func (r *DashboardRun) Execute(ctx context.Context) {
 		r.SetError(err)
 	}
 }
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*DashboardRun) IsSnapshotPanel() {}
 
 // GetName implements DashboardNodeRun
 func (r *DashboardRun) GetName() string {

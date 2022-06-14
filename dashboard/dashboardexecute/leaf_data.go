@@ -8,7 +8,7 @@ import (
 
 type LeafDataColumnType struct {
 	Name     string `json:"name"`
-	DataType string `json:"data_type_name"`
+	DataType string `json:"data_type"`
 }
 
 func NewLeafDataColumnType(sqlType *sql.ColumnType) *LeafDataColumnType {

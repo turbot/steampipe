@@ -38,7 +38,7 @@ type ControlRun struct {
 	Severity string `json:"-"`
 
 	// "control"
-	NodeType string `json:"node_type"`
+	NodeType string `json:"panel_type"`
 
 	// the control being run
 	Control *modconfig.Control `json:"properties,omitempty"`
@@ -138,8 +138,8 @@ func (r *ControlRun) GetError() error {
 	return r.runError
 }
 
-// IsSnapshotLeafNode implements SnapshotNode
-func (*ControlRun) IsSnapshotLeafNode() {}
+// IsSnapshotPanel implements SnapshotPanel
+func (*ControlRun) IsSnapshotPanel() {}
 
 // IsExecutionTreeNode implements ExecutionTreeNode
 func (*ControlRun) IsExecutionTreeNode() {}
@@ -155,8 +155,6 @@ func (r *ControlRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
 	res := &dashboardinterfaces.SnapshotTreeNode{
 		Name:     r.ControlId,
 		NodeType: r.NodeType,
-		Display:  r.Display,
-		Title:    r.Title,
 	}
 	return res
 }

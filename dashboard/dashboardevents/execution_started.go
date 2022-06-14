@@ -6,7 +6,7 @@ import (
 
 type ExecutionStarted struct {
 	Root        dashboardinterfaces.DashboardNodeRun `json:"dashboard"`
-	LeafNodes   map[string]dashboardinterfaces.SnapshotLeafNode
+	LeafNodes   map[string]dashboardinterfaces.SnapshotPanel
 	Session     string
 	ExecutionId string
 }

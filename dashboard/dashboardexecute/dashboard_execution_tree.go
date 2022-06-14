@@ -97,19 +97,19 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
-	leafNodes := e.buildSnapshotLeafNodes()
+	panels := e.buildSnapshotPanels()
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
-		LeafNodes:   leafNodes,
+		LeafNodes:   panels,
 	})
 	defer func() {
 		e := &dashboardevents.ExecutionComplete{
 			Root:        e.Root,
 			Session:     e.sessionId,
 			ExecutionId: e.id,
-			LeafNodes:   leafNodes,
+			Panels:      panels,
 			Inputs:      e.inputValues,
 			Variables:   e.workspace.VariableValues,
 			SearchPath:  e.client.GetRequiredSessionSearchPath(),
@@ -224,21 +224,21 @@ func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
 	return e.inputValues[name]
 }
 
-func (e *DashboardExecutionTree) buildSnapshotLeafNodes() map[string]dashboardinterfaces.SnapshotLeafNode {
-	res := map[string]dashboardinterfaces.SnapshotLeafNode{}
-	return e.buildSnapshotLeafNodesUnder(e.Root, res)
+func (e *DashboardExecutionTree) buildSnapshotPanels() map[string]dashboardinterfaces.SnapshotPanel {
+	res := map[string]dashboardinterfaces.SnapshotPanel{}
+	return e.buildSnapshotPanelsUnder(e.Root, res)
 }
 
-func (e *DashboardExecutionTree) buildSnapshotLeafNodesUnder(parent dashboardinterfaces.DashboardNodeRun, res map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {
+func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardinterfaces.DashboardNodeRun, res map[string]dashboardinterfaces.SnapshotPanel) map[string]dashboardinterfaces.SnapshotPanel {
 	if checkRun, ok := parent.(*CheckRun); ok {
-		return checkRun.buildSnapshotLeafNodes(res)
+		return checkRun.buildSnapshotPanels(res)
 	}
 	for _, c := range parent.GetChildren() {
 		// if this node is a snapshot node, add to map
-		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotLeafNode); ok {
+		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotPanel); ok {
 			res[c.GetName()] = snapshotNode
 		}
-		res = e.buildSnapshotLeafNodesUnder(c, res)
+		res = e.buildSnapshotPanelsUnder(c, res)
 	}
 	return res
 }

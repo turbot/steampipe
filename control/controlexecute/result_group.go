@@ -43,7 +43,7 @@ type ResultGroup struct {
 	Severity map[string]controlstatus.StatusSummary `json:"-"`
 
 	// "benchmark"
-	NodeType string `json:"node_type"`
+	NodeType string `json:"panel_type"`
 
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
@@ -203,8 +203,8 @@ func (r *ResultGroup) ControlRunCount() int {
 	return count
 }
 
-// IsSnapshotLeafNode implements SnapshotLeafNode
-func (*ResultGroup) IsSnapshotLeafNode() {}
+// IsSnapshotPanel implements SnapshotPanel
+func (*ResultGroup) IsSnapshotPanel() {}
 
 // IsExecutionTreeNode implements ExecutionTreeNode
 func (*ResultGroup) IsExecutionTreeNode() {}
@@ -221,8 +221,6 @@ func (r *ResultGroup) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
 		Name:     r.GroupId,
 		Children: make([]*dashboardinterfaces.SnapshotTreeNode, len(r.Children)),
 		NodeType: r.NodeType,
-		Display:  r.Display,
-		Title:    r.Title,
 	}
 	for i, c := range r.Children {
 		res.Children[i] = c.AsTreeNode()

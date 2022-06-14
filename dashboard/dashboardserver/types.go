@@ -55,11 +55,11 @@ type ErrorPayload struct {
 }
 
 type ExecutionPayload struct {
-	Action        string                                          `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun            `json:"dashboard_node"`
-	ExecutionId   string                                          `json:"execution_id"`
-	LeafNodes     map[string]dashboardinterfaces.SnapshotLeafNode `json:"leaf_nodes,omitempty"`
-	Layout        *dashboardinterfaces.SnapshotTreeNode           `json:"layout,omitempty"`
+	Action        string                                       `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun         `json:"dashboard_node"`
+	ExecutionId   string                                       `json:"execution_id"`
+	LeafNodes     map[string]dashboardinterfaces.SnapshotPanel `json:"leaf_nodes,omitempty"`
+	Layout        *dashboardinterfaces.SnapshotTreeNode        `json:"layout,omitempty"`
 }
 type ControlEventPayload struct {
 	Action      string                                 `json:"action"`
@@ -77,17 +77,17 @@ type ExecutionErrorPayload struct {
 }
 
 type ExecutionCompletePayload struct {
-	SchemaVersion int64                                           `json:"schema_version"`
-	Action        string                                          `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun            `json:"dashboard_node"`
-	Panels        map[string]dashboardinterfaces.SnapshotLeafNode `json:"panels"`
-	ExecutionId   string                                          `json:"execution_id"`
-	Inputs        map[string]interface{}                          `json:"inputs"`
-	Variables     map[string]string                               `json:"variables"`
-	SearchPath    []string                                        `json:"search_path"`
-	StartTime     time.Time                                       `json:"start_time"`
-	EndTime       time.Time                                       `json:"end_time"`
-	Layout        *dashboardinterfaces.SnapshotTreeNode           `json:"layout"`
+	SchemaVersion int64                                        `json:"schema_version"`
+	Action        string                                       `json:"action"`
+	DashboardNode dashboardinterfaces.DashboardNodeRun         `json:"dashboard_node"`
+	Panels        map[string]dashboardinterfaces.SnapshotPanel `json:"panels"`
+	ExecutionId   string                                       `json:"execution_id"`
+	Inputs        map[string]interface{}                       `json:"inputs"`
+	Variables     map[string]string                            `json:"variables"`
+	SearchPath    []string                                     `json:"search_path"`
+	StartTime     time.Time                                    `json:"start_time"`
+	EndTime       time.Time                                    `json:"end_time"`
+	Layout        *dashboardinterfaces.SnapshotTreeNode        `json:"layout"`
 }
 
 type InputValuesClearedPayload struct {

@@ -20,10 +20,10 @@ type CheckRun struct {
 	Description      string            `json:"description,omitempty"`
 	Documentation    string            `json:"documentation,omitempty"`
 	Display          string            `json:"display,omitempty"`
-	Type             string            `json:"type,omitempty"`
+	Type             string            `json:"display_type,omitempty"`
 	Tags             map[string]string `json:"tags,omitempty"`
 	ErrorString      string            `json:"error,omitempty"`
-	NodeType         string            `json:"node_type"`
+	NodeType         string            `json:"panel_type"`
 	DashboardName    string            `json:"dashboard"`
 	SourceDefinition string            `json:"source_definition"`
 	SessionId        string            `json:"session_id"`
@@ -184,18 +184,18 @@ func (r *CheckRun) ChildrenComplete() bool {
 //return nothing for CheckRun
 func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }
 
-// custom implementation of buildSnapshotLeafNodes - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
-func (r *CheckRun) buildSnapshotLeafNodes(leafNodeMap map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {
-	return r.buildSnapshotLeafNodesUnder(r.root, leafNodeMap)
+// custom implementation of buildSnapshotPanels - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
+func (r *CheckRun) buildSnapshotPanels(leafNodeMap map[string]dashboardinterfaces.SnapshotPanel) map[string]dashboardinterfaces.SnapshotPanel {
+	return r.buildSnapshotPanelsUnder(r.root, leafNodeMap)
 }
 
-func (r *CheckRun) buildSnapshotLeafNodesUnder(parent controlexecute.ExecutionTreeNode, res map[string]dashboardinterfaces.SnapshotLeafNode) map[string]dashboardinterfaces.SnapshotLeafNode {
+func (r *CheckRun) buildSnapshotPanelsUnder(parent controlexecute.ExecutionTreeNode, res map[string]dashboardinterfaces.SnapshotPanel) map[string]dashboardinterfaces.SnapshotPanel {
 	for _, c := range parent.GetChildren() {
 		// if this node is a snapshot node, add to map
-		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotLeafNode); ok {
+		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotPanel); ok {
 			res[c.GetName()] = snapshotNode
 		}
-		res = r.buildSnapshotLeafNodesUnder(c, res)
+		res = r.buildSnapshotPanelsUnder(c, res)
 	}
 	return res
 }

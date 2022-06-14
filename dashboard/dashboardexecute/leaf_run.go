@@ -12,20 +12,20 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	Name    string `json:"name"`
-	Title   string `json:"title,omitempty"`
-	Width   int    `json:"width,omitempty"`
-	Type    string `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
-	Display string `cty:"display" hcl:"display" json:"display,omitempty"`
+	Name             string                      `json:"name"`
+	Title            string                      `json:"title,omitempty"`
+	Width            int                         `json:"width,omitempty"`
+	Type             string                      `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
+	Display          string                      `cty:"display" hcl:"display" json:"display,omitempty"`
+	RawSQL           string                      `json:"sql,omitempty"`
+	Args             []string                    `json:"args,omitempty"`
+	Data             *LeafData                   `json:"data,omitempty"`
+	ErrorString      string                      `json:"error,omitempty"`
+	DashboardNode    modconfig.DashboardLeafNode `json:"properties,omitempty"`
+	NodeType         string                      `json:"panel_type"`
+	DashboardName    string                      `json:"dashboard"`
+	SourceDefinition string                      `json:"source_definition"`
 
-	RawSQL              string                      `json:"sql,omitempty"`
-	Args                []string                    `json:"args,omitempty"`
-	Data                *LeafData                   `json:"data,omitempty"`
-	ErrorString         string                      `json:"error,omitempty"`
-	DashboardNode       modconfig.DashboardLeafNode `json:"properties,omitempty"`
-	NodeType            string                      `json:"node_type"`
-	DashboardName       string                      `json:"dashboard"`
-	SourceDefinition    string                      `json:"source_definition"`
 	executeSQL          string
 	error               error
 	parent              dashboardinterfaces.DashboardNodeParent
@@ -38,8 +38,6 @@ func (r *LeafRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
 	return &dashboardinterfaces.SnapshotTreeNode{
 		Name:     r.Name,
 		NodeType: r.NodeType,
-		Width:    r.Width,
-		Title:    r.Title,
 	}
 }
 
@@ -205,8 +203,8 @@ func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }
 
-// IsSnapshotNode implements SnapshotLeafNode
-func (*LeafRun) IsSnapshotLeafNode() {}
+// IsSnapshotPanel implements SnapshotPanel
+func (*LeafRun) IsSnapshotPanel() {}
 
 // GetInputsDependingOn implements DashboardNodeRun
 //return nothing for LeafRun
