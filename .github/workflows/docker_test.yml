@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: turbot/steampipe:latest
-      options: --user steampipe user
+      options: --user "steampipe user"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: turbot/steampipe:latest
-      options: --user steampipe user
+      options: --user "steampipe user"
     steps:
       - name: uname
         run: uname -a
