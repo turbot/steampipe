@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
@@ -15,12 +16,13 @@ import (
 )
 
 type InitData struct {
-	Loaded    chan struct{}
-	Queries   []string
-	Workspace *workspace.Workspace
-	Client    db_common.Client
-	Result    *db_common.InitResult
-	cancel    context.CancelFunc
+	Loaded            chan struct{}
+	Queries           []string
+	Workspace         *workspace.Workspace
+	Client            db_common.Client
+	Result            *db_common.InitResult
+	cancel            context.CancelFunc
+	ShutdownTelemetry func()
 }
 
 // NewInitData creates a new InitData object and returns it
@@ -58,6 +60,9 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	if i.Client != nil {
 		i.Client.Close(ctx)
 	}
+	if i.ShutdownTelemetry != nil {
+		i.ShutdownTelemetry()
+	}
 }
 
 func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []string) {
@@ -72,6 +77,14 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		// close loaded channel to indicate we are complete
 		close(i.Loaded)
 	}()
+
+	// init telemetry
+	shutdownTelemetry, err := instrument.Init(constants.AppName)
+	if err != nil {
+		i.Result.AddWarnings(err.Error())
+	} else {
+		i.ShutdownTelemetry = shutdownTelemetry
+	}
 
 	// create a cancellable context so that we can cancel the initialisation
 	ctx, cancel := context.WithCancel(ctx)

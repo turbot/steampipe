@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
-
 	"github.com/spf13/viper"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/steampipeconfig"
