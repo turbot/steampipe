@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/workspace"
 )
@@ -81,7 +81,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	}
 	// oif there are any dependent inputs, set their value to nil and send an event to the UI
 	// if the dashboard run is complete, just re-execute
-	if executionTree.GetRunStatus() == dashboardinterfaces.DashboardRunComplete || inputPrevValue != nil {
+	if executionTree.GetRunStatus() == dashboardtypes.DashboardRunComplete || inputPrevValue != nil {
 		return e.ExecuteDashboard(
 			ctx,
 			sessionId,
@@ -97,7 +97,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	return nil
 }
 
-func (e *DashboardExecutor) clearDependentInputs(root dashboardinterfaces.DashboardNodeRun, changedInput string, inputs map[string]interface{}) []string {
+func (e *DashboardExecutor) clearDependentInputs(root dashboardtypes.DashboardNodeRun, changedInput string, inputs map[string]interface{}) []string {
 	dependentInputs := root.GetInputsDependingOn(changedInput)
 	clearedInputs := dependentInputs
 	if len(dependentInputs) > 0 {

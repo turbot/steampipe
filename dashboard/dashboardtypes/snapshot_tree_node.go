@@ -1,4 +1,4 @@
-package dashboardinterfaces
+package dashboardtypes
 
 // SnapshotTreeNode is a struct used to store the dashboard structure in the snapshot
 type SnapshotTreeNode struct {

@@ -1,4 +1,4 @@
-package dashboardinterfaces
+package dashboardtypes
 
 import (
 	"context"

@@ -1,12 +1,10 @@
 package dashboardevents
 
-import (
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
-)
+import "github.com/turbot/steampipe/dashboard/dashboardtypes"
 
 type ExecutionStarted struct {
-	Root        dashboardinterfaces.DashboardNodeRun `json:"dashboard"`
-	LeafNodes   map[string]dashboardinterfaces.SnapshotPanel
+	Root        dashboardtypes.DashboardNodeRun `json:"dashboard"`
+	LeafNodes   map[string]dashboardtypes.SnapshotPanel
 	Session     string
 	ExecutionId string
 }

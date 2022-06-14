@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/control/controlexecute"
 	"github.com/turbot/steampipe/control/controlstatus"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
@@ -36,16 +36,16 @@ type CheckRun struct {
 	root                 controlexecute.ExecutionTreeNode
 	controlExecutionTree *controlexecute.ExecutionTree
 	error                error
-	parent               dashboardinterfaces.DashboardNodeParent
-	runStatus            dashboardinterfaces.DashboardRunStatus
+	parent               dashboardtypes.DashboardNodeParent
+	runStatus            dashboardtypes.DashboardRunStatus
 	executionTree        *DashboardExecutionTree
 }
 
-func (r *CheckRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
+func (r *CheckRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	return r.root.AsTreeNode()
 }
 
-func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
+func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
 
 	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
@@ -70,7 +70,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
-		runStatus: dashboardinterfaces.DashboardRunComplete,
+		runStatus: dashboardtypes.DashboardRunComplete,
 	}
 	// verify node type
 	switch t := resource.(type) {
@@ -84,7 +84,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardinterface
 	}
 
 	//  set status to ready
-	c.runStatus = dashboardinterfaces.DashboardRunReady
+	c.runStatus = dashboardtypes.DashboardRunReady
 
 	// add r into execution tree
 	executionTree.runs[c.Name] = c
@@ -124,7 +124,7 @@ func (r *CheckRun) GetName() string {
 }
 
 // GetRunStatus implements DashboardNodeRun
-func (r *CheckRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
+func (r *CheckRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
 	return r.runStatus
 }
 
@@ -134,7 +134,7 @@ func (r *CheckRun) SetError(err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 
-	r.runStatus = dashboardinterfaces.DashboardRunError
+	r.runStatus = dashboardtypes.DashboardRunError
 	// raise dashboard error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
 		LeafNode:    r,
@@ -153,7 +153,7 @@ func (r *CheckRun) GetError() error {
 
 // SetComplete implements DashboardNodeRun
 func (r *CheckRun) SetComplete() {
-	r.runStatus = dashboardinterfaces.DashboardRunComplete
+	r.runStatus = dashboardtypes.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
 		LeafNode:    r,
@@ -166,11 +166,11 @@ func (r *CheckRun) SetComplete() {
 
 // RunComplete implements DashboardNodeRun
 func (r *CheckRun) RunComplete() bool {
-	return r.runStatus == dashboardinterfaces.DashboardRunComplete || r.runStatus == dashboardinterfaces.DashboardRunError
+	return r.runStatus == dashboardtypes.DashboardRunComplete || r.runStatus == dashboardtypes.DashboardRunError
 }
 
 // GetChildren implements DashboardNodeRun
-func (r *CheckRun) GetChildren() []dashboardinterfaces.DashboardNodeRun {
+func (r *CheckRun) GetChildren() []dashboardtypes.DashboardNodeRun {
 	// we have children, but they are not part of the dashboard execution tree, so return nil
 	return nil
 }
@@ -185,14 +185,14 @@ func (r *CheckRun) ChildrenComplete() bool {
 func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }
 
 // custom implementation of buildSnapshotPanels - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
-func (r *CheckRun) buildSnapshotPanels(leafNodeMap map[string]dashboardinterfaces.SnapshotPanel) map[string]dashboardinterfaces.SnapshotPanel {
+func (r *CheckRun) buildSnapshotPanels(leafNodeMap map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
 	return r.buildSnapshotPanelsUnder(r.root, leafNodeMap)
 }
 
-func (r *CheckRun) buildSnapshotPanelsUnder(parent controlexecute.ExecutionTreeNode, res map[string]dashboardinterfaces.SnapshotPanel) map[string]dashboardinterfaces.SnapshotPanel {
+func (r *CheckRun) buildSnapshotPanelsUnder(parent controlexecute.ExecutionTreeNode, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
 	for _, c := range parent.GetChildren() {
 		// if this node is a snapshot node, add to map
-		if snapshotNode, ok := c.(dashboardinterfaces.SnapshotPanel); ok {
+		if snapshotNode, ok := c.(dashboardtypes.SnapshotPanel); ok {
 			res[c.GetName()] = snapshotNode
 		}
 		res = r.buildSnapshotPanelsUnder(c, res)

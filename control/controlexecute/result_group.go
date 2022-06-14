@@ -7,12 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlstatus"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -216,10 +215,10 @@ func (r *ResultGroup) GetChildren() []ExecutionTreeNode { return r.Children }
 func (r *ResultGroup) GetName() string { return r.GroupId }
 
 // AsTreeNode implements ExecutionTreeNode
-func (r *ResultGroup) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
-	res := &dashboardinterfaces.SnapshotTreeNode{
+func (r *ResultGroup) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	res := &dashboardtypes.SnapshotTreeNode{
 		Name:     r.GroupId,
-		Children: make([]*dashboardinterfaces.SnapshotTreeNode, len(r.Children)),
+		Children: make([]*dashboardtypes.SnapshotTreeNode, len(r.Children)),
 		NodeType: r.NodeType,
 	}
 	for i, c := range r.Children {

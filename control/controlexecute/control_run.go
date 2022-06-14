@@ -8,12 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
-
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlstatus"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/statushooks"
@@ -46,7 +45,11 @@ type ControlRun struct {
 	Summary   *controlstatus.StatusSummary   `json:"summary"`
 	RunStatus controlstatus.ControlRunStatus `json:"status"`
 	// result rows
-	Rows []*ResultRow `json:"results"`
+	Rows ResultRows `json:"-"`
+
+	// the results in snapshot format
+	Data *dashboardtypes.LeafData `json:"data"`
+
 	// a list of distinct dimension keys from the results of this control
 	DimensionKeys []string `json:"-"`
 
@@ -63,7 +66,7 @@ type ControlRun struct {
 	runError       error
 	// the query result stream
 	queryResult *queryresult.Result
-	rowMap      map[string][]*ResultRow
+	rowMap      map[string]ResultRows
 	stateLock   sync.Mutex
 	doneChan    chan bool
 	attempts    int
@@ -87,7 +90,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 
 		Severity:  typehelpers.SafeString(control.Severity),
 		Title:     typehelpers.SafeString(control.Title),
-		rowMap:    make(map[string][]*ResultRow),
+		rowMap:    make(map[string]ResultRows),
 		Summary:   &controlstatus.StatusSummary{},
 		Lifecycle: utils.NewLifecycleTimer(),
 
@@ -151,8 +154,8 @@ func (*ControlRun) GetChildren() []ExecutionTreeNode { return nil }
 func (r *ControlRun) GetName() string { return r.ControlId }
 
 // AsTreeNode implements ExecutionTreeNode
-func (r *ControlRun) AsTreeNode() *dashboardinterfaces.SnapshotTreeNode {
-	res := &dashboardinterfaces.SnapshotTreeNode{
+func (r *ControlRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	res := &dashboardtypes.SnapshotTreeNode{
 		Name:     r.ControlId,
 		NodeType: r.NodeType,
 	}
@@ -383,13 +386,9 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 	defer func() { r.Lifecycle.Add("gather_finish") }()
 
 	defer func() {
-		for _, row := range r.Rows {
-			for _, dim := range row.Dimensions {
-				r.DimensionKeys = append(r.DimensionKeys, dim.Key)
-			}
-		}
-		r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
-		r.Group.addDimensionKeys(r.DimensionKeys...)
+		dimensionsSchema := r.getDimensionSchema()
+		// convert the data to snapshot format
+		r.Data = r.Rows.ToLeafData(dimensionsSchema)
 	}()
 
 	for {
@@ -422,6 +421,27 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (r *ControlRun) getDimensionSchema() map[string]*dashboardtypes.ColumnSchema {
+	var dimensionsSchema = make(map[string]*dashboardtypes.ColumnSchema)
+
+	for _, row := range r.Rows {
+		for _, dim := range row.Dimensions {
+			if _, ok := dimensionsSchema[dim.Key]; !ok {
+				// add to map
+				dimensionsSchema[dim.Key] = &dashboardtypes.ColumnSchema{
+					Name:     dim.Key,
+					DataType: dim.SqlType,
+				}
+				// also add to DimensionKeys
+				r.DimensionKeys = append(r.DimensionKeys, dim.Key)
+			}
+		}
+	}
+	// add keys to group
+	r.Group.addDimensionKeys(r.DimensionKeys...)
+	return dimensionsSchema
 }
 
 // add the result row to our results and update the summary with the row status
