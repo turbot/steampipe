@@ -1,0 +1,8 @@
+on: push
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    container: turbot/steampipe:latest
+    steps:
+      - run: steampipe -v
+      - run: steampipe -h
