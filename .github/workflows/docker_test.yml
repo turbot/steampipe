@@ -8,12 +8,17 @@ jobs:
     steps:
       - run: steampipe -v
       - run: steampipe query "select 1"
+      - run: uname -a
 
   acceptance_test:
     name: Acceptance tests
     needs: first-job
     runs-on: ubuntu-latest
+    container: turbot/steampipe:latest
     steps:
+      - name: uname
+        run: uname -a
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
