@@ -97,12 +97,16 @@ func checkLocaleSettings(ctx context.Context) {
 		fmt.Printf("Error while checking locale settings %v", err.Error())
 		return
 	}
-	// store the value of LC_CTYPE
-	lc_val, err := exec.Command("bash", "-c", "locale | grep LC_CTYPE").Output()
+	// store the output of 'locale | grep LC_CTYPE'
+	lc_output, err := exec.Command("bash", "-c", "locale | grep LC_CTYPE").Output()
 	if err != nil {
 		fmt.Printf("Error while checking locale settings %v", err.Error())
 		return
 	}
+
+	lc_val := strings.TrimSpace(string(lc_output))
+	// get the langpack name from the output
+	langpack_name := strings.TrimSpace(strings.Trim(string(lc_output), "LC_CTYPE="))
 
 	// check for cannot set LC_CTYPE error
 	flag := strings.Contains(string(output), "Cannot set LC_CTYPE to default locale")
@@ -110,7 +114,7 @@ func checkLocaleSettings(ctx context.Context) {
 	// if there is a cannot set LC_CTYPE error, exit with an error message
 	if flag {
 		utils.ShowError(ctx, fmt.Errorf(`Failed to initialize database as the default langpack(%s) is not installed. 
-To fix, either set environment variable LC_ALL to 'C' or 'POSIX' or install the langpack %s. [https://www.postgresql.org/docs/current/multibyte.html]`, strings.TrimSpace(string(lc_val)), strings.TrimSpace(strings.Trim(string(lc_val), "LC_CTYPE="))))
+To fix, either set environment variable LC_ALL to "C" or "POSIX" or install the langpack %s. [https://www.postgresql.org/docs/current/multibyte.html]`, lc_val, langpack_name))
 		os.Exit(1)
 	}
 }
