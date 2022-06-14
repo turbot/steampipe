@@ -160,27 +160,27 @@ class Control implements CheckNode {
   get_data_rows(tags: string[], dimensions: string[]): LeafNodeDataRow[] {
     let rows: LeafNodeDataRow[] = [];
     this._results.forEach((result) => {
-      const row: LeafNodeDataRow = [
-        this._group_id,
-        this._group_title ? this._group_title : null,
-        this._group_description ? this._group_description : null,
-        this._name,
-        this._title ? this._title : null,
-        this._description ? this._description : null,
-        this._severity ? this._severity : null,
-        result.reason,
-        result.resource,
-        result.status,
-      ];
+      const row: LeafNodeDataRow = {
+        group_id: this._group_id,
+        title: this._group_title ? this._group_title : null,
+        description: this._group_description ? this._group_description : null,
+        control_id: this._name,
+        control_title: this._title ? this._title : null,
+        control_description: this._description ? this._description : null,
+        severity: this._severity ? this._severity : null,
+        reason: result.reason,
+        resource: result.resource,
+        status: result.status,
+      };
 
       tags.forEach((tag) => {
         const val = this._tags[tag];
-        row.push(val === undefined ? null : val);
+        row[tag] = val === undefined ? null : val;
       });
 
       dimensions.forEach((dimension) => {
         const val = findDimension(result.dimensions, dimension);
-        row.push(val === undefined ? null : val.value);
+        row[dimension] = val === undefined ? null : val.value;
       });
 
       rows.push(row);
