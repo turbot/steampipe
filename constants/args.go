@@ -6,7 +6,7 @@ const (
 	ArgVersion             = "version"
 	ArgForce               = "force"
 	ArgAll                 = "all"
-	ArgTimer               = "timing"
+	ArgTiming            = "timing"
 	ArgOn                  = "on"
 	ArgOff                 = "off"
 	ArgClear               = "clear"

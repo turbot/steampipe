@@ -282,8 +282,9 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 	ShowPaged(ctx, outbuf.String())
 
 	// if timer is turned on
-	if cmdconfig.Viper().GetBool(constants.ArgTimer) {
-		fmt.Printf("\nTime: %v\n", <-result.Duration)
+	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+		timingResult := <-result.TimingResult
+		fmt.Printf("\nTime: %v. Rows fetched: %d (uncached) %d (cached). Hydrate calls: %d\n", timingResult.Duration, timingResult.RowsFetched, timingResult.CachedRowsFetched, timingResult.HydrateCalls)
 	}
 }
 

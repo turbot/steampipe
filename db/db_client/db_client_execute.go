@@ -54,8 +54,14 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 			syncResult.Rows = append(syncResult.Rows, row)
 		}
 	}
-	syncResult.Duration = <-result.Duration
+	if ShouldShowTiming() {
+		syncResult.TimingResult = <-result.TimingResult
+	}
 	return syncResult, nil
+}
+
+func ShouldShowTiming() bool {
+	return viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
 }
 
 // Execute implements Client
@@ -130,12 +136,46 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	go func() {
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result)
+		// set the time that it took for this one to execute
+		if ShouldShowTiming() {
+			c.getQueryTiming(ctx, startTime, session, result.TimingResult)
+		}
 		if onComplete != nil {
 			onComplete()
 		}
 	}()
 
 	return result, nil
+}
+
+func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan queryresult.TimingResult) {
+	var timingResult = queryresult.TimingResult{
+		Duration: time.Since(startTime),
+	}
+	viper.Set(constants.ArgTiming, false)
+	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from steampipe_command.scan_metadata where id > %d", session.ScanMetadataMaxId))
+	viper.Set(constants.ArgTiming, true)
+	fmt.Println(res)
+	fmt.Println(err)
+	var id int
+	for _, r := range res.Rows {
+		rw := r.(*queryresult.RowResult)
+		id = rw.Data[0].(int)
+		rowsFetched := rw.Data[1].(int)
+		cacheHit := rw.Data[2].(bool)
+		hydrateCalls := rw.Data[3].(int)
+
+		timingResult.HydrateCalls += hydrateCalls
+		if cacheHit {
+			timingResult.CachedRowsFetched += rowsFetched
+		} else {
+			timingResult.RowsFetched += rowsFetched
+		}
+
+	}
+	// update the max id for this session
+	session.ScanMetadataMaxId = id
+	resultChannel <- timingResult
 }
 
 // run query in a goroutine, so we can check for cancellation
@@ -222,9 +262,6 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			break
 		}
 	}
-
-	// set the time that it took for this one to execute
-	result.Duration <- time.Since(start)
 }
 
 func isStreamingOutput(outputFormat string) bool {
