@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/viper"
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/steampipeconfig"
@@ -41,7 +40,7 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 	}
 
 	// if telemetry is enabled, send cloud metadata
-	if payload.Metadata.Telemetry != instrument.TelemetryNone {
+	if payload.Metadata.Telemetry != constants.TelemetryNone {
 		payload.Metadata.Cloud = cloudMetadata
 	}
 

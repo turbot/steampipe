@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
@@ -40,7 +38,7 @@ func SetViperDefaults(configMap map[string]interface{}) {
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		constants.ArgUpdateCheck:  true,
-		constants.ArgTelemetry:    instrument.TelemetryInfo,
+		constants.ArgTelemetry:    constants.TelemetryInfo,
 		constants.ArgInstallDir:   filepaths.DefaultInstallDir,
 		constants.ArgDatabasePort: constants.DatabaseDefaultPort,
 	}
@@ -67,7 +65,7 @@ type envMapping struct {
 func overrideDefaultsFromEnv() {
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		instrument.EnvTelemetry:        {constants.ArgTelemetry, "string"},
+		constants.EnvTelemetry:         {constants.ArgTelemetry, "string"},
 		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
 		constants.EnvCloudHost:         {constants.ArgCloudHost, "string"},
 		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
