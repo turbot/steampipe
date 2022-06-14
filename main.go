@@ -7,6 +7,10 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/turbot/steampipe/statushooks"
+
+	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
+
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 
@@ -42,6 +46,14 @@ func main() {
 	utils.FailOnErrorWithMessage(err, "failed to increase the file limit")
 
 	cmd.InitCmd()
+
+	// init telemetry
+	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Initialising telemetry"))
+
+	shutdownTelemetry, err := instrument.Init(constants.AppName)
+	utils.FailOnError(err)
+	statusSpinner.Done()
+	defer shutdownTelemetry()
 
 	// execute the command
 	exitCode = cmd.Execute()

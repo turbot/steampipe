@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -171,8 +173,8 @@ func migrateLegacyFiles() error {
 // now validate  config values have appropriate values
 func validateConfig() error {
 	telemetry := viper.GetString(constants.ArgTelemetry)
-	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
-		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+	if !helpers.StringSliceContains(instrument.TelemetryLevels, telemetry) {
+		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(instrument.TelemetryLevels, ", "))
 	}
 	return nil
 }

@@ -20,6 +20,4 @@ const (
 
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	EnvInputVarPrefix = "SP_VAR_"
-
-	EnvTelemetry = "STEAMPIPE_TELEMETRY"
 )

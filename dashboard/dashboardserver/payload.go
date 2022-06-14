@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
+
 	"github.com/spf13/viper"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/constants"
@@ -40,7 +42,7 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 	}
 
 	// if telemetry is enabled, send cloud metadata
-	if payload.Metadata.Telemetry != constants.TelemetryNone {
+	if payload.Metadata.Telemetry != instrument.TelemetryNone {
 		payload.Metadata.Cloud = cloudMetadata
 	}
 
