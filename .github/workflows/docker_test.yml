@@ -4,12 +4,10 @@ jobs:
   first-job:
     name: Check steampipe version
     runs-on: ubuntu-latest
-    container:
-      image: turbot/steampipe:latest
-      options: --user "steampipe user"
+    container: turbot/steampipe:latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      # - name: Checkout
+      #   uses: actions/checkout@v3
 
       - name: Check version
         run: steampipe -v
@@ -21,17 +19,15 @@ jobs:
     name: Acceptance tests
     needs: first-job
     runs-on: ubuntu-latest
-    container:
-      image: turbot/steampipe:latest
-      options: --user "steampipe user"
+    container: turbot/steampipe:latest
     steps:
       - name: uname
         run: uname -a
 
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: true
+      # - name: Checkout
+      #   uses: actions/checkout@v3
+      #   with:
+      #     submodules: true
 
   #     - name: Set PATH
   #       run: |
