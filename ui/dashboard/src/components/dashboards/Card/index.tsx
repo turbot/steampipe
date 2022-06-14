@@ -13,7 +13,6 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { getColumnIndex } from "../../../utils/data";
 import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
@@ -160,27 +159,17 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
       setCalculatedProperties({
         loading: false,
         label: firstCol.name,
-        value: row[0],
+        value: row[firstCol.name],
         type: properties.type || null,
         icon: getIconForType(properties.type, properties.icon),
         href: properties.href || null,
       });
     } else {
-      const labelColIndex = getColumnIndex(data.columns, "label");
-      const formalLabel =
-        labelColIndex >= 0 ? get(data, `rows[0][${labelColIndex}]`) : null;
-      const valueColIndex = getColumnIndex(data.columns, "value");
-      const formalValue =
-        valueColIndex >= 0 ? get(data, `rows[0][${valueColIndex}]`) : null;
-      const typeColIndex = getColumnIndex(data.columns, "type");
-      const formalType =
-        typeColIndex >= 0 ? get(data, `rows[0][${typeColIndex}]`) : null;
-      const iconColIndex = getColumnIndex(data.columns, "icon");
-      const formalIcon =
-        iconColIndex >= 0 ? get(data, `rows[0][${iconColIndex}]`) : null;
-      const hrefColIndex = getColumnIndex(data.columns, "href");
-      const formalHref =
-        hrefColIndex >= 0 ? get(data, `rows[0][${hrefColIndex}]`) : null;
+      const formalLabel = get(data, "rows[0].label", null);
+      const formalValue = get(data, `rows[0].value`, null);
+      const formalType = get(data, `rows[0].type`, null);
+      const formalIcon = get(data, `rows[0].icon`, null);
+      const formalHref = get(data, `rows[0].href`, null);
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
@@ -239,9 +228,9 @@ const Card = (props: CardProps) => {
     const renderData = { ...state };
     if (props.data && props.data.columns && props.data.rows) {
       const row = props.data.rows[0];
-      props.data.columns.forEach((col, index) => {
+      props.data.columns.forEach((col) => {
         if (!has(renderData, col.name)) {
-          renderData[col.name] = row[index];
+          renderData[col.name] = row[col.name];
         }
       });
     }

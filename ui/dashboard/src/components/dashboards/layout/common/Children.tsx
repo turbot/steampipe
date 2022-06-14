@@ -30,7 +30,7 @@ const Children = ({
   return (
     <>
       {children.map((child) => {
-        switch (child.node_type) {
+        switch (child.panel_type) {
           case "benchmark":
             return (
               <Benchmark
@@ -71,22 +71,11 @@ const Children = ({
               <Container
                 key={child.name}
                 allowChildPanelExpand={child.allow_child_panel_expand}
-                definition={child}
                 expandDefinition={child}
+                layoutDefinition={child}
                 withTitle={withTitle}
               />
             );
-          // case "control":
-          //   return (
-          //     <Panel
-          //       key={child.name}
-          //       definition={child}
-          //       allowExpand={allowPanelExpand}
-          //       withTitle={withTitle}
-          //     >
-          //       <Control {...child} />
-          //     </Panel>
-          //   );
           case "dashboard":
             return <Dashboard key={child.name} definition={child} />;
           case "error":

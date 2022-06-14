@@ -1,7 +1,7 @@
 import has from "lodash/has";
 import { ChartProperties, ChartTransform, ChartType } from "../charts";
 import { FlowCategories, FlowProperties, FlowType } from "../flows";
-import { getColumnIndex } from "../../../utils/data";
+import { getColumn } from "../../../utils/data";
 import { HierarchyProperties, HierarchyType } from "../hierarchies";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -9,14 +9,14 @@ export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 export interface BasePrimitiveProps {
   base?: string;
   name: string;
-  node_type: string;
+  panel_type: string;
   title?: string;
   width?: Width;
 }
 
 export interface LeafNodeDataColumn {
   name: string;
-  data_type_name: string;
+  data_type: string;
 }
 
 // export interface HierarchyDataRow {
@@ -32,7 +32,9 @@ export interface LeafNodeDataColumn {
 //   value: number;
 // }
 
-export type LeafNodeDataRow = any[];
+export interface LeafNodeDataRow {
+  [key: string]: any;
+}
 
 export interface LeafNodeData {
   columns: LeafNodeDataColumn[];
@@ -78,9 +80,9 @@ const crosstabDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   const xAxisLabels: string[] = [];
   const seriesLabels: string[] = [];
   for (const row of data.rows) {
-    const xAxisLabel = row[0];
-    const seriesName = row[1];
-    const seriesValue = row[2];
+    const xAxisLabel = row[data.columns[0].name];
+    const seriesName = row[data.columns[1].name];
+    const seriesValue = row[data.columns[2].name];
 
     if (!xAxis[xAxisLabel]) {
       xAxis[xAxisLabel] = {};
@@ -124,20 +126,23 @@ const crosstabDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
 
 const defaultDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   return {
-    dataset: [data.columns.map((col) => col.name), ...data.rows],
+    dataset: [
+      data.columns.map((col) => col.name),
+      ...data.rows.map((row) => data.columns.map((col) => row[col.name])),
+    ],
     rowSeriesLabels: [],
     transform: "none",
   };
 };
 
-const isNumericCol = (data_type_name: string | null | undefined) => {
-  if (!data_type_name) {
+const isNumericCol = (data_type: string | null | undefined) => {
+  if (!data_type) {
     return false;
   }
   return (
-    data_type_name.toLowerCase().indexOf("int") >= 0 ||
-    data_type_name.toLowerCase().indexOf("float") >= 0 ||
-    data_type_name.toLowerCase().indexOf("numeric") >= 0
+    data_type.toLowerCase().indexOf("int") >= 0 ||
+    data_type.toLowerCase().indexOf("float") >= 0 ||
+    data_type.toLowerCase().indexOf("numeric") >= 0
   );
 };
 
@@ -146,9 +151,9 @@ const automaticDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   // If that's 3 columns, with the first 2 non-numeric and the last numeric, we'll apply
   // a crosstab transform, else we'll apply the default transform
   if (data.columns.length === 3) {
-    const col1Type = data.columns[0].data_type_name;
-    const col2Type = data.columns[1].data_type_name;
-    const col3Type = data.columns[2].data_type_name;
+    const col1Type = data.columns[0].data_type;
+    const col2Type = data.columns[1].data_type;
+    const col3Type = data.columns[2].data_type;
     if (
       !isNumericCol(col1Type) &&
       !isNumericCol(col2Type) &&
@@ -433,14 +438,14 @@ const buildNodesAndEdges = (
     categoryProperties = properties.categories;
   }
 
-  const id_index = getColumnIndex(rawData.columns, "id");
-  const from_index = getColumnIndex(rawData.columns, "from_id");
-  const to_index = getColumnIndex(rawData.columns, "to_id");
-  const title_index = getColumnIndex(rawData.columns, "title");
-  const category_index = getColumnIndex(rawData.columns, "category");
-  const depth_index = getColumnIndex(rawData.columns, "depth");
+  const id_col = getColumn(rawData.columns, "id");
+  const from_col = getColumn(rawData.columns, "from_id");
+  const to_col = getColumn(rawData.columns, "to_id");
+  const title_col = getColumn(rawData.columns, "title");
+  const category_col = getColumn(rawData.columns, "category");
+  const depth_col = getColumn(rawData.columns, "depth");
 
-  if (id_index === -1 && from_index === -1 && to_index === -1) {
+  if (!id_col && !from_col && !to_col) {
     throw new Error("No node or edge rows defined in the dataset");
   }
 
@@ -455,12 +460,12 @@ const buildNodesAndEdges = (
   let colorIndex = 0;
 
   rawData.rows.forEach((row) => {
-    const node_id = id_index > -1 ? row[id_index] : null;
-    const from_id = from_index > -1 ? row[from_index] : null;
-    const to_id = to_index > -1 ? row[to_index] : null;
-    const title = title_index > -1 ? row[title_index] : null;
-    const category = category_index > -1 ? row[category_index] : null;
-    const depth = depth_index > -1 ? row[depth_index] : null;
+    const node_id = id_col ? row[id_col.name] : null;
+    const from_id = from_col ? row[from_col.name] : null;
+    const to_id = to_col ? row[to_col?.name] : null;
+    const title = title_col ? row[title_col.name] : null;
+    const category = category_col ? row[category_col.name] : null;
+    const depth = depth_col ? row[depth_col.name] : null;
 
     // We must have at least a node id or an edge from_id / to_id pairing
     if (node_id === null && from_id === null && to_id === null) {

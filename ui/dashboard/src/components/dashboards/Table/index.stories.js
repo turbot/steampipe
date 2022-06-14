@@ -9,7 +9,7 @@ const story = {
 export default story;
 
 const Template = (args) => (
-  <PanelStoryDecorator definition={args} nodeType="table" />
+  <PanelStoryDecorator definition={args} panelType="table" />
 );
 
 export const Loading = Template.bind({});
@@ -21,8 +21,8 @@ export const NoData = Template.bind({});
 NoData.args = {
   data: {
     columns: [
-      { name: "Region", data_type_name: "TEXT" },
-      { name: "Resource Count", data_type_name: "INT8" },
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
     ],
   },
 };
@@ -31,10 +31,10 @@ export const Basic = Template.bind({});
 Basic.args = {
   data: {
     columns: [
-      { name: "Region", data_type_name: "TEXT" },
-      { name: "Resource Count", data_type_name: "INT8" },
-      { name: "Encrypted", data_type_name: "BOOL" },
-      { name: "Info", data_type_name: "JSONB" },
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
+      { name: "Encrypted", data_type: "BOOL" },
+      { name: "Info", data_type: "JSONB" },
     ],
     rows: [
       ["us-east-1", 246, true, null],
@@ -50,8 +50,8 @@ export const Nulls = Template.bind({});
 Nulls.args = {
   data: {
     columns: [
-      { name: "Color", data_type_name: "TEXT" },
-      { name: "Value", data_type_name: "INT8" },
+      { name: "Color", data_type: "TEXT" },
+      { name: "Value", data_type: "INT8" },
     ],
     rows: [
       ["red", 10],
@@ -69,10 +69,10 @@ export const HideColumn = Template.bind({});
 HideColumn.args = {
   data: {
     columns: [
-      { name: "Region", data_type_name: "TEXT" },
-      { name: "Resource Count", data_type_name: "INT8" },
-      { name: "Encrypted", data_type_name: "BOOL" },
-      { name: "Info", data_type_name: "JSONB" },
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
+      { name: "Encrypted", data_type: "BOOL" },
+      { name: "Info", data_type: "JSONB" },
     ],
     rows: [
       ["us-east-1", 246, true, null],
@@ -95,10 +95,10 @@ export const WrapColumn = Template.bind({});
 WrapColumn.args = {
   data: {
     columns: [
-      { name: "Region", data_type_name: "TEXT" },
-      { name: "Resource Count", data_type_name: "INT8" },
-      { name: "Encrypted", data_type_name: "BOOL" },
-      { name: "Long", data_type_name: "TEXT" },
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
+      { name: "Encrypted", data_type: "BOOL" },
+      { name: "Long", data_type: "TEXT" },
     ],
     rows: [
       [

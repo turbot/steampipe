@@ -1,5 +1,9 @@
 import Benchmark from "./Benchmark";
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
+import {
+  BasePrimitiveProps,
+  ExecutablePrimitiveProps,
+  LeafNodeData,
+} from "../../common";
 
 export type CheckNodeType =
   | "benchmark"
@@ -26,7 +30,7 @@ export interface CheckNode {
   severity_summary: CheckSeveritySummary;
   summary: CheckSummary;
   children?: CheckNode[];
-  results?: CheckResult[];
+  data?: LeafNodeData;
   error?: string;
   merge?: (other: CheckNode) => void;
 }
@@ -99,10 +103,10 @@ export interface CheckControlRun {
   name: string;
   title?: string;
   description?: string;
-  node_type: "control";
+  panel_type: "control";
   severity?: CheckSeverity | undefined;
   tags?: CheckTags;
-  results: CheckResult[];
+  data: LeafNodeData;
   summary: CheckSummary;
   status: CheckNodeStatusRaw;
   error?: string;
@@ -114,7 +118,7 @@ export interface CheckBenchmarkRun {
   name: string;
   title?: string;
   description?: string;
-  node_type: "benchmark";
+  panel_type: "benchmark";
   tags?: CheckTags;
   type: CheckGroupType;
   session_id: string;

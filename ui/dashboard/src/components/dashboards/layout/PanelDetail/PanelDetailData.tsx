@@ -14,7 +14,7 @@ const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
       {() => (
         <Table
           name={`${definition}.table.detail`}
-          node_type="table"
+          panel_type="table"
           data={definition.data}
         />
       )}

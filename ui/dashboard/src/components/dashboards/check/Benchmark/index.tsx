@@ -4,6 +4,11 @@ import Error from "../../Error";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
 import {
+  BenchmarkDefinition,
+  PanelDefinition,
+  useDashboard,
+} from "../../../../hooks/useDashboard";
+import {
   BenchmarkTreeProps,
   CheckDisplayGroup,
   CheckNode,
@@ -14,11 +19,6 @@ import {
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
-import {
-  BenchmarkDefinition,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
 import { stringToColour } from "../../../../utils/color";
 import { useMemo } from "react";
 
@@ -77,7 +77,7 @@ const Benchmark = (props: InnerCheckProps) => {
     );
     const summary_cards = [
       {
-        node_type: "card",
+        panel_type: "card",
         name: `${props.definition.name}.container.summary.ok-${totalSummary.ok}`,
         width: 2,
         properties: {
@@ -88,7 +88,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        node_type: "card",
+        panel_type: "card",
         name: `${props.definition.name}.container.summary.alarm-${totalSummary.alarm}`,
         width: 2,
         properties: {
@@ -99,7 +99,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        node_type: "card",
+        panel_type: "card",
         name: `${props.definition.name}.container.summary.error-${totalSummary.error}`,
         width: 2,
         properties: {
@@ -110,7 +110,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        node_type: "card",
+        panel_type: "card",
         name: `${props.definition.name}.container.summary.info-${totalSummary.info}`,
         width: 2,
         properties: {
@@ -121,7 +121,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        node_type: "card",
+        panel_type: "card",
         name: `${props.definition.name}.container.summary.skip-${totalSummary.skip}`,
         width: 2,
         properties: {
@@ -142,7 +142,7 @@ const Benchmark = (props: InnerCheckProps) => {
     if (criticalRaw !== undefined || highRaw !== undefined) {
       const total = critical + high;
       summary_cards.push({
-        node_type: "card",
+        panel_type: "card",
         name: `${props.definition.name}.container.summary.severity-${total}`,
         width: 2,
         properties: {
@@ -166,22 +166,22 @@ const Benchmark = (props: InnerCheckProps) => {
       allowExpand={true}
       definition={{
         name: props.definition.name,
-        node_type: "container",
+        panel_type: "container",
         children: [
           {
             name: `${props.definition.name}.container.summary`,
-            node_type: "container",
+            panel_type: "container",
             allow_child_panel_expand: false,
             children: summary_cards,
           },
           {
             name: `${props.definition.name}.container.tree`,
-            node_type: "container",
+            panel_type: "container",
             allow_child_panel_expand: false,
             children: [
               {
                 name: `${props.definition.name}.container.tree.results`,
-                node_type: "benchmark_tree",
+                panel_type: "benchmark_tree",
                 properties: {
                   grouping: props.grouping,
                   first_child_summaries: props.firstChildSummaries,
@@ -226,7 +226,7 @@ const BenchmarkTableView = ({
     <Panel
       layoutDefinition={{
         name: definition.name,
-        node_type: "table",
+        panel_type: "table",
         width: definition.width,
         data: benchmarkDataTable,
       }}
@@ -235,7 +235,7 @@ const BenchmarkTableView = ({
       {() => (
         <Table
           name={`${definition.name}.table`}
-          node_type="table"
+          panel_type="table"
           data={benchmarkDataTable}
         />
       )}
@@ -276,7 +276,7 @@ const Inner = ({ withTitle }) => {
       <Panel
         layoutDefinition={{
           name: definition.name,
-          node_type: "benchmark",
+          panel_type: "benchmark",
           width: definition.width,
         }}
       >

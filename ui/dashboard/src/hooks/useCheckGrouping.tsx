@@ -361,11 +361,11 @@ const CheckGroupingProvider = ({
 
       // @ts-ignore
       const nestedBenchmarks = definition.children?.filter(
-        (child) => child.node_type === "benchmark"
+        (child) => child.panel_type === "benchmark"
       );
       // @ts-ignore
       const nestedControls = definition.children?.filter(
-        (child) => child.node_type === "control"
+        (child) => child.panel_type === "control"
       );
 
       const b = new BenchmarkType(

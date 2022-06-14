@@ -116,12 +116,12 @@ const Panel = memo(
             className={classNames(
               "col-span-12 m-0.5",
               forceBackground ||
-                (definition.node_type !== "image" &&
-                  definition.node_type !== "card" &&
-                  definition.node_type !== "input") ||
-                ((definition.node_type === "image" ||
-                  definition.node_type === "card" ||
-                  definition.node_type === "input") &&
+                (definition.panel_type !== "image" &&
+                  definition.panel_type !== "card" &&
+                  definition.panel_type !== "input") ||
+                ((definition.panel_type === "image" ||
+                  definition.panel_type === "card" ||
+                  definition.panel_type === "input") &&
                   get(definition, "properties.type") === "table")
                 ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
                 : null
@@ -147,7 +147,7 @@ const Panel = memo(
             {withTitle && definition.title && (
               <div
                 className={classNames(
-                  definition.node_type === "input" &&
+                  definition.panel_type === "input" &&
                     get(definition, "properties.type") !== "table"
                     ? "pl-0 pr-2 sm:pr-4 py-2"
                     : "px-4 py-4"
@@ -167,9 +167,9 @@ const Panel = memo(
               className={classNames(
                 withTitle &&
                   definition.title &&
-                  ((definition.node_type !== "input" &&
-                    definition.node_type !== "table") ||
-                    (definition.node_type === "table" &&
+                  ((definition.panel_type !== "input" &&
+                    definition.panel_type !== "table") ||
+                    (definition.panel_type === "table" &&
                       get(definition, "properties.type") === "line"))
                   ? classNames(
                       "border-t",
@@ -179,7 +179,7 @@ const Panel = memo(
                     )
                   : null,
                 withOverflow ||
-                  (definition.node_type === "table" &&
+                  (definition.panel_type === "table" &&
                     get(definition, "properties.type") !== "line") ||
                   get(definition, "properties.type") === "table"
                   ? "overflow-x-auto"

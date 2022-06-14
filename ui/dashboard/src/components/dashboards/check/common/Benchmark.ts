@@ -59,20 +59,21 @@ class Benchmark implements CheckNode {
     const lengthMaxBenchmarkIndex = (benchmarksToAdd.length - 1).toString()
       .length;
     benchmarksToAdd.forEach((nestedBenchmark, benchmarkIndex) => {
+      const nestedDefinition = panelsMap[nestedBenchmark.name];
       // @ts-ignore
       const benchmarks = nestedBenchmark.children?.filter(
-        (child) => child.node_type === "benchmark"
+        (child) => child.panel_type === "benchmark"
       );
       // @ts-ignore
       const controls = nestedBenchmark.children?.filter(
-        (child) => child.node_type === "control"
+        (child) => child.panel_type === "control"
       );
       nestedBenchmarks.push(
         new Benchmark(
           padStart(benchmarkIndex.toString(), lengthMaxBenchmarkIndex),
-          nestedBenchmark.name,
-          nestedBenchmark.title,
-          nestedBenchmark.description,
+          nestedDefinition.name,
+          nestedDefinition.title,
+          nestedDefinition.description,
           benchmarks,
           controls,
           panelsMap,
@@ -97,7 +98,7 @@ class Benchmark implements CheckNode {
           control.title,
           control.description,
           control.severity,
-          control.results,
+          control.data,
           control.summary,
           control.tags,
           control.status,
@@ -197,56 +198,56 @@ class Benchmark implements CheckNode {
     const columns: LeafNodeDataColumn[] = [
       {
         name: "group_id",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "title",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "description",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "control_id",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "control_title",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "control_description",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "severity",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "reason",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "resource",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "status",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
     ];
     const { dimensions, tags } = this.get_dynamic_cols();
     Object.keys(tags).forEach((tag) =>
       columns.push({
         name: tag,
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       })
     );
     Object.keys(dimensions).forEach((dimension) =>
       columns.push({
         name: dimension,
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       })
     );
     const rows = this.get_data_rows(Object.keys(tags), Object.keys(dimensions));

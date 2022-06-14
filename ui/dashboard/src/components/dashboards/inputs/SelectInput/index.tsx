@@ -6,7 +6,7 @@ import Select, {
 import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
-import { getColumnIndex } from "../../../../utils/data";
+import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../index";
 import { useEffect, useMemo, useState } from "react";
 
@@ -115,18 +115,18 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     }
 
     if (data) {
-      const labelColIndex = getColumnIndex(data.columns, "label");
-      const valueColIndex = getColumnIndex(data.columns, "value");
-      const tagsColIndex = getColumnIndex(data.columns, "tags");
+      const labelCol = getColumn(data.columns, "label");
+      const valueCol = getColumn(data.columns, "value");
+      const tagsCol = getColumn(data.columns, "tags");
 
-      if (labelColIndex === -1 || valueColIndex === -1) {
+      if (!labelCol || !valueCol) {
         return [];
       }
 
       return data.rows.map((row) => ({
-        label: row[labelColIndex],
-        value: row[valueColIndex],
-        tags: tagsColIndex > -1 ? row[tagsColIndex] : {},
+        label: row[labelCol.name],
+        value: row[valueCol.name],
+        tags: tagsCol ? row[tagsCol.name] : {},
       }));
     } else if (properties.options) {
       return properties.options.map((option) => ({

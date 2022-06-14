@@ -1,22 +1,14 @@
 import { LeafNodeDataColumn } from "../components/dashboards/common";
 
-const getColumnIndex = (
+const getColumn = (
   columns: LeafNodeDataColumn[],
   name: string
-): number => {
+): LeafNodeDataColumn | undefined => {
   if (!columns || !name) {
-    return -1;
+    return undefined;
   }
 
-  return columns.findIndex((col) => col.name === name);
+  return columns.find((col) => col.name === name);
 };
 
-const hasColumn = (columns: LeafNodeDataColumn[], name: string): boolean => {
-  if (!columns || !name) {
-    return false;
-  }
-
-  return getColumnIndex(columns, name) >= 0;
-};
-
-export { getColumnIndex, hasColumn };
+export { getColumn };

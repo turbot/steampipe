@@ -247,7 +247,7 @@ export interface AvailableDashboardsDictionary {
 
 export interface ContainerDefinition {
   name: string;
-  node_type?: string;
+  panel_type?: string;
   allow_child_panel_expand?: boolean;
   data?: LeafNodeData;
   title?: string;
@@ -265,8 +265,9 @@ export interface SQLDataMap {
 
 export interface PanelDefinition {
   name: string;
-  node_type?: string;
+  panel_type?: string;
   title?: string;
+  description?: string;
   width?: Width;
   sql?: string;
   data?: LeafNodeData;
@@ -286,7 +287,7 @@ export interface ControlDefinition extends PanelDefinition {}
 export interface DashboardDefinition {
   artificial: boolean;
   name: string;
-  node_type: string;
+  panel_type: string;
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
@@ -419,7 +420,7 @@ const wrapDefinitionInArtificialDashboard = (
     artificial: true,
     name: definition.name,
     title: definition.title,
-    node_type: "dashboard",
+    panel_type: "dashboard",
     children: [
       {
         ...definitionWithoutTitle,
@@ -476,7 +477,7 @@ function reducer(state, action) {
       // For benchmarks and controls that are run directly from a mod,
       // we need to wrap these in an artificial dashboard, so we can treat
       // it just like any other dashboard
-      if (action.dashboard_node.node_type !== "dashboard") {
+      if (action.dashboard_node.panel_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(
           originalDashboard,
           action.layout
@@ -491,10 +492,7 @@ function reducer(state, action) {
       return {
         ...state,
         error: null,
-        panelsMap: addDataToPanels(
-          action.panels || action.leaf_nodes,
-          state.sqlDataMap
-        ),
+        panelsMap: addDataToPanels(action.panels, state.sqlDataMap),
         dashboard,
         execution_id: action.execution_id,
         refetchDashboard: false,
@@ -513,7 +511,7 @@ function reducer(state, action) {
       const originalDashboard = action.dashboard_node;
       let dashboard;
 
-      if (action.dashboard_node.node_type !== "dashboard") {
+      if (action.dashboard_node.panel_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(
           originalDashboard,
           action.layout
@@ -775,7 +773,7 @@ const DashboardProvider = ({
     getInitialState(searchParams, stateDefaults)
   );
   const dispatch = useCallback((action) => {
-    // console.log(action.type, action);
+    console.log(action.type, action);
     dispatchInner(action);
   }, []);
   const { dashboard_name } = useParams();

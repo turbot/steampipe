@@ -86,7 +86,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     let csvRows: any[] = [];
 
     const jsonbColIndices = data.columns
-      .filter((i) => i.data_type_name === "jsonb")
+      .filter((i) => i.data_type === "jsonb")
       .map((i) => data.columns.indexOf(i)); // would return e.g. [3,6,9]
 
     for (const row of data.rows) {
@@ -108,7 +108,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         selectedDashboard?.full_name ||
         definition.dashboard ||
         ""
-      ).replaceAll(".", "_")}_${definition.node_type}_${datetime}`
+      ).replaceAll(".", "_")}_${definition.panel_type}_${datetime}`
     );
   }, [definition, jsonToCSV, selectedDashboard]);
 

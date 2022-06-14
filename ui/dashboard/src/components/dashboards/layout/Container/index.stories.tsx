@@ -9,7 +9,7 @@ const story = {
 export default story;
 
 const Template = (args) => (
-  <PanelStoryDecorator definition={args.definition} nodeType="container" />
+  <PanelStoryDecorator definition={args.definition} panelType="container" />
 );
 
 export const Empty = Template.bind({});

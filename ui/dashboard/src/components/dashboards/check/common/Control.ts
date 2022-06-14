@@ -13,7 +13,11 @@ import {
   CheckTags,
   findDimension,
 } from "./index";
-import { LeafNodeDataRow } from "../../common";
+import {
+  LeafNodeData,
+  LeafNodeDataColumn,
+  LeafNodeDataRow,
+} from "../../common";
 import { PanelsMap } from "../../../../hooks/useDashboard";
 
 class Control implements CheckNode {
@@ -40,7 +44,7 @@ class Control implements CheckNode {
     title: string | undefined,
     description: string | undefined,
     severity: CheckSeverity | undefined,
-    results: CheckResult[] | undefined,
+    data: LeafNodeData | undefined,
     summary: CheckSummary | undefined,
     tags: CheckTags | undefined,
     status: CheckNodeStatusRaw,
@@ -57,7 +61,7 @@ class Control implements CheckNode {
     this._title = title;
     this._description = description;
     this._severity = severity;
-    this._results = results || [];
+    this._results = this._build_check_results(data);
     this._summary = summary || {
       alarm: 0,
       ok: 0,
@@ -244,6 +248,38 @@ class Control implements CheckNode {
       benchmark_trunk,
       control: this,
     }));
+  };
+
+  private _build_check_results = (data?: LeafNodeData): CheckResult[] => {
+    if (!data || !data.columns || !data.rows) {
+      return [];
+    }
+    const results: CheckResult[] = [];
+    const dimensionColumns: LeafNodeDataColumn[] = [];
+    for (const col of data.columns) {
+      if (
+        col.name === "reason" ||
+        col.name === "resource" ||
+        col.name === "status"
+      ) {
+        continue;
+      }
+      dimensionColumns.push(col);
+    }
+    for (const row of data.rows) {
+      const result = {
+        reason: row.reason,
+        resource: row.resource,
+        status: row.status,
+        dimensions: dimensionColumns.map((col) => ({
+          key: col.name,
+          value: row[col.name],
+        })),
+      };
+      // @ts-ignore
+      results.push(result);
+    }
+    return results;
   };
 }
 

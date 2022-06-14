@@ -5,7 +5,7 @@ import { noop } from "./func";
 
 type PanelStoryDecoratorProps = {
   definition: any;
-  nodeType: "card" | "chart" | "container" | "table" | "text";
+  panelType: "card" | "chart" | "container" | "table" | "text";
   additionalProperties?: {
     [key: string]: any;
   };
@@ -18,14 +18,14 @@ const stubDashboardSearch: DashboardSearch = {
 
 export const PanelStoryDecorator = ({
   definition = {},
-  nodeType,
+  panelType,
   additionalProperties = {},
 }: PanelStoryDecoratorProps) => {
   const { properties, ...rest } = definition;
 
   const newPanel = {
-    name: `${nodeType}.story`,
-    node_type: nodeType,
+    name: `${panelType}.story`,
+    panel_type: panelType,
     ...rest,
     properties: {
       ...(properties || {}),
@@ -73,7 +73,7 @@ export const PanelStoryDecorator = ({
           artificial: false,
           name: "storybook.dashboard.storybook_dashboard_wrapper",
           children: [newPanel],
-          node_type: "dashboard",
+          panel_type: "dashboard",
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
 
@@ -106,6 +106,7 @@ export const PanelStoryDecorator = ({
         components: buildComponentsMap(),
         selectedSnapshot: null,
         refetchDashboard: false,
+        state: "complete",
       }}
     >
       <Dashboard />
