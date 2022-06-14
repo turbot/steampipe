@@ -283,8 +283,33 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// if timer is turned on
 	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
-		timingResult := <-result.TimingResult
-		fmt.Printf("\nTime: %v. Rows fetched: %d (uncached) %d (cached). Hydrate calls: %d\n", timingResult.Duration, timingResult.RowsFetched, timingResult.CachedRowsFetched, timingResult.HydrateCalls)
+		displayTiming(result)
+	}
+}
+
+func displayTiming(result *queryresult.Result) {
+	timingResult := <-result.TimingResult
+	if timingResult != nil {
+		var sb strings.Builder
+
+		totalRows := timingResult.RowsFetched + timingResult.CachedRowsFetched
+		sb.WriteString(fmt.Sprintf("\nTime: %v. Rows fetched", timingResult.Duration))
+		if totalRows == 0 {
+			sb.WriteString(": 0")
+		} else {
+			if totalRows > 0 {
+				sb.WriteString(fmt.Sprintf(" %d", timingResult.RowsFetched+timingResult.CachedRowsFetched))
+			}
+			if timingResult.CachedRowsFetched > 0 {
+				if timingResult.RowsFetched == 0 {
+					sb.WriteString(" (cached)")
+				} else {
+					sb.WriteString(fmt.Sprintf(" (%d cached)", timingResult.CachedRowsFetched))
+				}
+			}
+		}
+		sb.WriteString(fmt.Sprintf(". Hydrate calls: %d\n", timingResult.HydrateCalls))
+		fmt.Printf(sb.String())
 	}
 }
 

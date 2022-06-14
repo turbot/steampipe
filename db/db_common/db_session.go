@@ -22,7 +22,7 @@ type DatabaseSession struct {
 	Connection *sql.Conn `json:"-"`
 
 	// the id of the last scan metadata retrieved
-	ScanMetadataMaxId int `json:"-"`
+	ScanMetadataMaxId int64 `json:"-"`
 }
 
 func NewDBSession(backendPid uint32) *DatabaseSession {
