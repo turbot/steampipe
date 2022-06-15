@@ -34,15 +34,25 @@ jobs:
           apt upgrade -y
           apt install -y git sudo
 
-      - name: Checkout submodules
+      # - name: Checkout submodules
+      #   run: |
+      #     ls
+      #     git submodule update --init
+      #     git submodule update --recursive
+
+      - name: install steampipe
         run: |
-          ls
-          git submodule update --init --recursive
+          ./install.sh v0.14.6
+          steampipe query "select 1"
 
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
 
-  #     - name: Set PATH
-  #       run: |
-  #         echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+      - name: Set PATH
+        run: |
+          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
         continue-on-error: false
@@ -50,14 +60,14 @@ jobs:
           steampipe service start
           steampipe service stop
 
-  #     - name: Run Test Suite
-  #       id: run-test-suite
-  #       timeout-minutes: 15
-  #       continue-on-error: true
-  #       run: |
-  #         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-  #         $GITHUB_WORKSPACE/tests/acceptance/run.sh
-  #         steampipe service stop --force
+      - name: Run Test Suite
+        id: run-test-suite
+        timeout-minutes: 15
+        continue-on-error: true
+        run: |
+          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          steampipe service stop --force
       
   #     - name: Save Test Suite Logs
   #       uses: actions/upload-artifact@v3
