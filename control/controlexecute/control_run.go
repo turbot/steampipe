@@ -31,7 +31,7 @@ type ControlRun struct {
 	Documentation string            `json:"documentation,omitempty"`
 	Tags          map[string]string `json:"tags,omitempty"`
 	Display       string            `json:"display,omitempty"`
-	Type          string            `json:"type,omitempty"`
+	Type          string            `json:"display_type,omitempty"`
 
 	// this will be serialised under 'properties'
 	Severity string `json:"-"`

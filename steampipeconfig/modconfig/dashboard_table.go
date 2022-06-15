@@ -26,7 +26,7 @@ type DashboardTable struct {
 
 	Title      *string                          `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width      *int                             `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type       *string                          `cty:"type" hcl:"type" column:"type,text" json:"type,omitempty"`
+	Type       *string                          `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*DashboardTableColumn `cty:"columns" json:"columns,omitempty"`
 	Display    *string                          `cty:"display" hcl:"display" json:"display,omitempty"`
