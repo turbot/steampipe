@@ -186,7 +186,7 @@ jobs:
         run: |
           pwd
           ls -al
-          echo "PATH=$PATH:$HOME/build:/__w/steampipe/steampipe/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
         run: |
@@ -197,8 +197,8 @@ jobs:
       - name: Run Test Suite
         timeout-minutes: 5
         run: |
-          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          chmod +x /__w/steampipe/steampipe/tests/acceptance/run.sh
+          /__w/steampipe/steampipe/tests/acceptance/run.sh
           steampipe service stop --force
 
   create_release_tag:
