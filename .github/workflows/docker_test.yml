@@ -34,27 +34,28 @@ jobs:
           apt upgrade -y
           apt install -y git sudo wget curl vim
 
-      # - name: Checkout submodules
-      #   run: |
-      #     ls
-      #     git submodule update --init
-      #     git submodule update --recursive
+      - name: Checkout submodules
+        run: |
+          ls
+          git init
+          git submodule update --init
+          git submodule update --recursive
 
       - name: install steampipe
         run: |
           ./install.sh v0.14.6
 
-      - name: add and switch to user
-        run: |
-          adduser --disabled-password --gecos "" sp
-          echo "sp:strongpassword" | chpasswd
+      # - name: add and switch to user
+      #   run: |
+      #     adduser --disabled-password --gecos "" sp
+      #     echo "sp:strongpassword" | chpasswd
 
-      - name: steampipe query
-        run: |
-          echo strongpassword | su - sp -c "my command line"
-          ls
-          whoami
-          steampipe query "select 1"
+      # - name: steampipe query
+      #   run: |
+      #     echo strongpassword | su - sp -c "my command line"
+      #     ls
+      #     whoami
+      #     steampipe query "select 1"
 
       - name: Setup BATS
         uses: mig4/setup-bats@v1
