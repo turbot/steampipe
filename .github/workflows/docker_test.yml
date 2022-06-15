@@ -30,7 +30,8 @@ jobs:
 
       - name: install git
         run: |
-          apt update && apt upgrade
+          apt update -y
+          apt upgrade -y
           apt install -y git sudo
 
       - name: Checkout submodules
