@@ -3,7 +3,7 @@ package dashboard
 import (
 	"context"
 
-	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
+	"github.com/turbot/steampipe-plugin-sdk/v3/telemetry"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
@@ -30,7 +30,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	}
 
 	// initialise telemetry
-	shutdownTelemetry, err := instrument.Init(constants.AppName)
+	shutdownTelemetry, err := telemetry.Init(constants.AppName)
 	if err != nil {
 		initData.Result.AddWarnings(err.Error())
 	} else {

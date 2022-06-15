@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
+	"github.com/turbot/steampipe-plugin-sdk/v3/telemetry"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
@@ -36,7 +36,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	}
 
 	// initialise telemetry
-	shutdownTelemetry, err := instrument.Init(constants.AppName)
+	shutdownTelemetry, err := telemetry.Init(constants.AppName)
 	if err != nil {
 		initData.Result.AddWarnings(err.Error())
 	} else {

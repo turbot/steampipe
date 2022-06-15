@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/v3/instrument"
+	"github.com/turbot/steampipe-plugin-sdk/v3/telemetry"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/db/db_client"
 	"github.com/turbot/steampipe/db/db_common"
@@ -79,7 +79,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	}()
 
 	// init telemetry
-	shutdownTelemetry, err := instrument.Init(constants.AppName)
+	shutdownTelemetry, err := telemetry.Init(constants.AppName)
 	if err != nil {
 		i.Result.AddWarnings(err.Error())
 	} else {
