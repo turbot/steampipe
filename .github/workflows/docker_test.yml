@@ -36,8 +36,8 @@ jobs:
 
       - name: Checkout submodules
         run: |
-          ls
           git init
+          git config --global --add safe.directory /__w/steampipe/steampipe
           git submodule update --init
           git submodule update --recursive
 
