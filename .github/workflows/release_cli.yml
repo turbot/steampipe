@@ -155,7 +155,6 @@ jobs:
           apt install -y git sudo wget curl jq vim
           ls /__w/steampipe/steampipe
           pwd
-          docker ps
 
       - name: Checkout submodules
         run: |
