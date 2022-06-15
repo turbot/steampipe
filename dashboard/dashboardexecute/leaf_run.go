@@ -12,13 +12,15 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	Name             string                      `json:"name"`
-	Title            string                      `json:"title,omitempty"`
-	Width            int                         `json:"width,omitempty"`
-	Type             string                      `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
-	Display          string                      `cty:"display" hcl:"display" json:"display,omitempty"`
-	RawSQL           string                      `json:"sql,omitempty"`
-	Args             []string                    `json:"args,omitempty"`
+	Name    string                `json:"name"`
+	Title   string                `json:"title,omitempty"`
+	Width   int                   `json:"width,omitempty"`
+	Type    string                `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
+	Display string                `cty:"display" hcl:"display" json:"display,omitempty"`
+	RawSQL  string                `json:"sql,omitempty"`
+	Args    []string              `json:"args,omitempty"`
+	Params  []*modconfig.ParamDef ` json:"params,omitempty"`
+
 	Data             *dashboardtypes.LeafData    `json:"data,omitempty"`
 	ErrorString      string                      `json:"error,omitempty"`
 	DashboardNode    modconfig.DashboardLeafNode `json:"properties,omitempty"`
@@ -266,6 +268,7 @@ func (r *LeafRun) resolveSQL() error {
 	r.RawSQL = resolvedQuery.RawSQL
 	r.executeSQL = resolvedQuery.ExecuteSQL
 	r.Args = resolvedQuery.Args
+	r.Params = resolvedQuery.Params
 	return nil
 }
 

@@ -37,7 +37,7 @@ type DashboardFlow struct {
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	Base       *DashboardFlow       `hcl:"base" json:"-"`
 	DeclRange  hcl.Range            `json:"-"`

@@ -73,6 +73,7 @@ func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryPr
 		ExecuteSQL: executeString,
 		RawSQL:     typehelpers.SafeString(queryProvider.GetSQL()),
 		Args:       argsArray,
+		Params:     queryProvider.GetParams(),
 	}, nil
 }
 

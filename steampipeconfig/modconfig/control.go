@@ -34,8 +34,8 @@ type Control struct {
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql,omitempty"`
 	Query                 *Query      `hcl:"query" json:"query,omitempty"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"args,omitempty"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	References      []*ResourceReference ` json:"-"`
 	Mod             *Mod                 `cty:"mod" json:"-"`
