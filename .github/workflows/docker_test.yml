@@ -45,10 +45,11 @@ jobs:
         run: |
           ./install.sh v0.14.6
 
-      # - name: add and switch to user
-      #   run: |
-      #     adduser --disabled-password --gecos "" sp
-      #     echo "sp:strongpassword" | chpasswd
+      - name: add and switch to user
+        run: |
+          adduser --disabled-password --gecos "" spipe
+          su - spipe
+          whoami
 
       # - name: steampipe query
       #   run: |

@@ -154,9 +154,12 @@ jobs:
           apt upgrade -y
           apt install -y git sudo wget curl jq vim
 
-      # - name: Checkout submodules
-      #   run: |
-      #     git submodule update --init --recursive
+      - name: Checkout submodules
+        run: |
+          git init
+          git config --global --add safe.directory /__w/steampipe/steampipe
+          git submodule update --init
+          git submodule update --recursive
 
       - name: Setup BATS
         uses: mig4/setup-bats@v1
