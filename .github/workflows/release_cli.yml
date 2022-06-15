@@ -140,7 +140,7 @@ jobs:
     strategy:
       matrix:
         containers: ["ubuntu:latest"]
-    container: ${{ matrix.platform }}
+    container: ${{ matrix.containers }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
