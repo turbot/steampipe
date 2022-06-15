@@ -27,6 +27,7 @@ import {
   BenchmarkDefinition,
   ElementType,
   IActions,
+  PanelDefinition,
   useDashboard,
 } from "./useDashboard";
 import { useSearchParams } from "react-router-dom";
@@ -48,7 +49,7 @@ export interface CheckGroupingAction {
 
 interface ICheckGroupingContext {
   benchmark: BenchmarkType | null;
-  definition: BenchmarkDefinition;
+  definition: PanelDefinition;
   grouping: CheckNode | null;
   groupingsConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
@@ -354,56 +355,67 @@ const CheckGroupingProvider = ({
     }
   }, [searchParams]);
 
-  const [benchmark, grouping, firstChildSummaries, tempNodeStates] =
-    useMemo(() => {
-      if (!definition) {
-        return [null, null, [], {}];
-      }
+  const [
+    benchmark,
+    panelDefinition,
+    grouping,
+    firstChildSummaries,
+    tempNodeStates,
+  ] = useMemo(() => {
+    if (!definition) {
+      return [null, null, null, [], {}];
+    }
 
-      // @ts-ignore
-      const nestedBenchmarks = definition.children?.filter(
-        (child) => child.panel_type === "benchmark"
+    // @ts-ignore
+    const nestedBenchmarks = definition.children?.filter(
+      (child) => child.panel_type === "benchmark"
+    );
+    // @ts-ignore
+    const nestedControls = definition.children?.filter(
+      (child) => child.panel_type === "control"
+    );
+
+    const rootBenchmarkPanel = panelsMap[definition.name];
+    const b = new BenchmarkType(
+      "0",
+      rootBenchmarkPanel.name,
+      rootBenchmarkPanel.title,
+      rootBenchmarkPanel.description,
+      nestedBenchmarks,
+      nestedControls,
+      panelsMap,
+      []
+    );
+
+    const checkNodeStates: CheckGroupNodeStates = {};
+    const result: CheckNode[] = [];
+    const temp = { _: result };
+    b.all_control_results.forEach((checkResult) => {
+      const grouping = groupCheckItems(
+        temp,
+        checkResult,
+        groupingsConfig,
+        checkNodeStates
       );
-      // @ts-ignore
-      const nestedControls = definition.children?.filter(
-        (child) => child.panel_type === "control"
-      );
+      const node = getCheckResultNode(checkResult);
+      grouping._.push(node);
+    });
 
-      const rootBenchmarkPanel = panelsMap[definition.name];
-      const b = new BenchmarkType(
-        "0",
-        rootBenchmarkPanel.name,
-        rootBenchmarkPanel.title,
-        rootBenchmarkPanel.description,
-        nestedBenchmarks,
-        nestedControls,
-        panelsMap,
-        []
-      );
+    const results = new RootNode(result);
 
-      const checkNodeStates: CheckGroupNodeStates = {};
-      const result: CheckNode[] = [];
-      const temp = { _: result };
-      b.all_control_results.forEach((checkResult) => {
-        const grouping = groupCheckItems(
-          temp,
-          checkResult,
-          groupingsConfig,
-          checkNodeStates
-        );
-        const node = getCheckResultNode(checkResult);
-        grouping._.push(node);
-      });
+    const firstChildSummaries: CheckSummary[] = [];
+    for (const child of results.children) {
+      firstChildSummaries.push(child.summary);
+    }
 
-      const results = new RootNode(result);
-
-      const firstChildSummaries: CheckSummary[] = [];
-      for (const child of results.children) {
-        firstChildSummaries.push(child.summary);
-      }
-
-      return [b, results, firstChildSummaries, checkNodeStates] as const;
-    }, [definition, groupingsConfig, panelsMap]);
+    return [
+      b,
+      { ...rootBenchmarkPanel, children: definition.children },
+      results,
+      firstChildSummaries,
+      checkNodeStates,
+    ] as const;
+  }, [definition, groupingsConfig, panelsMap]);
 
   const previousGroupings = usePrevious({ groupingsConfig });
 
@@ -425,7 +437,8 @@ const CheckGroupingProvider = ({
     <CheckGroupingContext.Provider
       value={{
         benchmark,
-        definition,
+        // @ts-ignore
+        definition: panelDefinition,
         dispatch,
         firstChildSummaries,
         grouping,

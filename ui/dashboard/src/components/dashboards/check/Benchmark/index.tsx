@@ -47,7 +47,7 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 );
 
 const Benchmark = (props: InnerCheckProps) => {
-  const { selectedDashboard } = useDashboard();
+  const { dashboard, selectedDashboard } = useDashboard();
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
@@ -191,7 +191,7 @@ const Benchmark = (props: InnerCheckProps) => {
           },
         ],
         data: benchmarkDataTable,
-        title: props.benchmark.title,
+        title: dashboard?.artificial ? undefined : props.benchmark.title,
         width: props.definition.width,
       }}
       // @ts-ignore
