@@ -40,10 +40,8 @@ type ResultGroup struct {
 	// list of children stored as controlexecute.ExecutionTreeNode
 	Children []ExecutionTreeNode                    `json:"-"`
 	Severity map[string]controlstatus.StatusSummary `json:"-"`
-
 	// "benchmark"
 	NodeType string `json:"panel_type"`
-
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
 	Parent    *ResultGroup          `json:"-"`

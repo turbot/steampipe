@@ -35,7 +35,6 @@ type DashboardChart struct {
 	Grouping   *string                          `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
-	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`

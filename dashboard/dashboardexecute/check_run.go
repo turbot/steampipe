@@ -180,6 +180,9 @@ func (r *CheckRun) ChildrenComplete() bool {
 	return r.RunComplete()
 }
 
+// IsSnapshotPanel implements SnapshotPanel
+func (*CheckRun) IsSnapshotPanel() {}
+
 // GetInputsDependingOn implements DashboardNodeRun
 //return nothing for CheckRun
 func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }

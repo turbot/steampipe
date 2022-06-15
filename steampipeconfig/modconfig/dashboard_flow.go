@@ -25,7 +25,6 @@ type DashboardFlow struct {
 
 	CategoryList DashboardFlowCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardFlowCategory `cty:"categories" json:"categories"`
-	OnHooks      []*DashboardOn                    `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`

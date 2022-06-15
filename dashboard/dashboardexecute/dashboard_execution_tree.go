@@ -226,6 +226,10 @@ func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
 
 func (e *DashboardExecutionTree) buildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
 	res := map[string]dashboardtypes.SnapshotPanel{}
+	// if this node is a snapshot node, add to map
+	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
+		res[e.Root.GetName()] = snapshotNode
+	}
 	return e.buildSnapshotPanelsUnder(e.Root, res)
 }
 
@@ -240,5 +244,6 @@ func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.
 		}
 		res = e.buildSnapshotPanelsUnder(c, res)
 	}
+
 	return res
 }

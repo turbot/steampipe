@@ -21,11 +21,10 @@ type DashboardCard struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Label   *string        `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
-	Value   *string        `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
-	Icon    *string        `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
-	HREF    *string        `cty:"href" hcl:"href" json:"href,omitempty"`
-	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Label *string `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
+	Value *string `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
+	Icon  *string `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
+	HREF  *string `cty:"href" hcl:"href" json:"href,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`

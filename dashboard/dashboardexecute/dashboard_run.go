@@ -17,6 +17,7 @@ type DashboardRun struct {
 	Title            string                            `json:"title,omitempty"`
 	Width            int                               `json:"width,omitempty"`
 	Description      string                            `json:"description,omitempty"`
+	Display          string                            `json:"display,omitempty"`
 	Documentation    string                            `json:"documentation,omitempty"`
 	Tags             map[string]string                 `json:"tags,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
@@ -25,7 +26,6 @@ type DashboardRun struct {
 	Status           dashboardtypes.DashboardRunStatus `json:"status"`
 	DashboardName    string                            `json:"dashboard"`
 	SourceDefinition string                            `json:"source_definition"`
-	Display          string                            `json:"display,omitempty"`
 
 	error         error
 	dashboardNode *modconfig.Dashboard
@@ -40,9 +40,11 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 		NodeType: r.NodeType,
 		Children: make([]*dashboardtypes.SnapshotTreeNode, len(r.Children)),
 	}
+
 	for i, c := range r.Children {
 		res.Children[i] = c.AsTreeNode()
 	}
+
 	return res
 }
 

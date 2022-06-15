@@ -19,30 +19,29 @@ type Dashboard struct {
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain" json:"-"`
+	Remain hcl.Body `hcl:",remain"`
 
-	ShortName       string            `json:"-"`
-	FullName        string            `cty:"name" json:"-"`
-	UnqualifiedName string            `cty:"unqualified_name" json:"-"`
-	Title           *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width           *int              `cty:"width" hcl:"width"  column:"width,text" json:"-"`
-	Display         *string           `cty:"display" hcl:"display" column:"display,text" json:"display,omitempty"`
-	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb" json:"inputs,omitempty"`
-	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
-	Description     *string           `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
-	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
-	Tags            map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb" json:"tags,omitempty"`
+	ShortName       string
+	FullName        string            `cty:"name"`
+	UnqualifiedName string            `cty:"unqualified_name"`
+	Title           *string           `cty:"title" hcl:"title" column:"title,text"`
+	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
+	Display         *string           `cty:"display" hcl:"display" column:"display,text"`
+	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
+	Description     *string           `cty:"description" hcl:"description" column:"description,text"`
+	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Tags            map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"`
+	UrlPath         string            `cty:"url_path"  column:"url_path,jsonb"`
 
-	UrlPath string `cty:"url_path"  column:"url_path,jsonb" json:"url_path"`
+	Base *Dashboard `hcl:"base"`
 
-	Base *Dashboard `hcl:"base" json:"-"`
+	References []*ResourceReference
+	Mod        *Mod `cty:"mod"`
+	DeclRange  hcl.Range
 
-	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
+	Paths []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
-	ChildNames []string `cty:"children" column:"children,jsonb" json:"-"`
+	ChildNames []string `cty:"children" column:"children,jsonb"`
 
 	selfInputsMap map[string]*DashboardInput
 	// the actual children

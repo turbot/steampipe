@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/utils"
@@ -16,6 +17,7 @@ type DashboardContainerRun struct {
 	Name             string                            `json:"name"`
 	Title            string                            `json:"title,omitempty"`
 	Width            int                               `json:"width,omitempty"`
+	Display          string                            `json:"display,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
 	Children         []dashboardtypes.DashboardNodeRun `json:"-"`
 	NodeType         string                            `json:"panel_type"`
@@ -53,6 +55,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 		Name:             name,
 		NodeType:         modconfig.BlockTypeContainer,
 		DashboardName:    executionTree.dashboardName,
+		Display:          typehelpers.SafeString(container.Display),
 		SourceDefinition: container.GetMetadata().SourceDefinition,
 		executionTree:    executionTree,
 		parent:           parent,

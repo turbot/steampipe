@@ -17,12 +17,11 @@ type DashboardInput struct {
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
-	UnqualifiedName string `cty:"unqualified_name" json:"name"`
-	DashboardName   string `column:"dashboard,text" json:"dashboard"`
+	UnqualifiedName string `cty:"unqualified_name" json:"-"`
+	DashboardName   string `column:"dashboard,text" json:"-"`
 
 	Label       *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
 	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
-	OnHooks     []*DashboardOn          `cty:"on" hcl:"on,block" json:"on,omitempty"`
 	Options     []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
@@ -61,7 +60,6 @@ func (i *DashboardInput) Clone() *DashboardInput {
 		Label:                    i.Label,
 		Placeholder:              i.Placeholder,
 		Display:                  i.Display,
-		OnHooks:                  i.OnHooks,
 		Options:                  i.Options,
 		SQL:                      i.SQL,
 		Query:                    i.Query,
@@ -74,7 +72,6 @@ func (i *DashboardInput) Clone() *DashboardInput {
 		parents:                  i.parents,
 		dashboard:                i.dashboard,
 	}
-
 }
 
 func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) *DashboardInput {
@@ -98,6 +95,9 @@ func (i *DashboardInput) Equals(other *DashboardInput) bool {
 func (i *DashboardInput) CtyValue() (cty.Value, error) {
 	return getCtyValue(i)
 }
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*DashboardInput) IsSnapshotPanel() {}
 
 // Name implements HclResource, ModTreeItem
 // return name in format: 'chart.<shortName>'

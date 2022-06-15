@@ -20,9 +20,8 @@ type DashboardImage struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Src     *string        `cty:"src" hcl:"src" column:"src,text" json:"src,omitempty"`
-	Alt     *string        `cty:"alt" hcl:"alt" column:"alt,text" json:"alt,omitempty"`
-	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Src *string `cty:"src" hcl:"src" column:"src,text" json:"src,omitempty"`
+	Alt *string `cty:"alt" hcl:"alt" column:"alt,text" json:"alt,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
