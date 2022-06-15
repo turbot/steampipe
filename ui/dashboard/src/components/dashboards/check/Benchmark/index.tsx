@@ -80,10 +80,10 @@ const Benchmark = (props: InnerCheckProps) => {
         panel_type: "card",
         name: `${props.definition.name}.container.summary.ok-${totalSummary.ok}`,
         width: 2,
+        display_type: totalSummary.ok > 0 ? "ok" : null,
         properties: {
           label: "OK",
           value: totalSummary.ok,
-          type: totalSummary.ok > 0 ? "ok" : null,
           icon: "heroicons-solid:check-circle",
         },
       },
@@ -91,10 +91,10 @@ const Benchmark = (props: InnerCheckProps) => {
         panel_type: "card",
         name: `${props.definition.name}.container.summary.alarm-${totalSummary.alarm}`,
         width: 2,
+        display_type: totalSummary.alarm > 0 ? "alert" : null,
         properties: {
           label: "Alarm",
           value: totalSummary.alarm,
-          type: totalSummary.alarm > 0 ? "alert" : null,
           icon: "heroicons-solid:bell",
         },
       },
@@ -102,10 +102,10 @@ const Benchmark = (props: InnerCheckProps) => {
         panel_type: "card",
         name: `${props.definition.name}.container.summary.error-${totalSummary.error}`,
         width: 2,
+        display_type: totalSummary.error > 0 ? "alert" : null,
         properties: {
           label: "Error",
           value: totalSummary.error,
-          type: totalSummary.error > 0 ? "alert" : null,
           icon: "heroicons-solid:exclamation-circle",
         },
       },
@@ -113,10 +113,10 @@ const Benchmark = (props: InnerCheckProps) => {
         panel_type: "card",
         name: `${props.definition.name}.container.summary.info-${totalSummary.info}`,
         width: 2,
+        display_type: totalSummary.info > 0 ? "info" : null,
         properties: {
           label: "Info",
           value: totalSummary.info,
-          type: totalSummary.info > 0 ? "info" : null,
           icon: "heroicons-solid:information-circle",
         },
       },
@@ -145,10 +145,10 @@ const Benchmark = (props: InnerCheckProps) => {
         panel_type: "card",
         name: `${props.definition.name}.container.summary.severity-${total}`,
         width: 2,
+        display_type: total > 0 ? "severity" : "",
         properties: {
           label: "Critical / High",
           value: total,
-          type: total > 0 ? "severity" : "",
           icon: "heroicons-solid:exclamation",
         },
       });
@@ -191,13 +191,13 @@ const Benchmark = (props: InnerCheckProps) => {
           },
         ],
         data: benchmarkDataTable,
-        title: props.definition.title,
+        title: props.benchmark.title,
         width: props.definition.width,
       }}
       // @ts-ignore
       expandDefinition={{
         ...props.definition,
-        title: props.definition.title || selectedDashboard?.title,
+        title: props.benchmark.title || selectedDashboard?.title,
         data: benchmarkDataTable,
       }}
       withTitle={props.withTitle}
