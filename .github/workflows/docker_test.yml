@@ -6,9 +6,6 @@ jobs:
     runs-on: ubuntu-latest
     container: turbot/steampipe:latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
       - name: Check version
         run: steampipe -v
 
@@ -24,10 +21,9 @@ jobs:
       - name: uname
         run: uname -a
 
-      # - name: Checkout
-      #   uses: actions/checkout@v3
-      #   with:
-      #     submodules: true
+      - name: Checkout submodules
+        run: |
+          git submodule update --init --recursive
 
   #     - name: Set PATH
   #       run: |
