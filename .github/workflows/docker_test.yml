@@ -47,7 +47,7 @@ jobs:
       - name: add and switch to user
         run: |
           adduser --disabled-password --gecos "" sp
-          useradd -a -G sudo sp
+          useradd -G sudo sp
 
       - name: steampipe query
         run: |

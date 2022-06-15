@@ -152,7 +152,7 @@ jobs:
         run: |
           apt update -y
           apt upgrade -y
-          apt install -y git sudo
+          apt install -y git sudo wget curl jq vim
 
       # - name: Checkout submodules
       #   run: |
