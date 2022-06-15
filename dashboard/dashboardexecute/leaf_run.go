@@ -6,33 +6,44 @@ import (
 	"log"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 )
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	Name string `json:"name"`
+	Name    string                `json:"name"`
+	Title   string                `json:"title,omitempty"`
+	Width   int                   `json:"width,omitempty"`
+	Type    string                `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
+	Display string                `cty:"display" hcl:"display" json:"display,omitempty"`
+	RawSQL  string                `json:"sql,omitempty"`
+	Args    []string              `json:"args,omitempty"`
+	Params  []*modconfig.ParamDef ` json:"params,omitempty"`
 
-	Title               string `json:"title,omitempty"`
-	Width               int    `json:"width,omitempty"`
+	Data             *dashboardtypes.LeafData    `json:"data,omitempty"`
+	ErrorString      string                      `json:"error,omitempty"`
+	DashboardNode    modconfig.DashboardLeafNode `json:"properties,omitempty"`
+	NodeType         string                      `json:"panel_type"`
+	DashboardName    string                      `json:"dashboard"`
+	SourceDefinition string                      `json:"source_definition"`
+
 	executeSQL          string
-	RawSQL              string                      `json:"sql,omitempty"`
-	Args                []string                    `json:"args,omitempty"`
-	Data                *LeafData                   `json:"data,omitempty"`
-	ErrorString         string                      `json:"error,omitempty"`
-	DashboardNode       modconfig.DashboardLeafNode `json:"properties"`
-	NodeType            string                      `json:"node_type"`
-	DashboardName       string                      `json:"dashboard"`
-	SourceDefinition    string                      `json:"source_definition"`
 	error               error
-	parent              dashboardinterfaces.DashboardNodeParent
-	runStatus           dashboardinterfaces.DashboardRunStatus
+	parent              dashboardtypes.DashboardNodeParent
+	runStatus           dashboardtypes.DashboardRunStatus
 	executionTree       *DashboardExecutionTree
 	runtimeDependencies map[string]*ResolvedRuntimeDependency
 }
 
-func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
+func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	return &dashboardtypes.SnapshotTreeNode{
+		Name:     r.Name,
+		NodeType: r.NodeType,
+	}
+}
+
+func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
 	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
 	// so FOR NOW it is safe to use the node name directly as the run name
@@ -42,6 +53,8 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		Name:                name,
 		Title:               resource.GetTitle(),
 		Width:               resource.GetWidth(),
+		Type:                resource.GetType(),
+		Display:             resource.GetDisplay(),
 		DashboardNode:       resource,
 		DashboardName:       executionTree.dashboardName,
 		SourceDefinition:    resource.GetMetadata().SourceDefinition,
@@ -50,7 +63,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 		runtimeDependencies: make(map[string]*ResolvedRuntimeDependency),
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
-		runStatus: dashboardinterfaces.DashboardRunComplete,
+		runStatus: dashboardtypes.DashboardRunComplete,
 	}
 
 	parsedName, err := modconfig.ParseResourceName(resource.Name())
@@ -61,7 +74,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardinterfaces
 	// if we have a query provider which requires execution, set status to ready
 	if provider, ok := resource.(modconfig.QueryProvider); ok && provider.RequiresExecution(provider) {
 		// if the provider has sql or a query, set status to ready
-		r.runStatus = dashboardinterfaces.DashboardRunReady
+		r.runStatus = dashboardtypes.DashboardRunReady
 
 	}
 
@@ -94,7 +107,7 @@ func (r *LeafRun) Initialise(ctx context.Context) {}
 // Execute implements DashboardRunNode
 func (r *LeafRun) Execute(ctx context.Context) {
 	// if there is nothing to do, return
-	if r.runStatus == dashboardinterfaces.DashboardRunComplete {
+	if r.runStatus == dashboardtypes.DashboardRunComplete {
 		return
 	}
 
@@ -128,7 +141,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	}
 	log.Printf("[TRACE] LeafRun '%s' complete", r.DashboardNode.Name())
 
-	r.Data = NewLeafData(queryResult)
+	r.Data = dashboardtypes.NewLeafData(queryResult)
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete()
 }
@@ -139,7 +152,7 @@ func (r *LeafRun) GetName() string {
 }
 
 // GetRunStatus implements DashboardNodeRun
-func (r *LeafRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
+func (r *LeafRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
 	return r.runStatus
 }
 
@@ -149,7 +162,7 @@ func (r *LeafRun) SetError(err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 
-	r.runStatus = dashboardinterfaces.DashboardRunError
+	r.runStatus = dashboardtypes.DashboardRunError
 	// raise counter error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
 		LeafNode:    r,
@@ -166,7 +179,7 @@ func (r *LeafRun) GetError() error {
 
 // SetComplete implements DashboardNodeRun
 func (r *LeafRun) SetComplete() {
-	r.runStatus = dashboardinterfaces.DashboardRunComplete
+	r.runStatus = dashboardtypes.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
 		LeafNode:    r,
@@ -179,13 +192,21 @@ func (r *LeafRun) SetComplete() {
 
 // RunComplete implements DashboardNodeRun
 func (r *LeafRun) RunComplete() bool {
-	return r.runStatus == dashboardinterfaces.DashboardRunComplete || r.runStatus == dashboardinterfaces.DashboardRunError
+	return r.runStatus == dashboardtypes.DashboardRunComplete || r.runStatus == dashboardtypes.DashboardRunError
+}
+
+// GetChildren implements DashboardNodeRun
+func (r *LeafRun) GetChildren() []dashboardtypes.DashboardNodeRun {
+	return nil
 }
 
 // ChildrenComplete implements DashboardNodeRun
 func (r *LeafRun) ChildrenComplete() bool {
 	return true
 }
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*LeafRun) IsSnapshotPanel() {}
 
 // GetInputsDependingOn implements DashboardNodeRun
 //return nothing for LeafRun
@@ -247,6 +268,7 @@ func (r *LeafRun) resolveSQL() error {
 	r.RawSQL = resolvedQuery.RawSQL
 	r.executeSQL = resolvedQuery.ExecuteSQL
 	r.Args = resolvedQuery.Args
+	r.Params = resolvedQuery.Params
 	return nil
 }
 

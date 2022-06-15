@@ -5,7 +5,7 @@ import { noop } from "./func";
 
 type PanelStoryDecoratorProps = {
   definition: any;
-  nodeType: "card" | "chart" | "container" | "table" | "text";
+  panelType: "card" | "chart" | "container" | "table" | "text";
   additionalProperties?: {
     [key: string]: any;
   };
@@ -18,10 +18,21 @@ const stubDashboardSearch: DashboardSearch = {
 
 export const PanelStoryDecorator = ({
   definition = {},
-  nodeType,
+  panelType,
   additionalProperties = {},
 }: PanelStoryDecoratorProps) => {
   const { properties, ...rest } = definition;
+
+  const newPanel = {
+    name: `${panelType}.story`,
+    panel_type: panelType,
+    ...rest,
+    properties: {
+      ...(properties || {}),
+      ...additionalProperties,
+    },
+    sql: "storybook",
+  };
 
   return (
     <DashboardContext.Provider
@@ -55,22 +66,14 @@ export const PanelStoryDecorator = ({
         },
         selectedDashboardInputs: {},
         lastChangedInput: null,
+        panelsMap: {
+          [newPanel.name]: newPanel,
+        },
         dashboard: {
           artificial: false,
           name: "storybook.dashboard.storybook_dashboard_wrapper",
-          children: [
-            {
-              name: `${nodeType}.story`,
-              node_type: nodeType,
-              ...rest,
-              properties: {
-                ...(properties || {}),
-                ...additionalProperties,
-              },
-              sql: "storybook",
-            },
-          ],
-          node_type: "dashboard",
+          children: [newPanel],
+          panel_type: "dashboard",
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
 
@@ -103,6 +106,7 @@ export const PanelStoryDecorator = ({
         components: buildComponentsMap(),
         selectedSnapshot: null,
         refetchDashboard: false,
+        state: "complete",
       }}
     >
       <Dashboard />

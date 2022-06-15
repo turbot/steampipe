@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/utils"
 
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -13,23 +14,36 @@ import (
 
 // DashboardContainerRun is a struct representing a container run
 type DashboardContainerRun struct {
-	Name             string                                 `json:"name"`
-	Title            string                                 `json:"title,omitempty"`
-	Width            int                                    `json:"width,omitempty"`
-	ErrorString      string                                 `json:"error,omitempty"`
-	Children         []dashboardinterfaces.DashboardNodeRun `json:"children,omitempty"`
-	NodeType         string                                 `json:"node_type"`
-	Status           dashboardinterfaces.DashboardRunStatus `json:"status"`
-	DashboardName    string                                 `json:"report"`
-	SourceDefinition string                                 `json:"source_definition"`
+	Name             string                            `json:"name"`
+	Title            string                            `json:"title,omitempty"`
+	Width            int                               `json:"width,omitempty"`
+	Display          string                            `json:"display,omitempty"`
+	ErrorString      string                            `json:"error,omitempty"`
+	Children         []dashboardtypes.DashboardNodeRun `json:"-"`
+	NodeType         string                            `json:"panel_type"`
+	Status           dashboardtypes.DashboardRunStatus `json:"status"`
+	DashboardName    string                            `json:"dashboard"`
+	SourceDefinition string                            `json:"source_definition"`
 	error            error
 	dashboardNode    *modconfig.DashboardContainer
-	parent           dashboardinterfaces.DashboardNodeParent
+	parent           dashboardtypes.DashboardNodeParent
 	executionTree    *DashboardExecutionTree
-	childComplete    chan dashboardinterfaces.DashboardNodeRun
+	childComplete    chan dashboardtypes.DashboardNodeRun
 }
 
-func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardinterfaces.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {
+func (r *DashboardContainerRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	res := &dashboardtypes.SnapshotTreeNode{
+		Name:     r.Name,
+		NodeType: r.NodeType,
+		Children: make([]*dashboardtypes.SnapshotTreeNode, len(r.Children)),
+	}
+	for i, c := range r.Children {
+		res.Children[i] = c.AsTreeNode()
+	}
+	return res
+}
+
+func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {
 	children := container.GetChildren()
 
 	// NOTE: for now we MUST declare children inline - therefore we cannot share children between runs in the tree
@@ -41,6 +55,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 		Name:             name,
 		NodeType:         modconfig.BlockTypeContainer,
 		DashboardName:    executionTree.dashboardName,
+		Display:          typehelpers.SafeString(container.Display),
 		SourceDefinition: container.GetMetadata().SourceDefinition,
 		executionTree:    executionTree,
 		parent:           parent,
@@ -48,8 +63,8 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
-		Status:        dashboardinterfaces.DashboardRunComplete,
-		childComplete: make(chan dashboardinterfaces.DashboardNodeRun, len(children)),
+		Status:        dashboardtypes.DashboardRunComplete,
+		childComplete: make(chan dashboardtypes.DashboardNodeRun, len(children)),
 	}
 	if container.Title != nil {
 		r.Title = *container.Title
@@ -60,7 +75,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	}
 
 	for _, child := range children {
-		var childRun dashboardinterfaces.DashboardNodeRun
+		var childRun dashboardtypes.DashboardNodeRun
 		var err error
 		switch i := child.(type) {
 		case *modconfig.DashboardContainer:
@@ -98,8 +113,8 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 		}
 
 		// if our child has not completed, we have not completed
-		if childRun.GetRunStatus() == dashboardinterfaces.DashboardRunReady {
-			r.Status = dashboardinterfaces.DashboardRunReady
+		if childRun.GetRunStatus() == dashboardtypes.DashboardRunReady {
+			r.Status = dashboardtypes.DashboardRunReady
 		}
 		r.Children = append(r.Children, childRun)
 	}
@@ -107,6 +122,9 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	executionTree.runs[r.Name] = r
 	return r, nil
 }
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*DashboardContainerRun) IsSnapshotPanel() {}
 
 // Initialise implements DashboardRunNode
 func (r *DashboardContainerRun) Initialise(ctx context.Context) {
@@ -132,7 +150,7 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	var errors []error
 	for !r.ChildrenComplete() {
 		completeChild := <-r.childComplete
-		if completeChild.GetRunStatus() == dashboardinterfaces.DashboardRunError {
+		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
 			errors = append(errors, completeChild.GetError())
 		}
 		// fall through to recheck ChildrenComplete
@@ -155,7 +173,7 @@ func (r *DashboardContainerRun) GetName() string {
 }
 
 // GetRunStatus implements DashboardNodeRun
-func (r *DashboardContainerRun) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
+func (r *DashboardContainerRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
 	return r.Status
 }
 
@@ -165,7 +183,7 @@ func (r *DashboardContainerRun) SetError(err error) {
 	r.error = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
-	r.Status = dashboardinterfaces.DashboardRunError
+	r.Status = dashboardtypes.DashboardRunError
 	// raise container error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{
 		Container:   r,
@@ -180,14 +198,9 @@ func (r *DashboardContainerRun) GetError() error {
 	return r.error
 }
 
-// GetChildren implements DashboardNodeRun
-func (r *DashboardContainerRun) GetChildren() []dashboardinterfaces.DashboardNodeRun {
-	return r.Children
-}
-
 // SetComplete implements DashboardNodeRun
 func (r *DashboardContainerRun) SetComplete() {
-	r.Status = dashboardinterfaces.DashboardRunComplete
+	r.Status = dashboardtypes.DashboardRunComplete
 	// raise container complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{
 		Container:   r,
@@ -200,7 +213,12 @@ func (r *DashboardContainerRun) SetComplete() {
 
 // RunComplete implements DashboardNodeRun
 func (r *DashboardContainerRun) RunComplete() bool {
-	return r.Status == dashboardinterfaces.DashboardRunComplete || r.Status == dashboardinterfaces.DashboardRunError
+	return r.Status == dashboardtypes.DashboardRunComplete || r.Status == dashboardtypes.DashboardRunError
+}
+
+// GetChildren implements DashboardNodeRun
+func (r *DashboardContainerRun) GetChildren() []dashboardtypes.DashboardNodeRun {
+	return r.Children
 }
 
 // ChildrenComplete implements DashboardNodeRun
@@ -214,7 +232,7 @@ func (r *DashboardContainerRun) ChildrenComplete() bool {
 	return true
 }
 
-func (r *DashboardContainerRun) ChildCompleteChan() chan dashboardinterfaces.DashboardNodeRun {
+func (r *DashboardContainerRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 	return r.childComplete
 }
 

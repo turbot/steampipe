@@ -9,7 +9,7 @@ const story = {
 export default story;
 
 const Template = (args) => (
-  <PanelStoryDecorator definition={args} nodeType="text" />
+  <PanelStoryDecorator definition={args} panelType="text" />
 );
 
 export const markdownWithTitle = Template.bind({});

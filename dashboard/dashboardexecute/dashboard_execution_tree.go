@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/dashboard/dashboardevents"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/workspace"
@@ -16,14 +16,14 @@ import (
 
 // DashboardExecutionTree is a structure representing the control result hierarchy
 type DashboardExecutionTree struct {
-	Root dashboardinterfaces.DashboardNodeRun
+	Root dashboardtypes.DashboardNodeRun
 
 	dashboardName string
 	sessionId     string
 	client        db_common.Client
-	runs          map[string]dashboardinterfaces.DashboardNodeRun
+	runs          map[string]dashboardtypes.DashboardNodeRun
 	workspace     *workspace.Workspace
-	runComplete   chan dashboardinterfaces.DashboardNodeRun
+	runComplete   chan dashboardtypes.DashboardNodeRun
 
 	inputLock sync.Mutex
 	// store subscribers as a map of maps for simple unsubscription
@@ -40,9 +40,9 @@ func NewDashboardExecutionTree(rootName string, sessionId string, client db_comm
 		dashboardName:          rootName,
 		sessionId:              sessionId,
 		client:                 client,
-		runs:                   make(map[string]dashboardinterfaces.DashboardNodeRun),
+		runs:                   make(map[string]dashboardtypes.DashboardNodeRun),
 		workspace:              workspace,
-		runComplete:            make(chan dashboardinterfaces.DashboardNodeRun, 1),
+		runComplete:            make(chan dashboardtypes.DashboardNodeRun, 1),
 		inputDataSubscriptions: make(map[string]map[*chan bool]struct{}),
 		inputValues:            make(map[string]interface{}),
 	}
@@ -58,7 +58,7 @@ func NewDashboardExecutionTree(rootName string, sessionId string, client db_comm
 	return executionTree, nil
 }
 
-func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardinterfaces.DashboardNodeRun, error) {
+func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes.DashboardNodeRun, error) {
 	parsedName, err := modconfig.ParseResourceName(rootName)
 	if err != nil {
 		return nil, err
@@ -97,26 +97,32 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
+	panels := e.buildSnapshotPanels()
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
+		Panels:      panels,
 	})
-	defer workspace.PublishDashboardEvent(&dashboardevents.ExecutionComplete{
-		Root:        e.Root,
-		Session:     e.sessionId,
-		ExecutionId: e.id,
-		Inputs:      e.inputValues,
-		Variables:   e.workspace.VariableValues,
-		SearchPath:  e.client.GetRequiredSessionSearchPath(),
-		StartTime:   startTime,
-		EndTime:     time.Now(),
-	})
+	defer func() {
+		e := &dashboardevents.ExecutionComplete{
+			Root:        e.Root,
+			Session:     e.sessionId,
+			ExecutionId: e.id,
+			Panels:      panels,
+			Inputs:      e.inputValues,
+			Variables:   e.workspace.VariableValues,
+			SearchPath:  e.client.GetRequiredSessionSearchPath(),
+			StartTime:   startTime,
+			EndTime:     time.Now(),
+		}
+		workspace.PublishDashboardEvent(e)
+	}()
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end DashboardExecutionTree.Execute")
 
-	if e.GetRunStatus() == dashboardinterfaces.DashboardRunComplete {
+	if e.GetRunStatus() == dashboardtypes.DashboardRunComplete {
 		// there must be no nodes to execute
 		log.Println("[TRACE]", "execution tree already complete")
 		return
@@ -127,7 +133,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 }
 
 // GetRunStatus returns the stats of the Root run
-func (e *DashboardExecutionTree) GetRunStatus() dashboardinterfaces.DashboardRunStatus {
+func (e *DashboardExecutionTree) GetRunStatus() dashboardtypes.DashboardRunStatus {
 	return e.Root.GetRunStatus()
 }
 
@@ -151,7 +157,7 @@ func (e *DashboardExecutionTree) SetInputs(inputValues map[string]interface{}) {
 }
 
 // ChildCompleteChan implements DashboardNodeParent
-func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardinterfaces.DashboardNodeRun {
+func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 	return e.runComplete
 }
 
@@ -203,7 +209,7 @@ func (e *DashboardExecutionTree) unsubscribeToInput(inputName string, depChan *c
 
 func (e *DashboardExecutionTree) Cancel() {
 	// if we have not completed, and already have a cancel function - cancel
-	if e.GetRunStatus() != dashboardinterfaces.DashboardRunReady || e.cancel == nil {
+	if e.GetRunStatus() != dashboardtypes.DashboardRunReady || e.cancel == nil {
 		return
 	}
 	e.cancel()
@@ -216,4 +222,28 @@ func (e *DashboardExecutionTree) Cancel() {
 
 func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
 	return e.inputValues[name]
+}
+
+func (e *DashboardExecutionTree) buildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
+	res := map[string]dashboardtypes.SnapshotPanel{}
+	// if this node is a snapshot node, add to map
+	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
+		res[e.Root.GetName()] = snapshotNode
+	}
+	return e.buildSnapshotPanelsUnder(e.Root, res)
+}
+
+func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardNodeRun, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
+	if checkRun, ok := parent.(*CheckRun); ok {
+		return checkRun.buildSnapshotPanels(res)
+	}
+	for _, c := range parent.GetChildren() {
+		// if this node is a snapshot node, add to map
+		if snapshotNode, ok := c.(dashboardtypes.SnapshotPanel); ok {
+			res[c.GetName()] = snapshotNode
+		}
+		res = e.buildSnapshotPanelsUnder(c, res)
+	}
+
+	return res
 }

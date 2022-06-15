@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/control/controlstatus"
-	"github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig"
 	"github.com/turbot/steampipe/workspace"
@@ -54,11 +54,23 @@ type ErrorPayload struct {
 	Error  string `json:"error"`
 }
 
-type ExecutionPayload struct {
-	Action        string                               `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
-	ExecutionId   string                               `json:"execution_id"`
+var ExecutionStartedSchemaVersion int64 = 20220614
+
+type ExecutionStartedPayload struct {
+	SchemaVersion string                                  `json:"schema_version"`
+	Action        string                                  `json:"action"`
+	DashboardNode dashboardtypes.DashboardNodeRun         `json:"dashboard_node"`
+	ExecutionId   string                                  `json:"execution_id"`
+	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`
+	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout"`
 }
+
+type LeafNodeCompletePayload struct {
+	Action        string                          `json:"action"`
+	DashboardNode dashboardtypes.DashboardNodeRun `json:"dashboard_node"`
+	ExecutionId   string                          `json:"execution_id"`
+}
+
 type ControlEventPayload struct {
 	Action      string                                 `json:"action"`
 	Control     controlstatus.ControlRunStatusProvider `json:"control"`
@@ -67,23 +79,25 @@ type ControlEventPayload struct {
 	ExecutionId string                                 `json:"execution_id"`
 }
 
-var ExecutionCompleteSchemaVersion int64 = 20220411
-
 type ExecutionErrorPayload struct {
 	Action string `json:"action"`
 	Error  string `json:"error"`
 }
 
+var ExecutionCompleteSchemaVersion int64 = 20220614
+
 type ExecutionCompletePayload struct {
-	SchemaVersion int64                                `json:"schema_version"`
-	Action        string                               `json:"action"`
-	DashboardNode dashboardinterfaces.DashboardNodeRun `json:"dashboard_node"`
-	ExecutionId   string                               `json:"execution_id"`
-	Inputs        map[string]interface{}               `json:"inputs"`
-	Variables     map[string]string                    `json:"variables"`
-	SearchPath    []string                             `json:"search_path"`
-	StartTime     time.Time                            `json:"start_time"`
-	EndTime       time.Time                            `json:"end_time"`
+	SchemaVersion string                                  `json:"schema_version"`
+	Action        string                                  `json:"action"`
+	DashboardNode dashboardtypes.DashboardNodeRun         `json:"dashboard_node"`
+	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`
+	ExecutionId   string                                  `json:"execution_id"`
+	Inputs        map[string]interface{}                  `json:"inputs"`
+	Variables     map[string]string                       `json:"variables"`
+	SearchPath    []string                                `json:"search_path"`
+	StartTime     time.Time                               `json:"start_time"`
+	EndTime       time.Time                               `json:"end_time"`
+	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout"`
 }
 
 type InputValuesClearedPayload struct {

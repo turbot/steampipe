@@ -6,7 +6,6 @@ import {
   ExecutablePrimitiveProps,
   LeafNodeData,
 } from "../common";
-import { getColumnIndex } from "../../../utils/data";
 import { useEffect, useState } from "react";
 
 type ImageType = "image" | "table" | null;
@@ -20,8 +19,8 @@ interface ImageState {
 
 export type ImageProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
+    display_type?: ImageType;
     properties: {
-      type?: ImageType;
       src: string;
       alt: string;
     };
@@ -64,16 +63,12 @@ const useImageState = ({ data, properties }: ImageProps) => {
       const firstCol = data.columns[0];
       const row = data.rows[0];
       setCalculatedProperties({
-        src: row[0],
+        src: row[firstCol.name],
         alt: firstCol.name,
       });
     } else {
-      const srcColIndex = getColumnIndex(data.columns, "src");
-      const src =
-        srcColIndex >= 0 ? get(data, `rows[0][${srcColIndex}]`) : null;
-      const altColIndex = getColumnIndex(data.columns, "alt");
-      const alt =
-        altColIndex >= 0 ? get(data, `rows[0][${altColIndex}]`) : null;
+      const src = get(data, `rows[0].src`, null);
+      const alt = get(data, `rows[0].alt`, null);
 
       setCalculatedProperties({
         src,
@@ -91,7 +86,7 @@ const Image = (props: ImageProps) => {
 };
 
 const ImageWrapper = (props: ImageProps) => {
-  if (get(props, "properties.type") === "table") {
+  if (props.display_type === "table") {
     // @ts-ignore
     return <Table {...props} />;
   }

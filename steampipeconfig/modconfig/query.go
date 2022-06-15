@@ -23,28 +23,28 @@ type Query struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	ShortName string `cty:"short_name"`
-	FullName  string `cty:"name"`
+	ShortName string `cty:"short_name" json:"name"`
+	FullName  string `cty:"name" json:"-"`
 
-	Description           *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation         *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	SearchPath            *string           `cty:"search_path" hcl:"search_path" column:"search_path,text"`
-	SearchPathPrefix      *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text"`
-	Tags                  map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
-	Title                 *string           `cty:"title" hcl:"title" column:"title,text"`
+	Description           *string           `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
+	Documentation         *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
+	SearchPath            *string           `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"seatch_path,omitempty"`
+	SearchPathPrefix      *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
+	Tags                  map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
+	Title                 *string           `cty:"title" hcl:"title" column:"title,text" json:"tags,omitempty"`
 	PreparedStatementName string            `column:"prepared_statement_name,text" json:"-"`
-	SQL                   *string           `cty:"sql" hcl:"sql" column:"sql,text"`
+	SQL                   *string           `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
 
-	Params []*ParamDef `cty:"params" column:"params,jsonb"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 	// list of all blocks referenced by the resource
-	References []*ResourceReference
+	References []*ResourceReference ` json:"-"`
 
-	Mod       *Mod `cty:"mod"`
-	DeclRange hcl.Range
+	Mod       *Mod      `cty:"mod" json:"-"`
+	DeclRange hcl.Range `json:"-"`
 
-	UnqualifiedName string
-	Paths           []NodePath `column:"path,jsonb"`
-	parents         []ModTreeItem
+	UnqualifiedName string        `json:"-"`
+	Paths           []NodePath    `column:"path,jsonb" json:"-"`
+	parents         []ModTreeItem `json:"-"`
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) *Query {

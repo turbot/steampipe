@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlstatus"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/query/queryresult"
 	"github.com/turbot/steampipe/statushooks"
@@ -23,38 +24,49 @@ const controlQueryTimeout = 240 * time.Second
 
 // ControlRun is a struct representing the execution of a control run. It will contain one or more result items (i.e. for one or more resources).
 type ControlRun struct {
+	// properties from control
+	ControlId     string            `json:"name"`
+	Title         string            `json:"title,omitempty"`
+	Description   string            `json:"description,omitempty"`
+	Documentation string            `json:"documentation,omitempty"`
+	Tags          map[string]string `json:"tags,omitempty"`
+	Display       string            `json:"display,omitempty"`
+	Type          string            `json:"display_type,omitempty"`
+
+	// this will be serialised under 'properties'
+	Severity string `json:"-"`
+
+	// "control"
+	NodeType string `json:"panel_type"`
+
 	// the control being run
-	Control *modconfig.Control `json:"-"`
+	Control *modconfig.Control `json:"properties,omitempty"`
 	// control summary
-	Summary *controlstatus.StatusSummary `json:"summary"`
+	Summary   *controlstatus.StatusSummary   `json:"summary"`
+	RunStatus controlstatus.ControlRunStatus `json:"status"`
 	// result rows
-	Rows []*ResultRow `json:"results"`
+	Rows ResultRows `json:"-"`
+
+	// the results in snapshot format
+	Data *dashboardtypes.LeafData `json:"data"`
+
 	// a list of distinct dimension keys from the results of this control
 	DimensionKeys []string `json:"-"`
+
 	// execution duration
 	Duration time.Duration `json:"-"`
-
-	// properties from control
-	ControlId   string            `json:"control_id"`
-	Description string            `json:"description"`
-	Severity    string            `json:"severity"`
-	Tags        map[string]string `json:"tags"`
-	Title       string            `json:"title"`
-
 	// parent result group
 	Group *ResultGroup `json:"-"`
 	// execution tree
 	Tree *ExecutionTree `json:"-"`
 	// used to trace the events within the duration of a control execution
-	Lifecycle *utils.LifecycleTimer          `json:"-"`
-	RunStatus controlstatus.ControlRunStatus `json:"run_status"`
+	Lifecycle *utils.LifecycleTimer `json:"-"`
 	// save run error as string for JSON export
-	RunErrorString string `json:"run_error"`
-
-	runError error
+	RunErrorString string `json:"error,omitempty"`
+	runError       error
 	// the query result stream
 	queryResult *queryresult.Result
-	rowMap      map[string][]*ResultRow
+	rowMap      map[string]ResultRows
 	stateLock   sync.Mutex
 	doneChan    chan bool
 	attempts    int
@@ -68,20 +80,25 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	}
 
 	res := &ControlRun{
-		Control:     control,
-		ControlId:   controlId,
-		Description: typehelpers.SafeString(control.Description),
-		Severity:    typehelpers.SafeString(control.Severity),
-		Title:       typehelpers.SafeString(control.Title),
-		Tags:        control.GetTags(),
-		rowMap:      make(map[string][]*ResultRow),
-		Summary:     &controlstatus.StatusSummary{},
-		Lifecycle:   utils.NewLifecycleTimer(),
+		Control:       control,
+		ControlId:     controlId,
+		Description:   control.GetDescription(),
+		Documentation: control.GetDocumentation(),
+		Tags:          control.GetTags(),
+		Display:       control.GetDisplay(),
+		Type:          control.GetType(),
+
+		Severity:  typehelpers.SafeString(control.Severity),
+		Title:     typehelpers.SafeString(control.Title),
+		rowMap:    make(map[string]ResultRows),
+		Summary:   &controlstatus.StatusSummary{},
+		Lifecycle: utils.NewLifecycleTimer(),
 
 		Tree:      executionTree,
 		RunStatus: controlstatus.ControlRunReady,
 
 		Group:    group,
+		NodeType: modconfig.BlockTypeControl,
 		doneChan: make(chan bool, 1),
 	}
 	res.Lifecycle.Add("constructed")
@@ -116,12 +133,33 @@ func (r *ControlRun) Finished() bool {
 
 // MatchTag returns the value corresponding to the input key. Returns 'false' if not found
 func (r *ControlRun) MatchTag(key string, value string) bool {
-	val, found := r.Tags[key]
+	val, found := r.Control.GetTags()[key]
 	return found && (val == value)
 }
 
 func (r *ControlRun) GetError() error {
 	return r.runError
+}
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*ControlRun) IsSnapshotPanel() {}
+
+// IsExecutionTreeNode implements ExecutionTreeNode
+func (*ControlRun) IsExecutionTreeNode() {}
+
+// GetChildren implements ExecutionTreeNode
+func (*ControlRun) GetChildren() []ExecutionTreeNode { return nil }
+
+// GetName implements ExecutionTreeNode
+func (r *ControlRun) GetName() string { return r.ControlId }
+
+// AsTreeNode implements ExecutionTreeNode
+func (r *ControlRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	res := &dashboardtypes.SnapshotTreeNode{
+		Name:     r.ControlId,
+		NodeType: r.NodeType,
+	}
+	return res
 }
 
 func (r *ControlRun) setError(ctx context.Context, err error) {
@@ -348,13 +386,9 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 	defer func() { r.Lifecycle.Add("gather_finish") }()
 
 	defer func() {
-		for _, row := range r.Rows {
-			for _, dim := range row.Dimensions {
-				r.DimensionKeys = append(r.DimensionKeys, dim.Key)
-			}
-		}
-		r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
-		r.Group.addDimensionKeys(r.DimensionKeys...)
+		dimensionsSchema := r.getDimensionSchema()
+		// convert the data to snapshot format
+		r.Data = r.Rows.ToLeafData(dimensionsSchema)
 	}()
 
 	for {
@@ -387,6 +421,27 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (r *ControlRun) getDimensionSchema() map[string]*dashboardtypes.ColumnSchema {
+	var dimensionsSchema = make(map[string]*dashboardtypes.ColumnSchema)
+
+	for _, row := range r.Rows {
+		for _, dim := range row.Dimensions {
+			if _, ok := dimensionsSchema[dim.Key]; !ok {
+				// add to map
+				dimensionsSchema[dim.Key] = &dashboardtypes.ColumnSchema{
+					Name:     dim.Key,
+					DataType: dim.SqlType,
+				}
+				// also add to DimensionKeys
+				r.DimensionKeys = append(r.DimensionKeys, dim.Key)
+			}
+		}
+	}
+	// add keys to group
+	r.Group.addDimensionKeys(r.DimensionKeys...)
+	return dimensionsSchema
 }
 
 // add the result row to our results and update the summary with the row status

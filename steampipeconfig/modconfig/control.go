@@ -21,24 +21,24 @@ type Control struct {
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	ShortName        string            `json:"-"`
-	FullName         string            `cty:"name"  json:"-"`
-	Description      *string           `cty:"description" hcl:"description" column:"description,text"  json:"description,omitempty"`
-	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text"  json:"documentation,omitempty"`
-	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text"  json:"search_path,omitempty"`
-	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text"  json:"search_path_prefix,omitempty"`
-	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text"  json:"severity,omitempty"`
-	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"  json:"tags,omitempty"`
-	Title            *string           `cty:"title" hcl:"title"  column:"title,text"  json:"-"`
+	FullName         string            `cty:"name" json:"-"`
+	Description      *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
+	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text" json:"-"`
+	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text" json:"search_path,omitempty"`
+	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
+	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
+	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb" json:"-"`
+	Title            *string           `cty:"title" hcl:"title"  column:"title,text" json:"-"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `hcl:"query" json:"-"`
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql,omitempty"`
+	Query                 *Query      `hcl:"query" json:"query,omitempty"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	References      []*ResourceReference ` json:"-"`
-	Mod             *Mod                 `cty:"mod"  json:"-"`
+	Mod             *Mod                 `cty:"mod" json:"-"`
 	DeclRange       hcl.Range            `json:"-"`
 	UnqualifiedName string               `json:"-"`
 	Paths           []NodePath           `json:"-"`
@@ -46,8 +46,8 @@ type Control struct {
 	// dashboard specific properties
 	Base    *Control `hcl:"base" json:"-"`
 	Width   *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type    *string  `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Display *string  `cty:"display" hcl:"display" json:"display,omitempty"`
+	Type    *string  `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string  `cty:"display" hcl:"display" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -262,8 +262,8 @@ func (c *Control) AddReference(ref *ResourceReference) {
 }
 
 // GetReferences implements HclResource
-func (b *Control) GetReferences() []*ResourceReference {
-	return b.References
+func (c *Control) GetReferences() []*ResourceReference {
+	return c.References
 }
 
 // GetMod implements HclResource
@@ -330,8 +330,18 @@ func (c *Control) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (c *Control) GetDisplay() *string {
-	return c.Display
+func (c *Control) GetDisplay() string {
+	return ""
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (c *Control) GetDocumentation() string {
+	return typehelpers.SafeString(c.Documentation)
+}
+
+// GetType implements DashboardLeafNode
+func (c *Control) GetType() string {
+	return typehelpers.SafeString(c.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

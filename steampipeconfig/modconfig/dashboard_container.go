@@ -15,23 +15,22 @@ type DashboardContainer struct {
 	ResourceWithMetadataBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain" json:"-"`
+	Remain hcl.Body `hcl:",remain"`
 
-	ShortName       string            `json:"-"`
-	FullName        string            `cty:"name" json:"-"`
-	UnqualifiedName string            `cty:"unqualified_name" json:"-"`
-	Title           *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width           *int              `cty:"width" hcl:"width"  column:"width,text" json:"-"`
-	Display         *string           `cty:"display" hcl:"display" json:"display,omitempty"`
-	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb" json:"inputs,omitempty"`
-	OnHooks         []*DashboardOn    `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	ShortName       string
+	FullName        string            `cty:"name"`
+	UnqualifiedName string            `cty:"unqualified_name"`
+	Title           *string           `cty:"title" hcl:"title" column:"title,text"`
+	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
+	Display         *string           `cty:"display" hcl:"display"`
+	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 
-	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
+	References []*ResourceReference
+	Mod        *Mod `cty:"mod"`
+	DeclRange  hcl.Range
+	Paths      []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
-	ChildNames []string `cty:"children" column:"children,jsonb" json:"-"`
+	ChildNames []string `cty:"children" column:"children,jsonb"`
 
 	// the actual children
 	children               []ModTreeItem

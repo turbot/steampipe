@@ -86,17 +86,23 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     let csvRows: any[] = [];
 
     const jsonbColIndices = data.columns
-      .filter((i) => i.data_type_name === "jsonb")
+      .filter((i) => i.data_type === "jsonb")
       .map((i) => data.columns.indexOf(i)); // would return e.g. [3,6,9]
 
     for (const row of data.rows) {
       // Deep copy the row or else it will update
       // the values in query output
-      const temp = JSON.parse(JSON.stringify(row));
-      for (const jsobColIndex of jsonbColIndices) {
-        temp[jsobColIndex] = JSON.stringify(temp[jsobColIndex]);
-      }
-      csvRows.push(temp);
+      // const temp = JSON.parse(JSON.stringify(row));
+      const csvRow: any[] = [];
+      colNames.forEach((col, index) => {
+        csvRow[index] = jsonbColIndices.includes(index)
+          ? JSON.stringify(row[col])
+          : row[col];
+      });
+      // for (const jsobColIndex of jsonbColIndices) {
+      //   temp[jsobColIndex] = JSON.stringify(temp[jsobColIndex]);
+      // }
+      csvRows.push(csvRow);
     }
 
     const csv = jsonToCSV([colNames, ...csvRows]);
@@ -108,7 +114,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         selectedDashboard?.full_name ||
         definition.dashboard ||
         ""
-      ).replaceAll(".", "_")}_${definition.node_type}_${datetime}`
+      ).replaceAll(".", "_")}_${definition.panel_type}_${datetime}`
     );
   }, [definition, jsonToCSV, selectedDashboard]);
 

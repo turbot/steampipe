@@ -20,20 +20,20 @@ type DashboardImage struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
+	Src *string `cty:"src" hcl:"src" column:"src,text" json:"src,omitempty"`
+	Alt *string `cty:"alt" hcl:"alt" column:"alt,text" json:"alt,omitempty"`
+
 	// these properties are JSON serialised by the parent LeafRun
-	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Src     *string        `cty:"src" hcl:"src" column:"src,text"  json:"src,omitempty"`
-	Alt     *string        `cty:"alt" hcl:"alt" column:"alt,text"  json:"alt,omitempty"`
-	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
-	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Display *string `cty:"display" hcl:"display" json:"-"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	Base       *DashboardImage      `hcl:"base" json:"-"`
 	DeclRange  hcl.Range            `json:"-"`
@@ -177,8 +177,18 @@ func (i *DashboardImage) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (i *DashboardImage) GetDisplay() *string {
-	return i.Display
+func (i *DashboardImage) GetDisplay() string {
+	return typehelpers.SafeString(i.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (*DashboardImage) GetDocumentation() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (*DashboardImage) GetType() string {
+	return ""
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

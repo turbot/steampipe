@@ -64,7 +64,7 @@
 	"severity": {{ toPrettyJson .Severity }},
 	"tags": {{ toPrettyJson .Tags }},
 	"title": {{ toPrettyJson .Title }},
-	"run_status": {{ toPrettyJson .RunStatus }},
+	"run_status": {{ template "run_status_map" .RunStatus }},
 	"run_error": {{ toPrettyJson .RunErrorString }}
 } {{- end -}}
 
@@ -76,3 +76,19 @@
 	"status": {{ toPrettyJson .Status }},
 	"dimensions": {{ toPrettyJson .Dimensions }}
 } {{ end }}
+
+{{/* sub template for control run status mapping */}}
+{{ define "run_status_map" }}
+	{{- if eq . "ready" -}}
+		1
+	{{- end -}}
+	{{- if eq . "started" -}}
+		2
+	{{- end -}}
+	{{- if eq . "complete" -}}
+		4
+	{{- end -}}
+	{{- if eq . "error" -}}
+		8
+	{{- end -}}
+{{- end -}}

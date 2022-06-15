@@ -38,7 +38,7 @@ interface TableColumnInfo {
   Header: string;
   accessor: string;
   name: string;
-  data_type_name: string;
+  data_type: string;
   display?: "all" | "none";
   wrap: TableColumnWrap;
   href_template?: string;
@@ -73,7 +73,7 @@ const getColumns = (
       Header: col.name,
       accessor: col.name,
       name: col.name,
-      data_type_name: col.data_type_name,
+      data_type: col.data_type,
       wrap: colWrap,
     };
     if (colHref) {
@@ -84,7 +84,7 @@ const getColumns = (
   return { columns, hiddenColumns };
 };
 
-const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
+const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow[]) => {
   if (!columns || columns.length === 0) {
     return [];
   }
@@ -92,13 +92,7 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
   if (!rows || rows.length === 0) {
     return [];
   }
-  return rows.map((r) => {
-    const rowData = {};
-    for (let colIndex = 0; colIndex < r.length; colIndex++) {
-      rowData[columns[colIndex].accessor] = r[colIndex];
-    }
-    return rowData;
-  });
+  return rows;
 };
 
 interface CellValueProps {
@@ -146,7 +140,7 @@ const CellValue = ({
   }, [column, rowIndex, rowTemplateData]);
 
   let cellContent;
-  const dataType = column.data_type_name.toLowerCase();
+  const dataType = column.data_type.toLowerCase();
   if (value === null || value === undefined) {
     cellContent = href ? (
       <ExternalLink
@@ -355,15 +349,14 @@ type TableColumns = {
 type TableType = "table" | "line" | null;
 
 export type TableProperties = {
-  type?: TableType;
   columns?: TableColumns;
 };
 
-export type BaseTableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
-
-export type TableProps = BaseTableProps & {
-  properties?: TableProperties;
-};
+export type TableProps = BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
+    display_type?: TableType;
+    properties?: TableProperties;
+  };
 
 const TableView = ({
   rowData,
@@ -438,7 +431,7 @@ const TableView = ({
                   scope="col"
                   className={classNames(
                     "py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap pl-4",
-                    isNumericCol(column.data_type_name) ? "text-right" : null
+                    isNumericCol(column.data_type) ? "text-right" : null
                   )}
                 >
                   {column.render("Header")}
@@ -480,9 +473,7 @@ const TableView = ({
                     {...cell.getCellProps()}
                     className={classNames(
                       "px-4 py-4 align-top content-center text-sm",
-                      isNumericCol(cell.column.data_type_name)
-                        ? "text-right"
-                        : "",
+                      isNumericCol(cell.column.data_type) ? "text-right" : "",
                       cell.column.wrap === "all"
                         ? "break-all"
                         : "whitespace-nowrap"
@@ -526,18 +517,9 @@ const TableViewWrapper = (props: TableProps) => {
   ) : null;
 };
 
-interface LineModeRow {
-  [key: string]: any;
-}
-
-interface LineModeRows {
-  row: LeafNodeDataRow;
-  obj: LineModeRow;
-}
-
 const LineView = (props: TableProps) => {
   const [columns, setColumns] = useState<TableColumnInfo[]>([]);
-  const [rows, setRows] = useState<LineModeRows[]>([]);
+  const [rows, setRows] = useState<LeafNodeDataRow[]>([]);
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   useEffect(() => {
@@ -559,17 +541,17 @@ const LineView = (props: TableProps) => {
       newColumns.push(newColDef);
     });
 
-    const newRows: LineModeRows[] = [];
-    props.data.rows.forEach((row) => {
-      const rowObj = {};
-      newColumns.forEach((col, index) => {
-        rowObj[col.name] = row[index];
-      });
-      newRows.push({ row, obj: rowObj });
-    });
+    // const newRows: LineModeRows[] = [];
+    // props.data.rows.forEach((row) => {
+    //   const rowObj = {};
+    //   newColumns.forEach((col, index) => {
+    //     rowObj[col.name] = row[index];
+    //   });
+    //   newRows.push({ row, obj: rowObj });
+    // });
 
     setColumns(newColumns);
-    setRows(newRows);
+    setRows(props.data.rows);
   }, [props.data, props.properties]);
 
   useDeepCompareEffect(() => {
@@ -605,12 +587,11 @@ const LineView = (props: TableProps) => {
 
   return (
     <div className="px-4 py-3 space-y-4">
-      {rows.map((rowInfo, rowIndex) => {
+      {rows.map((row, rowIndex) => {
         return (
           <div key={rowIndex} className="space-y-2">
-            {rowInfo.row.map((cellValue, columnIndex) => {
-              const col = columns[columnIndex];
-              if (!col || col.display === "none") {
+            {columns.map((col) => {
+              if (col.display === "none") {
                 return null;
               }
               return (
@@ -628,7 +609,7 @@ const LineView = (props: TableProps) => {
                       column={col}
                       rowIndex={rowIndex}
                       rowTemplateData={rowTemplateData}
-                      value={cellValue}
+                      value={row[col.name]}
                       showTitle
                     />
                   </span>
@@ -643,7 +624,7 @@ const LineView = (props: TableProps) => {
 };
 
 const Table = (props: TableProps) => {
-  if (props.properties && props.properties.type === "line") {
+  if (props.display_type === "line") {
     return <LineView {...props} />;
   }
   return <TableViewWrapper {...props} />;

@@ -13,7 +13,12 @@ import {
   CheckTags,
   findDimension,
 } from "./index";
-import { LeafNodeDataRow } from "../../common";
+import {
+  LeafNodeData,
+  LeafNodeDataColumn,
+  LeafNodeDataRow,
+} from "../../common";
+import { PanelsMap } from "../../../../hooks/useDashboard";
 
 class Control implements CheckNode {
   private readonly _sortIndex: string;
@@ -27,8 +32,8 @@ class Control implements CheckNode {
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _tags: CheckTags;
-  private readonly _run_state: CheckNodeStatusRaw;
-  private readonly _run_error: string | undefined;
+  private readonly _status: CheckNodeStatusRaw;
+  private readonly _error: string | undefined;
 
   constructor(
     sortIndex: string,
@@ -39,11 +44,12 @@ class Control implements CheckNode {
     title: string | undefined,
     description: string | undefined,
     severity: CheckSeverity | undefined,
-    results: CheckResult[] | undefined,
+    data: LeafNodeData | undefined,
     summary: CheckSummary | undefined,
     tags: CheckTags | undefined,
     status: CheckNodeStatusRaw,
-    run_error: string | undefined,
+    error: string | undefined,
+    panelsMap: PanelsMap,
     benchmark_trunk: Benchmark[],
     add_control_results: AddControlResultsAction
   ) {
@@ -55,7 +61,7 @@ class Control implements CheckNode {
     this._title = title;
     this._description = description;
     this._severity = severity;
-    this._results = results || [];
+    this._results = this._build_check_results(data);
     this._summary = summary || {
       alarm: 0,
       ok: 0,
@@ -64,14 +70,14 @@ class Control implements CheckNode {
       error: 0,
     };
     this._tags = tags || {};
-    this._run_state = status;
-    this._run_error = run_error;
+    this._status = status;
+    this._error = error;
 
-    if (this._run_state === 1 || this._run_state === 2) {
+    if (this._status === "ready" || this._status === "started") {
       add_control_results([this._build_control_loading_node(benchmark_trunk)]);
-    } else if (this._run_error) {
+    } else if (this._error) {
       add_control_results([
-        this._build_control_error_node(benchmark_trunk, this._run_error),
+        this._build_control_error_node(benchmark_trunk, this._error),
       ]);
     } else if (!this._results || this._results.length === 0) {
       add_control_results([this._build_control_empty_result(benchmark_trunk)]);
@@ -111,13 +117,13 @@ class Control implements CheckNode {
   }
 
   get error(): string | undefined {
-    return this._run_error;
+    return this._error;
   }
 
   get status(): CheckNodeStatus {
-    switch (this._run_state) {
-      case 1:
-      case 2:
+    switch (this._status) {
+      case "ready":
+      case "started":
         return "running";
       default:
         return "complete";
@@ -154,27 +160,27 @@ class Control implements CheckNode {
   get_data_rows(tags: string[], dimensions: string[]): LeafNodeDataRow[] {
     let rows: LeafNodeDataRow[] = [];
     this._results.forEach((result) => {
-      const row: LeafNodeDataRow = [
-        this._group_id,
-        this._group_title ? this._group_title : null,
-        this._group_description ? this._group_description : null,
-        this._name,
-        this._title ? this._title : null,
-        this._description ? this._description : null,
-        this._severity ? this._severity : null,
-        result.reason,
-        result.resource,
-        result.status,
-      ];
+      const row: LeafNodeDataRow = {
+        group_id: this._group_id,
+        title: this._group_title ? this._group_title : null,
+        description: this._group_description ? this._group_description : null,
+        control_id: this._name,
+        control_title: this._title ? this._title : null,
+        control_description: this._description ? this._description : null,
+        severity: this._severity ? this._severity : null,
+        reason: result.reason,
+        resource: result.resource,
+        status: result.status,
+      };
 
       tags.forEach((tag) => {
         const val = this._tags[tag];
-        row.push(val === undefined ? null : val);
+        row[tag] = val === undefined ? null : val;
       });
 
       dimensions.forEach((dimension) => {
         const val = findDimension(result.dimensions, dimension);
-        row.push(val === undefined ? null : val.value);
+        row[dimension] = val === undefined ? null : val.value;
       });
 
       rows.push(row);
@@ -242,6 +248,38 @@ class Control implements CheckNode {
       benchmark_trunk,
       control: this,
     }));
+  };
+
+  private _build_check_results = (data?: LeafNodeData): CheckResult[] => {
+    if (!data || !data.columns || !data.rows) {
+      return [];
+    }
+    const results: CheckResult[] = [];
+    const dimensionColumns: LeafNodeDataColumn[] = [];
+    for (const col of data.columns) {
+      if (
+        col.name === "reason" ||
+        col.name === "resource" ||
+        col.name === "status"
+      ) {
+        continue;
+      }
+      dimensionColumns.push(col);
+    }
+    for (const row of data.rows) {
+      const result = {
+        reason: row.reason,
+        resource: row.resource,
+        status: row.status,
+        dimensions: dimensionColumns.map((col) => ({
+          key: col.name,
+          value: row[col.name],
+        })),
+      };
+      // @ts-ignore
+      results.push(result);
+    }
+    return results;
   };
 }
 

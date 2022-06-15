@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controlstatus"
+	"github.com/turbot/steampipe/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/db/db_common"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/utils"
@@ -22,28 +23,31 @@ const RootResultGroupName = "root_result_group"
 // ResultGroup is a struct representing a grouping of control results
 // It may correspond to a Benchmark, or some other arbitrary grouping
 type ResultGroup struct {
-	GroupId     string            `json:"group_id" csv:"group_id"`
-	Title       string            `json:"title" csv:"title"`
-	Description string            `json:"description" csv:"description"`
-	Tags        map[string]string `json:"tags"`
+	GroupId       string            `json:"name" csv:"group_id"`
+	Title         string            `json:"title,omitempty" csv:"title"`
+	Description   string            `json:"description,omitempty" csv:"description"`
+	Tags          map[string]string `json:"tags,omitempty"`
+	Documentation string            `json:"documentation,omitempty"`
+	Display       string            `json:"display,omitempty"`
+	Type          string            `json:"type,omitempty"`
+
 	// the overall summary of the group
 	Summary *GroupSummary `json:"summary"`
 	// child result groups
-	Groups []*ResultGroup `json:"groups"`
+	Groups []*ResultGroup `json:"-"`
 	// child control runs
-	ControlRuns []*ControlRun                          `json:"controls"`
-	Severity    map[string]controlstatus.StatusSummary `json:"-"`
-
+	ControlRuns []*ControlRun `json:"-"`
+	// list of children stored as controlexecute.ExecutionTreeNode
+	Children []ExecutionTreeNode                    `json:"-"`
+	Severity map[string]controlstatus.StatusSummary `json:"-"`
+	// "benchmark"
+	NodeType string `json:"panel_type"`
 	// the control tree item associated with this group(i.e. a mod/benchmark)
 	GroupItem modconfig.ModTreeItem `json:"-"`
 	Parent    *ResultGroup          `json:"-"`
 	Duration  time.Duration         `json:"-"`
 	// a list of distinct dimension keys from descendant controls
 	DimensionKeys []string `json:"-"`
-
-	// fields used by dashboards
-	Type    *string `json:"type,omitempty"`
-	Display *string `json:"display,omitempty"`
 
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
@@ -67,6 +71,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		Summary:    NewGroupSummary(),
 		Severity:   make(map[string]controlstatus.StatusSummary),
 		updateLock: new(sync.Mutex),
+		NodeType:   modconfig.BlockTypeBenchmark,
 	}
 	for _, item := range rootItems {
 		// if root item is a benchmark, create new result group with root as parent
@@ -76,7 +81,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		} else {
 			// create a result group for this item
 			itemGroup := NewResultGroup(ctx, executionTree, item, root)
-			root.Groups = append(root.Groups, itemGroup)
+			root.addResultGroup(itemGroup)
 		}
 	}
 	return root
@@ -103,11 +108,19 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 		Summary:     NewGroupSummary(),
 		Severity:    make(map[string]controlstatus.StatusSummary),
 		updateLock:  new(sync.Mutex),
+		NodeType:    modconfig.BlockTypeBenchmark,
 	}
-	// TACTICAL for dashboard - if roo item is a benchmark, pull up 'type' and 'display'
-	if benchmark, ok := treeItem.(*modconfig.Benchmark); ok {
-		group.Type = benchmark.Type
-		group.Display = benchmark.Display
+
+	// populate additional properties (this avoids adding GetDocumentation, GetDisplay and GetType to all ModTreeItems)
+	switch t := treeItem.(type) {
+	case *modconfig.Benchmark:
+		group.Documentation = t.GetDocumentation()
+		group.Display = t.GetDisplay()
+		group.Type = t.GetType()
+	case *modconfig.Control:
+		group.Documentation = t.GetDocumentation()
+		group.Display = t.GetDisplay()
+		group.Type = t.GetType()
 	}
 	// add child groups for children which are benchmarks
 	for _, c := range treeItem.GetChildren() {
@@ -117,7 +130,7 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 			// if the group has any control runs, add to tree
 			if benchmarkGroup.ControlRunCount() > 0 {
 				// create a new result group with 'group' as the parent
-				group.Groups = append(group.Groups, benchmarkGroup)
+				group.addResultGroup(benchmarkGroup)
 			}
 		}
 		if control, ok := c.(*modconfig.Control); ok {
@@ -185,6 +198,43 @@ func (r *ResultGroup) ControlRunCount() int {
 		count += g.ControlRunCount()
 	}
 	return count
+}
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*ResultGroup) IsSnapshotPanel() {}
+
+// IsExecutionTreeNode implements ExecutionTreeNode
+func (*ResultGroup) IsExecutionTreeNode() {}
+
+// GetChildren implements ExecutionTreeNode
+func (r *ResultGroup) GetChildren() []ExecutionTreeNode { return r.Children }
+
+// GetName implements ExecutionTreeNode
+func (r *ResultGroup) GetName() string { return r.GroupId }
+
+// AsTreeNode implements ExecutionTreeNode
+func (r *ResultGroup) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	res := &dashboardtypes.SnapshotTreeNode{
+		Name:     r.GroupId,
+		Children: make([]*dashboardtypes.SnapshotTreeNode, len(r.Children)),
+		NodeType: r.NodeType,
+	}
+	for i, c := range r.Children {
+		res.Children[i] = c.AsTreeNode()
+	}
+	return res
+}
+
+// add result group into our list, and also add a tree node into our child list
+func (r *ResultGroup) addResultGroup(group *ResultGroup) {
+	r.Groups = append(r.Groups, group)
+	r.Children = append(r.Children, group)
+}
+
+// add control into our list, and also add a tree node into our child list
+func (r *ResultGroup) addControl(controlRun *ControlRun) {
+	r.ControlRuns = append(r.ControlRuns, controlRun)
+	r.Children = append(r.Children, controlRun)
 }
 
 func (r *ResultGroup) addDimensionKeys(keys ...string) {

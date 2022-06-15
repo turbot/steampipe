@@ -2,6 +2,7 @@ package dashboardserver
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/spf13/viper"
 	typeHelpers "github.com/turbot/go-kit/types"
@@ -156,6 +157,7 @@ func buildControlCompletePayload(event *dashboardevents.ControlComplete) ([]byte
 	}
 	return json.Marshal(payload)
 }
+
 func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, error) {
 	payload := ControlEventPayload{
 		Action:      "control_error",
@@ -168,7 +170,7 @@ func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, erro
 }
 
 func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]byte, error) {
-	payload := ExecutionPayload{
+	payload := LeafNodeCompletePayload{
 		Action:        "leaf_node_complete",
 		DashboardNode: event.LeafNode,
 		ExecutionId:   event.ExecutionId,
@@ -177,10 +179,13 @@ func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]by
 }
 
 func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]byte, error) {
-	payload := ExecutionPayload{
+	payload := ExecutionStartedPayload{
+		SchemaVersion: fmt.Sprintf("%d", ExecutionStartedSchemaVersion),
 		Action:        "execution_started",
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
+		Panels:        event.Panels,
+		Layout:        event.Root.AsTreeNode(),
 	}
 	return json.Marshal(payload)
 }
@@ -195,16 +200,19 @@ func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, 
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
 	payload := ExecutionCompletePayload{
-		SchemaVersion: ExecutionCompleteSchemaVersion,
+		SchemaVersion: fmt.Sprintf("%d", ExecutionCompleteSchemaVersion),
 		Action:        "execution_complete",
 		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
+		Panels:        event.Panels,
+		Layout:        event.Root.AsTreeNode(),
 		Inputs:        event.Inputs,
 		Variables:     event.Variables,
 		SearchPath:    event.SearchPath,
 		StartTime:     event.StartTime,
 		EndTime:       event.EndTime,
 	}
+
 	return json.Marshal(payload)
 }
 

@@ -30,7 +30,7 @@ const Children = ({
   return (
     <>
       {children.map((child) => {
-        switch (child.node_type) {
+        switch (child.panel_type) {
           case "benchmark":
             return (
               <Benchmark
@@ -45,23 +45,25 @@ const Children = ({
             return (
               <Panel
                 key={child.name}
-                definition={child}
+                layoutDefinition={child}
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                <Card {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Card {...definition} />}
               </Panel>
             );
           case "chart":
             return (
               <Panel
                 key={child.name}
-                definition={child}
-                ready={!!child.data}
+                layoutDefinition={child}
+                ready={(definition) => !!definition.data}
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                <Chart {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Chart {...definition} />}
               </Panel>
             );
           case "container":
@@ -69,106 +71,105 @@ const Children = ({
               <Container
                 key={child.name}
                 allowChildPanelExpand={child.allow_child_panel_expand}
-                definition={child}
                 expandDefinition={child}
+                layoutDefinition={child}
                 withTitle={withTitle}
               />
             );
-          // case "control":
-          //   return (
-          //     <Panel
-          //       key={child.name}
-          //       definition={child}
-          //       allowExpand={allowPanelExpand}
-          //       withTitle={withTitle}
-          //     >
-          //       <Control {...child} />
-          //     </Panel>
-          //   );
           case "dashboard":
             return <Dashboard key={child.name} definition={child} />;
           case "error":
             return (
               <Panel
                 key={child.name}
-                definition={child}
+                layoutDefinition={child}
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                <ErrorPanel error={child.error} />
+                {(definition) => <ErrorPanel {...definition} />}
               </Panel>
             );
           case "flow":
             return (
               <Panel
                 key={child.name}
-                definition={child}
-                ready={!!child.data}
+                layoutDefinition={child}
+                ready={(definition) => !!definition.data}
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                <Flow {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Flow {...definition} />}
               </Panel>
             );
           case "hierarchy":
             return (
               <Panel
                 key={child.name}
-                definition={child}
-                ready={!!child.data}
+                layoutDefinition={child}
+                ready={(definition) => !!definition.data}
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                <Hierarchy {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Hierarchy {...definition} />}
               </Panel>
             );
           case "image":
             return (
               <Panel
                 key={child.name}
-                definition={child}
-                ready={child.sql ? !!child.data : !!child.properties.src}
+                layoutDefinition={child}
+                ready={(definition) =>
+                  definition.sql
+                    ? !!definition.data
+                    : !!definition.properties.src
+                }
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                <Image {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Image {...definition} />}
               </Panel>
             );
           case "input":
             return (
               <Panel
                 key={child.name}
-                definition={child}
+                layoutDefinition={child}
                 allowExpand={
                   allowPanelExpand &&
-                  (child.title || child.properties?.type === "table")
+                  (child.title || child.display_type === "table")
                 }
                 withTitle={withTitle}
               >
-                <Input {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Input {...definition} />}
               </Panel>
             );
           case "table":
             return (
               <Panel
                 key={child.name}
-                definition={child}
-                ready={!!child.data}
+                layoutDefinition={child}
+                ready={(definition) => !!definition.data}
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                <Table {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Table {...definition} />}
               </Panel>
             );
           case "text":
             return (
               <Panel
                 key={child.name}
-                definition={child}
+                layoutDefinition={child}
                 allowExpand={false}
                 withTitle={withTitle}
               >
-                <Text {...child} />
+                {/*@ts-ignore*/}
+                {(definition) => <Text {...definition} />}
               </Panel>
             );
           default:

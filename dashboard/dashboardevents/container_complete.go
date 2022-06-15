@@ -1,9 +1,9 @@
 package dashboardevents
 
-import "github.com/turbot/steampipe/dashboard/dashboardinterfaces"
+import "github.com/turbot/steampipe/dashboard/dashboardtypes"
 
 type ContainerComplete struct {
-	Container   dashboardinterfaces.DashboardNodeRun
+	Container   dashboardtypes.DashboardNodeRun
 	Session     string
 	ExecutionId string
 }

@@ -5,4 +5,5 @@ type ResolvedQuery struct {
 	ExecuteSQL string
 	RawSQL     string
 	Args       []string
+	Params     []*ParamDef
 }

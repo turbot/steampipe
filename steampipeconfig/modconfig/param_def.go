@@ -15,8 +15,8 @@ type ParamDef struct {
 	Default     *string     `cty:"default" json:"default"`
 
 	// list of all blocks referenced by the resource
-	References []*ResourceReference
-	DeclRange  hcl.Range
+	References []*ResourceReference `json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
 }
 
 func NewParamDef(block *hcl.Block) *ParamDef {

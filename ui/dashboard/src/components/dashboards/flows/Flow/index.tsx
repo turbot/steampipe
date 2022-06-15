@@ -1,8 +1,6 @@
 import ErrorPanel from "../../Error";
 import Flows, { FlowProperties, FlowProps, FlowType } from "../index";
-import get from "lodash/get";
 import merge from "lodash/merge";
-import set from "lodash/set";
 import {
   buildNodesAndEdges,
   buildSankeyDataInputs,
@@ -11,7 +9,7 @@ import {
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
 const getCommonBaseOptions = () => ({
@@ -22,10 +20,7 @@ const getCommonBaseOptions = () => ({
   },
 });
 
-const getCommonBaseOptionsForFlowType = (
-  type: FlowType = "sankey",
-  namedColors
-) => {
+const getCommonBaseOptionsForFlowType = (type: FlowType = "sankey") => {
   switch (type) {
     case "sankey":
       return {};
@@ -86,9 +81,7 @@ const getOptionOverridesForFlowType = (
     return {};
   }
 
-  let overrides = {};
-
-  return overrides;
+  return {};
 };
 
 const buildFlowOptions = (props: FlowProps, theme, themeWrapperRef) => {
@@ -118,15 +111,15 @@ const buildFlowOptions = (props: FlowProps, theme, themeWrapperRef) => {
 
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForFlowType(props.properties?.type, namedColors),
+    getCommonBaseOptionsForFlowType(props.display_type),
     getSeriesForFlowType(
-      props.properties?.type,
+      props.display_type,
       props.data,
       props.properties,
       nodesAndEdges,
       namedColors
     ),
-    getOptionOverridesForFlowType(props.properties?.type, props.properties)
+    getOptionOverridesForFlowType(props.display_type, props.properties)
   );
 };
 
@@ -150,36 +143,26 @@ const FlowWrapper = (props: FlowProps) => {
   return (
     <Chart
       options={buildFlowOptions(props, theme, wrapperRef)}
-      type={props.properties ? props.properties.type : "sankey"}
+      type={props.display_type || "sankey"}
     />
   );
 };
 
-type FlowDefinition = PanelDefinition & {
-  properties: FlowProps;
-};
-
-const renderFlow = (definition: FlowDefinition) => {
+const renderFlow = (definition: FlowProps) => {
   // We default to sankey diagram if not specified
-  if (!get(definition, "properties.type")) {
-    // @ts-ignore
-    definition = set(definition, "properties.type", "sankey");
-  }
-  const {
-    properties: { type },
-  } = definition;
+  const { display_type = "sankey" } = definition;
 
-  const flow = Flows[type];
+  const flow = Flows[display_type];
 
   if (!flow) {
-    return <ErrorPanel error={`Unknown flow type ${type}`} />;
+    return <ErrorPanel error={`Unknown flow type ${display_type}`} />;
   }
 
   const Component = flow.component;
   return <Component {...definition} />;
 };
 
-const RenderFlow = (props: FlowDefinition) => {
+const RenderFlow = (props: FlowProps) => {
   return renderFlow(props);
 };
 

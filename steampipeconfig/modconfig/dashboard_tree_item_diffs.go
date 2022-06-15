@@ -108,16 +108,25 @@ func (d *DashboardTreeItemDiffs) queryProviderDiff(l QueryProvider, r QueryProvi
 }
 
 func (d *DashboardTreeItemDiffs) dashboardLeafNodeDiff(l DashboardLeafNode, r DashboardLeafNode) {
-	if !utils.SafeStringsEqual(l.Name(), r.Name()) {
+	if l.Name() != r.Name() {
 		d.AddPropertyDiff("Name")
 	}
-	if !utils.SafeStringsEqual(l.GetTitle(), r.GetTitle()) {
+	if l.GetTitle() != r.GetTitle() {
 		d.AddPropertyDiff("Title")
 	}
 	if l.GetWidth() != r.GetWidth() {
 		d.AddPropertyDiff("Width")
 	}
-	if !utils.SafeStringsEqual(l.GetDisplay(), r.GetDisplay()) {
+	if l.GetDisplay() != r.GetDisplay() {
 		d.AddPropertyDiff("Display")
+	}
+	if l.GetDocumentation() != r.GetDocumentation() {
+		d.AddPropertyDiff("Documentation")
+	}
+	if l.GetType() != r.GetType() {
+		d.AddPropertyDiff("Type")
+	}
+	if !utils.StringMapsEqual(l.GetTags(), r.GetTags()) {
+		d.AddPropertyDiff("Tags")
 	}
 }

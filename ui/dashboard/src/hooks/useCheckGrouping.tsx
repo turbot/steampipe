@@ -4,13 +4,12 @@ import ControlErrorNode from "../components/dashboards/check/common/node/Control
 import ControlNode from "../components/dashboards/check/common/node/ControlNode";
 import ControlResultNode from "../components/dashboards/check/common/node/ControlResultNode";
 import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
-import get from "lodash/get";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
+import usePrevious from "./usePrevious";
 import {
   CheckDisplayGroup,
   CheckDisplayGroupType,
-  CheckGroup,
   CheckNode,
   CheckResult,
   CheckSummary,
@@ -24,7 +23,13 @@ import {
   useReducer,
 } from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
-import { ElementType, IActions, PanelDefinition } from "./useDashboard";
+import {
+  BenchmarkDefinition,
+  ElementType,
+  IActions,
+  PanelDefinition,
+  useDashboard,
+} from "./useDashboard";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
@@ -49,7 +54,6 @@ interface ICheckGroupingContext {
   groupingsConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
   nodeStates: CheckGroupNodeStates;
-  rootBenchmark: CheckGroup;
   dispatch(action: CheckGroupingAction): void;
 }
 
@@ -302,15 +306,15 @@ const reducer = (state: CheckGroupNodeStates, action) => {
 
 interface CheckGroupingProviderProps {
   children: null | JSX.Element | JSX.Element[];
-  definition: PanelDefinition;
+  definition: BenchmarkDefinition;
 }
 
 const CheckGroupingProvider = ({
   children,
   definition,
 }: CheckGroupingProviderProps) => {
+  const { panelsMap } = useDashboard();
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
-  const rootBenchmark = get(definition, "execution_tree.root.groups[0]", null);
   const [searchParams] = useSearchParams();
 
   const groupingsConfig = useMemo(() => {
@@ -351,64 +355,95 @@ const CheckGroupingProvider = ({
     }
   }, [searchParams]);
 
-  const [benchmark, grouping, firstChildSummaries, tempNodeStates] =
-    useMemo(() => {
-      if (!rootBenchmark) {
-        return [null, null, [], {}];
-      }
+  const [
+    benchmark,
+    panelDefinition,
+    grouping,
+    firstChildSummaries,
+    tempNodeStates,
+  ] = useMemo(() => {
+    if (!definition) {
+      return [null, null, null, [], {}];
+    }
 
-      const b = new BenchmarkType(
-        "0",
-        rootBenchmark.group_id,
-        rootBenchmark.title,
-        rootBenchmark.description,
-        rootBenchmark.groups,
-        rootBenchmark.controls,
-        []
+    // @ts-ignore
+    const nestedBenchmarks = definition.children?.filter(
+      (child) => child.panel_type === "benchmark"
+    );
+    // @ts-ignore
+    const nestedControls = definition.children?.filter(
+      (child) => child.panel_type === "control"
+    );
+
+    const rootBenchmarkPanel = panelsMap[definition.name];
+    const b = new BenchmarkType(
+      "0",
+      rootBenchmarkPanel.name,
+      rootBenchmarkPanel.title,
+      rootBenchmarkPanel.description,
+      nestedBenchmarks,
+      nestedControls,
+      panelsMap,
+      []
+    );
+
+    const checkNodeStates: CheckGroupNodeStates = {};
+    const result: CheckNode[] = [];
+    const temp = { _: result };
+    b.all_control_results.forEach((checkResult) => {
+      const grouping = groupCheckItems(
+        temp,
+        checkResult,
+        groupingsConfig,
+        checkNodeStates
       );
+      const node = getCheckResultNode(checkResult);
+      grouping._.push(node);
+    });
 
-      const checkNodeStates: CheckGroupNodeStates = {};
-      const result: CheckNode[] = [];
-      const temp = { _: result };
-      b.all_control_results.forEach((checkResult) => {
-        const grouping = groupCheckItems(
-          temp,
-          checkResult,
-          groupingsConfig,
-          checkNodeStates
-        );
-        const node = getCheckResultNode(checkResult);
-        grouping._.push(node);
-      });
+    const results = new RootNode(result);
 
-      const results = new RootNode(result);
+    const firstChildSummaries: CheckSummary[] = [];
+    for (const child of results.children) {
+      firstChildSummaries.push(child.summary);
+    }
 
-      const firstChildSummaries: CheckSummary[] = [];
-      for (const child of results.children) {
-        firstChildSummaries.push(child.summary);
-      }
+    return [
+      b,
+      { ...rootBenchmarkPanel, children: definition.children },
+      results,
+      firstChildSummaries,
+      checkNodeStates,
+    ] as const;
+  }, [definition, groupingsConfig, panelsMap]);
 
-      return [b, results, firstChildSummaries, checkNodeStates] as const;
-    }, [groupingsConfig, rootBenchmark]);
+  const previousGroupings = usePrevious({ groupingsConfig });
 
   useEffect(() => {
+    if (
+      previousGroupings &&
+      // @ts-ignore
+      previousGroupings.groupingsConfig === groupingsConfig
+    ) {
+      return;
+    }
     dispatch({
       type: CheckGroupingActions.UPDATE_NODES,
       nodes: tempNodeStates,
     });
-  }, [groupingsConfig]);
+  }, [previousGroupings, groupingsConfig, tempNodeStates]);
 
   return (
     <CheckGroupingContext.Provider
       value={{
         benchmark,
-        definition,
+        // @ts-ignore
+        definition: panelDefinition,
         dispatch,
         firstChildSummaries,
         grouping,
         groupingsConfig,
         nodeStates,
-        rootBenchmark,
       }}
     >
       {children}

@@ -1,5 +1,9 @@
 import Benchmark from "./Benchmark";
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
+import {
+  BasePrimitiveProps,
+  ExecutablePrimitiveProps,
+  LeafNodeData,
+} from "../../common";
 
 export type CheckNodeType =
   | "benchmark"
@@ -26,12 +30,12 @@ export interface CheckNode {
   severity_summary: CheckSeveritySummary;
   summary: CheckSummary;
   children?: CheckNode[];
-  results?: CheckResult[];
+  data?: LeafNodeData;
   error?: string;
   merge?: (other: CheckNode) => void;
 }
 
-export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
+export type CheckNodeStatusRaw = "ready" | "started" | "complete" | "error";
 
 export type CheckNodeStatus = "running" | "complete";
 
@@ -95,41 +99,32 @@ export interface CheckResult {
   type: CheckResultType;
 }
 
-export interface CheckControl {
-  control_id: string;
+export interface CheckControlRun {
+  name: string;
   title?: string;
   description?: string;
+  panel_type: "control";
   severity?: CheckSeverity | undefined;
   tags?: CheckTags;
-  results: CheckResult[];
+  data: LeafNodeData;
   summary: CheckSummary;
-  run_status: CheckNodeStatusRaw;
-  run_error?: string;
+  status: CheckNodeStatusRaw;
+  error?: string;
 }
 
 export type CheckGroupType = "benchmark" | "table";
 
-export interface CheckGroup {
-  group_id: string;
+export interface CheckBenchmarkRun {
+  name: string;
   title?: string;
   description?: string;
+  panel_type: "benchmark";
   tags?: CheckTags;
   type: CheckGroupType;
+  session_id: string;
+  source_definition: string;
   summary: CheckLeafNodeDataGroupSummary;
-  groups?: CheckGroup[];
-  controls?: CheckControl[];
-}
-
-interface CheckLeafNodeProgress {
-  summary: CheckSummary;
-}
-
-export interface CheckExecutionTree {
-  start_time: string;
-  end_time: string;
-  control_runs: CheckControl[];
-  progress: CheckLeafNodeProgress;
-  root: CheckGroup;
+  children?: CheckBenchmarkRun[] | CheckControlRun[];
 }
 
 export type CheckDisplayGroupType =

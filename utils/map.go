@@ -30,3 +30,25 @@ func SortedStringKeys[V any](m map[string]V) []string {
 	sort.Strings(keys)
 	return keys
 }
+
+func StringMapsEqual(l, r map[string]string) bool {
+	// treat nil as empty
+	if l == nil {
+		l = map[string]string{}
+	}
+	if r == nil {
+		r = map[string]string{}
+	}
+
+	if len(l) != len(r) {
+		return false
+	}
+
+	for k, lVal := range l {
+		rVal, ok := r[k]
+		if !ok || rVal != lVal {
+			return false
+		}
+	}
+	return true
+}

@@ -14,23 +14,22 @@ import (
 type DashboardText struct {
 	ResourceWithMetadataBase
 
-	FullName        string `cty:"name" json:"-"`
-	ShortName       string `json:"-"`
-	UnqualifiedName string `json:"-"`
+	FullName        string  `cty:"name" json:"-"`
+	ShortName       string  `json:"-"`
+	UnqualifiedName string  `json:"-"`
+	Value           *string `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title   *string        `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int           `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type    *string        `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
-	Value   *string        `cty:"value" hcl:"value" column:"value,text"  json:"value,omitempty"`
-	Display *string        `cty:"display" hcl:"display" json:"display,omitempty"`
-	OnHooks []*DashboardOn `cty:"on" hcl:"on,block" json:"on,omitempty"`
+	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string `cty:"display" hcl:"display" json:"-"`
 
-	Base       *DashboardText `hcl:"base" json:"-"`
-	DeclRange  hcl.Range      `json:"-"`
-	References []*ResourceReference
-	Mod        *Mod       `cty:"mod" json:"-"`
-	Paths      []NodePath `column:"path,jsonb" json:"-"`
+	Base       *DashboardText       `hcl:"base" json:"-"`
+	DeclRange  hcl.Range            `json:"-"`
+	References []*ResourceReference `json:"-"`
+	Mod        *Mod                 `cty:"mod" json:"-"`
+	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -167,8 +166,18 @@ func (t *DashboardText) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (t *DashboardText) GetDisplay() *string {
-	return t.Display
+func (t *DashboardText) GetDisplay() string {
+	return typehelpers.SafeString(t.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (*DashboardText) GetDocumentation() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (t *DashboardText) GetType() string {
+	return typehelpers.SafeString(t.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

@@ -3,9 +3,9 @@ import merge from "lodash/merge";
 import padStart from "lodash/padStart";
 import {
   AddControlResultsAction,
-  CheckControl,
+  CheckBenchmarkRun,
+  CheckControlRun,
   CheckDynamicColsMap,
-  CheckGroup,
   CheckNode,
   CheckNodeStatus,
   CheckNodeType,
@@ -18,6 +18,7 @@ import {
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../../common";
+import { PanelsMap } from "../../../../hooks/useDashboard";
 
 class Benchmark implements CheckNode {
   private readonly _sortIndex: string;
@@ -34,8 +35,9 @@ class Benchmark implements CheckNode {
     name: string,
     title: string | undefined,
     description: string | undefined,
-    benchmarks: CheckGroup[] | undefined,
-    controls: CheckControl[] | undefined,
+    benchmarks: CheckBenchmarkRun[] | undefined,
+    controls: CheckControlRun[] | undefined,
+    panelsMap: PanelsMap,
     trunk: Benchmark[],
     add_control_results?: AddControlResultsAction
   ) {
@@ -57,14 +59,24 @@ class Benchmark implements CheckNode {
     const lengthMaxBenchmarkIndex = (benchmarksToAdd.length - 1).toString()
       .length;
     benchmarksToAdd.forEach((nestedBenchmark, benchmarkIndex) => {
+      const nestedDefinition = panelsMap[nestedBenchmark.name];
+      // @ts-ignore
+      const benchmarks = nestedBenchmark.children?.filter(
+        (child) => child.panel_type === "benchmark"
+      );
+      // @ts-ignore
+      const controls = nestedBenchmark.children?.filter(
+        (child) => child.panel_type === "control"
+      );
       nestedBenchmarks.push(
         new Benchmark(
           padStart(benchmarkIndex.toString(), lengthMaxBenchmarkIndex),
-          nestedBenchmark.group_id,
-          nestedBenchmark.title,
-          nestedBenchmark.description,
-          nestedBenchmark.groups,
-          nestedBenchmark.controls,
+          nestedDefinition.name,
+          nestedDefinition.title,
+          nestedDefinition.description,
+          benchmarks,
+          controls,
+          panelsMap,
           thisTrunk,
           this._add_control_results
         )
@@ -74,21 +86,24 @@ class Benchmark implements CheckNode {
     const controlsToAdd = controls || [];
     const lengthMaxControlIndex = (controlsToAdd.length - 1).toString().length;
     controlsToAdd.forEach((nestedControl, controlIndex) => {
+      // @ts-ignore
+      const control = panelsMap[nestedControl.name] as CheckControlRun;
       nestedControls.push(
         new Control(
           padStart(controlIndex.toString(), lengthMaxControlIndex),
           this._name,
           this._title,
           this._description,
-          nestedControl.control_id,
-          nestedControl.title,
-          nestedControl.description,
-          nestedControl.severity,
-          nestedControl.results,
-          nestedControl.summary,
-          nestedControl.tags,
-          nestedControl.run_status,
-          nestedControl.run_error,
+          control.name,
+          control.title,
+          control.description,
+          control.severity,
+          control.data,
+          control.summary,
+          control.tags,
+          control.status,
+          control.error,
+          panelsMap,
           thisTrunk,
           this._add_control_results
         )
@@ -183,56 +198,56 @@ class Benchmark implements CheckNode {
     const columns: LeafNodeDataColumn[] = [
       {
         name: "group_id",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "title",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "description",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "control_id",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "control_title",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "control_description",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "severity",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "reason",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "resource",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
       {
         name: "status",
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       },
     ];
     const { dimensions, tags } = this.get_dynamic_cols();
     Object.keys(tags).forEach((tag) =>
       columns.push({
         name: tag,
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       })
     );
     Object.keys(dimensions).forEach((dimension) =>
       columns.push({
         name: dimension,
-        data_type_name: "TEXT",
+        data_type: "TEXT",
       })
     );
     const rows = this.get_data_rows(Object.keys(tags), Object.keys(dimensions));

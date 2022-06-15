@@ -28,6 +28,10 @@ func (j *TextFormatter) FileExtension() string {
 	return ".txt"
 }
 
+func (tf TextFormatter) GetFormatName() string {
+	return "txt"
+}
+
 func (j *TextFormatter) getMaxCols(constraint RangeConstraint) int {
 	colsAvailable, _, _ := gows.GetWinSize()
 	// check if STEAMPIPE_CHECK_DISPLAY_WIDTH env variable is set

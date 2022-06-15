@@ -25,19 +25,18 @@ type DashboardTable struct {
 	UnqualifiedName string `json:"-"`
 
 	Title      *string                          `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width      *int                             `cty:"width" hcl:"width" column:"width,text"  json:"-"`
-	Type       *string                          `cty:"type" hcl:"type" column:"type,text"  json:"type,omitempty"`
+	Width      *int                             `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type       *string                          `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
 	Columns    map[string]*DashboardTableColumn `cty:"columns" json:"columns,omitempty"`
 	Display    *string                          `cty:"display" hcl:"display" json:"display,omitempty"`
-	OnHooks    []*DashboardOn                   `cty:"on" hcl:"on,block" json:"on,omitempty"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	Base       *DashboardTable      `hcl:"base" json:"-"`
 	DeclRange  hcl.Range            `json:"-"`
@@ -195,8 +194,18 @@ func (t *DashboardTable) GetWidth() int {
 }
 
 // GetDisplay implements DashboardLeafNode
-func (t *DashboardTable) GetDisplay() *string {
-	return t.Display
+func (t *DashboardTable) GetDisplay() string {
+	return typehelpers.SafeString(t.Display)
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (*DashboardTable) GetDocumentation() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (t *DashboardTable) GetType() string {
+	return typehelpers.SafeString(t.Type)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem

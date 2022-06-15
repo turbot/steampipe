@@ -12,7 +12,8 @@ import { ZoomIcon } from "../../../../constants/icons";
 interface ContainerProps {
   allowChildPanelExpand?: boolean;
   allowExpand?: boolean;
-  definition: ContainerDefinition;
+  layoutDefinition?: ContainerDefinition;
+  definition?: ContainerDefinition;
   expandDefinition: ContainerDefinition;
   withNarrowVertical?: boolean;
   withTitle?: boolean;
@@ -23,16 +24,32 @@ const Container = ({
   allowExpand = false,
   definition,
   expandDefinition,
+  layoutDefinition,
   withNarrowVertical,
   withTitle,
 }: ContainerProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const { dispatch } = useDashboard();
+  const { dispatch, panelsMap } = useDashboard();
+
+  if (!definition && !layoutDefinition) {
+    return null;
+  }
+
+  const panelDefinition = definition
+    ? definition
+    : layoutDefinition && panelsMap[layoutDefinition.name]
+    ? panelsMap[layoutDefinition.name]
+    : layoutDefinition;
+
+  if (!panelDefinition) {
+    return null;
+  }
+
   return (
     <LayoutPanel
       allowExpand={allowExpand}
       className="relative"
-      definition={definition}
+      definition={panelDefinition}
       events={{
         onMouseEnter: allowExpand
           ? () => {
@@ -60,6 +77,16 @@ const Container = ({
               dispatch({
                 type: DashboardActions.SELECT_PANEL,
                 panel: { ...expandDefinition },
+                // panel: {
+                //   ...{
+                //     ...panelDefinition,
+                //     children: definition
+                //       ? definition.children
+                //       : layoutDefinition
+                //       ? layoutDefinition.children
+                //       : [],
+                //   },
+                // },
               });
             }}
           >
@@ -69,7 +96,13 @@ const Container = ({
       </>
       <Children
         allowPanelExpand={allowChildPanelExpand}
-        children={definition.children}
+        children={
+          definition
+            ? definition.children
+            : layoutDefinition
+            ? layoutDefinition.children
+            : []
+        }
       />
     </LayoutPanel>
   );

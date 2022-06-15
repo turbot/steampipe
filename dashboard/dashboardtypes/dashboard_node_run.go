@@ -1,4 +1,4 @@
-package dashboardinterfaces
+package dashboardtypes
 
 import (
 	"context"
@@ -6,14 +6,13 @@ import (
 
 type DashboardRunStatus string
 
-// TODO [report] think about status - do we need in progress
 const (
 	DashboardRunReady    DashboardRunStatus = "ready"
-	DashboardRunBlocked  DashboardRunStatus = "blocked"
 	DashboardRunComplete DashboardRunStatus = "complete"
 	DashboardRunError    DashboardRunStatus = "error"
 )
 
+// DashboardNodeRun is an interface implemented by all dashboard run nodes
 type DashboardNodeRun interface {
 	Initialise(ctx context.Context)
 	Execute(ctx context.Context)
@@ -23,10 +22,13 @@ type DashboardNodeRun interface {
 	GetError() error
 	SetComplete()
 	RunComplete() bool
+	GetChildren() []DashboardNodeRun
 	ChildrenComplete() bool
 	GetInputsDependingOn(changedInputName string) []string
+	AsTreeNode() *SnapshotTreeNode
 }
 
+// DashboardNodeParent is an interface implemented by all dashboard run nodes which have children
 type DashboardNodeParent interface {
 	GetName() string
 	ChildCompleteChan() chan DashboardNodeRun
