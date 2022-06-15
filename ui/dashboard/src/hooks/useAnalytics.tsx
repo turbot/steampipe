@@ -16,14 +16,13 @@ import {
 } from "react";
 import { useTheme } from "./useTheme";
 
-// noinspection JSUnusedLocalSymbols
 interface AnalyticsProperties {
   [key: string]: any;
 }
 
 interface IAnalyticsContext {
   reset: () => void;
-  track: (string, AnalyticsProperties) => void;
+  track: (string, properties: AnalyticsProperties) => void;
 }
 
 interface SelectedDashboardStates {

@@ -182,7 +182,7 @@ const useCardState = ({ data, sql, display_type, properties }: CardProps) => {
         href: formalHref || properties.href || null,
       });
     }
-  }, [data, properties]);
+  }, [data, display_type, properties]);
 
   return calculatedProperties;
 };
