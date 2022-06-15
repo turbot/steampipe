@@ -43,6 +43,8 @@ jobs:
       - name: install steampipe
         run: |
           ./install.sh v0.14.6
+          adduser sp
+          su - sp
           steampipe query "select 1"
 
       - name: Setup BATS
