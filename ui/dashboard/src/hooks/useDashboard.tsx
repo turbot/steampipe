@@ -280,7 +280,6 @@ export interface PanelDefinition {
 
 export interface BenchmarkDefinition extends PanelDefinition {
   children?: BenchmarkDefinition | ControlDefinition[];
-  description?: string;
 }
 
 export interface ControlDefinition extends PanelDefinition {}

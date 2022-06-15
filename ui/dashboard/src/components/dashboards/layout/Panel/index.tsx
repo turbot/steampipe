@@ -1,6 +1,12 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts";
+import {
+  BenchmarkDefinition,
+  DashboardActions,
+  PanelDefinition,
+  useDashboard,
+} from "../../../../hooks/useDashboard";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
@@ -8,11 +14,6 @@ import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs";
 import { memo, useState } from "react";
-import {
-  DashboardActions,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
 import { ThemeNames } from "../../../../hooks/useTheme";
@@ -28,6 +29,16 @@ interface PanelProps {
     | ImageProps
     | InputProps
     | PanelDefinition
+    | TableProps
+    | TextProps;
+  layoutDefinition:
+    | BaseChartProps
+    | CardProps
+    | HierarchyProps
+    | ImageProps
+    | InputProps
+    | PanelDefinition
+    | BenchmarkDefinition
     | TableProps
     | TextProps;
   allowExpand?: boolean;
@@ -46,6 +57,7 @@ interface PanelWrapperProps {
     | ImageProps
     | InputProps
     | PanelDefinition
+    | BenchmarkDefinition
     | TableProps
     | TextProps;
   allowExpand?: boolean;
@@ -59,6 +71,7 @@ const Panel = memo(
   ({
     children,
     definition,
+    layoutDefinition,
     allowExpand = true,
     forceBackground = false,
     ready = true,
@@ -136,7 +149,7 @@ const Panel = memo(
                   e.stopPropagation();
                   dispatch({
                     type: DashboardActions.SELECT_PANEL,
-                    panel: { ...definition },
+                    panel: { ...(layoutDefinition || {}), ...definition },
                   });
                 }}
               >
@@ -215,6 +228,7 @@ const PanelWrapper = ({
     <Panel
       allowExpand={allowExpand}
       definition={panel || layoutDefinition}
+      layoutDefinition={layoutDefinition}
       forceBackground={forceBackground}
       ready={ready(panel || layoutDefinition)}
       withOverflow={withOverflow}

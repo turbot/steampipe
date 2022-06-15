@@ -24,7 +24,7 @@ import { useMemo } from "react";
 
 interface BenchmarkTableViewProps {
   benchmark: BenchmarkType;
-  definition: PanelDefinition;
+  definition: BenchmarkDefinition;
 }
 
 type InnerCheckProps = {
@@ -228,6 +228,7 @@ const BenchmarkTableView = ({
         name: definition.name,
         panel_type: "table",
         width: definition.width,
+        children: definition.children,
         data: benchmarkDataTable,
       }}
       ready={() => !!benchmarkDataTable}
