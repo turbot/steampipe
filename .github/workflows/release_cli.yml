@@ -183,7 +183,7 @@ jobs:
         run: |
           pwd
           ls -al
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/build:/__w/steampipe/steampipe/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
         run: |

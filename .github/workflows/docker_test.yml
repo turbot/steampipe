@@ -47,10 +47,11 @@ jobs:
       - name: add and switch to user
         run: |
           adduser --disabled-password --gecos "" sp
+          echo "sp:strongpassword" | chpasswd
 
       - name: steampipe query
         run: |
-          su sp
+          echo strongpassword | su - sp -c "my command line"
           ls
           whoami
           steampipe query "select 1"
