@@ -43,7 +43,7 @@ jobs:
       - name: install steampipe
         run: |
           ./install.sh v0.14.6
-          adduser sp -y
+          adduser --disabled-password --gecos "" sp
           su - sp
           steampipe query "select 1"
 
