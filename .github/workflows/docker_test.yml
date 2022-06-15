@@ -1,5 +1,13 @@
 name: ">>>>Steampipe Release"
-on: push
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch that will be built"
+        required: true
+      version:
+        description: "The version to release (must be prefixed with 'v')"
+        required: true
 
 env:
   PROJECT_ID: steampipe
