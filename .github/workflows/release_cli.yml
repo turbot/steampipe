@@ -182,7 +182,11 @@ jobs:
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
           cd
+          echo "cd"
+          pwd
           cd ~/build
+          echo "build"
+          pwd
           ls -al
 
       - name: Set PATH
@@ -190,6 +194,7 @@ jobs:
           pwd
           ls -al
           echo "PATH=$PATH:~/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+          export PATH="~/build:$PATH"
 
       - name: Install DB
         run: |
