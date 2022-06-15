@@ -131,7 +131,7 @@ jobs:
     needs: goreleaser
     strategy:
       matrix:
-        containers: [ubuntu:latest]
+        containers: ["ubuntu:latest"]
     container: ${{ matrix.platform }}
     runs-on: ubuntu-latest
     steps:
