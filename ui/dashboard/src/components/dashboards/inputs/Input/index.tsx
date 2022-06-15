@@ -8,7 +8,7 @@ export type InputDefinition = PanelDefinition & {
 
 const renderInput = (definition: InputDefinition) => {
   const {
-    properties: { name, type = "select" },
+    properties: { unqualified_name: name, type = "select" },
   } = definition;
   const input = Inputs[type];
 
