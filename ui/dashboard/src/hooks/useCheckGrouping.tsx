@@ -369,11 +369,12 @@ const CheckGroupingProvider = ({
         (child) => child.panel_type === "control"
       );
 
+      const rootBenchmarkPanel = panelsMap[definition.name];
       const b = new BenchmarkType(
         "0",
-        definition.name,
-        definition.title,
-        definition.description,
+        rootBenchmarkPanel.name,
+        rootBenchmarkPanel.title,
+        rootBenchmarkPanel.description,
         nestedBenchmarks,
         nestedControls,
         panelsMap,
