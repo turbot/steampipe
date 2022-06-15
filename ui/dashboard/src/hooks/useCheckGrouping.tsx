@@ -6,6 +6,7 @@ import ControlResultNode from "../components/dashboards/check/common/node/Contro
 import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
+import usePrevious from "./usePrevious";
 import {
   CheckDisplayGroup,
   CheckDisplayGroupType,
@@ -403,12 +404,21 @@ const CheckGroupingProvider = ({
       return [b, results, firstChildSummaries, checkNodeStates] as const;
     }, [definition, groupingsConfig, panelsMap]);
 
+  const previousGroupings = usePrevious({ groupingsConfig });
+
   useEffect(() => {
+    if (
+      previousGroupings &&
+      // @ts-ignore
+      previousGroupings.groupingsConfig === groupingsConfig
+    ) {
+      return;
+    }
     dispatch({
       type: CheckGroupingActions.UPDATE_NODES,
       nodes: tempNodeStates,
     });
-  }, [groupingsConfig]);
+  }, [previousGroupings, groupingsConfig, tempNodeStates]);
 
   return (
     <CheckGroupingContext.Provider

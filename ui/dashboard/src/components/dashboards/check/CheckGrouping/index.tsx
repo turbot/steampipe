@@ -21,7 +21,7 @@ const CheckGrouping = ({ node }: CheckGroupingProps) => {
     // console.log("Capturing and expanding", nodeStates);
     setRestoreNodeStates(nodeStates);
     dispatch({ type: CheckGroupingActions.EXPAND_ALL_NODES });
-  }, [nodeStates]);
+  }, [dispatch, nodeStates]);
 
   const restore = useCallback(() => {
     // console.log("Restoring", restoreNodeStates);
@@ -31,7 +31,7 @@ const CheckGrouping = ({ node }: CheckGroupingProps) => {
         nodes: restoreNodeStates,
       });
     }
-  }, [restoreNodeStates]);
+  }, [dispatch, restoreNodeStates]);
 
   useEffect(() => {
     window.onbeforeprint = expand;
