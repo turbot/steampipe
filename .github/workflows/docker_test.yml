@@ -24,13 +24,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: ls
+        run: |
+          ls -al
+
+      - name: install git
+        run: |
+          sudo apt install -y git
+
       - name: Checkout submodules
         run: |
           git submodule update --init --recursive
 
-      - name: ls
-        run: |
-          ls -al
 
   #     - name: Set PATH
   #       run: |
