@@ -47,10 +47,10 @@ jobs:
       - name: add and switch to user
         run: |
           adduser --disabled-password --gecos "" sp
-          su - sp
 
       - name: steampipe query
         run: |
+          su - sp
           steampipe query "select 1"
 
       - name: Setup BATS
