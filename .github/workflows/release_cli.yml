@@ -181,13 +181,15 @@ jobs:
 
       - name: Set PATH
         run: |
+          pwd
+          ls -al
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
-      # - name: Install DB
-      #   run: |
-      #     steampipe service start
-      #     steampipe plugin install chaos
-      #     steampipe service stop --force
+      - name: Install DB
+        run: |
+          steampipe service start
+          steampipe plugin install chaos
+          steampipe service stop --force
 
       - name: Run Test Suite
         timeout-minutes: 5
