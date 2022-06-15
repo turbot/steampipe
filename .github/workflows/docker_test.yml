@@ -36,6 +36,7 @@ jobs:
 
       - name: Checkout submodules
         run: |
+          ls
           git submodule update --init --recursive
 
 
