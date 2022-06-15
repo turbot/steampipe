@@ -21,6 +21,9 @@ jobs:
       - name: uname
         run: uname -a
 
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Checkout submodules
         run: |
           git submodule update --init --recursive
