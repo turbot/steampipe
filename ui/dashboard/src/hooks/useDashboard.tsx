@@ -265,6 +265,7 @@ export interface SQLDataMap {
 
 export interface PanelDefinition {
   name: string;
+  display_type?: string;
   panel_type?: string;
   title?: string;
   description?: string;

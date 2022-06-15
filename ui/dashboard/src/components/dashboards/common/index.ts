@@ -10,6 +10,7 @@ export interface BasePrimitiveProps {
   base?: string;
   name: string;
   panel_type: string;
+  display_type?: string;
   title?: string;
   width?: Width;
 }

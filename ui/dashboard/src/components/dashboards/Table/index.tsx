@@ -349,15 +349,14 @@ type TableColumns = {
 type TableType = "table" | "line" | null;
 
 export type TableProperties = {
-  type?: TableType;
   columns?: TableColumns;
 };
 
-export type BaseTableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
-
-export type TableProps = BaseTableProps & {
-  properties?: TableProperties;
-};
+export type TableProps = BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
+    display_type?: TableType;
+    properties?: TableProperties;
+  };
 
 const TableView = ({
   rowData,
@@ -625,7 +624,7 @@ const LineView = (props: TableProps) => {
 };
 
 const Table = (props: TableProps) => {
-  if (props.properties && props.properties.type === "line") {
+  if (props.display_type === "line") {
     return <LineView {...props} />;
   }
   return <TableViewWrapper {...props} />;

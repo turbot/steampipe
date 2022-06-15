@@ -1,11 +1,9 @@
 import ErrorPanel from "../../Error";
-import get from "lodash/get";
 import Hierarchies, {
   HierarchyProperties,
   HierarchyType,
 } from "../../hierarchies";
 import merge from "lodash/merge";
-import set from "lodash/set";
 import {
   buildNodesAndEdges,
   buildTreeDataInputs,
@@ -14,7 +12,7 @@ import {
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { HierarchyProps } from "../index";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
 const getCommonBaseOptions = () => ({
@@ -25,10 +23,7 @@ const getCommonBaseOptions = () => ({
   },
 });
 
-const getCommonBaseOptionsForHierarchyType = (
-  type: HierarchyType = "tree",
-  namedColors
-) => {
+const getCommonBaseOptionsForHierarchyType = (type: HierarchyType = "tree") => {
   switch (type) {
     default:
       return {};
@@ -94,9 +89,7 @@ const getOptionOverridesForHierarchyType = (
     return {};
   }
 
-  let overrides = {};
-
-  return overrides;
+  return {};
 };
 
 const buildHierarchyOptions = (
@@ -130,15 +123,15 @@ const buildHierarchyOptions = (
 
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForHierarchyType(props.properties?.type, namedColors),
+    getCommonBaseOptionsForHierarchyType(props.display_type),
     getSeriesForHierarchyType(
-      props.properties?.type,
+      props.display_type,
       props.data,
       props.properties,
       nodesAndEdges,
       namedColors
     ),
-    getOptionOverridesForHierarchyType(props.properties?.type, props.properties)
+    getOptionOverridesForHierarchyType(props.display_type, props.properties)
   );
 };
 
@@ -162,36 +155,26 @@ const HierarchyWrapper = (props: HierarchyProps) => {
   return (
     <Chart
       options={buildHierarchyOptions(props, theme, wrapperRef)}
-      type={props.properties ? props.properties.type : "tree"}
+      type={props.display_type || "tree"}
     />
   );
 };
 
-type HierarchyDefinition = PanelDefinition & {
-  properties: HierarchyProps;
-};
-
-const renderHierarchy = (definition: HierarchyDefinition) => {
+const renderHierarchy = (definition: HierarchyProps) => {
   // We default to tree diagram if not specified
-  if (!get(definition, "properties.type")) {
-    // @ts-ignore
-    definition = set(definition, "properties.type", "tree");
-  }
-  const {
-    properties: { type },
-  } = definition;
+  const { display_type = "tree" } = definition;
 
-  const hierarchy = Hierarchies[type];
+  const hierarchy = Hierarchies[display_type];
 
   if (!hierarchy) {
-    return <ErrorPanel error={`Unknown hierarchy type ${type}`} />;
+    return <ErrorPanel error={`Unknown hierarchy type ${display_type}`} />;
   }
 
   const Component = hierarchy.component;
   return <Component {...definition} />;
 };
 
-const RenderHierarchy = (props: HierarchyDefinition) => {
+const RenderHierarchy = (props: HierarchyProps) => {
   return renderHierarchy(props);
 };
 

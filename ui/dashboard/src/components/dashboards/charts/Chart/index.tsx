@@ -7,7 +7,6 @@ import Charts, {
   ChartType,
 } from "../index";
 import ErrorPanel from "../../Error";
-import get from "lodash/get";
 import has from "lodash/has";
 import merge from "lodash/merge";
 import React, { useEffect, useRef, useState } from "react";
@@ -40,8 +39,8 @@ import { EChartsOption } from "echarts-for-react/src/types";
 import { FlowType } from "../../flows";
 import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
 import { Theme } from "../../../../hooks/useTheme";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import * as echarts from "echarts/core";
 
 echarts.use([
@@ -647,7 +646,7 @@ const buildChartOptions = (
     props.properties
   );
   const series = getSeriesForChartType(
-    props.properties?.type,
+    props.display_type || "column",
     props.data,
     props.properties,
     rowSeriesLabels,
@@ -657,14 +656,17 @@ const buildChartOptions = (
   return merge(
     getCommonBaseOptions(),
     getCommonBaseOptionsForChartType(
-      props.properties?.type,
+      props.display_type || "column",
       props.width,
       dataset,
       series,
       props.properties?.series,
       themeColors
     ),
-    getOptionOverridesForChartType(props.properties?.type, props.properties),
+    getOptionOverridesForChartType(
+      props.display_type || "column",
+      props.properties
+    ),
     { series },
     {
       dataset: {
@@ -747,36 +749,26 @@ const ChartWrapper = (props: ChartProps) => {
   return (
     <Chart
       options={buildChartOptions(props, theme, wrapperRef)}
-      type={props.properties ? props.properties.type : "column"}
+      type={props.display_type || "column"}
     />
   );
 };
 
-type ChartDefinition = PanelDefinition & {
-  properties: ChartProperties;
-};
-
-const renderChart = (definition: ChartDefinition) => {
+const renderChart = (definition: ChartProps) => {
   // We default to column charts if not specified
-  if (!get(definition, "properties.type")) {
-    // @ts-ignore
-    definition = set(definition, "properties.type", "column");
-  }
-  const {
-    properties: { type },
-  } = definition;
+  const { display_type = "column" } = definition;
 
-  const chart = Charts[type];
+  const chart = Charts[display_type];
 
   if (!chart) {
-    return <ErrorPanel error={`Unknown chart type ${type}`} />;
+    return <ErrorPanel error={`Unknown chart type ${display_type}`} />;
   }
 
   const Component = chart.component;
   return <Component {...definition} />;
 };
 
-const RenderChart = (props: ChartDefinition) => {
+const RenderChart = (props: ChartProps) => {
   return renderChart(props);
 };
 

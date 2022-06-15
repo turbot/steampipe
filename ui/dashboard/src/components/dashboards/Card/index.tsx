@@ -65,8 +65,8 @@ type CardType = "alert" | "info" | "ok" | "table" | null;
 
 export type CardProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
+    display_type?: CardType;
     properties: {
-      type?: CardType;
       label?: string;
       value?: string;
       icon?: string;
@@ -115,15 +115,15 @@ const getIconForType = (type, icon) => {
   }
 };
 
-const useCardState = ({ data, sql, properties }: CardProps) => {
+const useCardState = ({ data, sql, display_type, properties }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
     loading: !!sql,
     label: properties.label || null,
     value: isNumber(properties.value)
       ? properties.value
       : properties.value || null,
-    type: properties.type || null,
-    icon: getIconForType(properties.type, properties.icon),
+    type: display_type || null,
+    icon: getIconForType(display_type, properties.icon),
     href: properties.href || null,
   });
 
@@ -144,8 +144,8 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
         value: isNumber(properties.value)
           ? properties.value
           : properties.value || null,
-        type: properties.type || null,
-        icon: getIconForType(properties.type, properties.icon),
+        type: display_type || null,
+        icon: getIconForType(display_type, properties.icon),
         href: properties.href || null,
       });
       return;
@@ -160,8 +160,8 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
         loading: false,
         label: firstCol.name,
         value: row[firstCol.name],
-        type: properties.type || null,
-        icon: getIconForType(properties.type, properties.icon),
+        type: display_type || null,
+        icon: getIconForType(display_type, properties.icon),
         href: properties.href || null,
       });
     } else {
@@ -174,9 +174,9 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
         loading: false,
         label: formalLabel,
         value: formalValue,
-        type: formalType || properties.type || null,
+        type: formalType || display_type || null,
         icon: getIconForType(
-          formalType || properties.type,
+          formalType || display_type,
           formalIcon || properties.icon
         ),
         href: formalHref || properties.href || null,
@@ -341,7 +341,7 @@ const Card = (props: CardProps) => {
 };
 
 const CardWrapper = (props: CardProps) => {
-  if (get(props, "properties.type") === "table") {
+  if (props.display_type === "table") {
     // @ts-ignore
     return <Table {...props} />;
   }

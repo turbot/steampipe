@@ -19,11 +19,11 @@ export type HierarchyCategories = {
 };
 
 export type HierarchyProperties = {
-  type: HierarchyType;
   categories?: HierarchyCategories;
 };
 
 export type HierarchyProps = BaseChartProps & {
+  display_type?: HierarchyType;
   properties?: HierarchyProperties;
 };
 

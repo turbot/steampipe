@@ -24,8 +24,8 @@ const getShortPanelClasses = () => {
 
 export type TextProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
+    display_type?: "raw" | "markdown" | "html";
     properties: {
-      type?: "raw" | "markdown" | "html";
       value: string;
     };
   };
@@ -84,9 +84,10 @@ const renderText = (type, value) => {
   }
 };
 
-const Text = (props: TextProps) => {
-  const type = props.properties.type ? props.properties.type : "markdown";
-  return renderText(type, props.properties ? props.properties.value : null);
-};
+const Text = (props: TextProps) =>
+  renderText(
+    props.display_type || "markdown",
+    props.properties ? props.properties.value : null
+  );
 
 export default Text;

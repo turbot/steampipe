@@ -13,13 +13,13 @@ interface SelectInputOption {
 }
 
 export type InputProperties = {
-  type: InputType;
   label?: string;
   options?: SelectInputOption[];
   placeholder?: string;
 };
 
 export type InputProps = BaseInputProps & {
+  display_type?: InputType;
   properties: InputProperties;
 };
 

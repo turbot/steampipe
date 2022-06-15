@@ -1,5 +1,4 @@
 import Error from "../../Error";
-import get from "lodash/get";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts";
 import { CardProps } from "../../Card";
@@ -122,7 +121,7 @@ const Panel = memo(
                 ((definition.panel_type === "image" ||
                   definition.panel_type === "card" ||
                   definition.panel_type === "input") &&
-                  get(definition, "properties.type") === "table")
+                  definition.display_type === "table")
                 ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
                 : null
             )}
@@ -148,7 +147,7 @@ const Panel = memo(
               <div
                 className={classNames(
                   definition.panel_type === "input" &&
-                    get(definition, "properties.type") !== "table"
+                    definition.display_type !== "table"
                     ? "pl-0 pr-2 sm:pr-4 py-2"
                     : "px-4 py-4"
                 )}
@@ -170,7 +169,7 @@ const Panel = memo(
                   ((definition.panel_type !== "input" &&
                     definition.panel_type !== "table") ||
                     (definition.panel_type === "table" &&
-                      get(definition, "properties.type") === "line"))
+                      definition.display_type === "line"))
                   ? classNames(
                       "border-t",
                       theme.name === ThemeNames.STEAMPIPE_DARK
@@ -180,8 +179,8 @@ const Panel = memo(
                   : null,
                 withOverflow ||
                   (definition.panel_type === "table" &&
-                    get(definition, "properties.type") !== "line") ||
-                  get(definition, "properties.type") === "table"
+                    definition.display_type !== "line") ||
+                  definition.display_type === "table"
                   ? "overflow-x-auto"
                   : "overflow-x-hidden"
               )}

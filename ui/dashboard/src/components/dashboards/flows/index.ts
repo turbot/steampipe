@@ -20,11 +20,11 @@ export type FlowCategories = {
 };
 
 export type FlowProperties = {
-  type: FlowType;
   categories?: FlowCategories;
 };
 
 export type FlowProps = BaseChartProps & {
+  display_type?: FlowType;
   properties?: FlowProperties;
 };
 

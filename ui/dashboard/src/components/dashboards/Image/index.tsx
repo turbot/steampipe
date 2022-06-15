@@ -19,8 +19,8 @@ interface ImageState {
 
 export type ImageProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
+    display_type?: ImageType;
     properties: {
-      type?: ImageType;
       src: string;
       alt: string;
     };
@@ -86,7 +86,7 @@ const Image = (props: ImageProps) => {
 };
 
 const ImageWrapper = (props: ImageProps) => {
-  if (get(props, "properties.type") === "table") {
+  if (props.display_type === "table") {
     // @ts-ignore
     return <Table {...props} />;
   }

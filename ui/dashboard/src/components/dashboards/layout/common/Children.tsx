@@ -139,7 +139,7 @@ const Children = ({
                 layoutDefinition={child}
                 allowExpand={
                   allowPanelExpand &&
-                  (child.title || child.properties?.type === "table")
+                  (child.title || child.display_type === "table")
                 }
                 withTitle={withTitle}
               >

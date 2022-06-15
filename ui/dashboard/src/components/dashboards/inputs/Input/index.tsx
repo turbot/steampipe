@@ -8,12 +8,13 @@ export type InputDefinition = PanelDefinition & {
 
 const renderInput = (definition: InputDefinition) => {
   const {
-    properties: { unqualified_name: name, type = "select" },
+    display_type = "select",
+    properties: { unqualified_name: name },
   } = definition;
-  const input = Inputs[type];
+  const input = Inputs[display_type];
 
   if (!input) {
-    return <ErrorPanel error={`Unknown input type ${type}`} />;
+    return <ErrorPanel error={`Unknown input type ${display_type}`} />;
   }
 
   const Component = input.component;

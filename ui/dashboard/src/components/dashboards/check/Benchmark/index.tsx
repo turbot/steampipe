@@ -256,8 +256,7 @@ const Inner = ({ withTitle }) => {
     return null;
   }
 
-  // @ts-ignore
-  if (!definition.type || definition.type === "benchmark") {
+  if (!definition.display_type || definition.display_type === "benchmark") {
     return (
       <Benchmark
         benchmark={benchmark}
@@ -269,7 +268,7 @@ const Inner = ({ withTitle }) => {
       />
     );
     // @ts-ignore
-  } else if (definition.type === "table") {
+  } else if (definition.display_type === "table") {
     return <BenchmarkTableView benchmark={benchmark} definition={definition} />;
   } else {
     return (
@@ -281,7 +280,9 @@ const Inner = ({ withTitle }) => {
         }}
       >
         {/*@ts-ignore*/}
-        <Error error={`Unsupported benchmark type ${definition.type}`} />
+        <Error
+          error={`Unsupported benchmark type ${definition.display_type}`}
+        />
       </Panel>
     );
   }

@@ -75,7 +75,6 @@ type ChartAxes = {
 type ChartGrouping = "stack" | "compare";
 
 export type ChartProperties = {
-  type: ChartType;
   axes?: ChartAxes;
   legend?: ChartLegendOptions;
   series?: ChartSeries;
@@ -84,6 +83,7 @@ export type ChartProperties = {
 };
 
 export type ChartProps = BaseChartProps & {
+  display_type?: ChartType;
   properties?: ChartProperties;
 };
 
