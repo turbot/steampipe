@@ -16,7 +16,7 @@ jobs:
     name: Acceptance tests
     needs: first-job
     runs-on: ubuntu-latest
-    container: turbot/steampipe:latest
+    container: "ubuntu:latest"
     steps:
       - name: uname
         run: uname -a
@@ -24,6 +24,10 @@ jobs:
       - name: Checkout submodules
         run: |
           git submodule update --init --recursive
+
+      - name: ls
+        run: |
+          ls -al
 
   #     - name: Set PATH
   #       run: |
