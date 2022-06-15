@@ -197,6 +197,7 @@ jobs:
         run: |
           pwd
           ls -al
+          echo $HOME
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
