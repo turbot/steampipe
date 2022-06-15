@@ -2,7 +2,7 @@ module github.com/turbot/steampipe
 
 go 1.18
 
-replace github.com/turbot/steampipe-plugin-sdk/v3 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
+
 
 require (
 	github.com/Machiel/slugify v1.0.1
@@ -183,7 +183,7 @@ require (
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	// telemetry
-	github.com/turbot/steampipe-plugin-sdk/v3 v3.2.1-0.20220527143135-ba5289aa42cd
+	github.com/turbot/steampipe-plugin-sdk/v3 v3.3.0-rc.0
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/mod v0.5.1 // indirect
