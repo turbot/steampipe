@@ -43,7 +43,7 @@ jobs:
       - name: install steampipe
         run: |
           ./install.sh v0.14.6
-          adduser sp
+          adduser sp -y
           su - sp
           steampipe query "select 1"
 
@@ -54,6 +54,8 @@ jobs:
 
       - name: Set PATH
         run: |
+          pwd
+          ls -al
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
