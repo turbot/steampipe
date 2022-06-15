@@ -17,7 +17,7 @@ type DashboardInput struct {
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
-	UnqualifiedName string `cty:"unqualified_name" json:"-"`
+	UnqualifiedName string `cty:"unqualified_name" json:"unqualified_name"`
 	DashboardName   string `column:"dashboard,text" json:"-"`
 
 	Label       *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
