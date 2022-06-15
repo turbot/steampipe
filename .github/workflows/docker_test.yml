@@ -43,8 +43,14 @@ jobs:
       - name: install steampipe
         run: |
           ./install.sh v0.14.6
+
+      - name: add and switch to user
+        run: |
           adduser --disabled-password --gecos "" sp
           su - sp
+
+      - name: steampipe query
+        run: |
           steampipe query "select 1"
 
       - name: Setup BATS
