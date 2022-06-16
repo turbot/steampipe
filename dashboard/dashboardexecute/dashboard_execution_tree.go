@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -105,6 +106,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		Panels:      panels,
 	})
 	defer func() {
+
 		e := &dashboardevents.ExecutionComplete{
 			Root:        e.Root,
 			Session:     e.sessionId,
@@ -112,9 +114,11 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 			Panels:      panels,
 			Inputs:      e.inputValues,
 			Variables:   e.workspace.VariableValues,
-			SearchPath:  e.client.GetRequiredSessionSearchPath(),
-			StartTime:   startTime,
-			EndTime:     time.Now(),
+			// search path elements are quoted (for consumption by postgres)
+			// unquote them
+			SearchPath: unquoteStringArray(e.client.GetRequiredSessionSearchPath()),
+			StartTime:  startTime,
+			EndTime:    time.Now(),
 		}
 		workspace.PublishDashboardEvent(e)
 	}()
@@ -130,6 +134,15 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 
 	// execute synchronously
 	e.Root.Execute(cancelCtx)
+}
+
+// remove quote marks from elements of string array
+func unquoteStringArray(stringArray []string) []string {
+	res := make([]string, len(stringArray))
+	for i, s := range stringArray {
+		res[i] = strings.Replace(s, `"`, ``, -1)
+	}
+	return res
 }
 
 // GetRunStatus returns the stats of the Root run
