@@ -12,8 +12,8 @@ type Connection struct {
 	CacheTTL *int  `hcl:"cache_ttl" json:"cache_ttl,omitempty"`
 
 	// legacy properties included for backwards compatibility with v0.13
-	LegacyCache    *bool `hcl:"cache" json:"Cache,omitempty"`
-	LegacyCacheTTL *int  `hcl:"cache_ttl" json:"CacheTTL,omitempty"`
+	LegacyCache    *bool `json:"Cache,omitempty"`
+	LegacyCacheTTL *int  `json:"CacheTTL,omitempty"`
 }
 
 // MigrateLegacy migrates the legacy properties into new properties
