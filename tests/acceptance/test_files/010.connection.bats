@@ -126,7 +126,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # verify that `content` and `new_content` are the same
-    assert_equal "$new_content" "$content"  
+    assert_equal "$new_content" "$content"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; yml)" {
@@ -169,7 +169,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # verify that `content` and `new_content` are the same
     assert_equal "$new_content" "$content"
-    
+
 }
 
 @test "steampipe check options config is being parsed and used(cache=false; hcl)" {
@@ -222,7 +222,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # remove the output and the config files
     rm -f benchmark.*.json
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
-    
+
     assert_equal "$flag" "0"
 }
 
@@ -256,7 +256,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # verify that `content` and `new_content` are the same
-    assert_equal "$new_content" "$content"  
+    assert_equal "$new_content" "$content"
 }
 
 # This test checks whether the options in the yml connection config(chaos_options.yml) is parsed and used correctly.

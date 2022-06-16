@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe-plugin-sdk/v3/telemetry"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/control/controldisplay"
@@ -17,9 +18,10 @@ import (
 )
 
 type InitData struct {
-	Workspace *workspace.Workspace
-	Client    db_common.Client
-	Result    *db_common.InitResult
+	Workspace         *workspace.Workspace
+	Client            db_common.Client
+	Result            *db_common.InitResult
+	ShutdownTelemetry func()
 }
 
 func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
@@ -31,6 +33,14 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	if err := controldisplay.EnsureTemplates(); err != nil {
 		initData.Result.Error = err
 		return initData
+	}
+
+	// initialise telemetry
+	shutdownTelemetry, err := telemetry.Init(constants.AppName)
+	if err != nil {
+		initData.Result.AddWarnings(err.Error())
+	} else {
+		initData.ShutdownTelemetry = shutdownTelemetry
 	}
 
 	if viper.GetBool(constants.ArgModInstall) {
@@ -113,6 +123,10 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 func (i InitData) Cleanup(ctx context.Context) {
 	if i.Client != nil {
 		i.Client.Close(ctx)
+	}
+
+	if i.ShutdownTelemetry != nil {
+		i.ShutdownTelemetry()
 	}
 }
 

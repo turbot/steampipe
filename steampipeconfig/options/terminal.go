@@ -36,7 +36,7 @@ func (t *Terminal) ConfigMap() map[string]interface{} {
 		res[constants.ArgMultiLine] = t.Multi
 	}
 	if t.Timing != nil {
-		res[constants.ArgTimer] = t.Timing
+		res[constants.ArgTiming] = t.Timing
 	}
 	if t.SearchPath != nil {
 		// convert from string to array

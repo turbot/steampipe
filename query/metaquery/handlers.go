@@ -137,7 +137,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
 func setTiming(ctx context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgTimer, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(constants.ArgTiming, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 

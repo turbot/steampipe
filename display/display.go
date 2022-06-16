@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -282,8 +283,34 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 	ShowPaged(ctx, outbuf.String())
 
 	// if timer is turned on
-	if cmdconfig.Viper().GetBool(constants.ArgTimer) {
-		fmt.Printf("\nTime: %v\n", <-result.Duration)
+	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+		displayTiming(result)
+	}
+}
+
+func displayTiming(result *queryresult.Result) {
+	timingResult := <-result.TimingResult
+	if timingResult != nil {
+		var sb strings.Builder
+
+		totalRows := timingResult.RowsFetched + timingResult.CachedRowsFetched
+		sb.WriteString(fmt.Sprintf("\nTime: %v. Rows fetched", timingResult.Duration.Truncate(100*time.Microsecond)))
+		if totalRows == 0 {
+			sb.WriteString(": 0")
+		} else {
+			if totalRows > 0 {
+				sb.WriteString(fmt.Sprintf(": %d", timingResult.RowsFetched+timingResult.CachedRowsFetched))
+			}
+			if timingResult.CachedRowsFetched > 0 {
+				if timingResult.RowsFetched == 0 {
+					sb.WriteString(" (cached)")
+				} else {
+					sb.WriteString(fmt.Sprintf(" (%d cached)", timingResult.CachedRowsFetched))
+				}
+			}
+		}
+		sb.WriteString(fmt.Sprintf(". Hydrate calls: %d.\n", timingResult.HydrateCalls))
+		fmt.Printf(sb.String())
 	}
 }
 

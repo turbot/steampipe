@@ -7,10 +7,9 @@ import (
 	"os/exec"
 	"strings"
 
+	_ "github.com/jackc/pgx/v4/stdlib"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/constants"
 	"github.com/turbot/steampipe/utils"

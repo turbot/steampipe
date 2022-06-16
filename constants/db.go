@@ -31,14 +31,13 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.1.1"
+	FdwVersion      = "1.2.0-rc.2"
 
-	// PostgresImageRef is the OCI Image ref for the databse binaries
+	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
 	PostgresImageDigest = "sha256:a75637209f1bc2fa9885216f7972dfa0d82010a25d3cbfc07baceba8d16f4a93"
 
-	FdwImageRef = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
-
+	FdwImageRef       = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 	FdwBinaryFileName = "steampipe_postgres_fdw.so"
 )
 
@@ -48,12 +47,15 @@ const (
 	FunctionSchema = "internal"
 
 	// CommandSchema is the schema which is used to send commands to the FDW
-	CommandSchema               = "steampipe_command"
-	CacheCommandTable           = "cache"
-	CacheCommandOperationColumn = "operation"
-	CommandCacheOn              = "cache_on"
-	CommandCacheOff             = "cache_off"
-	CommandCacheClear           = "cache_clear"
+	CommandSchema = "steampipe_command"
+
+	CommandTableCache                = "cache"
+	CommandTableCacheOperationColumn = "operation"
+	CommandCacheOn                   = "cache_on"
+	CommandCacheOff                  = "cache_off"
+	CommandCacheClear                = "cache_clear"
+
+	CommandTableScanMetadata = "scan_metadata"
 )
 
 // Functions :: a list of SQLFunc objects that are installed in the db 'internal' schema startup

@@ -5,14 +5,20 @@ import (
 	"time"
 )
 
+type TimingResult struct {
+	Duration          time.Duration
+	RowsFetched       int64
+	CachedRowsFetched int64
+	HydrateCalls      int64
+}
 type RowResult struct {
 	Data  []interface{}
 	Error error
 }
 type Result struct {
-	RowChan  *chan *RowResult
-	ColTypes []*sql.ColumnType
-	Duration chan time.Duration
+	RowChan      *chan *RowResult
+	ColTypes     []*sql.ColumnType
+	TimingResult chan *TimingResult
 }
 
 // Close closes the row channel
@@ -31,14 +37,14 @@ func (r Result) StreamError(err error) {
 func NewQueryResult(colTypes []*sql.ColumnType) *Result {
 	rowChan := make(chan *RowResult)
 	return &Result{
-		RowChan:  &rowChan,
-		ColTypes: colTypes,
-		Duration: make(chan time.Duration, 1),
+		RowChan:      &rowChan,
+		ColTypes:     colTypes,
+		TimingResult: make(chan *TimingResult, 1),
 	}
 }
 
 type SyncQueryResult struct {
-	Rows     []interface{}
-	ColTypes []*sql.ColumnType
-	Duration time.Duration
+	Rows         []interface{}
+	ColTypes     []*sql.ColumnType
+	TimingResult *TimingResult
 }

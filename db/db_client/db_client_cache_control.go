@@ -26,8 +26,8 @@ func (c *DbClient) executeCacheCommand(ctx context.Context, controlCommand strin
 	_, err := c.dbClient.ExecContext(ctx, fmt.Sprintf(
 		"insert into %s.%s (%s) values ('%s')",
 		constants.CommandSchema,
-		constants.CacheCommandTable,
-		constants.CacheCommandOperationColumn,
+		constants.CommandTableCache,
+		constants.CommandTableCacheOperationColumn,
 		controlCommand,
 	))
 	return err

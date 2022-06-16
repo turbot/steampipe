@@ -54,8 +54,16 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 			syncResult.Rows = append(syncResult.Rows, row)
 		}
 	}
-	syncResult.Duration = <-result.Duration
+	if ShouldShowTiming() {
+		syncResult.TimingResult = <-result.TimingResult
+	}
 	return syncResult, nil
+}
+
+func ShouldShowTiming() bool {
+	return viper.GetBool(constants.ArgTiming) &&
+		!viper.GetBool(constants.ArgDisableFetchTiming) &&
+		viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
 }
 
 // Execute implements Client
@@ -130,12 +138,55 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	go func() {
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result)
+		// set the time that it took for this one to execute
+		if ShouldShowTiming() {
+			if err := c.getQueryTiming(ctx, startTime, session, result.TimingResult); err != nil {
+				// just send close the timing result channel
+				close(result.TimingResult)
+			}
+		}
 		if onComplete != nil {
 			onComplete()
 		}
 	}()
 
 	return result, nil
+}
+
+func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) error {
+	var timingResult = &queryresult.TimingResult{
+		Duration: time.Since(startTime),
+	}
+
+	// set a separate viper config to disable fetching timing information to avoid recursion
+	// - we cannot just use ArgTiming as there is a race condition with reading the ArgTiming in displayTable()
+
+	viper.Set(constants.ArgDisableFetchTiming, true)
+	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from steampipe_command.scan_metadata where id > %d", session.ScanMetadataMaxId))
+	if err != nil {
+		return err
+	}
+	viper.Set(constants.ArgDisableFetchTiming, false)
+	var id int64
+	for _, r := range res.Rows {
+		rw := r.(*queryresult.RowResult)
+		id = rw.Data[0].(int64)
+		rowsFetched := rw.Data[1].(int64)
+		cacheHit := rw.Data[2].(bool)
+		hydrateCalls := rw.Data[3].(int64)
+
+		timingResult.HydrateCalls += hydrateCalls
+		if cacheHit {
+			timingResult.CachedRowsFetched += rowsFetched
+		} else {
+			timingResult.RowsFetched += rowsFetched
+		}
+
+	}
+	// update the max id for this session
+	session.ScanMetadataMaxId = id
+	resultChannel <- timingResult
+	return nil
 }
 
 // run query in a goroutine, so we can check for cancellation
@@ -222,9 +273,6 @@ func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows
 			break
 		}
 	}
-
-	// set the time that it took for this one to execute
-	result.Duration <- time.Since(start)
 }
 
 func isStreamingOutput(outputFormat string) bool {

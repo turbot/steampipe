@@ -218,10 +218,8 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:          &trueVal,
-				CacheTTL:       &ttlVal,
-				LegacyCache:    &trueVal,
-				LegacyCacheTTL: &ttlVal,
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -291,10 +289,8 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:          &trueVal,
-				CacheTTL:       &ttlVal,
-				LegacyCache:    &trueVal,
-				LegacyCacheTTL: &ttlVal,
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -360,10 +356,8 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:          &trueVal,
-				CacheTTL:       &ttlVal,
-				LegacyCache:    &trueVal,
-				LegacyCacheTTL: &ttlVal,
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -394,8 +388,8 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Config:          "",
 					Options: &options.Connection{
-						LegacyCache:    &trueVal,
-						LegacyCacheTTL: &ttlVal,
+						Cache:    &trueVal,
+						CacheTTL: &ttlVal,
 					},
 					DeclRange: modconfig.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
@@ -431,10 +425,8 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:          &trueVal,
-				CacheTTL:       &ttlVal,
-				LegacyCache:    &trueVal,
-				LegacyCacheTTL: &ttlVal,
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,
@@ -459,10 +451,8 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{},
 			DefaultConnectionOptions: &options.Connection{
-				Cache:          &trueVal,
-				CacheTTL:       &ttlVal,
-				LegacyCache:    &trueVal,
-				LegacyCacheTTL: &ttlVal,
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
 				Port:       &databasePort,

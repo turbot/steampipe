@@ -3,6 +3,8 @@ package dashboard
 import (
 	"context"
 
+	"github.com/turbot/steampipe-plugin-sdk/v3/telemetry"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/cmdconfig"
 	"github.com/turbot/steampipe/constants"
@@ -15,22 +17,24 @@ import (
 )
 
 type InitData struct {
-	Workspace *workspace.Workspace
-	Client    db_common.Client
-	Result    *db_common.InitResult
-}
-
-func (i InitData) Cleanup(ctx context.Context) {
-	// if a client was initialised, close it
-	if i.Client != nil {
-		i.Client.Close(ctx)
-	}
+	Workspace         *workspace.Workspace
+	Client            db_common.Client
+	Result            *db_common.InitResult
+	ShutdownTelemetry func()
 }
 
 func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	initData := &InitData{
 		Workspace: w,
 		Result:    &db_common.InitResult{},
+	}
+
+	// initialise telemetry
+	shutdownTelemetry, err := telemetry.Init(constants.AppName)
+	if err != nil {
+		initData.Result.AddWarnings(err.Error())
+	} else {
+		initData.ShutdownTelemetry = shutdownTelemetry
 	}
 
 	if !w.ModfileExists() {
@@ -97,4 +101,15 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 
 	return initData
 
+}
+
+func (i InitData) Cleanup(ctx context.Context) {
+	// if a client was initialised, close it
+	if i.Client != nil {
+		i.Client.Close(ctx)
+	}
+
+	if i.ShutdownTelemetry != nil {
+		i.ShutdownTelemetry()
+	}
 }
