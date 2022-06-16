@@ -578,11 +578,17 @@ function reducer(state, action) {
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
     case DashboardActions.CLEAR_SNAPSHOT:
-      return { ...state, selectedSnapshot: null, dataMode: "live" };
+      return {
+        ...state,
+        selectedSnapshot: null,
+        snapshotId: null,
+        dataMode: "live",
+      };
     case DashboardActions.SELECT_SNAPSHOT:
       return {
         ...state,
         selectedSnapshot: action.snapshot,
+        snapshotId: action.snapshot.id,
         dataMode: "snapshot",
       };
     case DashboardActions.SET_DATA_MODE:
