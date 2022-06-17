@@ -20,6 +20,9 @@ var builtinTemplateFS embed.FS
 // templates in '$STEAMPIPE_INSTALL_DIR/templates' - where it is expected
 // that a directory with the same name will exist.
 //
+// We always re-write the templates(even if they exist or not) so that the
+// latest changes in the 'templates' package are always reflected in
+// '$STEAMPIPE_INSTALL_DIR/templates'.
 func WriteTemplates() error {
 	log.Println("[TRACE] writing check export/output templates")
 	dirs, err := fs.ReadDir(builtinTemplateFS, "templates")
