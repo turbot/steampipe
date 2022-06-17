@@ -13,30 +13,27 @@ import (
 //go:embed templates/*
 var builtinTemplateFS embed.FS
 
-// EnsureTemplates scans the '$STEAMPIPE_INSTALL_DIR/templates' directory and
-// copies over any missing templates as defined in the 'templates' package
+// WriteTemplates scans the '$STEAMPIPE_INSTALL_DIR/templates' directory and
+// copies over all the templates defined in the 'templates' package
 //
 // The name of the folder in the 'templates' package is used to identify
 // templates in '$STEAMPIPE_INSTALL_DIR/templates' - where it is expected
-// that a directory with the same name will exist. If said directory does
-// not exist, it is copied over from 'templates'
+// that a directory with the same name will exist.
 //
-func EnsureTemplates() error {
-	log.Println("[TRACE] ensuring check export/output templates")
+// We always re-write the templates(even if they exist or not) so that the
+// latest changes in the 'templates' package are always reflected in
+// '$STEAMPIPE_INSTALL_DIR/templates'.
+func WriteTemplates() error {
+	log.Println("[TRACE] writing check export/output templates")
 	dirs, err := fs.ReadDir(builtinTemplateFS, "templates")
 	if err != nil {
 		return err
 	}
 	for _, d := range dirs {
 		targetDirectory := filepath.Join(filepaths.EnsureTemplateDir(), d.Name())
-		if _, err := os.Stat(targetDirectory); os.IsNotExist(err) {
-			log.Println("[TRACE] target directory does not exist - copying template")
-			if err := writeTemplate(d.Name(), targetDirectory); err != nil {
-				log.Println("[ERROR] error copying template", err)
-				return err
-			}
-		} else if err != nil {
-			log.Println("[ERROR] error fetching directory information", err)
+		// write the templates for each directory
+		if err := writeTemplate(d.Name(), targetDirectory); err != nil {
+			log.Println("[ERROR] error copying template", err)
 			return err
 		}
 	}
