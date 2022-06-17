@@ -207,14 +207,19 @@ func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {
 func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeItem, error) {
 	// special case handling for the string "all"
 	if arg == "all" {
-		// return the workspace mod as root
-		return e.workspace.Mod, nil
+		// if the arg is "all", we want to execute all _direct_ children of the Mod
+		// but NOT children which come from dependency mods
+
+		// to achieve this, use a  DirectChildrenModDecorator
+
+		return DirectChildrenModDecorator{e.workspace.Mod}, nil
 	}
 
-	// if the arg is the name of one of the workjspace dependen
+	// if the arg is the name of one of the workspace dependendencies, wrap it in DirectChildrenModDecorator
+	// so we only execute _its_ direct children
 	for _, mod := range e.workspace.Mods {
 		if mod.ShortName == arg {
-			return mod, nil
+			return DirectChildrenModDecorator{mod}, nil
 		}
 	}
 
