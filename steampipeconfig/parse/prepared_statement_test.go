@@ -100,6 +100,13 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "'foo'", "p2": "'bar'"}},
 		},
 	},
+	"named param with dot in value": {
+		input: `query.q1(p1 => "foo.bar")`,
+		expected: parsePreparedStatementInvocationResult{
+			queryName: `query.q1`,
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "'foo.bar'"}},
+		},
+	},
 }
 
 func TestParsePreparedStatementInvocation(t *testing.T) {
