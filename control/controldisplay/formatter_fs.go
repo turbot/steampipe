@@ -36,10 +36,10 @@ func WriteTemplates() error {
 	}
 	for _, d := range dirs {
 		targetDirectory := filepath.Join(filepaths.EnsureTemplateDir(), d.Name())
-		currentVersionsFilePath := filepath.Join(targetDirectory, "versions.json")
-		embeddedVersionsFilePath := filepath.Join("templates", d.Name(), "versions.json")
+		currentVersionsFilePath := filepath.Join(targetDirectory, "version.json")
+		embeddedVersionsFilePath := filepath.Join("templates", d.Name(), "version.json")
 
-		// check if version in versions.json matches with embedded template version
+		// check if version in version.json matches with embedded template version
 		if getCurrentTemplateVersion(currentVersionsFilePath) != getEmbeddedTemplateVersion(embeddedVersionsFilePath) {
 			log.Println("[TRACE] versions do not match - copying template")
 			if err := writeTemplate(d.Name(), targetDirectory); err != nil {
@@ -64,7 +64,7 @@ func getCurrentTemplateVersion(path string) string {
 	var ver TemplateVersionFile
 	err = json.Unmarshal(data, &ver)
 	if err != nil {
-		log.Println("[TRACE] error while unmarshaling current versions.json file", err)
+		log.Println("[TRACE] error while unmarshaling current version.json file", err)
 		return ""
 	}
 	return ver.Version
