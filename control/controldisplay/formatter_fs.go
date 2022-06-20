@@ -41,7 +41,7 @@ func WriteTemplates() error {
 
 		// check if version in version.json matches with embedded template version
 		if getCurrentTemplateVersion(currentVersionsFilePath) != getEmbeddedTemplateVersion(embeddedVersionsFilePath) {
-			log.Println("[TRACE] versions do not match - copying template")
+			log.Printf("[TRACE] versions do not match for dir '%s' - copying updated template\n", d)
 			if err := writeTemplate(d.Name(), targetDirectory); err != nil {
 				log.Println("[TRACE] error copying template", err)
 				return err
