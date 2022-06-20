@@ -1,6 +1,7 @@
 ## v0.15.0 [tbc]
 _What's new?_
 * Add support for Open Telemetry. ([#1193](https://github.com/turbot/steampipe/issues/1193))
+* Update `.timing` output to return additional query metadata such as the number of hydrate functions called andd the cache status. ([#2192](https://github.com/turbot/steampipe/issues/2192))
 * Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
 * Add `--show-password` cli arg to reveal the db user password. Disables password visibility by default. ([#2033](https://github.com/turbot/steampipe/issues/2033)) 
 * Update dashboard snapshot format, making control/benchmark output consistent with dashboards. ([#2154](https://github.com/turbot/steampipe/issues/2154)) 
