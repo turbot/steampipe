@@ -462,7 +462,7 @@ const calculateProgress = (panelsMap) => {
   if (dataPanels === 0) {
     return 100;
   }
-  return Math.floor((completeDataPanels / dataPanels) * 100);
+  return Math.min(Math.ceil((completeDataPanels / dataPanels) * 100), 100);
 };
 
 function reducer(state, action) {
