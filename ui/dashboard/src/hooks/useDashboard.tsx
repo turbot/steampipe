@@ -815,6 +815,7 @@ const DashboardProvider = ({
     console.log(action.type, action);
     dispatchInner(action);
   }, []);
+  console.log("state", state);
   const { dashboard_name } = useParams();
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     dispatch,
