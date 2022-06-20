@@ -487,14 +487,16 @@ function reducer(state, action) {
         availableDashboardsLoaded: true,
         dashboards,
         dashboardsMap,
-        selectedDashboard: updateSelectedDashboard(
-          state.selectedDashboard,
-          dashboards
-        ),
+        selectedDashboard:
+          state.dataMode === "snapshot"
+            ? state.selectedDashboard
+            : selectedDashboard,
         dashboard:
-          selectedDashboard &&
-          state.dashboard &&
-          state.dashboard.name === selectedDashboard.full_name
+          state.dataMode === "snapshot"
+            ? state.dashboard
+            : selectedDashboard &&
+              state.dashboard &&
+              state.dashboard.name === selectedDashboard.full_name
             ? state.dashboard
             : null,
       };
@@ -638,9 +640,16 @@ function reducer(state, action) {
         dashboard: action.dashboard,
       };
     case DashboardActions.SELECT_DASHBOARD:
+      if (action.dataMode === "snapshot") {
+        return {
+          ...state,
+          dataMode: "snapshot",
+          selectedDashboard: action.dashboard,
+        };
+      }
       return {
         ...state,
-        dataMode: action.dataMode || "live",
+        dataMode: "live",
         dashboard: null,
         execution_id: null,
         snapshotId: null,
