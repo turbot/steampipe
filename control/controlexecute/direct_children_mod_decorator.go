@@ -16,8 +16,8 @@ func (r DirectChildrenModDecorator) AddParent(item modconfig.ModTreeItem) error 
 func (r DirectChildrenModDecorator) GetChildren() []modconfig.ModTreeItem {
 	var res []modconfig.ModTreeItem
 	for _, child := range r.Mod.GetChildren() {
-		if child.GetMod().Name() == r.Mod.Name() {
-			res = append(res)
+		if child.GetMod().ShortName == r.Mod.ShortName {
+			res = append(res, child)
 		}
 	}
 	return res
