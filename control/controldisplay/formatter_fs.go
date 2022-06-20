@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/turbot/steampipe/filepaths"
 )
@@ -30,7 +29,6 @@ type TemplateVersionFile struct {
 // We re-write the templates, when there is a higher template version
 // available in the 'templates' package.
 func WriteTemplates() error {
-	start := time.Now()
 	log.Println("[TRACE] ensuring check export/output templates")
 	dirs, err := fs.ReadDir(builtinTemplateFS, "templates")
 	if err != nil {
@@ -50,8 +48,6 @@ func WriteTemplates() error {
 			}
 		}
 	}
-	elapsed := time.Since(start)
-	log.Printf("[WARN] >> time elapsed: %v", elapsed)
 	return nil
 }
 
