@@ -1,7 +1,22 @@
 ## v0.15.0 [tbc]
 _What's new?_
+* Add support for Open Telemetry. ([#1193](https://github.com/turbot/steampipe/issues/1193))
 * Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
-* Add control severity in the check run CSV output. ([#1966](https://github.com/turbot/steampipe/issues/1966))
+* Add `--show-password` cli arg to reveal the db user password. Disables password visibility by default. ([#2033](https://github.com/turbot/steampipe/issues/2033)) 
+* Update dashboard snapshot format, making control/benchmark output consistent with dashboards. ([#2154](https://github.com/turbot/steampipe/issues/2154)) 
+* Support optional names for dashboard child blocks. ([#2161](https://github.com/turbot/steampipe/issues/2161))
+* Improve the response to `steampipe plugin update all` to make it more helpful. ([#2125](https://github.com/turbot/steampipe/issues/2125))
+* Add better help message when invalid locale settings caused db init failure. ([#1673](https://github.com/turbot/steampipe/issues/1673))
+* Update json control output template to use Go templating, rather than just serialising the results. ([#2163](https://github.com/turbot/steampipe/issues/2163))
+
+_Bug fixes_
+* Add control severity in the check run CSV output. ([#2083](https://github.com/turbot/steampipe/issues/2083))
+* Ensure prompt is shown after installing updated FDW. ([#2101](https://github.com/turbot/steampipe/issues/2101))
+* Fix nil pointer error when empty array passed as variable value. ([#2094](https://github.com/turbot/steampipe/issues/2094))
+* Fix interactive query failing with EOF error if the history.json is empty. ([#2151](https://github.com/turbot/steampipe/issues/2151))
+* Update autocomplete description for `.output` to include `line` as an option. ([#2142](https://github.com/turbot/steampipe/issues/2142))
+* Fix issue where check/templates were not getting updated even when the template file has been updated. ([#2180](https://github.com/turbot/steampipe/issues/2180))
+* Fix `check all` so it does not runs controls/benchmarks from dependency mods. ([#2182](https://github.com/turbot/steampipe/issues/2182))
 
 ## v0.14.6 [2022-05-25]
 _Bug fixes_
