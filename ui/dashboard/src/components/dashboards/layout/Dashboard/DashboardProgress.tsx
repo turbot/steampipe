@@ -10,7 +10,7 @@ const DashboardProgress = ({ state, progress }: DashboardProgressProps) => {
     <div className="w-full h-[4px] bg-dashboard">
       {state === "running" ? (
         <div
-          className="h-full dashboard-loading-animate"
+          className="h-full bg-black-scale-3"
           style={{ width: `${progress}%` }}
         />
       ) : null}
