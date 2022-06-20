@@ -30,7 +30,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		Result:    &db_common.InitResult{},
 	}
 
-	if err := controldisplay.WriteTemplates(); err != nil {
+	if err := controldisplay.EnsureTemplates(); err != nil {
 		initData.Result.Error = err
 		return initData
 	}

@@ -19,7 +19,7 @@ type TemplateVersionFile struct {
 	Version string `json:"version"`
 }
 
-// WriteTemplates scans the '$STEAMPIPE_INSTALL_DIR/check/templates' directory and
+// EnsureTemplates scans the '$STEAMPIPE_INSTALL_DIR/check/templates' directory and
 // copies over the templates defined in the 'templates' package if needed.
 //
 // The name of the folder in the 'templates' package is used to identify
@@ -28,7 +28,7 @@ type TemplateVersionFile struct {
 //
 // We re-write the templates, when there is a higher template version
 // available in the 'templates' package.
-func WriteTemplates() error {
+func EnsureTemplates() error {
 	log.Println("[TRACE] ensuring check export/output templates")
 	dirs, err := fs.ReadDir(builtinTemplateFS, "templates")
 	if err != nil {
