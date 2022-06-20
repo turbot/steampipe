@@ -215,6 +215,19 @@
   animation: barberpole 10s linear infinite;
 }
 
+.dashboard-loading-animate {
+  background-image:
+          repeating-linear-gradient(
+                  -45deg,
+                  var(--color-skip-animate),
+                  var(--color-skip-animate) 0.5rem,
+                  var(--color-skip) 0.5rem,
+                  var(--color-skip) 1.25rem
+          );
+  background-size: 200% 200%;
+  animation: barberpole 10s linear infinite;
+}
+
 @keyframes barberpole {
   100% {
     background-position: 100% 100%;

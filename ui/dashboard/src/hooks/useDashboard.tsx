@@ -1,4 +1,5 @@
 import get from "lodash/get";
+import has from "lodash/has";
 import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
 import set from "lodash/set";
@@ -50,7 +51,7 @@ export interface PanelsMap {
 
 export type DashboardDataMode = "live" | "snapshot";
 
-export type DashboardRunState = "running" | "complete";
+export type DashboardRunState = "running" | "error" | "complete";
 
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
@@ -89,6 +90,7 @@ interface IDashboardContext {
 
   components: ComponentsMap;
 
+  progress: number;
   state: DashboardRunState;
 }
 
@@ -273,6 +275,7 @@ export interface PanelDefinition {
   sql?: string;
   data?: LeafNodeData;
   source_definition?: string;
+  status?: DashboardRunState;
   error?: Error;
   properties?: PanelProperties;
   dashboard: string;
@@ -438,6 +441,30 @@ const updatePanelsMapWithControlEvent = (panelsMap, action) => {
   };
 };
 
+const calculateProgress = (panelsMap) => {
+  const panels: PanelDefinition[] = Object.values(panelsMap || {});
+  let dataPanels = 0;
+  let completeDataPanels = 0;
+  for (const panel of panels) {
+    const isControl = panel.panel_type === "control";
+    const isDataPanel = has(panel, "sql");
+    if (isControl || isDataPanel) {
+      dataPanels += 1;
+    }
+    if (
+      (isControl &&
+        (panel.status === "complete" || panel.status === "error")) ||
+      (isDataPanel && has(panel, "data"))
+    ) {
+      completeDataPanels += 1;
+    }
+  }
+  if (dataPanels === 0) {
+    return 100;
+  }
+  return Math.floor((completeDataPanels / dataPanels) * 100);
+};
+
 function reducer(state, action) {
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
@@ -496,6 +523,7 @@ function reducer(state, action) {
         dashboard,
         execution_id: action.execution_id,
         refetchDashboard: false,
+        progress: 0,
         state: "running",
       };
     }
@@ -532,11 +560,12 @@ function reducer(state, action) {
         panelsMap: action.panels,
         dashboard,
         sqlDataMap,
+        progress: 100,
         state: "complete",
       };
     }
     case DashboardActions.EXECUTION_ERROR:
-      return { ...state, error: action.error, state: "error" };
+      return { ...state, error: action.error, progress: 100, state: "error" };
     case DashboardActions.CONTROL_COMPLETE:
     case DashboardActions.CONTROL_ERROR:
       // We're not expecting execution events for this ID
@@ -556,6 +585,7 @@ function reducer(state, action) {
       return {
         ...state,
         panelsMap: updatedPanelsMap,
+        progress: calculateProgress(updatedPanelsMap),
       };
     case DashboardActions.LEAF_NODE_COMPLETE: {
       // We're not expecting execution events for this ID
@@ -573,6 +603,7 @@ function reducer(state, action) {
       return {
         ...state,
         panelsMap,
+        progress: calculateProgress(panelsMap),
       };
     }
     case DashboardActions.SELECT_PANEL:
@@ -755,6 +786,8 @@ const getInitialState = (searchParams, defaults = {}) => {
     sqlDataMap: {},
 
     execution_id: null,
+
+    progress: 0,
   };
 };
 

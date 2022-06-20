@@ -77,7 +77,9 @@ const Children = ({
               />
             );
           case "dashboard":
-            return <Dashboard key={child.name} definition={child} />;
+            return (
+              <Dashboard key={child.name} definition={child} isRoot={false} />
+            );
           case "error":
             return (
               <Panel

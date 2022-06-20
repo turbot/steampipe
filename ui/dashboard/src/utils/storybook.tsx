@@ -107,6 +107,7 @@ export const PanelStoryDecorator = ({
         selectedSnapshot: null,
         refetchDashboard: false,
         state: "complete",
+        progress: 100,
       }}
     >
       <Dashboard />
