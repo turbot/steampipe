@@ -24,9 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: ls
-        run: |
-          ls -al
 
       - name: install git
         run: |
@@ -44,6 +41,17 @@ jobs:
       - name: install steampipe
         run: |
           ./install.sh v0.14.6
+
+      - name: ls
+        run: |
+          ls -al
+          echo "upto here 'ls -al'"
+          ls
+          echo "upto here 'ls'"
+          ls /github
+          echo "upto here 'ls /github'"
+          pwd
+          echo "upto here 'pwd'"
 
       - name: add and switch to user
         run: |
