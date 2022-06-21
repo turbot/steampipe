@@ -183,6 +183,8 @@ jobs:
         run: |
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
+          cd ~/build
+          ls -al
       
       - name: ls
         run: |
@@ -194,21 +196,6 @@ jobs:
           ls /github
           echo "'pwd'"
           pwd
-
-      - name: Move folders
-        run: |
-          echo "cd"
-          cd
-          echo "mkdir workspace"
-          mkdir workspace
-          echo "'ls /github'"
-          ls /github
-          echo "mv /__w/steampipe/steampipe /github/workspace/steampipe"
-          mv /__w/steampipe/steampipe /github/workspace/steampipe
-          echo "ls /github/workspace"
-          ls /github/workspace
-          echo "ls -al /github/home/build"
-          ls -al /github/home/build
 
       - name: Set PATH
         run: |
