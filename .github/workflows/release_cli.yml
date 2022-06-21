@@ -183,7 +183,9 @@ jobs:
         run: |
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
-          cd
+      
+      - name: ls
+        run: |
           echo "'ls -al'"
           ls -al
           echo "'ls'"
@@ -198,7 +200,7 @@ jobs:
           pwd
           ls -al
           echo $HOME
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "PATH=/github/home/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
         run: |
