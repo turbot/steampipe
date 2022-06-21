@@ -209,7 +209,20 @@ jobs:
           ls -al /github/home/build
           echo "ls ~/build"
           ls -al ~/build
-          echo "PATH=~/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+
+      - name: Run steampipe
+        run: |
+          echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "echo $PATH"
+          echo $PATH
+          echo "ls -al /github/home/build/steampipe"
+          ls -al /github/home/build/steampipe
+          echo "chmod +x /github/home/build/steampipe"
+          chmod +x /github/home/build/steampipe
+          echo "run"
+          /github/home/build/steampipe -v
+          steampipe -v
 
       - name: Install DB
         run: |
