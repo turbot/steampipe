@@ -195,12 +195,27 @@ jobs:
           echo "'pwd'"
           pwd
 
+      - name: Move folders
+        run: |
+          echo "cd"
+          cd
+          echo "mkdir workspace"
+          mkdir workspace
+          echo "'ls /github'"
+          ls /github
+          echo "mv /__w/steampipe/steampipe /github/workspace/steampipe"
+          mv /__w/steampipe/steampipe /github/workspace/steampipe
+          echo "ls /github/workspace"
+          ls /github/workspace
+          echo "ls -al /github/home/build"
+          ls -al /github/home/build
+
       - name: Set PATH
         run: |
           pwd
           ls -al
           echo $HOME
-          echo "PATH=/github/home/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "PATH=/github/home/build:$GTIHUB_WORKSPACE/steampipe/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
         run: |
