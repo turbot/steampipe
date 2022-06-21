@@ -218,8 +218,6 @@ jobs:
           echo $PATH
           echo "ls -al /github/home/build/steampipe"
           ls -al /github/home/build/steampipe
-          echo "chmod +x /github/home/build/steampipe"
-          chmod +x /github/home/build/steampipe
           echo "run"
           cp /github/home/build/steampipe /usr/local/bin
           steampipe -v
