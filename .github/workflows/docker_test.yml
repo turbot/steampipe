@@ -16,7 +16,9 @@ jobs:
     name: Acceptance tests
     needs: first-job
     runs-on: ubuntu-latest
-    container: "ubuntu:latest"
+    container:
+      image: "ubuntu:latest"
+      options: --user pskr
     steps:
       - name: uname
         run: uname -a
@@ -42,30 +44,6 @@ jobs:
         run: |
           ./install.sh v0.14.6
 
-      - name: ls
-        run: |
-          echo "'ls -al'"
-          ls -al
-          echo "'ls'"
-          ls
-          echo "'ls /github'"
-          ls /github
-          echo "'pwd'"
-          pwd
-
-      - name: add and switch to user
-        run: |
-          adduser --disabled-password --gecos "" spipe
-          su - spipe
-          whoami
-
-      # - name: steampipe query
-      #   run: |
-      #     echo strongpassword | su - sp -c "my command line"
-      #     ls
-      #     whoami
-      #     steampipe query "select 1"
-
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
@@ -73,8 +51,6 @@ jobs:
 
       - name: Set PATH
         run: |
-          pwd
-          ls -al
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
