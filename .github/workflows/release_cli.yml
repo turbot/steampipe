@@ -202,6 +202,9 @@ jobs:
           pwd
           ls -al
           echo $HOME
+          cd
+          echo "ls"
+          ls
           echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
