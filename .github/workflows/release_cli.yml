@@ -205,7 +205,11 @@ jobs:
           cd
           echo "ls"
           ls
-          echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "ls -al /github/home/build"
+          ls -al /github/home/build
+          echo "ls ~/build"
+          ls -al ~/build
+          echo "PATH=~/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
         run: |
