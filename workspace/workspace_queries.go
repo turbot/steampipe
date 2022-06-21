@@ -183,6 +183,7 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 
 // does this resource name look like a control or query
 func isNamedQueryOrControl(name string) bool {
+	// remove parameters before calling ParseResourceName
 	openBracketIdx := strings.Index(name, "(")
 	if openBracketIdx != -1 {
 		name = name[:openBracketIdx]
