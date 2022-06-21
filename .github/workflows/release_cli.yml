@@ -221,7 +221,7 @@ jobs:
           echo "chmod +x /github/home/build/steampipe"
           chmod +x /github/home/build/steampipe
           echo "run"
-          /github/home/build/steampipe -v
+          cp /github/home/build/steampipe /usr/local/bin
           steampipe -v
 
       - name: Install DB
