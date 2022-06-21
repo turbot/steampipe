@@ -155,3 +155,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f test.xml*
   cd -
 }
+
+@test "steampipe check all" {
+  cd $CHECK_ALL_MOD
+  run steampipe check all --export test.json --progress=false
+  assert_equal "$(cat test.json)" "$(cat $TEST_DATA_DIR/expected_check_all.json)"
+  rm -f test.json
+  cd -
+}
