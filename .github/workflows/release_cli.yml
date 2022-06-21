@@ -202,7 +202,7 @@ jobs:
           pwd
           ls -al
           echo $HOME
-          echo "PATH=/github/home/build:$GITHUB_WORKSPACE/steampipe/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+          echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
       - name: Install DB
         run: |
