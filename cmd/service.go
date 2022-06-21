@@ -67,7 +67,7 @@ connection from any Postgres compatible database client.`,
 		AddStringFlag(constants.ArgListenAddress, "", string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (postgres)").
 		AddStringFlag(constants.ArgServicePassword, "", "", "Set the database password for this session").
 		// default is false and hides the database user password from service start prompt
-		AddBoolFlag(constants.ArgServiceShowPassword, "", false, "View password for connection from another machine").
+		AddBoolFlag(constants.ArgServiceShowPassword, "", false, "View database password for connecting from another machine").
 		// dashboard server
 		AddBoolFlag(constants.ArgDashboard, "", false, "Run the dashboard webserver with the service").
 		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
@@ -76,11 +76,11 @@ connection from any Postgres compatible database client.`,
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 
 		// flags relevant only if the --dashboard arg is used:
-		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
+		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values (only applies if '--dashboard' flag is also set)").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
+		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable (only applies if '--dashboard' flag is also set)").
 
 		// hidden flags for internal use
 		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
@@ -102,6 +102,8 @@ Report current status of the Steampipe database service.`,
 
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service status").
+		// default is false and hides the database user password from service start prompt
+		AddBoolFlag(constants.ArgServiceShowPassword, "", false, "View database password for connecting from another machine").
 		AddBoolFlag(constants.ArgAll, "", false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
 	return cmd
@@ -212,7 +214,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			if err1 != nil {
 				utils.ShowError(ctx, err1)
 			}
-		utils.FailOnError(err)
+			utils.FailOnError(err)
 		}
 	}
 
@@ -244,7 +246,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func tryToStopServices(ctx context.Context){
+func tryToStopServices(ctx context.Context) {
 	if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
 		utils.ShowError(ctx, err)
 	}
@@ -609,7 +611,7 @@ Managing the Steampipe service:
   # Get status of the service
   steampipe service status
 	 
-  # View password for connection from another machine
+  # View database password for connecting from another machine
   steampipe service status --show-password
   
   # Restart the service
