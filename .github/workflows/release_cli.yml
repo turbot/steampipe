@@ -206,6 +206,7 @@ jobs:
 
       - name: Install DB
         run: |
+          echo $PATH
           steampipe service start
           steampipe plugin install chaos
           steampipe service stop --force
