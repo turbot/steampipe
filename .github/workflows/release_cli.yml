@@ -183,48 +183,14 @@ jobs:
         run: |
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
-          cd ~/build
-          ls -al
-      
-      - name: ls
-        run: |
-          echo "'ls -al'"
-          ls -al
-          echo "'ls'"
-          ls
-          echo "'ls /github'"
-          ls /github
-          echo "'pwd'"
-          pwd
 
       - name: Set PATH
         run: |
-          pwd
-          ls -al
-          echo $HOME
-          cd
-          echo "ls"
-          ls
-          echo "ls -al /github/home/build"
-          ls -al /github/home/build
-          echo "ls ~/build"
-          ls -al ~/build
           echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
-
-      - name: Run steampipe
-        run: |
-          echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
-          echo "echo $PATH"
-          echo $PATH
-          echo "ls -al /github/home/build/steampipe"
-          ls -al /github/home/build/steampipe
-          echo "run"
-          cp /github/home/build/steampipe /usr/local/bin
-          steampipe -v
 
       - name: Install DB
         run: |
-          echo $PATH
+          cp /github/home/build/steampipe /usr/local/bin
           steampipe service start
           steampipe plugin install chaos
           steampipe service stop --force
