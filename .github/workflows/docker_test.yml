@@ -44,14 +44,14 @@ jobs:
 
       - name: ls
         run: |
+          echo "'ls -al'"
           ls -al
-          echo "upto here 'ls -al'"
+          echo "'ls'"
           ls
-          echo "upto here 'ls'"
+          echo "'ls /github'"
           ls /github
-          echo "upto here 'ls /github'"
+          echo "'pwd'"
           pwd
-          echo "upto here 'pwd'"
 
       - name: add and switch to user
         run: |

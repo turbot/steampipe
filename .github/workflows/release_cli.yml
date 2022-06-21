@@ -184,14 +184,14 @@ jobs:
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
           cd
-          echo "cd"
-          ls
-          pwd
-          cd ~/build
-          echo "build"
-          ls
-          pwd
+          echo "'ls -al'"
           ls -al
+          echo "'ls'"
+          ls
+          echo "'ls /github'"
+          ls /github
+          echo "'pwd'"
+          pwd
 
       - name: Set PATH
         run: |
