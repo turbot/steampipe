@@ -16,9 +16,7 @@ jobs:
     name: Acceptance tests
     needs: first-job
     runs-on: ubuntu-latest
-    container:
-      image: "ubuntu:latest"
-      options: --user 1001
+    container: "ubuntu:latest"
     steps:
       - name: uname
         run: uname -a
@@ -29,9 +27,9 @@ jobs:
 
       - name: install git
         run: |
-          sudo apt update -y
-          sudo apt upgrade -y
-          sudo apt install -y git sudo wget curl vim
+          apt update -y
+          apt upgrade -y
+          apt install -y git sudo wget curl vim
 
       - name: Checkout submodules
         run: |
@@ -56,6 +54,10 @@ jobs:
       - name: Install DB
         continue-on-error: false
         run: |
+          adduser --disabled-password --gecos "" username1
+          usermod -aG sudo username1
+          echo "username1:newpass1" | chpasswd
+          su - username1
           steampipe service start
           steampipe service stop
 
