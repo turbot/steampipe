@@ -1,6 +1,6 @@
 import DashboardListEmptyCallToAction from "./DashboardListEmptyCallToAction";
 import ExternalLink from "./ExternalLink";
-import { ComponentsMap } from "../hooks/useDashboard";
+import { ComponentsMap } from "../types/dashboard";
 
 const buildComponentsMap = (overrides = {}): ComponentsMap => {
   return {

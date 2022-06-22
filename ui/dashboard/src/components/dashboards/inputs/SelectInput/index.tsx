@@ -5,7 +5,7 @@ import Select, {
 } from "react-select";
 import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
-import { DashboardActions } from "../../../../hooks/useDashboard";
+import { DashboardActions } from "../../../../types/dashboard";
 import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../index";
 import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";

@@ -577,12 +577,4 @@ const DashboardProvider = ({ children }: DashboardProviderProps) => {
   );
 };
 
-const useDashboard = () => {
-  const context = useContext(DashboardContext);
-  if (context === undefined) {
-    throw new Error("useDashboard must be used within a DashboardContext");
-  }
-  return context as IDashboardContext;
-};
-
-export { DashboardActions, DashboardContext, DashboardProvider, useDashboard };
+export { DashboardContext, DashboardProvider };
