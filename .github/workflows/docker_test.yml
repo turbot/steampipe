@@ -23,6 +23,11 @@ jobs:
           docker build -t sp dockerfiles
           docker images
 
+      - name: get the id and run a container
+        run: |
+          id=${docker images sp --format "{{.ID}}"}
+          echo $id
+
       # - name: Setup BATS
       #   uses: mig4/setup-bats@v1
       #   with:
