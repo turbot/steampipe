@@ -26,13 +26,13 @@ ENV STEAMPIPE_UPDATE_CHECK=false
 # disable telemetry
 ENV STEAMPIPE_TELEMETRY=none
 
-# Run steampipe service once
-RUN steampipe service start --dashboard
-# and stop it
-RUN steampipe service stop
+# # Run steampipe service once
+# RUN steampipe service start --dashboard
+# # and stop it
+# RUN steampipe service stop
 
-# remove the generated service .passwd file from this image, so that it gets regenerated in the container
-RUN rm -f /home/steampipe/.steampipe/internal/.passwd
+# # remove the generated service .passwd file from this image, so that it gets regenerated in the container
+# RUN rm -f /home/steampipe/.steampipe/internal/.passwd
 
 # expose postgres service default port
 EXPOSE 9193
