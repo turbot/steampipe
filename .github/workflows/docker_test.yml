@@ -1,77 +1,57 @@
 name: ">>>> Docker testing"
 on: push
 jobs:
-  first-job:
-    name: Check steampipe version
-    runs-on: ubuntu-latest
-    container: turbot/steampipe:latest
-    steps:
-      - name: Check version
-        run: steampipe -v
-
-      - name: Query
-        run: steampipe query "select 1"
 
   acceptance_test:
     name: Acceptance tests
-    needs: first-job
     runs-on: ubuntu-latest
-    container: "ubuntu:latest"
     steps:
       - name: uname
         run: uname -a
 
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: true
 
-
-      - name: install git
+      - name: docker?
         run: |
-          apt update -y
-          apt upgrade -y
-          apt install -y git sudo wget curl vim
-
-      - name: Checkout submodules
-        run: |
-          git init
-          git config --global --add safe.directory /__w/steampipe/steampipe
-          git submodule update --init
-          git submodule update --recursive
+          docker info
 
       - name: install steampipe
         run: |
           ./install.sh v0.14.6
 
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
+      # - name: Setup BATS
+      #   uses: mig4/setup-bats@v1
+      #   with:
+      #     bats-version: 1.2.1
 
-      - name: Set PATH
-        run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+      # - name: Set PATH
+      #   run: |
+      #     echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
-      - name: Install DB
-        continue-on-error: false
-        run: |
-          adduser --disabled-password --gecos "" username1
-          usermod -aG sudo username1
-          echo "username1:newpass1" | chpasswd
-          su - username1
-          echo $?
-          echo "whoami"
-          whoami
-          steampipe service start
-          steampipe service stop
+      # - name: Install DB
+      #   continue-on-error: false
+      #   run: |
+      #     adduser --disabled-password --gecos "" username1
+      #     usermod -aG sudo username1
+      #     echo "username1:newpass1" | chpasswd
+      #     su - username1
+      #     echo $?
+      #     echo "whoami"
+      #     whoami
+      #     steampipe service start
+      #     steampipe service stop
 
-      - name: Run Test Suite
-        id: run-test-suite
-        timeout-minutes: 15
-        continue-on-error: true
-        run: |
-          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          steampipe service stop --force
+      # - name: Run Test Suite
+      #   id: run-test-suite
+      #   timeout-minutes: 15
+      #   continue-on-error: true
+      #   run: |
+      #     chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+      #     $GITHUB_WORKSPACE/tests/acceptance/run.sh
+      #     steampipe service stop --force
       
   #     - name: Save Test Suite Logs
   #       uses: actions/upload-artifact@v3
