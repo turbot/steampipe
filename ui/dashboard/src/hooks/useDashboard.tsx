@@ -17,6 +17,7 @@ import {
   useState,
 } from "react";
 import { GlobalHotKeys } from "react-hotkeys";
+import { IActions } from "../types/dashboard";
 import { LeafNodeData, Width } from "../components/dashboards/common";
 import { noop } from "../utils/func";
 import { Theme } from "./useTheme";
@@ -27,6 +28,12 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+
+// State
+// Socket
+// Query Params
+// History
+// Inputs
 
 interface IBreakpointContext {
   currentBreakpoint: string | null;
@@ -92,10 +99,6 @@ interface IDashboardContext {
 
   progress: number;
   state: DashboardRunState;
-}
-
-export interface IActions {
-  [type: string]: string;
 }
 
 const DashboardActions: IActions = {

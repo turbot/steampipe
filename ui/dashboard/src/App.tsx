@@ -8,17 +8,22 @@ import { FullHeightThemeWrapper, useTheme } from "./hooks/useTheme";
 import { Route, Routes } from "react-router-dom";
 import { useBreakpoint } from "./hooks/useBreakpoint";
 
+// Refactor
+import { DashboardProviderNew } from "./hooks/refactor/useDashboard";
+
 const Dashboards = ({ analyticsContext, breakpointContext, themeContext }) => (
-  <DashboardProvider
-    analyticsContext={analyticsContext}
-    breakpointContext={breakpointContext}
-    themeContext={themeContext}
-  >
-    <DashboardHeader />
-    <DashboardErrorModal />
-    <DashboardList wrapperClassName="p-4" />
-    <Dashboard />
-  </DashboardProvider>
+  <DashboardProviderNew>
+    <DashboardProvider
+      analyticsContext={analyticsContext}
+      breakpointContext={breakpointContext}
+      themeContext={themeContext}
+    >
+      <DashboardHeader />
+      <DashboardErrorModal />
+      <DashboardList wrapperClassName="p-4" />
+      <Dashboard />
+    </DashboardProvider>
+  </DashboardProviderNew>
 );
 
 const DashboardApp = ({

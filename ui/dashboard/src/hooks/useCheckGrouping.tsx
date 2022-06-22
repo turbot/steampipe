@@ -22,14 +22,14 @@ import {
   useMemo,
   useReducer,
 } from "react";
-import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import {
   BenchmarkDefinition,
   ElementType,
-  IActions,
   PanelDefinition,
   useDashboard,
 } from "./useDashboard";
+import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
+import { IActions } from "../types/dashboard";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;

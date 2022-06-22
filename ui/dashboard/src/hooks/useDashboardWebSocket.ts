@@ -1,4 +1,5 @@
-import { DashboardActionType, ElementType, IActions } from "./useDashboard";
+import { DashboardActionType, ElementType } from "./useDashboard";
+import { IActions } from "../types/dashboard";
 import { useCallback, useEffect, useRef } from "react";
 
 export interface EventHooks {
