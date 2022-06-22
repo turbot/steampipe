@@ -6,10 +6,7 @@ import Image from "../../Image";
 import Panel from "../Panel";
 import Table from "../../Table";
 import Text from "../../Text";
-import {
-  ContainerDefinition,
-  PanelDefinition,
-} from "../../../../hooks/useDashboard";
+import { ContainerDefinition, PanelDefinition } from "../../../../types/panel";
 import { Dashboard } from "../Dashboard";
 import { RenderChart as Chart } from "../../charts/Chart";
 import { RenderFlow as Flow } from "../../flows/Flow";

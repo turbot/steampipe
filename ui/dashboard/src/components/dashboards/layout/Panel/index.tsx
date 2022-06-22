@@ -1,23 +1,21 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts";
-import {
-  BenchmarkDefinition,
-  DashboardActions,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import { BenchmarkDefinition } from "../../../../types/benchmark";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
+import { DashboardActions } from "../../../../types/dashboard";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs";
 import { memo, useState } from "react";
+import { PanelDefinition } from "../../../../types/panel";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { TableProps } from "../../Table";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { ZoomIcon } from "../../../../constants/icons";
 
 interface PanelProps {
@@ -84,7 +82,7 @@ const Panel = memo(
     const {
       dispatch,
       themeContext: { theme },
-    } = useDashboard();
+    } = useDashboardNew();
 
     const baseStyles = classNames(
       "relative col-span-12",
@@ -222,7 +220,7 @@ const PanelWrapper = ({
   withOverflow = false,
   withTitle = true,
 }: PanelWrapperProps) => {
-  const { panelsMap } = useDashboard();
+  const { panelsMap } = useDashboardNew();
   const panel = panelsMap[layoutDefinition.name];
   return (
     <Panel

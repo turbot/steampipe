@@ -3,11 +3,7 @@ import Container from "../../layout/Container";
 import Error from "../../Error";
 import Panel from "../../layout/Panel";
 import Table from "../../Table";
-import {
-  BenchmarkDefinition,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import { BenchmarkDefinition } from "../../../../types/benchmark";
 import {
   BenchmarkTreeProps,
   CheckDisplayGroup,
@@ -19,7 +15,9 @@ import {
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
+import { PanelDefinition } from "../../../../types/panel";
 import { stringToColour } from "../../../../utils/color";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useMemo } from "react";
 
 interface BenchmarkTableViewProps {
@@ -47,7 +45,7 @@ const ControlDimension = ({ dimensionKey, dimensionValue }) => (
 );
 
 const Benchmark = (props: InnerCheckProps) => {
-  const { dashboard, selectedDashboard } = useDashboard();
+  const { dashboard, selectedDashboard } = useDashboardNew();
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||

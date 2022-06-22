@@ -7,9 +7,10 @@ import PanelDetailDefinition from "./PanelDetailDefinition";
 import PanelDetailPreview from "./PanelDetailPreview";
 import PanelDetailQuery from "./PanelDetailQuery";
 import { classNames } from "../../../../utils/styles";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import { PanelDefinition } from "../../../../types/panel";
 import { saveAs } from "file-saver";
 import { useCallback, useMemo, useState } from "react";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { usePapaParse } from "react-papaparse";
 
 export type PanelDetailProps = {
@@ -45,7 +46,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     breakpointContext: { minBreakpoint },
     closePanelDetail,
     selectedDashboard,
-  } = useDashboard();
+  } = useDashboardNew();
   const { jsonToCSV } = usePapaParse();
   const isTablet = minBreakpoint("md");
 

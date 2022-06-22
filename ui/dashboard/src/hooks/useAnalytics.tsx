@@ -6,7 +6,7 @@ import {
   CloudDashboardWorkspaceMetadata,
   DashboardMetadata,
   ModDashboardMetadata,
-} from "./useDashboard";
+} from "../types/dashboard";
 import {
   createContext,
   useCallback,

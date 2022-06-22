@@ -4,20 +4,18 @@ import DashboardHeader from "./components/DashboardHeader";
 import DashboardList from "./components/DashboardList";
 import useAnalytics from "./hooks/useAnalytics";
 import { DashboardProvider } from "./hooks/useDashboard";
+import { DashboardProviderNew } from "./hooks/refactor/useDashboard";
 import { FullHeightThemeWrapper, useTheme } from "./hooks/useTheme";
 import { Route, Routes } from "react-router-dom";
 import { useBreakpoint } from "./hooks/useBreakpoint";
 
-// Refactor
-import { DashboardProviderNew } from "./hooks/refactor/useDashboard";
-
 const Dashboards = ({ analyticsContext, breakpointContext, themeContext }) => (
-  <DashboardProviderNew>
-    <DashboardProvider
-      analyticsContext={analyticsContext}
-      breakpointContext={breakpointContext}
-      themeContext={themeContext}
-    >
+  <DashboardProviderNew
+    analyticsContext={analyticsContext}
+    breakpointContext={breakpointContext}
+    themeContext={themeContext}
+  >
+    <DashboardProvider>
       <DashboardHeader />
       <DashboardErrorModal />
       <DashboardList wrapperClassName="p-4" />

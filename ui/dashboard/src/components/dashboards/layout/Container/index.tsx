@@ -1,11 +1,9 @@
 import Children from "../common/Children";
 import LayoutPanel from "../common/LayoutPanel";
 import { classNames } from "../../../../utils/styles";
-import {
-  ContainerDefinition,
-  DashboardActions,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import { ContainerDefinition } from "../../../../types/panel";
+import { DashboardActions } from "../../../../types/dashboard";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useState } from "react";
 import { ZoomIcon } from "../../../../constants/icons";
 
@@ -29,7 +27,7 @@ const Container = ({
   withTitle,
 }: ContainerProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const { dispatch, panelsMap } = useDashboard();
+  const { dispatch, panelsMap } = useDashboardNew();
 
   if (!definition && !layoutDefinition) {
     return null;

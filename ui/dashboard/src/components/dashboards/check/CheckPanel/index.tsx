@@ -27,7 +27,7 @@ import {
 import { classNames } from "../../../../utils/styles";
 import { ControlDimension } from "../Benchmark";
 import { ThemeNames } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useMemo } from "react";
 
 interface CheckChildrenProps {
@@ -199,7 +199,7 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
 const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
   const {
     themeContext: { theme },
-  } = useDashboard();
+  } = useDashboardNew();
 
   if (!empties || !errors || !results) {
     return null;

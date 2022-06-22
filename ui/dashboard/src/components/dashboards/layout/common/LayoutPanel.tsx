@@ -1,9 +1,7 @@
 import { classNames } from "../../../../utils/styles";
-import {
-  ContainerDefinition,
-  DashboardDefinition,
-} from "../../../../hooks/useDashboard";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
+import { DashboardDefinition } from "../../../../types/dashboard";
+import { ContainerDefinition } from "../../../../types/panel";
 
 interface EventMap {
   [name: string]: any;

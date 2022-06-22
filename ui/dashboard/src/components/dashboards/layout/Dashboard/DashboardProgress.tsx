@@ -1,4 +1,4 @@
-import { DashboardRunState } from "../../../../hooks/useDashboard";
+import { DashboardRunState } from "../../../../types/dashboard";
 
 interface DashboardProgressProps {
   state?: DashboardRunState;

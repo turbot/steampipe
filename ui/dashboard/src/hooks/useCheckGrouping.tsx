@@ -7,6 +7,7 @@ import ControlRunningNode from "../components/dashboards/check/common/node/Contr
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import usePrevious from "./usePrevious";
+import { BenchmarkDefinition } from "../types/benchmark";
 import {
   CheckDisplayGroup,
   CheckDisplayGroupType,
@@ -22,14 +23,11 @@ import {
   useMemo,
   useReducer,
 } from "react";
-import {
-  BenchmarkDefinition,
-  ElementType,
-  PanelDefinition,
-  useDashboard,
-} from "./useDashboard";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
+import { ElementType } from "../types/common";
 import { IActions } from "../types/dashboard";
+import { PanelDefinition } from "../types/panel";
+import { useDashboardNew } from "./refactor/useDashboard";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
@@ -313,7 +311,7 @@ const CheckGroupingProvider = ({
   children,
   definition,
 }: CheckGroupingProviderProps) => {
-  const { panelsMap } = useDashboard();
+  const { panelsMap } = useDashboardNew();
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
   const [searchParams] = useSearchParams();
 

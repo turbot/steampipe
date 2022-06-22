@@ -1,18 +1,18 @@
 import get from "lodash/get";
 import sortBy from "lodash/sortBy";
+import CallToActions from "../CallToActions";
+import LoadingIndicator from "../dashboards/LoadingIndicator";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
   DashboardAction,
   DashboardActions,
   ModDashboardMetadata,
-  useDashboard,
-} from "../../hooks/useDashboard";
-import CallToActions from "../CallToActions";
-import LoadingIndicator from "../dashboards/LoadingIndicator";
+} from "../../types/dashboard";
 import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
 import { stringToColour } from "../../utils/color";
+import { useDashboardNew } from "../../hooks/refactor/useDashboard";
 import { useParams } from "react-router-dom";
 
 interface DashboardListSection {
@@ -68,7 +68,7 @@ const DashboardTag = ({
 const TitlePart = ({ part }) => {
   const {
     components: { ExternalLink },
-  } = useDashboard();
+  } = useDashboardNew();
 
   return (
     <ExternalLink
@@ -83,8 +83,8 @@ const TitlePart = ({ part }) => {
 const BenchmarkTitle = ({ benchmark, searchValue }) => {
   const {
     components: { ExternalLink },
-    dashboardsMap,
-  } = useDashboard();
+  } = useDashboardNew();
+  const { dashboardsMap } = useDashboardNew();
 
   if (!searchValue) {
     return (
@@ -255,7 +255,7 @@ const DashboardList = () => {
     dispatch,
     metadata,
     search: { value: searchValue, groupBy: searchGroupBy },
-  } = useDashboard();
+  } = useDashboardNew();
   const [unfilteredDashboards, setUnfilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
@@ -410,7 +410,7 @@ const DashboardList = () => {
 
 const DashboardListWrapper = ({ wrapperClassName = "" }) => {
   const { dashboard_name } = useParams();
-  const { search } = useDashboard();
+  const { search } = useDashboardNew();
 
   // If we have a dashboard selected and no search, we don't want to show the list
   if (dashboard_name && !search.value) {

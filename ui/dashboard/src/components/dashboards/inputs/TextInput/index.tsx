@@ -1,11 +1,12 @@
 import { ClearIcon, SubmitIcon } from "../../../../constants/icons";
-import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
+import { DashboardActions } from "../../../../types/dashboard";
 import { IInput, InputProps } from "../index";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useEffect, useState } from "react";
 
 const TextInput = (props: InputProps) => {
-  const { dataMode, dispatch, selectedDashboardInputs } = useDashboard();
-  const stateValue = selectedDashboardInputs[props.name];
+  const { dataMode, dispatch, inputs } = useDashboardNew();
+  const stateValue = inputs[props.name];
   const [value, setValue] = useState<string>(() => {
     return stateValue || "";
   });

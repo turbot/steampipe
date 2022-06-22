@@ -12,7 +12,7 @@ import {
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { HierarchyProps } from "../index";
-import { useDashboard } from "../../../../hooks/useDashboard";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useEffect, useState } from "react";
 
 const getCommonBaseOptions = () => ({
@@ -139,7 +139,7 @@ const HierarchyWrapper = (props: HierarchyProps) => {
   const [, setRandomVal] = useState(0);
   const {
     themeContext: { theme, wrapperRef },
-  } = useDashboard();
+  } = useDashboardNew();
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);

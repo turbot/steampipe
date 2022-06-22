@@ -1,5 +1,9 @@
+import { ContainerDefinition, PanelDefinition } from "./panel";
 import { ElementType } from "./common";
+import { LeafNodeData } from "../components/dashboards/common";
+import { Ref } from "react";
 import { SocketURLFactory } from "./webSocket";
+import { Theme } from "../hooks/useTheme";
 
 /***** Actions *****/
 
@@ -39,6 +43,11 @@ export const DashboardActions: IActions = {
 const dashboardActions = Object.values(DashboardActions);
 
 export type DashboardActionType = ElementType<typeof dashboardActions>;
+
+export interface DashboardAction {
+  type: DashboardActionType;
+  [key: string]: any;
+}
 
 /***** Dashboard Metadata *****/
 
@@ -108,6 +117,10 @@ export interface DashboardsCollection {
   dashboardsMap: AvailableDashboardsDictionary;
 }
 
+export interface DashboardTags {
+  keys: string[];
+}
+
 /***** Mode *****/
 
 export type DashboardDataMode = "live" | "snapshot";
@@ -132,13 +145,70 @@ export interface DashboardInputs {
   [name: string]: string;
 }
 
-/***** Props *****/
-
-export interface DashboardProviderProps {
-  children: null | JSX.Element | JSX.Element[];
-  socketUrlFactory?: SocketURLFactory;
-}
+/***** Hooks *****/
 
 export interface EventHooks {
   [type: DashboardActionType]: (event: any) => Promise<void>;
+}
+
+/***** Props *****/
+
+export interface DashboardProviderProps {
+  analyticsContext: any;
+  breakpointContext: any;
+  children: null | JSX.Element | JSX.Element[];
+  componentOverrides?: {};
+  eventHooks?: EventHooks;
+  featureFlags?: string[];
+  socketUrlFactory?: SocketURLFactory;
+  stateDefaults?: {};
+  themeContext: any;
+}
+
+/***** Components *****/
+
+export interface ComponentsMap {
+  [name: string]: any;
+}
+
+/***** Context *****/
+
+export interface IBreakpointContext {
+  currentBreakpoint: string | null;
+  maxBreakpoint(breakpointAndDown: string): boolean;
+  minBreakpoint(breakpointAndUp: string): boolean;
+  width: number;
+}
+
+export interface IThemeContext {
+  theme: Theme;
+  setTheme(theme: string): void;
+  wrapperRef: Ref<null>;
+}
+
+/***** Dashboard State *****/
+
+export interface SelectedDashboardStates {
+  dashboard_name: string | null;
+  selectedDashboard: AvailableDashboard | null;
+}
+
+export interface DashboardDefinition {
+  artificial: boolean;
+  name: string;
+  panel_type: string;
+  title?: string;
+  width?: number;
+  children?: (ContainerDefinition | PanelDefinition)[];
+  dashboard: string;
+}
+
+export type DashboardRunState = "running" | "error" | "complete";
+
+export interface PanelsMap {
+  [name: string]: PanelDefinition;
+}
+
+export interface SQLDataMap {
+  [sql: string]: LeafNodeData;
 }

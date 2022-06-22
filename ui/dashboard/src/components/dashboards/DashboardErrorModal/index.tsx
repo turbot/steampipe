@@ -1,5 +1,5 @@
 import ErrorModal from "../../Modal/ErrorModal";
-import { useDashboard } from "../../../hooks/useDashboard";
+import { useDashboardNew } from "../../../hooks/refactor/useDashboard";
 
 interface DashboardErrorModalProps {
   error: any;
@@ -10,7 +10,7 @@ const DashboardErrorModal = ({ error }: DashboardErrorModalProps) => (
 );
 
 const DashboardErrorModalWrapper = () => {
-  const { error } = useDashboard();
+  const { error } = useDashboardNew();
   if (!error) {
     return null;
   }

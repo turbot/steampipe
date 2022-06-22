@@ -18,7 +18,7 @@ import {
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../../common";
-import { PanelsMap } from "../../../../hooks/useDashboard";
+import { PanelsMap } from "../../../../types/dashboard";
 
 class Control implements CheckNode {
   private readonly _sortIndex: string;

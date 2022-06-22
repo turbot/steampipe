@@ -1,21 +1,24 @@
 import SearchInput from "../SearchInput";
-import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
-import { useCallback } from "react";
+import { useDashboardNew } from "../../hooks/refactor/useDashboard";
+import { useSearchParams } from "react-router-dom";
 
 const DashboardSearch = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     availableDashboardsLoaded,
     breakpointContext: { minBreakpoint },
-    dispatch,
-    search,
     metadata,
-  } = useDashboard();
+    search,
+  } = useDashboardNew();
 
-  const updateSearchValue = useCallback(
-    (value) =>
-      dispatch({ type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE, value }),
-    [dispatch]
-  );
+  const updateSearchValue = (value) => {
+    if (value) {
+      searchParams.set("search", value);
+    } else {
+      searchParams.delete("search");
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   return (
     <div className="w-full sm:w-56 md:w-72 lg:w-96">

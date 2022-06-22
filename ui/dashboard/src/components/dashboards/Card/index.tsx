@@ -15,7 +15,7 @@ import {
 import { classNames } from "../../../utils/styles";
 import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
-import { useDashboard } from "../../../hooks/useDashboard";
+import { useDashboardNew } from "../../../hooks/refactor/useDashboard";
 import { useEffect, useState } from "react";
 import { usePanel } from "../../../hooks/usePanel";
 
@@ -202,7 +202,8 @@ const Label = ({ value }) => {
 const Card = (props: CardProps) => {
   const {
     components: { ExternalLink },
-  } = useDashboard();
+    themeContext: { theme },
+  } = useDashboardNew();
   const state = useCardState(props);
   const [renderedHref, setRenderedHref] = useState<string | null>(
     state.href || null
@@ -210,9 +211,6 @@ const Card = (props: CardProps) => {
   const [, setRenderError] = useState<string | null>(null);
   const textClasses = getTextClasses(state.type);
   const { setZoomIconClassName } = usePanel();
-  const {
-    themeContext: { theme },
-  } = useDashboard();
 
   useEffect(() => {
     setZoomIconClassName(textClasses ? textClasses : "");

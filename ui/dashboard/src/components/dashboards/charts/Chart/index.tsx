@@ -40,7 +40,7 @@ import { FlowType } from "../../flows";
 import { HierarchyType } from "../../hierarchies";
 import { LabelLayout } from "echarts/features";
 import { Theme } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import * as echarts from "echarts/core";
 
 echarts.use([
@@ -733,7 +733,7 @@ const ChartWrapper = (props: ChartProps) => {
   const [, setRandomVal] = useState(0);
   const {
     themeContext: { theme, wrapperRef },
-  } = useDashboard();
+  } = useDashboardNew();
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setRandomVal(Math.random()), [theme.name]);

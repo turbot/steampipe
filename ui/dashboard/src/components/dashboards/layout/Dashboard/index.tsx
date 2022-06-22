@@ -5,8 +5,8 @@ import PanelDetail from "../PanelDetail";
 import {
   DashboardDefinition,
   DashboardRunState,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+} from "../../../../types/dashboard";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 
 interface DashboardProps {
   definition: DashboardDefinition;
@@ -44,7 +44,7 @@ const DashboardWrapper = () => {
     selectedDashboard,
     selectedPanel,
     state,
-  } = useDashboard();
+  } = useDashboardNew();
 
   if (search.value || !dashboard || !selectedDashboard) {
     return null;

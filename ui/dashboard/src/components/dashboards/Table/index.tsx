@@ -28,7 +28,7 @@ import {
   renderInterpolatedTemplates,
 } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
-import { useDashboard } from "../../../hooks/useDashboard";
+import { useDashboardNew } from "../../../hooks/refactor/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
 type TableColumnDisplay = "all" | "none";
@@ -112,7 +112,7 @@ const CellValue = ({
 }: CellValueProps) => {
   const {
     components: { ExternalLink },
-  } = useDashboard();
+  } = useDashboardNew();
   const [href, setHref] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -366,7 +366,7 @@ const TableView = ({
 }) => {
   const {
     themeContext: { theme },
-  } = useDashboard();
+  } = useDashboardNew();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =

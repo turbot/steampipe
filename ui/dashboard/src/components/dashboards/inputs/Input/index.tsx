@@ -1,6 +1,6 @@
 import ErrorPanel from "../../Error";
 import Inputs, { InputProperties } from "../index";
-import { PanelDefinition } from "../../../../hooks/useDashboard";
+import { PanelDefinition } from "../../../../types/panel";
 
 export type InputDefinition = PanelDefinition & {
   properties: InputProperties;

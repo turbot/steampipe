@@ -4,13 +4,13 @@ import SteampipeLogo from "./SteampipeLogo";
 import ThemeToggle from "../ThemeToggle";
 import { classNames } from "../../utils/styles";
 import { ThemeNames } from "../../hooks/useTheme";
-import { useDashboard } from "../../hooks/useDashboard";
+import { useDashboardNew } from "../../hooks/refactor/useDashboard";
 
 const DashboardHeader = () => {
   const {
     components: { ExternalLink },
     themeContext: { theme },
-  } = useDashboard();
+  } = useDashboardNew();
   return (
     <div
       className={classNames(

@@ -1,14 +1,15 @@
 import sortBy from "lodash/sortBy";
 import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
 import { classNames } from "../../utils/styles";
-import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
-import { useParams } from "react-router-dom";
+import { useDashboardNew } from "../../hooks/refactor/useDashboard";
+import { useParams, useSearchParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
-  const { availableDashboardsLoaded, dashboardTags, dispatch, search } =
-    useDashboard();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { availableDashboardsLoaded, dashboardTags, search } =
+    useDashboardNew();
   const { dashboard_name } = useParams();
 
   const options = useMemo(() => {
@@ -54,15 +55,15 @@ const DashboardTagGroupSelect = () => {
 
   const [value, setValue] = useState(() => findOption(search.groupBy));
 
-  const updateState = useCallback(
-    (option) =>
-      dispatch({
-        type: DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY,
-        value: option.groupBy,
-        tag: option.tag,
-      }),
-    [dispatch]
-  );
+  const updateGroupBy = (option) => {
+    searchParams.set("group_by", option.groupBy);
+    if (option.groupBy === "mod") {
+      searchParams.delete("tag");
+    } else {
+      searchParams.set("tag", option.tag);
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   useEffect(() => {
     setValue(findOption(search.groupBy));
@@ -77,7 +78,7 @@ const DashboardTagGroupSelect = () => {
   }
 
   return (
-    <Listbox value={value} onChange={updateState}>
+    <Listbox value={value} onChange={updateGroupBy}>
       {({ open }) => (
         <>
           <div className="relative">

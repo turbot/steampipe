@@ -1,4 +1,4 @@
-import { useDashboard } from "../../hooks/useDashboard";
+import { useDashboardNew } from "../../hooks/refactor/useDashboard";
 
 const items = [
   {
@@ -27,7 +27,7 @@ const items = [
 const CallToActions = () => {
   const {
     components: { ExternalLink },
-  } = useDashboard();
+  } = useDashboardNew();
   return (
     <ul className="mt-4 md:mt-0 space-y-6">
       {items.map((item, itemIdx) => (

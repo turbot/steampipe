@@ -2,7 +2,7 @@ import CopyToClipboard, { CopyToClipboardProvider } from "../CopyToClipboard";
 import { classNames } from "../../utils/styles";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeNames } from "../../hooks/useTheme";
-import { useDashboard } from "../../hooks/useDashboard";
+import { useDashboardNew } from "../../hooks/refactor/useDashboard";
 import { useMemo, useState } from "react";
 import {
   vs,
@@ -25,7 +25,7 @@ const CodeBlock = ({
   const [showCopyIcon, setShowCopyIcon] = useState(false);
   const {
     themeContext: { theme },
-  } = useDashboard();
+  } = useDashboardNew();
 
   const styles = useMemo(() => {
     const commonStyles = {

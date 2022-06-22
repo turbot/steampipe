@@ -5,9 +5,10 @@ import Select, {
 } from "react-select";
 import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
-import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
+import { DashboardActions } from "../../../../hooks/useDashboard";
 import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../index";
+import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface SelectOption {
@@ -98,7 +99,7 @@ const findOptions = (options, multi, value) => {
 };
 
 const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
-  const { dataMode, dispatch, selectedDashboardInputs } = useDashboard();
+  const { dataMode, dispatch, inputs } = useDashboardNew();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
@@ -139,7 +140,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     }
   }, [properties.options, data]);
 
-  const stateValue = selectedDashboardInputs[name];
+  const stateValue = inputs[name];
 
   // Bind the selected option to the reducer state
   useEffect(() => {
