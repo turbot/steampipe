@@ -140,11 +140,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		c.readRows(ctx, startTime, rows, result)
 		// set the time that it took for this one to execute
 		if ShouldShowTiming() {
-			if err := c.getQueryTiming(ctx, startTime, session, result.TimingResult); err != nil {
-				// just send close the timing result channel
-				close(result.TimingResult)
-			}
+			c.getQueryTimingAsync(ctx, startTime, session, result.TimingResult)
 		}
+
 		if onComplete != nil {
 			onComplete()
 		}
@@ -153,20 +151,29 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	return result, nil
 }
 
-func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) error {
+func (c *DbClient) getQueryTimingAsync(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
 	var timingResult = &queryresult.TimingResult{
 		Duration: time.Since(startTime),
 	}
-
 	// set a separate viper config to disable fetching timing information to avoid recursion
 	// - we cannot just use ArgTiming as there is a race condition with reading the ArgTiming in displayTable()
-
 	viper.Set(constants.ArgDisableFetchTiming, true)
+
+	// whatever happens, we need to reenable timing, and send the result back with at least the duration
+	defer func() {
+		viper.Set(constants.ArgDisableFetchTiming, false)
+		resultChannel <- timingResult
+	}()
+
 	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from steampipe_command.scan_metadata where id > %d", session.ScanMetadataMaxId))
-	if err != nil {
-		return err
+	// if we failed to read scan metadata (either because the query failed or the plugin does not support it)
+	// just return
+	if err != nil || len(res.Rows) == 0 {
+		return
 	}
-	viper.Set(constants.ArgDisableFetchTiming, false)
+
+	// so we have scan metadata - create the metadata struct
+	timingResult.Metadata = &queryresult.TimingMetadata{}
 	var id int64
 	for _, r := range res.Rows {
 		rw := r.(*queryresult.RowResult)
@@ -175,18 +182,18 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		cacheHit := rw.Data[2].(bool)
 		hydrateCalls := rw.Data[3].(int64)
 
-		timingResult.HydrateCalls += hydrateCalls
+		timingResult.Metadata.HydrateCalls += hydrateCalls
 		if cacheHit {
-			timingResult.CachedRowsFetched += rowsFetched
+			timingResult.Metadata.CachedRowsFetched += rowsFetched
 		} else {
-			timingResult.RowsFetched += rowsFetched
+			timingResult.Metadata.RowsFetched += rowsFetched
 		}
 
 	}
 	// update the max id for this session
 	session.ScanMetadataMaxId = id
-	resultChannel <- timingResult
-	return nil
+
+	return
 }
 
 // run query in a goroutine, so we can check for cancellation

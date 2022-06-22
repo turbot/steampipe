@@ -5,11 +5,15 @@ import (
 	"time"
 )
 
-type TimingResult struct {
-	Duration          time.Duration
+type TimingMetadata struct {
 	RowsFetched       int64
 	CachedRowsFetched int64
 	HydrateCalls      int64
+}
+
+type TimingResult struct {
+	Duration time.Duration
+	Metadata *TimingMetadata
 }
 type RowResult struct {
 	Data  []interface{}
