@@ -58,6 +58,7 @@ jobs:
           usermod -aG sudo username1
           echo "username1:newpass1" | chpasswd
           su - username1
+          echo $?
           echo "whoami"
           whoami
           steampipe service start
