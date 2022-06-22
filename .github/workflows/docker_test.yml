@@ -18,9 +18,10 @@ jobs:
         run: |
           docker info
 
-      - name: install steampipe
+      - name: build an image
         run: |
-          ./install.sh v0.14.6
+          docker build -t sp dockerfiles
+          docker images
 
       # - name: Setup BATS
       #   uses: mig4/setup-bats@v1
