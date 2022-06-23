@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
-# chown steampipe:0 /home/steampipe/.steampipe/db/14.2.0/data/
-
+# check version
 steampipe -v
+
+# clone the repo, to run the test suite
 git clone https://github.com/turbot/steampipe.git
-ls -al
 cd steampipe
+
+# initialize git along with bats submodules
 git init
 git submodule update --init
 git submodule update --recursive
 
+# run test suite
 ./tests/acceptance/run.sh

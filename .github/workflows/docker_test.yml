@@ -23,66 +23,6 @@ jobs:
           docker build -t sp dockerfiles
           docker images
 
-      - name: run tests in a container
+      - name: run test suite in a container
         run: |
           docker run --name steampipe-test `docker images -q sp`
-
-      # - name: Setup BATS
-      #   uses: mig4/setup-bats@v1
-      #   with:
-      #     bats-version: 1.2.1
-
-      # - name: Set PATH
-      #   run: |
-      #     echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
-
-      # - name: Install DB
-      #   continue-on-error: false
-      #   run: |
-      #     adduser --disabled-password --gecos "" username1
-      #     usermod -aG sudo username1
-      #     echo "username1:newpass1" | chpasswd
-      #     su - username1
-      #     echo $?
-      #     echo "whoami"
-      #     whoami
-      #     steampipe service start
-      #     steampipe service stop
-
-      # - name: Run Test Suite
-      #   id: run-test-suite
-      #   timeout-minutes: 15
-      #   continue-on-error: true
-      #   run: |
-      #     chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-      #     $GITHUB_WORKSPACE/tests/acceptance/run.sh
-      #     steampipe service stop --force
-      
-  #     - name: Save Test Suite Logs
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: test-logs
-  #         path: ~/.steampipe/logs
-  #         if-no-files-found: error
-      
-  #     # This job checks whether the test suite has passed or not.
-  #     # Since the exit_code is set only when the bats test suite pass, so we have added the if-conditional block 
-  #     - name: Check Test Passed/Failed
-  #       continue-on-error: false
-  #       run: |
-  #         if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
-  #           exit 0
-  #         else
-  #           exit 1
-  #         fi
-
-  # clean_up:
-  #   name: Clean Up
-  #   needs: acceptance_test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Clean up Test Suite Logs
-  #       uses: geekyeggo/delete-artifact@v1
-  #       with:
-  #         name: test-logs
-  #         failOnError: true
