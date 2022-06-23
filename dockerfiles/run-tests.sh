@@ -3,6 +3,8 @@
 # chown steampipe:0 /home/steampipe/.steampipe/db/14.2.0/data/
 
 steampipe -v
+ls -al
+pwd
 git clone https://github.com/turbot/steampipe.git
 cd steampipe
 git init
