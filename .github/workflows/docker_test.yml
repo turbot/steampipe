@@ -23,11 +23,9 @@ jobs:
           docker build -t sp dockerfiles
           docker images
 
-      - name: run a container using the image
+      - name: run tests in a container
         run: |
-          a=`docker images -q sp`
-          echo "${a}"
-          docker run --name steampipe-test "${a}"
+          docker run --name steampipe-test `docker images -q sp`
 
       # - name: Setup BATS
       #   uses: mig4/setup-bats@v1
