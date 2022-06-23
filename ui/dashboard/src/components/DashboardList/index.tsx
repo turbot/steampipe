@@ -5,7 +5,6 @@ import LoadingIndicator from "../dashboards/LoadingIndicator";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
-  DashboardAction,
   DashboardActions,
   ModDashboardMetadata,
 } from "../../types/dashboard";
@@ -13,7 +12,11 @@ import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
 import { stringToColour } from "../../utils/color";
 import { useDashboardNew } from "../../hooks/refactor/useDashboard";
-import { useParams } from "react-router-dom";
+import {
+  URLSearchParamsInit,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 interface DashboardListSection {
   title: string;
@@ -27,22 +30,41 @@ type AvailableDashboardWithMod = AvailableDashboard & {
 interface DashboardTagProps {
   tagKey: string;
   tagValue: string;
-  dispatch: (action: DashboardAction) => void;
+  searchParams: URLSearchParams;
   searchValue: string;
+  setSearchParams: (
+    nextInit: URLSearchParamsInit,
+    navigateOptions?:
+      | {
+          replace?: boolean | undefined;
+          state?: any;
+        }
+      | undefined
+  ) => void;
 }
 
 interface SectionProps {
   title: string;
   dashboards: AvailableDashboardWithMod[];
-  dispatch: (action: DashboardAction) => void;
+  searchParams: URLSearchParams;
   searchValue: string;
+  setSearchParams: (
+    nextInit: URLSearchParamsInit,
+    navigateOptions?:
+      | {
+          replace?: boolean | undefined;
+          state?: any;
+        }
+      | undefined
+  ) => void;
 }
 
 const DashboardTag = ({
   tagKey,
   tagValue,
-  dispatch,
+  searchParams,
   searchValue,
+  setSearchParams,
 }: DashboardTagProps) => (
   <span
     className="cursor-pointer rounded-md text-xs"
@@ -53,10 +75,8 @@ const DashboardTag = ({
           ? `${existingSearch} ${tagValue}`
           : existingSearch
         : tagValue;
-      dispatch({
-        type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-        value: searchWithTag,
-      });
+      searchParams.set("search", searchWithTag);
+      setSearchParams(searchParams, { replace: true });
     }}
     style={{ color: stringToColour(tagValue) }}
     title={`${tagKey} = ${tagValue}`}
@@ -123,8 +143,9 @@ const BenchmarkTitle = ({ benchmark, searchValue }) => {
 const Section = ({
   title,
   dashboards,
-  dispatch,
+  searchParams,
   searchValue,
+  setSearchParams,
 }: SectionProps) => {
   return (
     <div className="space-y-2">
@@ -147,8 +168,9 @@ const Section = ({
                   key={key}
                   tagKey={key}
                   tagValue={value}
-                  dispatch={dispatch}
+                  searchParams={searchParams}
                   searchValue={searchValue}
+                  setSearchParams={setSearchParams}
                 />
               );
             })}
@@ -264,6 +286,7 @@ const DashboardList = () => {
   const [filteredDashboards, setFilteredDashboards] = useState<
     AvailableDashboardWithMod[]
   >([]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Initialise dashboards with their mod + update when the list of dashboards is updated
   useEffect(() => {
@@ -371,12 +394,10 @@ const DashboardList = () => {
                       <span>No search results.</span>{" "}
                       <span
                         className="link-highlight"
-                        onClick={() =>
-                          dispatch({
-                            type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-                            value: "",
-                          })
-                        }
+                        onClick={() => {
+                          searchParams.delete("search");
+                          setSearchParams(searchParams, { replace: true });
+                        }}
                       >
                         Clear
                       </span>
@@ -393,8 +414,9 @@ const DashboardList = () => {
                   key={section.title}
                   title={section.title}
                   dashboards={section.dashboards}
-                  dispatch={dispatch}
+                  searchParams={searchParams}
                   searchValue={searchValue}
+                  setSearchParams={setSearchParams}
                 />
               ))}
             </div>
