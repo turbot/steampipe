@@ -46,7 +46,7 @@ const DashboardWrapper = () => {
     state,
   } = useDashboardNew();
 
-  if (search.value || !dashboard || !selectedDashboard) {
+  if (search.value || !dashboard) {
     return null;
   }
 

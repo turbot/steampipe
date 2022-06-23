@@ -150,6 +150,16 @@ const dashboardReducer = (state, action, context) => {
       };
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
+    case DashboardActions.SELECT_SNAPSHOT:
+      return {
+        ...state,
+        selectedSnapshot: action.snapshot,
+      };
+    case DashboardActions.CLEAR_SNAPSHOT:
+      return {
+        ...state,
+        selectedSnapshot: null,
+      };
     case DashboardActions.EXECUTION_STARTED: {
       const originalDashboard = action.dashboard_node;
       let dashboard;
@@ -344,10 +354,12 @@ const useDashboardState = (
       const dashboard = dashboardState.dashboards.find(
         (dashboard) => dashboard.full_name === dashboard_name
       );
+      if (!dashboard) {
+        return;
+      }
       dispatch({
         type: DashboardActions.SELECT_DASHBOARD,
         dashboard,
-        dataMode: dataMode,
       });
       return;
     }
@@ -361,6 +373,9 @@ const useDashboardState = (
       const dashboard = dashboardState.dashboards.find(
         (dashboard) => dashboard.full_name === dashboard_name
       );
+      if (!dashboard) {
+        return;
+      }
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
     }
   }, [

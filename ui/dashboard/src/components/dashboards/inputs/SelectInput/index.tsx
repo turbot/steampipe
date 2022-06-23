@@ -3,7 +3,6 @@ import Select, {
   OptionProps,
   SingleValueProps,
 } from "react-select";
-import usePrevious from "../../../../hooks/usePrevious";
 import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
 import { DashboardActions } from "../../../../types/dashboard";
@@ -103,8 +102,6 @@ const findOptions = (options, multi, value) => {
 const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   const { dataMode, dispatch, inputs } = useDashboardNew();
   const [searchParams, setSearchParams] = useSearchParams();
-  // const [initialisedFromState, setInitialisedFromState] = useState(false);
-  // const [recordLastChange, setRecordLastChange] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
@@ -183,144 +180,6 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     setValue,
     stateValue,
   ]);
-
-  // const previousInputStates = usePrevious({
-  //   stateValue,
-  //   value,
-  // });
-  //
-  // // Bind the selected option to the reducer state
-  // useEffect(() => {
-  //   // If we haven't got the data we need yet...
-  //   if (!options || options.length === 0 || initialisedFromState) {
-  //     return;
-  //   }
-  //
-  //   // If this is first load and we have a value from state, initialise it
-  //   if (stateValue) {
-  //     const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-  //     const foundOptions = findOptions(options, multi, parsedUrlValue);
-  //     setValue(foundOptions || null);
-  //     setInitialisedFromState(true);
-  //   } else if (!stateValue && properties.placeholder) {
-  //     setInitialisedFromState(true);
-  //   } else if (!stateValue && !properties.placeholder) {
-  //     console.log("Initialising with first value");
-  //     setValue(multi ? [options[0]] : options[0]);
-  //     dispatch({
-  //       type: DashboardActions.SET_LAST_CHANGED_INPUT,
-  //       name,
-  //     });
-  //     searchParams.set(
-  //       name,
-  //       getValueForState(multi, multi ? [options[0]] : options[0])
-  //     );
-  //     setSearchParams(searchParams, { replace: true });
-  //     setInitialisedFromState(true);
-  //   }
-  // }, [
-  //   dispatch,
-  //   initialisedFromState,
-  //   multi,
-  //   name,
-  //   options,
-  //   properties.placeholder,
-  //   searchParams,
-  //   stateValue,
-  //   setSearchParams,
-  // ]);
-  //
-  // useEffect(() => {
-  //   if (!initialisedFromState || !previousInputStates) {
-  //     return;
-  //   }
-  //
-  //   if (
-  //     previousInputStates &&
-  //     // @ts-ignore
-  //     previousInputStates.stateValue &&
-  //     // @ts-ignore
-  //     previousInputStates.stateValue !== stateValue &&
-  //     value
-  //   ) {
-  //     console.log("Updating with value from state");
-  //     const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-  //     const foundOptions = findOptions(options, multi, parsedUrlValue);
-  //     setValue(foundOptions || null);
-  //     setRecordLastChange(false);
-  //     return;
-  //   }
-  //
-  //   if (
-  //     previousInputStates &&
-  //     // @ts-ignore
-  //     previousInputStates.stateValue &&
-  //     !stateValue &&
-  //     value
-  //   ) {
-  //     console.log("Clearing as value from state cleared");
-  //     setValue(null);
-  //     setRecordLastChange(false);
-  //   }
-  // }, [
-  //   dispatch,
-  //   initialisedFromState,
-  //   options,
-  //   multi,
-  //   previousInputStates,
-  //   searchParams,
-  //   setSearchParams,
-  //   stateValue,
-  //   value,
-  // ]);
-  //
-  // useEffect(() => {
-  //   if (!initialisedFromState) {
-  //     return;
-  //   }
-  //
-  //   if (
-  //     !value ||
-  //     // @ts-ignore
-  //     value.length === 0
-  //   ) {
-  //     if (recordLastChange) {
-  //       console.log("Recording history for state");
-  //     }
-  //     dispatch({
-  //       type: DashboardActions.SET_LAST_CHANGED_INPUT,
-  //       name,
-  //     });
-  //     searchParams.delete(name);
-  //     setSearchParams(searchParams, { replace: !recordLastChange });
-  //     setRecordLastChange(false);
-  //     return;
-  //   }
-  //
-  //   if (recordLastChange) {
-  //     console.log("Recording history for state", {
-  //       previousInputStates,
-  //       stateValue,
-  //       value,
-  //     });
-  //     dispatch({
-  //       type: DashboardActions.SET_LAST_CHANGED_INPUT,
-  //       name,
-  //     });
-  //     searchParams.set(name, getValueForState(multi, value));
-  //     setSearchParams(searchParams);
-  //     setRecordLastChange(false);
-  //   }
-  // }, [
-  //   dispatch,
-  //   initialisedFromState,
-  //   multi,
-  //   name,
-  //   previousInputStates,
-  //   searchParams,
-  //   setSearchParams,
-  //   value,
-  // ]);
 
   const styles = useSelectInputStyles();
 
