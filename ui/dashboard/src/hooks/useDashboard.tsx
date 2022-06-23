@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useReducer } from "react";
+import { createContext, useCallback, useReducer } from "react";
 import { IActions } from "../types/dashboard";
 import { useSearchParams } from "react-router-dom";
 
@@ -7,10 +7,6 @@ import { useSearchParams } from "react-router-dom";
 // Query Params
 // History
 // Inputs
-
-export interface ComponentsMap {
-  [name: string]: any;
-}
 
 export type DashboardDataMode = "live" | "snapshot";
 

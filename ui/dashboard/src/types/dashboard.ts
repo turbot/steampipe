@@ -156,7 +156,9 @@ export interface DashboardProviderProps {
   eventHooks?: EventHooks;
   featureFlags?: string[];
   socketUrlFactory?: SocketURLFactory;
-  stateDefaults?: {};
+  stateDefaults?: {
+    search?: DashboardSearch;
+  };
   themeContext: any;
 }
 

@@ -2,6 +2,7 @@ import useDashboardDataMode from "./useDashboardDataMode";
 import useDashboardInputs from "./useDashboardInputs";
 import useDashboardPageTitle from "./useDashboardPageTitle";
 import useDashboardSearch from "./useDashboardSearch";
+import useDashboardSnapshot from "./useDashboardSnapshot";
 import useDashboardState from "./useDashboardState";
 import useDashboardWebSocket from "./useDashboardWebSocket";
 import {
@@ -30,6 +31,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { DashboardSnapshot } from "../../types/snapshot";
 import { GlobalHotKeys } from "react-hotkeys";
 import { noop } from "../../utils/func";
 import { PanelDefinition } from "../../types/panel";
@@ -56,6 +58,8 @@ interface IDashboardContext {
   state: DashboardRunState;
   selectedDashboard: AvailableDashboard | null;
   selectedPanel: PanelDefinition | null;
+  selectedSnapshot: DashboardSnapshot | null;
+  snapshotId: string | null;
   themeContext: IThemeContext;
 }
 
@@ -76,7 +80,7 @@ const DashboardProviderNew = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const { dataMode } = useDashboardDataMode(searchParams);
   const { inputs } = useDashboardInputs(searchParams);
-  const { search } = useDashboardSearch(searchParams);
+  const { search } = useDashboardSearch(searchParams, stateDefaults.search);
   const {
     ready: socketReady,
     lastMessage,
@@ -92,6 +96,12 @@ const DashboardProviderNew = ({
       searchParams,
       setSearchParams
     );
+  const { id: snapshotId } = useDashboardSnapshot(
+    searchParams,
+    dashboardState,
+    dataMode,
+    featureFlags
+  );
   const dispatchDashboardAction = useCallback(
     (action) => {
       console.log(action.type, action);
@@ -123,7 +133,12 @@ const DashboardProviderNew = ({
       type: (lastMessage as ReceivedSocketMessagePayload).action,
       ...lastMessage,
     });
-  }, [dispatchDashboardAction, lastMessage]);
+    const hookHandler =
+      eventHooks[(lastMessage as ReceivedSocketMessagePayload).action];
+    if (hookHandler) {
+      hookHandler(lastMessage);
+    }
+  }, [dispatchDashboardAction, eventHooks, lastMessage]);
 
   const [hotKeysHandlers, setHotKeysHandlers] = useState({
     CLOSE_PANEL_DETAIL: noop,
@@ -166,6 +181,8 @@ const DashboardProviderNew = ({
     search,
     selectedDashboard: dashboardState.selectedDashboard,
     selectedPanel: dashboardState.selectedPanel,
+    selectedSnapshot: dashboardState.selectedSnapshot,
+    snapshotId,
     state: dashboardState.state,
     themeContext,
   };
