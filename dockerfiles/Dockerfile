@@ -1,10 +1,6 @@
 FROM debian:buster-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
-ARG TARGETVERSION
-ARG TARGETOS
-ARG TARGETARCH
-
 # add a non-root 'steampipe' user
 RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
 
