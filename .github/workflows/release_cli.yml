@@ -162,10 +162,8 @@ jobs:
 
       - name: Copy binary
         run: |
-          ls
-          ls ~/workspace/steampipe/dockerfiles/
           pwd
-          cp ~/build/steampipe ~/workspace/steampipe/dockerfiles/
+          cp ~/build/steampipe dockerfiles/
       
       - name: Build a docker image
         run: |
