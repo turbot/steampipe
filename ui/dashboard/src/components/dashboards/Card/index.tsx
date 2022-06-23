@@ -204,10 +204,10 @@ const Card = (props: CardProps) => {
     components: { ExternalLink },
   } = useDashboard();
   const state = useCardState(props);
+  const [renderError, setRenderError] = useState<string | null>(null);
   const [renderedHref, setRenderedHref] = useState<string | null>(
     state.href || null
   );
-  const [, setRenderError] = useState<string | null>(null);
   const textClasses = getTextClasses(state.type);
   const { setZoomIconClassName } = usePanel();
   const {
@@ -218,10 +218,15 @@ const Card = (props: CardProps) => {
     setZoomIconClassName(textClasses ? textClasses : "");
   }, [setZoomIconClassName, textClasses]);
 
+  useEffect(() => {
+    if ((state.loading || !state.href) && (renderError || renderedHref)) {
+      setRenderError(null);
+      setRenderedHref(null);
+    }
+  }, [state.loading, state.href, renderError, renderedHref]);
+
   useDeepCompareEffect(() => {
     if (state.loading || !state.href) {
-      setRenderedHref(null);
-      setRenderError(null);
       return;
     }
     // const { label, loading, value, ...rest } = state;

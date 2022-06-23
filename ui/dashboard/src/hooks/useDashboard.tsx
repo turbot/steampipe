@@ -4,7 +4,10 @@ import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
 import set from "lodash/set";
 import sortBy from "lodash/sortBy";
-import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
+import useDashboardWebSocket, {
+  SocketActions,
+  SocketURLFactory,
+} from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
 import { buildComponentsMap } from "../components";
 import {
@@ -309,7 +312,7 @@ interface DashboardProviderProps {
   componentOverrides?: {};
   eventHooks?: {};
   featureFlags?: string[];
-  socketFactory?: () => WebSocket;
+  socketUrlFactory?: SocketURLFactory;
   stateDefaults?: {};
   themeContext: any;
 }
@@ -807,9 +810,9 @@ const DashboardProvider = ({
   breakpointContext,
   children,
   componentOverrides = {},
-  eventHooks = {},
+  eventHooks,
   featureFlags = [],
-  socketFactory,
+  socketUrlFactory,
   stateDefaults = {},
   themeContext,
 }: DashboardProviderProps) => {
@@ -826,9 +829,10 @@ const DashboardProvider = ({
   }, []);
   const { dashboard_name } = useParams();
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
+    state.dataMode,
     dispatch,
-    socketFactory,
-    eventHooks
+    eventHooks,
+    socketUrlFactory
   );
   const {
     setMetadata: setAnalyticsMetadata,
