@@ -1,11 +1,12 @@
 import { ClearIcon, SubmitIcon } from "../../../../constants/icons";
-import { DashboardActions } from "../../../../types/dashboard";
 import { IInput, InputProps } from "../index";
 import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 const TextInput = (props: InputProps) => {
-  const { dataMode, dispatch, inputs } = useDashboardNew();
+  const { dataMode, inputs } = useDashboardNew();
+  const [searchParams, setSearchParams] = useSearchParams();
   const stateValue = inputs[props.name];
   const [value, setValue] = useState<string>(() => {
     return stateValue || "";
@@ -20,29 +21,19 @@ const TextInput = (props: InputProps) => {
   const submit = () => {
     setIsDirty(false);
     if (value) {
-      dispatch({
-        type: DashboardActions.SET_DASHBOARD_INPUT,
-        name: props.name,
-        value,
-        recordInputsHistory: !!stateValue,
-      });
+      searchParams.set(props.name, value);
+      setSearchParams(searchParams, { replace: !stateValue });
     } else {
-      dispatch({
-        type: DashboardActions.DELETE_DASHBOARD_INPUT,
-        name: props.name,
-        recordInputsHistory: !!stateValue,
-      });
+      searchParams.delete(props.name);
+      setSearchParams(searchParams, { replace: !stateValue });
     }
   };
 
   const clear = () => {
     setValue("");
     setIsDirty(false);
-    dispatch({
-      type: DashboardActions.DELETE_DASHBOARD_INPUT,
-      name: props.name,
-      recordInputsHistory: true,
-    });
+    searchParams.delete(props.name);
+    setSearchParams(searchParams);
   };
 
   useEffect(() => {

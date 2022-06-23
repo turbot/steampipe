@@ -3,13 +3,14 @@ import Select, {
   OptionProps,
   SingleValueProps,
 } from "react-select";
+import usePrevious from "../../../../hooks/usePrevious";
 import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
-import { DashboardActions } from "../../../../types/dashboard";
 import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../index";
 import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 export interface SelectOption {
   label: string;
@@ -99,7 +100,8 @@ const findOptions = (options, multi, value) => {
 };
 
 const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
-  const { dataMode, dispatch, inputs } = useDashboardNew();
+  const { dataMode, inputs } = useDashboardNew();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
@@ -142,10 +144,14 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
 
   const stateValue = inputs[name];
 
+  const previousInputStates = usePrevious({
+    stateValue,
+  });
+
   // Bind the selected option to the reducer state
   useEffect(() => {
     // If we haven't got the data we need yet...
-    if (!options || options.length === 0) {
+    if (!options || options.length === 0 || initialisedFromState) {
       return;
     }
 
@@ -162,15 +168,16 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       !stateValue &&
       !properties.placeholder
     ) {
+      console.log("Initialising with first value");
       setInitialisedFromState(true);
       setValue(multi ? [options[0]] : options[0]);
-      dispatch({
-        type: DashboardActions.SET_DASHBOARD_INPUT,
+      searchParams.set(
         name,
-        value: getValueForState(multi, multi ? [options[0]] : options[0]),
-        recordInputsHistory: false,
-      });
+        getValueForState(multi, multi ? [options[0]] : options[0])
+      );
+      setSearchParams(searchParams, { replace: true });
     } else if (initialisedFromState && stateValue) {
+      console.log("Updating from state value");
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
       setValue(foundOptions || null);
@@ -178,13 +185,49 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       setValue(null);
     }
   }, [
-    dispatch,
     initialisedFromState,
     multi,
     name,
     options,
     properties.placeholder,
+    searchParams,
     stateValue,
+    setSearchParams,
+  ]);
+
+  useEffect(() => {
+    if (!initialisedFromState || !previousInputStates) {
+      return;
+    }
+
+    if (
+      previousInputStates &&
+      // @ts-ignore
+      previousInputStates.stateValue !== stateValue &&
+      // @ts-ignore
+      stateValue !== value.value
+    ) {
+      console.log("Updating with value from state");
+      const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
+      const foundOptions = findOptions(options, multi, parsedUrlValue);
+      setValue(foundOptions || null);
+      return;
+    }
+
+    // @ts-ignore
+    if (previousInputStates.stateValue && !stateValue && value) {
+      console.log("Clearing as value from state cleared");
+      setValue(null);
+    }
+  }, [
+    initialisedFromState,
+    options,
+    multi,
+    previousInputStates,
+    searchParams,
+    setSearchParams,
+    stateValue,
+    value,
   ]);
 
   useEffect(() => {
@@ -194,21 +237,14 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
 
     // @ts-ignore
     if (!value || value.length === 0) {
-      dispatch({
-        type: DashboardActions.DELETE_DASHBOARD_INPUT,
-        name,
-        recordInputsHistory: true,
-      });
+      searchParams.delete(name);
+      setSearchParams(searchParams);
       return;
     }
 
-    dispatch({
-      type: DashboardActions.SET_DASHBOARD_INPUT,
-      name,
-      value: getValueForState(multi, value),
-      recordInputsHistory: true,
-    });
-  }, [dispatch, initialisedFromState, multi, name, value]);
+    searchParams.set(name, getValueForState(multi, value));
+    setSearchParams(searchParams);
+  }, [initialisedFromState, multi, name, searchParams, setSearchParams, value]);
 
   const styles = useSelectInputStyles();
 

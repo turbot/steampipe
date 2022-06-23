@@ -287,7 +287,7 @@ const useDashboardState = (
 ) => {
   const navigate = useNavigate();
   const [dashboardState, dispatch] = useReducer(
-    (action, state) => dashboardReducer(action, state, { dataMode }),
+    (action, state) => dashboardReducer(action, state, { dataMode, inputs }),
     getInitialDashboardState()
   );
   const { dashboard_name } = useParams();
@@ -319,7 +319,6 @@ const useDashboardState = (
       dispatch({
         type: DashboardActions.SELECT_DASHBOARD,
         dashboard: null,
-        recordInputsHistory: false,
       });
       return;
     }

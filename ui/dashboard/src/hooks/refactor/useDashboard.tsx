@@ -90,10 +90,26 @@ const DashboardProviderNew = ({
       socketReady,
       sendSocketMessage
     );
-  const dispatchDashboardAction = useCallback((action) => {
-    console.log(action.type, action);
-    dispatchDashboardActionInner(action);
-  }, []);
+  const dispatchDashboardAction = useCallback(
+    (action) => {
+      console.log(action.type, action);
+      switch (action.type) {
+        case DashboardActions.INPUT_VALUES_CLEARED:
+          // We're not expecting execution events for this ID
+          if (action.execution_id !== dashboardState.execution_id) {
+            return;
+          }
+          for (const input of action.cleared_inputs || []) {
+            searchParams.delete(input);
+          }
+          setSearchParams(searchParams);
+          break;
+        default:
+          dispatchDashboardActionInner(action);
+      }
+    },
+    [searchParams, setSearchParams]
+  );
 
   useDashboardPageTitle(dashboardState.selectedDashboard);
 
