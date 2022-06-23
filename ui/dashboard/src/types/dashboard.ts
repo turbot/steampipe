@@ -30,7 +30,6 @@ export const DashboardActions: IActions = {
   SELECT_SNAPSHOT: "select_snapshot",
   SET_DASHBOARD: "set_dashboard",
   SET_DASHBOARD_INPUT: "set_dashboard_input",
-  SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
   SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
   SET_DATA_MODE: "set_data_mode",
   SET_REFETCH_DASHBOARD: "set_refetch_dashboard",

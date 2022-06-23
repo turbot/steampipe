@@ -347,12 +347,6 @@ const useDashboardState = (
         (dashboard) => dashboard.full_name === dashboard_name
       );
       dispatch({ type: DashboardActions.SELECT_DASHBOARD, dashboard });
-      // const value = buildSelectedDashboardInputsFromSearchParams(searchParams);
-      // dispatch({
-      //   type: DashboardActions.SET_DASHBOARD_INPUTS,
-      //   value,
-      //   recordInputsHistory: false,
-      // });
     }
   }, [
     dashboard_name,
