@@ -88,7 +88,9 @@ const DashboardProviderNew = ({
       dataMode,
       analyticsContext,
       socketReady,
-      sendSocketMessage
+      sendSocketMessage,
+      searchParams,
+      setSearchParams
     );
   const dispatchDashboardAction = useCallback(
     (action) => {
@@ -102,7 +104,7 @@ const DashboardProviderNew = ({
           for (const input of action.cleared_inputs || []) {
             searchParams.delete(input);
           }
-          setSearchParams(searchParams);
+          setSearchParams(searchParams, { replace: true });
           break;
         default:
           dispatchDashboardActionInner(action);

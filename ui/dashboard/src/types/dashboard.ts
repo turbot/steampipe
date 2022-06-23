@@ -13,7 +13,6 @@ export interface IActions {
 
 export const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
-  CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
   CLEAR_SNAPSHOT: "clear_snapshot",
   CONTROL_COMPLETE: "control_complete",
   CONTROL_ERROR: "control_error",

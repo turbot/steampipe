@@ -19,7 +19,7 @@ import {
 } from "../../utils/dashboard";
 import { SocketActions } from "../../types/webSocket";
 import { useEffect, useReducer } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { URLSearchParamsInit, useNavigate, useParams } from "react-router-dom";
 
 const buildDashboards = (
   dashboards: AvailableDashboardsDictionary,
@@ -283,7 +283,17 @@ const useDashboardState = (
   dataMode: DashboardDataMode,
   analyticsContext: any,
   socketReady: boolean,
-  sendSocketMessage: (message: any) => void
+  sendSocketMessage: (message: any) => void,
+  searchParams: URLSearchParams,
+  setSearchParams: (
+    nextInit: URLSearchParamsInit,
+    navigateOptions?:
+      | {
+          replace?: boolean | undefined;
+          state?: any;
+        }
+      | undefined
+  ) => void
 ) => {
   const navigate = useNavigate();
   const [dashboardState, dispatch] = useReducer(
@@ -312,10 +322,14 @@ const useDashboardState = (
     // If we've got no dashboard selected in the URL, but we've got one selected in state,
     // then clear both the inputs and the selected dashboard in state
     if (!dashboard_name && dashboardState.selectedDashboard) {
-      // dispatch({
-      //   type: DashboardActions.CLEAR_DASHBOARD_INPUTS,
-      //   recordInputsHistory: false,
-      // });
+      const searchKeys = searchParams.keys();
+      for (const key of searchKeys) {
+        if (!key.startsWith("input.")) {
+          continue;
+        }
+        searchParams.delete(key);
+      }
+      setSearchParams(searchParams, { replace: true });
       dispatch({
         type: DashboardActions.SELECT_DASHBOARD,
         dashboard: null,
@@ -353,6 +367,8 @@ const useDashboardState = (
     dashboardState.dashboards,
     dataMode,
     dashboardState.selectedDashboard,
+    searchParams,
+    setSearchParams,
   ]);
 
   useEffect(() => {

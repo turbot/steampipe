@@ -103,6 +103,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   const { dataMode, inputs } = useDashboardNew();
   const [searchParams, setSearchParams] = useSearchParams();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
+  const [recordLastChange, setRecordLastChange] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
     null
   );
@@ -146,6 +147,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
 
   const previousInputStates = usePrevious({
     stateValue,
+    value,
   });
 
   // Bind the selected option to the reducer state
@@ -156,33 +158,22 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     }
 
     // If this is first load and we have a value from state, initialise it
-    if (!initialisedFromState && stateValue) {
+    if (stateValue) {
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
       setValue(foundOptions || null);
       setInitialisedFromState(true);
-    } else if (!initialisedFromState && !stateValue && properties.placeholder) {
+    } else if (!stateValue && properties.placeholder) {
       setInitialisedFromState(true);
-    } else if (
-      !initialisedFromState &&
-      !stateValue &&
-      !properties.placeholder
-    ) {
+    } else if (!stateValue && !properties.placeholder) {
       console.log("Initialising with first value");
-      setInitialisedFromState(true);
       setValue(multi ? [options[0]] : options[0]);
       searchParams.set(
         name,
         getValueForState(multi, multi ? [options[0]] : options[0])
       );
       setSearchParams(searchParams, { replace: true });
-    } else if (initialisedFromState && stateValue) {
-      console.log("Updating from state value");
-      const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-      const foundOptions = findOptions(options, multi, parsedUrlValue);
-      setValue(foundOptions || null);
-    } else if (initialisedFromState && !stateValue) {
-      setValue(null);
+      setInitialisedFromState(true);
     }
   }, [
     initialisedFromState,
@@ -203,21 +194,29 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     if (
       previousInputStates &&
       // @ts-ignore
-      previousInputStates.stateValue !== stateValue &&
+      previousInputStates.stateValue &&
       // @ts-ignore
-      stateValue !== value.value
+      previousInputStates.stateValue !== stateValue &&
+      value
     ) {
       console.log("Updating with value from state");
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
       setValue(foundOptions || null);
+      setRecordLastChange(false);
       return;
     }
 
-    // @ts-ignore
-    if (previousInputStates.stateValue && !stateValue && value) {
+    if (
+      previousInputStates &&
+      // @ts-ignore
+      previousInputStates.stateValue &&
+      !stateValue &&
+      value
+    ) {
       console.log("Clearing as value from state cleared");
       setValue(null);
+      setRecordLastChange(false);
     }
   }, [
     initialisedFromState,
@@ -235,16 +234,39 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       return;
     }
 
-    // @ts-ignore
-    if (!value || value.length === 0) {
+    if (
+      !value ||
+      // @ts-ignore
+      value.length === 0
+    ) {
+      if (recordLastChange) {
+        console.log("Recording history for state");
+      }
       searchParams.delete(name);
-      setSearchParams(searchParams);
+      setSearchParams(searchParams, { replace: !recordLastChange });
+      setRecordLastChange(false);
       return;
     }
 
-    searchParams.set(name, getValueForState(multi, value));
-    setSearchParams(searchParams);
-  }, [initialisedFromState, multi, name, searchParams, setSearchParams, value]);
+    if (recordLastChange) {
+      console.log("Recording history for state", {
+        previousInputStates,
+        stateValue,
+        value,
+      });
+      searchParams.set(name, getValueForState(multi, value));
+      setSearchParams(searchParams);
+      setRecordLastChange(false);
+    }
+  }, [
+    initialisedFromState,
+    multi,
+    name,
+    previousInputStates,
+    searchParams,
+    setSearchParams,
+    value,
+  ]);
 
   const styles = useSelectInputStyles();
 
@@ -285,8 +307,11 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         isMulti={multi}
         // menuIsOpen
         name={name}
-        // @ts-ignore
-        onChange={(value) => setValue(value)}
+        onChange={(value) => {
+          setRecordLastChange(true);
+          // @ts-ignore
+          setValue(value);
+        }}
         options={options}
         placeholder={
           properties && properties.placeholder ? properties.placeholder : null
