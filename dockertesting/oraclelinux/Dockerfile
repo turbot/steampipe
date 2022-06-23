@@ -1,21 +1,21 @@
-FROM debian:buster-slim
+FROM oraclelinux:8-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
 # add a non-root 'steampipe' user
-RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
+RUN adduser --system --shell /bin/false --uid 9193 --gid 0 --create-home steampipe
 
-# updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' interactive mode,
-# and others for running acceptance tests
-RUN apt-get update -y && apt-get install -y sudo wget git jq sed vim curl bc less
+# updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' 
+# interactive mode, and others for running acceptance tests
+RUN microdnf update -y && microdnf upgrade -y && microdnf install -y sudo findutils wget git jq sed vim curl bc less
 
 # copy steampipe binary from local folder
-COPY steampipe /usr/local/bin/
+COPY steampipe /usr/bin/
 
 # Use a constant workspace directory that can be mounted to
 WORKDIR /workspace
 
 # change the owner of the /workspace directory
-RUN chown steampipe:0 /workspace
+RUN chown steampipe /workspace
 
 # Change user to non-root
 USER steampipe:0
@@ -32,5 +32,5 @@ EXPOSE 9193
 # expose dashboard service default port
 EXPOSE 9194
 
-COPY run-tests.sh /usr/local/bin
+COPY run-tests.sh /usr/bin
 ENTRYPOINT [ "run-tests.sh" ]
