@@ -3,8 +3,8 @@
 # chown steampipe:0 /home/steampipe/.steampipe/db/14.2.0/data/
 
 steampipe -v
-sudo chown -R $USER /workspace
 pwd
+cat /etc/sudoers
 sudo git clone https://github.com/turbot/steampipe.git
 ls -al
 cd steampipe
