@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -32,14 +33,16 @@ type PluginManager struct {
 	mut              sync.Mutex
 	connectionConfig map[string]*pb.ConnectionConfig
 	logger           hclog.Logger
+	cacheManager     *CacheManager
 }
 
 func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger hclog.Logger) *PluginManager {
 	pluginManager := &PluginManager{
+		Plugins:          make(map[string]*runningPlugin),
 		logger:           logger,
 		connectionConfig: connectionConfig,
-		Plugins:          make(map[string]*runningPlugin),
 	}
+	pluginManager.cacheManager = NewCacheManager(pluginManager)
 	return pluginManager
 }
 
@@ -176,6 +179,9 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 	reattach := m.storeClientToMap(connection, client)
 	log.Printf("[TRACE] PluginManager getPlugin complete, returning reattach config with PID: %d", reattach.Pid)
 
+	// open the cache stream
+	m.cacheManager.AddConnection(client, connection)
+
 	// and return
 	return reattach, nil
 }
@@ -213,6 +219,7 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.Connecti
 
 func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
 	log.Printf("[TRACE] PluginManager Shutdown %v", m.Plugins)
+	debug.PrintStack()
 
 	m.mut.Lock()
 	defer func() {
@@ -271,6 +278,7 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, error) {
 	if _, err := client.Start(); err != nil {
 		return nil, err
 	}
+
 	return client, nil
 }
 
