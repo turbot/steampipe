@@ -26,6 +26,7 @@ jobs:
       - name: run a container using the image
         run: |
           a=`docker images -q sp`
+          echo "${a}"
           docker run -it --name steampipe-test "${a}"
 
       # - name: Setup BATS
