@@ -14,14 +14,14 @@ RUN apt-get update -y && apt-get install -y sudo wget git jq sed vim curl less
 # copy steampipe binary from local folder
 COPY steampipe /usr/local/bin/
 
+# Use a constant workspace directory that can be mounted to
+WORKDIR /workspace
+
 # change the owner of the /workspace directory
 RUN chown steampipe:0 /workspace
 
 # Change user to non-root
 USER steampipe:0
-
-# Use a constant workspace directory that can be mounted to
-WORKDIR /workspace
 
 # disable auto-update
 ENV STEAMPIPE_UPDATE_CHECK=false
