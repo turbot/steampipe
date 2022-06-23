@@ -25,7 +25,8 @@ jobs:
 
       - name: run a container using the image
         run: |
-          docker run -it --name steampipe-test-2 `docker images -q sp`
+          a=`docker images -q sp`
+          docker run -it --name steampipe-test "${a}"
 
       # - name: Setup BATS
       #   uses: mig4/setup-bats@v1
