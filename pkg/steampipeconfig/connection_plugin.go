@@ -230,7 +230,7 @@ func getPluginManager() (pluginshared.PluginManager, error) {
 
 // use the reattach config to create a PluginClient for the plugin
 func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string) (*sdkgrpc.PluginClient, error) {
-	return sdkgrpc.NewPluginClient(reattach, pluginName)
+	return sdkgrpc.NewPluginClientFromReattach(reattach, pluginName)
 }
 
 // function used for debugging the plugin manager
