@@ -144,16 +144,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   const stateValue = inputs[name];
 
   useEffect(() => {
-    console.log({
-      name,
-      multi,
-      options,
-      placeholder: properties.placeholder,
-      stateValue,
-    });
-
     if (!stateValue && !properties.placeholder && options.length) {
-      console.log("Need to choose first", name);
       setValue(multi ? [options[0]] : options[0]);
       dispatch({
         type: DashboardActions.SET_LAST_CHANGED_INPUT,
@@ -165,7 +156,6 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       );
       setSearchParams(searchParams, { replace: true });
     } else if (stateValue && options.length) {
-      console.log("Setting from state", name);
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
       setValue(foundOptions || null);
