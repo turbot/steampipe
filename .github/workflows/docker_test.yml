@@ -20,7 +20,7 @@ jobs:
 
       - name: build an image
         run: |
-          docker build -t sp dockerfiles
+          docker build -t sp dockertesting/debian
           docker images
 
       - name: run test suite in a container

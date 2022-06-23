@@ -160,16 +160,16 @@ jobs:
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Copy binary
+      - name: Copy binary(Debian)
         run: |
-          cp ~/build/steampipe dockerfiles/
+          cp ~/build/steampipe dockertesting/debian
       
-      - name: Build steampipe docker image
+      - name: Build steampipe docker image(Debian)
         run: |
-          docker build -t sp dockerfiles
+          docker build -t sp dockertesting/debian
           docker images
 
-      - name: Create a container and run the test suite
+      - name: Create a container and run the test suite(Debian)
         run: |
           docker run --name steampipe-test `docker images -q sp`
 
