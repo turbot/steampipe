@@ -162,13 +162,16 @@ jobs:
 
       - name: Copy binary
         run: |
-          pwd
           cp ~/build/steampipe dockerfiles/
       
-      - name: Build a docker image
+      - name: Build steampipe docker image
         run: |
           docker build -t sp dockerfiles
           docker images
+
+      - name: Create a container and run the test suite
+        run: |
+          docker run --name steampipe-test `docker images -q sp`
 
   create_release_tag:
     name: Tag Release
