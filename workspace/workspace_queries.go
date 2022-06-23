@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/steampipeconfig/modconfig"
@@ -180,8 +181,14 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	return string(fileBytes), true, nil
 }
 
-// does this resource name look like a control or query
-func isNamedQueryOrControl(name string) bool {
-	parsedResourceName, err := modconfig.ParseResourceName(name)
+// does the input look like a named control or query
+func isNamedQueryOrControl(input string) bool {
+	// remove parameters from the input string before calling ParseResourceName
+	// as parameters may break parsing
+	openBracketIdx := strings.Index(input, "(")
+	if openBracketIdx != -1 {
+		input = input[:openBracketIdx]
+	}
+	parsedResourceName, err := modconfig.ParseResourceName(input)
 	return err == nil && (parsedResourceName.ItemType == "query" || parsedResourceName.ItemType == "control")
 }
