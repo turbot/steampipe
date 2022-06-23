@@ -134,39 +134,15 @@ jobs:
   #         $GITHUB_WORKSPACE/tests/acceptance/run.sh
   #         steampipe service stop --force
 
-  docker_acceptance_test:
+  acceptance_test:
     name: Acceptance tests(Docker)
     needs: goreleaser
-    strategy:
-      matrix:
-        containers: ["ubuntu:latest"]
-    container: ${{ matrix.containers }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.branch }}
-
-      - name: APT upgrade & install git
-        run: |
-          apt update -y
-          apt upgrade -y
-          apt install -y git sudo wget curl jq vim
-          ls /__w/steampipe/steampipe
-          pwd
-
-      - name: Checkout submodules
-        run: |
-          git init
-          git config --global --add safe.directory /__w/steampipe/steampipe
-          git submodule update --init
-          git submodule update --recursive
-
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
 
       - name: Prepare for downloads
         id: prepare-for-downloads
@@ -184,23 +160,17 @@ jobs:
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Set PATH
+      - name: Copy binary
         run: |
-          echo "PATH=/github/home/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
-
-      - name: Install DB
+          cp ~/build/steampipe ~/workspace/steampipe/dockerfiles/
+          ls
+          ls ~/workspace/steampipe/dockerfiles/
+          pwd
+      
+      - name: Build a docker image
         run: |
-          cp /github/home/build/steampipe /usr/local/bin
-          steampipe service start
-          steampipe plugin install chaos
-          steampipe service stop --force
-
-      - name: Run Test Suite
-        timeout-minutes: 5
-        run: |
-          chmod +x /__w/steampipe/steampipe/tests/acceptance/run.sh
-          /__w/steampipe/steampipe/tests/acceptance/run.sh
-          steampipe service stop --force
+          docker build -t sp dockerfiles
+          docker images
 
   create_release_tag:
     name: Tag Release
