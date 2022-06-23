@@ -3,10 +3,9 @@
 # chown steampipe:0 /home/steampipe/.steampipe/db/14.2.0/data/
 
 steampipe -v
-ls -al
-pwd
-whoami
+sudo chown -R $USER /workspace
 git clone https://github.com/turbot/steampipe.git
+ls -al
 cd steampipe
 git init
 git submodule update --init
