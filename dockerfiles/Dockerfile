@@ -5,7 +5,7 @@ LABEL maintainer="Turbot Support <help@turbot.com>"
 RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
 
 # updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' interactive mode
-RUN apt-get update -y && apt-get install -y sudo wget git jq sed vim curl less
+RUN apt-get update -y && apt-get install -y sudo wget git jq sed vim curl bc less
 
 # copy steampipe binary from local folder
 COPY steampipe /usr/local/bin/
