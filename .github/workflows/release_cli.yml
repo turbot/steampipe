@@ -134,7 +134,7 @@ jobs:
   #         $GITHUB_WORKSPACE/tests/acceptance/run.sh
   #         steampipe service stop --force
 
-  acceptance_test:
+  docker_acceptance_test:
     name: Acceptance tests(Docker)
     needs: goreleaser
     runs-on: ubuntu-latest
