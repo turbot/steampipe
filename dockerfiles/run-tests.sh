@@ -5,6 +5,7 @@
 steampipe -v
 ls -al
 pwd
+whoami
 git clone https://github.com/turbot/steampipe.git
 cd steampipe
 git init
