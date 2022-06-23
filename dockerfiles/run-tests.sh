@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-chown steampipe:0 /home/steampipe/.steampipe/db/14.2.0/data/
+# chown steampipe:0 /home/steampipe/.steampipe/db/14.2.0/data/
 
 steampipe -v
 git clone https://github.com/turbot/steampipe.git
