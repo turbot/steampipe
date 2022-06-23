@@ -23,10 +23,9 @@ jobs:
           docker build -t sp dockerfiles
           docker images
 
-      - name: get the id and run a container
+      - name: run a container using the image
         run: |
-          id=${docker images sp --format "{{.ID}}"}
-          echo $id
+          docker run -it --name steampipe-test-2 `docker images -q sp`
 
       # - name: Setup BATS
       #   uses: mig4/setup-bats@v1
