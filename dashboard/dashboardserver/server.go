@@ -216,7 +216,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		}
 
 		// If) any deleted/new/changed dashboards, emit an available dashboards message to clients
-		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 {
+		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 || len(changedBenchmarks) != 0 {
 			OutputMessage(s.context, "Available Dashboards updated")
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if payloadError != nil {
