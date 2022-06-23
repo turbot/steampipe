@@ -3,9 +3,10 @@ import { IInput, InputProps } from "../index";
 import { useDashboardNew } from "../../../../hooks/refactor/useDashboard";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { DashboardActions } from "../../../../types/dashboard";
 
 const TextInput = (props: InputProps) => {
-  const { dataMode, inputs } = useDashboardNew();
+  const { dataMode, dispatch, inputs } = useDashboardNew();
   const [searchParams, setSearchParams] = useSearchParams();
   const stateValue = inputs[props.name];
   const [value, setValue] = useState<string>(() => {
@@ -20,6 +21,10 @@ const TextInput = (props: InputProps) => {
 
   const submit = () => {
     setIsDirty(false);
+    dispatch({
+      type: DashboardActions.SET_LAST_CHANGED_INPUT,
+      name: props.name,
+    });
     if (value) {
       searchParams.set(props.name, value);
       setSearchParams(searchParams, { replace: !stateValue });

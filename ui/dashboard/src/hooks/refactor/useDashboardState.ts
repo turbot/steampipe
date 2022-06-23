@@ -258,6 +258,8 @@ const dashboardReducer = (state, action, context) => {
         progress: calculateProgress(panelsMap),
       };
     }
+    case DashboardActions.SET_LAST_CHANGED_INPUT:
+      return { ...state, lastChangedInput: action.name };
     case DashboardActions.WORKSPACE_ERROR:
       return { ...state, error: action.error };
     default:
@@ -439,7 +441,7 @@ const useDashboardState = (
           dashboard: {
             full_name: dashboardState.selectedDashboard.full_name,
           },
-          // changed_input: state.lastChangedInput,
+          changed_input: dashboardState.lastChangedInput,
           input_values: inputs,
         },
       });

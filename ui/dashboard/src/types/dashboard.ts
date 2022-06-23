@@ -29,6 +29,7 @@ export const DashboardActions: IActions = {
   SET_DASHBOARD: "set_dashboard",
   SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
   SET_DATA_MODE: "set_data_mode",
+  SET_LAST_CHANGED_INPUT: "set_last_changed_input",
   SET_REFETCH_DASHBOARD: "set_refetch_dashboard",
   SET_SNAPSHOT: "set_snapshot",
   WORKSPACE_ERROR: "workspace_error",
