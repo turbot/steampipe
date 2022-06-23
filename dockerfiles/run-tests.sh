@@ -4,7 +4,8 @@
 
 steampipe -v
 sudo chown -R $USER /workspace
-git clone https://github.com/turbot/steampipe.git
+pwd
+sudo git clone https://github.com/turbot/steampipe.git
 ls -al
 cd steampipe
 git init
