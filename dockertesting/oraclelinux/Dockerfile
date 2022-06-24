@@ -6,7 +6,7 @@ RUN adduser --system --shell /bin/false --uid 9193 --gid 0 --create-home steampi
 
 # updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' 
 # interactive mode, and others for running acceptance tests
-RUN microdnf update -y && microdnf upgrade -y && microdnf install -y sudo findutils wget git jq sed vim curl bc less
+RUN microdnf update -y && microdnf upgrade -y && microdnf install -y sudo findutils wget git jq sed vim curl bc tar less
 
 # copy steampipe binary from local folder
 COPY steampipe /usr/bin/
