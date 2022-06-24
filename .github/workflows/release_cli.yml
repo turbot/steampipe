@@ -160,18 +160,24 @@ jobs:
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Copy binary(Debian)
+      - name: Copy binary(Debian & Oracle linux)
         run: |
           cp ~/build/steampipe dockertesting/debian
+          cp ~/build/steampipe dockertesting/oraclelinux
       
-      - name: Build steampipe docker image(Debian)
+      - name: Build steampipe docker images(Debian & Oracle linux)
         run: |
-          docker build -t sp dockertesting/debian
+          docker build -t spdebian dockertesting/debian
+          docker build -t sporacle dockertesting/oraclelinux
           docker images
 
       - name: Create a container and run the test suite(Debian)
         run: |
-          docker run --name steampipe-test `docker images -q sp`
+          docker run --name steampipe-deb `docker images -q spdebian`
+
+      - name: Create a container and run the test suite(Oracle Linux)
+        run: |
+          docker run --name steampipe-oracle `docker images -q sporacle`
 
   create_release_tag:
     name: Tag Release
