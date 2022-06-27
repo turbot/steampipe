@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/filepaths"
-	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const maxSchemaNameLength = 63

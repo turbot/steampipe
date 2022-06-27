@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v3/grpc/shared"
+	"github.com/turbot/steampipe/pkg/utils"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
-	"github.com/turbot/steampipe/utils"
 )
 
 type runningPlugin struct {

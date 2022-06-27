@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/turbot/steampipe/dashboard/dashboardserver"
-	"github.com/turbot/steampipe/statushooks"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/statushooks"
 
 	"os"
 	"os/signal"
@@ -17,12 +17,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/db/db_local"
-	"github.com/turbot/steampipe/display"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
-	"github.com/turbot/steampipe/utils"
 )
 
 func serviceCmd() *cobra.Command {

@@ -6,20 +6,20 @@ import (
 	"log"
 	"os"
 
-	"github.com/turbot/steampipe/statushooks"
-	"github.com/turbot/steampipe/workspace"
+	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/workspace"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/contexthelpers"
-	"github.com/turbot/steampipe/dashboard"
-	"github.com/turbot/steampipe/dashboard/dashboardassets"
-	"github.com/turbot/steampipe/dashboard/dashboardserver"
-	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
+	"github.com/turbot/steampipe/pkg/dashboard"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func dashboardCmd() *cobra.Command {

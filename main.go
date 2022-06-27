@@ -11,8 +11,8 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/utils"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 var exitCode int
