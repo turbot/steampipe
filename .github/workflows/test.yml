@@ -38,7 +38,7 @@ jobs:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
-       Cache go mod cache, used to speedup builds
+      # Cache go mod cache, used to speedup builds
       - name: Go Mod Cache
         id: mod-cache
         uses: actions/cache@v3
