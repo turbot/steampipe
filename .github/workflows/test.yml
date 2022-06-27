@@ -31,12 +31,12 @@ jobs:
           echo "::set-output name=go-mod::$(go env GOMODCACHE)"
 
       # used to speedup go test
-      - name: Go Build Cache
-        id: build-cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+#      - name: Go Build Cache
+#        id: build-cache
+#        uses: actions/cache@v3
+#        with:
+#          path: ${{ steps.go-cache-paths.outputs.go-build }}
+#          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
       # Cache go mod cache, used to speedup builds
 #      - name: Go Mod Cache
