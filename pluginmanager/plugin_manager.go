@@ -33,17 +33,21 @@ type PluginManager struct {
 	mut              sync.Mutex
 	connectionConfig map[string]*pb.ConnectionConfig
 	logger           hclog.Logger
-	cacheManager     *CacheManager
+	cacheManager     *CacheServer
 }
 
-func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger hclog.Logger) *PluginManager {
+func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
 	pluginManager := &PluginManager{
 		Plugins:          make(map[string]*runningPlugin),
 		logger:           logger,
 		connectionConfig: connectionConfig,
 	}
-	pluginManager.cacheManager = NewCacheManager(pluginManager)
-	return pluginManager
+	cacheManager, err := NewCacheServer(pluginManager)
+	if err != nil {
+		return nil, err
+	}
+	pluginManager.cacheManager = cacheManager
+	return pluginManager, nil
 }
 
 // plugin interface functions
