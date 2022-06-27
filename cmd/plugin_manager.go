@@ -47,7 +47,11 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
-	pluginManager := pluginmanager.NewPluginManager(configMap, logger)
+	pluginManager, err := pluginmanager.NewPluginManager(configMap, logger)
+	if err != nil {
+		log.Printf("[WARN] failed to create plugin manager: %s", err.Error())
+		os.Exit(1)
+	}
 
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
