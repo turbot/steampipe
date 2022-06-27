@@ -14,6 +14,7 @@ type schemaRecord struct {
 	TableSchema       string
 	TableName         string
 	ColumnName        string
+	UdtName           string
 	ColumnDefault     string
 	IsNullable        string
 	DataType          string
@@ -21,9 +22,13 @@ type schemaRecord struct {
 	TableDescription  string
 }
 
-func BuildSchemaMetadata(rows *sql.Rows) (*schema.Metadata, error) {
+func BuildSchemaMetadata(rows *sql.Rows) (_ *schema.Metadata, err error) {
 	utils.LogTime("db.buildSchemaMetadata start")
-	defer utils.LogTime("db.buildSchemaMetadata end")
+	defer func() {
+		utils.LogTime("db.buildSchemaMetadata end")
+		// ensure rows are closed
+		rows.Close()
+	}()
 
 	records, err := getSchemaRecordsFromRows(rows)
 	if err != nil {
@@ -68,10 +73,10 @@ func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
 	utils.LogTime("db.getSchemaRecordsFromRows start")
 	defer utils.LogTime("db.getSchemaRecordsFromRows end")
 
-	records := []schemaRecord{}
+	var records []schemaRecord
 
 	// set this to the number of cols that are getting fetched
-	numCols := 8
+	numCols := 9
 
 	rawResult := make([][]byte, numCols)
 	dest := make([]interface{}, numCols) // A temporary interface{} slice
@@ -80,7 +85,6 @@ func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
 	}
 
 	for rows.Next() {
-
 		err := rows.Scan(dest...)
 		if err != nil {
 			return nil, err
@@ -92,11 +96,15 @@ func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
 			ColumnDefault:     string(rawResult[2]),
 			IsNullable:        string(rawResult[3]),
 			DataType:          string(rawResult[4]),
-			TableSchema:       string(rawResult[5]),
-			ColumnDescription: string(rawResult[6]),
-			TableDescription:  string(rawResult[7]),
+			UdtName:           string(rawResult[5]),
+			TableSchema:       string(rawResult[6]),
+			ColumnDescription: string(rawResult[7]),
+			TableDescription:  string(rawResult[8]),
 		}
-
+		// for ltree data type, we need to use UdtName
+		if t.DataType == "USER-DEFINED" {
+			t.DataType = t.UdtName
+		}
 		records = append(records, t)
 	}
 
