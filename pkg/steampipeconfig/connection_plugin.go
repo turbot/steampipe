@@ -253,5 +253,5 @@ func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
 			Config:          v.Config,
 		}
 	}
-	return pluginmanager.NewPluginManager(configMap, logger), nil
+	return pluginmanager.NewPluginManager(configMap, logger)
 }
