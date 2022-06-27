@@ -13,13 +13,13 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/connectionwatcher"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/filepaths"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/connectionwatcher"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
-	"github.com/turbot/steampipe/steampipeconfig"
-	"github.com/turbot/steampipe/utils"
 )
 
 func pluginManagerCmd() *cobra.Command {
