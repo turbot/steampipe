@@ -2,49 +2,44 @@ package pluginmanager
 
 import (
 	"context"
-	"io"
-	"log"
-	"time"
-
+	"github.com/allegro/bigcache/v3"
 	"github.com/eko/gocache/v3/cache"
 	"github.com/eko/gocache/v3/store"
 	"github.com/hashicorp/go-plugin"
-	gocache "github.com/patrickmn/go-cache"
-	sdkcache "github.com/turbot/steampipe-plugin-sdk/v3/cache"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
-	"github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
+	"google.golang.org/protobuf/proto"
+	"io"
+	"log"
+	"time"
 )
 
 type CacheData interface {
-	*sdkcache.QueryCacheResult | *sdkcache.IndexBucket
+	proto.Message
+	*sdkproto.QueryResult | *sdkproto.IndexBucket
 }
 
 type CacheServer struct {
 	pluginManager *PluginManager
-	indexCache    *cache.Cache[*sdkcache.IndexBucket]
-	resultCache   *cache.Cache[*sdkcache.QueryCacheResult]
+	cache         *cache.Cache[[]byte]
 }
 
-func NewCacheServer(pluginManager *PluginManager) (*CacheServer, error) {
-	cacheStore, err := createCacheStore()
+func NewCacheServer(maxCacheStorageMb int, pluginManager *PluginManager) (*CacheServer, error) {
+	cacheStore, err := createCacheStore(maxCacheStorageMb)
 	if err != nil {
 		return nil, err
 	}
-	resultCache := cache.New[*sdkcache.QueryCacheResult](cacheStore)
-	indexCache := cache.New[*sdkcache.IndexBucket](cacheStore)
-
 	res := &CacheServer{
 		pluginManager: pluginManager,
-		resultCache:   resultCache,
-		indexCache:    indexCache,
+		cache:         cache.New[[]byte](cacheStore),
 	}
 	return res, nil
 }
 
-func createCacheStore() (store.StoreInterface, error) {
+func createCacheStore(maxCacheStorageMb int) (store.StoreInterface, error) {
 	//ristrettoCache, err := ristretto.NewCache(&ristretto.Config{
 	//	NumCounters: 1000,
-	//	MaxCost:     100,
+	//	MaxCost:     100000,
 	//	BufferItems: 64,
 	//})
 	//if err != nil {
@@ -52,9 +47,16 @@ func createCacheStore() (store.StoreInterface, error) {
 	//}
 	//ristrettoStore := store.NewRistretto(ristrettoCache)
 	//return ristrettoStore, nil
-	gocacheClient := gocache.New(5*time.Minute, 10*time.Minute)
-	return store.NewGoCache(gocacheClient), nil
 
+	//gocacheClient := gocache.New(5*time.Minute, 10*time.Minute)
+	//return store.NewGoCache(gocacheClient), nil
+
+	config := bigcache.DefaultConfig(5 * time.Minute)
+	config.HardMaxCacheSize = maxCacheStorageMb
+	bigcacheClient, _ := bigcache.NewBigCache(config)
+	bigcacheStore := store.NewBigcache(bigcacheClient)
+
+	return bigcacheStore, nil
 }
 
 func (m CacheServer) AddConnection(client *plugin.Client, connection string) error {
@@ -71,7 +73,7 @@ func (m CacheServer) AddConnection(client *plugin.Client, connection string) err
 	return nil
 }
 
-func (m *CacheServer) openCacheStream(rawClient *plugin.Client, connection string) (proto.WrapperPlugin_EstablishCacheConnectionClient, error) {
+func (m *CacheServer) openCacheStream(rawClient *plugin.Client, connection string) (sdkproto.WrapperPlugin_EstablishCacheConnectionClient, error) {
 	log.Printf("[TRACE] openCacheStream for connection '%s'", connection)
 
 	plugin := m.pluginManager.connectionConfig[connection].Plugin
@@ -93,7 +95,7 @@ func (m *CacheServer) openCacheStream(rawClient *plugin.Client, connection strin
 	return cacheStream, nil
 }
 
-func (m *CacheServer) runCacheListener(stream proto.WrapperPlugin_EstablishCacheConnectionClient, connection string) {
+func (m *CacheServer) runCacheListener(stream sdkproto.WrapperPlugin_EstablishCacheConnectionClient, connection string) {
 	defer stream.CloseSend()
 
 	log.Printf("[WARN] runCacheListener connection '%s'", connection)
@@ -110,9 +112,7 @@ func (m *CacheServer) runCacheListener(stream proto.WrapperPlugin_EstablishCache
 		if err := stream.Send(result); err != nil {
 			// TODO WHAT TO DO?
 			log.Printf("[ERROR] error sending cache result for connection '%s': %v", connection, err)
-
 		}
-
 	}
 }
 
@@ -130,68 +130,77 @@ func (m *CacheServer) logReceiveError(err error, connection string) {
 	}
 }
 
-func (m CacheServer) handleCacheRequest(ctx context.Context, request *proto.CacheRequest) *proto.CacheResult {
-
-	var res *proto.CacheResult
+func (m CacheServer) handleCacheRequest(ctx context.Context, request *sdkproto.CacheRequest) *sdkproto.CacheResult {
+	var res *sdkproto.CacheResult
 	switch request.Command {
-	case proto.CacheCommand_GET_RESULT:
+	case sdkproto.CacheCommand_GET_RESULT:
 		log.Printf("[WARN] GET RESULT")
-		res = doGet(ctx, request.Key, m.resultCache)
+		res = doGet[*sdkproto.QueryResult](ctx, request.Key, m.cache)
 
-	case proto.CacheCommand_SET_RESULT:
+	case sdkproto.CacheCommand_SET_RESULT:
 		log.Printf("[WARN] SET RESULT")
-		data := sdkcache.QueryCacheResultFromProto(request.Result)
-		res = doSet(ctx, request.Key, data, request.Cost, request.Ttl, m.resultCache)
+		res = doSet(ctx, request.Key, request.Result, request.Cost, request.Ttl, m.cache)
 
-	case proto.CacheCommand_DELETE_RESULT:
+	case sdkproto.CacheCommand_DELETE_RESULT, sdkproto.CacheCommand_DELETE_INDEX:
 		log.Printf("[WARN] DELETE RESULT")
-		res = doDelete(ctx, request.Key, m.resultCache)
+		res = doDelete(ctx, request.Key, m.cache)
 
-	case proto.CacheCommand_GET_INDEX:
+	case sdkproto.CacheCommand_GET_INDEX:
 		log.Printf("[WARN] GET INDEX")
-		res = doGet(ctx, request.Key, m.indexCache)
+		res = doGet[*sdkproto.IndexBucket](ctx, request.Key, m.cache)
 
-	case proto.CacheCommand_SET_INDEX:
+	case sdkproto.CacheCommand_SET_INDEX:
 		log.Printf("[WARN] SET INDEX")
-		data := sdkcache.IndexBucketfromProto(request.IndexBucket)
-		res = doSet(ctx, request.Key, data, request.Cost, request.Ttl, m.indexCache)
-
-	case proto.CacheCommand_DELETE_INDEX:
-		log.Printf("[WARN] DELETE INDEX")
-		res = doDelete(ctx, request.Key, m.indexCache)
+		res = doSet(ctx, request.Key, request.IndexBucket, request.Cost, request.Ttl, m.cache)
 	}
 	return res
 }
 
-func doGet[T CacheData](ctx context.Context, key string, cache *cache.Cache[T]) *proto.CacheResult {
+func doGet[T CacheData](ctx context.Context, key string, cache *cache.Cache[[]byte]) *sdkproto.CacheResult {
 	log.Printf("[WARN] doGet key %s", key)
-	res := &proto.CacheResult{
-		Success: true,
-	}
 
+	// get the bytes from the cache
 	getRes, err := cache.Get(ctx, key)
 	if err != nil {
-		res.Success = false
-		res.Error = err.Error()
-		return res
+		return &sdkproto.CacheResult{Error: err.Error()}
+	}
+	res := &sdkproto.CacheResult{
+		Success: true,
 	}
 
-	if queryResult, ok := any(getRes).(*sdkcache.QueryCacheResult); ok {
-		res.QueryResult = queryResult.AsProto()
-	} else if indexBucket, ok := any(getRes).(*sdkcache.IndexBucket); ok {
-		res.IndexBucket = indexBucket.AsProto()
+	// unmarshall into the correct type
+	var t T
+	if _, ok := any(t).(*sdkproto.QueryResult); ok {
+		target := &sdkproto.QueryResult{}
+		err = proto.Unmarshal(getRes, target)
+		res.QueryResult = target
+	} else if _, ok := any(t).(*sdkproto.IndexBucket); ok {
+		target := &sdkproto.IndexBucket{}
+		err = proto.Unmarshal(getRes, target)
+		res.IndexBucket = target
 	}
+	if err != nil {
+		return &sdkproto.CacheResult{Error: err.Error()}
+	}
+
 	return res
 }
-func doSet[T CacheData](ctx context.Context, key string, value T, cost int64, ttl int64, cache *cache.Cache[T]) *proto.CacheResult {
-	res := &proto.CacheResult{
+
+func doSet[T CacheData](ctx context.Context, key string, value T, cost int64, ttl int64, cache *cache.Cache[[]byte]) *sdkproto.CacheResult {
+	res := &sdkproto.CacheResult{
 		Success: true,
+	}
+
+	bytes, err := proto.Marshal(value)
+	if err != nil {
+		log.Printf("[WARN] marshal failed")
+		return &sdkproto.CacheResult{Error: err.Error()}
 	}
 
 	expiration := time.Duration(ttl) * time.Second
-	err := cache.Set(ctx,
+	err = cache.Set(ctx,
 		key,
-		value,
+		bytes,
 		store.WithCost(cost),
 		store.WithExpiration(expiration),
 	)
@@ -203,8 +212,8 @@ func doSet[T CacheData](ctx context.Context, key string, value T, cost int64, tt
 	return res
 }
 
-func doDelete[T CacheData](ctx context.Context, key string, cache *cache.Cache[T]) *proto.CacheResult {
-	res := &proto.CacheResult{
+func doDelete(ctx context.Context, key string, cache *cache.Cache[[]byte]) *sdkproto.CacheResult {
+	res := &sdkproto.CacheResult{
 		Success: true,
 	}
 	err := cache.Delete(ctx, key)
@@ -212,6 +221,5 @@ func doDelete[T CacheData](ctx context.Context, key string, cache *cache.Cache[T
 		res.Success = false
 		res.Error = err.Error()
 	}
-	return res
 	return res
 }
