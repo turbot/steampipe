@@ -2,6 +2,8 @@ package pluginmanager
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"os"
 	"os/exec"
@@ -42,7 +44,8 @@ func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger h
 		logger:           logger,
 		connectionConfig: connectionConfig,
 	}
-	cacheManager, err := NewCacheServer(pluginManager)
+	maxCacheStorageMb := viper.GetInt(constants.ArgMaxCacheSizeMb)
+	cacheManager, err := NewCacheServer(maxCacheStorageMb, pluginManager)
 	if err != nil {
 		return nil, err
 	}
