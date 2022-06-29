@@ -48,6 +48,7 @@ const (
 	ArgServiceMode         = "service-mode"
 	ArgBrowser             = "browser"
 	ArgInput               = "input"
+	ArgMaxCacheSizeMb      = "max-cache-size-mb"
 )
 
 /// metaquery mode arguments

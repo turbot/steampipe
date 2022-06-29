@@ -37,10 +37,11 @@ func SetViperDefaults(configMap map[string]interface{}) {
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
-		constants.ArgUpdateCheck:  true,
-		constants.ArgTelemetry:    constants.TelemetryInfo,
-		constants.ArgInstallDir:   filepaths.DefaultInstallDir,
-		constants.ArgDatabasePort: constants.DatabaseDefaultPort,
+		constants.ArgUpdateCheck:    true,
+		constants.ArgTelemetry:      constants.TelemetryInfo,
+		constants.ArgInstallDir:     filepaths.DefaultInstallDir,
+		constants.ArgDatabasePort:   constants.DatabaseDefaultPort,
+		constants.ArgMaxCacheSizeMb: constants.DefaultMaxCacheSizeMb,
 	}
 
 	for k, v := range defaults {
