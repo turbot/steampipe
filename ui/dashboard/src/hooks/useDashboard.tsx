@@ -305,11 +305,17 @@ interface DashboardsCollection {
   dashboardsMap: AvailableDashboardsDictionary;
 }
 
+export interface DashboardDataOptions {
+  dataMode: DashboardDataMode;
+  snapshotId?: string;
+}
+
 interface DashboardProviderProps {
   analyticsContext: any;
   breakpointContext: any;
   children: null | JSX.Element | JSX.Element[];
   componentOverrides?: {};
+  dataOptions?: DashboardDataOptions;
   eventHooks?: {};
   featureFlags?: string[];
   socketUrlFactory?: SocketURLFactory;
@@ -759,7 +765,7 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   return selectedDashboardInputs;
 };
 
-const getInitialState = (searchParams, defaults = {}) => {
+const getInitialState = (searchParams, defaults: any = {}) => {
   return {
     availableDashboardsLoaded: false,
     metadata: null,
@@ -767,13 +773,10 @@ const getInitialState = (searchParams, defaults = {}) => {
     dashboardTags: {
       keys: [],
     },
-    dataMode: searchParams.get("mode") || "live",
-    snapshotId: searchParams.has("snapshot_id")
-      ? searchParams.get("snapshot_id")
-      : null,
+    dataMode: defaults.dataMode || "live",
+    snapshotId: defaults.snapshotId ? defaults.snapshotId : null,
     refetchDashboard: false,
     error: null,
-
     panelsMap: {},
     dashboard: null,
     selectedPanel: null,
@@ -810,6 +813,9 @@ const DashboardProvider = ({
   breakpointContext,
   children,
   componentOverrides = {},
+  dataOptions = {
+    dataMode: "live",
+  },
   eventHooks,
   featureFlags = [],
   socketUrlFactory,
@@ -821,7 +827,7 @@ const DashboardProvider = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatchInner] = useReducer(
     reducer,
-    getInitialState(searchParams, stateDefaults)
+    getInitialState(searchParams, { ...stateDefaults, ...dataOptions })
   );
   const dispatch = useCallback((action) => {
     // console.log(action.type, action);
@@ -854,18 +860,6 @@ const DashboardProvider = ({
       selectedDashboardInputs: state.selectedDashboardInputs,
       selectedSnapshot: state.selectedSnapshot,
     });
-
-  // Initial sync into URL
-  useEffect(() => {
-    if (
-      !featureFlags.includes("snapshots") ||
-      (searchParams.has("mode") && searchParams.get("mode") === state.dataMode)
-    ) {
-      return;
-    }
-    searchParams.set("mode", state.dataMode);
-    setSearchParams(searchParams, { replace: true });
-  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
 
   useEffect(() => {
     if (featureFlags.includes("snapshots") && state.selectedSnapshot) {
@@ -1020,9 +1014,6 @@ const DashboardProvider = ({
       }
     }
 
-    if (featureFlags.includes("snapshots")) {
-      searchParams.set("mode", state.dataMode);
-    }
     setSearchParams(searchParams, { replace: true });
   }, [
     dashboard_name,
@@ -1216,9 +1207,6 @@ const DashboardProvider = ({
     const newParams = {
       ...state.selectedDashboardInputs,
     };
-    if (featureFlags.includes("snapshots")) {
-      newParams.mode = state.dataMode;
-    }
     setSearchParams(newParams, {
       replace: !shouldRecordHistory,
     });
