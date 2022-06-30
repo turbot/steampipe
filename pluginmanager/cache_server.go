@@ -47,12 +47,17 @@ func createCacheStore(maxCacheStorageMb int) (store.StoreInterface, error) {
 	//}
 	//ristrettoStore := store.NewRistretto(ristrettoCache)
 	//return ristrettoStore, nil
-
+	//
 	//gocacheClient := gocache.New(5*time.Minute, 10*time.Minute)
 	//return store.NewGoCache(gocacheClient), nil
 
 	config := bigcache.DefaultConfig(5 * time.Minute)
-	config.HardMaxCacheSize = maxCacheStorageMb
+	//config.HardMaxCacheSize = maxCacheStorageMb
+	//config.Shards = 10
+
+	// max entry size is HardMaxCacheSize/1000
+	//config.MaxEntrySize = (maxCacheStorageMb) * 1024 * 1024
+
 	bigcacheClient, _ := bigcache.NewBigCache(config)
 	bigcacheStore := store.NewBigcache(bigcacheClient)
 
@@ -112,6 +117,7 @@ func (m *CacheServer) runCacheListener(stream sdkproto.WrapperPlugin_EstablishCa
 		if err := stream.Send(result); err != nil {
 			// TODO WHAT TO DO?
 			log.Printf("[ERROR] error sending cache result for connection '%s': %v", connection, err)
+
 		}
 	}
 }
