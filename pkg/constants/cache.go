@@ -1,3 +1,3 @@
 package constants
 
-const DefaultMaxCacheSizeMb = 8192
+const DefaultMaxCacheSizeMb = 16384
