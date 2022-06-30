@@ -830,7 +830,7 @@ const DashboardProvider = ({
     getInitialState(searchParams, { ...stateDefaults, ...dataOptions })
   );
   const dispatch = useCallback((action) => {
-    // console.log(action.type, action);
+    console.log(action.type, action);
     dispatchInner(action);
   }, []);
   const { dashboard_name } = useParams();
@@ -860,24 +860,6 @@ const DashboardProvider = ({
       selectedDashboardInputs: state.selectedDashboardInputs,
       selectedSnapshot: state.selectedSnapshot,
     });
-
-  useEffect(() => {
-    if (featureFlags.includes("snapshots") && state.selectedSnapshot) {
-      searchParams.set("snapshot_id", state.selectedSnapshot.id);
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [featureFlags, searchParams, setSearchParams, state.selectedSnapshot]);
-
-  useEffect(() => {
-    if (
-      featureFlags.includes("snapshots") &&
-      state.dataMode === "live" &&
-      searchParams.has("snapshot_id")
-    ) {
-      searchParams.delete("snapshot_id");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
 
   // Alert analytics
   useEffect(() => {
@@ -913,9 +895,6 @@ const DashboardProvider = ({
     const tag =
       searchParams.get("tag") ||
       get(stateDefaults, "search.groupBy.tag", "service");
-    const dataMode = searchParams.has("mode")
-      ? searchParams.get("mode")
-      : "live";
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
@@ -931,12 +910,6 @@ const DashboardProvider = ({
       value: inputs,
       recordInputsHistory: false,
     });
-    if (featureFlags.includes("snapshots")) {
-      dispatch({
-        type: DashboardActions.SET_DATA_MODE,
-        dataMode,
-      });
-    }
   }, [
     dashboard_name,
     dispatch,
@@ -951,22 +924,23 @@ const DashboardProvider = ({
   useEffect(() => {
     // If no search params have changed
     if (
-      previousSelectedDashboardStates &&
-      // @ts-ignore
-      previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
-      // @ts-ignore
-      previousSelectedDashboardStates.dataMode === state.dataMode &&
-      // @ts-ignore
-      previousSelectedDashboardStates.search.value === state.search.value &&
-      // @ts-ignore
-      previousSelectedDashboardStates.search.groupBy.value ===
-        state.search.groupBy.value &&
-      // @ts-ignore
-      previousSelectedDashboardStates.search.groupBy.tag ===
-        state.search.groupBy.tag &&
-      // @ts-ignore
-      previousSelectedDashboardStates.searchParams.toString() ===
-        searchParams.toString()
+      state.dataMode === "snapshot" ||
+      (previousSelectedDashboardStates &&
+        // @ts-ignore
+        previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
+        // @ts-ignore
+        previousSelectedDashboardStates.dataMode === state.dataMode &&
+        // @ts-ignore
+        previousSelectedDashboardStates.search.value === state.search.value &&
+        // @ts-ignore
+        previousSelectedDashboardStates.search.groupBy.value ===
+          state.search.groupBy.value &&
+        // @ts-ignore
+        previousSelectedDashboardStates.search.groupBy.tag ===
+          state.search.groupBy.tag &&
+        // @ts-ignore
+        previousSelectedDashboardStates.searchParams.toString() ===
+          searchParams.toString())
     ) {
       return;
     }

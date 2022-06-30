@@ -66,7 +66,7 @@ const useDashboardWebSocket = (
       reconnectAttempts: 10,
       reconnectInterval: 3000,
     },
-    true
+    dataMode === "live"
   );
 
   useEffect(() => {
