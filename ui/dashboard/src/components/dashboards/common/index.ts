@@ -503,12 +503,12 @@ const buildNodesAndEdges = (
       // If this also has an implicit edge
       if (from_id !== null) {
         // If we've previously recorded this as a root node, remove it
-        delete root_node_lookup[node_id];
+        delete root_node_lookup[to_id || node_id];
 
         const { edge, duplicate_edge } = recordEdge(
           edge_lookup,
           from_id,
-          node_id,
+          to_id || node_id,
           null,
           null
         );
