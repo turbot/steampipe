@@ -1,0 +1,15 @@
+name: Bump Homebrew formula
+
+on: push
+
+jobs:
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dawidd6/action-homebrew-bump-formula@v3
+        with:
+          token: ${{secrets.TOKEN}}
+          tap: turbot/homebrew-tap
+          formula: Steampipe
+          
