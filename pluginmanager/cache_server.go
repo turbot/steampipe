@@ -2,6 +2,7 @@ package pluginmanager
 
 import (
 	"context"
+	"fmt"
 	"github.com/allegro/bigcache/v3"
 	"github.com/eko/gocache/v3/cache"
 	"github.com/eko/gocache/v3/store"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"io"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -22,6 +24,9 @@ type CacheData interface {
 type CacheServer struct {
 	pluginManager *PluginManager
 	cache         *cache.Cache[[]byte]
+	// map of ongoing request
+	setRequests map[string]*sdkproto.CacheRequest
+	setLock     sync.Mutex
 }
 
 func NewCacheServer(maxCacheStorageMb int, pluginManager *PluginManager) (*CacheServer, error) {
@@ -32,6 +37,7 @@ func NewCacheServer(maxCacheStorageMb int, pluginManager *PluginManager) (*Cache
 	res := &CacheServer{
 		pluginManager: pluginManager,
 		cache:         cache.New[[]byte](cacheStore),
+		setRequests:   make(map[string]*sdkproto.CacheRequest),
 	}
 	return res, nil
 }
@@ -64,7 +70,7 @@ func createCacheStore(maxCacheStorageMb int) (store.StoreInterface, error) {
 	return bigcacheStore, nil
 }
 
-func (m CacheServer) AddConnection(client *plugin.Client, connection string) error {
+func (m *CacheServer) AddConnection(client *plugin.Client, connection string) error {
 	cacheStream, err := m.openCacheStream(client, connection)
 	if err != nil {
 		return err
@@ -112,13 +118,8 @@ func (m *CacheServer) runCacheListener(stream sdkproto.WrapperPlugin_EstablishCa
 			return
 		}
 		log.Printf("[WARN] runCacheListener got request for connection '%s': %s", connection, request.Command)
-		result := m.handleCacheRequest(stream.Context(), request)
+		m.handleCacheRequest(stream, request, connection)
 
-		if err := stream.Send(result); err != nil {
-			// TODO WHAT TO DO?
-			log.Printf("[ERROR] error sending cache result for connection '%s': %v", connection, err)
-
-		}
 	}
 }
 
@@ -136,30 +137,43 @@ func (m *CacheServer) logReceiveError(err error, connection string) {
 	}
 }
 
-func (m CacheServer) handleCacheRequest(ctx context.Context, request *sdkproto.CacheRequest) *sdkproto.CacheResult {
+func (m *CacheServer) handleCacheRequest(stream sdkproto.WrapperPlugin_EstablishCacheConnectionClient, request *sdkproto.CacheRequest, connection string) {
+	ctx := stream.Context()
 	var res *sdkproto.CacheResult
 	switch request.Command {
 	case sdkproto.CacheCommand_GET_RESULT:
 		log.Printf("[WARN] GET RESULT")
 		res = doGet[*sdkproto.QueryResult](ctx, request.Key, m.cache)
+		// stream 'get' results a row at a time
+		m.streamQueryResults(stream, res, connection)
+		return
 
-	case sdkproto.CacheCommand_SET_RESULT:
-		log.Printf("[WARN] SET RESULT")
-		res = doSet(ctx, request.Key, request.Result, request.Cost, request.Ttl, m.cache)
+	case sdkproto.CacheCommand_SET_RESULT_START:
+		log.Printf("[WARN] handleCacheRequest: CacheCommand_SET_RESULT_START")
+		res = m.startSet(ctx, request)
+
+	case sdkproto.CacheCommand_SET_RESULT_ITERATE:
+		log.Printf("[WARN] handleCacheRequest: CacheCommand_SET_RESULT_ITERATE")
+		res = m.iterateSet(ctx, request)
+
+	case sdkproto.CacheCommand_SET_RESULT_END:
+		log.Printf("[WARN] handleCacheRequest: CacheCommand_SET_RESULT_ITERATE")
+		res = m.endSet(ctx, request)
 
 	case sdkproto.CacheCommand_DELETE_RESULT, sdkproto.CacheCommand_DELETE_INDEX:
-		log.Printf("[WARN] DELETE RESULT")
+		log.Printf("[WARN] handleCacheRequest: CacheCommand_DELETE_RESULT")
 		res = doDelete(ctx, request.Key, m.cache)
 
 	case sdkproto.CacheCommand_GET_INDEX:
-		log.Printf("[WARN] GET INDEX")
+		log.Printf("[WARN] handleCacheRequest: CacheCommand_GET_INDEX")
 		res = doGet[*sdkproto.IndexBucket](ctx, request.Key, m.cache)
 
 	case sdkproto.CacheCommand_SET_INDEX:
-		log.Printf("[WARN] SET INDEX")
-		res = doSet(ctx, request.Key, request.IndexBucket, request.Cost, request.Ttl, m.cache)
+		log.Printf("[WARN] handleCacheRequest: CacheCommand_SET_INDEX")
+		res = doSet(ctx, request.Key, request.IndexBucket, request.Ttl, m.cache)
 	}
-	return res
+
+	m.streamResult(stream, res, connection)
 }
 
 func doGet[T CacheData](ctx context.Context, key string, cache *cache.Cache[[]byte]) *sdkproto.CacheResult {
@@ -192,7 +206,83 @@ func doGet[T CacheData](ctx context.Context, key string, cache *cache.Cache[[]by
 	return res
 }
 
-func doSet[T CacheData](ctx context.Context, key string, value T, cost int64, ttl int64, cache *cache.Cache[[]byte]) *sdkproto.CacheResult {
+func (m *CacheServer) startSet(_ context.Context, req *sdkproto.CacheRequest) *sdkproto.CacheResult {
+	res := &sdkproto.CacheResult{
+		Success: true,
+		CallId:  sdkgrpc.BuildCallId(),
+	}
+
+	// add empty query result to the request - this will be appended to by iterateSet calls
+	req.Result = &sdkproto.QueryResult{}
+
+	// add entry into map
+	m.setLock.Lock()
+	m.setRequests[res.CallId] = req
+	m.setLock.Unlock()
+
+	return res
+}
+
+func (m *CacheServer) iterateSet(_ context.Context, req *sdkproto.CacheRequest) *sdkproto.CacheResult {
+	// find the entry for the in-progress et operation
+	m.setLock.Lock()
+	defer m.setLock.Unlock()
+	inProgress, ok := m.setRequests[req.CallId]
+	if !ok {
+		return &sdkproto.CacheResult{
+			Error: fmt.Sprintf("iterateSet could not find in-progress set operastion for call id '%s'", req.CallId),
+		}
+	}
+	if req.Result == nil {
+		return &sdkproto.CacheResult{Error: "iterateSet called with nil result"}
+	}
+	inProgress.Result.Rows = append(inProgress.Result.Rows, req.Result.Rows...)
+	return &sdkproto.CacheResult{Success: true}
+}
+
+func (m *CacheServer) endSet(ctx context.Context, req *sdkproto.CacheRequest) *sdkproto.CacheResult {
+	// find the entry for the in-progress et operation
+	m.setLock.Lock()
+	defer m.setLock.Unlock()
+	inProgress, ok := m.setRequests[req.CallId]
+	if !ok {
+		return &sdkproto.CacheResult{
+			Error: fmt.Sprintf("endSet could not find in-progress set operastion for call id '%s'", req.CallId),
+		}
+	}
+	if req.Result != nil {
+		// no result should be passed with end set
+		return &sdkproto.CacheResult{Error: "endSet called with non-nil result"}
+	}
+	// remove from in progress map
+	delete(m.setRequests, req.CallId)
+
+	// now do the actual set
+	return doSet(ctx, inProgress.Key, inProgress.Result, inProgress.Ttl, m.cache)
+}
+
+func (m *CacheServer) streamQueryResults(stream sdkproto.WrapperPlugin_EstablishCacheConnectionClient, res *sdkproto.CacheResult, connection string) {
+	rowResult := &sdkproto.CacheResult{
+		Success:     true,
+		QueryResult: &sdkproto.QueryResult{},
+		CallId:      res.CallId,
+	}
+	// stream, a row at a time
+	for _, row := range res.QueryResult.Rows {
+		rowResult.QueryResult.Rows = []*sdkproto.Row{row}
+		m.streamResult(stream, rowResult, connection)
+	}
+}
+
+// attempt to stream a result
+func (m *CacheServer) streamResult(stream sdkproto.WrapperPlugin_EstablishCacheConnectionClient, rowResult *sdkproto.CacheResult, connection string) {
+	if err := stream.Send(rowResult); err != nil {
+		// TODO WHAT TO DO?
+		log.Printf("[ERROR] error sending cache result for connection '%s': %v", connection, err)
+	}
+}
+
+func doSet[T CacheData](ctx context.Context, key string, value T, ttl int64, cache *cache.Cache[[]byte]) *sdkproto.CacheResult {
 	res := &sdkproto.CacheResult{
 		Success: true,
 	}
@@ -207,11 +297,10 @@ func doSet[T CacheData](ctx context.Context, key string, value T, cost int64, tt
 	err = cache.Set(ctx,
 		key,
 		bytes,
-		store.WithCost(cost),
 		store.WithExpiration(expiration),
 	)
 	if err != nil {
-		log.Printf("[WARN] doSet failed: %v", err)
+		log.Printf("[WARN] startSet failed: %v", err)
 		res.Success = false
 		res.Error = err.Error()
 	}
