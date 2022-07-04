@@ -20,6 +20,7 @@ archives:
   - files:
     - none*
     format: zip
+    id: homebrew
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
     - goos: linux
@@ -58,3 +59,18 @@ release:
   draft: true
 changelog:
   skip: true
+
+brews:
+  -
+    ids:
+      - homebrew
+    name: steampipe
+    tap:
+      owner: turbot
+      name: homebrew-tap
+      branch: bump_formula
+    url_template: "https://github.com/turbot/steampipe/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    homepage: "https://steampipe.io"
+    description: "select * from cloud;"
+    install: |-
+      bin.install "steampipe"
