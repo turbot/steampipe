@@ -69,6 +69,7 @@ brews:
       owner: turbot
       name: homebrew-tap
       branch: bump_formula
+    folder: Formula
     url_template: "https://github.com/turbot/steampipe/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     homepage: "https://steampipe.io"
     description: "select * from cloud;"
