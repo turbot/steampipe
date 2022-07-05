@@ -7,10 +7,12 @@ import (
 	"github.com/eko/gocache/v3/cache"
 	"github.com/eko/gocache/v3/store"
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v3/error_helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
 	"google.golang.org/protobuf/proto"
 	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -135,6 +137,8 @@ func (m *CacheServer) logReceiveError(err error, connection string) {
 	case sdkgrpc.IsNotImplementedError(err):
 		// should not be possible
 		log.Printf("[TRACE] connection '%s' does not support centralised cache", connection)
+	case error_helpers.IsContextCancelledError(err):
+		// ignore
 	default:
 		log.Printf("[ERROR] error in runCacheListener for connection '%s': %v", connection, err)
 	}
@@ -145,7 +149,7 @@ func (m *CacheServer) handleCacheRequest(stream sdkproto.WrapperPlugin_Establish
 
 	switch request.Command {
 	case sdkproto.CacheCommand_GET_RESULT:
-		log.Printf("[TRACE] handleCacheRequest: CacheCommand_GET_RESULT")
+		log.Printf("[TRACE] handleCacheRequest: CacheCommand_GET_RESULT key: %s", request.Key)
 		res := doGet[*sdkproto.QueryResult](ctx, request.Key, m.cache)
 
 		// stream 'get' results a row at a time
@@ -235,6 +239,7 @@ func (m *CacheServer) startSet(_ context.Context, req *sdkproto.CacheRequest) {
 	defer m.setLock.Unlock()
 
 	m.setRequests[req.CallId] = req
+	//log.Printf("[WARN] startSet for call id %s", req.CallId)
 }
 
 func (m *CacheServer) iterateSet(_ context.Context, req *sdkproto.CacheRequest) {
@@ -245,6 +250,11 @@ func (m *CacheServer) iterateSet(_ context.Context, req *sdkproto.CacheRequest) 
 	inProgress, ok := m.setRequests[req.CallId]
 	if !ok {
 		log.Printf("[WARN] iterateSet could not find in-progress Set operation for call id '%s'", req.CallId)
+		var callIDs []string
+		for k := range m.setRequests {
+			callIDs = append(callIDs, k)
+		}
+		log.Printf("[WARN] current ids: %s", strings.Join(callIDs, ","))
 		return
 	}
 
@@ -260,6 +270,9 @@ func (m *CacheServer) endSet(ctx context.Context, req *sdkproto.CacheRequest) *s
 	m.setLock.Lock()
 	defer m.setLock.Unlock()
 
+	log.Printf("[WARN] endSet"+
+		": %s", req.CallId)
+
 	// find the entry for the in-progress set operation
 	inProgress, ok := m.setRequests[req.CallId]
 	if !ok {
@@ -271,11 +284,14 @@ func (m *CacheServer) endSet(ctx context.Context, req *sdkproto.CacheRequest) *s
 		// no result should be passed with end set
 		return &sdkproto.CacheResponse{Error: "endSet called with non-nil result"}
 	}
+
 	// remove from in progress map
 	delete(m.setRequests, req.CallId)
 
 	// now do the actual set
-	return doSet(ctx, inProgress.Key, inProgress.Result, inProgress.Ttl, m.cache)
+	res := doSet(ctx, inProgress.Key, inProgress.Result, inProgress.Ttl, m.cache)
+	log.Printf("[TRACE] endSet complete, key %s, success %v", inProgress.Key, res.Success)
+	return res
 }
 
 // remove an in progress set request from the map
@@ -287,7 +303,7 @@ func (m *CacheServer) abortSet(_ context.Context, req *sdkproto.CacheRequest) {
 }
 
 func (m *CacheServer) streamQueryResults(stream sdkproto.WrapperPlugin_EstablishCacheConnectionClient, res *sdkproto.CacheResponse, connection string, callId string) {
-	log.Printf("[TRACE] streamQueryResults callId %s", callId)
+	log.Printf("[TRACE] streamQueryResults callId %s, success %v", callId, res.Success)
 
 	// stream, a row at a time
 	rowResult := &sdkproto.CacheResponse{
@@ -319,10 +335,6 @@ func (m *CacheServer) streamResponse(stream sdkproto.WrapperPlugin_EstablishCach
 }
 
 func doSet[T CacheData](ctx context.Context, key string, value T, ttl int64, cache *cache.Cache[[]byte]) *sdkproto.CacheResponse {
-	res := &sdkproto.CacheResponse{
-		Success: true,
-	}
-
 	bytes, err := proto.Marshal(value)
 	if err != nil {
 		log.Printf("[WARN] doSet - marshal failed: %v", err)
@@ -337,10 +349,9 @@ func doSet[T CacheData](ctx context.Context, key string, value T, ttl int64, cac
 	)
 	if err != nil {
 		log.Printf("[WARN] startSet failed: %v", err)
-		res.Success = false
-		res.Error = err.Error()
+		return &sdkproto.CacheResponse{Error: err.Error()}
 	}
-	return res
+	return &sdkproto.CacheResponse{Success: true}
 }
 
 func doDelete(ctx context.Context, key string, cache *cache.Cache[[]byte]) *sdkproto.CacheResponse {
