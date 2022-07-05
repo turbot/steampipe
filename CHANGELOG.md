@@ -1,3 +1,7 @@
+## v0.15.1 [tbd]
+_Bug fixes_
+* Fixes various EOF query errors. ([#192](https://github.com/turbot/steampipe-postgres-fdw/issues/192), [#201](https://github.com/turbot/steampipe-postgres-fdw/issues/201), [#207](https://github.com/turbot/steampipe-postgres-fdw/issues/207))
+
 ## v0.15.0 [2022-06-23]
 _What's new?_
 * Add support for Open Telemetry. ([#1193](https://github.com/turbot/steampipe/issues/1193))
