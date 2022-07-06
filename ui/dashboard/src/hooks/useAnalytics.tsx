@@ -48,7 +48,7 @@ const useAnalyticsProvider = () => {
 
   const identify = useCallback((actor) => {
     // @ts-ignore
-    if (window.heap) {
+    if (window.heap && window.heap.identify) {
       // @ts-ignore
       window.heap.identify(actor.id);
     }
@@ -56,7 +56,7 @@ const useAnalyticsProvider = () => {
 
   const reset = useCallback(() => {
     // @ts-ignore
-    if (window.heap) {
+    if (window.heap && window.heap.resetIdentity) {
       // @ts-ignore
       window.heap.resetIdentity();
     }
@@ -85,13 +85,16 @@ const useAnalyticsProvider = () => {
         ...properties,
       };
       // @ts-ignore
-      window.heap && window.heap.track(event, finalProperties);
+      if (window.heap && window.heap.track) {
+        // @ts-ignore
+        window.heap.track(event, finalProperties);
+      }
     },
     [enabled, initialised, identity, workspace, localStorageTheme, theme.name]
   );
 
   useEffect(() => {
-    if (!metadata) {
+    if (initialised || !metadata) {
       return;
     }
 
@@ -101,14 +104,14 @@ const useAnalyticsProvider = () => {
       !!process.env.REACT_APP_HEAP_ID;
 
     // @ts-ignore
-    if (enabled && window.heap) {
+    if (enabled && window.heap && window.heap.load) {
       // @ts-ignore
       window.heap.load(process.env.REACT_APP_HEAP_ID);
     }
 
     setEnabled(enabled);
     setInitialised(true);
-  }, [metadata]);
+  }, [initialised, metadata]);
 
   useEffect(() => {
     if (!metadata || !initialised) {
