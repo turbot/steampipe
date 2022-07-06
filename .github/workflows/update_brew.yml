@@ -18,4 +18,4 @@ jobs:
           git fetch
           cd homebrew-tap
 
-          gh pr create --base bump_formula --head bump --title "Brew formula update for steampipe version ${{ github.event.inputs.release }}"
+          gh pr create --base bump_formula --head bump --title "Brew formula update for steampipe version ${{ github.event.inputs.release }}" --fill
