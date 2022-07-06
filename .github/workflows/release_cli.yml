@@ -269,10 +269,9 @@ jobs:
       - name: Ensure branch exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          git fetch --all
-          git pull --all
-          if [ "`git branch --list bump-brew`" ]
-          then
+          b=$(git ls-remote --heads git@github.com:turbot/homebrew-tap.git bump-brew | wc -l | tr -d ' ')
+          echo $b
+          if [[ "$b" == 1 ]]; then
             echo ">>>>>"
             git push origin --delete bump-brew
             git checkout -b bump-brew
