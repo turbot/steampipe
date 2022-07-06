@@ -46,19 +46,14 @@ jobs:
     name: Update homebrew-tap formula
     runs-on: ubuntu-latest
     steps:
-      - name: Create and merge pull request
-        run: |
-          git clone https://github.com/turbot/homebrew-tap.git
-          git config --global --add safe.directory /home/runner/work/steampipe/steampipe/homebrew-tap
-          git config --global init.defaultBranch main
-          git init
-          git fetch
-          cd homebrew-tap
-
-          pr_link=$(gh pr create --base dev --head bump-brew --title "Brew formula update for steampipe" --body "Update formula")
-
-          gh pr merge $pr_link --squash --delete-branch
-
-          git checkout -b bump-brew
-          git push
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
         
+      - name: Merge pull request to update brew formula
+        run: |
+          git fetch --all
+          gh pr merge bump-brew --squash
