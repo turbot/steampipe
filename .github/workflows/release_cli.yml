@@ -336,6 +336,7 @@ jobs:
         if: steps.semver_parser.outputs.prerelease == ''
         uses: peter-evans/create-pull-request@v4
         with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           branch: bump-brew
           title: ${{ github.event.inputs.version }}
           base: main
