@@ -318,6 +318,33 @@ jobs:
       #     gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
       #     gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
+  create_pr_in_homebrew:
+    name: Create PR in homebrew-tap
+    needs: create_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Create pull request
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: peter-evans/create-pull-request@v4
+        with:
+          branch: bump-brew
+          title: ${{ github.event.inputs.version }}
+          base: main
+
   clean_up:
     # let's clean up the artifacts.
     # incase this step isn't reached,
@@ -325,7 +352,7 @@ jobs:
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
-    needs: create_release
+    needs: create_pr_in_homebrew
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Linux Build
