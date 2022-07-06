@@ -202,8 +202,8 @@ func (i *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
 	if len(i.Options) != len(other.Options) {
 		res.AddPropertyDiff("Options")
 	} else {
-		for i, o := range i.Options {
-			if other.Options[i].Equals(o) {
+		for idx, o := range i.Options {
+			if !other.Options[idx].Equals(o) {
 				res.AddPropertyDiff("Options")
 			}
 		}
