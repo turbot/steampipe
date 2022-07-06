@@ -272,10 +272,10 @@ jobs:
           then
             git branch -D bump-brew
             git checkout -b bump-brew
-            git push
+            git push --set-upstream origin bump-brew
           else
             git checkout -b bump-brew
-            git push
+            git push --set-upstream origin bump-brew
           fi
     
   create_release:
