@@ -57,6 +57,9 @@ jobs:
 
           pr_link=$(gh pr create --base dev --head bump-brew --title "Brew formula update for steampipe" --body "Update formula")
 
-          gh pr merge $pr_link --squash
+          gh pr merge $pr_link --squash --delete-branch
+
+          git checkout -b bump-brew
+          git push origin bump-brew
           
         
