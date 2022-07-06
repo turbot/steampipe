@@ -349,7 +349,7 @@ jobs:
       - name: Create pull request
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          gh pr create --base dev --head bump-brew --title "$Version" --body "Update formula"
+          gh pr create --base main --head bump-brew --title "$Version" --body "Update formula"
 
 
   clean_up:
