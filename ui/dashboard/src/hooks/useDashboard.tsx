@@ -878,6 +878,9 @@ const DashboardProvider = ({
     if (location.key === "default") {
       return;
     }
+    if (state.dataMode === "snapshot") {
+      return;
+    }
 
     // If we've just popped or pushed from one dashboard to another, then we don't want to add the search to the URL
     // as that will show the dashboard list, but we want to see the dashboard that we came from / went to previously.
@@ -919,6 +922,7 @@ const DashboardProvider = ({
     previousSelectedDashboardStates,
     searchParams,
     stateDefaults,
+    state.dataMode,
   ]);
 
   useEffect(() => {
