@@ -1,6 +1,9 @@
 name: Update brew formula
 on: push
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   update_homebrew_tap:  
     name: Update homebrew-tap formula
@@ -10,6 +13,7 @@ jobs:
         run: |
           git clone https://github.com/turbot/homebrew-tap.git
           git config --global --add safe.directory /home/runner/work/homebrew-tap/homebrew-tap
+          git config --global init.defaultBranch main
           git init
           git fetch
           cd homebrew-tap
