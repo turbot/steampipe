@@ -266,11 +266,16 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           ref: main
 
-      - name: Ensure branch exists
+      - name: Delete branch if exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
           git fetch --all
           git push origin --delete bump-brew
+        continue-on-error: true
+
+      - name: Create branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
           git checkout -b bump-brew
           git push --set-upstream origin bump-brew
 
