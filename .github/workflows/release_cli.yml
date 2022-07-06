@@ -318,6 +318,8 @@ jobs:
     name: Create PR in homebrew-tap
     needs: create_release
     runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
     steps:
       - name: Parse semver string
         id: semver_parser
@@ -333,14 +335,17 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           ref: main
 
+      - name: Close pull request if already exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr close bump-brew
+        continue-on-error: true
+
       - name: Create pull request
         if: steps.semver_parser.outputs.prerelease == ''
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          branch: bump-brew
-          title: ${{ github.event.inputs.version }}
-          base: main
+        run: |
+          gh pr create --base dev --head bump-brew --title "$Version" --body "Update formula"
+
 
   clean_up:
     # let's clean up the artifacts.
