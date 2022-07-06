@@ -13,6 +13,7 @@ env:
   PROJECT_ID: steampipe
   STEAMPIPE_UPDATE_CHECK: false
   VERSION: ${{ github.event.inputs.version }}
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
   goreleaser:
@@ -268,10 +269,19 @@ jobs:
       - name: Ensure branch exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          git push origin --delete bump-brew
-          git fetch
-          git checkout -b bump-brew
-          git push --set-upstream origin bump-brew
+          git fetch --all
+          git pull --all
+          if [ `git branch --list bump-brew` ]
+          then
+            echo ">>>>>"
+            git push origin --delete bump-brew
+            git checkout -b bump-brew
+            git push --set-upstream origin bump-brew
+          else
+            echo "?????"
+            git checkout -b bump-brew
+            git push --set-upstream origin bump-brew
+          fi
 
   create_release:
     name: Release
