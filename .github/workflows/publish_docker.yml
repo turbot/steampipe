@@ -60,6 +60,5 @@ jobs:
           gh pr merge $pr_link --squash --delete-branch
 
           git checkout -b bump-brew
-          git push origin bump-brew
-          
+          git push
         
