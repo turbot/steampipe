@@ -12,12 +12,11 @@ jobs:
       - name: Create and merge pull request
         run: |
           git clone https://github.com/turbot/homebrew-tap.git
-          git config --global --add safe.directory /home/runner/work/homebrew-tap/homebrew-tap
+          git config --global --add safe.directory /home/runner/work/steampipe/steampipe/homebrew-tap
           git config --global init.defaultBranch main
           git init
           git fetch
           cd homebrew-tap
-          pwd
-          ls
 
-          gh pr create --base bump_formula --head bump --title "Brew formula update for steampipe version ${{ github.event.inputs.release }}" --body "update formula"
+          a=$(gh pr create --base bump_formula --head bump --title "Brew formula update for steampipe" --body "Update formula")
+          echo $a
