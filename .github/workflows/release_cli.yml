@@ -271,7 +271,7 @@ jobs:
         run: |
           git fetch --all
           git pull --all
-          if [ `git branch --list bump-brew` ]
+          if [ "`git branch --list bump-brew`" ]
           then
             echo ">>>>>"
             git push origin --delete bump-brew
