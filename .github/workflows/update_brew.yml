@@ -2,7 +2,7 @@ name: Update brew formula
 on: push
 
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
   update_homebrew_tap:  
@@ -17,5 +17,7 @@ jobs:
           git init
           git fetch
           cd homebrew-tap
+          pwd
+          ls
 
           gh pr create --base bump_formula --head bump --title "Brew formula update for steampipe version ${{ github.event.inputs.release }}" --body "update formula"
