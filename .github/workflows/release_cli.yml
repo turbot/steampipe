@@ -268,17 +268,11 @@ jobs:
       - name: Ensure branch exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          if [ `git branch --list bump-brew` ]
-          then
-            git checkout -b bump-brew
-            git push --set-upstream origin bump-brew
-          else
-            git branch -D bump-brew
-            git fetch
-            git checkout -b bump-brew
-            git push --set-upstream origin bump-brew
-          fi
-    
+          git push origin --delete bump-brew
+          git fetch
+          git checkout -b bump-brew
+          git push --set-upstream origin bump-brew
+
   create_release:
     name: Release
     needs: [ensure_branch_in_homebrew]
