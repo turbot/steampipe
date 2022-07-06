@@ -270,10 +270,11 @@ jobs:
         run: |
           if [ `git branch --list bump-brew` ]
           then
-            git branch -D bump-brew
             git checkout -b bump-brew
             git push --set-upstream origin bump-brew
           else
+            git branch -D bump-brew
+            git fetch
             git checkout -b bump-brew
             git push --set-upstream origin bump-brew
           fi
