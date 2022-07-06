@@ -16,57 +16,57 @@ env:
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
-  goreleaser:
-    name: Build
-    runs-on: ubuntu-latest
+  # goreleaser:
+  #   name: Build
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.branch }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         ref: ${{ github.event.inputs.branch }}
 
-      - name: Unshallow
-        run: git fetch
+  #     - name: Unshallow
+  #       run: git fetch
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v3
+  #       with:
+  #         go-version: 1.18
 
-      - name: Hook private repo
-        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+  #     - name: Hook private repo
+  #       run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
-        with:
-          version: latest
-          args: release --snapshot --rm-dist --skip-publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Run GoReleaser
+  #       uses: goreleaser/goreleaser-action@v3
+  #       with:
+  #         version: latest
+  #         args: release --snapshot --rm-dist --skip-publish
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Move build artifacts
-        run: |
-          mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+  #     - name: Move build artifacts
+  #       run: |
+  #         mkdir ~/artifacts
+  #         mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+  #         mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
-      - name: List Build Artifacts
-        run: ls -l ~/artifacts
+  #     - name: List Build Artifacts
+  #       run: ls -l ~/artifacts
 
-      - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
+  #     - name: Save Linux Build Artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: build-artifact-linux
+  #         path: ~/artifacts/linux.tar.gz
+  #         if-no-files-found: error
 
-      - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts/darwin.zip
-          if-no-files-found: error
+  #     - name: Save MacOS Build Artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: build-artifact-darwin
+  #         path: ~/artifacts/darwin.zip
+  #         if-no-files-found: error
 
   # acceptance_test:
   #   name: Acceptance tests
