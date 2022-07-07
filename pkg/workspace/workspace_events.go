@@ -295,10 +295,11 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 		}
 	}
 	for name, p := range resourceMaps.GlobalDashboardInputs {
-		if _, ok := prevResourceMaps.DashboardInputs[name]; !ok {
+		if _, ok := prevResourceMaps.GlobalDashboardInputs[name]; !ok {
 			event.NewInputs = append(event.NewInputs, p)
 		}
 	}
+
 	for name, currentInputsForDashboard := range resourceMaps.DashboardInputs {
 		if prevInputsForDashboard, ok := prevResourceMaps.DashboardInputs[name]; ok {
 			for name, current := range currentInputsForDashboard {

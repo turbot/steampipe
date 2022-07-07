@@ -1,6 +1,9 @@
 package modconfig
 
-import "github.com/turbot/steampipe/pkg/utils"
+import (
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/utils"
+)
 
 // DashboardTreeItemDiffs is a struct representing the differences between 2 DashboardTreeItems (of same type)
 type DashboardTreeItemDiffs struct {
@@ -12,7 +15,9 @@ type DashboardTreeItemDiffs struct {
 }
 
 func (d *DashboardTreeItemDiffs) AddPropertyDiff(propertyName string) {
-	d.ChangedProperties = append(d.ChangedProperties, propertyName)
+	if !helpers.StringSliceContains(d.ChangedProperties, propertyName) {
+		d.ChangedProperties = append(d.ChangedProperties, propertyName)
+	}
 }
 
 func (d *DashboardTreeItemDiffs) AddAddedItem(name string) {
@@ -28,10 +33,17 @@ func (d *DashboardTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTree
 	oldChildMap := make(map[string]bool)
 	newChildMap := make(map[string]bool)
 
-	for _, child := range old.GetChildren() {
+	oldChildren := old.GetChildren()
+	newChildren := new.GetChildren()
+
+	for i, child := range oldChildren {
+		// check for child ordering
+		if i < len(newChildren) && newChildren[i].Name() != child.Name() {
+			d.AddPropertyDiff("Children")
+		}
 		oldChildMap[child.Name()] = true
 	}
-	for _, child := range new.GetChildren() {
+	for _, child := range newChildren {
 		newChildMap[child.Name()] = true
 	}
 
