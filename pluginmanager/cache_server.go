@@ -279,10 +279,8 @@ func (m *CacheServer) endSet(ctx context.Context, req *sdkproto.CacheRequest) *s
 			Error: fmt.Sprintf("endSet could not find in-progress set operastion for call id '%s'", req.CallId),
 		}
 	}
-	if req.Result != nil {
-		// no result should be passed with end set
-		return &sdkproto.CacheResponse{Error: "endSet called with non-nil result"}
-	}
+	// buffer the final rows if any were passed
+	inProgress.Result.Rows = append(inProgress.Result.Rows, req.Result.Rows...)
 
 	// remove from in progress map
 	delete(m.setRequests, req.CallId)
