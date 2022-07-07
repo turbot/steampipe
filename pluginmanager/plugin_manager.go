@@ -3,6 +3,7 @@ package pluginmanager
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"os"
@@ -17,13 +18,13 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v3/grpc/shared"
 	"github.com/turbot/steampipe/pkg/utils"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
+	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
 
 type runningPlugin struct {
 	client   *plugin.Client
-	reattach *pb.ReattachConfig
+	reattach *proto.ReattachConfig
 	// does this plugin support multiple connections - requires sdk version > 4
 	multiConnection bool
 	initialized     chan bool
@@ -31,21 +32,23 @@ type runningPlugin struct {
 
 // PluginManager is the real implementation of grpc.PluginManager
 type PluginManager struct {
-	pb.UnimplementedPluginManagerServer
+	proto.UnimplementedPluginManagerServer
 
 	Plugins map[string]*runningPlugin
 
-	mut              sync.Mutex
-	connectionConfig map[string]*pb.ConnectionConfig
-	logger           hclog.Logger
-	cacheManager     *CacheServer
+	mut               sync.Mutex
+	pluginConnections map[string][]*proto.ConnectionConfig
+	connectionConfig  map[string]*proto.ConnectionConfig
+	logger            hclog.Logger
+	cacheManager      *CacheServer
 }
 
-func NewPluginManager(connectionConfig map[string]*pb.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(connectionConfig map[string]*proto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
 	pluginManager := &PluginManager{
-		Plugins:          make(map[string]*runningPlugin),
-		logger:           logger,
-		connectionConfig: connectionConfig,
+		Plugins:           make(map[string]*runningPlugin),
+		logger:            logger,
+		connectionConfig:  connectionConfig,
+		pluginConnections: make(map[string][]*proto.ConnectionConfig),
 	}
 	maxCacheStorageMb := viper.GetInt(constants.ArgMaxCacheSizeMb)
 	cacheManager, err := NewCacheServer(maxCacheStorageMb, pluginManager)
@@ -71,8 +74,8 @@ func (m *PluginManager) Serve() {
 	})
 }
 
-func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
-	resp := &pb.GetResponse{ReattachMap: make(map[string]*pb.ReattachConfig)}
+func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
+	resp := &proto.GetResponse{ReattachMap: make(map[string]*proto.ReattachConfig)}
 	var errors []error
 	var resultLock sync.Mutex
 	var resultWg sync.WaitGroup
@@ -105,7 +108,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	return resp, nil
 }
 
-func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err error) {
+func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -175,7 +178,7 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 	// log the startup reason
 	log.Printf("[TRACE] %s", reason)
 	// so we need to start the plugin
-	client, err := m.startPlugin(connection)
+	client, reattach, err := m.startPlugin(connection)
 	if err != nil {
 		m.mut.Lock()
 		delete(m.Plugins, connection)
@@ -185,10 +188,8 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 		return nil, err
 	}
 
-	// get the support
-
 	// store the client to our map
-	reattach := m.storeClientToMap(connection, client)
+	m.storeClientToMap(connection, client, reattach)
 	log.Printf("[TRACE] PluginManager getPlugin complete, returning reattach config with PID: %d", reattach.Pid)
 
 	// open the cache stream
@@ -199,22 +200,20 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 }
 
 // create reattach config for plugin, store to map and close initialized channel
-func (m *PluginManager) storeClientToMap(connection string, client *plugin.Client) *pb.ReattachConfig {
+func (m *PluginManager) storeClientToMap(connection string, client *plugin.Client, reattach *proto.ReattachConfig) {
 	// lock access to map
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
-	reattach := pb.NewReattachConfig(client.ReattachConfig())
 	p := m.Plugins[connection]
 	p.client = client
 	p.reattach = reattach
 	m.Plugins[connection] = p
 	// mark as initialized
 	close(p.initialized)
-	return reattach
 }
 
-func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.ConnectionConfig) {
+func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*proto.ConnectionConfig) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -229,7 +228,14 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*pb.Connecti
 	m.connectionConfig = configMap
 }
 
-func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
+// populate map of connection configs for each plugin
+func (m *PluginManager) setPluginConnectionConfigs() {
+	for _, config := range m.connectionConfig {
+		m.pluginConnections[config.Plugin] = append(m.pluginConnections[config.Plugin], config)
+	}
+}
+
+func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
 	log.Printf("[TRACE] PluginManager Shutdown %v", m.Plugins)
 	debug.PrintStack()
 
@@ -250,22 +256,22 @@ func (m *PluginManager) Shutdown(req *pb.ShutdownRequest) (resp *pb.ShutdownResp
 		log.Printf("[TRACE] killing plugin %s (%v)", name, p.reattach.Pid)
 		p.client.Kill()
 	}
-	return &pb.ShutdownResponse{}, nil
+	return &proto.ShutdownResponse{}, nil
 }
 
-func (m *PluginManager) startPlugin(connection string) (*plugin.Client, error) {
+func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.ReattachConfig, error) {
 
 	log.Printf("[TRACE] ************ start plugin %s ********************\n", connection)
 
 	// get connection config
 	connectionConfig, ok := m.connectionConfig[connection]
 	if !ok {
-		return nil, fmt.Errorf("no config loaded for connection %s", connection)
+		return nil, nil, fmt.Errorf("no config loaded for connection %s", connection)
 	}
 
 	pluginPath, err := GetPluginPath(connectionConfig.Plugin, connectionConfig.PluginShortName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// create the plugin map
@@ -288,10 +294,26 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, error) {
 	})
 
 	if _, err := client.Start(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return client, nil
+	// get the supported operations
+	pluginClient, err := sdkgrpc.NewPluginClient(client, pluginName)
+	if err != nil {
+		return nil, nil, err
+	}
+	supportedOperations, err := pluginClient.GetSupportedOperations()
+	if err != nil {
+		return nil, nil, err
+	}
+	var connections = []string{connection}
+	if supportedOperations.MultipleConnections {
+		// get all connectrions for this plugin
+		connections = m.getConnectionsForPlugin(pluginName)
+	}
+	reattach := proto.NewReattachConfig(client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connections)
+
+	return client, reattach, nil
 }
 
 func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) error {
@@ -305,4 +327,12 @@ func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) e
 	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
 		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", connection, pluginStartTimeoutSecs)
 	}
+}
+
+func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
+	var res = make([]string, len(m.pluginConnections[pluginName]))
+	for i, c := range m.pluginConnections[pluginName] {
+		res[i] = c.Connection
+	}
+	return res
 }
