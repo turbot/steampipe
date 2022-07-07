@@ -46,8 +46,6 @@ jobs:
     name: Update homebrew-tap formula
     needs: publish_docker
     runs-on: ubuntu-latest
-    env:
-      Version: ${{ github.event.inputs.release }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -59,4 +57,4 @@ jobs:
       - name: Merge pull request to update brew formula
         run: |
           git fetch --all
-          gh pr merge $Version --squash --delete-branch
+          gh pr merge bump-brew --squash --delete-branch

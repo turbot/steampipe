@@ -251,8 +251,6 @@ jobs:
     name: Ensure branch exists in homebrew-tap
     needs: [create_release_tag]
     runs-on: ubuntu-latest
-    env:
-      Version: ${{ github.event.inputs.version }}
     steps:
       - name: Parse semver string
         id: semver_parser
@@ -271,16 +269,15 @@ jobs:
       - name: Delete branch if exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          echo $Version
           git fetch --all
-          git push origin --delete $Version
+          git push origin --delete bump-brew
         continue-on-error: true
 
       - name: Create branch
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          git checkout -b $Version
-          git push --set-upstream origin $Version
+          git checkout -b bump-brew
+          git push --set-upstream origin bump-brew
 
   create_release:
     name: Release
@@ -346,14 +343,13 @@ jobs:
       - name: Close pull request if already exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          echo $Version
-          gh pr close $Version
+          gh pr close bump-brew
         continue-on-error: true
 
       - name: Create pull request
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          gh pr create --base dev --head $Version --title "$Version" --body "Update formula"
+          gh pr create --base main --head bump-brew --title "$Version" --body "Update formula"
 
 
   clean_up:
