@@ -27,6 +27,7 @@ message ReattachConfig {
   int64  protocol_version = 2;
   NetAddr addr            = 3;
   int64 pid               = 4;
+  repeated
 }
 
 message NetAddr {

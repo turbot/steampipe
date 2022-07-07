@@ -22,16 +22,19 @@ import (
 )
 
 type runningPlugin struct {
-	client      *plugin.Client
-	reattach    *pb.ReattachConfig
-	initialized chan bool
+	client   *plugin.Client
+	reattach *pb.ReattachConfig
+	// does this plugin support multiple connections - requires sdk version > 4
+	multiConnection bool
+	initialized     chan bool
 }
 
 // PluginManager is the real implementation of grpc.PluginManager
 type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 
-	Plugins          map[string]*runningPlugin
+	Plugins map[string]*runningPlugin
+
 	mut              sync.Mutex
 	connectionConfig map[string]*pb.ConnectionConfig
 	logger           hclog.Logger
@@ -181,6 +184,8 @@ func (m *PluginManager) getPlugin(connection string) (_ *pb.ReattachConfig, err 
 		log.Println("[TRACE] startPlugin failed with", err)
 		return nil, err
 	}
+
+	// get the support
 
 	// store the client to our map
 	reattach := m.storeClientToMap(connection, client)
