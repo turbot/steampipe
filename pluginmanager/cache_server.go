@@ -270,8 +270,7 @@ func (m *CacheServer) endSet(ctx context.Context, req *sdkproto.CacheRequest) *s
 	m.setLock.Lock()
 	defer m.setLock.Unlock()
 
-	log.Printf("[WARN] endSet"+
-		": %s", req.CallId)
+	log.Printf("[TRACE] endSet: %s", req.CallId)
 
 	// find the entry for the in-progress set operation
 	inProgress, ok := m.setRequests[req.CallId]
@@ -365,3 +364,16 @@ func doDelete(ctx context.Context, key string, cache *cache.Cache[[]byte]) *sdkp
 	}
 	return res
 }
+
+// TODO log metrics
+//func (c *QueryCache) logMetrics() {
+//	log.Printf("[TRACE] ------------------------------------ ")
+//	log.Printf("[TRACE] Cache Metrics ")
+//	log.Printf("[TRACE] ------------------------------------ ")
+//	log.Printf("[TRACE] MaxCost: %d", c.cache.MaxCost())
+//	log.Printf("[TRACE] KeysAdded: %d", c.cache.Metrics.KeysAdded())
+//	log.Printf("[TRACE] CostAdded: %d", c.cache.Metrics.CostAdded())
+//	log.Printf("[TRACE] KeysEvicted: %d", c.cache.Metrics.KeysEvicted())
+//	log.Printf("[TRACE] CostEvicted: %d", c.cache.Metrics.CostEvicted())
+//	log.Printf("[TRACE] ------------------------------------ ")
+//}
