@@ -326,6 +326,12 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 	}
 
 	if event.HasChanges() {
+		// for every changed resopurce, set parents as changed, up the tree
+		f := func(item modconfig.ModTreeItem) (bool, error) {
+			event.SetParentsChanged(item)
+			return true, nil
+		}
+		event.WalkChangedResources(f)
 		w.PublishDashboardEvent(event)
 	}
 }

@@ -12,6 +12,9 @@ type DirectChildrenModDecorator struct {
 func (r DirectChildrenModDecorator) AddParent(item modconfig.ModTreeItem) error {
 	return nil
 }
+func (r DirectChildrenModDecorator) GetParents() []modconfig.ModTreeItem {
+	return nil
+}
 
 func (r DirectChildrenModDecorator) GetChildren() []modconfig.ModTreeItem {
 	var res []modconfig.ModTreeItem

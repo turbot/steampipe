@@ -86,3 +86,242 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.DeletedTables)+
 		len(c.DeletedTexts) > 0
 }
+
+func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig.ModTreeItem) (bool, error)) error {
+	for _, r := range c.ChangedDashboards {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedContainers {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedControls {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedCards {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedCharts {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedFlows {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedHierarchies {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedImages {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedInputs {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedTables {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedTexts {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewDashboards {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewContainers {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewControls {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewCards {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewCharts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewFlows {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewHierarchies {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewImages {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewInputs {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewTables {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.NewTexts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedContainers {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedControls {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedCards {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedCharts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedFlows {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedHierarchies {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedImages {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedInputs {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedTables {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedTexts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *DashboardChanged) SetParentsChanged(item modconfig.ModTreeItem) {
+	parents := item.GetParents()
+	for _, parent := range parents {
+		c.AddChanged(parent)
+		c.SetParentsChanged(parent)
+	}
+}
+
+func (c *DashboardChanged) diffsContain(diffs []*modconfig.DashboardTreeItemDiffs, item modconfig.ModTreeItem) bool {
+	for _, d := range diffs {
+		if d.Item.Name() == item.Name() {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *DashboardChanged) AddChanged(item modconfig.ModTreeItem) {
+	diff := &modconfig.DashboardTreeItemDiffs{
+		Name:              item.Name(),
+		Item:              item,
+		ChangedProperties: []string{"Children"},
+	}
+	switch item.(type) {
+	case *modconfig.Dashboard:
+		if !c.diffsContain(c.ChangedDashboards, item) {
+			c.ChangedDashboards = append(c.ChangedDashboards, diff)
+		}
+	case *modconfig.DashboardContainer:
+		if !c.diffsContain(c.ChangedContainers, item) {
+			c.ChangedContainers = append(c.ChangedContainers, diff)
+		}
+	case *modconfig.Control:
+		if !c.diffsContain(c.ChangedControls, item) {
+			c.ChangedControls = append(c.ChangedControls, diff)
+		}
+	case *modconfig.Benchmark:
+		if !c.diffsContain(c.ChangedBenchmarks, item) {
+			c.ChangedBenchmarks = append(c.ChangedBenchmarks, diff)
+		}
+	case *modconfig.DashboardCard:
+		if !c.diffsContain(c.ChangedCards, item) {
+			c.ChangedCards = append(c.ChangedCards, diff)
+		}
+	case *modconfig.DashboardChart:
+		if !c.diffsContain(c.ChangedCharts, item) {
+			c.ChangedCharts = append(c.ChangedCharts, diff)
+		}
+	case *modconfig.DashboardHierarchy:
+		if !c.diffsContain(c.ChangedHierarchies, item) {
+			c.ChangedHierarchies = append(c.ChangedHierarchies, diff)
+		}
+
+	case *modconfig.DashboardImage:
+		if !c.diffsContain(c.ChangedImages, item) {
+			c.ChangedImages = append(c.ChangedImages, diff)
+		}
+
+	case *modconfig.DashboardInput:
+		if !c.diffsContain(c.ChangedInputs, item) {
+			c.ChangedInputs = append(c.ChangedInputs, diff)
+		}
+
+	case *modconfig.DashboardTable:
+		if !c.diffsContain(c.ChangedTables, item) {
+			c.ChangedTables = append(c.ChangedTables, diff)
+		}
+	case *modconfig.DashboardText:
+		if !c.diffsContain(c.ChangedTexts, item) {
+			c.ChangedTexts = append(c.ChangedTexts, diff)
+		}
+	}
+}

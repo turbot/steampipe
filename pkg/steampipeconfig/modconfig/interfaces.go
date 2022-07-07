@@ -22,6 +22,7 @@ type (
 	// i.e. Control, Benchmark, Dashboard
 	ModTreeItem interface {
 		AddParent(ModTreeItem) error
+		GetParents() []ModTreeItem
 		GetChildren() []ModTreeItem
 		Name() string
 		GetUnqualifiedName() string

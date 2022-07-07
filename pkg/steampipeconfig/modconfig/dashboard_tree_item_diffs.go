@@ -45,7 +45,6 @@ func (d *DashboardTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTree
 			d.AddAddedItem(childName)
 		}
 	}
-
 }
 
 func (d *DashboardTreeItemDiffs) HasChanges() bool {
