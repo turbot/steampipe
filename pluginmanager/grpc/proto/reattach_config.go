@@ -4,7 +4,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 )
 
-func NewReattachConfig(src *plugin.ReattachConfig) *ReattachConfig {
+func NewReattachConfig(src *plugin.ReattachConfig, supportedOperations *SupportedOperations, connections []string) *ReattachConfig {
 	return &ReattachConfig{
 		Protocol:        string(src.Protocol),
 		ProtocolVersion: int64(src.ProtocolVersion),
@@ -12,7 +12,9 @@ func NewReattachConfig(src *plugin.ReattachConfig) *ReattachConfig {
 			Network: src.Addr.Network(),
 			Address: src.Addr.String(),
 		},
-		Pid: int64(src.Pid),
+		Pid:                 int64(src.Pid),
+		SupportedOperations: supportedOperations,
+		Connections:         connections,
 	}
 }
 
