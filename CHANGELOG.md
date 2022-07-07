@@ -1,6 +1,9 @@
-## v0.15.1 [tbd]
+## v0.15.1 [2222-07-07]
 _Bug fixes_
 * Fixes various EOF query errors. ([#192](https://github.com/turbot/steampipe-postgres-fdw/issues/192), [#201](https://github.com/turbot/steampipe-postgres-fdw/issues/201), [#207](https://github.com/turbot/steampipe-postgres-fdw/issues/207))
+* Ensure DashboardChanged events are generated when child elements have a changed index within a container. ([#2228](https://github.com/turbot/steampipe/issues/2228))
+* Fix incorrectly identified changed inputs in DashboardChanged events. ([#2221](https://github.com/turbot/steampipe/issues/2221))
+* Fix dashboard UI crashing when socket connection reconnects. ([#2224](https://github.com/turbot/steampipe/issues/2224))
 
 ## v0.15.0 [2022-06-23]
 _What's new?_
