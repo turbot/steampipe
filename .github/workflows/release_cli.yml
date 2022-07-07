@@ -279,7 +279,7 @@ jobs:
       - name: Create branch
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          git checkout -b bump-brew
+          git checkout -b $Version
           git push --set-upstream origin $Version
 
   create_release:
