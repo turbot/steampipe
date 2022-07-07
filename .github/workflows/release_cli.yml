@@ -16,206 +16,206 @@ env:
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
-  goreleaser:
-    name: Build
-    runs-on: ubuntu-latest
+  # goreleaser:
+  #   name: Build
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.branch }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         ref: ${{ github.event.inputs.branch }}
 
-      - name: Unshallow
-        run: git fetch
+  #     - name: Unshallow
+  #       run: git fetch
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v3
+  #       with:
+  #         go-version: 1.18
 
-      - name: Hook private repo
-        run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
+  #     - name: Hook private repo
+  #       run: git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}:x-oauth-basic@github.com".insteadOf "https://github.com"
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
-        with:
-          version: latest
-          args: release --snapshot --rm-dist --skip-publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Run GoReleaser
+  #       uses: goreleaser/goreleaser-action@v3
+  #       with:
+  #         version: latest
+  #         args: release --snapshot --rm-dist --skip-publish
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Move build artifacts
-        run: |
-          mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+  #     - name: Move build artifacts
+  #       run: |
+  #         mkdir ~/artifacts
+  #         mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+  #         mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
-      - name: List Build Artifacts
-        run: ls -l ~/artifacts
+  #     - name: List Build Artifacts
+  #       run: ls -l ~/artifacts
 
-      - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
+  #     - name: Save Linux Build Artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: build-artifact-linux
+  #         path: ~/artifacts/linux.tar.gz
+  #         if-no-files-found: error
 
-      - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts/darwin.zip
-          if-no-files-found: error
+  #     - name: Save MacOS Build Artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: build-artifact-darwin
+  #         path: ~/artifacts/darwin.zip
+  #         if-no-files-found: error
 
-  acceptance_test:
-    name: Acceptance tests
-    needs: goreleaser
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-          ref: ${{ github.event.inputs.branch }}
+  # acceptance_test:
+  #   name: Acceptance tests
+  #   needs: goreleaser
+  #   strategy:
+  #     matrix:
+  #       platform: [ubuntu-latest]
+  #   runs-on: ${{ matrix.platform }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         submodules: true
+  #         ref: ${{ github.event.inputs.branch }}
 
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
+  #     - name: Setup BATS
+  #       uses: mig4/setup-bats@v1
+  #       with:
+  #         bats-version: 1.2.1
 
-      - name: Prepare for downloads
-        id: prepare-for-downloads
-        run: |
-          mkdir ~/artifacts
+  #     - name: Prepare for downloads
+  #       id: prepare-for-downloads
+  #       run: |
+  #         mkdir ~/artifacts
 
-      - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v3
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts
+  #     - name: Download Linux Build Artifacts
+  #       uses: actions/download-artifact@v3
+  #       if: ${{ matrix.platform == 'ubuntu-latest' }}
+  #       with:
+  #         name: build-artifact-linux
+  #         path: ~/artifacts
 
-      - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v3
-        if: ${{ matrix.platform == 'macos-latest' }}
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts
+  #     - name: Download Darwin Build Artifacts
+  #       uses: actions/download-artifact@v3
+  #       if: ${{ matrix.platform == 'macos-latest' }}
+  #       with:
+  #         name: build-artifact-darwin
+  #         path: ~/artifacts
 
-      - name: Extract Darwin Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          mkdir ~/build
-          unzip ~/artifacts/darwin.zip -d ~/build
+  #     - name: Extract Darwin Artifacts and Install Binary
+  #       if: ${{ matrix.platform == 'macos-latest' }}
+  #       run: |
+  #         mkdir ~/build
+  #         unzip ~/artifacts/darwin.zip -d ~/build
 
-      - name: Extract Ubuntu Artifacts and Install Binary
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: |
-          mkdir ~/build
-          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+  #     - name: Extract Ubuntu Artifacts and Install Binary
+  #       if: ${{ matrix.platform == 'ubuntu-latest' }}
+  #       run: |
+  #         mkdir ~/build
+  #         tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Set PATH
-        run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+  #     - name: Set PATH
+  #       run: |
+  #         echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
-      - name: Install DB
-        run: |
-          steampipe service start
-          steampipe plugin install chaos
-          steampipe service stop --force
+  #     - name: Install DB
+  #       run: |
+  #         steampipe service start
+  #         steampipe plugin install chaos
+  #         steampipe service stop --force
 
-      - name: Run Test Suite
-        timeout-minutes: 5
-        run: |
-          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          steampipe service stop --force
+  #     - name: Run Test Suite
+  #       timeout-minutes: 5
+  #       run: |
+  #         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+  #         $GITHUB_WORKSPACE/tests/acceptance/run.sh
+  #         steampipe service stop --force
 
-  docker_acceptance_test_debian:
-    name: Acceptance tests(Docker - Debian)
-    needs: goreleaser
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.branch }}
+  # docker_acceptance_test_debian:
+  #   name: Acceptance tests(Docker - Debian)
+  #   needs: goreleaser
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         ref: ${{ github.event.inputs.branch }}
 
-      - name: Prepare for downloads
-        id: prepare-for-downloads
-        run: |
-          mkdir ~/artifacts
+  #     - name: Prepare for downloads
+  #       id: prepare-for-downloads
+  #       run: |
+  #         mkdir ~/artifacts
 
-      - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts
+  #     - name: Download Linux Build Artifacts
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: build-artifact-linux
+  #         path: ~/artifacts
 
-      - name: Extract Ubuntu Artifacts and Install Binary
-        run: |
-          mkdir ~/build
-          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+  #     - name: Extract Ubuntu Artifacts and Install Binary
+  #       run: |
+  #         mkdir ~/build
+  #         tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Copy binary
-        run: |
-          cp ~/build/steampipe tests/dockertesting/debian
+  #     - name: Copy binary
+  #       run: |
+  #         cp ~/build/steampipe tests/dockertesting/debian
       
-      - name: Build steampipe docker images
-        run: |
-          docker build -t spdebian tests/dockertesting/debian
-          docker images
+  #     - name: Build steampipe docker images
+  #       run: |
+  #         docker build -t spdebian tests/dockertesting/debian
+  #         docker images
 
-      - name: Create a container and run the test suite
-        run: |
-          docker run --name steampipe-deb `docker images -q spdebian`
+  #     - name: Create a container and run the test suite
+  #       run: |
+  #         docker run --name steampipe-deb `docker images -q spdebian`
 
-  docker_acceptance_test_oraclelinux:
-    name: Acceptance tests(Docker - OracleLinux)
-    needs: goreleaser
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.branch }}
+  # docker_acceptance_test_oraclelinux:
+  #   name: Acceptance tests(Docker - OracleLinux)
+  #   needs: goreleaser
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #       with:
+  #         ref: ${{ github.event.inputs.branch }}
 
-      - name: Prepare for downloads
-        id: prepare-for-downloads
-        run: |
-          mkdir ~/artifacts
+  #     - name: Prepare for downloads
+  #       id: prepare-for-downloads
+  #       run: |
+  #         mkdir ~/artifacts
 
-      - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts
+  #     - name: Download Linux Build Artifacts
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: build-artifact-linux
+  #         path: ~/artifacts
 
-      - name: Extract Ubuntu Artifacts and Install Binary
-        run: |
-          mkdir ~/build
-          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+  #     - name: Extract Ubuntu Artifacts and Install Binary
+  #       run: |
+  #         mkdir ~/build
+  #         tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Copy binary
-        run: |
-          cp ~/build/steampipe tests/dockertesting/oraclelinux
+  #     - name: Copy binary
+  #       run: |
+  #         cp ~/build/steampipe tests/dockertesting/oraclelinux
       
-      - name: Build steampipe docker images
-        run: |
-          docker build -t sporacle tests/dockertesting/oraclelinux
-          docker images
+  #     - name: Build steampipe docker images
+  #       run: |
+  #         docker build -t sporacle tests/dockertesting/oraclelinux
+  #         docker images
 
-      - name: Create a container and run the test suite
-        run: |
-          docker run --name steampipe-oracle `docker images -q sporacle`
+  #     - name: Create a container and run the test suite
+  #       run: |
+  #         docker run --name steampipe-oracle `docker images -q sporacle`
 
   create_release_tag:
     name: Tag Release
-    needs: [goreleaser, acceptance_test, docker_acceptance_test_debian, docker_acceptance_test_oraclelinux]
+    # needs: [goreleaser, acceptance_test, docker_acceptance_test_debian, docker_acceptance_test_oraclelinux]
     runs-on: ubuntu-latest
     steps:
 
@@ -251,6 +251,8 @@ jobs:
     name: Ensure branch exists in homebrew-tap
     needs: [create_release_tag]
     runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
     steps:
       - name: Parse semver string
         id: semver_parser
@@ -269,15 +271,16 @@ jobs:
       - name: Delete branch if exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
+          echo $Version
           git fetch --all
-          git push origin --delete bump-brew
+          git push origin --delete $Version
         continue-on-error: true
 
       - name: Create branch
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
           git checkout -b bump-brew
-          git push --set-upstream origin bump-brew
+          git push --set-upstream origin $Version
 
   create_release:
     name: Release
@@ -343,13 +346,14 @@ jobs:
       - name: Close pull request if already exists
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          gh pr close bump-brew
+          echo $Version
+          gh pr close $Version
         continue-on-error: true
 
       - name: Create pull request
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          gh pr create --base main --head bump-brew --title "$Version" --body "Update formula"
+          gh pr create --base dev --head $Version --title "$Version" --body "Update formula"
 
 
   clean_up:
