@@ -45,6 +45,7 @@ type PluginManager struct {
 }
 
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
+	log.Printf("[TRACE] NewPluginManager")
 	pluginManager := &PluginManager{
 		Plugins:                 make(map[string]*runningPlugin),
 		logger:                  logger,
@@ -57,6 +58,9 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, lo
 		return nil, err
 	}
 	pluginManager.cacheManager = cacheManager
+
+	// populate plugin connection config map
+	pluginManager.setPluginConnectionConfigs()
 	return pluginManager, nil
 }
 
@@ -240,6 +244,7 @@ func (m *PluginManager) setPluginConnectionConfigs() {
 	for _, config := range m.connectionConfig {
 		m.pluginConnectionConfigs[config.Plugin] = append(m.pluginConnectionConfigs[config.Plugin], config)
 	}
+	log.Printf("[TRACE] setPluginConnectionConfigs: %v", m.pluginConnectionConfigs)
 }
 
 func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
@@ -267,7 +272,6 @@ func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.Shutdo
 }
 
 func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.ReattachConfig, error) {
-
 	log.Printf("[TRACE] ************ start plugin %s ********************\n", connection)
 
 	// get connection config
@@ -309,15 +313,17 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.R
 	if err != nil {
 		return nil, nil, err
 	}
+
 	supportedOperations, err := pluginClient.GetSupportedOperations()
 	if err != nil {
 		return nil, nil, err
 	}
+	log.Printf("[WARN] supportedOperations: %v", supportedOperations)
 	var connections = []string{connection}
 
 	if supportedOperations.MultipleConnections {
 		// send the connection config for all connections for this plugin
-		m.setConnectionConfig(pluginClient, pluginName)
+		m.setAllConnectionConfigs(pluginClient, pluginName)
 	} else {
 		// send the connection config using legacy single connection function
 		m.setSingleConnectionConfig(pluginClient, connection)
@@ -350,7 +356,7 @@ func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
 }
 
 // set connection config for multiple connection, for compatible plugins)
-func (m *PluginManager) setConnectionConfig(pluginClient *sdkgrpc.PluginClient, pluginName string) error {
+func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClient, pluginName string) error {
 	configs, ok := m.pluginConnectionConfigs[pluginName]
 	if !ok {
 		// should never happen

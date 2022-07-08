@@ -120,7 +120,7 @@ func buildPluginSchemaMap(connectionPluginMap map[string]*ConnectionPlugin) (map
 	pluginSchemaMap := make(map[string]*sdkproto.Schema)
 	for _, connectionPlugin := range connectionPluginMap {
 		if _, ok := pluginSchemaMap[connectionPlugin.PluginName]; !ok {
-			schema, err := connectionPlugin.PluginClient.GetSchema()
+			schema, err := connectionPlugin.PluginClient.GetSchema(connectionPlugin.ConnectionName)
 			if err != nil {
 				log.Printf("[TRACE] failed to get schema for connection '%s': %s", connectionPlugin.ConnectionName, err)
 				errors = append(errors, err)
