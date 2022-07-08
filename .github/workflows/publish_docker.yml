@@ -44,7 +44,7 @@ jobs:
 
   update_homebrew_tap:  
     name: Update homebrew-tap formula
-    needs: publish_docker
+    # needs: publish_docker
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
