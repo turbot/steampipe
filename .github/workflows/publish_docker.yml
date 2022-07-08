@@ -72,6 +72,7 @@ jobs:
             echo "Correct branch"
           else
             echo "Incorrect Branch"
+            exit 1
           fi
         
       # - name: Merge pull request to update brew formula
