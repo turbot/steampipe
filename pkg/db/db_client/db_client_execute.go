@@ -149,7 +149,7 @@ func (c *DbClient) getQueryTimingAsync(ctx context.Context, startTime time.Time,
 	var timingResult = &queryresult.TimingResult{
 		Duration: time.Since(startTime),
 	}
-	// set a separate property to disable fetching timing information to avoid recursion
+	// disable fetching timing information to avoid recursion
 	c.shouldShowTiming = false
 
 	// whatever happens, we need to reenable timing, and send the result back with at least the duration
