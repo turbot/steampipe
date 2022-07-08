@@ -4,6 +4,7 @@ _Bug fixes_
 * Ensure DashboardChanged events are generated when child elements have a changed index within a container. ([#2228](https://github.com/turbot/steampipe/issues/2228))
 * Fix incorrectly identified changed inputs in DashboardChanged events. ([#2221](https://github.com/turbot/steampipe/issues/2221))
 * Fix dashboard UI crashing when socket connection reconnects. ([#2224](https://github.com/turbot/steampipe/issues/2224))
+* Fix intermittent "concurrent map access" error when timing is enabled. ([#2231](https://github.com/turbot/steampipe/issues/2231))
 
 ## v0.15.0 [2022-06-23]
 _What's new?_
