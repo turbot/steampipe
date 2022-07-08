@@ -67,10 +67,12 @@ jobs:
           echo ${{ env.STEAMPIPE_VERSION }}
 
       - name: Fail if PR title does not match with version
-        if: steps.pr_title.outputs.PR_TITLE == ${{ env.STEAMPIPE_VERSION }}
         run: |
-          echo "Version mismatch"
-          exit 1
+          if ${{ (steps.pr_title.outputs.PR_TITLE == env.STEAMPIPE_VERSION) }} == 'true';then
+            echo "Correct branch"
+          else
+            echo "Incorrect Branch"
+          fi
         
       # - name: Merge pull request to update brew formula
       #   run: |
