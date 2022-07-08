@@ -44,6 +44,7 @@ type DbClient struct {
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
 	searchPathPrefix []string
+	shouldShowTiming bool
 }
 
 func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
@@ -51,6 +52,9 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	defer utils.LogTime("db_client.NewDbClient end")
 
 	db, err := establishConnection(ctx, connectionString)
+
+	shouldShowTiming := viper.GetBool(constants.ArgTiming) &&
+		viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
 
 	if err != nil {
 		return nil, err
@@ -65,6 +69,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
+		shouldShowTiming:        shouldShowTiming,
 	}
 	client.connectionString = connectionString
 
@@ -73,6 +78,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 		client.Close(ctx)
 		return nil, err
 	}
+
 	return client, nil
 }
 
@@ -286,3 +292,4 @@ WHERE
 `
 	return query
 }
+

@@ -54,16 +54,10 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 			syncResult.Rows = append(syncResult.Rows, row)
 		}
 	}
-	if ShouldShowTiming() {
+	if c.shouldShowTiming {
 		syncResult.TimingResult = <-result.TimingResult
 	}
 	return syncResult, nil
-}
-
-func ShouldShowTiming() bool {
-	return viper.GetBool(constants.ArgTiming) &&
-		!viper.GetBool(constants.ArgDisableFetchTiming) &&
-		viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
 }
 
 // Execute implements Client
@@ -139,7 +133,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result)
 		// set the time that it took for this one to execute
-		if ShouldShowTiming() {
+		if c.shouldShowTiming {
 			c.getQueryTimingAsync(ctx, startTime, session, result.TimingResult)
 		}
 
@@ -155,13 +149,12 @@ func (c *DbClient) getQueryTimingAsync(ctx context.Context, startTime time.Time,
 	var timingResult = &queryresult.TimingResult{
 		Duration: time.Since(startTime),
 	}
-	// set a separate viper config to disable fetching timing information to avoid recursion
-	// - we cannot just use ArgTiming as there is a race condition with reading the ArgTiming in displayTable()
-	viper.Set(constants.ArgDisableFetchTiming, true)
+	// disable fetching timing information to avoid recursion
+	c.shouldShowTiming = false
 
 	// whatever happens, we need to reenable timing, and send the result back with at least the duration
 	defer func() {
-		viper.Set(constants.ArgDisableFetchTiming, false)
+		c.shouldShowTiming = true
 		resultChannel <- timingResult
 	}()
 

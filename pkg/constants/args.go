@@ -7,7 +7,6 @@ const (
 	ArgForce               = "force"
 	ArgAll                 = "all"
 	ArgTiming              = "timing"
-	ArgDisableFetchTiming  = "disable-fetch-timing"
 	ArgOn                  = "on"
 	ArgOff                 = "off"
 	ArgClear               = "clear"
