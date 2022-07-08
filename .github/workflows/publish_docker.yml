@@ -61,9 +61,9 @@ jobs:
             gh pr view bump-brew --json title | jq .title | tr -d '"'
           )"
 
-      - name: Ouput
-        run: |
-          echo ${{ steps.pr_title.outputs.PR_TITLE }}
+      - name: Fail if PR title does not match with version
+        if: steps.pr_title.outputs.PR_TITLE != ${{ github.event.inputs.release }}
+        run: exit 1
         
       # - name: Merge pull request to update brew formula
       #   run: |
