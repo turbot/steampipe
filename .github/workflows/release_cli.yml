@@ -344,6 +344,7 @@ jobs:
       - name: Create a new branch off the base branch
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
+          git fetch --all
           git checkout bump-brew
           git checkout -b $VERSION
           git push --set-upstream origin $VERSION
@@ -357,7 +358,7 @@ jobs:
       - name: Create pull request
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+          gh pr create --base dev --head $VERSION --title "$Version" --body "Update formula"
 
 
   clean_up:

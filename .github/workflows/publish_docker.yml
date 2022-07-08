@@ -78,4 +78,5 @@ jobs:
       - name: Merge pull request to update brew formula
         run: |
           git fetch --all
-          gh pr merge bump-brew --squash --delete-branch
+          gh pr merge $STEAMPIPE_VERSION --squash --delete-branch
+          git push origin --delete bump-brew
