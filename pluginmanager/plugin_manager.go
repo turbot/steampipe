@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
 	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"os"
@@ -36,19 +37,19 @@ type PluginManager struct {
 
 	Plugins map[string]*runningPlugin
 
-	mut               sync.Mutex
-	pluginConnections map[string][]*proto.ConnectionConfig
-	connectionConfig  map[string]*proto.ConnectionConfig
-	logger            hclog.Logger
-	cacheManager      *CacheServer
+	mut                     sync.Mutex
+	pluginConnectionConfigs map[string][]*sdkproto.ConnectionConfig
+	connectionConfig        map[string]*sdkproto.ConnectionConfig
+	logger                  hclog.Logger
+	cacheManager            *CacheServer
 }
 
-func NewPluginManager(connectionConfig map[string]*proto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
 	pluginManager := &PluginManager{
-		Plugins:           make(map[string]*runningPlugin),
-		logger:            logger,
-		connectionConfig:  connectionConfig,
-		pluginConnections: make(map[string][]*proto.ConnectionConfig),
+		Plugins:                 make(map[string]*runningPlugin),
+		logger:                  logger,
+		connectionConfig:        connectionConfig,
+		pluginConnectionConfigs: make(map[string][]*sdkproto.ConnectionConfig),
 	}
 	maxCacheStorageMb := viper.GetInt(constants.ArgMaxCacheSizeMb)
 	cacheManager, err := NewCacheServer(maxCacheStorageMb, pluginManager)
@@ -219,7 +220,7 @@ func (m *PluginManager) storeClientToMap(connection string, client *plugin.Clien
 	close(p.initialized)
 }
 
-func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*proto.ConnectionConfig) {
+func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.ConnectionConfig) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -237,7 +238,7 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*proto.Conne
 // populate map of connection configs for each plugin
 func (m *PluginManager) setPluginConnectionConfigs() {
 	for _, config := range m.connectionConfig {
-		m.pluginConnections[config.Plugin] = append(m.pluginConnections[config.Plugin], config)
+		m.pluginConnectionConfigs[config.Plugin] = append(m.pluginConnectionConfigs[config.Plugin], config)
 	}
 }
 
@@ -315,15 +316,12 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.R
 	var connections = []string{connection}
 
 	if supportedOperations.MultipleConnections {
-		// get all connections for this plugin
-		connections = m.getConnectionsForPlugin(pluginName)
-		// send the connection config for all connections
-		m.setConnectionConfig(pluginClient, connections)
+		// send the connection config for all connections for this plugin
+		m.setConnectionConfig(pluginClient, pluginName)
 	} else {
 		// send the connection config using legacy single connection function
 		m.setSingleConnectionConfig(pluginClient, connection)
 	}
-
 
 	reattach := proto.NewReattachConfig(client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connections)
 
@@ -344,19 +342,39 @@ func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) e
 }
 
 func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
-	var res = make([]string, len(m.pluginConnections[pluginName]))
-	for i, c := range m.pluginConnections[pluginName] {
+	var res = make([]string, len(m.pluginConnectionConfigs[pluginName]))
+	for i, c := range m.pluginConnectionConfigs[pluginName] {
 		res[i] = c.Connection
 	}
 	return res
 }
 
 // set connection config for multiple connection, for compatible plugins)
-func (m *PluginManager) setConnectionConfig(client *sdkgrpc.PluginClient, connections []string) {
+func (m *PluginManager) setConnectionConfig(pluginClient *sdkgrpc.PluginClient, pluginName string) error {
+	configs, ok := m.pluginConnectionConfigs[pluginName]
+	if !ok {
+		// should never happen
+		return fmt.Errorf("no config loaded for plugin '%s'", pluginName)
+	}
+	req := &sdkproto.SetAllConnectionConfigsRequest{
+		Configs: configs,
+	}
 
+	return pluginClient.SetAllConnectionConfigs(req)
 }
 
 // set connection config for single connection, for legacy plugins)
-func (m *PluginManager) setSingleConnectionConfig(client *sdkgrpc.PluginClient, connection string) {
+func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginClient, connectionName string) error {
+	connectionConfig, ok := m.connectionConfig[connectionName]
+	if !ok {
+		// should never happen
+		return fmt.Errorf("no config loaded for connection '%s'", connectionName)
+	}
+	// set the connection config
+	req := &sdkproto.SetConnectionConfigRequest{
+		ConnectionName:   connectionName,
+		ConnectionConfig: connectionConfig.Config,
+	}
 
+	return pluginClient.SetConnectionConfig(req)
 }

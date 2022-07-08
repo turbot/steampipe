@@ -20,10 +20,6 @@ import (
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
 
-type CreateConnectionPluginOptions struct {
-	SetConnectionConfig bool
-}
-
 // ConnectionPlugin is a structure representing an instance of a plugin
 // NOTE: this corresponds to a single steampipe connection,
 // i.e. we have 1 plugin instance per steampipe connection
@@ -34,11 +30,11 @@ type ConnectionPlugin struct {
 	PluginName          string
 	PluginClient        *sdkgrpc.PluginClient
 	Schema              *sdkproto.Schema
-	SupportedOperations *sdkproto.GetSupportedOperationsResponse
+	SupportedOperations *proto.SupportedOperations
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, fetches schemas and sends connection config
-func CreateConnectionPlugins(connections []*modconfig.Connection, opts *CreateConnectionPluginOptions) (connectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+func CreateConnectionPlugins(connections []*modconfig.Connection) (connectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
 	res = &RefreshConnectionResult{}
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connections))
 
@@ -66,7 +62,7 @@ func CreateConnectionPlugins(connections []*modconfig.Connection, opts *CreateCo
 
 	// now create a connection plugin for each connection
 	for _, connection := range connections {
-		connectionPlugin, err := createConnectionPlugin(connection, getResponse, opts)
+		connectionPlugin, err := createConnectionPlugin(connection, getResponse)
 		if err != nil {
 			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginShortName, err))
 			continue
@@ -149,7 +145,7 @@ func buildSchemaModeMap(connectionPluginMap map[string]*ConnectionPlugin, plugin
 	return schemaModeMap
 }
 
-func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto.GetResponse, opts *CreateConnectionPluginOptions) (*ConnectionPlugin, error) {
+func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto.GetResponse) (*ConnectionPlugin, error) {
 	// we should never instantiate an aggregator connection
 	if connection.Type == modconfig.ConnectionTypeAggregator {
 		return nil, fmt.Errorf("we should never instantiate an aggregator connection plugin")
@@ -175,26 +171,6 @@ func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto
 		return nil, err
 	}
 
-	if opts.SetConnectionConfig {
-		// set the connection config
-		req := &sdkproto.SetConnectionConfigRequest{
-			ConnectionName:   connectionName,
-			ConnectionConfig: connectionConfig,
-		}
-
-		if err = pluginClient.SetConnectionConfig(req); err != nil {
-			log.Printf("[TRACE] failed to set connection config for connection '%s' - pid %d: %s",
-				connectionName, reattach.Pid, err)
-			return nil, err
-		}
-	}
-	// fetch the supported operations
-	supportedOperations, _ := pluginClient.GetSupportedOperations()
-	// ignore errors  - just create an empty support structure if needed
-	if supportedOperations == nil {
-		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
-	}
-
 	// now create ConnectionPlugin object return
 	c := &ConnectionPlugin{
 		ConnectionName:      connectionName,
@@ -202,7 +178,7 @@ func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto
 		ConnectionOptions:   connectionOptions,
 		PluginName:          pluginName,
 		PluginClient:        pluginClient,
-		SupportedOperations: supportedOperations,
+		SupportedOperations: reattach.SupportedOperations,
 	}
 	log.Printf("[TRACE] created connection plugin for connection: '%s', pluginName: '%s'", connectionName, pluginName)
 	return c, nil
@@ -245,9 +221,9 @@ func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
 	logger := logging.NewLogger(loggOpts)
 
 	// build config map
-	configMap := make(map[string]*proto.ConnectionConfig)
+	configMap := make(map[string]*sdkproto.ConnectionConfig)
 	for k, v := range steampipeConfig.Connections {
-		configMap[k] = &proto.ConnectionConfig{
+		configMap[k] = &sdkproto.ConnectionConfig{
 			Plugin:          v.Plugin,
 			PluginShortName: v.PluginShortName,
 			Config:          v.Config,
