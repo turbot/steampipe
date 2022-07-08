@@ -2,6 +2,7 @@ package connectionwatcher
 
 import (
 	"context"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
 	"log"
 
 	"github.com/fsnotify/fsnotify"
@@ -13,17 +14,16 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 )
 
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *utils.FileWatcher
-	onConnectionConfigChanged func(configMap map[string]*pb.ConnectionConfig)
+	onConnectionConfigChanged func(configMap map[string]*sdkproto.ConnectionConfig)
 	count                     int
 }
 
-func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*pb.ConnectionConfig)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkproto.ConnectionConfig)) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
 	}
