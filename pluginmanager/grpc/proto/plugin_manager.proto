@@ -42,11 +42,3 @@ message NetAddr {
   string Network = 1; // name of the network (for example, "tcp", "udp")
   string Address = 2; // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
 }
-
-message ConnectionConfig {
-  string connection = 1;
-  string plugin = 2;
-  string plugin_short_name = 3;
-  string config = 4;
-
-}
