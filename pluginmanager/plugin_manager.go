@@ -124,7 +124,6 @@ func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, e
 	// lock access to plugin map
 	m.mut.Lock()
 	p, ok := m.Plugins[connection]
-
 	if ok {
 		// unlock access to map
 		m.mut.Unlock()
@@ -150,7 +149,6 @@ func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, e
 			return reattach, nil
 		}
 
-		// TODO combine with 'else' code to remove duplication
 		//  either the pid does not exist or the plugin has exited
 		// remove from map
 		m.mut.Lock()
@@ -205,10 +203,18 @@ func (m *PluginManager) storeClientToMap(connection string, client *plugin.Clien
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
+	// a RunningPlugin in initializing state will already have been put into the Plugins map
+	// populate its properties
 	p := m.Plugins[connection]
 	p.client = client
 	p.reattach = reattach
-	m.Plugins[connection] = p
+
+	// NOTE: if this plugin supports multiple connections, reattach.Connections will be a list of all connections
+	// provided by this plugin
+	// add map entries for all other connections using this plugin (all pointing to same RunningPlugin)
+	for _, c := range reattach.Connections {
+		m.Plugins[c] = p
+	}
 	// mark as initialized
 	close(p.initialized)
 }
@@ -307,10 +313,18 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.R
 		return nil, nil, err
 	}
 	var connections = []string{connection}
+
 	if supportedOperations.MultipleConnections {
-		// get all connectrions for this plugin
+		// get all connections for this plugin
 		connections = m.getConnectionsForPlugin(pluginName)
+		// send the connection config for all connections
+		m.setConnectionConfig(pluginClient, connections)
+	} else {
+		// send the connection config using legacy single connection function
+		m.setSingleConnectionConfig(pluginClient, connection)
 	}
+
+
 	reattach := proto.NewReattachConfig(client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connections)
 
 	return client, reattach, nil
@@ -335,4 +349,14 @@ func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
 		res[i] = c.Connection
 	}
 	return res
+}
+
+// set connection config for multiple connection, for compatible plugins)
+func (m *PluginManager) setConnectionConfig(client *sdkgrpc.PluginClient, connections []string) {
+
+}
+
+// set connection config for single connection, for legacy plugins)
+func (m *PluginManager) setSingleConnectionConfig(client *sdkgrpc.PluginClient, connection string) {
+
 }
