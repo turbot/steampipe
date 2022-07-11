@@ -222,11 +222,12 @@ func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
 
 	// build config map
 	configMap := make(map[string]*sdkproto.ConnectionConfig)
-	for k, v := range steampipeConfig.Connections {
-		configMap[k] = &sdkproto.ConnectionConfig{
-			Plugin:          v.Plugin,
-			PluginShortName: v.PluginShortName,
-			Config:          v.Config,
+	for connectionName, connection := range steampipeConfig.Connections {
+		configMap[connectionName] = &sdkproto.ConnectionConfig{
+			Connection:      connection.Name,
+			Plugin:          connection.Plugin,
+			PluginShortName: connection.PluginShortName,
+			Config:          connection.Config,
 		}
 	}
 	return pluginmanager.NewPluginManager(configMap, logger)
