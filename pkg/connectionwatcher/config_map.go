@@ -9,6 +9,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) map[
 	configMap := make(map[string]*sdkproto.ConnectionConfig)
 	for k, v := range connectionMap {
 		configMap[k] = &sdkproto.ConnectionConfig{
+			Connection:      v.Name,
 			Plugin:          v.Plugin,
 			PluginShortName: v.PluginShortName,
 			Config:          v.Config,
