@@ -1,15 +1,20 @@
-import Table from "../Table";
-import Tree from "./Tree";
+import { getComponent } from "../index";
 import { IHierarchy } from "./types";
+const Table = getComponent("table");
+
+const flowsMap = {};
+
+const getHierarchyComponent = (key: string): IHierarchy => flowsMap[key];
+
+const registerHierarchyComponent = (key: string, component: IHierarchy) => {
+  flowsMap[key] = component;
+};
 
 const TableWrapper: IHierarchy = {
   type: "table",
   component: Table,
 };
 
-const hierarchies = {
-  [TableWrapper.type]: TableWrapper,
-  [Tree.type]: Tree,
-};
+registerHierarchyComponent(TableWrapper.type, TableWrapper);
 
-export { hierarchies };
+export { getHierarchyComponent, registerHierarchyComponent };

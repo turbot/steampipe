@@ -6,6 +6,7 @@ import {
   DashboardActions,
   useDashboard,
 } from "../../../../hooks/useDashboard";
+import { registerComponent } from "../../index";
 import { useState } from "react";
 import { ZoomIcon } from "../../../../constants/icons";
 
@@ -107,5 +108,7 @@ const Container = ({
     </LayoutPanel>
   );
 };
+
+registerComponent("container", Container);
 
 export default Container;

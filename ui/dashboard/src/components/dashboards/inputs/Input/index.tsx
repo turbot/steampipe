@@ -1,5 +1,6 @@
 import ErrorPanel from "../../Error";
-import Inputs, { InputProperties } from "../index";
+import { getInputComponent } from "../index";
+import { InputProperties } from "../types";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
 
 export type InputDefinition = PanelDefinition & {
@@ -11,7 +12,7 @@ const renderInput = (definition: InputDefinition) => {
     display_type = "select",
     properties: { unqualified_name: name },
   } = definition;
-  const input = Inputs[display_type];
+  const input = getInputComponent(display_type);
 
   if (!input) {
     return <ErrorPanel error={`Unknown input type ${display_type}`} />;

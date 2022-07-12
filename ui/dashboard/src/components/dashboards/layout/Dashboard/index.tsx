@@ -7,6 +7,7 @@ import {
   DashboardRunState,
   useDashboard,
 } from "../../../../hooks/useDashboard";
+import { registerComponent } from "../../index";
 
 interface DashboardProps {
   definition: DashboardDefinition;
@@ -20,11 +21,12 @@ interface DashboardProps {
 const Dashboard = ({
   definition,
   progress = 0,
+  isRoot = true,
   state = "running",
   withPadding = false,
 }: DashboardProps) => (
   <>
-    <DashboardProgress state={state} progress={progress} />
+    {isRoot ? <DashboardProgress state={state} progress={progress} /> : <></>}
     <LayoutPanel
       definition={definition}
       isDashboard={true}
@@ -62,6 +64,8 @@ const DashboardWrapper = () => {
     />
   );
 };
+
+registerComponent("dashboard", Dashboard);
 
 export default DashboardWrapper;
 

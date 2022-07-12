@@ -1,6 +1,7 @@
 import { ClearIcon, SubmitIcon } from "../../../../constants/icons";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
-import { IInput, InputProps } from "../index";
+import { registerInputComponent } from "../index";
+import { IInput, InputProps } from "../types";
 import { useEffect, useState } from "react";
 
 const TextInput = (props: InputProps) => {
@@ -100,5 +101,7 @@ const definition: IInput = {
   type: "text",
   component: TextInput,
 };
+
+registerInputComponent(definition.type, definition);
 
 export default definition;

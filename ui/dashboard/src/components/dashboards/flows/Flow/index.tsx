@@ -9,7 +9,7 @@ import {
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { FlowProperties, FlowProps, FlowType } from "../types";
-import { flows } from "..";
+import { getFlowComponent } from "..";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
@@ -153,7 +153,7 @@ const renderFlow = (definition: FlowProps) => {
   // We default to sankey diagram if not specified
   const { display_type = "sankey" } = definition;
 
-  const flow = flows[display_type];
+  const flow = getFlowComponent(display_type);
 
   if (!flow) {
     return <ErrorPanel error={`Unknown flow type ${display_type}`} />;

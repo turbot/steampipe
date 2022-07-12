@@ -1,4 +1,3 @@
-import Charts from "..";
 import ErrorPanel from "../../Error";
 import has from "lodash/has";
 import merge from "lodash/merge";
@@ -38,6 +37,7 @@ import {
   ChartType,
 } from "../types";
 import { FlowType } from "../../flows/types";
+import { getChartComponent } from "..";
 import { HierarchyType } from "../../hierarchies/types";
 import { LabelLayout } from "echarts/features";
 import { Theme } from "../../../../hooks/useTheme";
@@ -759,7 +759,7 @@ const renderChart = (definition: ChartProps) => {
   // We default to column charts if not specified
   const { display_type = "column" } = definition;
 
-  const chart = Charts[display_type];
+  const chart = getChartComponent(display_type);
 
   if (!chart) {
     return <ErrorPanel error={`Unknown chart type ${display_type}`} />;

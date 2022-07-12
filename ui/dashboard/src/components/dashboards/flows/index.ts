@@ -1,15 +1,20 @@
-import Sankey from "./Sankey";
-import Table from "../Table";
+import { getComponent } from "../index";
 import { IFlow } from "./types";
+const Table = getComponent("table");
+
+const flowsMap = {};
+
+const getFlowComponent = (key: string): IFlow => flowsMap[key];
+
+const registerFlowComponent = (key: string, component: IFlow) => {
+  flowsMap[key] = component;
+};
 
 const TableWrapper: IFlow = {
   type: "table",
   component: Table,
 };
 
-const flows = {
-  [Sankey.type]: Sankey,
-  [TableWrapper.type]: TableWrapper,
-};
+registerFlowComponent(TableWrapper.type, TableWrapper);
 
-export { flows };
+export { getFlowComponent, registerFlowComponent };

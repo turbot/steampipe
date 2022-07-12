@@ -3,6 +3,7 @@ import gfm from "remark-gfm"; // Support for strikethrough, tables, tasklists an
 import ReactMarkdown from "react-markdown";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import { classNames } from "../../../utils/styles";
+import { registerComponent } from "../index";
 
 const getLongPanelClasses = () => {
   // switch (type) {
@@ -89,5 +90,7 @@ const Text = (props: TextProps) =>
     props.display_type || "markdown",
     props.properties ? props.properties.value : null
   );
+
+registerComponent("text", Text);
 
 export default Text;

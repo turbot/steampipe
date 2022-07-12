@@ -1,4 +1,5 @@
 import CheckSummaryChart from "../CheckSummaryChart";
+import ControlDimension from "../Benchmark/ControlDimension";
 import ControlEmptyResultNode from "../common/node/ControlEmptyResultNode";
 import ControlErrorNode from "../common/node/ControlErrorNode";
 import ControlResultNode from "../common/node/ControlResultNode";
@@ -25,7 +26,6 @@ import {
   CheckSeveritySummary,
 } from "../common";
 import { classNames } from "../../../../utils/styles";
-import { ControlDimension } from "../Benchmark";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo } from "react";

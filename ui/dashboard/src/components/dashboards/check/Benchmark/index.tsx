@@ -1,8 +1,6 @@
-import CheckGrouping from "../CheckGrouping";
 import Container from "../../layout/Container";
 import Error from "../../Error";
 import Panel from "../../layout/Panel";
-import Table from "../../Table";
 import {
   BenchmarkDefinition,
   PanelDefinition,
@@ -19,8 +17,10 @@ import {
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
-import { stringToColour } from "../../../../utils/color";
+import { getComponent, registerComponent } from "../../index";
 import { useMemo } from "react";
+const CheckGrouping = getComponent("check_grouping");
+const Table = getComponent("table");
 
 interface BenchmarkTableViewProps {
   benchmark: BenchmarkType;
@@ -35,16 +35,6 @@ type InnerCheckProps = {
   firstChildSummaries: CheckSummary[];
   withTitle: boolean;
 };
-
-const ControlDimension = ({ dimensionKey, dimensionValue }) => (
-  <span
-    className="rounded-md text-xs"
-    style={{ color: stringToColour(dimensionValue) }}
-    title={`${dimensionKey} = ${dimensionValue}`}
-  >
-    {dimensionValue}
-  </span>
-);
 
 const Benchmark = (props: InnerCheckProps) => {
   const { dashboard, selectedDashboard } = useDashboard();
@@ -301,6 +291,7 @@ const BenchmarkWrapper = (props: BenchmarkProps) => {
   );
 };
 
-export default BenchmarkWrapper;
+registerComponent("benchmark", BenchmarkWrapper);
+registerComponent("benchmark_tree", BenchmarkTree);
 
-export { BenchmarkTree, ControlDimension };
+export default BenchmarkWrapper;

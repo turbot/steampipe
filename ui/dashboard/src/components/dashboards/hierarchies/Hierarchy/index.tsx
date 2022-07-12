@@ -7,7 +7,7 @@ import {
   NodesAndEdges,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { hierarchies } from "..";
+import { getHierarchyComponent } from "..";
 import { HierarchyProps, HierarchyProperties, HierarchyType } from "../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
@@ -161,7 +161,7 @@ const renderHierarchy = (definition: HierarchyProps) => {
   // We default to tree diagram if not specified
   const { display_type = "tree" } = definition;
 
-  const hierarchy = hierarchies[display_type];
+  const hierarchy = getHierarchyComponent(display_type);
 
   if (!hierarchy) {
     return <ErrorPanel error={`Unknown hierarchy type ${display_type}`} />;
