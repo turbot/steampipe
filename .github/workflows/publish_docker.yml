@@ -1,4 +1,4 @@
-name: Publish Docker Release
+name: Publish Docker Release and Update Brew
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +8,7 @@ on:
 
 env:
   STEAMPIPE_VERSION: ${{ github.event.inputs.release }}
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
   publish_docker:  
@@ -41,6 +42,41 @@ jobs:
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
+  update_homebrew_tap:  
+    name: Update homebrew-tap formula
+    needs: publish_docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
 
-          
+      - name: Get pull request title
+        id: pr_title
+        run: >-
+          echo "::set-output name=PR_TITLE::$(
+            gh pr view $STEAMPIPE_VERSION --json title | jq .title | tr -d '"'
+          )"
+
+      - name: Output
+        run: |
+          echo ${{ steps.pr_title.outputs.PR_TITLE }}
+          echo ${{ env.STEAMPIPE_VERSION }}
+
+      - name: Fail if PR title does not match with version
+        run: |
+          if ${{ (steps.pr_title.outputs.PR_TITLE == env.STEAMPIPE_VERSION) }} == 'true';then
+            echo "Correct version"
+          else
+            echo "Incorrect version"
+            exit 1
+          fi
         
+      - name: Merge pull request to update brew formula
+        run: |
+          git fetch --all
+          gh pr merge $STEAMPIPE_VERSION --squash --delete-branch
+          git push origin --delete bump-brew

@@ -13,6 +13,7 @@ env:
   PROJECT_ID: steampipe
   STEAMPIPE_UPDATE_CHECK: false
   VERSION: ${{ github.event.inputs.version }}
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
   goreleaser:
@@ -246,9 +247,42 @@ jobs:
           git tag ${{ github.event.inputs.version }}
           git push origin ${{ github.event.inputs.version }}
 
+  ensure_branch_in_homebrew:
+    name: Ensure branch exists in homebrew-tap
+    needs: [create_release_tag]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Delete base branch if exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git fetch --all
+          git push origin --delete bump-brew
+          git push origin --delete $VERSION
+        continue-on-error: true
+
+      - name: Create base branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git checkout -b bump-brew
+          git push --set-upstream origin bump-brew
+
   create_release:
     name: Release
-    needs: [create_release_tag]
+    needs: [create_release_tag, ensure_branch_in_homebrew]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -267,7 +301,7 @@ jobs:
           version: latest
           args: release --rm-dist
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
       # - name: Setup GCloud CLI
       #   uses: google-github-actions/setup-gcloud@v0.6.0
@@ -286,6 +320,47 @@ jobs:
       #     gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
       #     gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
+  create_pr_in_homebrew:
+    name: Create PR in homebrew-tap
+    needs: [ensure_branch_in_homebrew, create_release]
+    runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Create a new branch off the base branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git fetch --all
+          git checkout bump-brew
+          git checkout -b $VERSION
+          git push --set-upstream origin $VERSION
+
+      - name: Close pull request if already exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr close $VERSION
+        continue-on-error: true
+
+      - name: Create pull request
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+
+
   clean_up:
     # let's clean up the artifacts.
     # incase this step isn't reached,
@@ -293,7 +368,7 @@ jobs:
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
-    needs: create_release
+    needs: create_pr_in_homebrew
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Linux Build

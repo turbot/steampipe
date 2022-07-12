@@ -20,6 +20,7 @@ archives:
   - files:
     - none*
     format: zip
+    id: homebrew
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
     - goos: linux
@@ -58,3 +59,20 @@ release:
   draft: true
 changelog:
   skip: true
+
+brews:
+  -
+    ids:
+      - homebrew
+    name: steampipe
+    tap:
+      owner: turbot
+      name: homebrew-tap
+      branch: bump-brew
+    folder: Formula
+    url_template: "https://github.com/turbot/steampipe/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    homepage: "https://steampipe.io/"
+    description: "Steampipe exposes APIs and services as a high-performance relational database, giving you the ability to write SQL-based queries to explore, assess and report on dynamic data."
+    skip_upload: auto
+    install: |-
+      bin.install "steampipe"
