@@ -106,7 +106,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 			if tx != nil {
 				tx.Rollback()
 			}
-			// call the completion callback - if one was provided
+			// in case of error call the onComplete callback
 			if onComplete != nil {
 				onComplete()
 			}
@@ -136,10 +136,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result)
 		// set the time that it took for this one to execute
-		if c.shouldShowTiming() {
-			c.getQueryTimingAsync(ctx, startTime, session, result.TimingResult)
-		}
+		c.getQueryTiming(ctx, startTime, session, result.TimingResult)
 
+		// call the completion callback - if one was provided
 		if onComplete != nil {
 			onComplete()
 		}
@@ -148,7 +147,18 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	return result, nil
 }
 
-func (c *DbClient) getQueryTimingAsync(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
+func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
+	if !c.shouldShowTiming() {
+		// so we are not displaying timing - do not fetch the query timing
+		// however, we still need to update the updateScanMetadataMaxId
+		// (unless timing is disabled, i.e. this query is part of a timing fetch call)
+		if !c.disableTiming {
+			// even if not showing timing, we need to update ScanMetadataMaxId
+			c.updateScanMetadataMaxId(ctx, session)
+		}
+		return
+	}
+
 	var timingResult = &queryresult.TimingResult{
 		Duration: time.Since(startTime),
 	}
@@ -190,6 +200,25 @@ func (c *DbClient) getQueryTimingAsync(ctx context.Context, startTime time.Time,
 	session.ScanMetadataMaxId = id
 
 	return
+}
+
+func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
+	res, err := c.ExecuteSyncInSession(ctx, session, "select max(id) from steampipe_command.scan_metadata")
+	if err != nil {
+		return err
+	}
+
+	for _, r := range res.Rows {
+		rw := r.(*queryresult.RowResult)
+		id, ok := rw.Data[0].(int64)
+		if ok {
+			// update the max id for this session
+			session.ScanMetadataMaxId = id
+		}
+
+		break
+	}
+	return nil
 }
 
 // run query in a goroutine, so we can check for cancellation
