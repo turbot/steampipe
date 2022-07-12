@@ -141,9 +141,9 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 		idx = 0
 		builder.Reset()
 		numCommentsUpdates := len(validatedPlugins)
-		for _, connection := range validatedPlugins {
-			log.Printf("[TRACE] executing comment query %d of %d for plugin '%s'", idx, numCommentsUpdates, connection.ConnectionName)
-			builder.WriteString(getCommentsQueryForPlugin(connection))
+		for connectionName, connectionPlugin := range validatedPlugins {
+			log.Printf("[TRACE] executing comment query %d of %d for plugin '%s'", idx, numCommentsUpdates, connectionName)
+			builder.WriteString(getCommentsQueryForPlugin(connectionName, connectionPlugin))
 
 		}
 		_, err := rootClient.ExecContext(ctx, builder.String())
@@ -156,26 +156,11 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 	return nil
 }
 
-func executeCommentsQuery(ctx context.Context, rootClient *sql.DB, connections []*steampipeconfig.ConnectionPlugin) error {
-	idx := 0
-	numUpdates := len(connections)
-	for _, connection := range connections {
-		log.Printf("[TRACE] executing comment query %d of %d for plugin '%s'", idx, numUpdates, connection.ConnectionName)
-		query := getCommentsQueryForPlugin(connection)
-		_, err := rootClient.ExecContext(ctx, query)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-
-}
-
-func getCommentsQueryForPlugin(p *steampipeconfig.ConnectionPlugin) string {
+func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.ConnectionPlugin) string {
 	var statements strings.Builder
-	for t, schema := range p.Schema.Schema {
+	for t, schema := range p.ConnectionMap[connectionName].Schema.Schema {
 		table := db_common.PgEscapeName(t)
-		schemaName := db_common.PgEscapeName(p.ConnectionName)
+		schemaName := db_common.PgEscapeName(connectionName)
 		if schema.Description != "" {
 			tableDescription := db_common.PgEscapeString(schema.Description)
 			statements.WriteString(fmt.Sprintf("COMMENT ON FOREIGN TABLE %s.%s is %s;\n", schemaName, table, tableDescription))

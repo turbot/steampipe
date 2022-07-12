@@ -123,12 +123,12 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 		// have we loaded a connection plugin for this connection
 		// - if so us the schema mode from the schema  it has loaded
 		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
-			v.SchemaMode = connectionPlugin.Schema.Mode
+			v.SchemaMode = connectionPlugin.ConnectionMap[k].Schema.Mode
 			// if the schema mode is dynamic and the hash is not set yet, calculate the value from the connection plugin schema
 			// this will happen the first time we load a plugin - as schemaHashMap will NOT include the has
 			// because we do not know yet that the plugin is dynamic
 			if v.SchemaMode == plugin.SchemaModeDynamic && v.SchemaHash == "" {
-				v.SchemaHash = pluginSchemaHash(connectionPlugin.Schema)
+				v.SchemaHash = pluginSchemaHash(connectionPlugin.ConnectionMap[k].Schema)
 			}
 		}
 
@@ -218,7 +218,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
 		// update schema hash stored in required connections so it is persisted in the state if updates are made
-		schemaHash := pluginSchemaHash(c.Schema)
+		schemaHash := pluginSchemaHash(c.ConnectionMap[name].Schema)
 		hashMap[name] = schemaHash
 	}
 	return hashMap, connectionsPluginsWithDynamicSchema, nil
