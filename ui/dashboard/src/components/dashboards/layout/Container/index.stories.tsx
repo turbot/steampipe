@@ -9,7 +9,11 @@ const story = {
 export default story;
 
 const Template = (args) => (
-  <PanelStoryDecorator definition={args.definition} panelType="container" />
+  <PanelStoryDecorator
+    definition={args.definition}
+    panels={args.panels}
+    panelType="container"
+  />
 );
 
 export const Empty = Template.bind({});
@@ -27,46 +31,72 @@ Title.args = {
 };
 
 export const Basic = Template.bind({});
+const textPanel = {
+  name: "text.markdown",
+  panel_type: "text",
+  properties: { value: "## Basic Dashboard" },
+};
 // @ts-ignore
 Basic.args = {
   definition: {
-    children: [{ name: "text.markdown", value: "## Basic Dashboard" }],
+    children: [textPanel],
+  },
+  panels: {
+    [textPanel.name]: textPanel,
   },
 };
 
 export const TwoColumn = Template.bind({});
+const leftContainer = {
+  name: "container.left",
+  panel_type: "container",
+  width: 6,
+};
+const rightContainer = {
+  name: "container.right",
+  panel_type: "container",
+  width: 6,
+};
+const leftTopTextPanel = {
+  name: "left.top.text.markdown",
+  panel_type: "text",
+  properties: { value: "## Column 1 Top" },
+};
+const leftBottomTextPanel = {
+  name: "left.bottom.text.markdown",
+  panel_type: "text",
+  properties: { value: "## Column 1 Bottom" },
+};
+const rightTopTextPanel = {
+  name: "right.top.text.markdown",
+  panel_type: "text",
+  properties: { value: "## Column 2 Top" },
+};
+const rightBottomTextPanel = {
+  name: "right.bottom.text.markdown",
+  panel_type: "text",
+  properties: { value: "## Column 2 Bottom" },
+};
 // @ts-ignore
 TwoColumn.args = {
   definition: {
     children: [
       {
-        name: "container.left",
-        width: 6,
-        children: [
-          {
-            name: "text.markdown",
-            value: "## Column 1 Top",
-          },
-          {
-            name: "text.markdown",
-            value: "## Column 1 Bottom",
-          },
-        ],
+        ...leftContainer,
+        children: [leftTopTextPanel, leftBottomTextPanel],
       },
       {
-        name: "container.right",
-        width: 6,
-        children: [
-          {
-            name: "text.markdown",
-            value: "## Column 2 Top",
-          },
-          {
-            name: "text.markdown",
-            value: "## Column 2 Bottom",
-          },
-        ],
+        ...rightContainer,
+        children: [rightTopTextPanel, rightBottomTextPanel],
       },
     ],
+  },
+  panels: {
+    [leftContainer.name]: leftContainer,
+    [rightContainer.name]: rightContainer,
+    [leftTopTextPanel.name]: leftTopTextPanel,
+    [leftBottomTextPanel.name]: leftBottomTextPanel,
+    [rightTopTextPanel.name]: rightTopTextPanel,
+    [rightBottomTextPanel.name]: rightBottomTextPanel,
   },
 };

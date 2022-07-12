@@ -10,9 +10,8 @@ export default story;
 
 const Template = (args) => (
   <PanelStoryDecorator
-    definition={args}
+    definition={{ ...args, display_type: "column" }}
     panelType="chart"
-    additionalProperties={{ type: "column" }}
   />
 );
 
