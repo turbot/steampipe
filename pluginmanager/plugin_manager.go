@@ -82,27 +82,17 @@ func (m *PluginManager) Serve() {
 func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 	resp := &proto.GetResponse{ReattachMap: make(map[string]*proto.ReattachConfig)}
 	var errors []error
-	var resultLock sync.Mutex
-	var resultWg sync.WaitGroup
 
 	log.Printf("[TRACE] PluginManager Get, connections: '%s'\n", req.Connections)
-	for _, c := range req.Connections {
-		resultWg.Add(1)
-		go func(connectionName string) {
-			reattach, err := m.getPlugin(connectionName)
+	for _, connectionName := range req.Connections {
 
-			resultLock.Lock()
-			if err != nil {
-				errors = append(errors, err)
-			} else {
-				resp.ReattachMap[connectionName] = reattach
-			}
-			resultLock.Unlock()
-			resultWg.Done()
-		}(c)
+		reattach, err := m.getPlugin(connectionName)
+		if err != nil {
+			errors = append(errors, err)
+		} else {
+			resp.ReattachMap[connectionName] = reattach
+		}
 	}
-
-	resultWg.Wait()
 
 	if len(errors) > 0 {
 		return nil, utils.CombineErrors(errors...)
@@ -323,10 +313,14 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.R
 
 	if supportedOperations.MultipleConnections {
 		// send the connection config for all connections for this plugin
-		m.setAllConnectionConfigs(pluginClient, pluginName)
+		// this returns a list of all connections provided by this plugin
+		connections, err = m.setAllConnectionConfigs(pluginClient, pluginName)
 	} else {
 		// send the connection config using legacy single connection function
-		m.setSingleConnectionConfig(pluginClient, connection)
+		err = m.setSingleConnectionConfig(pluginClient, connection)
+	}
+	if err != nil {
+		return nil, nil, err
 	}
 
 	reattach := proto.NewReattachConfig(client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connections)
@@ -356,17 +350,21 @@ func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
 }
 
 // set connection config for multiple connection, for compatible plugins)
-func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClient, pluginName string) error {
+func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClient, pluginName string) ([]string, error) {
 	configs, ok := m.pluginConnectionConfigs[pluginName]
 	if !ok {
 		// should never happen
-		return fmt.Errorf("no config loaded for plugin '%s'", pluginName)
+		return nil, fmt.Errorf("no config loaded for plugin '%s'", pluginName)
 	}
 	req := &sdkproto.SetAllConnectionConfigsRequest{
 		Configs: configs,
 	}
-
-	return pluginClient.SetAllConnectionConfigs(req)
+	// build list of connections
+	connections := make([]string, len(configs))
+	for i, config := range configs {
+		connections[i] = config.Connection
+	}
+	return connections, pluginClient.SetAllConnectionConfigs(req)
 }
 
 // set connection config for single connection, for legacy plugins)
