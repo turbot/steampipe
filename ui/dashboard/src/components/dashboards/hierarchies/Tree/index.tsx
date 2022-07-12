@@ -1,5 +1,5 @@
 import Hierarchy from "../Hierarchy";
-import { HierarchyProps, IHierarchy } from "../index";
+import { HierarchyProps, IHierarchy } from "../types";
 
 const Tree = (props: HierarchyProps) => <Hierarchy {...props} />;
 

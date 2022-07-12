@@ -1,38 +1,6 @@
-import React from "react";
 import Table from "../Table";
 import Tree from "./Tree";
-import {
-  BasePrimitiveProps,
-  ColorOverride,
-  ExecutablePrimitiveProps,
-} from "../common";
-
-export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
-
-interface HierarchyCategoryOptions {
-  title?: string;
-  color?: ColorOverride;
-}
-
-export type HierarchyCategories = {
-  [category: string]: HierarchyCategoryOptions;
-};
-
-export type HierarchyProperties = {
-  categories?: HierarchyCategories;
-};
-
-export type HierarchyProps = BaseChartProps & {
-  display_type?: HierarchyType;
-  properties?: HierarchyProperties;
-};
-
-export type HierarchyType = "table" | "tree";
-
-export interface IHierarchy {
-  type: HierarchyType;
-  component: React.ComponentType<any>;
-}
+import { IHierarchy } from "./types";
 
 const TableWrapper: IHierarchy = {
   type: "table",
@@ -44,4 +12,4 @@ const hierarchies = {
   [Tree.type]: Tree,
 };
 
-export default hierarchies;
+export { hierarchies };

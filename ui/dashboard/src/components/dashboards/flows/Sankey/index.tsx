@@ -1,5 +1,5 @@
 import Flow from "../Flow";
-import { FlowProps, IFlow } from "../index";
+import { FlowProps, IFlow } from "../types";
 
 const Sankey = (props: FlowProps) => <Flow {...props} />;
 

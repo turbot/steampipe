@@ -1,6 +1,6 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
-import { BaseChartProps } from "../../charts";
+import { BaseChartProps } from "../../charts/types";
 import {
   BenchmarkDefinition,
   DashboardActions,
@@ -10,7 +10,7 @@ import {
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
-import { HierarchyProps } from "../../hierarchies";
+import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs";
 import { memo, useState } from "react";

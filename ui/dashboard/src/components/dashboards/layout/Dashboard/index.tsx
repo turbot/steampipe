@@ -20,12 +20,11 @@ interface DashboardProps {
 const Dashboard = ({
   definition,
   progress = 0,
-  isRoot = true,
   state = "running",
   withPadding = false,
 }: DashboardProps) => (
   <>
-    {isRoot ? <DashboardProgress state={state} progress={progress} /> : <></>}
+    <DashboardProgress state={state} progress={progress} />
     <LayoutPanel
       definition={definition}
       isDashboard={true}

@@ -50,7 +50,7 @@ export const PanelStoryDecorator = ({
         closePanelDetail: noop,
         dataMode: "live",
         snapshotId: null,
-        dispatch: () => {},
+        dispatch: noop,
         error: null,
         dashboards: [],
         dashboardsMap: {},

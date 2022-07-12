@@ -1,5 +1,5 @@
 import Chart from "../Chart";
-import { ChartProps, IChart } from "../index";
+import { ChartProps, IChart } from "../types";
 
 const ColumnChart = (props: ChartProps) => {
   return <Chart {...props} />;

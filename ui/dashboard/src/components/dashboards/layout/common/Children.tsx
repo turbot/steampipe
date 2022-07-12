@@ -15,6 +15,7 @@ import { RenderChart as Chart } from "../../charts/Chart";
 import { RenderFlow as Flow } from "../../flows/Flow";
 import { RenderHierarchy as Hierarchy } from "../../hierarchies/Hierarchy";
 import { RenderInput as Input } from "../../inputs/Input";
+import NestedDashboard from "../Dashboard/NestedDashboard";
 
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
@@ -77,9 +78,7 @@ const Children = ({
               />
             );
           case "dashboard":
-            return (
-              <Dashboard key={child.name} definition={child} isRoot={false} />
-            );
+            return <NestedDashboard key={child.name} definition={child} />;
           case "error":
             return (
               <Panel

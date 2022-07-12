@@ -1,8 +1,4 @@
 import ErrorPanel from "../../Error";
-import Hierarchies, {
-  HierarchyProperties,
-  HierarchyType,
-} from "../../hierarchies";
 import merge from "lodash/merge";
 import {
   buildNodesAndEdges,
@@ -11,7 +7,8 @@ import {
   NodesAndEdges,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { HierarchyProps } from "../index";
+import { hierarchies } from "..";
+import { HierarchyProps, HierarchyProperties, HierarchyType } from "../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
@@ -164,7 +161,7 @@ const renderHierarchy = (definition: HierarchyProps) => {
   // We default to tree diagram if not specified
   const { display_type = "tree" } = definition;
 
-  const hierarchy = Hierarchies[display_type];
+  const hierarchy = hierarchies[display_type];
 
   if (!hierarchy) {
     return <ErrorPanel error={`Unknown hierarchy type ${display_type}`} />;

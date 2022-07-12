@@ -1,11 +1,4 @@
-import Charts, {
-  ChartProperties,
-  ChartProps,
-  ChartSeries,
-  ChartSeriesOptions,
-  ChartTransform,
-  ChartType,
-} from "../index";
+import Charts from "..";
 import ErrorPanel from "../../Error";
 import has from "lodash/has";
 import merge from "lodash/merge";
@@ -36,8 +29,16 @@ import {
   TooltipComponent,
 } from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
-import { FlowType } from "../../flows";
-import { HierarchyType } from "../../hierarchies";
+import {
+  ChartProperties,
+  ChartProps,
+  ChartSeries,
+  ChartSeriesOptions,
+  ChartTransform,
+  ChartType,
+} from "../types";
+import { FlowType } from "../../flows/types";
+import { HierarchyType } from "../../hierarchies/types";
 import { LabelLayout } from "echarts/features";
 import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
