@@ -7,6 +7,7 @@ import {
   DashboardRunState,
   useDashboard,
 } from "../../../../hooks/useDashboard";
+import { registerComponent } from "../../index";
 
 interface DashboardProps {
   definition: DashboardDefinition;
@@ -63,6 +64,8 @@ const DashboardWrapper = () => {
     />
   );
 };
+
+registerComponent("dashboard", Dashboard);
 
 export default DashboardWrapper;
 

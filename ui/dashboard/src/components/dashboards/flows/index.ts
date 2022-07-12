@@ -1,48 +1,20 @@
-import React from "react";
-import Sankey from "./Sankey";
-import Table from "../Table";
-import {
-  BasePrimitiveProps,
-  ColorOverride,
-  ExecutablePrimitiveProps,
-} from "../common";
+import { getComponent } from "../index";
+import { IFlow } from "./types";
+const Table = getComponent("table");
 
-export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+const flowsMap = {};
 
-interface FlowCategoryOptions {
-  title?: string;
-  color?: ColorOverride;
-  depth?: number;
-}
+const getFlowComponent = (key: string): IFlow => flowsMap[key];
 
-export type FlowCategories = {
-  [category: string]: FlowCategoryOptions;
+const registerFlowComponent = (key: string, component: IFlow) => {
+  flowsMap[key] = component;
 };
-
-export type FlowProperties = {
-  categories?: FlowCategories;
-};
-
-export type FlowProps = BaseChartProps & {
-  display_type?: FlowType;
-  properties?: FlowProperties;
-};
-
-export type FlowType = "sankey" | "table";
-
-export interface IFlow {
-  type: FlowType;
-  component: React.ComponentType<any>;
-}
 
 const TableWrapper: IFlow = {
   type: "table",
   component: Table,
 };
 
-const flows = {
-  [Sankey.type]: Sankey,
-  [TableWrapper.type]: TableWrapper,
-};
+registerFlowComponent(TableWrapper.type, TableWrapper);
 
-export default flows;
+export { getFlowComponent, registerFlowComponent };

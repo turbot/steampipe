@@ -1,6 +1,6 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
-import { BaseChartProps } from "../../charts";
+import { BaseChartProps } from "../../charts/types";
 import {
   BenchmarkDefinition,
   DashboardActions,
@@ -10,11 +10,12 @@ import {
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
-import { HierarchyProps } from "../../hierarchies";
+import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
-import { InputProps } from "../../inputs";
+import { InputProps } from "../../inputs/types";
 import { memo, useState } from "react";
 import { PanelProvider } from "../../../../hooks/usePanel";
+import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
@@ -238,5 +239,7 @@ const PanelWrapper = ({
     </Panel>
   );
 };
+
+registerComponent("panel", PanelWrapper);
 
 export default PanelWrapper;

@@ -1,16 +1,8 @@
-import Benchmark, { BenchmarkTree } from "../../check/Benchmark";
-import Card from "../../Card";
-import Container from "../Container";
-import ErrorPanel from "../../Error";
-import Image from "../../Image";
-import Panel from "../Panel";
-import Table from "../../Table";
-import Text from "../../Text";
 import {
   ContainerDefinition,
   PanelDefinition,
 } from "../../../../hooks/useDashboard";
-import { Dashboard } from "../Dashboard";
+import { getComponent } from "../../index";
 import { RenderChart as Chart } from "../../charts/Chart";
 import { RenderFlow as Flow } from "../../flows/Flow";
 import { RenderHierarchy as Hierarchy } from "../../hierarchies/Hierarchy";
@@ -27,11 +19,13 @@ const Children = ({
   allowPanelExpand = true,
   withTitle = true,
 }: ChildrenProps) => {
+  const Panel = getComponent("panel");
   return (
     <>
       {children.map((child) => {
         switch (child.panel_type) {
           case "benchmark":
+            const Benchmark = getComponent("benchmark");
             return (
               <Benchmark
                 key={child.name}
@@ -40,8 +34,10 @@ const Children = ({
               />
             );
           case "benchmark_tree":
+            const BenchmarkTree = getComponent("benchmark_tree");
             return <BenchmarkTree key={child.name} {...child} />;
           case "card":
+            const Card = getComponent("card");
             return (
               <Panel
                 key={child.name}
@@ -67,6 +63,7 @@ const Children = ({
               </Panel>
             );
           case "container":
+            const Container = getComponent("container");
             return (
               <Container
                 key={child.name}
@@ -77,10 +74,12 @@ const Children = ({
               />
             );
           case "dashboard":
+            const Dashboard = getComponent("dashboard");
             return (
               <Dashboard key={child.name} definition={child} isRoot={false} />
             );
           case "error":
+            const ErrorPanel = getComponent("error");
             return (
               <Panel
                 key={child.name}
@@ -118,6 +117,7 @@ const Children = ({
               </Panel>
             );
           case "image":
+            const Image = getComponent("image");
             return (
               <Panel
                 key={child.name}
@@ -150,6 +150,7 @@ const Children = ({
               </Panel>
             );
           case "table":
+            const Table = getComponent("table");
             return (
               <Panel
                 key={child.name}
@@ -163,6 +164,7 @@ const Children = ({
               </Panel>
             );
           case "text":
+            const Text = getComponent("text");
             return (
               <Panel
                 key={child.name}

@@ -1,47 +1,20 @@
-import React from "react";
-import Table from "../Table";
-import Tree from "./Tree";
-import {
-  BasePrimitiveProps,
-  ColorOverride,
-  ExecutablePrimitiveProps,
-} from "../common";
+import { getComponent } from "../index";
+import { IHierarchy } from "./types";
+const Table = getComponent("table");
 
-export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+const flowsMap = {};
 
-interface HierarchyCategoryOptions {
-  title?: string;
-  color?: ColorOverride;
-}
+const getHierarchyComponent = (key: string): IHierarchy => flowsMap[key];
 
-export type HierarchyCategories = {
-  [category: string]: HierarchyCategoryOptions;
+const registerHierarchyComponent = (key: string, component: IHierarchy) => {
+  flowsMap[key] = component;
 };
-
-export type HierarchyProperties = {
-  categories?: HierarchyCategories;
-};
-
-export type HierarchyProps = BaseChartProps & {
-  display_type?: HierarchyType;
-  properties?: HierarchyProperties;
-};
-
-export type HierarchyType = "table" | "tree";
-
-export interface IHierarchy {
-  type: HierarchyType;
-  component: React.ComponentType<any>;
-}
 
 const TableWrapper: IHierarchy = {
   type: "table",
   component: Table,
 };
 
-const hierarchies = {
-  [TableWrapper.type]: TableWrapper,
-  [Tree.type]: Tree,
-};
+registerHierarchyComponent(TableWrapper.type, TableWrapper);
 
-export default hierarchies;
+export { getHierarchyComponent, registerHierarchyComponent };

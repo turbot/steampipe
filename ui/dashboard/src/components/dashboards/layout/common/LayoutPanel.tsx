@@ -22,7 +22,6 @@ interface LayoutPanelProps {
 }
 
 const LayoutPanel = ({
-  allowExpand = false,
   children,
   className,
   definition,

@@ -1,12 +1,13 @@
 import get from "lodash/get";
 import Img from "react-cool-img";
-import Table from "../Table";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
   LeafNodeData,
 } from "../common";
+import { getComponent, registerComponent } from "../index";
 import { useEffect, useState } from "react";
+const Table = getComponent("table");
 
 type ImageType = "image" | "table" | null;
 
@@ -92,5 +93,7 @@ const ImageWrapper = (props: ImageProps) => {
   }
   return <Image {...props} />;
 };
+
+registerComponent("image", ImageWrapper);
 
 export default ImageWrapper;

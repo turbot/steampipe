@@ -1,6 +1,7 @@
 import Panel from "../Panel";
-import Table from "../../Table";
+import { getComponent } from "../../index";
 import { PanelDetailProps } from "./index";
+const Table = getComponent("table");
 
 const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
   return (

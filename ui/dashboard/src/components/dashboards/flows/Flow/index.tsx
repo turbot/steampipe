@@ -1,5 +1,4 @@
 import ErrorPanel from "../../Error";
-import Flows, { FlowProperties, FlowProps, FlowType } from "../index";
 import merge from "lodash/merge";
 import {
   buildNodesAndEdges,
@@ -9,6 +8,8 @@ import {
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
+import { FlowProperties, FlowProps, FlowType } from "../types";
+import { getFlowComponent } from "..";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
@@ -152,7 +153,7 @@ const renderFlow = (definition: FlowProps) => {
   // We default to sankey diagram if not specified
   const { display_type = "sankey" } = definition;
 
-  const flow = Flows[display_type];
+  const flow = getFlowComponent(display_type);
 
   if (!flow) {
     return <ErrorPanel error={`Unknown flow type ${display_type}`} />;

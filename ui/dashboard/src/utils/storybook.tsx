@@ -1,11 +1,16 @@
+import "../utils/registerComponents";
 import Dashboard from "../components/dashboards/layout/Dashboard";
 import { buildComponentsMap } from "../components";
 import { DashboardContext, DashboardSearch } from "../hooks/useDashboard";
 import { noop } from "./func";
+import { useStorybookTheme } from "../hooks/useStorybookTheme";
 
 type PanelStoryDecoratorProps = {
   definition: any;
   panelType: "card" | "chart" | "container" | "table" | "text";
+  panels?: {
+    [key: string]: any;
+  };
   additionalProperties?: {
     [key: string]: any;
   };
@@ -18,9 +23,11 @@ const stubDashboardSearch: DashboardSearch = {
 
 export const PanelStoryDecorator = ({
   definition = {},
+  panels = {},
   panelType,
   additionalProperties = {},
 }: PanelStoryDecoratorProps) => {
+  const { wrapperRef } = useStorybookTheme();
   const { properties, ...rest } = definition;
 
   const newPanel = {
@@ -50,7 +57,7 @@ export const PanelStoryDecorator = ({
         closePanelDetail: noop,
         dataMode: "live",
         snapshotId: null,
-        dispatch: () => {},
+        dispatch: noop,
         error: null,
         dashboards: [],
         dashboardsMap: {},
@@ -68,6 +75,7 @@ export const PanelStoryDecorator = ({
         lastChangedInput: null,
         panelsMap: {
           [newPanel.name]: newPanel,
+          ...panels,
         },
         dashboard: {
           artificial: false,
@@ -100,7 +108,7 @@ export const PanelStoryDecorator = ({
             name: "steampipe-default",
           },
           setTheme: noop,
-          wrapperRef: null,
+          wrapperRef,
         },
 
         components: buildComponentsMap(),

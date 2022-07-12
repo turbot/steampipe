@@ -7,7 +7,7 @@ import useSelectInputStyles from "./useSelectInputStyles";
 import { ColorGenerator } from "../../../../utils/color";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getColumn } from "../../../../utils/data";
-import { InputProps } from "../index";
+import { InputProps } from "../types";
 import { useEffect, useMemo, useState } from "react";
 
 export interface SelectOption {

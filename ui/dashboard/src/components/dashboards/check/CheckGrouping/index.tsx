@@ -7,6 +7,7 @@ import {
 } from "../../../../hooks/useCheckGrouping";
 import { CheckNode } from "../common";
 import { useCallback, useEffect, useState } from "react";
+import { registerComponent } from "../../index";
 
 interface CheckGroupingProps {
   node: CheckNode;
@@ -46,5 +47,7 @@ const CheckGrouping = ({ node }: CheckGroupingProps) => {
     </div>
   );
 };
+
+registerComponent("check_grouping", CheckGrouping);
 
 export default CheckGrouping;

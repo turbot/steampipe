@@ -1,4 +1,5 @@
 import ErrorMessage from "../../ErrorMessage";
+import { registerComponent } from "../index";
 
 interface ErrorProps {
   error?: any;
@@ -14,5 +15,7 @@ const Error = ({ error }: ErrorProps) => {
     </div>
   );
 };
+
+registerComponent("error", Error);
 
 export default Error;

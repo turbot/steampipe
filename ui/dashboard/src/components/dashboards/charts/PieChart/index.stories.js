@@ -10,9 +10,8 @@ export default story;
 
 const Template = (args) => (
   <PanelStoryDecorator
-    definition={args}
+    definition={{ ...args, display_type: "pie" }}
     panelType="chart"
-    additionalProperties={{ type: "pie" }}
   />
 );
 

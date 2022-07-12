@@ -1,3 +1,4 @@
+import "./utils/registerComponents";
 import Dashboard from "./components/dashboards/layout/Dashboard";
 import DashboardErrorModal from "./components/dashboards/DashboardErrorModal";
 import DashboardHeader from "./components/DashboardHeader";

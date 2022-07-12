@@ -1,3 +1,4 @@
+import ControlDimension from "../check/Benchmark/ControlDimension";
 import isEmpty from "lodash/isEmpty";
 import isObject from "lodash/isObject";
 import useDeepCompareEffect from "use-deep-compare-effect";
@@ -16,7 +17,6 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { ControlDimension } from "../check/Benchmark";
 import {
   ErrorIcon,
   SortAscendingIcon,
@@ -30,6 +30,7 @@ import {
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
+import { registerComponent } from "../index";
 
 type TableColumnDisplay = "all" | "none";
 type TableColumnWrap = "all" | "none";
@@ -630,6 +631,6 @@ const Table = (props: TableProps) => {
   return <TableViewWrapper {...props} />;
 };
 
-export default Table;
+registerComponent("table", Table);
 
 export { TableView };
