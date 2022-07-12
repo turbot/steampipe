@@ -54,7 +54,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 			syncResult.Rows = append(syncResult.Rows, row)
 		}
 	}
-	if c.shouldShowTiming {
+	if c.shouldShowTiming() {
 		syncResult.TimingResult = <-result.TimingResult
 	}
 	return syncResult, nil
@@ -64,6 +64,9 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 // execute the query in the given Context
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Result, error) {
+	// re-read shouldShowTiming from viper (in case the .timing command has been run)
+	c.setShouldShowTiming()
+
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -91,8 +94,8 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	if session.Connection == nil {
 		return nil, fmt.Errorf("nil database connection passed to ExecuteInSession")
 	}
-
 	startTime := time.Now()
+
 	var tx *sql.Tx
 
 	defer func() {
@@ -133,7 +136,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		// read in the rows and stream to the query result object
 		c.readRows(ctx, startTime, rows, result)
 		// set the time that it took for this one to execute
-		if c.shouldShowTiming {
+		if c.shouldShowTiming() {
 			c.getQueryTimingAsync(ctx, startTime, session, result.TimingResult)
 		}
 
@@ -150,11 +153,11 @@ func (c *DbClient) getQueryTimingAsync(ctx context.Context, startTime time.Time,
 		Duration: time.Since(startTime),
 	}
 	// disable fetching timing information to avoid recursion
-	c.shouldShowTiming = false
+	c.disableTiming = true
 
 	// whatever happens, we need to reenable timing, and send the result back with at least the duration
 	defer func() {
-		c.shouldShowTiming = true
+		c.disableTiming = false
 		resultChannel <- timingResult
 	}()
 

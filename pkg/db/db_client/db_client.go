@@ -44,7 +44,11 @@ type DbClient struct {
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
 	searchPathPrefix []string
-	shouldShowTiming bool
+	// a cached copy of (viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable)
+	// (cached to avoid concurrent access error on viper)
+	showTimingFlag bool
+	// disable timing - set whilst in process of querying the timing
+	disableTiming bool
 }
 
 func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
@@ -52,9 +56,6 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	defer utils.LogTime("db_client.NewDbClient end")
 
 	db, err := establishConnection(ctx, connectionString)
-
-	shouldShowTiming := viper.GetBool(constants.ArgTiming) &&
-		viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
 
 	if err != nil {
 		return nil, err
@@ -69,8 +70,11 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
-		shouldShowTiming:        shouldShowTiming,
 	}
+
+	// read timing from viper
+	client.setShouldShowTiming()
+
 	client.connectionString = connectionString
 
 	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
@@ -80,6 +84,13 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	}
 
 	return client, nil
+}
+
+func (c *DbClient) setShouldShowTiming() {
+	c.showTimingFlag = viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
+}
+func (c *DbClient) shouldShowTiming() bool {
+	return c.showTimingFlag && !c.disableTiming
 }
 
 func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
@@ -292,4 +303,3 @@ WHERE
 `
 	return query
 }
-
