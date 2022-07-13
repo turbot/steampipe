@@ -1,3 +1,7 @@
+## v0.15.2 [2222-07-13]
+_Bug fixes_
+* Fix intermittent hangs in interactive mode if timing is enabled.  ([#2237](https://github.com/turbot/steampipe/issues/2237))
+
 ## v0.15.1 [2222-07-07]
 _Bug fixes_
 * Fixes various EOF query errors. ([#192](https://github.com/turbot/steampipe-postgres-fdw/issues/192), [#201](https://github.com/turbot/steampipe-postgres-fdw/issues/201), [#207](https://github.com/turbot/steampipe-postgres-fdw/issues/207))
