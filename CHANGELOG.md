@@ -1,6 +1,6 @@
 ## v0.15.2 [2222-07-13]
 _Bug fixes_
-* Fix intermittent hangs in interactive mode if timing is enabled.  ([#2237](https://github.com/turbot/steampipe/issues/2237))
+* Fix intermittent hang in interactive mode if timing is enabled.  ([#2237](https://github.com/turbot/steampipe/issues/2237))
 
 ## v0.15.1 [2222-07-07]
 _Bug fixes_
