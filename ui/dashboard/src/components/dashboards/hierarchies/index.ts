@@ -2,12 +2,12 @@ import { getComponent } from "../index";
 import { IHierarchy } from "./types";
 const Table = getComponent("table");
 
-const flowsMap = {};
+const hierarchiesMap = {};
 
-const getHierarchyComponent = (key: string): IHierarchy => flowsMap[key];
+const getHierarchyComponent = (key: string): IHierarchy => hierarchiesMap[key];
 
 const registerHierarchyComponent = (key: string, component: IHierarchy) => {
-  flowsMap[key] = component;
+  hierarchiesMap[key] = component;
 };
 
 const TableWrapper: IHierarchy = {
