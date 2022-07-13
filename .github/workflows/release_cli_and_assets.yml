@@ -297,7 +297,7 @@ jobs:
     needs: [create_test_build,build_and_release_assets]
     strategy:
       matrix:
-        platform: [ ubuntu-latest ]
+        platform: [ macos-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Trim asset version prefix and Validate
