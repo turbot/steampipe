@@ -358,16 +358,17 @@ func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto
 
 	log.Printf("[TRACE] createConnectionPlugin for connection %s", connection.Name)
 
-	// we should never instantiate an aggregator connection
-	if connection.Type == modconfig.ConnectionTypeAggregator {
-		return nil, fmt.Errorf("we should never instantiate an aggregator connection plugin")
-	}
 	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config
 	connectionOptions := connection.Options
-
 	reattach := getResponse.ReattachMap[connectionName]
+
+	// we should never instantiate an aggregator connection
+	if connection.Type == modconfig.ConnectionTypeAggregator && !reattach.SupportedOperations.MultipleConnections {
+		return nil, fmt.Errorf("we should never instantiate an aggregator connection for a legacy plugin")
+	}
+
 	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d, reattach %v",
 		connectionName, reattach.Pid, reattach)
 	if reattach.Pid == 0 {
@@ -396,7 +397,7 @@ func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto
 		log.Printf("[TRACE] multiple connections ARE supported - adding all connections to ConnectionPlugin: %v", reattach.Connections)
 		// now identify all connections serviced by this plugin
 		for _, c := range reattach.Connections {
-			log.Printf("[TRACE] adding connectoin %s", c)
+			log.Printf("[TRACE] adding connection %s", c)
 
 			// NOTE: use GlobalConfig to access connection config
 			// we assume this has been populated either by the hub (if this is being invoked from the fdw) or the CLI

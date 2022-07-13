@@ -168,20 +168,20 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 }
 
 func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.Connection {
-	log.Printf("[TRACE] GetConnectionOptions")
+	log.Printf("[TRACE] GetConnectionOptions for %s", connectionName)
 	connection, ok := c.Connections[connectionName]
 	if !ok {
-		log.Printf("[TRACE] returning default %v", c.DefaultConnectionOptions)
-		// if we can't find connection, jsy return defaults
+		log.Printf("[TRACE] connection %s not found - returning default \n%v", connectionName, c.DefaultConnectionOptions)
+		// if we can't find connection, just return defaults
 		return c.DefaultConnectionOptions
 	}
 	// does the connection have connection options set - if not, return the default
 	if connection.Options == nil {
-		log.Printf("[TRACE] returning default %v", c.DefaultConnectionOptions)
+		log.Printf("[TRACE] connection %s has no options - returning default \n%v", connectionName, c.DefaultConnectionOptions)
 		return c.DefaultConnectionOptions
 	}
 	// so there are connection options, ensure all fields are set
-	log.Printf("[TRACE] connection defines options %v", connection.Options)
+	log.Printf("[TRACE] connection %s defines options %v", connectionName, connection.Options)
 
 	// create a copy of the options to return
 	result := &options.Connection{
