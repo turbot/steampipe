@@ -262,3 +262,15 @@ func (c *Connection) FirstChild() *Connection {
 	sort.Strings(childNames)
 	return c.Connections[childNames[0]]
 }
+
+// GetResolveConnectionNames return the names of all child connections
+// (will only be non-empty for aggregator connections)
+func (c *Connection) GetResolveConnectionNames() []string {
+	res := make([]string, len(c.Connections))
+	idx := 0
+	for k := range c.Connections {
+		res[idx] = k
+		idx++
+	}
+	return res
+}
