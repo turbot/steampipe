@@ -72,9 +72,6 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 		sessionsMutex:           &sync.Mutex{},
 	}
 
-	// read timing from viper
-	client.setShouldShowTiming()
-
 	client.connectionString = connectionString
 
 	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
@@ -86,8 +83,16 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	return client, nil
 }
 
-func (c *DbClient) setShouldShowTiming() {
-	c.showTimingFlag = viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
+func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) {
+	currentShowTimingFlag := viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
+
+	// if we are turning timing ON, fetch the ScanMetadataMaxId
+	// to ensure we only delect the relevant scan metadata table entries
+	if currentShowTimingFlag && !c.showTimingFlag {
+		c.updateScanMetadataMaxId(ctx, session)
+	}
+
+	c.showTimingFlag = currentShowTimingFlag
 }
 func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming

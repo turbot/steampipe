@@ -64,14 +64,14 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 // execute the query in the given Context
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Result, error) {
-	// re-read shouldShowTiming from viper (in case the .timing command has been run)
-	c.setShouldShowTiming()
-
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
 	}
+	// re-read ArgTiming from viper (in case the .timing command has been run)
+	// (this will refetch ScanMetadataMaxId is timing has just been enabled)
+	c.setShouldShowTiming(ctx, sessionResult.Session)
 
 	// define callback to close session when the async execution is complete
 	closeSessionCallback := func() { sessionResult.Session.Close(utils.IsContextCancelled(ctx)) }
@@ -133,10 +133,14 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	// read the rows in a go routine
 	go func() {
+		// define a callback which fetches the timing information
+		// this will be invoked after reading rows is complete but BEFORE closing the rows object (which closes the connection)
+		timingCallback := func() {
+			c.getQueryTiming(ctx, startTime, session, result.TimingResult)
+		}
+
 		// read in the rows and stream to the query result object
-		c.readRows(ctx, startTime, rows, result)
-		// set the time that it took for this one to execute
-		c.getQueryTiming(ctx, startTime, session, result.TimingResult)
+		c.readRows(ctx, rows, result, timingCallback)
 
 		// call the completion callback - if one was provided
 		if onComplete != nil {
@@ -149,13 +153,6 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
 	if !c.shouldShowTiming() {
-		// so we are not displaying timing - do not fetch the query timing
-		// however, we still need to update the updateScanMetadataMaxId
-		// (unless timing is disabled, i.e. this query is part of a timing fetch call)
-		if !c.disableTiming {
-			// even if not showing timing, we need to update ScanMetadataMaxId
-			c.updateScanMetadataMaxId(ctx, session)
-		}
 		return
 	}
 
@@ -248,11 +245,13 @@ func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn)
 	return
 }
 
-func (c *DbClient) readRows(ctx context.Context, start time.Time, rows *sql.Rows, result *queryresult.Result) {
+func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryresult.Result, timingCallback func()) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. clear the status indication
 		statushooks.Done(ctx)
+		// call the timing callback BEFORE closing the rows
+		timingCallback()
 		// close the sql rows object
 		rows.Close()
 		if err := rows.Err(); err != nil {
