@@ -18,6 +18,7 @@ env:
   CONFIG_SCHEMA_VERSION: "2020-11-18"
   VERSION: ${{ github.event.inputs.version }}
   STEAMPIPE_UPDATE_CHECK: false
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
 
@@ -370,10 +371,88 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
         $GITHUB_WORKSPACE/tests/acceptance/run.sh
         steampipe service stop --force
+
+  docker_acceptance_test_debian:
+    name: Acceptance tests(Docker - Debian)
+    needs: [create_test_build,build_and_release_assets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Prepare for downloads
+        id: prepare-for-downloads
+        run: |
+          mkdir ~/artifacts
+
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
+
+      - name: Extract Ubuntu Artifacts and Install Binary
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+
+      - name: Copy binary
+        run: |
+          cp ~/build/steampipe tests/dockertesting/debian
+      
+      - name: Build steampipe docker images
+        run: |
+          docker build -t spdebian tests/dockertesting/debian
+          docker images
+
+      - name: Create a container and run the test suite
+        run: |
+          docker run --name steampipe-deb `docker images -q spdebian`
   
+  docker_acceptance_test_oraclelinux:
+    name: Acceptance tests(Docker - OracleLinux)
+    needs: [create_test_build,build_and_release_assets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Prepare for downloads
+        id: prepare-for-downloads
+        run: |
+          mkdir ~/artifacts
+
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
+
+      - name: Extract Ubuntu Artifacts and Install Binary
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+
+      - name: Copy binary
+        run: |
+          cp ~/build/steampipe tests/dockertesting/oraclelinux
+      
+      - name: Build steampipe docker images
+        run: |
+          docker build -t sporacle tests/dockertesting/oraclelinux
+          docker images
+
+      - name: Create a container and run the test suite
+        run: |
+          docker run --name steampipe-oracle `docker images -q sporacle`
+
   create_release_tag:
     name: Tag Release
-    needs: [run_acceptance_tests]
+    needs: [run_acceptance_tests, docker_acceptance_test_debian, docker_acceptance_test_oraclelinux]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
@@ -404,9 +483,42 @@ jobs:
         git tag ${{ github.event.inputs.version }}
         git push origin ${{ github.event.inputs.version }}
 
+  ensure_branch_in_homebrew:
+    name: Ensure branch exists in homebrew-tap
+    needs: [create_release_tag]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Delete base branch if exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git fetch --all
+          git push origin --delete bump-brew
+          git push origin --delete $VERSION
+        continue-on-error: true
+
+      - name: Create base branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git checkout -b bump-brew
+          git push --set-upstream origin bump-brew
+
   build_and_release_cli:
     name: Release CLI
-    needs: [create_release_tag]
+    needs: [create_release_tag, ensure_branch_in_homebrew]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
@@ -441,7 +553,7 @@ jobs:
         version: latest
         args: release --rm-dist
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
     # - name: Setup GCloud
     #   uses: google-github-actions/setup-gcloud@v0.6.0
@@ -460,6 +572,46 @@ jobs:
     #     gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
     #     gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
+  create_pr_in_homebrew:
+    name: Create PR in homebrew-tap
+    needs: [ensure_branch_in_homebrew, build_and_release_cli]
+    runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Create a new branch off the base branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git fetch --all
+          git checkout bump-brew
+          git checkout -b $VERSION
+          git push --set-upstream origin $VERSION
+
+      - name: Close pull request if already exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr close $VERSION
+        continue-on-error: true
+
+      - name: Create pull request
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+
   clean_up:
     # let's clean up the artifacts.
     # in case this step isn't reached,
@@ -467,7 +619,7 @@ jobs:
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
-    needs: build_and_release_cli
+    needs: create_pr_in_homebrew
     runs-on: ubuntu-latest
     steps:
     - name: Clean up Linux Build
