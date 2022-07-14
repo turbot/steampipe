@@ -1,3 +1,7 @@
+## v0.15.3 [2222-07-14]
+_Bug fixes_
+* Fix crash when inspecting tables in interactive mode. ([#2243](https://github.com/turbot/steampipe/issues/2243))
+
 ## v0.15.2 [2222-07-13]
 _Bug fixes_
 * Fix intermittent hang in interactive mode if timing is enabled.  ([#2237](https://github.com/turbot/steampipe/issues/2237))
