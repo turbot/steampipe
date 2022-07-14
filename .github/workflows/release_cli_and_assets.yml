@@ -371,10 +371,88 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
         $GITHUB_WORKSPACE/tests/acceptance/run.sh
         steampipe service stop --force
+
+  docker_acceptance_test_debian:
+    name: Acceptance tests(Docker - Debian)
+    needs: [create_test_build,build_and_release_assets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Prepare for downloads
+        id: prepare-for-downloads
+        run: |
+          mkdir ~/artifacts
+
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
+
+      - name: Extract Ubuntu Artifacts and Install Binary
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+
+      - name: Copy binary
+        run: |
+          cp ~/build/steampipe tests/dockertesting/debian
+      
+      - name: Build steampipe docker images
+        run: |
+          docker build -t spdebian tests/dockertesting/debian
+          docker images
+
+      - name: Create a container and run the test suite
+        run: |
+          docker run --name steampipe-deb `docker images -q spdebian`
   
+  docker_acceptance_test_oraclelinux:
+    name: Acceptance tests(Docker - OracleLinux)
+    needs: [create_test_build,build_and_release_assets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Prepare for downloads
+        id: prepare-for-downloads
+        run: |
+          mkdir ~/artifacts
+
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
+
+      - name: Extract Ubuntu Artifacts and Install Binary
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+
+      - name: Copy binary
+        run: |
+          cp ~/build/steampipe tests/dockertesting/oraclelinux
+      
+      - name: Build steampipe docker images
+        run: |
+          docker build -t sporacle tests/dockertesting/oraclelinux
+          docker images
+
+      - name: Create a container and run the test suite
+        run: |
+          docker run --name steampipe-oracle `docker images -q sporacle`
+
   create_release_tag:
     name: Tag Release
-    needs: [run_acceptance_tests]
+    needs: [run_acceptance_tests, docker_acceptance_test_debian, docker_acceptance_test_oraclelinux]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
