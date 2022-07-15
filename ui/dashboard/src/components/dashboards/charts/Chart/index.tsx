@@ -43,6 +43,7 @@ import { LabelLayout } from "echarts/features";
 import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import * as echarts from "echarts/core";
+import { registerComponent } from "../../index";
 
 echarts.use([
   BarChart,
@@ -773,6 +774,8 @@ const RenderChart = (props: ChartProps) => {
   return renderChart(props);
 };
 
+registerComponent("chart", RenderChart);
+
 export default ChartWrapper;
 
-export { Chart, RenderChart };
+export { Chart };

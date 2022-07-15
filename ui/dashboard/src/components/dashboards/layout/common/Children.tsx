@@ -3,10 +3,6 @@ import {
   PanelDefinition,
 } from "../../../../hooks/useDashboard";
 import { getComponent } from "../../index";
-import { RenderChart as Chart } from "../../charts/Chart";
-import { RenderFlow as Flow } from "../../flows/Flow";
-import { RenderHierarchy as Hierarchy } from "../../hierarchies/Hierarchy";
-import { RenderInput as Input } from "../../inputs/Input";
 
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
@@ -45,11 +41,11 @@ const Children = ({
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Card {...definition} />}
               </Panel>
             );
           case "chart":
+            const Chart = getComponent("chart");
             return (
               <Panel
                 key={child.name}
@@ -58,7 +54,6 @@ const Children = ({
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Chart {...definition} />}
               </Panel>
             );
@@ -91,6 +86,7 @@ const Children = ({
               </Panel>
             );
           case "flow":
+            const Flow = getComponent("flow");
             return (
               <Panel
                 key={child.name}
@@ -99,11 +95,11 @@ const Children = ({
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Flow {...definition} />}
               </Panel>
             );
           case "hierarchy":
+            const Hierarchy = getComponent("hierarchy");
             return (
               <Panel
                 key={child.name}
@@ -112,7 +108,6 @@ const Children = ({
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Hierarchy {...definition} />}
               </Panel>
             );
@@ -130,11 +125,11 @@ const Children = ({
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Image {...definition} />}
               </Panel>
             );
           case "input":
+            const Input = getComponent("input");
             return (
               <Panel
                 key={child.name}
@@ -145,7 +140,6 @@ const Children = ({
                 }
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Input {...definition} />}
               </Panel>
             );
@@ -159,7 +153,6 @@ const Children = ({
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Table {...definition} />}
               </Panel>
             );
@@ -172,7 +165,6 @@ const Children = ({
                 allowExpand={false}
                 withTitle={withTitle}
               >
-                {/*@ts-ignore*/}
                 {(definition) => <Text {...definition} />}
               </Panel>
             );

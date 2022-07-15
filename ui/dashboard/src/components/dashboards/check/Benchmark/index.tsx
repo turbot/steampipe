@@ -270,10 +270,11 @@ const Inner = ({ withTitle }) => {
           width: definition.width,
         }}
       >
-        {/*@ts-ignore*/}
-        <Error
-          error={`Unsupported benchmark type ${definition.display_type}`}
-        />
+        {() => (
+          <Error
+            error={`Unsupported benchmark type ${definition.display_type}`}
+          />
+        )}
       </Panel>
     );
   }

@@ -10,6 +10,7 @@ import {
 import { Chart } from "../../charts/Chart";
 import { FlowProperties, FlowProps, FlowType } from "../types";
 import { getFlowComponent } from "..";
+import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
@@ -167,6 +168,6 @@ const RenderFlow = (props: FlowProps) => {
   return renderFlow(props);
 };
 
-export default FlowWrapper;
+registerComponent("flow", RenderFlow);
 
-export { RenderFlow };
+export default FlowWrapper;
