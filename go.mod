@@ -15,10 +15,9 @@ require (
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/briandowns/spinner v1.18.1
 	github.com/c-bata/go-prompt v0.2.6
-	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/containerd/containerd v1.4.12
 	github.com/deislabs/oras v0.8.1
-	github.com/eko/gocache/v3 v3.1.0
+	github.com/eko/gocache/v3 v3.1.1
 	github.com/fatih/color v1.13.0
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gertd/go-pluralize v0.2.1
