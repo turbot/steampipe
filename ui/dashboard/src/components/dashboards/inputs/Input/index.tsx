@@ -2,6 +2,7 @@ import ErrorPanel from "../../Error";
 import { getInputComponent } from "../index";
 import { InputProperties } from "../types";
 import { PanelDefinition } from "../../../../hooks/useDashboard";
+import { registerComponent } from "../../index";
 
 export type InputDefinition = PanelDefinition & {
   properties: InputProperties;
@@ -26,4 +27,4 @@ const RenderInput = (props: InputDefinition) => {
   return renderInput(props);
 };
 
-export { RenderInput };
+registerComponent("input", RenderInput);

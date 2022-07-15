@@ -1,3 +1,7 @@
+## v0.15.4 [2222-07-14]
+_Bug fixes_
+* Fix dashboard UI not rendering for chart/flow/hierarchy/input when type is set to table. ([#2250](https://github.com/turbot/steampipe/issues/2250))
+
 ## v0.15.3 [2222-07-14]
 _Bug fixes_
 * Fix crash when inspecting tables in interactive mode. ([#2243](https://github.com/turbot/steampipe/issues/2243))

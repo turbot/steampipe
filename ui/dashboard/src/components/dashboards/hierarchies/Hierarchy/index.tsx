@@ -9,6 +9,7 @@ import {
 import { Chart } from "../../charts/Chart";
 import { getHierarchyComponent } from "..";
 import { HierarchyProps, HierarchyProperties, HierarchyType } from "../types";
+import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
@@ -175,6 +176,6 @@ const RenderHierarchy = (props: HierarchyProps) => {
   return renderHierarchy(props);
 };
 
-export default HierarchyWrapper;
+registerComponent("hierarchy", RenderHierarchy);
 
-export { RenderHierarchy };
+export default HierarchyWrapper;
