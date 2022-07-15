@@ -4,7 +4,7 @@ go 1.18
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20220512154952-8a65716d8171
 
-replace github.com/turbot/steampipe-plugin-sdk/v3 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
+//replace github.com/turbot/steampipe-plugin-sdk/v3 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
 
 require (
 	github.com/Machiel/slugify v1.0.1
@@ -49,7 +49,7 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.4.0
-	github.com/turbot/steampipe-plugin-sdk/v3 v3.4.0-alpha.1
+	github.com/turbot/steampipe-plugin-sdk/v3 v3.4.0-alpha.2
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.10.0
 	github.com/zclconf/go-cty-yaml v1.0.2
