@@ -108,7 +108,15 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 		}
 
 		// otherwise create one
-		connectionPlugin, err := createConnectionPlugin(connection, getResponse)
+
+		reattach := getResponse.ReattachMap[connection.Name]
+		// if this is a legacy aggregator connection, skip - we do not instantiate connectionPlugins for these
+		if connection.Type == modconfig.ConnectionTypeAggregator && !reattach.SupportedOperations.MultipleConnections {
+			log.Printf("[TRACE] %s is a legacy aggregator connection - NOT creating a ConnectionPlugin", connection.Name)
+			continue
+		}
+
+		connectionPlugin, err := createConnectionPlugin(connection, reattach)
 		if err != nil {
 			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginShortName, err))
 			continue
@@ -132,33 +140,6 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 	return requestedConnectionPluginMap, res
 }
 
-//
-//func populateConnectionPluginSchemas(connections []*modconfig.Connection, connectionPluginMap map[string]*ConnectionPlugin, multiConnectionPlugins map[string]*ConnectionPlugin) error {
-//
-//	// split connections into list of conneciton using legacy plugins and the rest
-//	var legacyPluginConnections []*modconfig.Connection
-//	var multiConnections []*modconfig.Connection
-//	for _, c := range connections {
-//		if multiConnectionPlugins[c.Plugin] != nil {
-//			multiConnections = append(multiConnections, c)
-//		} else {
-//			legacyPluginConnections = append(legacyPluginConnections, c)
-//
-//		}
-//	}
-//	if len(legacyPluginConnections) > 0 {
-//		if err := populateLegacyConnectionPluginSchemas(legacyPluginConnections, connectionPluginMap); err != nil {
-//			return err
-//		}
-//	}
-//	if len(multiConnections) > 0 {
-//		if err := populateMultiConnectionPluginSchemas(multiConnections, connectionPluginMap); err != nil {
-//			return err
-//		}
-//	}
-//	return nil
-//}
-
 func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*ConnectionPlugin) error {
 
 	// requestedConnectionPluginMap is a map of connection plugins, keyed by connection name
@@ -167,7 +148,7 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 	// NOTE: the connection plugins may provide  _more_ connections that those requested
 	// - we need to populate the schema for _all_ of them
 
-	// build a map keyed by _all_ connection names provided by the conenction plugins
+	// build a map keyed by _all_ connection names provided by the connection plugins
 	connectionPluginMap := fullConnectionPluginMap(requestedConnectionPluginMap)
 
 	var errors []error
@@ -175,10 +156,14 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 	// build map of the static schemas, keyed by plugin
 	staticSchemas := make(map[string]*sdkproto.Schema)
 
+	log.Printf("[TRACE] populateConnectionPluginSchemas")
+
 	for connectionName, connectionPlugin := range connectionPluginMap {
+		log.Printf("[TRACE] populateConnectionPluginSchemas: connectionName: %s", connectionName)
 		// does this plugin  exist in the static schema map?
 		schema, ok := staticSchemas[connectionPlugin.PluginName]
 		if !ok {
+			log.Printf("[TRACE] schema does not exist in list of static schemas, fetching")
 			// if not, fetch the schema
 			var err error
 			schema, err = connectionPlugin.PluginClient.GetSchema(connectionName)
@@ -188,12 +173,14 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 				continue
 			}
 
+			log.Printf("[TRACE] got schema, mode: %s", schema.Mode)
 			// if the schema is static, add to static schema map
 			if schema.Mode == sdkplugin.SchemaModeStatic {
 				staticSchemas[connectionPlugin.PluginName] = schema
 			}
 		}
 
+		log.Printf("[TRACE] add schema to connection map for connection name %s", connectionName)
 		// set the schema on the connection plugin
 		connectionPlugin.ConnectionMap[connectionName].Schema = schema
 
@@ -354,20 +341,13 @@ func fullConnectionPluginMap(sparseConnectionPluginMap map[string]*ConnectionPlu
 //	return schemaModeMap
 //}
 
-func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto.GetResponse) (*ConnectionPlugin, error) {
+func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
 
 	log.Printf("[TRACE] createConnectionPlugin for connection %s", connection.Name)
-
 	pluginName := connection.Plugin
 	connectionName := connection.Name
 	connectionConfig := connection.Config
 	connectionOptions := connection.Options
-	reattach := getResponse.ReattachMap[connectionName]
-
-	// we should never instantiate an aggregator connection
-	if connection.Type == modconfig.ConnectionTypeAggregator && !reattach.SupportedOperations.MultipleConnections {
-		return nil, fmt.Errorf("we should never instantiate an aggregator connection for a legacy plugin")
-	}
 
 	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d, reattach %v",
 		connectionName, reattach.Pid, reattach)
