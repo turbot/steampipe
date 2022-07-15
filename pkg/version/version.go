@@ -27,7 +27,7 @@ var steampipeVersion = "0.16.0"
 var prerelease = "alpha.0"
 
 // SteampipeVersion is an instance of semver.Version. This has the secondary
-// benefit of verifying during tests and init trc.3ime that our version is a
+// benefit of verifying during tests and init time that our version is a
 // proper semantic version, which should always be the case.
 var SteampipeVersion *semver.Version
 

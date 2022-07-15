@@ -234,7 +234,8 @@ func (m *PluginManager) setPluginConnectionConfigs() {
 	for _, config := range m.connectionConfig {
 		m.pluginConnectionConfigs[config.Plugin] = append(m.pluginConnectionConfigs[config.Plugin], config)
 	}
-	log.Printf("[TRACE] setPluginConnectionConfigs: %v", m.pluginConnectionConfigs)
+	numConnections := len(m.pluginConnectionConfigs)
+	log.Printf("[TRACE]  PluginManager setPluginConnectionConfigs: %d %s", numConnections, utils.Pluralize("connection", numConnections))
 }
 
 func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {

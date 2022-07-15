@@ -111,8 +111,9 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 
 	var builder strings.Builder
 
+	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 	for connectionName, connectionData := range updates {
-		log.Printf("[TRACE] executing update query %d of %d for connection '%s'", idx, numUpdates, connectionName)
+
 		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
 		builder.WriteString(getUpdateConnectionQuery(connectionName, remoteSchema))
 
@@ -141,8 +142,9 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 		idx = 0
 		builder.Reset()
 		numCommentsUpdates := len(validatedPlugins)
+		log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
+
 		for connectionName, connectionPlugin := range validatedPlugins {
-			log.Printf("[TRACE] executing comment query %d of %d for plugin '%s'", idx, numCommentsUpdates, connectionName)
 			builder.WriteString(getCommentsQueryForPlugin(connectionName, connectionPlugin))
 
 		}
