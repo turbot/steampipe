@@ -3,15 +3,19 @@ module github.com/turbot/steampipe
 go 1.18
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20220512154952-8a65716d8171
+
 replace github.com/turbot/steampipe-plugin-sdk/v3 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
+
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver v1.5.0
 	github.com/ahmetb/go-linq v3.0.0+incompatible
 	github.com/alecthomas/chroma v0.10.0
+	github.com/allegro/bigcache/v3 v3.0.2
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/briandowns/spinner v1.18.1
 	github.com/c-bata/go-prompt v0.2.6
+	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/containerd/containerd v1.4.12
 	github.com/deislabs/oras v0.8.1
 	github.com/eko/gocache/v3 v3.1.0
@@ -37,7 +41,6 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/otiai10/copy v1.7.0
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
 	github.com/shirou/gopsutil v3.21.11+incompatible
@@ -68,7 +71,6 @@ require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
-	github.com/allegro/bigcache/v3 v3.0.2 // indirect
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect

@@ -390,7 +390,7 @@ func createConnectionPlugin(connection *modconfig.Connection, getResponse *proto
 	connectionPlugin := NewConnectionPlugin(pluginName, pluginClient, reattach.SupportedOperations)
 
 	// if multiple connections are NOT supported, add the config for our one and only connection
-	if !reattach.SupportedOperations.MultipleConnections {
+	if reattach.SupportedOperations == nil || !reattach.SupportedOperations.MultipleConnections {
 		log.Printf("[TRACE] multiple connections NOT supported - adding single connection '%s' to ConnectionPlugin", connectionName)
 		connectionPlugin.addConnection(connectionName, connectionConfig, connectionOptions)
 	} else {

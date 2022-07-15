@@ -3,16 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"strings"
-
 	_ "github.com/jackc/pgx/v4/stdlib"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 var exitCode int
