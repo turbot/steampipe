@@ -20,6 +20,10 @@ import "../components/dashboards/charts/Chart";
 import "../components/dashboards/flows/Sankey";
 import "../components/dashboards/flows/Flow";
 
+// Graphs
+import "../components/dashboards/graphs/ForceDirectedGraph";
+import "../components/dashboards/graphs/Graph";
+
 // Hierarchies
 import "../components/dashboards/hierarchies/Tree";
 import "../components/dashboards/hierarchies/Hierarchy";

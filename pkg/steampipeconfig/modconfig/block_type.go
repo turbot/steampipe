@@ -10,6 +10,7 @@ const (
 	BlockTypeChart          = "chart"
 	BlockTypeCard           = "card"
 	BlockTypeFlow           = "flow"
+	BlockTypeGraph          = "graph"
 	BlockTypeHierarchy      = "hierarchy"
 	BlockTypeImage          = "image"
 	BlockTypeInput          = "input"
@@ -31,6 +32,7 @@ var QueryProviderBlocks = []string{
 	BlockTypeCard,
 	BlockTypeTable,
 	BlockTypeFlow,
+	BlockTypeGraph,
 	BlockTypeHierarchy,
 }
 
@@ -45,6 +47,7 @@ var ReferenceBlocks = []string{
 	BlockTypeCard,
 	BlockTypeChart,
 	BlockTypeFlow,
+	BlockTypeGraph,
 	BlockTypeHierarchy,
 	BlockTypeImage,
 	BlockTypeInput,
