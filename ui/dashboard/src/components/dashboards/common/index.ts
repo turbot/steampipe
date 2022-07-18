@@ -20,19 +20,6 @@ export interface LeafNodeDataColumn {
   data_type: string;
 }
 
-// export interface HierarchyDataRow {
-//   id: string;
-//   category: string;
-//   parent: string | null;
-//   name: string | null;
-// }
-//
-// export interface HierarchyDataRowEdge {
-//   source: string;
-//   target: string;
-//   value: number;
-// }
-
 export interface LeafNodeDataRow {
   [key: string]: any;
 }
@@ -188,113 +175,6 @@ const buildChartDataset = (
   }
 };
 
-// const buildSeriesInputs = (rawData, seriesDataFormat, seriesDataType) => {
-//   const seriesDataLookup: SeriesTimeLookup = {};
-//   const seriesDataTotalLookup: TotalLookup = {};
-//   const seriesLabels: string[] = [];
-//   const timeSeriesLabels: string[] = [];
-//   if (seriesDataFormat === "row") {
-//     if (seriesDataType === "time") {
-//       for (const row of rawData.slice(1)) {
-//         const timeRaw = row[0];
-//         const formattedTime = moment(timeRaw).format("DD MMM YYYY");
-//         const series = row[1];
-//         const value = row[2];
-//         seriesDataLookup[formattedTime] = seriesDataLookup[formattedTime] || {};
-//         const timeEntry = seriesDataLookup[formattedTime];
-//         timeEntry[series] = timeEntry[series] || {};
-//         const seriesEntry = timeEntry[series];
-//         seriesEntry.value = value;
-//         if (timeSeriesLabels.indexOf(formattedTime) === -1) {
-//           timeSeriesLabels.push(formattedTime);
-//         }
-//         if (value !== 0 && seriesLabels.indexOf(series) === -1) {
-//           seriesLabels.push(series);
-//         }
-//
-//         seriesDataTotalLookup[formattedTime] = seriesDataTotalLookup[
-//           formattedTime
-//         ] || {
-//           min: 0,
-//           max: 0,
-//         };
-//         if (value > 0) {
-//           seriesDataTotalLookup[formattedTime].max += value;
-//         }
-//         if (value < 0) {
-//           seriesDataTotalLookup[formattedTime].min += value;
-//         }
-//       }
-//     }
-//   }
-//
-//   return {
-//     seriesDataLookup,
-//     seriesDataTotalLookup,
-//     seriesLabels,
-//     timeSeriesLabels,
-//   };
-// };
-
-// const buildSeriesDataInputs = (rawData, seriesDataFormat, seriesDataType) => {
-//   const {
-//     seriesDataLookup,
-//     seriesDataTotalLookup,
-//     seriesLabels,
-//     timeSeriesLabels,
-//   } = buildSeriesInputs(rawData, seriesDataFormat, seriesDataType);
-//   const datasets: SeriesData[] = [];
-//
-//   for (
-//     let seriesLabelIndex = 0;
-//     seriesLabelIndex < seriesLabels.length;
-//     seriesLabelIndex++
-//   ) {
-//     const seriesLabel = seriesLabels[seriesLabelIndex];
-//     const data: any[] = [];
-//
-//     for (const timeSeriesLabel of timeSeriesLabels) {
-//       const timeSeriesEntry = seriesDataLookup[timeSeriesLabel];
-//       const seriesEntry = timeSeriesEntry[seriesLabel];
-//       data.push(seriesEntry ? seriesEntry.value : null);
-//     }
-//
-//     datasets.push({
-//       name: seriesLabel,
-//       data,
-//       // backgroundColor: themeColors[seriesLabelIndex],
-//     });
-//   }
-//
-//   let min = 0;
-//   let max = 0;
-//   for (const {
-//     min: seriesDataMinTotal,
-//     max: seriesDataMaxTotal,
-//   } of Object.values(seriesDataTotalLookup)) {
-//     if (seriesDataMinTotal < min) {
-//       min = seriesDataMinTotal;
-//     }
-//     if (seriesDataMaxTotal > max) {
-//       max = seriesDataMaxTotal;
-//     }
-//   }
-//
-//   min = adjustMinValue(min);
-//   max = adjustMaxValue(max);
-//
-//   const data = {
-//     labels: timeSeriesLabels,
-//     datasets,
-//   };
-//
-//   return {
-//     data,
-//     min,
-//     max,
-//   };
-// };
-
 const adjust = (value, divisor, direction = "asc") => {
   const remainder = value % divisor;
   if (direction === "asc") {
@@ -354,15 +234,17 @@ const adjustMaxValue = (initial) => {
 
 interface Node {
   id: string;
-  title?: string;
-  category?: string;
-  depth?: number;
+  title: string | null;
+  category: string | null;
+  depth: number | null;
 }
 
 interface Edge {
+  id: string;
   from_id: string;
   to_id: string;
-  category?: string;
+  title: string | null;
+  category: string | null;
 }
 
 interface NodeMap {
@@ -395,7 +277,13 @@ export interface NodesAndEdges {
   next_color_index: number;
 }
 
-const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
+const recordEdge = (
+  edge_lookup,
+  from_id: string,
+  to_id: string,
+  title: string | null = null,
+  category: string | null = null
+) => {
   let duplicate_edge = false;
   // Find any existing edge
   const edge_id = `${from_id}:${to_id}`;
@@ -406,7 +294,7 @@ const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
     edge_lookup[edge_id] = true;
   }
 
-  const edge = {
+  const edge: Edge = {
     id: edge_id,
     from_id,
     to_id,
@@ -419,10 +307,25 @@ const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
   };
 };
 
+const createNode = (
+  id: string,
+  title: string | null = null,
+  category: string | null = null,
+  depth: number | null = null
+) => {
+  const node: Node = {
+    id,
+    category,
+    title,
+    depth,
+  };
+  return node;
+};
+
 const buildNodesAndEdges = (
   rawData: LeafNodeData | undefined,
-  properties: FlowProperties | HierarchyProperties | undefined,
-  namedColors
+  properties: FlowProperties | HierarchyProperties = {},
+  namedColors = {}
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
     return {
@@ -461,15 +364,29 @@ const buildNodesAndEdges = (
   let colorIndex = 0;
 
   rawData.rows.forEach((row) => {
-    const node_id = id_col ? row[id_col.name] : null;
-    const from_id = from_col ? row[from_col.name] : null;
-    const to_id = to_col ? row[to_col?.name] : null;
-    const title = title_col ? row[title_col.name] : null;
-    const category = category_col ? row[category_col.name] : null;
-    const depth = depth_col ? row[depth_col.name] : null;
+    const node_id: string | null = id_col ? row[id_col.name] : null;
+    const from_id: string | null = from_col ? row[from_col.name] : null;
+    const to_id: string | null = to_col ? row[to_col?.name] : null;
+    const title: string | null = title_col ? row[title_col.name] : null;
+    const category: string | null = category_col
+      ? row[category_col.name]
+      : null;
+    const depth: number | null = depth_col ? row[depth_col.name] : null;
+
+    // 4 types of row:
+    //
+    // id                  = node         1      1
+    // from_id & id        = node & edge  1 2    3
+    // id & to_id          = node & edge  1 4    5
+    // from_id & to_id     = edge         2 4    6
+    // id, from_id & to_id = node & edge  1 2 4  7
+
+    const nodeAndEndMask =
+      (node_id ? 1 : 0) + (from_id ? 2 : 0) + (to_id ? 4 : 0);
+    const allowedNodeAndEdgeMasks = [1, 3, 5, 6, 7];
 
     // We must have at least a node id or an edge from_id / to_id pairing
-    if (node_id === null && from_id === null && to_id === null) {
+    if (!allowedNodeAndEdgeMasks.includes(nodeAndEndMask)) {
       return new Error(
         `Encountered dataset row with no node or edge definition: ${JSON.stringify(
           row
@@ -478,16 +395,11 @@ const buildNodesAndEdges = (
     }
 
     // If this row is a node
-    if (node_id !== null) {
+    if (!!node_id) {
       const existingNode = node_lookup[node_id];
 
       if (!existingNode) {
-        const node = {
-          id: node_id,
-          title,
-          category,
-          depth,
-        };
+        const node = createNode(node_id, title, category, depth);
         node_lookup[node_id] = node;
 
         nodes.push(node);
@@ -500,17 +412,49 @@ const buildNodesAndEdges = (
         existingNode.depth = depth;
       }
 
-      // If this also has an implicit edge
-      if (from_id !== null) {
+      // If this has an edge from another node
+      if (!!from_id && !to_id) {
         // If we've previously recorded this as a root node, remove it
-        delete root_node_lookup[to_id || node_id];
+        delete root_node_lookup[node_id];
+
+        const existingNode = node_lookup[from_id];
+        if (!existingNode) {
+          const node = createNode(from_id);
+          node_lookup[from_id] = node;
+
+          nodes.push(node);
+
+          // Record this as a root node for now - we may remove that once we process the edges
+          root_node_lookup[from_id] = node;
+        }
 
         const { edge, duplicate_edge } = recordEdge(
           edge_lookup,
           from_id,
-          to_id || node_id,
-          null,
-          null
+          node_id
+        );
+        if (duplicate_edge) {
+          contains_duplicate_edges = true;
+        }
+        edges.push(edge);
+      }
+      // Else if this has an edge to another node
+      else if (!!to_id && !from_id) {
+        // If we've previously recorded the target as a root node, remove it
+        delete root_node_lookup[to_id];
+
+        const existingNode = node_lookup[to_id];
+        if (!existingNode) {
+          const node = createNode(to_id);
+          node_lookup[to_id] = node;
+
+          nodes.push(node);
+        }
+
+        const { edge, duplicate_edge } = recordEdge(
+          edge_lookup,
+          node_id,
+          to_id
         );
         if (duplicate_edge) {
           contains_duplicate_edges = true;
@@ -518,18 +462,16 @@ const buildNodesAndEdges = (
         edges.push(edge);
       }
     }
-    // Else if it looks like an edge
-    else if (from_id !== null && to_id !== null) {
+
+    // If this row looks like an edge
+    if (!!from_id && !!to_id) {
       // If we've previously recorded this as a root node, remove it
       delete root_node_lookup[to_id];
 
       // Record implicit nodes from edge definition
       const existingFromNode = node_lookup[from_id];
       if (!existingFromNode) {
-        const node = {
-          id: from_id,
-          title: from_id,
-        };
+        const node = createNode(from_id);
         node_lookup[from_id] = node;
         nodes.push(node);
         // Record this as a root node for now - we may remove that once we process the edges
@@ -537,10 +479,7 @@ const buildNodesAndEdges = (
       }
       const existingToNode = node_lookup[to_id];
       if (!existingToNode) {
-        const node = {
-          id: to_id,
-          title: to_id,
-        };
+        const node = createNode(to_id);
         node_lookup[to_id] = node;
         nodes.push(node);
       }

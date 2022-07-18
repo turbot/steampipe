@@ -1,5 +1,10 @@
 import "../../../test/matchMedia";
-import { adjustMinValue, adjustMaxValue } from "./index";
+import {
+  adjustMinValue,
+  adjustMaxValue,
+  buildNodesAndEdges,
+  themeColors,
+} from "./index";
 
 describe("common.adjustMinValue", () => {
   test("5", () => {
@@ -139,4 +144,259 @@ describe("common.adjustMaxValue", () => {
   test("26526", () => {
     expect(adjustMaxValue(26526)).toEqual(27000);
   });
+});
+
+describe("common.buildNodesAndEdges", () => {
+  test("single node", () => {
+    const rawData = {
+      columns: [{ name: "id", data_type: "text" }],
+      rows: [{ id: "node" }],
+    };
+    expect(buildNodesAndEdges(rawData)).toEqual({
+      categories: {},
+      edges: [],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+      next_color_index: 0,
+      nodes: [{ id: "node", title: null, category: null, depth: null }],
+      root_nodes: {
+        node: {
+          id: "node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      },
+    });
+  });
+
+  test("single node with from_id", () => {
+    const rawData = {
+      columns: [
+        { name: "id", data_type: "text" },
+        { name: "from_id", data_type: "text" },
+      ],
+      rows: [{ id: "node", from_id: "from_node" }],
+    };
+    expect(buildNodesAndEdges(rawData)).toEqual({
+      categories: {},
+      edges: [
+        {
+          id: "from_node:node",
+          from_id: "from_node",
+          to_id: "node",
+          title: null,
+          category: null,
+        },
+      ],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+      next_color_index: 0,
+      nodes: [
+        { id: "node", title: null, category: null, depth: null },
+        {
+          id: "from_node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      ],
+      root_nodes: {
+        from_node: {
+          id: "from_node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      },
+    });
+  });
+
+  test("single node with to_id", () => {
+    const rawData = {
+      columns: [
+        { name: "id", data_type: "text" },
+        { name: "to_id", data_type: "text" },
+      ],
+      rows: [{ id: "node", to_id: "to_node" }],
+    };
+    expect(buildNodesAndEdges(rawData)).toEqual({
+      categories: {},
+      edges: [
+        {
+          id: "node:to_node",
+          from_id: "node",
+          to_id: "to_node",
+          title: null,
+          category: null,
+        },
+      ],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+      next_color_index: 0,
+      nodes: [
+        { id: "node", title: null, category: null, depth: null },
+        {
+          id: "to_node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      ],
+      root_nodes: {
+        node: {
+          id: "node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      },
+    });
+  });
+
+  test("single node with from_id and to_id", () => {
+    const rawData = {
+      columns: [
+        { name: "id", data_type: "text" },
+        { name: "from_id", data_type: "text" },
+        { name: "to_id", data_type: "text" },
+      ],
+      rows: [{ id: "node", from_id: "from_node", to_id: "to_node" }],
+    };
+    expect(buildNodesAndEdges(rawData)).toEqual({
+      categories: {},
+      edges: [
+        {
+          id: "from_node:to_node",
+          from_id: "from_node",
+          to_id: "to_node",
+          title: null,
+          category: null,
+        },
+      ],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: true },
+      next_color_index: 0,
+      nodes: [
+        { id: "node", title: null, category: null, depth: null },
+        {
+          id: "from_node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+        {
+          id: "to_node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      ],
+      root_nodes: {
+        node: {
+          id: "node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+        from_node: {
+          id: "from_node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      },
+    });
+  });
+
+  test("two node with separate edge declaration", () => {
+    const rawData = {
+      columns: [
+        { name: "id", data_type: "text" },
+        { name: "from_id", data_type: "text" },
+        { name: "to_id", data_type: "text" },
+      ],
+      rows: [
+        { id: "from_node" },
+        { id: "to_node" },
+        { from_id: "from_node", to_id: "to_node" },
+      ],
+    };
+    expect(buildNodesAndEdges(rawData)).toEqual({
+      categories: {},
+      edges: [
+        {
+          id: "from_node:to_node",
+          from_id: "from_node",
+          to_id: "to_node",
+          title: null,
+          category: null,
+        },
+      ],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+      next_color_index: 0,
+      nodes: [
+        { id: "from_node", title: null, category: null, depth: null },
+        { id: "to_node", title: null, category: null, depth: null },
+      ],
+      root_nodes: {
+        from_node: {
+          id: "from_node",
+          title: null,
+          category: null,
+          depth: null,
+        },
+      },
+    });
+  });
+
+  // test("single node with title", () => {
+  //   const rawData = {
+  //     columns: [
+  //       { name: "id", data_type: "text" },
+  //       { name: "title", data_type: "text" },
+  //     ],
+  //     rows: [{ id: "a_node", title: "A Node Title" }],
+  //   };
+  //   expect(buildNodesAndEdges(rawData)).toEqual({
+  //     categories: {},
+  //     edges: [],
+  //     metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+  //     next_color_index: 0,
+  //     nodes: [
+  //       { category: null, depth: null, id: "a_node", title: "A Node Title" },
+  //     ],
+  //     root_nodes: {
+  //       a_node: {
+  //         category: null,
+  //         depth: null,
+  //         id: "a_node",
+  //         title: "A Node Title",
+  //       },
+  //     },
+  //   });
+  // });
+  //
+  // test("single node with category", () => {
+  //   const rawData = {
+  //     columns: [
+  //       { name: "id", data_type: "text" },
+  //       { name: "category", data_type: "text" },
+  //     ],
+  //     rows: [{ id: "a_node", category: "a_category" }],
+  //   };
+  //   expect(buildNodesAndEdges(rawData)).toEqual({
+  //     categories: {},
+  //     edges: [],
+  //     metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+  //     next_color_index: 0,
+  //     nodes: [
+  //       { category: "a_category", depth: null, id: "a_node", title: null },
+  //     ],
+  //     root_nodes: {
+  //       a_node: {
+  //         category: "a_category",
+  //         depth: null,
+  //         id: "a_node",
+  //         title: null,
+  //       },
+  //     },
+  //   });
+  // });
 });
