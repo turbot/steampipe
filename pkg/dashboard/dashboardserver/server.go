@@ -186,6 +186,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		changedCards := e.ChangedCards
 		changedCharts := e.ChangedCharts
 		changedFlows := e.ChangedFlows
+		changedGraphs := e.ChangedGraphs
 		changedHierarchies := e.ChangedHierarchies
 		changedImages := e.ChangedImages
 		changedInputs := e.ChangedInputs
@@ -202,6 +203,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 			len(changedCards) == 0 &&
 			len(changedCharts) == 0 &&
 			len(changedFlows) == 0 &&
+			len(changedGraphs) == 0 &&
 			len(changedHierarchies) == 0 &&
 			len(changedImages) == 0 &&
 			len(changedInputs) == 0 &&
@@ -248,6 +250,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedCards)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedCharts)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedFlows)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedGraphs)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedHierarchies)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedImages)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedInputs)...)
