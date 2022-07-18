@@ -941,6 +941,15 @@ func init() {
 							Type:            toStringPointer("sankey"),
 						},
 					},
+					DashboardGraphs: map[string]*modconfig.DashboardGraph{
+						"container_with_children.graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0": {
+							FullName:        "container_with_children.graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
+							ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
+							UnqualifiedName: "graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
+							Title:           toStringPointer("example graph"),
+							Type:            toStringPointer("sankey"),
+						},
+					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
 						"container_with_children.hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0": {
 							FullName:        "container_with_children.hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0",
@@ -1032,6 +1041,15 @@ func init() {
 							ShortName:       "dashboard_dashboard_with_child_res_anonymous_flow_0",
 							UnqualifiedName: "flow.dashboard_dashboard_with_child_res_anonymous_flow_0",
 							Title:           toStringPointer("example flow"),
+							Type:            toStringPointer("sankey"),
+						},
+					},
+					DashboardGraphs: map[string]*modconfig.DashboardGraph{
+						"dashboard_with_children.graph.dashboard_dashboard_with_child_res_anonymous_graph_0": {
+							FullName:        "dashboard_with_children.graph.dashboard_dashboard_with_child_res_anonymous_graph_0",
+							ShortName:       "dashboard_dashboard_with_child_res_anonymous_graph_0",
+							UnqualifiedName: "graph.dashboard_dashboard_with_child_res_anonymous_graph_0",
+							Title:           toStringPointer("example graph"),
 							Type:            toStringPointer("sankey"),
 						},
 					},
@@ -1308,6 +1326,15 @@ func init() {
 							UnqualifiedName: "flow.f1",
 							Title:           toStringPointer("example flow"),
 							Type:            toStringPointer("sankey"),
+						},
+					},
+					DashboardGraphs: map[string]*modconfig.DashboardGraph{
+						"dashboard_with_children.graph.f1": {
+							FullName:        "dashboard_with_children.graph.f1",
+							ShortName:       "f1",
+							UnqualifiedName: "graph.f1",
+							Title:           toStringPointer("example graph"),
+							Type:            toStringPointer("graph"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{

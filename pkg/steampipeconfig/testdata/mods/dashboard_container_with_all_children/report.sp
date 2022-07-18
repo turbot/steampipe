@@ -21,6 +21,10 @@ dashboard container_with_child_res {
       title = "example flow"
       type = "sankey"
     }
+    graph {
+      title = "example graph"
+      type = "graph"
+    }
     hierarchy {
       title = "example hierarchy"
       type = "graph"

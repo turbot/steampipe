@@ -12,6 +12,7 @@ type DashboardChanged struct {
 	ChangedCards       []*modconfig.DashboardTreeItemDiffs
 	ChangedCharts      []*modconfig.DashboardTreeItemDiffs
 	ChangedFlows       []*modconfig.DashboardTreeItemDiffs
+	ChangedGraphs      []*modconfig.DashboardTreeItemDiffs
 	ChangedHierarchies []*modconfig.DashboardTreeItemDiffs
 	ChangedImages      []*modconfig.DashboardTreeItemDiffs
 	ChangedInputs      []*modconfig.DashboardTreeItemDiffs
@@ -25,6 +26,7 @@ type DashboardChanged struct {
 	NewCards       []*modconfig.DashboardCard
 	NewCharts      []*modconfig.DashboardChart
 	NewFlows       []*modconfig.DashboardFlow
+	NewGraphs      []*modconfig.DashboardGraph
 	NewHierarchies []*modconfig.DashboardHierarchy
 	NewImages      []*modconfig.DashboardImage
 	NewInputs      []*modconfig.DashboardInput
@@ -38,6 +40,7 @@ type DashboardChanged struct {
 	DeletedCards       []*modconfig.DashboardCard
 	DeletedCharts      []*modconfig.DashboardChart
 	DeletedFlows       []*modconfig.DashboardFlow
+	DeletedGraphs      []*modconfig.DashboardGraph
 	DeletedHierarchies []*modconfig.DashboardHierarchy
 	DeletedImages      []*modconfig.DashboardImage
 	DeletedInputs      []*modconfig.DashboardInput
@@ -56,6 +59,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.ChangedCards)+
 		len(c.ChangedCharts)+
 		len(c.ChangedFlows)+
+		len(c.ChangedGraphs)+
 		len(c.ChangedHierarchies)+
 		len(c.ChangedImages)+
 		len(c.ChangedInputs)+
@@ -68,6 +72,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.NewCards)+
 		len(c.NewCharts)+
 		len(c.NewFlows)+
+		len(c.NewGraphs)+
 		len(c.NewHierarchies)+
 		len(c.NewImages)+
 		len(c.NewInputs)+
@@ -80,6 +85,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.DeletedCards)+
 		len(c.DeletedCharts)+
 		len(c.DeletedFlows)+
+		len(c.DeletedGraphs)+
 		len(c.DeletedHierarchies)+
 		len(c.DeletedImages)+
 		len(c.DeletedInputs)+
@@ -114,6 +120,11 @@ func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig
 		}
 	}
 	for _, r := range c.ChangedFlows {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedGraphs {
 		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
 			return err
 		}
@@ -173,6 +184,11 @@ func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig
 			return err
 		}
 	}
+	for _, r := range c.NewGraphs {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
 	for _, r := range c.NewHierarchies {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
@@ -219,6 +235,11 @@ func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig
 		}
 	}
 	for _, r := range c.DeletedFlows {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedGraphs {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
