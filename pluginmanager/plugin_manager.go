@@ -136,7 +136,7 @@ func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, e
 		exists, _ := utils.PidExists(int(reattach.Pid))
 		if exists {
 			// so the plugin is good
-			log.Printf("[TRACE] PluginManager found '%s' in map, pid %d, reattach %v", connection, reattach.Pid, reattach)
+			log.Printf("[TRACE] PluginManager found '%s' in map, pid %d", connection, reattach.Pid)
 
 			// return the reattach config
 			return reattach, nil
