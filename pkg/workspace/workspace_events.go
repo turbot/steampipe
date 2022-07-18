@@ -179,6 +179,16 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 			event.DeletedFlows = append(event.DeletedFlows, prev)
 		}
 	}
+	for name, prev := range prevResourceMaps.DashboardGraphs {
+		if current, ok := resourceMaps.DashboardGraphs[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedGraphs = append(event.ChangedGraphs, diff)
+			}
+		} else {
+			event.DeletedGraphs = append(event.DeletedGraphs, prev)
+		}
+	}
 	for name, prev := range prevResourceMaps.DashboardHierarchies {
 		if current, ok := resourceMaps.DashboardHierarchies[name]; ok {
 			diff := prev.Diff(current)
@@ -282,6 +292,11 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 	for name, p := range resourceMaps.DashboardFlows {
 		if _, ok := prevResourceMaps.DashboardFlows[name]; !ok {
 			event.NewFlows = append(event.NewFlows, p)
+		}
+	}
+	for name, p := range resourceMaps.DashboardGraphs {
+		if _, ok := prevResourceMaps.DashboardGraphs[name]; !ok {
+			event.NewGraphs = append(event.NewGraphs, p)
 		}
 	}
 	for name, p := range resourceMaps.DashboardHierarchies {

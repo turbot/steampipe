@@ -1,9 +1,10 @@
 import has from "lodash/has";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
+import { DashboardRunState } from "../../../hooks/useDashboard";
 import { FlowCategories, FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
+import { GraphType } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
-import { DashboardRunState } from "../../../hooks/useDashboard";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -39,10 +40,10 @@ export interface ExecutablePrimitiveProps {
 
 export type ColorOverride = "alert" | "info" | "ok" | string;
 
-export type EChartsType = "bar" | "line" | "pie" | "sankey";
+export type EChartsType = "bar" | "line" | "pie" | "sankey" | "tree" | "graph";
 
 const toEChartsType = (
-  type: ChartType | FlowType | HierarchyType
+  type: ChartType | FlowType | GraphType | HierarchyType
 ): EChartsType => {
   // A column chart in chart.js is a bar chart with different options
   if (type === "column") {
@@ -536,7 +537,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides;
+    let categoryOverrides: Category = { color: null };
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
@@ -562,7 +563,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
     });
   });
 
-  nodesAndEdges.nodes.forEach((node, index) => {
+  nodesAndEdges.nodes.forEach((node) => {
     let categoryOverrides;
     if (node.category && nodesAndEdges.categories[node.category]) {
       categoryOverrides = nodesAndEdges.categories[node.category];

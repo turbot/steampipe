@@ -98,6 +98,19 @@ const Children = ({
                 {(definition) => <Flow {...definition} />}
               </Panel>
             );
+          case "graph":
+            const Graph = getComponent("graph");
+            return (
+              <Panel
+                key={child.name}
+                layoutDefinition={child}
+                ready={(definition) => !!definition.data}
+                allowExpand={allowPanelExpand}
+                withTitle={withTitle}
+              >
+                {(definition) => <Graph {...definition} />}
+              </Panel>
+            );
           case "hierarchy":
             const Hierarchy = getComponent("hierarchy");
             return (
