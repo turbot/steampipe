@@ -93,6 +93,7 @@ const (
 	IntrospectionTableDashboardCard      = "steampipe_dashboard_card"
 	IntrospectionTableDashboardChart     = "steampipe_dashboard_chart"
 	IntrospectionTableDashboardFlow      = "steampipe_dashboard_flow"
+	IntrospectionTableDashboardGraph     = "steampipe_dashboard_graph"
 	IntrospectionTableDashboardHierarchy = "steampipe_dashboard_hierarchy"
 	IntrospectionTableDashboardImage     = "steampipe_dashboard_image"
 	IntrospectionTableDashboardInput     = "steampipe_dashboard_input"

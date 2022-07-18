@@ -7,6 +7,7 @@ import set from "lodash/set";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import {
   BarChart,
+  GraphChart,
   LineChart,
   PieChart,
   SankeyChart,
@@ -44,11 +45,13 @@ import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import * as echarts from "echarts/core";
 import { registerComponent } from "../../index";
+import { GraphType } from "../../graphs/types";
 
 echarts.use([
   BarChart,
   CanvasRenderer,
   DatasetComponent,
+  GraphChart,
   GridComponent,
   LabelLayout,
   LegendComponent,
@@ -680,7 +683,7 @@ const buildChartOptions = (
 
 interface ChartComponentProps {
   options: EChartsOption;
-  type: ChartType | FlowType | HierarchyType;
+  type: ChartType | FlowType | GraphType | HierarchyType;
 }
 
 const Chart = ({ options, type }: ChartComponentProps) => {
