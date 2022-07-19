@@ -2,6 +2,7 @@ package pluginmanager
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
 	"log"
@@ -39,7 +40,6 @@ type PluginManager struct {
 	pluginConnectionConfigs map[string][]*sdkproto.ConnectionConfig
 	connectionConfig        map[string]*sdkproto.ConnectionConfig
 	logger                  hclog.Logger
-	//cacheManager            *CacheServer
 }
 
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
@@ -50,12 +50,6 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, lo
 		connectionConfig:        connectionConfig,
 		pluginConnectionConfigs: make(map[string][]*sdkproto.ConnectionConfig),
 	}
-	//maxCacheStorageMb := viper.GetInt(constants.ArgMaxCacheSizeMb)
-	//cacheManager, err := NewCacheServer(maxCacheStorageMb, pluginManager)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//pluginManager.cacheManager = cacheManager
 
 	// populate plugin connection config map
 	pluginManager.setPluginConnectionConfigs()
@@ -182,9 +176,6 @@ func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, e
 	// store the client to our map
 	m.storeClientToMap(connection, client, reattach)
 	log.Printf("[TRACE] PluginManager getPlugin complete, returning reattach config with PID: %d", reattach.Pid)
-
-	// open the cache stream
-	//m.cacheManager.AddConnection(client, connection)
 
 	// and return
 	return reattach, nil
