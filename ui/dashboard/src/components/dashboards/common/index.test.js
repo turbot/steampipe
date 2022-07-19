@@ -346,6 +346,48 @@ describe("common.buildNodesAndEdges", () => {
     });
   });
 
+  test("two nodes with separate edge declaration including metadata", () => {
+    const rawData = {
+      columns: [
+        { name: "id", data_type: "text" },
+        { name: "from_id", data_type: "text" },
+        { name: "to_id", data_type: "text" },
+        { name: "title", data_type: "text" },
+      ],
+      rows: [
+        { id: "from_node", title: "From Node" },
+        { id: "to_node", title: "To Node" },
+        { from_id: "from_node", to_id: "to_node", title: "The Edge" },
+      ],
+    };
+    expect(buildNodesAndEdges(rawData)).toEqual({
+      categories: {},
+      edges: [
+        {
+          id: "from_node:to_node",
+          from_id: "from_node",
+          to_id: "to_node",
+          title: "The Edge",
+          category: null,
+        },
+      ],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+      next_color_index: 0,
+      nodes: [
+        { id: "from_node", title: "From Node", category: null, depth: null },
+        { id: "to_node", title: "To Node", category: null, depth: null },
+      ],
+      root_nodes: {
+        from_node: {
+          id: "from_node",
+          title: "From Node",
+          category: null,
+          depth: null,
+        },
+      },
+    });
+  });
+
   // test("single node with title", () => {
   //   const rawData = {
   //     columns: [
