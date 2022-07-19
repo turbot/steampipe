@@ -2,7 +2,8 @@ package pluginmanager
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/plugin"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
 	"log"
@@ -13,8 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v3/grpc/shared"
 	"github.com/turbot/steampipe/pkg/utils"
