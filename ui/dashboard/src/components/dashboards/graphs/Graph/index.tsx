@@ -51,6 +51,7 @@ const getSeriesForGraphType = (
         series.push({
           type: toEChartsType(type),
           layout: "force",
+          roam: true,
           draggable: true,
           label: { color: namedColors.foreground, formatter: "{b}" },
           emphasis: {
