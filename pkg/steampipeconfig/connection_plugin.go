@@ -64,9 +64,9 @@ func NewConnectionPlugin(pluginName string, pluginClient *sdkgrpc.PluginClient, 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
 func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
 	res = &RefreshConnectionResult{}
-
+	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)
 	if len(connectionsToCreate) == 0 {
-		return nil, res
+		return
 	}
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connectionsToCreate))
 
