@@ -88,7 +88,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 	modTimeMap := make(map[string]time.Time)
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
-	// populate checksum for each referenced plugin
+	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
 		remoteSchema := connection.Plugin
 		pluginPath, err := pluginmanager.GetPluginPath(connection.Plugin, connection.PluginShortName)

@@ -205,14 +205,11 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 			}
 		}
 	}
-	var connectionsPluginsWithDynamicSchema = make(map[string]*ConnectionPlugin)
-	if len(connectionsPluginsWithDynamicSchema) > 0 {
-		var res *RefreshConnectionResult
-		connectionsPluginsWithDynamicSchema, res = CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
-		if res.Error != nil {
-			return nil, nil, res.Error
-		}
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
+	if res.Error != nil {
+		return nil, nil, res.Error
 	}
+
 	log.Printf("[TRACE] fetched schema for %d dynamic %s", len(connectionsPluginsWithDynamicSchema), utils.Pluralize("plugin", len(connectionsPluginsWithDynamicSchema)))
 
 	hashMap := make(map[string]string)
