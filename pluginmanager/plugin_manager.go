@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v4/query_cache"
 	"log"
 	"os"
 	"os/exec"
@@ -287,8 +288,9 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 
 	cmd := exec.Command(pluginPath)
 
-	// pass env to command
-	cmd.Env = os.Environ()
+	// set the command env vars - including setting the max cache size env
+	cmd.Env = m.getCommandEnv(pluginName)
+
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  sdkshared.Handshake,
 		Plugins:          pluginMap,
@@ -394,4 +396,26 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 	}
 
 	return pluginClient.SetConnectionConfig(req)
+}
+
+func (m *PluginManager) getCommandEnv(pluginName string) []string {
+	env := os.Environ()
+	// todo calc max size for this plugin
+	maxSizeMb := 1000
+	envString := fmt.Sprintf("%s=%d", query_cache.EnvMaxCacheSize, maxSizeMb)
+
+	// see whether the env already contains STEAMPIPE_MAX_CACHE_SIZE
+	// NOTE: iterate backwards through array 1if there is a duplicatre env var, the last one is used
+	for i := len(env) - 1; i >= 0; i-- {
+		parts := strings.Split(env[i], "=")
+
+		if parts[0] == query_cache.EnvMaxCacheSize {
+			env[i] = envString
+			return env
+		}
+	}
+
+	// so there is not currently an env var - add one
+	env = append(env, envString)
+	return env
 }
