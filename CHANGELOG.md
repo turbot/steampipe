@@ -1,6 +1,8 @@
 ## v0.15.4 [2222-07-14]
 _Bug fixes_
 * Fix dashboard UI not rendering for chart/flow/hierarchy/input when type is set to table. ([#2250](https://github.com/turbot/steampipe/issues/2250))
+* Fix flow/hierarchy dashboard UI bug where id/to_id and id/from_id/to_id rows would not render the expected results. ([#2254](https://github.com/turbot/steampipe/issues/2254))
+* Fix FDW build issue which causes load failure on Arm Docker images.  ([#219](https://github.com/turbot/steampipe-postgres-fdw/issues/219))
 
 ## v0.15.3 [2222-07-14]
 _Bug fixes_
