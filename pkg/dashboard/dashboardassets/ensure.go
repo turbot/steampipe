@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"

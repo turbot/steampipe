@@ -16,6 +16,7 @@ message GetRequest {
 
 message GetResponse {
   map<string, ReattachConfig> reattach_map = 1;
+  map<string, string> failure_map = 2;
 }
 
 message ShutdownRequest {}

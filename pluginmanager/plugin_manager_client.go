@@ -1,12 +1,13 @@
 package pluginmanager
 
 import (
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc"
 	"io"
 	"log"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
@@ -64,11 +65,19 @@ func (c *PluginManagerClient) attachToPluginManager() error {
 	return nil
 }
 
-func (c *PluginManagerClient) Get(req *pb.GetRequest) (res *pb.GetResponse, err error) {
-	return c.manager.Get(req)
+func (c *PluginManagerClient) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
+	res, err := c.manager.Get(req)
+	if err != nil {
+		return nil, grpc.HandleGrpcError(err, "PluginManager", "Get")
+	}
+	return res, nil
 }
 
-func (c *PluginManagerClient) Shutdown(req *pb.ShutdownRequest) (res *pb.ShutdownResponse, err error) {
+func (c *PluginManagerClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
 	log.Printf("[TRACE] PluginManagerClient Shutdown")
-	return c.manager.Shutdown(req)
+	res, err := c.manager.Shutdown(req)
+	if err != nil {
+		return nil, grpc.HandleGrpcError(err, "PluginManager", "Get")
+	}
+	return res, nil
 }

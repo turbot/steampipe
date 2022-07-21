@@ -1,7 +1,7 @@
 package connectionwatcher
 
 import (
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -9,10 +9,11 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) map[
 	configMap := make(map[string]*sdkproto.ConnectionConfig)
 	for k, v := range connectionMap {
 		configMap[k] = &sdkproto.ConnectionConfig{
-			Connection:      v.Name,
-			Plugin:          v.Plugin,
-			PluginShortName: v.PluginShortName,
-			Config:          v.Config,
+			Connection:       v.Name,
+			Plugin:           v.Plugin,
+			PluginShortName:  v.PluginShortName,
+			Config:           v.Config,
+			ChildConnections: v.GetResolveConnectionNames(),
 		}
 	}
 	return configMap

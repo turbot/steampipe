@@ -12,7 +12,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
-	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connectionwatcher"
 	"github.com/turbot/steampipe/pkg/constants"

@@ -2,7 +2,7 @@ package connectionwatcher
 
 import (
 	"context"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"log"
 
 	"github.com/fsnotify/fsnotify"

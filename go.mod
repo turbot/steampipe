@@ -4,7 +4,7 @@ go 1.18
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20220512154952-8a65716d8171
 
-//replace github.com/turbot/steampipe-plugin-sdk/v3 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
+replace github.com/turbot/steampipe-plugin-sdk/v4 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
 
 require (
 	github.com/Machiel/slugify v1.0.1
@@ -47,7 +47,7 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.4.0
-	github.com/turbot/steampipe-plugin-sdk/v3 v3.4.0-alpha.3
+	github.com/turbot/steampipe-plugin-sdk/v4 v4.0.0-dev.1
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.10.0
 	github.com/zclconf/go-cty-yaml v1.0.2
@@ -176,7 +176,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
+	google.golang.org/genproto v0.0.0-20220720214146-176da50484ac // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect

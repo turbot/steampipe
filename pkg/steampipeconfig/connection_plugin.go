@@ -9,10 +9,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v3/plugin"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -92,6 +92,11 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 		return nil, res
 	}
 
+	// if there were any failures, display them
+	for plugin, failure := range getResponse.FailureMap {
+		res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", plugin, failure))
+	}
+
 	// now create or retrieve a connection plugin for each connection
 
 	// NOTE: multiple connections may use the same plugin
@@ -107,8 +112,13 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 			continue
 		}
 
-		// otherwise create one
+		// do we have a reattach config for this connection's plugin
+		if _, ok := getResponse.ReattachMap[connection.Name]; !ok {
+			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, connection.Plugin)
+			continue
+		}
 
+		// so we have a reattach - create a connection plugin
 		reattach := getResponse.ReattachMap[connection.Name]
 		// if this is a legacy aggregator connection, skip - we do not instantiate connectionPlugins for these
 		if connection.Type == modconfig.ConnectionTypeAggregator && !reattach.SupportedOperations.MultipleConnections {
@@ -433,10 +443,11 @@ func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
 	configMap := make(map[string]*sdkproto.ConnectionConfig)
 	for connectionName, connection := range steampipeConfig.Connections {
 		configMap[connectionName] = &sdkproto.ConnectionConfig{
-			Connection:      connection.Name,
-			Plugin:          connection.Plugin,
-			PluginShortName: connection.PluginShortName,
-			Config:          connection.Config,
+			Connection:       connection.Name,
+			Plugin:           connection.Plugin,
+			PluginShortName:  connection.PluginShortName,
+			Config:           connection.Config,
+			ChildConnections: connection.GetResolveConnectionNames(),
 		}
 	}
 	return pluginmanager.NewPluginManager(configMap, logger)

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v3/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"log"
 	"os"
 	"os/exec"
@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	sdkshared "github.com/turbot/steampipe-plugin-sdk/v3/grpc/shared"
+	sdkshared "github.com/turbot/steampipe-plugin-sdk/v4/grpc/shared"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
@@ -35,10 +35,12 @@ type PluginManager struct {
 
 	Plugins map[string]*runningPlugin
 
-	mut                     sync.Mutex
+	mut sync.Mutex
+	// map of connection configs, keyed by plugin name
 	pluginConnectionConfigs map[string][]*sdkproto.ConnectionConfig
-	connectionConfig        map[string]*sdkproto.ConnectionConfig
-	logger                  hclog.Logger
+	// map of connection configs, keyed by connection name
+	connectionConfig map[string]*sdkproto.ConnectionConfig
+	logger           hclog.Logger
 }
 
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
@@ -71,27 +73,41 @@ func (m *PluginManager) Serve() {
 }
 
 func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
-	resp := &proto.GetResponse{ReattachMap: make(map[string]*proto.ReattachConfig)}
-	var errors []error
+	resp := &proto.GetResponse{
+		ReattachMap: make(map[string]*proto.ReattachConfig),
+		FailureMap:  make(map[string]string),
+	}
 
 	log.Printf("[TRACE] PluginManager Get, connections: '%s'\n", req.Connections)
 	for _, connectionName := range req.Connections {
+		connectionConfig, err := m.getConnectionConfig(connectionName)
+		if err != nil {
+			return nil, err
+		}
+		pluginName := connectionConfig.Plugin
+		// have we already tried and failed to load this plugin - if so skip
+		if _, pluginAlreadyFailed := resp.FailureMap[pluginName]; pluginAlreadyFailed {
+			continue
+		}
 
 		reattach, err := m.getPlugin(connectionName)
 		if err != nil {
-			errors = append(errors, err)
+			resp.FailureMap[pluginName] = err.Error()
 		} else {
 			resp.ReattachMap[connectionName] = reattach
 		}
 	}
 
-	if len(errors) > 0 {
-		return nil, utils.CombineErrors(errors...)
-	}
-
-	// TODO ADD PLUGINS TO OUR STATE FILE - JUST SERIALISE THE Plugins map?
 	log.Printf("[TRACE] PluginManager Get returning %+v", resp)
 	return resp, nil
+}
+
+func (m *PluginManager) getConnectionConfig(connectionName string) (*sdkproto.ConnectionConfig, error) {
+	connectionConfig, ok := m.connectionConfig[connectionName]
+	if !ok {
+		return nil, fmt.Errorf("no connection config loaded for connection '%s'", connectionName)
+	}
+	return connectionConfig, nil
 }
 
 func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, err error) {
@@ -227,7 +243,7 @@ func (m *PluginManager) setPluginConnectionConfigs() {
 }
 
 func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
-	log.Printf("[TRACE] PluginManager Shutdown %v", m.Plugins)
+	log.Printf("[TRACE] PluginManager Shutdown")
 	debug.PrintStack()
 
 	m.mut.Lock()
@@ -250,15 +266,14 @@ func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.Shutdo
 	return &proto.ShutdownResponse{}, nil
 }
 
-func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.ReattachConfig, error) {
-	log.Printf("[TRACE] ************ start plugin %s ********************\n", connection)
+func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ *proto.ReattachConfig, err error) {
+	log.Printf("[TRACE] ************ start plugin %s ********************\n", connectionName)
 
 	// get connection config
-	connectionConfig, ok := m.connectionConfig[connection]
-	if !ok {
-		return nil, nil, fmt.Errorf("no config loaded for connection %s", connection)
+	connectionConfig, err := m.getConnectionConfig(connectionName)
+	if err != nil {
+		return nil, nil, err
 	}
-
 	pluginPath, err := GetPluginPath(connectionConfig.Plugin, connectionConfig.PluginShortName)
 	if err != nil {
 		return nil, nil, err
@@ -287,6 +302,14 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.R
 		return nil, nil, err
 	}
 
+	// ensure we shut down in case of failure
+	defer func() {
+		if err != nil {
+			// we failed - shut down the plugin again
+			client.Kill()
+		}
+	}()
+
 	// get the supported operations
 	pluginClient, err := sdkgrpc.NewPluginClient(client, pluginName)
 	if err != nil {
@@ -298,7 +321,7 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.R
 		return nil, nil, err
 	}
 	log.Printf("[WARN] supportedOperations: %v", supportedOperations)
-	var connections = []string{connection}
+	var connections = []string{connectionName}
 
 	if supportedOperations.MultipleConnections {
 		// send the connection config for all connections for this plugin
@@ -306,9 +329,10 @@ func (m *PluginManager) startPlugin(connection string) (*plugin.Client, *proto.R
 		connections, err = m.setAllConnectionConfigs(pluginClient, pluginName)
 	} else {
 		// send the connection config using legacy single connection function
-		err = m.setSingleConnectionConfig(pluginClient, connection)
+		err = m.setSingleConnectionConfig(pluginClient, connectionName)
 	}
 	if err != nil {
+		log.Printf("[WARN] supportedOperations: %v", supportedOperations)
 		return nil, nil, err
 	}
 
@@ -338,7 +362,8 @@ func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
 	return res
 }
 
-// set connection config for multiple connection, for compatible plugins)
+// set connection config for multiple connection, for compatible plugins
+// NOTE: we DO NOT set connection config for aggregator connections
 func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClient, pluginName string) ([]string, error) {
 	configs, ok := m.pluginConnectionConfigs[pluginName]
 	if !ok {
@@ -358,10 +383,9 @@ func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClie
 
 // set connection config for single connection, for legacy plugins)
 func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginClient, connectionName string) error {
-	connectionConfig, ok := m.connectionConfig[connectionName]
-	if !ok {
-		// should never happen
-		return fmt.Errorf("no config loaded for connection '%s'", connectionName)
+	connectionConfig, err := m.getConnectionConfig(connectionName)
+	if err != nil {
+		return err
 	}
 	// set the connection config
 	req := &sdkproto.SetConnectionConfigRequest{
