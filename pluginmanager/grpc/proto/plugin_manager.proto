@@ -35,8 +35,7 @@ message ReattachConfig {
 // NOTE: this must be consistent with GetSupportedOperationsResponse in steampipe-plugin-sdk/grpc/proto/plugin.proto
 message SupportedOperations {
   bool query_cache = 1;
-  bool cache_stream = 2;
-  bool multiple_connections = 3;
+  bool multiple_connections = 2;
 }
 
 message NetAddr {

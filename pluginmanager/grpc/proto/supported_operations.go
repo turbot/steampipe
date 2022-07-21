@@ -7,7 +7,6 @@ import (
 func SupportedOperationsFromSdk(s *sdkproto.GetSupportedOperationsResponse) *SupportedOperations {
 	return &SupportedOperations{
 		QueryCache:          s.QueryCache,
-		CacheStream:         s.CacheStream,
 		MultipleConnections: s.MultipleConnections,
 	}
 }
