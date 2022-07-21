@@ -83,13 +83,14 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 	*/
 	failureCount := len(failures)
 	str := fmt.Sprintf(`
-%s:
 
 %s
 
-%d %s was not imported.
+%s
+
+%d %s not imported.
 `,
-		constants.Red("Validation Errors"),
+		constants.Red(fmt.Sprintf("%d Connection Validation %s", failureCount, utils.Pluralize("Error", failureCount))),
 		strings.Join(warningsStrings, "\n\n"),
 		failureCount,
 		utils.Pluralize("connection", failureCount))
