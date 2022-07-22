@@ -2,10 +2,9 @@ package utils
 
 import (
 	"context"
-	"errors"
+	"github.com/turbot/steampipe-plugin-sdk/v4/error_helpers"
 )
 
 func IsContextCancelled(ctx context.Context) bool {
-	err := ctx.Err()
-	return err != nil && errors.Is(err, context.Canceled)
+	return error_helpers.IsContextCancelledError(ctx.Err())
 }

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe-plugin-sdk/v3/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v3/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -123,12 +123,12 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 		// have we loaded a connection plugin for this connection
 		// - if so us the schema mode from the schema  it has loaded
 		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
-			v.SchemaMode = connectionPlugin.Schema.Mode
+			v.SchemaMode = connectionPlugin.ConnectionMap[k].Schema.Mode
 			// if the schema mode is dynamic and the hash is not set yet, calculate the value from the connection plugin schema
 			// this will happen the first time we load a plugin - as schemaHashMap will NOT include the has
 			// because we do not know yet that the plugin is dynamic
 			if v.SchemaMode == plugin.SchemaModeDynamic && v.SchemaHash == "" {
-				v.SchemaHash = pluginSchemaHash(connectionPlugin.Schema)
+				v.SchemaHash = pluginSchemaHash(connectionPlugin.ConnectionMap[k].Schema)
 			}
 		}
 
@@ -141,7 +141,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// - for any aggregator connections, instantiate the first child connection instead
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
 	// now create them
-	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate, &CreateConnectionPluginOptions{SetConnectionConfig: true})
+	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate)
 	if res.Error != nil {
 		return res
 	}
@@ -205,17 +205,17 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 			}
 		}
 	}
-
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections(), &CreateConnectionPluginOptions{SetConnectionConfig: true})
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
 	if res.Error != nil {
 		return nil, nil, res.Error
 	}
+
 	log.Printf("[TRACE] fetched schema for %d dynamic %s", len(connectionsPluginsWithDynamicSchema), utils.Pluralize("plugin", len(connectionsPluginsWithDynamicSchema)))
 
 	hashMap := make(map[string]string)
 	for name, c := range connectionsPluginsWithDynamicSchema {
 		// update schema hash stored in required connections so it is persisted in the state if updates are made
-		schemaHash := pluginSchemaHash(c.Schema)
+		schemaHash := pluginSchemaHash(c.ConnectionMap[name].Schema)
 		hashMap[name] = schemaHash
 	}
 	return hashMap, connectionsPluginsWithDynamicSchema, nil

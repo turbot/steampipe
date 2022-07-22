@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe-plugin-sdk/v3/telemetry"
+	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
