@@ -64,6 +64,7 @@ const getSeriesForGraphType = (
             min: 0.4,
             max: 4,
           },
+          edgeSymbol: ["none", "arrow"],
           emphasis: {
             focus: "adjacency",
             blurScope: "coordinateSystem",
