@@ -94,6 +94,20 @@ const FullHeightThemeWrapper = ({ children }) => {
   );
 };
 
+const ThemeWrapper = ({ children }) => {
+  const { setWrapperRef, theme } = useTheme();
+  return (
+    <div
+      ref={setWrapperRef}
+      className={classNames(
+        `theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground print:text-black`
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
 const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
@@ -102,4 +116,11 @@ const useTheme = () => {
   return context;
 };
 
-export { FullHeightThemeWrapper, Themes, ThemeNames, ThemeProvider, useTheme };
+export {
+  FullHeightThemeWrapper,
+  Themes,
+  ThemeNames,
+  ThemeProvider,
+  ThemeWrapper,
+  useTheme,
+};
