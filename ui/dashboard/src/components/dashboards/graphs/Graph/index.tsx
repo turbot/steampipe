@@ -1,8 +1,8 @@
 import ErrorPanel from "../../Error";
 import merge from "lodash/merge";
 import {
+  buildGraphDataInputs,
   buildNodesAndEdges,
-  buildSankeyDataInputs,
   LeafNodeData,
   NodesAndEdges,
   toEChartsType,
@@ -46,23 +46,33 @@ const getSeriesForGraphType = (
   for (let seriesIndex = 0; seriesIndex < seriesLength; seriesIndex++) {
     switch (type) {
       case "graph": {
-        const { data: sankeyData, links } =
-          buildSankeyDataInputs(nodesAndEdges);
+        const { data: graphData, links } = buildGraphDataInputs(nodesAndEdges);
         series.push({
           type: toEChartsType(type),
           layout: "force",
           roam: true,
           draggable: true,
-          label: { color: namedColors.foreground, formatter: "{b}" },
+          label: {
+            show: true,
+            color: namedColors.foreground,
+            formatter: "{b}",
+          },
+          labelLayout: {
+            hideOverlap: true,
+          },
+          scaleLimit: {
+            min: 0.4,
+            max: 4,
+          },
           emphasis: {
             focus: "adjacency",
             blurScope: "coordinateSystem",
           },
           lineStyle: {
             color: "source",
-            curveness: 0.5,
+            curveness: 0,
           },
-          data: sankeyData,
+          data: graphData,
           links,
           tooltip: {
             formatter: "{b}",
