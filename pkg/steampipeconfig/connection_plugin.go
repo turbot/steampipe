@@ -359,8 +359,8 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	connectionConfig := connection.Config
 	connectionOptions := connection.Options
 
-	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d, reattach %v",
-		connectionName, reattach.Pid, reattach)
+	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
+		connectionName, reattach.Pid)
 	if reattach.Pid == 0 {
 		log.Printf("[WARN] plugin manager returned nil PID for %s", connectionName)
 		return nil, fmt.Errorf("plugin manager returned nil PID for %s", connectionName)

@@ -6,11 +6,12 @@ import (
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v4/query_cache"
+	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"os"
 	"os/exec"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -39,6 +40,8 @@ type PluginManager struct {
 	mut sync.Mutex
 	// map of connection configs, keyed by plugin name
 	pluginConnectionConfigs map[string][]*sdkproto.ConnectionConfig
+	// map of max cache size, keyed by plugin name
+	pluginCacheSizeMap map[string]int64
 	// map of connection configs, keyed by connection name
 	connectionConfig map[string]*sdkproto.ConnectionConfig
 	logger           hclog.Logger
@@ -55,6 +58,8 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, lo
 
 	// populate plugin connection config map
 	pluginManager.setPluginConnectionConfigs()
+	// determine cache size for each plugin
+	pluginManager.setPluginCacheSizeMap()
 	return pluginManager, nil
 }
 
@@ -239,8 +244,37 @@ func (m *PluginManager) setPluginConnectionConfigs() {
 	for _, config := range m.connectionConfig {
 		m.pluginConnectionConfigs[config.Plugin] = append(m.pluginConnectionConfigs[config.Plugin], config)
 	}
-	numConnections := len(m.pluginConnectionConfigs)
-	log.Printf("[TRACE]  PluginManager setPluginConnectionConfigs: %d %s", numConnections, utils.Pluralize("connection", numConnections))
+}
+
+// populate map of connection configs for each plugin
+func (m *PluginManager) setPluginCacheSizeMap() {
+	m.pluginCacheSizeMap = make(map[string]int64, len(m.pluginConnectionConfigs))
+
+	// read the env var setting cache size
+	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvMaxCacheSize))
+
+	// get total connection count for this plugin (excluding aggregators)
+	numConnections := m.nonAggregatorConnectionCount()
+
+	log.Printf("[TRACE] PluginManager setPluginCacheSizeMap: %d %s.", numConnections, utils.Pluralize("connection", numConnections))
+	log.Printf("[TRACE] Total cache size %dMb", maxCacheSizeMb)
+
+	for plugin, connections := range m.pluginConnectionConfigs {
+		var size int64 = 0
+		// if no max size is set, just set all plugins to zero (unlimited)
+		if maxCacheSizeMb > 0 {
+			// get connection count for this plugin (excluding aggregators)
+			numPluginConnections := nonAggregatorConnectionCount(connections)
+			size = int64(float64(numPluginConnections) / float64(numConnections) * float64(maxCacheSizeMb))
+			// make this at least 1 Mb (as zero means unlimited)
+			if size == 0 {
+				size = 1
+			}
+			log.Printf("[TRACE] Plugin '%s', %d %s, max cache size %dMb", plugin, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
+		}
+
+		m.pluginCacheSizeMap[plugin] = size
+	}
 }
 
 func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
@@ -287,10 +321,6 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	}
 
 	cmd := exec.Command(pluginPath)
-
-	// set the command env vars - including setting the max cache size env
-	cmd.Env = m.getCommandEnv(pluginName)
-
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  sdkshared.Handshake,
 		Plugins:          pluginMap,
@@ -322,7 +352,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Printf("[WARN] supportedOperations: %v", supportedOperations)
+	log.Printf("[TRACE] supportedOperations: %v", supportedOperations)
 	var connections = []string{connectionName}
 
 	if supportedOperations.MultipleConnections {
@@ -334,7 +364,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 		err = m.setSingleConnectionConfig(pluginClient, connectionName)
 	}
 	if err != nil {
-		log.Printf("[WARN] supportedOperations: %v", supportedOperations)
+		log.Printf("[WARN] failed to set connection config: %s", err.Error())
 		return nil, nil, err
 	}
 
@@ -373,7 +403,8 @@ func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClie
 		return nil, fmt.Errorf("no config loaded for plugin '%s'", pluginName)
 	}
 	req := &sdkproto.SetAllConnectionConfigsRequest{
-		Configs: configs,
+		Configs:        configs,
+		MaxCacheSizeMb: m.pluginCacheSizeMap[pluginName],
 	}
 	// build list of connections
 	connections := make([]string, len(configs))
@@ -398,24 +429,21 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 	return pluginClient.SetConnectionConfig(req)
 }
 
-func (m *PluginManager) getCommandEnv(pluginName string) []string {
-	env := os.Environ()
-	// todo calc max size for this plugin
-	maxSizeMb := 1000
-	envString := fmt.Sprintf("%s=%d", query_cache.EnvMaxCacheSize, maxSizeMb)
+func (m *PluginManager) nonAggregatorConnectionCount() int {
+	res := 0
+	for _, connections := range m.pluginConnectionConfigs {
+		res += nonAggregatorConnectionCount(connections)
+	}
+	return res
+}
 
-	// see whether the env already contains STEAMPIPE_MAX_CACHE_SIZE
-	// NOTE: iterate backwards through array 1if there is a duplicatre env var, the last one is used
-	for i := len(env) - 1; i >= 0; i-- {
-		parts := strings.Split(env[i], "=")
-
-		if parts[0] == query_cache.EnvMaxCacheSize {
-			env[i] = envString
-			return env
+func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {
+	res := 0
+	for _, c := range connections {
+		if len(c.ChildConnections) == 0 {
+			res++
 		}
 	}
+	return res
 
-	// so there is not currently an env var - add one
-	env = append(env, envString)
-	return env
 }
