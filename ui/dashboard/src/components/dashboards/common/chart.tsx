@@ -7,7 +7,7 @@ const Tooltip = ({ children, title }) => {
   return (
     <ThemeProvider>
       <ThemeWrapper>
-        <div className="p-3 border border-divide rounded-md text-sm flex flex-col space-y-2">
+        <div className="p-3 border border-divide rounded-md text-sm flex flex-col space-y-2 bg-dashboard-panel">
           <Title title={title} />
           {children}
         </div>
@@ -24,7 +24,14 @@ const PropertyItem = ({ name, value }) => {
   return (
     <div>
       <span className="block text-sm text-table-head truncate">{name}</span>
-      <span className={classNames("block", "break-words")}>{value}</span>
+      {value === null && (
+        <span className="text-foreground-lightest">
+          <>null</>
+        </span>
+      )}
+      {value !== null && (
+        <span className={classNames("block", "break-words")}>{value}</span>
+      )}
     </div>
     // <div className="space-x-2">
     //   <span>{name}</span>
@@ -44,7 +51,7 @@ const Properties = ({ properties = {} }) => {
   );
 };
 
-const formatChartTooltip = (params: any, data: any) => {
+const formatChartTooltip = (params: any) => {
   const componentType = params.componentType;
   if (componentType !== "series") {
     return params.name;
@@ -54,16 +61,16 @@ const formatChartTooltip = (params: any, data: any) => {
 
   switch (componentSubType) {
     case "graph":
-      return new GraphTooltipFormatter().format(params, data);
+      return new GraphTooltipFormatter().format(params);
   }
 };
 
 class GraphTooltipFormatter implements ChartTooltipFormatter {
-  format(params, data: any[]): string {
-    const dataRow = data[params.dataIndex];
+  format(params): string {
+    const data = params.data;
     const tooltip = renderToString(
       <Tooltip title={params.name}>
-        <Properties properties={dataRow.properties} />
+        <Properties properties={data.properties} />
       </Tooltip>
     );
     return tooltip;

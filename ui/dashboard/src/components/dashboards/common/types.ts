@@ -1,3 +1,3 @@
 export interface ChartTooltipFormatter {
-  format(params: Object | any[], data: Object[]): string;
+  format(params: Object | any[]): string;
 }
