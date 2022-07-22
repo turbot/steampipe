@@ -34,6 +34,7 @@ const LayoutPanel = ({
   const panelWidthClass = getResponsivePanelWidthClass(definition.width);
   return (
     <div
+      id={definition.name}
       className={classNames(
         "grid grid-cols-12 col-span-12 gap-x-4",
         withNarrowVertical ? "gap-y-2" : "gap-y-4 md:gap-y-6",
