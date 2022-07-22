@@ -11,6 +11,7 @@ interface FlowCategoryOptions {
   title?: string;
   color?: ColorOverride;
   depth?: number;
+  icon?: string;
 }
 
 export type FlowCategories = {
