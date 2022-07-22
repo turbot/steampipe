@@ -46,6 +46,8 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 import * as echarts from "echarts/core";
 import { registerComponent } from "../../index";
 import { GraphType } from "../../graphs/types";
+import { useNavigate } from "react-router-dom";
+import { renderInterpolatedTemplates } from "../../../../utils/template";
 
 echarts.use([
   BarChart,
@@ -686,7 +688,31 @@ interface ChartComponentProps {
   type: ChartType | FlowType | GraphType | HierarchyType;
 }
 
+const handleClick = async (params: any, navigate) => {
+  const componentType = params.componentType;
+  if (componentType !== "series") {
+    return;
+  }
+  // const componentSubType = params.componentSubType;
+  const dataType = params.dataType;
+
+  switch (dataType) {
+    case "node":
+      console.log(params);
+      if (!params.data.href) {
+        return;
+      }
+      const renderedResults = await renderInterpolatedTemplates(
+        { graph_node: params.data.href as string },
+        [params.data]
+      );
+      let rowRenderResult = renderedResults[0];
+      navigate(rowRenderResult.graph_node.result);
+  }
+};
+
 const Chart = ({ options, type }: ChartComponentProps) => {
+  const navigate = useNavigate();
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const mediaMode = useMediaMode();
@@ -708,6 +734,10 @@ const Chart = ({ options, type }: ChartComponentProps) => {
     return null;
   }
 
+  const eventsDict = {
+    click: (params) => handleClick(params, navigate),
+  };
+
   return (
     <>
       {mediaMode !== "print" && (
@@ -716,6 +746,7 @@ const Chart = ({ options, type }: ChartComponentProps) => {
             ref={chartRef}
             echarts={echarts}
             className="chart-canvas"
+            onEvents={eventsDict}
             option={options}
             notMerge={true}
             lazyUpdate={true}
