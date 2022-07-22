@@ -242,6 +242,7 @@ interface Node {
   depth: number | null;
   properties: NodeProperties | null;
   symbol: string | null;
+  href: string | null;
 }
 
 interface Edge {
@@ -272,6 +273,7 @@ interface EdgeMap {
 interface Category {
   color: string | null;
   icon: string | null;
+  href: string | null;
 }
 
 interface CategoryMap {
@@ -333,10 +335,14 @@ const createNode = (
   categories: CategoryMap = {}
 ) => {
   let symbol: string | null = null;
+  let href: string | null = null;
   if (category && categories) {
     const matchingCategory = categories[category];
     if (matchingCategory && matchingCategory.icon) {
       symbol = matchingCategory.icon;
+    }
+    if (matchingCategory && matchingCategory.href) {
+      href = matchingCategory.href;
     }
   }
 
@@ -347,6 +353,7 @@ const createNode = (
     depth,
     properties,
     symbol,
+    href,
   };
   return node;
 };
@@ -408,7 +415,12 @@ const buildNodesAndEdges = (
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
-      const categorySettings = { color: null, depth: null, icon: null };
+      const categorySettings = {
+        color: null,
+        depth: null,
+        icon: null,
+        href: null,
+      };
       if (overrides) {
         // @ts-ignore
         categorySettings.color =
@@ -420,6 +432,7 @@ const buildNodesAndEdges = (
           : null;
 
         categorySettings.icon = has(overrides, "icon") ? overrides.icon : null;
+        categorySettings.href = has(overrides, "href") ? overrides.href : null;
       } else {
         // @ts-ignore
         categorySettings.color = themeColors[colorIndex++];
@@ -579,7 +592,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides: Category = { color: null, icon: null };
+    let categoryOverrides: Category = { color: null, icon: null, href: null };
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
@@ -709,7 +722,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides: Category = { color: null, icon: null };
+    let categoryOverrides: Category = { color: null, icon: null, href: null };
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
@@ -758,6 +771,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
       },
       properties: node.properties,
       symbol: node.symbol,
+      href: node.href,
     };
     data.push(dataNode);
   });
