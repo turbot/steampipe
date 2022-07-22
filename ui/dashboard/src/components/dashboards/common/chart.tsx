@@ -1,7 +1,7 @@
 import { ChartTooltipFormatter } from "./types";
-import { renderToString } from "react-dom/server";
 import { classNames } from "../../../utils/styles";
-import { ThemeProvider, ThemeWrapper, useTheme } from "../../../hooks/useTheme";
+import { renderToString } from "react-dom/server";
+import { ThemeProvider, ThemeWrapper } from "../../../hooks/useTheme";
 
 const Tooltip = ({ children, title }) => {
   return (
@@ -17,12 +17,10 @@ const Tooltip = ({ children, title }) => {
 };
 
 const Title = ({ title }) => {
-  const { theme } = useTheme();
-  console.log(theme);
   return <strong className="block break-all">{title}</strong>;
 };
 
-const MetadataItem = ({ name, value }) => {
+const PropertyItem = ({ name, value }) => {
   return (
     <div>
       <span className="block text-sm text-table-head truncate">{name}</span>
@@ -36,11 +34,11 @@ const MetadataItem = ({ name, value }) => {
   );
 };
 
-const Metadata = ({ metadata = {} }) => {
+const Properties = ({ properties = {} }) => {
   return (
     <div className="space-y-2">
-      {Object.entries(metadata).map(([key, value]) => (
-        <MetadataItem key={key} name={key} value={value} />
+      {Object.entries(properties || {}).map(([key, value]) => (
+        <PropertyItem key={key} name={key} value={value} />
       ))}
     </div>
   );
@@ -63,12 +61,12 @@ const formatChartTooltip = (params: any, data: any) => {
 class GraphTooltipFormatter implements ChartTooltipFormatter {
   format(params, data: any[]): string {
     const dataRow = data[params.dataIndex];
-    console.log({ params, data, dataRow });
-    return renderToString(
+    const tooltip = renderToString(
       <Tooltip title={params.name}>
-        <Metadata metadata={dataRow.metadata} />
+        <Properties properties={dataRow.properties} />
       </Tooltip>
     );
+    return tooltip;
   }
 }
 

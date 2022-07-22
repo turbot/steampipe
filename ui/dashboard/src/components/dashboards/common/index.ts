@@ -240,7 +240,7 @@ interface Node {
   title: string | null;
   category: string | null;
   depth: number | null;
-  metadata: NodeMetadata | null;
+  properties: NodeProperties | null;
   symbol: string | null;
 }
 
@@ -256,7 +256,7 @@ interface NodeMap {
   [id: string]: Node;
 }
 
-interface NodeMetadata {
+interface NodeProperties {
   [key: string]: string;
 }
 
@@ -322,7 +322,7 @@ const createNode = (
   title: string | null = null,
   category: string | null = null,
   depth: number | null = null,
-  metadata: NodeMetadata | null = {},
+  properties: NodeProperties | null = {},
   categories: CategoryMap = {}
 ) => {
   let symbol: string | null = null;
@@ -338,7 +338,7 @@ const createNode = (
     category,
     title,
     depth,
-    metadata,
+    properties,
     symbol,
   };
   return node;
@@ -370,7 +370,7 @@ const buildNodesAndEdges = (
   const title_col = getColumn(rawData.columns, "title");
   const category_col = getColumn(rawData.columns, "category");
   const depth_col = getColumn(rawData.columns, "depth");
-  const metadata_col = getColumn(rawData.columns, "metadata");
+  const properties_col = getColumn(rawData.columns, "properties");
 
   if (!id_col && !from_col && !to_col) {
     throw new Error("No node or edge rows defined in the dataset");
@@ -395,7 +395,9 @@ const buildNodesAndEdges = (
       ? row[category_col.name]
       : null;
     const depth: number | null = depth_col ? row[depth_col.name] : null;
-    const metadata: {} | null = metadata_col ? row[metadata_col.name] : null;
+    const rowProperties: {} | null = properties_col
+      ? row[properties_col.name]
+      : null;
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
@@ -449,7 +451,7 @@ const buildNodesAndEdges = (
           title,
           category,
           depth,
-          metadata,
+          rowProperties,
           categories
         );
         node_lookup[node_id] = node;
@@ -745,7 +747,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
             ? categoryOverrides.color
             : themeColors[nodesAndEdges.next_color_index++],
       },
-      metadata: node.metadata,
+      properties: node.properties,
       symbol: node.symbol,
     };
     data.push(dataNode);
