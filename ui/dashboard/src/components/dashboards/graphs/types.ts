@@ -11,6 +11,7 @@ interface GraphCategoryOptions {
   title?: string;
   color?: ColorOverride;
   depth?: number;
+  icon?: string;
 }
 
 export type GraphCategories = {
