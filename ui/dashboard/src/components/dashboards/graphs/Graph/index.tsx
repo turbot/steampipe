@@ -56,6 +56,7 @@ const getSeriesForGraphType = (
             show: true,
             color: namedColors.foreground,
             formatter: "{b}",
+            position: "bottom",
           },
           labelLayout: {
             hideOverlap: true,
