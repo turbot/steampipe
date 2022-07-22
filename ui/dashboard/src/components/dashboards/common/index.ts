@@ -1,9 +1,9 @@
 import has from "lodash/has";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
 import { DashboardRunState } from "../../../hooks/useDashboard";
-import { FlowCategories, FlowProperties, FlowType } from "../flows/types";
+import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
-import { GraphType } from "../graphs/types";
+import { GraphProperties, GraphType } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -240,6 +240,7 @@ interface Node {
   title: string | null;
   category: string | null;
   depth: number | null;
+  symbol: string | null;
 }
 
 interface Edge {
@@ -260,6 +261,7 @@ interface EdgeMap {
 
 interface Category {
   color: string | null;
+  icon: string | null;
 }
 
 interface CategoryMap {
@@ -314,20 +316,30 @@ const createNode = (
   id: string,
   title: string | null = null,
   category: string | null = null,
-  depth: number | null = null
+  depth: number | null = null,
+  categories: CategoryMap = {}
 ) => {
+  let symbol: string | null = null;
+  if (category && categories) {
+    const matchingCategory = categories[category];
+    if (matchingCategory && matchingCategory.icon) {
+      symbol = matchingCategory.icon;
+    }
+  }
+
   const node: Node = {
     id,
     category,
     title,
     depth,
+    symbol,
   };
   return node;
 };
 
 const buildNodesAndEdges = (
   rawData: LeafNodeData | undefined,
-  properties: FlowProperties | HierarchyProperties = {},
+  properties: FlowProperties | GraphProperties | HierarchyProperties = {},
   namedColors = {}
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
@@ -340,7 +352,7 @@ const buildNodesAndEdges = (
     };
   }
 
-  let categoryProperties: FlowCategories = {};
+  let categoryProperties = {};
   if (properties && properties.categories) {
     categoryProperties = properties.categories;
   }
@@ -376,6 +388,27 @@ const buildNodesAndEdges = (
       : null;
     const depth: number | null = depth_col ? row[depth_col.name] : null;
 
+    if (category && !categories[category]) {
+      const overrides = categoryProperties[category];
+      const categorySettings = { color: null, depth: null, icon: null };
+      if (overrides) {
+        // @ts-ignore
+        categorySettings.color =
+          getColorOverride(overrides.color, namedColors) ||
+          themeColors[colorIndex++];
+        // @ts-ignore
+        categorySettings.depth = has(overrides, "depth")
+          ? overrides.depth
+          : null;
+
+        categorySettings.icon = has(overrides, "icon") ? overrides.icon : null;
+      } else {
+        // @ts-ignore
+        categorySettings.color = themeColors[colorIndex++];
+      }
+      categories[category] = categorySettings;
+    }
+
     // 4 types of row:
     //
     // id                  = node         1      1
@@ -402,7 +435,7 @@ const buildNodesAndEdges = (
       const existingNode = node_lookup[node_id];
 
       if (!existingNode) {
-        const node = createNode(node_id, title, category, depth);
+        const node = createNode(node_id, title, category, depth, categories);
         node_lookup[node_id] = node;
 
         nodes.push(node);
@@ -499,23 +532,6 @@ const buildNodesAndEdges = (
       }
       edges.push(edge);
     }
-
-    if (category && !categories[category]) {
-      const overrides = categoryProperties[category];
-      const categorySettings = { color: null, depth: null };
-      if (overrides) {
-        // @ts-ignore
-        categorySettings.color = getColorOverride(overrides.color, namedColors);
-        // @ts-ignore
-        categorySettings.depth = has(overrides, "depth")
-          ? overrides.depth
-          : null;
-      } else {
-        // @ts-ignore
-        categorySettings.color = themeColors[colorIndex++];
-      }
-      categories[category] = categorySettings;
-    }
   });
 
   return {
@@ -537,7 +553,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides: Category = { color: null };
+    let categoryOverrides: Category = { color: null, icon: null };
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
@@ -583,6 +599,137 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
             ? categoryOverrides.color
             : themeColors[nodesAndEdges.next_color_index++],
       },
+    };
+    data.push(dataNode);
+  });
+
+  return {
+    data,
+    links,
+  };
+
+  // const objectData = rawData.rows.map((dataRow) => {
+  //   const row: HierarchyDataRow = {
+  //     parent: null,
+  //     category: "",
+  //     id: "",
+  //     name: "",
+  //   };
+  //   for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
+  //     const column = rawData.columns[colIndex];
+  //     row[column.name] = dataRow[colIndex];
+  //   }
+  //
+  //   if (row.category && !categories[row.category]) {
+  //     let color;
+  //     if (
+  //       properties &&
+  //       properties.categories &&
+  //       properties.categories[row.category] &&
+  //       properties.categories[row.category].color
+  //     ) {
+  //       color = properties.categories[row.category].color;
+  //       colorIndex++;
+  //     } else {
+  //       color = themeColors[colorIndex++];
+  //     }
+  //     categories[row.category] = { color };
+  //   }
+  //
+  //   if (!usedIds[row.id]) {
+  //     builtData.push({
+  //       ...row,
+  //       itemStyle: {
+  //         // @ts-ignore
+  //         color: getColorOverride(categories[row.category].color, themeColors),
+  //       },
+  //     });
+  //     usedIds[row.id] = true;
+  //   }
+  //   return row;
+  // });
+  // const edges: HierarchyDataRowEdge[] = [];
+  // const edgeValues = {};
+  // for (const d of objectData) {
+  //   // TODO remove <null> after Kai fixes base64 issue and removes col string conversion
+  //   if (d.parent === null || d.parent === "<null>") {
+  //     d.parent = null;
+  //     continue;
+  //   }
+  //   edges.push({ source: d.parent, target: d.id, value: 0.01 });
+  //   edgeValues[d.parent] = (edgeValues[d.parent] || 0) + 0.01;
+  // }
+  // for (const e of edges) {
+  //   var v = 0;
+  //   if (edgeValues[e.target]) {
+  //     for (const e2 of edges) {
+  //       if (e.target === e2.source) {
+  //         v += edgeValues[e2.target] || 0.01;
+  //       }
+  //     }
+  //     e.value = v;
+  //   }
+  // }
+  //
+  // return {
+  //   data: builtData,
+  //   links: edges,
+  // };
+};
+
+const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
+  const data: any[] = [];
+  const links: any[] = [];
+  const nodeDepths = {};
+
+  nodesAndEdges.edges.forEach((edge) => {
+    let categoryOverrides: Category = { color: null, icon: null };
+    if (edge.category && nodesAndEdges.categories[edge.category]) {
+      categoryOverrides = nodesAndEdges.categories[edge.category];
+    }
+
+    const existingFromDepth = nodeDepths[edge.from_id];
+    if (!existingFromDepth) {
+      nodeDepths[edge.from_id] = 0;
+    }
+    const existingToDepth = nodeDepths[edge.to_id];
+    if (!existingToDepth) {
+      nodeDepths[edge.to_id] = nodeDepths[edge.from_id] + 1;
+    }
+    links.push({
+      source: edge.from_id,
+      target: edge.to_id,
+      value: 0.01,
+      lineStyle: {
+        color:
+          categoryOverrides && categoryOverrides.color
+            ? categoryOverrides.color
+            : "target",
+      },
+    });
+  });
+
+  nodesAndEdges.nodes.forEach((node) => {
+    let categoryOverrides;
+    if (node.category && nodesAndEdges.categories[node.category]) {
+      categoryOverrides = nodesAndEdges.categories[node.category];
+    }
+    const dataNode = {
+      id: node.id,
+      name: node.title,
+      depth:
+        node.depth !== null
+          ? node.depth
+          : has(categoryOverrides, "depth")
+          ? categoryOverrides.depth
+          : nodeDepths[node.id],
+      itemStyle: {
+        color:
+          categoryOverrides && categoryOverrides.color
+            ? categoryOverrides.color
+            : themeColors[nodesAndEdges.next_color_index++],
+      },
+      symbol: node.symbol,
     };
     data.push(dataNode);
   });
@@ -888,6 +1035,7 @@ export {
   adjustMinValue,
   adjustMaxValue,
   buildChartDataset,
+  buildGraphDataInputs,
   buildNodesAndEdges,
   buildSankeyDataInputs,
   buildTreeDataInputs,
