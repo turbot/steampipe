@@ -82,7 +82,7 @@ const getSeriesForGraphType = (
           data: graphData,
           links,
           tooltip: {
-            formatter: (nodeData) => formatChartTooltip(nodeData, graphData),
+            formatter: (nodeData) => formatChartTooltip(nodeData),
           },
         });
         break;
