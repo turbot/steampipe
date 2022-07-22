@@ -250,6 +250,7 @@ interface Edge {
   to_id: string;
   title: string | null;
   category: string | null;
+  properties: EdgeProperties | null;
 }
 
 interface NodeMap {
@@ -257,6 +258,10 @@ interface NodeMap {
 }
 
 interface NodeProperties {
+  [key: string]: string;
+}
+
+interface EdgeProperties {
   [key: string]: string;
 }
 
@@ -292,7 +297,8 @@ const recordEdge = (
   from_id: string,
   to_id: string,
   title: string | null = null,
-  category: string | null = null
+  category: string | null = null,
+  properties: NodeProperties | null = {}
 ) => {
   let duplicate_edge = false;
   // Find any existing edge
@@ -310,6 +316,7 @@ const recordEdge = (
     to_id,
     title,
     category,
+    properties,
   };
   return {
     edge,
@@ -543,7 +550,8 @@ const buildNodesAndEdges = (
         from_id,
         to_id,
         title,
-        category
+        category,
+        nodeAndEndMask === 6 ? rowProperties : null
       );
       if (duplicate_edge) {
         contains_duplicate_edges = true;
@@ -724,6 +732,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
             ? categoryOverrides.color
             : "target",
       },
+      properties: edge.properties,
     });
   });
 
