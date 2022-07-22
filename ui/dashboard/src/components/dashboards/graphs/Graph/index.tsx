@@ -8,6 +8,8 @@ import {
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
+// @ts-ignore
+import { formatChartTooltip } from "../../common/chart";
 import { GraphProperties, GraphProps, GraphType } from "../types";
 import { getGraphComponent } from "..";
 import { registerComponent } from "../../index";
@@ -17,6 +19,9 @@ import { useEffect, useState } from "react";
 const getCommonBaseOptions = () => ({
   animation: false,
   tooltip: {
+    appendToBody: true,
+    borderWidth: 0,
+    padding: 0,
     trigger: "item",
     triggerOn: "mousemove",
   },
@@ -77,7 +82,7 @@ const getSeriesForGraphType = (
           data: graphData,
           links,
           tooltip: {
-            formatter: "{b}",
+            formatter: (nodeData) => formatChartTooltip(nodeData, graphData),
           },
         });
         break;

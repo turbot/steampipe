@@ -59,6 +59,7 @@
     "@tailwindcss/forms": "0.5.2",
     "@tailwindcss/typography": "0.5.4",
     "@tsconfig/create-react-app": "1.0.2",
+    "@types/echarts": "4.9.16",
     "@types/jest": "28.1.6",
     "@types/lodash": "4.14.182",
     "@types/node": "18.7.3",
