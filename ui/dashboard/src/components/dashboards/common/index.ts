@@ -240,6 +240,7 @@ interface Node {
   title: string | null;
   category: string | null;
   depth: number | null;
+  metadata: NodeMetadata | null;
   symbol: string | null;
 }
 
@@ -253,6 +254,10 @@ interface Edge {
 
 interface NodeMap {
   [id: string]: Node;
+}
+
+interface NodeMetadata {
+  [key: string]: string;
 }
 
 interface EdgeMap {
@@ -317,6 +322,7 @@ const createNode = (
   title: string | null = null,
   category: string | null = null,
   depth: number | null = null,
+  metadata: NodeMetadata | null = {},
   categories: CategoryMap = {}
 ) => {
   let symbol: string | null = null;
@@ -332,6 +338,7 @@ const createNode = (
     category,
     title,
     depth,
+    metadata,
     symbol,
   };
   return node;
@@ -363,6 +370,7 @@ const buildNodesAndEdges = (
   const title_col = getColumn(rawData.columns, "title");
   const category_col = getColumn(rawData.columns, "category");
   const depth_col = getColumn(rawData.columns, "depth");
+  const metadata_col = getColumn(rawData.columns, "metadata");
 
   if (!id_col && !from_col && !to_col) {
     throw new Error("No node or edge rows defined in the dataset");
@@ -387,6 +395,7 @@ const buildNodesAndEdges = (
       ? row[category_col.name]
       : null;
     const depth: number | null = depth_col ? row[depth_col.name] : null;
+    const metadata: {} | null = metadata_col ? row[metadata_col.name] : null;
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
@@ -435,7 +444,14 @@ const buildNodesAndEdges = (
       const existingNode = node_lookup[node_id];
 
       if (!existingNode) {
-        const node = createNode(node_id, title, category, depth, categories);
+        const node = createNode(
+          node_id,
+          title,
+          category,
+          depth,
+          metadata,
+          categories
+        );
         node_lookup[node_id] = node;
 
         nodes.push(node);
@@ -729,6 +745,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
             ? categoryOverrides.color
             : themeColors[nodesAndEdges.next_color_index++],
       },
+      metadata: node.metadata,
       symbol: node.symbol,
     };
     data.push(dataNode);

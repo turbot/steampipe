@@ -697,7 +697,7 @@ const Chart = ({ options, type }: ChartComponentProps) => {
     }
 
     const echartInstance = chartRef.current.getEchartsInstance();
-    const dataURL = echartInstance.getDataURL();
+    const dataURL = echartInstance.getDataURL({});
     if (dataURL === imageUrl) {
       return;
     }
