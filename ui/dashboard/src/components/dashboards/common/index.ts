@@ -771,6 +771,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
       },
       properties: node.properties,
       symbol: node.symbol,
+      symbolSize: 15,
       href: node.href,
     };
     data.push(dataNode);
