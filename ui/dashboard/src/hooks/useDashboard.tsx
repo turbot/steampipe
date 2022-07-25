@@ -871,7 +871,7 @@ const DashboardProvider = ({
 
   // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
-    if (navigationType !== "POP" && navigationType !== "PUSH") {
+    if (navigationType !== "POP") {
       return;
     }
     if (location.key === "default") {
