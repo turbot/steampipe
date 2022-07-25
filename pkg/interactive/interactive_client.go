@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"log"
 	"os"
 	"os/signal"
@@ -119,6 +120,7 @@ func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 
 	statushooks.Message(ctx,
 		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
+		fmt.Sprintf("[memory limit %dMb]", plugin.GetMaxMemoryBytes()/(1024*1024)),
 		fmt.Sprintf("For more information, type %s", constants.Bold(".help")))
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors

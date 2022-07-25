@@ -3,8 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"log"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -44,6 +46,8 @@ var rootCmd = &cobra.Command{
 		createLogger()
 		initGlobalConfig()
 		task.RunTasks()
+		// set the max memory
+		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
 	},
 	Short: "Query cloud resources using SQL",
 	Long: `Query cloud resources using SQL.
