@@ -40,6 +40,7 @@ const Dashboard = ({
 const DashboardWrapper = () => {
   const {
     dashboard,
+    dataMode,
     progress,
     search,
     selectedDashboard,
@@ -47,7 +48,11 @@ const DashboardWrapper = () => {
     state,
   } = useDashboard();
 
-  if (search.value || !dashboard || !selectedDashboard) {
+  if (
+    search.value ||
+    !dashboard ||
+    (!selectedDashboard && dataMode === "live")
+  ) {
     return null;
   }
 

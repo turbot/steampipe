@@ -221,7 +221,6 @@ export interface DashboardSnapshot {
   dashboard_name: string;
   start_time: string;
   end_time: string;
-  lineage: string;
   schema_version: string;
   search_path: string;
   variables: DashboardVariables;
@@ -305,11 +304,17 @@ interface DashboardsCollection {
   dashboardsMap: AvailableDashboardsDictionary;
 }
 
+export interface DashboardDataOptions {
+  dataMode: DashboardDataMode;
+  snapshotId?: string;
+}
+
 interface DashboardProviderProps {
   analyticsContext: any;
   breakpointContext: any;
   children: null | JSX.Element | JSX.Element[];
   componentOverrides?: {};
+  dataOptions?: DashboardDataOptions;
   eventHooks?: {};
   featureFlags?: string[];
   socketUrlFactory?: SocketURLFactory;
@@ -759,7 +764,7 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   return selectedDashboardInputs;
 };
 
-const getInitialState = (searchParams, defaults = {}) => {
+const getInitialState = (searchParams, defaults: any = {}) => {
   return {
     availableDashboardsLoaded: false,
     metadata: null,
@@ -767,13 +772,10 @@ const getInitialState = (searchParams, defaults = {}) => {
     dashboardTags: {
       keys: [],
     },
-    dataMode: searchParams.get("mode") || "live",
-    snapshotId: searchParams.has("snapshot_id")
-      ? searchParams.get("snapshot_id")
-      : null,
+    dataMode: defaults.dataMode || "live",
+    snapshotId: defaults.snapshotId ? defaults.snapshotId : null,
     refetchDashboard: false,
     error: null,
-
     panelsMap: {},
     dashboard: null,
     selectedPanel: null,
@@ -810,6 +812,9 @@ const DashboardProvider = ({
   breakpointContext,
   children,
   componentOverrides = {},
+  dataOptions = {
+    dataMode: "live",
+  },
   eventHooks,
   featureFlags = [],
   socketUrlFactory,
@@ -821,10 +826,10 @@ const DashboardProvider = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatchInner] = useReducer(
     reducer,
-    getInitialState(searchParams, stateDefaults)
+    getInitialState(searchParams, { ...stateDefaults, ...dataOptions })
   );
   const dispatch = useCallback((action) => {
-    // console.log(action.type, action);
+    console.log(action.type, action);
     dispatchInner(action);
   }, []);
   const { dashboard_name } = useParams();
@@ -855,36 +860,6 @@ const DashboardProvider = ({
       selectedSnapshot: state.selectedSnapshot,
     });
 
-  // Initial sync into URL
-  useEffect(() => {
-    if (
-      !featureFlags.includes("snapshots") ||
-      (searchParams.has("mode") && searchParams.get("mode") === state.dataMode)
-    ) {
-      return;
-    }
-    searchParams.set("mode", state.dataMode);
-    setSearchParams(searchParams, { replace: true });
-  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
-
-  useEffect(() => {
-    if (featureFlags.includes("snapshots") && state.selectedSnapshot) {
-      searchParams.set("snapshot_id", state.selectedSnapshot.id);
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [featureFlags, searchParams, setSearchParams, state.selectedSnapshot]);
-
-  useEffect(() => {
-    if (
-      featureFlags.includes("snapshots") &&
-      state.dataMode === "live" &&
-      searchParams.has("snapshot_id")
-    ) {
-      searchParams.delete("snapshot_id");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [featureFlags, searchParams, setSearchParams, state.dataMode]);
-
   // Alert analytics
   useEffect(() => {
     setAnalyticsMetadata(state.metadata);
@@ -900,6 +875,9 @@ const DashboardProvider = ({
       return;
     }
     if (location.key === "default") {
+      return;
+    }
+    if (state.dataMode === "snapshot") {
       return;
     }
 
@@ -919,9 +897,6 @@ const DashboardProvider = ({
     const tag =
       searchParams.get("tag") ||
       get(stateDefaults, "search.groupBy.tag", "service");
-    const dataMode = searchParams.has("mode")
-      ? searchParams.get("mode")
-      : "live";
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
@@ -937,12 +912,6 @@ const DashboardProvider = ({
       value: inputs,
       recordInputsHistory: false,
     });
-    if (featureFlags.includes("snapshots")) {
-      dispatch({
-        type: DashboardActions.SET_DATA_MODE,
-        dataMode,
-      });
-    }
   }, [
     dashboard_name,
     dispatch,
@@ -952,27 +921,29 @@ const DashboardProvider = ({
     previousSelectedDashboardStates,
     searchParams,
     stateDefaults,
+    state.dataMode,
   ]);
 
   useEffect(() => {
     // If no search params have changed
     if (
-      previousSelectedDashboardStates &&
-      // @ts-ignore
-      previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
-      // @ts-ignore
-      previousSelectedDashboardStates.dataMode === state.dataMode &&
-      // @ts-ignore
-      previousSelectedDashboardStates.search.value === state.search.value &&
-      // @ts-ignore
-      previousSelectedDashboardStates.search.groupBy.value ===
-        state.search.groupBy.value &&
-      // @ts-ignore
-      previousSelectedDashboardStates.search.groupBy.tag ===
-        state.search.groupBy.tag &&
-      // @ts-ignore
-      previousSelectedDashboardStates.searchParams.toString() ===
-        searchParams.toString()
+      state.dataMode === "snapshot" ||
+      (previousSelectedDashboardStates &&
+        // @ts-ignore
+        previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
+        // @ts-ignore
+        previousSelectedDashboardStates.dataMode === state.dataMode &&
+        // @ts-ignore
+        previousSelectedDashboardStates.search.value === state.search.value &&
+        // @ts-ignore
+        previousSelectedDashboardStates.search.groupBy.value ===
+          state.search.groupBy.value &&
+        // @ts-ignore
+        previousSelectedDashboardStates.search.groupBy.tag ===
+          state.search.groupBy.tag &&
+        // @ts-ignore
+        previousSelectedDashboardStates.searchParams.toString() ===
+          searchParams.toString())
     ) {
       return;
     }
@@ -1020,9 +991,6 @@ const DashboardProvider = ({
       }
     }
 
-    if (featureFlags.includes("snapshots")) {
-      searchParams.set("mode", state.dataMode);
-    }
     setSearchParams(searchParams, { replace: true });
   }, [
     dashboard_name,
@@ -1216,9 +1184,6 @@ const DashboardProvider = ({
     const newParams = {
       ...state.selectedDashboardInputs,
     };
-    if (featureFlags.includes("snapshots")) {
-      newParams.mode = state.dataMode;
-    }
     setSearchParams(newParams, {
       replace: !shouldRecordHistory,
     });
