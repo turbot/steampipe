@@ -21,17 +21,17 @@ type LeafRun struct {
 	Args    []string              `json:"args,omitempty"`
 	Params  []*modconfig.ParamDef ` json:"params,omitempty"`
 
-	Data             *dashboardtypes.LeafData    `json:"data,omitempty"`
-	ErrorString      string                      `json:"error,omitempty"`
-	DashboardNode    modconfig.DashboardLeafNode `json:"properties,omitempty"`
-	NodeType         string                      `json:"panel_type"`
-	DashboardName    string                      `json:"dashboard"`
-	SourceDefinition string                      `json:"source_definition"`
+	Data             *dashboardtypes.LeafData          `json:"data,omitempty"`
+	ErrorString      string                            `json:"error,omitempty"`
+	DashboardNode    modconfig.DashboardLeafNode       `json:"properties,omitempty"`
+	NodeType         string                            `json:"panel_type"`
+	Status           dashboardtypes.DashboardRunStatus `json:"status"`
+	DashboardName    string                            `json:"dashboard"`
+	SourceDefinition string                            `json:"source_definition"`
 
 	executeSQL          string
 	error               error
 	parent              dashboardtypes.DashboardNodeParent
-	runStatus           dashboardtypes.DashboardRunStatus
 	executionTree       *DashboardExecutionTree
 	runtimeDependencies map[string]*ResolvedRuntimeDependency
 }
@@ -63,7 +63,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		runtimeDependencies: make(map[string]*ResolvedRuntimeDependency),
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
-		runStatus: dashboardtypes.DashboardRunComplete,
+		Status: dashboardtypes.DashboardRunComplete,
 	}
 
 	parsedName, err := modconfig.ParseResourceName(resource.Name())
@@ -74,7 +74,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	// if we have a query provider which requires execution, set status to ready
 	if provider, ok := resource.(modconfig.QueryProvider); ok && provider.RequiresExecution(provider) {
 		// if the provider has sql or a query, set status to ready
-		r.runStatus = dashboardtypes.DashboardRunReady
+		r.Status = dashboardtypes.DashboardRunReady
 
 	}
 
@@ -107,7 +107,7 @@ func (r *LeafRun) Initialise(ctx context.Context) {}
 // Execute implements DashboardRunNode
 func (r *LeafRun) Execute(ctx context.Context) {
 	// if there is nothing to do, return
-	if r.runStatus == dashboardtypes.DashboardRunComplete {
+	if r.Status == dashboardtypes.DashboardRunComplete {
 		return
 	}
 
@@ -153,7 +153,7 @@ func (r *LeafRun) GetName() string {
 
 // GetRunStatus implements DashboardNodeRun
 func (r *LeafRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
-	return r.runStatus
+	return r.Status
 }
 
 // SetError implements DashboardNodeRun
@@ -162,7 +162,7 @@ func (r *LeafRun) SetError(err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 
-	r.runStatus = dashboardtypes.DashboardRunError
+	r.Status = dashboardtypes.DashboardRunError
 	// raise counter error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
 		LeafNode:    r,
@@ -179,7 +179,7 @@ func (r *LeafRun) GetError() error {
 
 // SetComplete implements DashboardNodeRun
 func (r *LeafRun) SetComplete() {
-	r.runStatus = dashboardtypes.DashboardRunComplete
+	r.Status = dashboardtypes.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
 		LeafNode:    r,
@@ -192,7 +192,7 @@ func (r *LeafRun) SetComplete() {
 
 // RunComplete implements DashboardNodeRun
 func (r *LeafRun) RunComplete() bool {
-	return r.runStatus == dashboardtypes.DashboardRunComplete || r.runStatus == dashboardtypes.DashboardRunError
+	return r.Status == dashboardtypes.DashboardRunComplete || r.Status == dashboardtypes.DashboardRunError
 }
 
 // GetChildren implements DashboardNodeRun

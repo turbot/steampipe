@@ -8,7 +8,7 @@ interface DashboardProgressProps {
 const DashboardProgress = ({ state, progress }: DashboardProgressProps) => {
   return (
     <div className="w-full h-[4px] bg-dashboard">
-      {state === "running" ? (
+      {state === "ready" ? (
         <div
           className="h-full bg-black-scale-3"
           style={{ width: `${progress}%` }}

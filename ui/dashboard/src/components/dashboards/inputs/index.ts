@@ -2,12 +2,12 @@ import { getComponent } from "../index";
 import { IInput } from "./types";
 const Table = getComponent("table");
 
-const flowsMap = {};
+const inputsMap = {};
 
-const getInputComponent = (key: string): IInput => flowsMap[key];
+const getInputComponent = (key: string): IInput => inputsMap[key];
 
 const registerInputComponent = (key: string, component: IInput) => {
-  flowsMap[key] = component;
+  inputsMap[key] = component;
 };
 
 const TableWrapper: IInput = {

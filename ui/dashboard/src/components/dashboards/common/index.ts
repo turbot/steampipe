@@ -3,6 +3,7 @@ import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
 import { FlowCategories, FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
+import { DashboardRunState } from "../../../hooks/useDashboard";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -33,6 +34,7 @@ export interface ExecutablePrimitiveProps {
   sql?: string;
   data?: LeafNodeData;
   error?: Error;
+  status: DashboardRunState;
 }
 
 export type ColorOverride = "alert" | "info" | "ok" | string;
