@@ -22,7 +22,7 @@ const Dashboard = ({
   definition,
   progress = 0,
   isRoot = true,
-  state = "running",
+  state = "ready",
   withPadding = false,
 }: DashboardProps) => (
   <>

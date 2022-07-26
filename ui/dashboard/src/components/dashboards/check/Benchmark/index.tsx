@@ -220,6 +220,7 @@ const BenchmarkTableView = ({
         width: definition.width,
         children: definition.children,
         data: benchmarkDataTable,
+        status: benchmarkDataTable ? "complete" : "ready",
       }}
       ready={() => !!benchmarkDataTable}
     >
@@ -268,6 +269,7 @@ const Inner = ({ withTitle }) => {
           name: definition.name,
           panel_type: "benchmark",
           width: definition.width,
+          status: "error",
         }}
       >
         {() => (

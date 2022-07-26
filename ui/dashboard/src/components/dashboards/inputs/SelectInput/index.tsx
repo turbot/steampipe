@@ -87,6 +87,15 @@ const getValueForState = (multi, option) => {
   }
 };
 
+const getValueFromState = (multi, value) => {
+  if (multi) {
+    // @ts-ignore
+    return value ? value.split(",") : [];
+  } else {
+    return value;
+  }
+};
+
 const findOptions = (options, multi, value) => {
   return multi
     ? options.filter((option) =>
@@ -97,7 +106,13 @@ const findOptions = (options, multi, value) => {
       );
 };
 
-const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
+const SelectInput = ({
+  data,
+  multi,
+  name,
+  properties,
+  status,
+}: SelectInputProps) => {
   const { dataMode, dispatch, selectedDashboardInputs } = useDashboard();
   const [initialisedFromState, setInitialisedFromState] = useState(false);
   const [value, setValue] = useState<SelectOption | SelectOption[] | null>(
@@ -108,8 +123,9 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
   const options: SelectOption[] = useMemo(() => {
     // If no options defined at all
     if (
-      (!properties?.options || properties?.options.length === 0) &&
-      (!data || !data.columns || !data.rows)
+      ((!properties?.options || properties?.options.length === 0) &&
+        (!data || !data.columns || !data.rows)) ||
+      status !== "complete"
     ) {
       return [];
     }
@@ -137,18 +153,33 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     } else {
       return [];
     }
-  }, [properties.options, data]);
+  }, [properties.options, data, status]);
 
   const stateValue = selectedDashboardInputs[name];
 
   // Bind the selected option to the reducer state
   useEffect(() => {
+    // console.log({
+    //   name,
+    //   status,
+    //   multi,
+    //   options,
+    //   initialisedFromState,
+    //   placeholder: properties.placeholder,
+    //   stateValue,
+    //   value,
+    // });
+    // console.log(name, status, options);
     // If we haven't got the data we need yet...
-    if (!options || options.length === 0) {
+    if (status !== "complete" || !options || options.length === 0) {
       return;
     }
+    //
+    // if (initialisedFromState) {
+    //   return;
+    // }
 
-    // If this is first load and we have a value from state, initialise it
+    // If this is first load, and we have a value from state, initialise it
     if (!initialisedFromState && stateValue) {
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
@@ -162,19 +193,42 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
       !properties.placeholder
     ) {
       setInitialisedFromState(true);
-      setValue(multi ? [options[0]] : options[0]);
+      const newValue = multi ? [options[0]] : options[0];
+      setValue(newValue);
       dispatch({
         type: DashboardActions.SET_DASHBOARD_INPUT,
         name,
-        value: getValueForState(multi, multi ? [options[0]] : options[0]),
+        value: getValueForState(multi, newValue),
         recordInputsHistory: false,
       });
     } else if (initialisedFromState && stateValue) {
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
       setValue(foundOptions || null);
+      // dispatch({
+      //   type: DashboardActions.SET_DASHBOARD_INPUT,
+      //   name,
+      //   value: getValueForState(multi, foundOptions),
+      //   recordInputsHistory: false,
+      // });
     } else if (initialisedFromState && !stateValue) {
-      setValue(null);
+      if (properties.placeholder) {
+        // console.log("Value cleared in state and no placeholder");
+        setValue(null);
+      } else {
+        // console.log(
+        //   "Value cleared in state and placeholder so choosing first item"
+        // );
+        const newValue = multi ? [options[0]] : options[0];
+        // console.log(name, status, newValue);
+        setValue(newValue);
+        dispatch({
+          type: DashboardActions.SET_DASHBOARD_INPUT,
+          name,
+          value: getValueForState(multi, newValue),
+          recordInputsHistory: false,
+        });
+      }
     }
   }, [
     dispatch,
@@ -184,30 +238,115 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
     options,
     properties.placeholder,
     stateValue,
+    status,
   ]);
 
-  useEffect(() => {
-    if (!initialisedFromState) {
-      return;
-    }
+  // useEffect(() => {
+  //   if (!initialisedFromState) {
+  //     return;
+  //   }
+  //
+  //   // If we don't have a value in state and in the control, nothing to do
+  //   if (!stateValue && !value) {
+  //     // console.log("value changed - nothing to do");
+  //     return;
+  //   }
+  //
+  //   // const parsedStateValue = getValueFromState(multi, stateValue);
+  //   // const parsedOptionValue = multi
+  //   //   ? value
+  //   //     ? // @ts-ignore
+  //   //       value.map((v) => v.value)
+  //   //     : []
+  //   //   : // @ts-ignore
+  //   //     value.value;
+  //   // const sameValue = multi
+  //   //   ? JSON.stringify(parsedStateValue) === JSON.stringify(parsedOptionValue)
+  //   //   : parsedStateValue === parsedOptionValue;
+  //   //
+  //   // // If nothing has changed, don't dispatch changes
+  //   // if (sameValue) {
+  //   //   console.log("value changed - no change as same value", {
+  //   //     name,
+  //   //     multi,
+  //   //     stateValue,
+  //   //     value,
+  //   //     parsedStateValue,
+  //   //     parsedOptionValue,
+  //   //   });
+  //   //   return;
+  //   // }
+  //
+  //   // @ts-ignore
+  //   if (!value || value.length === 0) {
+  //     // console.log("value changed - deleting", {
+  //     //   initialisedFromState,
+  //     //   multi,
+  //     //   name,
+  //     //   stateValue,
+  //     //   // parsedStateValue,
+  //     //   // parsedOptionValue,
+  //     //   value,
+  //     // });
+  //     dispatch({
+  //       type: DashboardActions.DELETE_DASHBOARD_INPUT,
+  //       name,
+  //       recordInputsHistory: true,
+  //     });
+  //     if (properties.placeholder) {
+  //       // console.log("Value cleared in state and no placeholder");
+  //       setValue(null);
+  //     } else {
+  //       // console.log(
+  //       //   "Value cleared in state and placeholder so choosing first item"
+  //       // );
+  //       setValue(multi ? [options[0]] : options[0]);
+  //     }
+  //     return;
+  //   }
+  //
+  //   // console.log("value changed - setting", {
+  //   //   initialisedFromState,
+  //   //   multi,
+  //   //   name,
+  //   //   stateValue,
+  //   //   // parsedStateValue,
+  //   //   // parsedOptionValue,
+  //   //   value,
+  //   // });
+  //   dispatch({
+  //     type: DashboardActions.SET_DASHBOARD_INPUT,
+  //     name,
+  //     value: getValueForState(multi, value),
+  //     recordInputsHistory: true,
+  //   });
+  // }, [
+  //   dispatch,
+  //   initialisedFromState,
+  //   multi,
+  //   name,
+  //   properties.placeholder,
+  //   stateValue,
+  //   value,
+  // ]);
 
-    // @ts-ignore
-    if (!value || value.length === 0) {
+  const updateValue = (newValue) => {
+    setValue(newValue);
+    if (!newValue || newValue.length === 0) {
       dispatch({
         type: DashboardActions.DELETE_DASHBOARD_INPUT,
         name,
         recordInputsHistory: true,
       });
-      return;
+    } else {
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_INPUT,
+        name,
+        value: getValueForState(multi, newValue),
+        recordInputsHistory: true,
+      });
     }
-
-    dispatch({
-      type: DashboardActions.SET_DASHBOARD_INPUT,
-      name,
-      value: getValueForState(multi, value),
-      recordInputsHistory: true,
-    });
-  }, [dispatch, initialisedFromState, multi, name, value]);
+  };
 
   const styles = useSelectInputStyles();
 
@@ -249,7 +388,7 @@ const SelectInput = ({ data, multi, name, properties }: SelectInputProps) => {
         // menuIsOpen
         name={name}
         // @ts-ignore
-        onChange={(value) => setValue(value)}
+        onChange={updateValue}
         options={options}
         placeholder={
           properties && properties.placeholder ? properties.placeholder : null

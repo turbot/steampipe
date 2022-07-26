@@ -30,6 +30,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import isEmpty from "lodash/isEmpty";
 
 interface IBreakpointContext {
   currentBreakpoint: string | null;
@@ -54,7 +55,7 @@ export interface PanelsMap {
 
 export type DashboardDataMode = "live" | "snapshot";
 
-export type DashboardRunState = "running" | "error" | "complete";
+export type DashboardRunState = "ready" | "error" | "complete";
 
 interface IDashboardContext {
   metadata: DashboardMetadata | null;
@@ -415,8 +416,14 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
     if (!data) {
       continue;
     }
-    const dataPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}.data`;
-    set(panels, dataPath, data);
+    const panelPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}`;
+    const dataPath = `${panelPath}.data`;
+    const panel = get(panels, panelPath);
+    // We don't want to retain panel data for inputs as it causes issues with selection
+    // of incorrect values for select controls without placeholders
+    if (panel && panel.panel_type !== "input") {
+      set(panels, dataPath, data);
+    }
   }
   return panels;
 }
@@ -534,7 +541,7 @@ function reducer(state, action) {
         execution_id: action.execution_id,
         refetchDashboard: false,
         progress: 0,
-        state: "running",
+        state: "ready",
       };
     }
     case DashboardActions.EXECUTION_COMPLETE: {
@@ -707,11 +714,25 @@ function reducer(state, action) {
         return state;
       }
       const newSelectedDashboardInputs = { ...state.selectedDashboardInputs };
+      const newPanelsMap = { ...state.panelsMap };
+      const panelsMapKeys = Object.keys(newPanelsMap);
       for (const input of action.cleared_inputs || []) {
         delete newSelectedDashboardInputs[input];
+        const matchingPanelKey = panelsMapKeys.find((key) =>
+          key.endsWith(input)
+        );
+        if (!matchingPanelKey) {
+          continue;
+        }
+        const panel = newPanelsMap[matchingPanelKey];
+        newPanelsMap[matchingPanelKey] = {
+          ...panel,
+          status: "ready",
+        };
       }
       return {
         ...state,
+        panelsMap: newPanelsMap,
         selectedDashboardInputs: newSelectedDashboardInputs,
         lastChangedInput: null,
         recordInputsHistory: false,
@@ -829,7 +850,7 @@ const DashboardProvider = ({
     getInitialState(searchParams, { ...stateDefaults, ...dataOptions })
   );
   const dispatch = useCallback((action) => {
-    console.log(action.type, action);
+    // console.log(action.type, action);
     dispatchInner(action);
   }, []);
   const { dashboard_name } = useParams();
@@ -898,6 +919,11 @@ const DashboardProvider = ({
       searchParams.get("tag") ||
       get(stateDefaults, "search.groupBy.tag", "service");
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
+    // console.log({
+    //   // @ts-ignore
+    //   previous: previousSelectedDashboardStates?.selectedDashboardInputs,
+    //   current: inputs,
+    // });
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
       value: goneFromDashboardToDashboard ? "" : search,
@@ -907,11 +933,19 @@ const DashboardProvider = ({
       value: groupBy,
       tag,
     });
-    dispatch({
-      type: DashboardActions.SET_DASHBOARD_INPUTS,
-      value: inputs,
-      recordInputsHistory: false,
-    });
+    if (
+      JSON.stringify(
+        // @ts-ignore
+        previousSelectedDashboardStates?.selectedDashboardInputs
+      ) !== JSON.stringify(inputs)
+    ) {
+      // console.log("dispatching inputs", inputs);
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_INPUTS,
+        value: inputs,
+        recordInputsHistory: false,
+      });
+    }
   }, [
     dashboard_name,
     dispatch,
