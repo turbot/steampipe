@@ -87,15 +87,6 @@ const getValueForState = (multi, option) => {
   }
 };
 
-const getValueFromState = (multi, value) => {
-  if (multi) {
-    // @ts-ignore
-    return value ? value.split(",") : [];
-  } else {
-    return value;
-  }
-};
-
 const findOptions = (options, multi, value) => {
   return multi
     ? options.filter((option) =>
@@ -125,7 +116,8 @@ const SelectInput = ({
     if (
       ((!properties?.options || properties?.options.length === 0) &&
         (!data || !data.columns || !data.rows)) ||
-      status !== "complete"
+      // This property is only present in workspaces >=v0.16.x
+      (status !== undefined && status !== "complete")
     ) {
       return [];
     }
@@ -171,7 +163,12 @@ const SelectInput = ({
     // });
     // console.log(name, status, options);
     // If we haven't got the data we need yet...
-    if (status !== "complete" || !options || options.length === 0) {
+    if (
+      // This property is only present in workspaces >=v0.16.x
+      (status !== undefined && status !== "complete") ||
+      !options ||
+      options.length === 0
+    ) {
       return;
     }
     //
