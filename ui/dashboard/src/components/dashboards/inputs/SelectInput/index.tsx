@@ -159,6 +159,16 @@ const SelectInput = ({
 
   // Bind the selected option to the reducer state
   useEffect(() => {
+    // console.log({
+    //   name,
+    //   status,
+    //   multi,
+    //   options,
+    //   initialisedFromState,
+    //   placeholder: properties.placeholder,
+    //   stateValue,
+    //   value,
+    // });
     // console.log(name, status, options);
     // If we haven't got the data we need yet...
     if (status !== "complete" || !options || options.length === 0) {
@@ -169,7 +179,7 @@ const SelectInput = ({
     //   return;
     // }
 
-    // If this is first load and we have a value from state, initialise it
+    // If this is first load, and we have a value from state, initialise it
     if (!initialisedFromState && stateValue) {
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
@@ -195,6 +205,12 @@ const SelectInput = ({
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
       setValue(foundOptions || null);
+      // dispatch({
+      //   type: DashboardActions.SET_DASHBOARD_INPUT,
+      //   name,
+      //   value: getValueForState(multi, foundOptions),
+      //   recordInputsHistory: false,
+      // });
     } else if (initialisedFromState && !stateValue) {
       if (properties.placeholder) {
         // console.log("Value cleared in state and no placeholder");

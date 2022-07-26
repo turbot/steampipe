@@ -30,6 +30,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import isEmpty from "lodash/isEmpty";
 
 interface IBreakpointContext {
   currentBreakpoint: string | null;
@@ -891,7 +892,7 @@ const DashboardProvider = ({
 
   // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
-    if (navigationType !== "POP") {
+    if (navigationType !== "POP" && navigationType !== "PUSH") {
       return;
     }
     if (location.key === "default") {
@@ -918,6 +919,11 @@ const DashboardProvider = ({
       searchParams.get("tag") ||
       get(stateDefaults, "search.groupBy.tag", "service");
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
+    // console.log({
+    //   // @ts-ignore
+    //   previous: previousSelectedDashboardStates?.selectedDashboardInputs,
+    //   current: inputs,
+    // });
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
       value: goneFromDashboardToDashboard ? "" : search,
@@ -927,11 +933,19 @@ const DashboardProvider = ({
       value: groupBy,
       tag,
     });
-    dispatch({
-      type: DashboardActions.SET_DASHBOARD_INPUTS,
-      value: inputs,
-      recordInputsHistory: false,
-    });
+    if (
+      JSON.stringify(
+        // @ts-ignore
+        previousSelectedDashboardStates?.selectedDashboardInputs
+      ) !== JSON.stringify(inputs)
+    ) {
+      // console.log("dispatching inputs", inputs);
+      dispatch({
+        type: DashboardActions.SET_DASHBOARD_INPUTS,
+        value: inputs,
+        recordInputsHistory: false,
+      });
+    }
   }, [
     dashboard_name,
     dispatch,
