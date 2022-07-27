@@ -55,6 +55,10 @@ func startAPIAsync(ctx context.Context, webSocket *melody.Melody) chan struct{} 
 		})
 
 		router.NoRoute(func(c *gin.Context) {
+			// https://stackoverflow.com/questions/49547/how-do-we-control-web-page-caching-across-all-browsers
+			c.Header("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
+			c.Header("Pragma", "no-cache")                                   // HTTP 1.0.
+			c.Header("Expires", "0")                                         // Proxies.
 			c.File(path.Join(assetsDirectory, "index.html"))
 		})
 
