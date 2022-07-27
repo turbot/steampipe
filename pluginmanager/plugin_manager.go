@@ -60,6 +60,9 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, lo
 	pluginManager.setPluginConnectionConfigs()
 	// determine cache size for each plugin
 	pluginManager.setPluginCacheSizeMap()
+
+	// tell OS to reclaim memory immediately
+	os.Setenv("GODEBUG", "madvdontneed=1")
 	return pluginManager, nil
 }
 

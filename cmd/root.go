@@ -44,6 +44,9 @@ var rootCmd = &cobra.Command{
 		createLogger()
 		initGlobalConfig()
 		task.RunTasks()
+		// TODO enable this when we move to go 1.19
+		// set the max memory
+		//debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
 	},
 	Short: "Query cloud resources using SQL",
 	Long: `Query cloud resources using SQL.
