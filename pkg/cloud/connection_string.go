@@ -32,14 +32,15 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	client := &http.Client{}
 
 	// org or user?
-	workspace, err := getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
+	workspaceData, err := getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
 	if err != nil {
 		return nil, err
 	}
-	if workspace == nil {
+	if workspaceData == nil {
 		return nil, fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
 	}
 
+	workspace := workspaceData["workspace"].(map[string]interface{})
 	workspaceHost := workspace["host"].(string)
 	databaseName := workspace["database_name"].(string)
 
@@ -54,7 +55,7 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
-	identity := workspace["identity"].(map[string]interface{})
+	identity := workspaceData["identity"].(map[string]interface{})
 
 	cloudMetadata := steampipeconfig.NewCloudMetadata()
 	cloudMetadata.Actor.Id = userId
@@ -81,8 +82,9 @@ func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, c
 		itemsArray := items.([]interface{})
 		for _, i := range itemsArray {
 			item := i.(map[string]interface{})
+			workspace := item["workspace"].(map[string]interface{})
 			identity := item["identity"].(map[string]interface{})
-			if identity["handle"] == identityHandle && item["handle"] == workspaceHandle {
+			if identity["handle"] == identityHandle && workspace["handle"] == workspaceHandle {
 				return item, nil
 			}
 		}
