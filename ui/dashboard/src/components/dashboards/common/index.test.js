@@ -1,10 +1,5 @@
 import "../../../test/matchMedia";
-import {
-  adjustMinValue,
-  adjustMaxValue,
-  buildNodesAndEdges,
-  themeColors,
-} from "./index";
+import { adjustMinValue, adjustMaxValue, buildNodesAndEdges } from "./index";
 
 describe("common.adjustMinValue", () => {
   test("5", () => {
@@ -157,13 +152,26 @@ describe("common.buildNodesAndEdges", () => {
       edges: [],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
-      nodes: [{ id: "node", title: null, category: null, depth: null }],
+      nodes: [
+        {
+          id: "node",
+          title: null,
+          category: null,
+          depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
+        },
+      ],
       root_nodes: {
         node: {
           id: "node",
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       },
     });
@@ -186,17 +194,29 @@ describe("common.buildNodesAndEdges", () => {
           to_id: "node",
           title: null,
           category: null,
+          properties: {},
         },
       ],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
       nodes: [
-        { id: "node", title: null, category: null, depth: null },
+        {
+          id: "node",
+          title: null,
+          category: null,
+          depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
+        },
         {
           id: "from_node",
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       ],
       root_nodes: {
@@ -205,6 +225,9 @@ describe("common.buildNodesAndEdges", () => {
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       },
     });
@@ -227,17 +250,29 @@ describe("common.buildNodesAndEdges", () => {
           to_id: "to_node",
           title: null,
           category: null,
+          properties: {},
         },
       ],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
       nodes: [
-        { id: "node", title: null, category: null, depth: null },
+        {
+          id: "node",
+          title: null,
+          category: null,
+          depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
+        },
         {
           id: "to_node",
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       ],
       root_nodes: {
@@ -246,6 +281,9 @@ describe("common.buildNodesAndEdges", () => {
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       },
     });
@@ -269,23 +307,38 @@ describe("common.buildNodesAndEdges", () => {
           to_id: "to_node",
           title: null,
           category: null,
+          properties: {},
         },
       ],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: true },
       next_color_index: 0,
       nodes: [
-        { id: "node", title: null, category: null, depth: null },
+        {
+          id: "node",
+          title: null,
+          category: null,
+          depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
+        },
         {
           id: "from_node",
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
         {
           id: "to_node",
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       ],
       root_nodes: {
@@ -294,18 +347,24 @@ describe("common.buildNodesAndEdges", () => {
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
         from_node: {
           id: "from_node",
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       },
     });
   });
 
-  test("two node with separate edge declaration", () => {
+  test("two nodes with separate edge declaration", () => {
     const rawData = {
       columns: [
         { name: "id", data_type: "text" },
@@ -327,13 +386,30 @@ describe("common.buildNodesAndEdges", () => {
           to_id: "to_node",
           title: null,
           category: null,
+          properties: {},
         },
       ],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
       nodes: [
-        { id: "from_node", title: null, category: null, depth: null },
-        { id: "to_node", title: null, category: null, depth: null },
+        {
+          id: "from_node",
+          title: null,
+          category: null,
+          depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
+        },
+        {
+          id: "to_node",
+          title: null,
+          category: null,
+          depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
+        },
       ],
       root_nodes: {
         from_node: {
@@ -341,23 +417,32 @@ describe("common.buildNodesAndEdges", () => {
           title: null,
           category: null,
           depth: null,
+          properties: {},
+          href: null,
+          symbol: null,
         },
       },
     });
   });
 
-  test("two nodes with separate edge declaration including metadata", () => {
+  test("two nodes with separate edge declaration including properties", () => {
     const rawData = {
       columns: [
         { name: "id", data_type: "text" },
         { name: "from_id", data_type: "text" },
         { name: "to_id", data_type: "text" },
         { name: "title", data_type: "text" },
+        { name: "properties", data_type: "jsonb" },
       ],
       rows: [
-        { id: "from_node", title: "From Node" },
-        { id: "to_node", title: "To Node" },
-        { from_id: "from_node", to_id: "to_node", title: "The Edge" },
+        { id: "from_node", title: "From Node", properties: { foo: "bar" } },
+        { id: "to_node", title: "To Node", properties: { bar: "foo" } },
+        {
+          from_id: "from_node",
+          to_id: "to_node",
+          title: "The Edge",
+          properties: { foobar: "barfoo" },
+        },
       ],
     };
     expect(buildNodesAndEdges(rawData)).toEqual({
@@ -369,13 +454,30 @@ describe("common.buildNodesAndEdges", () => {
           to_id: "to_node",
           title: "The Edge",
           category: null,
+          properties: { foobar: "barfoo" },
         },
       ],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
       nodes: [
-        { id: "from_node", title: "From Node", category: null, depth: null },
-        { id: "to_node", title: "To Node", category: null, depth: null },
+        {
+          id: "from_node",
+          title: "From Node",
+          category: null,
+          depth: null,
+          properties: { foo: "bar" },
+          href: null,
+          symbol: null,
+        },
+        {
+          id: "to_node",
+          title: "To Node",
+          category: null,
+          depth: null,
+          properties: { bar: "foo" },
+          href: null,
+          symbol: null,
+        },
       ],
       root_nodes: {
         from_node: {
@@ -383,6 +485,9 @@ describe("common.buildNodesAndEdges", () => {
           title: "From Node",
           category: null,
           depth: null,
+          properties: { foo: "bar" },
+          href: null,
+          symbol: null,
         },
       },
     });
