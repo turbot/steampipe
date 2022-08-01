@@ -178,6 +178,10 @@ interface DashboardVariables {
   [name: string]: any;
 }
 
+interface DashboardSnapshotTags {
+  [name: string]: string;
+}
+
 export interface ModDashboardMetadata {
   title: string;
   full_name: string;
@@ -226,6 +230,7 @@ export interface DashboardSnapshot {
   search_path: string;
   variables: DashboardVariables;
   inputs: DashboardInputs;
+  tags: DashboardSnapshotTags;
 }
 
 interface AvailableDashboardTags {
