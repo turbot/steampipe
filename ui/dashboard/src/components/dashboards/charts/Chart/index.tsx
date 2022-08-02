@@ -45,9 +45,9 @@ import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import * as echarts from "echarts/core";
 import { registerComponent } from "../../index";
+import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { GraphType } from "../../graphs/types";
 import { useNavigate } from "react-router-dom";
-import { renderInterpolatedTemplates } from "../../../../utils/template";
 
 echarts.use([
   BarChart,
