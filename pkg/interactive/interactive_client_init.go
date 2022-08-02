@@ -14,8 +14,6 @@ import (
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
-var initTimeout = 40 * time.Second
-
 // init data has arrived, handle any errors/warnings/messages
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
 	// try to take an execution lock, so that we don't end up showing warnings and errors
@@ -23,16 +21,20 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	if utils.IsContextCancelled(ctx) {
-		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
-		return
-	}
-
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
 		utils.ShowError(ctx, initResult.Error)
+		return
+	}
+
+	if utils.IsContextCancelled(ctx) {
+		c.ClosePrompt(AfterPromptCloseExit)
+		// add newline to ensure error is not printed at end of current prompt line
+		fmt.Println()
+		utils.ShowError(ctx, initResult.Error)
+		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
 		return
 	}
 
@@ -56,13 +58,15 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			utils.ShowError(ctx, helpers.ToError(r))
 
 		}
+		// whatever happens, set initialisationComplete
+		c.initialisationComplete = true
 	}()
+
 	<-c.initData.Loaded
 
 	defer func() { c.initResultChan <- c.initData.Result }()
 
 	if c.initData.Result.Error != nil {
-
 		return
 	}
 
@@ -93,10 +97,11 @@ func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, er
 // return whether the client is initialises
 // there are 3 conditions>
 func (c *InteractiveClient) isInitialised() bool {
-	return c.initData != nil && c.schemaMetadata != nil
+	return c.initialisationComplete
 }
 
 func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
+	var initTimeout = 40 * time.Second
 	ticker := time.NewTicker(20 * time.Millisecond)
 	for {
 		select {

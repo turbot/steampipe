@@ -3,7 +3,6 @@ package query
 import (
 	"context"
 	"fmt"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
