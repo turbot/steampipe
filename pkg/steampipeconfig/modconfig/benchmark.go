@@ -288,6 +288,25 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 	return res
 }
 
+func (b *Benchmark) WalkResources(resourceFunc func(resource ModTreeItem) (bool, error)) error {
+	for _, child := range b.Children {
+		continueWalking, err := resourceFunc(child)
+		if err != nil {
+			return err
+		}
+		if !continueWalking {
+			break
+		}
+
+		if childContainer, ok := child.(*Benchmark); ok {
+			if err := childContainer.WalkResources(resourceFunc); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (b *Benchmark) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
