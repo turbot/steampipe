@@ -51,14 +51,14 @@ type InteractiveClient struct {
 	cancelPrompt      context.CancelFunc
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
-	afterClose     AfterPromptCloseAction
+	// flag set when initialisation is complete (with or without errors)
+	initialisationComplete bool
+	afterClose             AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
-
 	// the schema metadata - this is loaded asynchronously during init
 	schemaMetadata *schema.Metadata
-
-	highlighter *Highlighter
+	highlighter    *Highlighter
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -91,14 +91,13 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, results
 }
 
 // InteractivePrompt starts an interactive prompt and return
-func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
+func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
 	// (registered when we call createQueryContext)
 	quitChannel := c.startCancelHandler()
 
 	// create a cancel context for the prompt - this will set c.cancelPrompt
-	parentContext := ctx
-	ctx = c.createPromptContext(parentContext)
+	ctx := c.createPromptContext(parentContext)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -140,8 +139,8 @@ func (c *InteractiveClient) InteractivePrompt(ctx context.Context) {
 			if c.afterClose == AfterPromptCloseExit {
 				return
 			}
-			// create new context
-			ctx = c.createPromptContext(parentContext)
+			// create new context with a cancellation func
+			ctx := c.createPromptContext(parentContext)
 			// now run it again
 			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
@@ -313,15 +312,11 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	line = strings.TrimSpace(line)
 
-	query, err := c.getQuery(ctx, line)
+	query := c.getQuery(ctx, line)
 	if query == "" {
-		if err != nil {
-			// this will be an initialisation error
-			utils.ShowError(ctx, utils.HandleCancelError(err))
-		} else {
-			// restart the prompt, DO NOT clear the interactive buffer
-			c.restartInteractiveSession()
-		}
+		// we failed to resolve a query, or are in the middle of a multi-line entry
+		// restart the prompt, DO NOT clear the interactive buffer
+		c.restartInteractiveSession()
 		return
 	}
 
@@ -351,10 +346,10 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	c.restartInteractiveSession()
 }
 
-func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, error) {
+func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
-		return "", nil
+		return ""
 	}
 
 	// store the history (the raw line which was entered)
@@ -386,8 +381,8 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 			historyEntry = ""
 			// clear the interactive buffer
 			c.interactiveBuffer = nil
-			// if it failed, report error and quit
-			return "", err
+			// error will have been handled elsewhere
+			return ""
 		}
 	}
 
@@ -406,7 +401,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 		// - clear interactive buffer
 		c.interactiveBuffer = nil
 		utils.ShowError(ctx, err)
-		return "", nil
+		return ""
 	}
 	isNamedQuery := query != queryString
 
@@ -417,7 +412,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 		// is we are not executing, do not store history
 		historyEntry = ""
 		// do not clear interactive buffer
-		return "", nil
+		return ""
 	}
 
 	// so we need to execute
@@ -431,14 +426,14 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 		// do not store in history
 		historyEntry = ""
 		c.restartInteractiveSession()
-		return "", nil
+		return ""
 	}
 	// if this is a multiline query, update history entry
 	if len(strings.Split(query, "\n")) > 1 {
 		historyEntry = query
 	}
 
-	return query, nil
+	return query
 }
 
 func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) error {
