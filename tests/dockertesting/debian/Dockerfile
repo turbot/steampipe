@@ -1,4 +1,4 @@
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
 # add a non-root 'steampipe' user
