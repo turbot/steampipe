@@ -312,19 +312,20 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	c.afterClose = AfterPromptCloseRestart
 
 	line = strings.TrimSpace(line)
-	// store the history (the raw line which was entered)
-	// we want to store even if we fail to resolve a query
-	c.interactiveQueryHistory.Push(line)
 
 	query, err := c.getQuery(ctx, line)
 	if query == "" {
 		if err != nil {
+			// this will be an initialisation error
 			utils.ShowError(ctx, utils.HandleCancelError(err))
+		} else {
+			// restart the prompt, DO NOT clear the interactive buffer
+			c.restartInteractiveSession()
 		}
-		// restart the prompt
-		c.restartInteractiveSession()
 		return
 	}
+
+	// we successfully retrieved a query
 
 	// create a  context for the execution of the query
 	queryContext := c.createQueryContext(ctx)
@@ -356,6 +357,16 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 		return "", nil
 	}
 
+	// store the history (the raw line which was entered)
+	historyEntry := line
+	defer func() {
+		if len(historyEntry) > 0 {
+			// we want to store even if we fail to resolve a query
+			c.interactiveQueryHistory.Push(historyEntry)
+		}
+
+	}()
+
 	// wait for initialisation to complete so we can access the workspace
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
@@ -371,6 +382,10 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 		err := c.waitForInitData(queryContext)
 		statushooks.Done(ctx)
 		if err != nil {
+			// clear history entry
+			historyEntry = ""
+			// clear the interactive buffer
+			c.interactiveBuffer = nil
 			// if it failed, report error and quit
 			return "", err
 		}
@@ -385,26 +400,42 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) (string, 
 	// in case of a named query call with params, parse the where clause
 	query, _, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
 	if err != nil {
-		// if we fail to resolve, show error but do not return it - we want to stay in the prompt
+		// if we fail to resolve:
+		// - show error but do not return it so we  stay in the prompt
+		// - do not clear history item - we want to store bad entry in history
+		// - clear interactive buffer
+		c.interactiveBuffer = nil
 		utils.ShowError(ctx, err)
 		return "", nil
 	}
 	isNamedQuery := query != queryString
 
-	// if it is a multiline query, execute even without `;`
-	if !isNamedQuery {
-		// should we execute?
-		if !c.shouldExecute(queryString) {
-			return "", nil
-		}
+	// should we execute?
+	// we will NOT execute if we are in multiline mode, there is no semi-colon
+	// and it is NOT a metaquery or a named query
+	if !c.shouldExecute(queryString, isNamedQuery) {
+		// is we are not executing, do not store history
+		historyEntry = ""
+		// do not clear interactive buffer
+		return "", nil
 	}
 
-	// so we need to execute - what are we executing
+	// so we need to execute
+	// clear the interactive buffer
+	c.interactiveBuffer = nil
+
+	// what are we executing?
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
 	if strings.TrimSpace(query) == ";" {
+		// do not store in history
+		historyEntry = ""
 		c.restartInteractiveSession()
 		return "", nil
+	}
+	// if this is a multiline query, update history entry
+	if len(strings.Split(query, "\n")) > 1 {
+		historyEntry = query
 	}
 
 	return query, nil
@@ -439,14 +470,29 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {
-	// empty the buffer
-	c.interactiveBuffer = []string{}
 	// restart the prompt
 	c.ClosePrompt(c.afterClose)
 }
 
-func (c *InteractiveClient) shouldExecute(line string) bool {
-	return !cmdconfig.Viper().GetBool(constants.ArgMultiLine) || strings.HasSuffix(line, ";") || metaquery.IsMetaQuery(line)
+func (c *InteractiveClient) shouldExecute(line string, namedQuery bool) bool {
+	if namedQuery {
+		// execute named queries with no ';' even in multiline mode
+		return true
+	}
+	if !cmdconfig.Viper().GetBool(constants.ArgMultiLine) {
+		// NOT multiline mode
+		return true
+	}
+	if metaquery.IsMetaQuery(line) {
+		// execute metaqueries with no ';' even in multiline mode
+		return true
+	}
+	if strings.HasSuffix(line, ";") {
+		// statement has terminating ';'
+		return true
+	}
+
+	return false
 }
 
 func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
