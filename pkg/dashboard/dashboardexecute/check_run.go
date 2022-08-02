@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-// CheckRun is a struct representing the execution of a leaf dashboard node
+// CheckRun is a struct representing the execution of a control or benchmark
 type CheckRun struct {
 	Name             string            `json:"name"`
 	Title            string            `json:"title,omitempty"`
