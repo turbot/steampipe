@@ -393,7 +393,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 	queryString := strings.Join(c.interactiveBuffer, "\n")
 
 	// in case of a named query call with params, parse the where clause
-	query, _, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
+	query, queryProvider, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
 	if err != nil {
 		// if we fail to resolve:
 		// - show error but do not return it so we  stay in the prompt
@@ -403,7 +403,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 		utils.ShowError(ctx, err)
 		return ""
 	}
-	isNamedQuery := query != queryString
+	isNamedQuery := queryProvider != nil
 
 	// should we execute?
 	// we will NOT execute if we are in multiline mode, there is no semi-colon
@@ -429,7 +429,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 		return ""
 	}
 	// if this is a multiline query, update history entry
-	if len(strings.Split(query, "\n")) > 1 {
+	if !isNamedQuery && len(strings.Split(query, "\n")) > 1 {
 		historyEntry = query
 	}
 
