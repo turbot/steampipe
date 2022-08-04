@@ -433,7 +433,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	m.pluginCacheSizeMap = make(map[string]int64, len(m.pluginConnectionConfigMap))
 
 	// read the env var setting cache size
-	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvMaxCacheSize))
+	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvCacheMaxSize))
 
 	// get total connection count for this plugin (excluding aggregators)
 	numConnections := m.nonAggregatorConnectionCount()
