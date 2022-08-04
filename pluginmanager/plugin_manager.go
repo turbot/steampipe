@@ -24,40 +24,45 @@ import (
 )
 
 type runningPlugin struct {
+	name     string
 	client   *plugin.Client
 	reattach *proto.ReattachConfig
 	// does this plugin support multiple connections - requires sdk version > 4
 	multiConnection bool
-	initialized     chan bool
+	initialized     chan struct{}
 }
 
 // PluginManager is the real implementation of grpc.PluginManager
 type PluginManager struct {
 	proto.UnimplementedPluginManagerServer
 
-	Plugins map[string]*runningPlugin
+	// map of running plugins keyed by plugin name
+	pluginMap map[string]*runningPlugin
+	// map of running plugins keyed by connection nasme
+	connectionPluginMap map[string]*runningPlugin
 
-	mut sync.Mutex
 	// map of connection configs, keyed by plugin name
 	pluginConnectionConfigs map[string][]*sdkproto.ConnectionConfig
 	// map of max cache size, keyed by plugin name
 	pluginCacheSizeMap map[string]int64
 	// map of connection configs, keyed by connection name
-	connectionConfig map[string]*sdkproto.ConnectionConfig
-	logger           hclog.Logger
+	connectionConfigMap map[string]*sdkproto.ConnectionConfig
+	mut                 sync.Mutex
+	logger              hclog.Logger
 }
 
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[WARN] NewPluginManager")
 	pluginManager := &PluginManager{
-		Plugins:                 make(map[string]*runningPlugin),
-		logger:                  logger,
-		connectionConfig:        connectionConfig,
-		pluginConnectionConfigs: make(map[string][]*sdkproto.ConnectionConfig),
+		logger:              logger,
+		pluginMap:           make(map[string]*runningPlugin),
+		connectionPluginMap: make(map[string]*runningPlugin),
+		connectionConfigMap: connectionConfig,
 	}
 
 	// populate plugin connection config map
-	pluginManager.setPluginConnectionConfigs()
+	pluginManager.populatePluginConnectionConfigs()
+
 	// determine cache size for each plugin
 	pluginManager.setPluginCacheSizeMap()
 
@@ -110,40 +115,91 @@ func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 	return resp, nil
 }
 
+func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.ConnectionConfig) {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
+	names := make([]string, len(configMap))
+	idx := 0
+	for name := range configMap {
+		names[idx] = name
+		idx++
+	}
+	log.Printf("[TRACE] SetConnectionConfigMap: %s", strings.Join(names, ","))
+
+	m.connectionConfigMap = configMap
+
+	// repopulate the map of connection configs keyed by plugin
+	m.populatePluginConnectionConfigs()
+	// connection have changed - ensure all reattach configs have the correct connections associated
+	m.setReattachConnections()
+	// repopulate the map of plugins keyed by connection
+	m.populateConnectionPluginMap()
+}
+
+func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
+	log.Printf("[TRACE] PluginManager Shutdown")
+	debug.PrintStack()
+
+	m.mut.Lock()
+	defer func() {
+		m.mut.Unlock()
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
+	}()
+
+	for name, p := range m.connectionPluginMap {
+		if p.client == nil {
+			log.Printf("[WARN] plugin %s has no client - cannot kill", name)
+			// shouldn't happen but has been observed in error situations
+			continue
+		}
+		log.Printf("[TRACE] killing plugin %s (%v)", name, p.reattach.Pid)
+		p.client.Kill()
+	}
+	return &proto.ShutdownResponse{}, nil
+}
+
 func (m *PluginManager) getConnectionConfig(connectionName string) (*sdkproto.ConnectionConfig, error) {
-	connectionConfig, ok := m.connectionConfig[connectionName]
+	connectionConfig, ok := m.connectionConfigMap[connectionName]
 	if !ok {
 		return nil, fmt.Errorf("no connection config loaded for connection '%s'", connectionName)
 	}
 	return connectionConfig, nil
 }
 
-func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, err error) {
+func (m *PluginManager) getPlugin(connectionName string) (_ *proto.ReattachConfig, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
 		}
 	}()
 
-	log.Printf("[TRACE] PluginManager getPlugin connection '%s'\n", connection)
+	log.Printf("[TRACE] PluginManager getPlugin connection '%s'\n", connectionName)
 
 	// reason for starting the plugin (if we need to
 	var reason string
+	// get connection config
+	connectionConfig, err := m.getConnectionConfig(connectionName)
+	if err != nil {
+		return nil, err
+	}
 
 	// is this plugin already running
 	// lock access to plugin map
 	m.mut.Lock()
-	p, ok := m.Plugins[connection]
+	p, ok := m.connectionPluginMap[connectionName]
 	if ok {
 		// unlock access to map
 		m.mut.Unlock()
 
 		// so we have the plugin in our map - is it started?
-		err = m.waitForPluginLoad(connection, p)
+		err = m.waitForPluginLoad(connectionName, p)
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("[TRACE] connection %s is loaded, check for running PID", connection)
+		log.Printf("[TRACE] connection %s is loaded, check for running PID", connectionName)
 
 		// ok so the plugin should now be running
 
@@ -153,7 +209,7 @@ func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, e
 		exists, _ := utils.PidExists(int(reattach.Pid))
 		if exists {
 			// so the plugin is good
-			log.Printf("[TRACE] PluginManager found '%s' in map, pid %d", connection, reattach.Pid)
+			log.Printf("[TRACE] PluginManager found '%s' in map, pid %d", connectionName, reattach.Pid)
 
 			// return the reattach config
 			return reattach, nil
@@ -162,34 +218,36 @@ func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, e
 		//  either the pid does not exist or the plugin has exited
 		// remove from map
 		m.mut.Lock()
-		delete(m.Plugins, connection)
-		m.Plugins[connection] = &runningPlugin{
-			initialized: make(chan (bool), 1),
+		delete(m.connectionPluginMap, connectionName)
+		m.connectionPluginMap[connectionName] = &runningPlugin{
+			name:        connectionConfig.Plugin,
+			initialized: make(chan struct{}, 1),
 		}
 		m.mut.Unlock()
 		// update reason
-		reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, connection)
+		reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, connectionName)
 
 	} else {
 		// so the plugin is NOT loaded or loading - this is the first time anyone has requested this connection
 		// put in a placeholder so no other thread tries to create start this plugin
-		m.Plugins[connection] = &runningPlugin{
-			initialized: make(chan (bool), 1),
+		m.connectionPluginMap[connectionName] = &runningPlugin{
+			name:        connectionConfig.Plugin,
+			initialized: make(chan struct{}, 1),
 		}
 
 		// unlock access to map
 		m.mut.Unlock()
-		reason = fmt.Sprintf("PluginManager %p '%s' NOT found in map  - starting", m, connection)
+		reason = fmt.Sprintf("PluginManager %p '%s' NOT found in map  - starting", m, connectionName)
 	}
 
 	// fall through to plugin startup
 	// log the startup reason
 	log.Printf("[TRACE] %s", reason)
 	// so we need to start the plugin
-	client, reattach, err := m.startPlugin(connection)
+	client, reattach, err := m.startPlugin(connectionConfig)
 	if err != nil {
 		m.mut.Lock()
-		delete(m.Plugins, connection)
+		delete(m.connectionPluginMap, connectionName)
 		m.mut.Unlock()
 
 		log.Println("[TRACE] startPlugin failed with", err)
@@ -197,7 +255,7 @@ func (m *PluginManager) getPlugin(connection string) (_ *proto.ReattachConfig, e
 	}
 
 	// store the client to our map
-	m.storeClientToMap(connection, client, reattach)
+	m.storeClientToMap(connectionName, client, reattach)
 	log.Printf("[TRACE] PluginManager getPlugin complete, returning reattach config with PID: %d", reattach.Pid)
 
 	// and return
@@ -212,39 +270,54 @@ func (m *PluginManager) storeClientToMap(connection string, client *plugin.Clien
 
 	// a RunningPlugin in initializing state will already have been put into the Plugins map
 	// populate its properties
-	p := m.Plugins[connection]
+	p := m.connectionPluginMap[connection]
 	p.client = client
 	p.reattach = reattach
 
+	// store fully initialised runningPlugin to pluginMap
+	m.pluginMap[p.name] = p
 	// NOTE: if this plugin supports multiple connections, reattach.Connections will be a list of all connections
 	// provided by this plugin
 	// add map entries for all other connections using this plugin (all pointing to same RunningPlugin)
 	for _, c := range reattach.Connections {
-		m.Plugins[c] = p
+		m.connectionPluginMap[c] = p
 	}
 	// mark as initialized
 	close(p.initialized)
 }
 
-func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.ConnectionConfig) {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
-	names := make([]string, len(configMap))
-	idx := 0
-	for name := range configMap {
-		names[idx] = name
-		idx++
+// populate map of connection configs for each plugin
+func (m *PluginManager) populatePluginConnectionConfigs() {
+	m.pluginConnectionConfigs = make(map[string][]*sdkproto.ConnectionConfig)
+	for _, config := range m.connectionConfigMap {
+		m.pluginConnectionConfigs[config.Plugin] = append(m.pluginConnectionConfigs[config.Plugin], config)
 	}
-	log.Printf("[TRACE] SetConnectionConfigMap: %s", strings.Join(names, ","))
-
-	m.connectionConfig = configMap
 }
 
-// populate map of connection configs for each plugin
-func (m *PluginManager) setPluginConnectionConfigs() {
-	for _, config := range m.connectionConfig {
-		m.pluginConnectionConfigs[config.Plugin] = append(m.pluginConnectionConfigs[config.Plugin], config)
+// update the list of connections for each plugin reattach config
+func (m *PluginManager) setReattachConnections() {
+	// iterate through pluginConnectionConfigs
+	for pluginName, connectionConfigs := range m.pluginConnectionConfigs {
+		if p, ok := m.pluginMap[pluginName]; ok {
+			p.reattach.Connections = make([]string, len(connectionConfigs))
+			for i, c := range connectionConfigs {
+				p.reattach.Connections[i] = c.Connection
+			}
+		}
+	}
+}
+
+// repopulate the map of running plugins keyed by connection
+// (this is called when connections have been added or removed)
+func (m *PluginManager) populateConnectionPluginMap() {
+	m.connectionPluginMap = make(map[string]*runningPlugin)
+	// iterate through our map of connection configs keyed by plugin
+	for pluginName := range m.pluginConnectionConfigs {
+		if p, ok := m.pluginMap[pluginName]; ok {
+			for _, c := range p.reattach.Connections {
+				m.connectionPluginMap[c] = p
+			}
+		}
 	}
 }
 
@@ -279,38 +352,10 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	}
 }
 
-func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
-	log.Printf("[TRACE] PluginManager Shutdown")
-	debug.PrintStack()
-
-	m.mut.Lock()
-	defer func() {
-		m.mut.Unlock()
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
-
-	for name, p := range m.Plugins {
-		if p.client == nil {
-			log.Printf("[WARN] plugin %s has no client - cannot kill", name)
-			// shouldn't happen but has been observed in error situations
-			continue
-		}
-		log.Printf("[TRACE] killing plugin %s (%v)", name, p.reattach.Pid)
-		p.client.Kill()
-	}
-	return &proto.ShutdownResponse{}, nil
-}
-
-func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ *proto.ReattachConfig, err error) {
+func (m *PluginManager) startPlugin(connectionConfig *sdkproto.ConnectionConfig) (_ *plugin.Client, _ *proto.ReattachConfig, err error) {
+	connectionName := connectionConfig.Connection
 	log.Printf("[TRACE] ************ start plugin %s ********************\n", connectionName)
 
-	// get connection config
-	connectionConfig, err := m.getConnectionConfig(connectionName)
-	if err != nil {
-		return nil, nil, err
-	}
 	pluginPath, err := GetPluginPath(connectionConfig.Plugin, connectionConfig.PluginShortName)
 	if err != nil {
 		return nil, nil, err
@@ -383,6 +428,7 @@ func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) e
 
 	select {
 	case <-p.initialized:
+		log.Printf("[TRACE] initialized: %d", p.reattach.Pid)
 		log.Printf("[TRACE] initialized: %d", p.reattach.Pid)
 		return nil
 
