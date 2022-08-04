@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/karrick/gows"
@@ -16,13 +16,12 @@ import (
 )
 
 // ShowPaged displays the `content` in a system dependent pager
-func ShowPaged(ctx context.Context, filename string) {
-	nixPager(ctx, filename)
-	//if isPagerNeeded(content) && (runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
-	//	nixPager(ctx, content)
-	//} else {
-	//	nullPager(content)
-	//}
+func ShowPaged(ctx context.Context, content string) {
+	if isPagerNeeded(content) && (runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
+		nixPager(ctx, content)
+	} else {
+		nullPager(content)
+	}
 }
 
 func isPagerNeeded(content string) bool {
@@ -61,19 +60,14 @@ func nullPager(content string) {
 	fmt.Print(content)
 }
 
-func nixPager(ctx context.Context, filename string) {
-	cmdStr := fmt.Sprintf("cat %s | less -SRXF", filename)
-	cmd := exec.Command("bash", "-c", cmdStr)
-	cmd.Dir = filepath.Dir(filename)
-	execPager(ctx, cmd)
-
-	//if isLessAvailable() {
-	//	execPager(ctx, exec.Command("less", fmt.Sprintf("+F %s", filename), "-SRXF"))
-	//} else if isMoreAvailable() {
-	//	execPager(ctx, exec.Command("more"), content)
-	//} else {
-	//	nullPager(content)
-	//}
+func nixPager(ctx context.Context, content string) {
+	if isLessAvailable() {
+		execPager(ctx, exec.Command("less", "-SRXF"), content)
+	} else if isMoreAvailable() {
+		execPager(ctx, exec.Command("more"), content)
+	} else {
+		nullPager(content)
+	}
 }
 
 func isLessAvailable() bool {
@@ -86,10 +80,10 @@ func isMoreAvailable() bool {
 	return err == nil
 }
 
-func execPager(ctx context.Context, cmd *exec.Cmd) {
+func execPager(ctx context.Context, cmd *exec.Cmd, content string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	//cmd.Stdin = strings.NewReader(content)
+	cmd.Stdin = strings.NewReader(content)
 	// run the command - it will block until the pager is exited
 	err := cmd.Run()
 	if err != nil {

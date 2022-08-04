@@ -9,7 +9,6 @@ import (
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -22,7 +21,6 @@ func main() {
 	utils.LogTime("main start")
 	exitCode := constants.ExitCodeSuccessful
 	defer func() {
-		log.Printf("[WARN] main defer")
 		if r := recover(); r != nil {
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
