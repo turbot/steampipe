@@ -59,6 +59,7 @@ type InteractiveClient struct {
 	// the schema metadata - this is loaded asynchronously during init
 	schemaMetadata *schema.Metadata
 	highlighter    *Highlighter
+	hidePrompt     bool
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -213,6 +214,9 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			useLive = true
 			if len(c.interactiveBuffer) > 0 {
 				prefix = ">>  "
+			}
+			if c.hidePrompt {
+				prefix = ""
 			}
 			return
 		}),

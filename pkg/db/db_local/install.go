@@ -213,8 +213,10 @@ func prepareDb(ctx context.Context) error {
 			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
 		}
 
-		fmt.Printf("%s was updated to %s. ", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
-		fmt.Println()
+		// get the message renderer from the context
+		// this allows the interactive client init to inject a custom renderer
+		messageRenderer := statushooks.MessageRendererFromContext(ctx)
+		messageRenderer("%s was updated to %s.\n", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
 	}
 
 	if needsInit() {
