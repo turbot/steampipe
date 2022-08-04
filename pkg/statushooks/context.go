@@ -2,12 +2,14 @@ package statushooks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 )
 
 var (
-	contextKeyStatusHook = contexthelpers.ContextKey("status_hook")
+	contextKeyStatusHook      = contexthelpers.ContextKey("status_hook")
+	contextKeyMessageRenderer = contexthelpers.ContextKey("meddage_renderer")
 )
 
 func DisableStatusHooks(ctx context.Context) context.Context {
@@ -16,6 +18,10 @@ func DisableStatusHooks(ctx context.Context) context.Context {
 
 func AddStatusHooksToContext(ctx context.Context, statusHooks StatusHooks) context.Context {
 	return context.WithValue(ctx, contextKeyStatusHook, statusHooks)
+}
+
+func AddMessageRendererToContext(ctx context.Context, messageRenderer MessageRenderer) context.Context {
+	return context.WithValue(ctx, contextKeyMessageRenderer, messageRenderer)
 }
 
 func StatusHooksFromContext(ctx context.Context) StatusHooks {
@@ -39,4 +45,20 @@ func Done(ctx context.Context) {
 
 func Message(ctx context.Context, msgs ...string) {
 	StatusHooksFromContext(ctx).Message(msgs...)
+}
+
+type MessageRenderer func(format string, a ...any)
+
+func MessageRendererFromContext(ctx context.Context) MessageRenderer {
+	defaultRenderer := func(format string, a ...any) {
+		fmt.Printf(format, a...)
+	}
+	if ctx == nil {
+		return defaultRenderer
+	}
+	if val, ok := ctx.Value(contextKeyMessageRenderer).(MessageRenderer); ok {
+		return val
+	}
+	// no message renderer - return fmt.Printf
+	return defaultRenderer
 }

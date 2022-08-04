@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -93,7 +94,13 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
 
-	c, err := getClient(ctx)
+	// add a message rendering function to the context - this is used for the fdw update message and
+	// allows us to render it as a standard initialisation message
+	getClientCtx := statushooks.AddMessageRendererToContext(ctx, func(format string, a ...any) {
+		i.Result.AddMessage(fmt.Sprintf(format, a...))
+	})
+
+	c, err := getClient(getClientCtx)
 	if err != nil {
 		i.Result.Error = err
 		return
