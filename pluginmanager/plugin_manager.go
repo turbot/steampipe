@@ -48,7 +48,7 @@ type PluginManager struct {
 }
 
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
-	log.Printf("[TRACE] NewPluginManager")
+	log.Printf("[WARN] NewPluginManager")
 	pluginManager := &PluginManager{
 		Plugins:                 make(map[string]*runningPlugin),
 		logger:                  logger,
@@ -61,8 +61,6 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, lo
 	// determine cache size for each plugin
 	pluginManager.setPluginCacheSizeMap()
 
-	// tell OS to reclaim memory immediately
-	os.Setenv("GODEBUG", "madvdontneed=1")
 	return pluginManager, nil
 }
 
@@ -79,6 +77,7 @@ func (m *PluginManager) Serve() {
 		//  enable gRPC serving for this plugin...
 		GRPCServer: plugin.DefaultGRPCServer,
 	})
+	log.Printf("[WARN] PluginManager Serve exiting")
 }
 
 func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
@@ -254,13 +253,13 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	m.pluginCacheSizeMap = make(map[string]int64, len(m.pluginConnectionConfigs))
 
 	// read the env var setting cache size
-	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvMaxCacheSize))
+	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvCacheMaxSize))
 
 	// get total connection count for this plugin (excluding aggregators)
 	numConnections := m.nonAggregatorConnectionCount()
 
-	log.Printf("[TRACE] PluginManager setPluginCacheSizeMap: %d %s.", numConnections, utils.Pluralize("connection", numConnections))
-	log.Printf("[TRACE] Total cache size %dMb", maxCacheSizeMb)
+	log.Printf("[WARN] PluginManager setPluginCacheSizeMap: %d %s.", numConnections, utils.Pluralize("connection", numConnections))
+	log.Printf("[WARN] Total cache size %dMb", maxCacheSizeMb)
 
 	for plugin, connections := range m.pluginConnectionConfigs {
 		var size int64 = 0
@@ -273,7 +272,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 			if size == 0 {
 				size = 1
 			}
-			log.Printf("[TRACE] Plugin '%s', %d %s, max cache size %dMb", plugin, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
+			log.Printf("[WARN] Plugin '%s', %d %s, max cache size %dMb", plugin, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
 		}
 
 		m.pluginCacheSizeMap[plugin] = size
@@ -351,10 +350,13 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 		return nil, nil, err
 	}
 
-	supportedOperations, err := pluginClient.GetSupportedOperations()
-	if err != nil {
-		return nil, nil, err
+	// fetch the supported operations
+	supportedOperations, _ := pluginClient.GetSupportedOperations()
+	// ignore errors  - just create an empty support structure if needed
+	if supportedOperations == nil {
+		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
 	}
+
 	log.Printf("[TRACE] supportedOperations: %v", supportedOperations)
 	var connections = []string{connectionName}
 

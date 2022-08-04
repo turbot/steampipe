@@ -3,8 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"log"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -46,7 +48,7 @@ var rootCmd = &cobra.Command{
 		task.RunTasks()
 		// TODO enable this when we move to go 1.19
 		// set the max memory
-		//debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
+		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
 	},
 	Short: "Query cloud resources using SQL",
 	Long: `Query cloud resources using SQL.
@@ -113,6 +115,10 @@ func InitCmd() {
 	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "Version for steampipe")
 
 	hideRootFlags(constants.ArgSchemaComments)
+
+	// tell OS to reclaim memory immediately
+	os.Setenv("GODEBUG", "madvdontneed=1")
+
 }
 
 func hideRootFlags(flags ...string) {
