@@ -30,6 +30,7 @@ message ReattachConfig {
   int64 pid               = 4;
   SupportedOperations supported_operations = 5;
   repeated string connections = 6;
+  string plugin = 7;
 }
 
 // NOTE: this must be consistent with GetSupportedOperationsResponse in steampipe-plugin-sdk/grpc/proto/plugin.proto

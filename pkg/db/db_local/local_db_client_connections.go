@@ -45,9 +45,9 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	}
 
 	// now build list of necessary queries to perform the update
-	otherRes := c.executeConnectionUpdateQueries(ctx, connectionUpdates)
+	queryRes := c.executeConnectionUpdateQueries(ctx, connectionUpdates)
 	// merge results into local results
-	res.Merge(otherRes)
+	res.Merge(queryRes)
 	if res.Error != nil {
 		return res
 	}

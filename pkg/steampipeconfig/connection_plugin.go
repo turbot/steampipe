@@ -393,7 +393,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 			// we assume this has been populated either by the hub (if this is being invoked from the fdw) or the CLI
 			config, ok := GlobalConfig.Connections[c]
 			if !ok {
-				return nil, fmt.Errorf("no conection config loaded for '%s'", c)
+				return nil, fmt.Errorf("no connection config loaded for '%s'", c)
 			}
 			connectionPlugin.addConnection(c, config.Config, config.Options)
 		}

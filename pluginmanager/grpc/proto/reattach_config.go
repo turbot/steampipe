@@ -2,10 +2,12 @@ package proto
 
 import (
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/go-kit/helpers"
 )
 
-func NewReattachConfig(src *plugin.ReattachConfig, supportedOperations *SupportedOperations, connections []string) *ReattachConfig {
+func NewReattachConfig(pluginName string, src *plugin.ReattachConfig, supportedOperations *SupportedOperations, connections []string) *ReattachConfig {
 	return &ReattachConfig{
+		Plugin:          pluginName,
 		Protocol:        string(src.Protocol),
 		ProtocolVersion: int64(src.ProtocolVersion),
 		Addr: &NetAddr{
@@ -28,5 +30,20 @@ func (r *ReattachConfig) Convert() *plugin.ReattachConfig {
 			AddressString: r.Addr.Address,
 		},
 		Pid: int(r.Pid),
+	}
+}
+
+func (r *ReattachConfig) AddConnection(connection string) {
+	if !helpers.StringSliceContains(r.Connections, connection) {
+		r.Connections = append(r.Connections, connection)
+	}
+}
+func (r *ReattachConfig) RemoveConnection(connection string) {
+	existingConnections := r.Connections
+	r.Connections = nil
+	for _, existingConnections := range existingConnections {
+		if existingConnections != connection {
+			r.Connections = append(r.Connections, existingConnections)
+		}
 	}
 }
