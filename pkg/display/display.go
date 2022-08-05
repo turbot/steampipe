@@ -1,14 +1,16 @@
 package display
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
+	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
@@ -243,6 +245,8 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 			Name:     column.Name(),
 			Number:   idx + 1,
 			WidthMax: constants.MaxColumnWidth,
+			// use truncation to enforce max width
+			WidthMaxEnforcer: helpers.TruncateString,
 		})
 	}
 
@@ -256,53 +260,120 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 		t.AppendRow(rowObj)
 	}
 
-	filename := filepath.Join(os.TempDir(), "_")
-	f, err := os.Create(filename)
-	utils.FailOnError(err)
-	defer os.Remove(filename)
-
-	allDone := false
-	showHeader := viper.GetBool(constants.ArgHeader)
-	pageSize := 100
-
-	for !allDone {
-
-		// the buffer to put the output data in
-		outbuf := bytes.NewBufferString("")
-
-		// the table
-		t := table.NewWriter()
-		t.SetOutputMirror(outbuf)
-		t.SetStyle(table.StyleDefault)
-		t.Style().Format.Header = text.FormatDefault
-		t.SetColumnConfigs(colConfigs)
-		if showHeader {
-			t.AppendHeader(headers)
-		}
-		showHeader = false
-
-		// iterate each row, adding each to the table
-		allDone, err = iterateResults2(t, result, rowFunc, pageSize)
-		if err != nil {
-			// display the error
-			fmt.Println()
-			utils.ShowError(ctx, err)
-			fmt.Println()
-		}
-		// write out the table to the buffer
-		t.Render()
-
-		f.Write(outbuf.Bytes())
+	if !viper.GetBool(constants.ArgHeader) {
+		headers = nil
 	}
-	f.Close()
+	pageSize := 9
 
-	// page out the table
-	filePager(ctx, filename)
+	// render first page into a buffer
+	var b bytes.Buffer
+	writer := bufio.NewWriter(&b)
+	allDone, headerTable, err := renderTablePage(colConfigs, headers, result, rowFunc, pageSize, writer, nil)
+
+	// TODO determine if we need a pager
+
+	// assuming we do,
+	cmd := exec.Command("less", "-SRXF")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "could not display results")
+		return
+	}
+
+	// write first page
+	stdin.Write(b.Bytes())
+
+	// now render further pages async if necessary
+	if !allDone {
+		// update column configs to set the max widths as the actual column widths of the header table
+		// to ensure we truncate long results
+		for idx, columnWidth := range headerTable.MaxColumnLengths() {
+			colConfigs[idx].WidthMax = columnWidth
+		}
+
+		go func() {
+			defer stdin.Close()
+
+			for !allDone {
+				// pass nil for header
+				allDone, _, err = renderTablePage(colConfigs, nil, result, rowFunc, pageSize, stdin, headerTable)
+
+				if err != nil {
+					// display the error
+					fmt.Println()
+					utils.ShowError(ctx, err)
+					fmt.Println()
+					break
+				}
+			}
+
+		}()
+	}
+
+	// run the command - it will block until the pager is exited
+	err = cmd.Run()
+	if err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "could not display results")
+		return
+	}
 
 	// if timer is turned on
 	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 		displayTiming(result)
 	}
+}
+
+func renderTablePage(colConfigs []table.ColumnConfig, headers table.Row, result *queryresult.Result, rowFunc displayResultsFunc2, pageSize int, writer io.Writer, headerTable table.Writer) (bool, table.Writer, error) {
+	// the buffer to put the output data in
+	outbuff := bytes.NewBufferString("")
+
+	// the table
+	t := createTable(outbuff, colConfigs, headers, headerTable)
+
+	// iterate each row, adding each to the table
+
+	allDone, err := iterateResults2(t, result, rowFunc, pageSize)
+	if err != nil {
+		return false, nil, err
+
+	}
+
+	// if a header table was passed, this is not the first table page
+	// do not render the top border
+	if headerTable != nil {
+		t.HideTopBorder(true)
+	}
+	// if we are not complete, hide the bottom border
+	if !allDone {
+		t.HideBottomBorder(true)
+	}
+
+	// write out the table to the buffer
+	t.Render()
+
+	tableStr := outbuff.String()
+	io.WriteString(writer, tableStr)
+
+	return allDone, t, nil
+}
+
+func createTable(outbuf *bytes.Buffer, colConfigs []table.ColumnConfig, headers table.Row, headerTable table.Writer) table.Writer {
+	t := table.NewWriter()
+	t.SetOutputMirror(outbuf)
+	t.SetStyle(table.StyleDefault)
+	t.Style().Format.Header = text.FormatDefault
+	t.SetColumnConfigs(colConfigs)
+	if headers != nil {
+		t.AppendHeader(headers)
+	}
+	// if an headerTable was provided, use it to set the column widths
+	if headerTable != nil {
+		t.SetMaxColumnLengths(headerTable.MaxColumnLengths())
+
+	}
+	return t
 }
 
 func filePager(ctx context.Context, filename string) {
@@ -320,6 +391,7 @@ func filePager(ctx context.Context, filename string) {
 		utils.ShowErrorWithMessage(ctx, err, "could not display results")
 	}
 }
+
 func displayTiming(result *queryresult.Result) {
 	timingResult := <-result.TimingResult
 	var sb strings.Builder
@@ -367,10 +439,15 @@ func iterateResults(result *queryresult.Result, displayResult displayResultsFunc
 	return nil
 }
 
+//var bufferedRow *queryresult.RowResult
+
 func iterateResults2(t table.Writer, result *queryresult.Result, displayResult displayResultsFunc2, count int) (allDone bool, err error) {
 	i := 0
+	//if bufferedRow != nil {
+	//	displayResult(t, bufferedRow.Data, result)
+	//	bufferedRow = nil
+	//}
 	for row := range *result.RowChan {
-
 		// shouldn't happen
 		if row == nil {
 			return true, nil
@@ -378,11 +455,14 @@ func iterateResults2(t table.Writer, result *queryresult.Result, displayResult d
 		if row.Error != nil {
 			return true, row.Error
 		}
-		displayResult(t, row.Data, result)
 		i++
+		displayResult(t, row.Data, result)
 		if i == count {
+			// buffer the last row (to ensure that we never end up trying to render an empty table)
+			//bufferedRow = row
 			return false, nil
 		}
+
 	}
 
 	return true, nil
