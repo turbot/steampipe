@@ -307,7 +307,7 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 }
 
 func isStreamingOutput(outputFormat string) bool {
-	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
+	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine, constants.OutputFormatTable}, outputFormat)
 }
 
 func readRowContext(ctx context.Context, rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
