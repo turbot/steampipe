@@ -131,7 +131,6 @@ jobs:
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          steampipe service stop --force
 
   docker_acceptance_test_debian:
     name: Acceptance tests(Docker - Debian)

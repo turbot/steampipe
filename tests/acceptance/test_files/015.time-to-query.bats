@@ -2,7 +2,6 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "time to query a chaos table" {
-  skip
 
   # using bash's built-in time, set the timeformat to seconds
   TIMEFORMAT=%R
@@ -19,7 +18,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "time to query a chaos table that does not exist" {
-  skip
 
   # using bash's built-in time, set the timeformat to seconds
   TIMEFORMAT=%R
