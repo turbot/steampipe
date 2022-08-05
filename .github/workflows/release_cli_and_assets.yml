@@ -297,7 +297,7 @@ jobs:
     needs: [create_test_build,build_and_release_assets]
     strategy:
       matrix:
-        platform: [ macos-latest ]
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Trim asset version prefix and Validate
@@ -368,7 +368,6 @@ jobs:
       run: |
         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
         $GITHUB_WORKSPACE/tests/acceptance/run.sh
-        steampipe service stop --force
 
   docker_acceptance_test_debian:
     name: Acceptance tests(Docker - Debian)
