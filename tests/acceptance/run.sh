@@ -8,7 +8,7 @@ fi
 
 if [[ ! ${TIME_TO_QUERY} ]];
 then
-  TIME_TO_QUERY=2
+  TIME_TO_QUERY=4
 fi
 
 # set this to the source file for development
@@ -55,7 +55,7 @@ fi
 
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
-bats --tap $MY_PATH/test_files
+bats --tap $MY_PATH/test_files/015*
 
 # Setting the exit_code, to use in the github workflow(This only gets set to 0 when the above bats test suite passes)
 echo "::set-output name=exit_code::$(echo $?)"
