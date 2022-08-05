@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"unicode/utf8"
 
@@ -231,16 +233,8 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 }
 
 func displayTable(ctx context.Context, result *queryresult.Result) {
-	// the buffer to put the output data in
-	outbuf := bytes.NewBufferString("")
 
-	// the table
-	t := table.NewWriter()
-	t.SetOutputMirror(outbuf)
-	t.SetStyle(table.StyleDefault)
-	t.Style().Format.Header = text.FormatDefault
-
-	colConfigs := []table.ColumnConfig{}
+	var colConfigs []table.ColumnConfig
 	headers := make(table.Row, len(result.ColTypes))
 
 	for idx, column := range result.ColTypes {
@@ -252,13 +246,8 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 		})
 	}
 
-	t.SetColumnConfigs(colConfigs)
-	if viper.GetBool(constants.ArgHeader) {
-		t.AppendHeader(headers)
-	}
-
 	// define a function to execute for each row
-	rowFunc := func(row []interface{}, result *queryresult.Result) {
+	rowFunc := func(t table.Writer, row []interface{}, result *queryresult.Result) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
@@ -267,19 +256,48 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 		t.AppendRow(rowObj)
 	}
 
-	// iterate each row, adding each to the table
-	err := iterateResults(result, rowFunc)
-	if err != nil {
-		// display the error
-		fmt.Println()
-		utils.ShowError(ctx, err)
-		fmt.Println()
+	filename := filepath.Join(os.TempDir(), "_")
+	f, err := os.Create(filename)
+	utils.FailOnError(err)
+	defer os.Remove(filename)
+
+	allDone := false
+	showHeader := viper.GetBool(constants.ArgHeader)
+	pageSize := 100
+
+	for !allDone {
+
+		// the buffer to put the output data in
+		outbuf := bytes.NewBufferString("")
+
+		// the table
+		t := table.NewWriter()
+		t.SetOutputMirror(outbuf)
+		t.SetStyle(table.StyleDefault)
+		t.Style().Format.Header = text.FormatDefault
+		t.SetColumnConfigs(colConfigs)
+		if showHeader {
+			t.AppendHeader(headers)
+		}
+		showHeader = false
+
+		// iterate each row, adding each to the table
+		allDone, err = iterateResults2(t, result, rowFunc, pageSize)
+		if err != nil {
+			// display the error
+			fmt.Println()
+			utils.ShowError(ctx, err)
+			fmt.Println()
+		}
+		// write out the table to the buffer
+		t.Render()
+
+		f.Write(outbuf.Bytes())
 	}
-	// write out the table to the buffer
-	t.Render()
+	f.Close()
 
 	// page out the table
-	ShowPaged(ctx, outbuf.String())
+	filePager(ctx, filename)
 
 	// if timer is turned on
 	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
@@ -287,6 +305,21 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 	}
 }
 
+func filePager(ctx context.Context, filename string) {
+	//cmdStr := fmt.Sprintf("cat %s | less -SRXF", filename)
+	//cmd := exec.Command("bash", "-c", cmdStr)
+	//cmd.Dir = filepath.Dir(filename)
+
+	cmd := exec.Command("less", "-SRXF", filename)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	//cmd.Stdin = strings.NewReader(content)
+	// run the command - it will block until the pager is exited
+	err := cmd.Run()
+	if err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "could not display results")
+	}
+}
 func displayTiming(result *queryresult.Result) {
 	timingResult := <-result.TimingResult
 	var sb strings.Builder
@@ -316,7 +349,8 @@ func displayTiming(result *queryresult.Result) {
 	fmt.Println(sb.String())
 }
 
-type displayResultsFunc func(row []interface{}, result *queryresult.Result)
+type displayResultsFunc func([]interface{}, *queryresult.Result)
+type displayResultsFunc2 func(table.Writer, []interface{}, *queryresult.Result)
 
 // call func displayResult for each row of results
 func iterateResults(result *queryresult.Result, displayResult displayResultsFunc) error {
@@ -331,4 +365,25 @@ func iterateResults(result *queryresult.Result, displayResult displayResultsFunc
 	}
 	// we will not get here
 	return nil
+}
+
+func iterateResults2(t table.Writer, result *queryresult.Result, displayResult displayResultsFunc2, count int) (allDone bool, err error) {
+	i := 0
+	for row := range *result.RowChan {
+
+		// shouldn't happen
+		if row == nil {
+			return true, nil
+		}
+		if row.Error != nil {
+			return true, row.Error
+		}
+		displayResult(t, row.Data, result)
+		i++
+		if i == count {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

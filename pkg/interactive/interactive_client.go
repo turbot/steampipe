@@ -605,19 +605,21 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 		for {
 			select {
 			case <-sigIntChannel:
-				log.Println("[TRACE] interactive client cancel handler got SIGINT")
+				log.Println("[WARN] interactive client cancel handler got SIGINT")
 				// if initialisation is not complete, just close the prompt
 				// this will cancel the context used for initialisation so cancel any initialisation queries
 				if !c.isInitialised() {
+					log.Println("[WARN] not initialised - close prompt")
 					c.ClosePrompt(AfterPromptCloseExit)
 					return
 				} else {
+					log.Println("[WARN] cancelActiveQueryIfAny")
 					// otherwise call cancelActiveQueryIfAny which the for the active query, if there is one
 					c.cancelActiveQueryIfAny()
 					// keep waiting for further cancellations
 				}
 			case <-quitChannel:
-				log.Println("[TRACE] cancel handler exiting")
+				log.Println("[WARN] cancel handler quitChannel signalled - exiting")
 				c.cancelActiveQueryIfAny()
 				// we're done
 				return
