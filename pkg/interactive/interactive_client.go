@@ -141,7 +141,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 				return
 			}
 			// create new context with a cancellation func
-			ctx := c.createPromptContext(parentContext)
+			ctx = c.createPromptContext(parentContext)
 			// now run it again
 			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
