@@ -77,6 +77,10 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		// close loaded channel to indicate we are complete
 		close(i.Loaded)
 	}()
+	// create a cancellable context so that we can cancel the initialisation
+	ctx, cancel := context.WithCancel(ctx)
+	// and store it
+	i.cancel = cancel
 
 	// init telemetry
 	shutdownTelemetry, err := telemetry.Init(constants.AppName)
@@ -85,11 +89,6 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	} else {
 		i.ShutdownTelemetry = shutdownTelemetry
 	}
-
-	// create a cancellable context so that we can cancel the initialisation
-	ctx, cancel := context.WithCancel(ctx)
-	// and store it
-	i.cancel = cancel
 
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)

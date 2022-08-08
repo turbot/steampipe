@@ -16,10 +16,10 @@ import (
 
 // init data has arrived, handle any errors/warnings/messages
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
-	// try to take an execution lock, so that we don't end up showing warnings and errors
-	// while an execution is underway
-	c.executionLock.Lock()
-	defer c.executionLock.Unlock()
+	// whatever happens, set initialisationComplete
+	defer func() {
+		c.initialisationComplete = true
+	}()
 
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
@@ -58,10 +58,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 		if r := recover(); r != nil {
 			c.interactivePrompt.ClearScreen()
 			utils.ShowError(ctx, helpers.ToError(r))
-
 		}
-		// whatever happens, set initialisationComplete
-		c.initialisationComplete = true
 	}()
 
 	<-c.initData.Loaded
