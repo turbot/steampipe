@@ -10,6 +10,7 @@ import {
 } from "../../hooks/useDashboard";
 import CallToActions from "../CallToActions";
 import LoadingIndicator from "../dashboards/LoadingIndicator";
+import { classNames } from "../../utils/styles";
 import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
 import { stringToColour } from "../../utils/color";
@@ -27,8 +28,8 @@ type AvailableDashboardWithMod = AvailableDashboard & {
 interface DashboardTagProps {
   tagKey: string;
   tagValue: string;
-  dispatch: (action: DashboardAction) => void;
-  searchValue: string;
+  dispatch?: (action: DashboardAction) => void;
+  searchValue?: string;
 }
 
 interface SectionProps {
@@ -45,19 +46,26 @@ const DashboardTag = ({
   searchValue,
 }: DashboardTagProps) => (
   <span
-    className="cursor-pointer rounded-md text-xs"
-    onClick={() => {
-      const existingSearch = searchValue.trim();
-      const searchWithTag = existingSearch
-        ? existingSearch.indexOf(tagValue) < 0
-          ? `${existingSearch} ${tagValue}`
-          : existingSearch
-        : tagValue;
-      dispatch({
-        type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-        value: searchWithTag,
-      });
-    }}
+    className={classNames(
+      "rounded-md text-xs",
+      dispatch ? "cursor-pointer" : null
+    )}
+    onClick={
+      dispatch
+        ? () => {
+            const existingSearch = searchValue ? searchValue.trim() : "";
+            const searchWithTag = existingSearch
+              ? existingSearch.indexOf(tagValue) < 0
+                ? `${existingSearch} ${tagValue}`
+                : existingSearch
+              : tagValue;
+            dispatch({
+              type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+              value: searchWithTag,
+            });
+          }
+        : undefined
+    }
     style={{ color: stringToColour(tagValue) }}
     title={`${tagKey} = ${tagValue}`}
   >
@@ -425,3 +433,5 @@ const DashboardListWrapper = ({ wrapperClassName = "" }) => {
 };
 
 export default DashboardListWrapper;
+
+export { DashboardTag };

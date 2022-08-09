@@ -17,18 +17,19 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
+import { DashboardDataMode, useDashboard } from "../../../hooks/useDashboard";
 import {
   ErrorIcon,
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
+import { isRelativeUrl } from "../../../utils/url";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
-import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 import { registerComponent } from "../index";
 
@@ -98,6 +99,7 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow[]) => {
 
 interface CellValueProps {
   column: TableColumnInfo;
+  dataMode: DashboardDataMode;
   rowIndex: number;
   rowTemplateData: RowRenderResult[];
   value: any;
@@ -106,6 +108,7 @@ interface CellValueProps {
 
 const CellValue = ({
   column,
+  dataMode,
   rowIndex,
   rowTemplateData,
   value,
@@ -132,7 +135,13 @@ const CellValue = ({
       return;
     }
     if (renderedTemplateForColumn.result) {
-      setHref(renderedTemplateForColumn.result);
+      // We only want to render the HREF if it's live, or it's snapshot and absolute
+      const isRelative = isRelativeUrl(renderedTemplateForColumn.result);
+      setHref(
+        dataMode === "snapshot" && isRelative
+          ? null
+          : renderedTemplateForColumn.result
+      );
       setError(null);
     } else if (renderedTemplateForColumn.error) {
       setHref(null);
@@ -396,13 +405,13 @@ const TableView = ({
       setRowTemplateData(renderedResults);
     };
 
-    if (dataMode === "snapshot" || columns.length === 0 || rows.length === 0) {
+    if (columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
     }
 
     doRender();
-  }, [dataMode, columns, rows]);
+  }, [columns, rows]);
 
   return (
     <>
@@ -483,6 +492,7 @@ const TableView = ({
                   >
                     <MemoCellValue
                       column={cell.column}
+                      dataMode={dataMode}
                       rowIndex={index}
                       rowTemplateData={rowTemplateData}
                       value={cell.value}
@@ -576,13 +586,13 @@ const LineView = (props: TableProps) => {
       setRowTemplateData(renderedResults);
     };
 
-    if (dataMode === "snapshot" || columns.length === 0 || rows.length === 0) {
+    if (columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
     }
 
     doRender();
-  }, [dataMode, columns, rows]);
+  }, [columns, rows]);
 
   if (columns.length === 0 || rows.length === 0) {
     return null;
@@ -610,6 +620,7 @@ const LineView = (props: TableProps) => {
                   >
                     <MemoCellValue
                       column={col}
+                      dataMode={dataMode}
                       rowIndex={rowIndex}
                       rowTemplateData={rowTemplateData}
                       value={row[col.name]}

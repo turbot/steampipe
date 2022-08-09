@@ -18,6 +18,7 @@ import {
   getWrapperClasses,
 } from "../../../utils/card";
 import { getComponent, registerComponent } from "../index";
+import { isRelativeUrl } from "../../../utils/url";
 import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
@@ -185,17 +186,14 @@ const Card = (props: CardProps) => {
   }, [setZoomIconClassName, textClasses]);
 
   useEffect(() => {
-    if (
-      dataMode === "snapshot" ||
-      ((state.loading || !state.href) && (renderError || renderedHref))
-    ) {
+    if ((state.loading || !state.href) && (renderError || renderedHref)) {
       setRenderError(null);
       setRenderedHref(null);
     }
-  }, [dataMode, state.loading, state.href, renderError, renderedHref]);
+  }, [state.loading, state.href, renderError, renderedHref]);
 
   useDeepCompareEffect(() => {
-    if (dataMode === "snapshot" || state.loading || !state.href) {
+    if (state.loading || !state.href) {
       return;
     }
     // const { label, loading, value, ...rest } = state;
@@ -222,7 +220,15 @@ const Card = (props: CardProps) => {
         setRenderedHref(null);
         setRenderError(null);
       } else if (renderedResults[0].card.result) {
-        setRenderedHref(renderedResults[0].card.result as string);
+        // We only want to render the HREF if it's live, or it's snapshot and absolute
+        const isRelative = isRelativeUrl(
+          renderedResults[0].card.result as string
+        );
+        setRenderedHref(
+          dataMode === "snapshot" && isRelative
+            ? null
+            : (renderedResults[0].card.result as string)
+        );
         setRenderError(null);
       } else if (renderedResults[0].card.error) {
         setRenderError(renderedResults[0].card.error as string);
@@ -230,7 +236,7 @@ const Card = (props: CardProps) => {
       }
     };
     doRender();
-  }, [dataMode, state, props.data]);
+  }, [state, props.data]);
 
   const card = (
     <div
