@@ -1,18 +1,18 @@
-## v0.15.4 [2222-07-14]
+## v0.15.4 [2022-07-14]
 _Bug fixes_
 * Fix dashboard UI not rendering for chart/flow/hierarchy/input when type is set to table. ([#2250](https://github.com/turbot/steampipe/issues/2250))
 * Fix flow/hierarchy dashboard UI bug where id/to_id and id/from_id/to_id rows would not render the expected results. ([#2254](https://github.com/turbot/steampipe/issues/2254))
 * Fix FDW build issue which causes load failure on Arm Docker images.  ([#219](https://github.com/turbot/steampipe-postgres-fdw/issues/219))
 
-## v0.15.3 [2222-07-14]
+## v0.15.3 [2022-07-14]
 _Bug fixes_
 * Fix crash when inspecting tables in interactive mode. ([#2243](https://github.com/turbot/steampipe/issues/2243))
 
-## v0.15.2 [2222-07-13]
+## v0.15.2 [2022-07-13]
 _Bug fixes_
 * Fix intermittent hang in interactive mode if timing is enabled.  ([#2237](https://github.com/turbot/steampipe/issues/2237))
 
-## v0.15.1 [2222-07-07]
+## v0.15.1 [2022-07-07]
 _Bug fixes_
 * Fixes various EOF query errors. ([#192](https://github.com/turbot/steampipe-postgres-fdw/issues/192), [#201](https://github.com/turbot/steampipe-postgres-fdw/issues/201), [#207](https://github.com/turbot/steampipe-postgres-fdw/issues/207))
 * Ensure DashboardChanged events are generated when child elements have a changed index within a container. ([#2228](https://github.com/turbot/steampipe/issues/2228))
