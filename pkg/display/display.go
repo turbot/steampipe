@@ -18,6 +18,8 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // ShowOutput displays the output using the proper formatter as applicable
@@ -290,13 +292,15 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 func displayTiming(result *queryresult.Result) {
 	timingResult := <-result.TimingResult
 	var sb strings.Builder
+	// large numbers should be formatted with commas
+	p := message.NewPrinter(language.English)
 
 	milliseconds := float64(timingResult.Duration.Microseconds()) / 1000
 	seconds := timingResult.Duration.Seconds()
 	if seconds < 0.5 {
-		sb.WriteString(fmt.Sprintf("\nTime: %dms.", int64(milliseconds)))
+		sb.WriteString(p.Sprintf("\nTime: %dms.", int64(milliseconds)))
 	} else {
-		sb.WriteString(fmt.Sprintf("\nTime: %.1fs.", seconds))
+		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
 	}
 
 	if timingMetadata := timingResult.Metadata; timingMetadata != nil {
@@ -306,17 +310,17 @@ func displayTiming(result *queryresult.Result) {
 			sb.WriteString("0")
 		} else {
 			if totalRows > 0 {
-				sb.WriteString(fmt.Sprintf("%d", timingMetadata.RowsFetched+timingMetadata.CachedRowsFetched))
+				sb.WriteString(p.Sprintf("%d", timingMetadata.RowsFetched+timingMetadata.CachedRowsFetched))
 			}
 			if timingMetadata.CachedRowsFetched > 0 {
 				if timingMetadata.RowsFetched == 0 {
 					sb.WriteString(" (cached)")
 				} else {
-					sb.WriteString(fmt.Sprintf(" (%d cached)", timingMetadata.CachedRowsFetched))
+					sb.WriteString(p.Sprintf(" (%d cached)", timingMetadata.CachedRowsFetched))
 				}
 			}
 		}
-		sb.WriteString(fmt.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
+		sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
 	}
 
 	fmt.Println(sb.String())
