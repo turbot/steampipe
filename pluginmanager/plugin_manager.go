@@ -33,11 +33,12 @@ type runningPlugin struct {
 type PluginManager struct {
 	proto.UnimplementedPluginManagerServer
 
-	// map of running plugins keyed by plugin name
-	pluginMap map[string]*runningPlugin
-	// map of running plugins keyed by connection nasme
+	//// map of multi connection running plugins keyed by plugin name
+	multiConnectionPluginMap map[string]*runningPlugin
+	// map of ALL running plugins keyed by connection name
 	connectionPluginMap map[string]*runningPlugin
 	// map of connection configs, keyed by plugin name
+	// NOTE - for legace plugins, one entry in this map may correspond to multiple running plugins
 	pluginConnectionConfigMap map[string][]*sdkproto.ConnectionConfig
 	// map of connection configs, keyed by connection name
 	connectionConfigMap map[string]*sdkproto.ConnectionConfig
@@ -51,10 +52,10 @@ type PluginManager struct {
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[TRACE] NewPluginManager")
 	pluginManager := &PluginManager{
-		logger:              logger,
-		pluginMap:           make(map[string]*runningPlugin),
-		connectionPluginMap: make(map[string]*runningPlugin),
-		connectionConfigMap: connectionConfig,
+		logger:                   logger,
+		multiConnectionPluginMap: make(map[string]*runningPlugin),
+		connectionPluginMap:      make(map[string]*runningPlugin),
+		connectionConfigMap:      connectionConfig,
 		// pluginConnectionConfigMap is created by populatePluginConnectionConfigs
 	}
 
@@ -115,6 +116,7 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.Co
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
+	// TODO add getMapKeys function
 	names := make([]string, len(configMap))
 	idx := 0
 	for name := range configMap {
@@ -155,9 +157,9 @@ func (m *PluginManager) handleConnectionConfigChanges(configMap map[string]*sdkp
 func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) error {
 	var errors []error
 	for plugin, req := range requestMap {
-		runningPlugin, pluginAlreadyRunning := m.pluginMap[plugin]
+		runningPlugin, pluginAlreadyRunning := m.multiConnectionPluginMap[plugin]
+		// if the plugin is not running (or is not multi connection, so is not in this map), return
 		if !pluginAlreadyRunning {
-			// not expected
 			continue
 		}
 
@@ -181,8 +183,8 @@ func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sd
 	// (but only if the plugin is already started - if not we do nothing here - refreshConnections will start the plugin)
 	for p, connections := range addedConnections {
 		// find the existing running plugin for this plugin
-		// if this plugins is NOT running, skip here - we will start it when running refreshConnections
-		runningPlugin, pluginAlreadyRunning := m.pluginMap[p]
+		// if this plugins is NOT running (or is not multi connection), skip here - we will start it when running refreshConnections
+		runningPlugin, pluginAlreadyRunning := m.multiConnectionPluginMap[p]
 		if !pluginAlreadyRunning {
 			log.Printf("[TRACE] handleAddedConnections - plugin '%s' has been added to connection config and is not running - doing nothing here as it will be started by refreshConnections", p)
 			continue
@@ -212,7 +214,7 @@ func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sd
 // this mutates requestMap
 func (m *PluginManager) handleDeletedConnections(deletedConnections map[string][]*sdkproto.ConnectionConfig, requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) {
 	for p, connections := range deletedConnections {
-		runningPlugin, pluginAlreadyRunning := m.pluginMap[p]
+		runningPlugin, pluginAlreadyRunning := m.multiConnectionPluginMap[p]
 		if !pluginAlreadyRunning {
 			continue
 		}
@@ -395,7 +397,9 @@ func (m *PluginManager) storeClientToMap(connection string, client *plugin.Clien
 	p.reattach = reattach
 
 	// store fully initialised runningPlugin to pluginMap
-	m.pluginMap[reattach.Plugin] = p
+	if reattach.SupportedOperations.MultipleConnections {
+		m.multiConnectionPluginMap[reattach.Plugin] = p
+	}
 	// NOTE: if this plugin supports multiple connections, reattach.Connections will be a list of all connections
 	// provided by this plugin
 	// add map entries for all other connections using this plugin (all pointing to same RunningPlugin)
@@ -411,20 +415,6 @@ func (m *PluginManager) populatePluginConnectionConfigs() {
 	m.pluginConnectionConfigMap = make(map[string][]*sdkproto.ConnectionConfig)
 	for _, config := range m.connectionConfigMap {
 		m.pluginConnectionConfigMap[config.Plugin] = append(m.pluginConnectionConfigMap[config.Plugin], config)
-	}
-}
-
-// repopulate the map of running plugins keyed by connection
-// (this is called when connections have been added or removed)
-func (m *PluginManager) populateConnectionPluginMap() {
-	m.connectionPluginMap = make(map[string]*runningPlugin)
-	// iterate through our map of connection configs keyed by plugin
-	for pluginName := range m.pluginConnectionConfigMap {
-		if p, ok := m.pluginMap[pluginName]; ok {
-			for _, c := range p.reattach.Connections {
-				m.connectionPluginMap[c] = p
-			}
-		}
 	}
 }
 
