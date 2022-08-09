@@ -26,7 +26,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-//  Plugin management commands
+// Plugin management commands
 func pluginCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "plugin [command]",
@@ -403,8 +403,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	for updateResult := range dataChannel {
 		updateResults = append(updateResults, updateResult)
 	}
-
-	refreshConnectionsIfNecessary(cmd.Context(), updateResults, false)
+	// prevent fdw update message
+	nullStatusHookCtx := statushooks.DisableStatusHooks(ctx)
+	refreshConnectionsIfNecessary(nullStatusHookCtx, updateResults, false)
 	progressBars.Stop()
 	fmt.Println()
 	display.PrintInstallReports(updateResults, true)
