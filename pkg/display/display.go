@@ -292,7 +292,13 @@ func displayTiming(result *queryresult.Result) {
 	var sb strings.Builder
 
 	milliseconds := float64(timingResult.Duration.Microseconds()) / 1000
-	sb.WriteString(fmt.Sprintf("\nTime: %.1fms.", milliseconds))
+	seconds := timingResult.Duration.Seconds()
+	if seconds < 0.5 {
+		sb.WriteString(fmt.Sprintf("\nTime: %dms.", int64(milliseconds)))
+	} else {
+		sb.WriteString(fmt.Sprintf("\nTime: %.1fs.", seconds))
+	}
+
 	if timingMetadata := timingResult.Metadata; timingMetadata != nil {
 		totalRows := timingMetadata.RowsFetched + timingMetadata.CachedRowsFetched
 		sb.WriteString(" Rows fetched: ")
