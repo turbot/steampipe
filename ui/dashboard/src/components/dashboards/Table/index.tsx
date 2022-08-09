@@ -366,6 +366,7 @@ const TableView = ({
   hasTopBorder = false,
 }) => {
   const {
+    dataMode,
     themeContext: { theme },
   } = useDashboard();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
@@ -395,13 +396,13 @@ const TableView = ({
       setRowTemplateData(renderedResults);
     };
 
-    if (columns.length === 0 || rows.length === 0) {
+    if (dataMode === "snapshot" || columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
     }
 
     doRender();
-  }, [columns, rows]);
+  }, [dataMode, columns, rows]);
 
   return (
     <>
@@ -519,6 +520,7 @@ const TableViewWrapper = (props: TableProps) => {
 };
 
 const LineView = (props: TableProps) => {
+  const { dataMode } = useDashboard();
   const [columns, setColumns] = useState<TableColumnInfo[]>([]);
   const [rows, setRows] = useState<LeafNodeDataRow[]>([]);
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
@@ -574,13 +576,13 @@ const LineView = (props: TableProps) => {
       setRowTemplateData(renderedResults);
     };
 
-    if (columns.length === 0 || rows.length === 0) {
+    if (dataMode === "snapshot" || columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
     }
 
     doRender();
-  }, [columns, rows]);
+  }, [dataMode, columns, rows]);
 
   if (columns.length === 0 || rows.length === 0) {
     return null;

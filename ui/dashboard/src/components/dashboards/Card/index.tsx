@@ -167,6 +167,7 @@ const Label = ({ value }) => {
 const Card = (props: CardProps) => {
   const {
     components: { ExternalLink },
+    dataMode,
   } = useDashboard();
   const state = useCardState(props);
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -184,14 +185,17 @@ const Card = (props: CardProps) => {
   }, [setZoomIconClassName, textClasses]);
 
   useEffect(() => {
-    if ((state.loading || !state.href) && (renderError || renderedHref)) {
+    if (
+      dataMode === "snapshot" ||
+      ((state.loading || !state.href) && (renderError || renderedHref))
+    ) {
       setRenderError(null);
       setRenderedHref(null);
     }
-  }, [state.loading, state.href, renderError, renderedHref]);
+  }, [dataMode, state.loading, state.href, renderError, renderedHref]);
 
   useDeepCompareEffect(() => {
-    if (state.loading || !state.href) {
+    if (dataMode === "snapshot" || state.loading || !state.href) {
       return;
     }
     // const { label, loading, value, ...rest } = state;
@@ -226,7 +230,7 @@ const Card = (props: CardProps) => {
       }
     };
     doRender();
-  }, [state, props.data]);
+  }, [dataMode, state, props.data]);
 
   const card = (
     <div
@@ -299,7 +303,7 @@ const Card = (props: CardProps) => {
     </div>
   );
 
-  if (renderedHref) {
+  if (dataMode === "live" && renderedHref) {
     return (
       <ExternalLink className="" to={renderedHref}>
         {card}
