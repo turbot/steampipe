@@ -47,16 +47,23 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # start service to turn on caching
   steampipe service start
 
-  steampipe query "select case when mod(id,2)=0 then 'alarm' when mod(id,2)=1 then 'ok' end status, unique_col as resource, id as reason from chaos.chaos_cache_check where id=2" --output json > query_result1.json
+  steampipe query "select unique_col, a, b from chaos_cache_check" --output json &> output1.json
+  # store the result from 1st query in `content`
+  content=$(cat output1.json)
 
-  steampipe query "select case when mod(id,2)=0 then 'alarm' when mod(id,2)=1 then 'ok' end status, unique_col as resource, id as reason from chaos.chaos_cache_check where id=2" --output json > query_result2.json
+  steampipe query "select unique_col, a, b from chaos_cache_check" --output json &> output2.json
+  # store the result from 2nd query in `new_content`
+  new_content=$(cat output2.json)
 
-  # stop the service
+  echo $content
+  echo $new_content
+
+  # stop service
   steampipe service stop
 
-  # both the results should be same
-  assert_equal "$(cat query_result1.json)" "$(cat query_result2.json)"
+  # verify that `content` and `new_content` are the same
+  assert_equal "$new_content" "$content"
 
-  rm -f query_result1.json
-  rm -f query_result2.json
+  rm -f output1.json
+  rm -f output2.json
 }
