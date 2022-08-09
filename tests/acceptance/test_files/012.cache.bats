@@ -42,3 +42,28 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$flag" "0"
   rm -f benchmark.*.json
 }
+
+@test "steampipe cache functionality check ON(check content of results, not just the unique column)" {
+  # start service to turn on caching
+  steampipe service start
+
+  steampipe query "select unique_col, a, b from chaos_cache_check" --output json &> output1.json
+  # store the result from 1st query in `content`
+  content=$(cat output1.json)
+
+  steampipe query "select unique_col, a, b from chaos_cache_check" --output json &> output2.json
+  # store the result from 2nd query in `new_content`
+  new_content=$(cat output2.json)
+
+  echo $content
+  echo $new_content
+
+  # stop service
+  steampipe service stop
+
+  # verify that `content` and `new_content` are the same
+  assert_equal "$new_content" "$content"
+
+  rm -f output1.json
+  rm -f output2.json
+}
