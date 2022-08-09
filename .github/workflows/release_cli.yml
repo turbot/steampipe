@@ -124,16 +124,13 @@ jobs:
 
       - name: Install DB
         run: |
-          steampipe service start
           steampipe plugin install chaos
-          steampipe service stop --force
 
       - name: Run Test Suite
         timeout-minutes: 5
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          steampipe service stop --force
 
   docker_acceptance_test_debian:
     name: Acceptance tests(Docker - Debian)

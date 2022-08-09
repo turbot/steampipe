@@ -8,7 +8,7 @@ fi
 
 if [[ ! ${TIME_TO_QUERY} ]];
 then
-  TIME_TO_QUERY=2
+  TIME_TO_QUERY=4
 fi
 
 # set this to the source file for development

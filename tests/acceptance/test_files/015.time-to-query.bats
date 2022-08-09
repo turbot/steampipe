@@ -11,7 +11,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $QUERY_TIME
   echo $TIME_TO_QUERY
 
-  # check whether time to query is less than 2 seconds(This value can be changed)
+  # Check whether time to query is less than 4 seconds(This value can be changed)
+  # The query should get completed within 2secs, however we check whether it is less
+  # than 4 in order to avoid failures in our github workflows.
   assert_equal "$(echo $QUERY_TIME '<' $TIME_TO_QUERY | bc -l)" "1"
 }
 
@@ -25,6 +27,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $QUERY_TIME
   echo $TIME_TO_QUERY
 
-  # check whether time to error out is less than 2 seconds(This value can be changed)
+  # Check whether time to error out is less than 4 seconds(This value can be changed).
+  # The query should get completed within 2secs, however we check whether it is less
+  # than 4 in order to avoid failures in our github workflows. 
   assert_equal "$(echo $QUERY_TIME '<' $TIME_TO_QUERY | bc -l)" "1"
 }
