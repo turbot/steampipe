@@ -16,6 +16,7 @@
   "dependencies": {
     "@headlessui/react": "1.6.6",
     "@heroicons/react": "1.0.6",
+    "@popperjs/core": "2.11.5",
     "@supabase/sql-formatter": "4.0.3",
     "color-convert": "2.0.1",
     "copy-to-clipboard": "3.3.2",
@@ -36,6 +37,7 @@
     "react-markdown": "8.0.3",
     "react-papaparse": "4.1.0",
     "react-placeholder": "4.1.0",
+    "react-popper": "2.3.0",
     "react-router-dom": "6.3.0",
     "react-select": "5.4.0",
     "react-syntax-highlighter": "15.5.0",
