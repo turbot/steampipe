@@ -205,6 +205,7 @@ const buildGraphNodesAndEdges = (
       data: {
         icon: matchingCategory ? matchingCategory.icon : null,
         label: node.title,
+        properties: node.properties,
       },
     });
   }
