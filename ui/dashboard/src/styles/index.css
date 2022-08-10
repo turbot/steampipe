@@ -228,6 +228,25 @@
   animation: barberpole 10s linear infinite;
 }
 
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__handle {
+  display: none;
+}
+
+.react-flow__edge-path {
+  stroke-width: 0.5 !important;
+  stroke: #aaa !important;
+}
+
+.react-flow__edge-text {
+  font-size: 7px !important;
+  font-style: italic;
+  fill: #999;
+}
+
 @keyframes barberpole {
   100% {
     background-position: 100% 100%;
