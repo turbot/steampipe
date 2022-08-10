@@ -8,6 +8,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
+  addEdge,
 } from "react-flow-renderer";
 import merge from "lodash/merge";
 import {
@@ -22,7 +23,7 @@ import { GraphProperties, GraphProps, GraphType } from "../types";
 import { getGraphComponent } from "..";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { Ref, useEffect, useState } from "react";
+import { Ref, useCallback, useEffect, useMemo, useState } from "react";
 import { Theme } from "../../../../hooks/useTheme";
 import AssetNode from "./AssetNode";
 import FloatingEdge from "./FloatingEdge";
@@ -273,10 +274,9 @@ const useGraphOptions = (
     namedColors = {};
   }
 
-  const nodesAndEdges = buildGraphNodesAndEdges(
-    props.data,
-    props.properties,
-    namedColors
+  const nodesAndEdges = useMemo(
+    () => buildGraphNodesAndEdges(props.data, props.properties, namedColors),
+    [props.data, props.properties]
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
@@ -285,16 +285,41 @@ const useGraphOptions = (
   //   []
   // );
 
-  return { nodes, edges, onNodesChange, onEdgesChange };
+  useEffect(() => {
+    // console.log("nodes changes", nodesAndEdges.nodes);
+    setNodes(nodesAndEdges.nodes);
+  }, [nodesAndEdges.nodes]);
+
+  useEffect(() => {
+    // console.log("edges changes", nodesAndEdges.edges);
+    setEdges(nodesAndEdges.edges);
+  }, [nodesAndEdges.edges]);
+
+  return { nodes, edges, setEdges, onNodesChange, onEdgesChange };
 };
 
 const Graph = ({ props, theme, themeWrapperRef }) => {
   const graphOptions = useGraphOptions(props, theme, themeWrapperRef);
-  const {} = usePanel();
+  const onConnect = useCallback(
+    (params) =>
+      graphOptions.setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            type: "floating",
+            markerEnd: { type: MarkerType.Arrow },
+          },
+          eds
+        )
+      ),
+    [graphOptions.setEdges]
+  );
+  // const {} = usePanel();
   return (
     <ReactFlow
       nodes={graphOptions.nodes}
       edges={graphOptions.edges}
+      onConnect={onConnect}
       onNodesChange={graphOptions.onNodesChange}
       onEdgesChange={graphOptions.onEdgesChange}
       nodeTypes={nodeTypes}
