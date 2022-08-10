@@ -411,6 +411,7 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 	return reattach, nil
 }
 
+// wait for plugin to load, verify it is running and check it provides the required connection
 func (m *PluginManager) verifyLoadingPlugin(connectionName string, p *runningPlugin) (string, *proto.ReattachConfig, error) {
 	var reason string
 	// so we have a plugin in our map for this connection - is it started?
