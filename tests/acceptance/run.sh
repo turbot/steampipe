@@ -56,6 +56,6 @@ fi
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
 bats --tap $MY_PATH/test_files
-
+echo "bats tests completed"
 # Setting the exit_code, to use in the github workflow(This only gets set to 0 when the above bats test suite passes)
 echo "::set-output name=exit_code::$(echo $?)"
