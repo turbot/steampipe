@@ -67,6 +67,7 @@ const useSelectInputStyles = () => {
         paddingBottom: 0,
       };
     },
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
     option: (provided, state) => {
       return {
         ...provided,
