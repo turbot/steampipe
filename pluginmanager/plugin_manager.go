@@ -317,11 +317,16 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 	// lock access to plugin map
 	m.mut.Lock()
 	p, ok := m.connectionPluginMap[connectionName]
-	if !ok {
+	if ok {
+		log.Printf("[TRACE] connection %s found in connectionPluginMap\n", connectionName)
+	} else {
 		// so there is no entry in connectionPluginMap for this connection - check whether there is an entry in either
 		// - pluginMultiConnectionMap (indicating this is a multi connection plugin which has been loaded for another connection
 		// - loadingPlugins (indicating this is a plugin which is still loading and we do not yet know if it supports multi connection
 		p, ok = m.pluginMultiConnectionMap[pluginName]
+		if ok {
+			log.Printf("[TRACE] %s found in pluginMultiConnectionMap\n", pluginName)
+		}
 	}
 	if !ok {
 		p, ok = m.loadingPlugins[pluginName]
@@ -333,40 +338,37 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 	if ok {
 		// unlock access to map to allow other getPlugin calls to proceed
 		m.mut.Unlock()
+		var reattach *proto.ReattachConfig
 
-		// so we have a plugin in our map for this connection - is it started?
-		err = m.waitForPluginLoad(connectionName, p)
-		if err != nil {
-			return nil, err
+		// wait for plugin to load, verify it is running and check it provides the required connection
+		reason, reattach, err = m.verifyLoadingPlugin(connectionName, p)
+		if reason == "" {
+			return reattach, err
 		}
-		log.Printf("[TRACE] connection %s is loaded, check for running PID", connectionName)
+		// so we have not yet found a compatible plugin
 
-		// ok so the plugin _should_ now be running
+		// NOTE: re-lock the mutex before falling through to addLoadingPlugin
+		m.mut.Lock()
 
-		// check if this plugin provides this connection
-		// this should always be the case for multiconnection plugins but may not be the case for legacy plugins
-		reattach := p.reattach
-		if helpers.StringSliceContains(p.reattach.Connections, connectionName) {
+		// TACTICAL there is a race condition here - multiple threads may be here at the same time
+		// check whether another thread has one and started loading the required plugin
+		// recheck the connection map
+		p, ok := m.connectionPluginMap[connectionName]
+		if ok {
+			// unlock before calling verifyLoadingPlugin
+			m.mut.Unlock()
 
-			// now check if the plugins process IS running
-			exists, _ := utils.PidExists(int(reattach.Pid))
-			if exists {
-				// so the plugin is good
-				log.Printf("[TRACE] PluginManager found '%s' in map, pid %d", connectionName, reattach.Pid)
-				return reattach, nil
-			} else {
-				// otherwise we need to start the plugin again -  update reason
-				reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, connectionName)
+			log.Printf("[TRACE] after waiting for plugin %s to load, and discovering it does not support connection %s, found a loading plugin in connectionPluginMap, so using that", pluginName, connectionName)
+			reason, reattach, err = m.verifyLoadingPlugin(connectionName, p)
+			if reason == "" {
+				log.Printf("[TRACE] now we have one")
+				return reattach, err
 			}
-		} else {
-			// so the plugin does not support this connection (must be a legacy plugin)
-			// update reason
-			reason = fmt.Sprintf("plugin %s does NOT provide connection %s", pluginName, connectionName)
+			// relock
+			m.mut.Lock()
 		}
 
 		//  either the pid does not exist or the plugin has exited
-		// NOTE: re-lock the mutex before falling through to addLoadingPlugin
-		m.mut.Lock()
 
 	} else {
 		// so the plugin is NOT loaded or loading - this is the first time anyone has requested this plugin
@@ -407,6 +409,40 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 
 	// and return
 	return reattach, nil
+}
+
+func (m *PluginManager) verifyLoadingPlugin(connectionName string, p *runningPlugin) (string, *proto.ReattachConfig, error) {
+	var reason string
+	// so we have a plugin in our map for this connection - is it started?
+	err := m.waitForPluginLoad(p)
+	if err != nil {
+		return "", nil, err
+	}
+	log.Printf("[TRACE] connection %s is loaded, check for running PID", connectionName)
+
+	// ok so the plugin _should_ now be running
+
+	// check if this plugin provides this connection
+	// this should always be the case for multiconnection plugins but may not be the case for legacy plugins
+	reattach := p.reattach
+	if helpers.StringSliceContains(p.reattach.Connections, connectionName) {
+		// now check if the plugins process IS running
+		exists, _ := utils.PidExists(int(reattach.Pid))
+		if exists {
+			// so the plugin is good
+			log.Printf("[TRACE] PluginManager found '%s' in map, pid %d", connectionName, reattach.Pid)
+			return "", reattach, nil
+		} else {
+			// otherwise we need to start the plugin again -  update reason
+			reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, connectionName)
+		}
+	} else {
+		// so the plugin does not support this connection (must be a legacy plugin)
+
+		// update reason
+		reason = fmt.Sprintf("plugin %s does NOT provide connection %s", p.reattach.Plugin, connectionName)
+	}
+	return reason, nil, nil
 }
 
 func (m *PluginManager) addLoadingPlugin(connectionName string, p *runningPlugin, pluginName string) {
@@ -563,7 +599,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	return client, reattach, nil
 }
 
-func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) error {
+func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
 	pluginStartTimeoutSecs := 5
 
 	select {
@@ -573,7 +609,7 @@ func (m *PluginManager) waitForPluginLoad(connection string, p *runningPlugin) e
 		return nil
 
 	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
-		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", connection, pluginStartTimeoutSecs)
+		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", p.reattach.Plugin, pluginStartTimeoutSecs)
 	}
 }
 
