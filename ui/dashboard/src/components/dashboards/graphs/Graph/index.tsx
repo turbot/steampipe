@@ -166,8 +166,6 @@ const edgeTypes = {
   floating: FloatingEdge,
 };
 
-interface GraphNode extends Node {}
-
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
@@ -203,9 +201,10 @@ const buildGraphNodesAndEdges = (
       id: node.id,
       position: { x: matchingNode.x, y: matchingNode.y },
       data: {
+        href: matchingCategory ? matchingCategory.href : null,
         icon: matchingCategory ? matchingCategory.icon : null,
         label: node.title,
-        properties: node.properties,
+        row_data: node.row_data,
       },
     });
   }
@@ -221,7 +220,7 @@ const buildGraphNodesAndEdges = (
         type: MarkerType.ArrowClosed,
       },
       data: {
-        properties: edge.properties,
+        row_data: edge.row_data,
         label: edge.title,
       },
     });
