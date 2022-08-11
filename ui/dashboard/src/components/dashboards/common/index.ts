@@ -409,9 +409,6 @@ const buildNodesAndEdges = (
       ? row[category_col.name]
       : null;
     const depth: number | null = depth_col ? row[depth_col.name] : null;
-    const rowProperties: {} | null = properties_col
-      ? row[properties_col.name]
-      : {};
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
@@ -564,7 +561,7 @@ const buildNodesAndEdges = (
         to_id,
         title,
         category,
-        nodeAndEndMask === 6 ? rowProperties : {}
+        nodeAndEndMask === 6 ? row : {}
       );
       if (duplicate_edge) {
         contains_duplicate_edges = true;
