@@ -561,7 +561,7 @@ const buildNodesAndEdges = (
         to_id,
         title,
         category,
-        nodeAndEndMask === 6 ? row : {}
+        nodeAndEndMask === 6 ? row : null
       );
       if (duplicate_edge) {
         contains_duplicate_edges = true;
