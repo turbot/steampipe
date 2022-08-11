@@ -17,7 +17,6 @@ const FloatingEdge = ({
   labelBgBorderRadius,
   data: { row_data, label },
 }) => {
-  console.log(row_data);
   const sourceNode = useStore(
     useCallback((store) => store.nodeInternals.get(source), [source])
   );
