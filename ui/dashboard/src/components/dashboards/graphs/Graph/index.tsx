@@ -1,5 +1,7 @@
+import AssetNode from "./AssetNode";
 import dagre from "dagre";
 import ErrorPanel from "../../Error";
+import FloatingEdge from "./FloatingEdge";
 import ReactFlow, {
   Controls,
   Edge,
@@ -22,12 +24,9 @@ import { formatChartTooltip } from "../../common/chart";
 import { GraphProperties, GraphProps, GraphType } from "../types";
 import { getGraphComponent } from "..";
 import { registerComponent } from "../../index";
-import { useDashboard } from "../../../../hooks/useDashboard";
 import { Ref, useCallback, useEffect, useMemo, useState } from "react";
 import { Theme } from "../../../../hooks/useTheme";
-import AssetNode from "./AssetNode";
-import FloatingEdge from "./FloatingEdge";
-import { usePanel } from "../../../../hooks/usePanel";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 const getCommonBaseOptions = () => ({
   animation: false,
@@ -220,6 +219,10 @@ const buildGraphNodesAndEdges = (
       labelBgPadding: [11, 0],
       markerEnd: {
         type: MarkerType.ArrowClosed,
+      },
+      data: {
+        properties: edge.properties,
+        label: edge.title,
       },
     });
   }
