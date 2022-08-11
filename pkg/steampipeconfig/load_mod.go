@@ -1,7 +1,9 @@
 package steampipeconfig
 
 import (
+	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,7 +25,7 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
+func LoadMod(ctx context.Context, modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -43,7 +45,7 @@ func LoadMod(modPath string, runCtx *parse.RunContext) (mod *modconfig.Mod, err 
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = runCtx.GetResourceMaps()
 	// now load the mod resource hcl
-	return loadModResources(modPath, runCtx, mod)
+	return loadModResources(ctx, modPath, runCtx, mod)
 }
 
 func loadModDefinition(modPath string, runCtx *parse.RunContext) (*modconfig.Mod, error) {
@@ -150,7 +152,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 	childRunCtx.BlockTypes = runCtx.BlockTypes
 	childRunCtx.ParentRunCtx = runCtx
 
-	mod, err := LoadMod(dependencyPath, childRunCtx)
+	mod, err := LoadMod(context.Background(), dependencyPath, childRunCtx)
 	if err != nil {
 		return err
 	}
@@ -169,7 +171,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *pa
 
 }
 
-func loadModResources(modPath string, runCtx *parse.RunContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
+func loadModResources(ctx context.Context, modPath string, runCtx *parse.RunContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
 	var err error
@@ -186,6 +188,10 @@ func loadModResources(modPath string, runCtx *parse.RunContext, mod *modconfig.M
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, err
+	}
+	if numFiles := len(sourcePaths); numFiles > 0 {
+		statushooks.SetStatus(ctx, fmt.Sprintf("Loading %d mod resource files", numFiles))
+		defer statushooks.Done(ctx)
 	}
 
 	// load the raw file data

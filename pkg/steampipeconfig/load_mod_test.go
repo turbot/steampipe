@@ -1425,7 +1425,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 		}
 	}()
 
-	actualMod, err := LoadMod(modPath, runCtx)
+	actualMod, err := LoadMod(context.Background(), modPath, runCtx)
 	if err != nil {
 		if test.expected != "ERROR" {
 			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
@@ -1536,7 +1536,7 @@ func TestLoadModResourceNames(t *testing.T) {
 				Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
 				Flags:   filehelpers.Files,
 			})
-		LoadMod(modPath, runCtx)
+		LoadMod(context.Background(), modPath, runCtx)
 		names, err := LoadModResourceNames(modPath, runCtx)
 
 		if err != nil {

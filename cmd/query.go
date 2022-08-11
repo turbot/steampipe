@@ -4,10 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -20,6 +16,9 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
+	"log"
+	"os"
+	"strings"
 )
 
 func queryCmd() *cobra.Command {
@@ -144,6 +143,8 @@ func getPipedStdinData() string {
 
 func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	statushooks.SetStatus(ctx, "Loading workspace")
+	defer statushooks.Done(ctx)
 
 	w, err := workspace.Load(ctx, workspacePath)
 	if err == nil {

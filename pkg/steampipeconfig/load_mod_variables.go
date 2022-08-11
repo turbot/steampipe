@@ -19,7 +19,7 @@ import (
 func LoadVariableDefinitions(variablePath string, runCtx *parse.RunContext) (*modconfig.ModVariableMap, error) {
 	// only load mod and variables blocks
 	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, err := LoadMod(variablePath, runCtx)
+	mod, err := LoadMod(context.Background(), variablePath, runCtx)
 	if err != nil {
 		return nil, err
 	}

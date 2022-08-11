@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -60,6 +62,10 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	workspace, err := createShellWorkspace(workspacePath)
 	if err != nil {
 		return nil, err
+	}
+
+	if workspace.modFilePath != "" {
+		statushooks.SetStatus(ctx, fmt.Sprintf("Loading workspace modfile %s", workspace.modFilePath))
 	}
 
 	// load the workspace mod
@@ -258,7 +264,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	runCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
 	// load the workspace mod
-	m, err := steampipeconfig.LoadMod(w.Path, runCtx)
+	m, err := steampipeconfig.LoadMod(ctx, w.Path, runCtx)
 	if err != nil {
 		return err
 	}

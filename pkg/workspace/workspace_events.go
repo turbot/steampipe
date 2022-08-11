@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -47,7 +48,9 @@ func (w *Workspace) handleDashboardEvent() {
 }
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, _ []fsnotify.Event) {
-	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
+	// create new context with no status spinner
+	reloadCtx := statushooks.DisableStatusHooks(ctx)
+	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(reloadCtx)
 	if err != nil {
 		// publish error event
 		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})
@@ -80,7 +83,6 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ModResou
 		prevResourceMaps = modconfig.NewWorkspaceResourceMaps(w.Mod)
 	}
 
-	// now reload the workspace
 	err := w.loadWorkspaceMod(ctx)
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
