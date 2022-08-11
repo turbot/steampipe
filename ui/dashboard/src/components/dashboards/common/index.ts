@@ -240,7 +240,7 @@ interface Node {
   title: string | null;
   category: string | null;
   depth: number | null;
-  properties: NodeProperties | null;
+  row_data: LeafNodeDataRow | null;
   symbol: string | null;
   href: string | null;
 }
@@ -251,7 +251,7 @@ interface Edge {
   to_id: string;
   title: string | null;
   category: string | null;
-  properties: EdgeProperties | null;
+  row_data: LeafNodeDataRow | null;
 }
 
 interface NodeMap {
@@ -300,7 +300,7 @@ const recordEdge = (
   to_id: string,
   title: string | null = null,
   category: string | null = null,
-  properties: NodeProperties | null = {}
+  row_data: LeafNodeDataRow | null = null
 ) => {
   let duplicate_edge = false;
   // Find any existing edge
@@ -318,7 +318,7 @@ const recordEdge = (
     to_id,
     title,
     category,
-    properties,
+    row_data,
   };
   return {
     edge,
@@ -331,7 +331,7 @@ const createNode = (
   title: string | null = null,
   category: string | null = null,
   depth: number | null = null,
-  properties: NodeProperties | null = {},
+  row_data: LeafNodeDataRow | null = null,
   categories: CategoryMap = {}
 ) => {
   let symbol: string | null = null;
@@ -351,7 +351,7 @@ const createNode = (
     category,
     title,
     depth,
-    properties,
+    row_data,
     symbol,
     href,
   };
@@ -471,7 +471,7 @@ const buildNodesAndEdges = (
           title,
           category,
           depth,
-          rowProperties,
+          row,
           categories
         );
         node_lookup[node_id] = node;
@@ -745,7 +745,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
             ? categoryOverrides.color
             : "target",
       },
-      properties: edge.properties,
+      row_data: edge.row_data,
     });
   });
 
@@ -769,7 +769,7 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
             ? categoryOverrides.color
             : themeColors[nodesAndEdges.next_color_index++],
       },
-      properties: node.properties,
+      row_data: node.row_data,
       symbol: node.symbol,
       symbolSize: 15,
       href: node.href,

@@ -41,6 +41,8 @@ const Tooltip = ({ children, overlay, show = false, title }: TooltipProps) => {
               >
                 <Title title={title} />
                 {overlay}
+                {/*@ts-ignore*/}
+                <div ref={setArrowElement} style={styles.arrow} />
               </div>
             </ThemeWrapper>
           </ThemeProvider>,
