@@ -10,14 +10,14 @@ const FloatingEdge = ({
   target,
   markerEnd,
   style,
-  label,
   labelStyle,
   labelBgStyle,
   labelShowBg,
   labelBgPadding,
   labelBgBorderRadius,
-  data,
+  data: { row_data, label },
 }) => {
+  console.log(row_data);
   const sourceNode = useStore(
     useCallback((store) => store.nodeInternals.get(source), [source])
   );
@@ -44,34 +44,43 @@ const FloatingEdge = ({
     targetY: ty,
   });
 
+  const edge = (
+    <g className="react-flow__connection">
+      <path
+        id={id}
+        // className="stroke-[0.5] stroke-[#aaa]"
+        className="react-flow__edge-path"
+        d={d}
+        markerEnd={markerEnd}
+        style={style}
+      />
+      <EdgeText
+        // className="italic text-[5px] fill-foreground-light"
+        // className="react-flow__edge-path"
+        x={mx}
+        y={my}
+        label={label}
+        labelStyle={labelStyle}
+        labelShowBg={labelShowBg}
+        labelBgStyle={labelBgStyle}
+        labelBgPadding={labelBgPadding}
+        labelBgBorderRadius={labelBgBorderRadius}
+      />
+    </g>
+  );
+
   return (
-    <Tooltip
-      overlay={<Properties properties={data.properties} />}
-      title={data.label}
-    >
-      <g className="react-flow__connection">
-        <path
-          id={id}
-          // className="stroke-[0.5] stroke-[#aaa]"
-          className="react-flow__edge-path"
-          d={d}
-          markerEnd={markerEnd}
-          style={style}
-        />
-        <EdgeText
-          // className="italic text-[5px] fill-foreground-light"
-          // className="react-flow__edge-path"
-          x={mx}
-          y={my}
-          label={label}
-          labelStyle={labelStyle}
-          labelShowBg={labelShowBg}
-          labelBgStyle={labelBgStyle}
-          labelBgPadding={labelBgPadding}
-          labelBgBorderRadius={labelBgBorderRadius}
-        />
-      </g>
-    </Tooltip>
+    <>
+      {row_data && row_data.properties && (
+        <Tooltip
+          overlay={<Properties properties={row_data.properties} />}
+          title={label}
+        >
+          {edge}
+        </Tooltip>
+      )}
+      {(!row_data || !row_data.properties) && edge}
+    </>
   );
 };
 
