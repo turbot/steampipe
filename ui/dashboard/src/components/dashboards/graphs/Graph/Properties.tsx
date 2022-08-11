@@ -18,14 +18,23 @@ const PropertyItemValue = ({ value }) => {
       break;
   }
   return (
-    <span className={classNames("block", "break-words")}>{renderValue}</span>
+    <span
+      className={classNames(
+        "block break-words",
+        renderValue ? "" : "text-foreground-lightest"
+      )}
+    >
+      {renderValue ? renderValue : "Empty"}
+    </span>
   );
 };
 
 const PropertyItem = ({ name, value }) => {
   return (
     <div>
-      <span className="block text-sm text-table-head truncate">{name}</span>
+      <span className="block text-sm text-foreground-lighter truncate">
+        {name}
+      </span>
       <PropertyItemValue value={value} />
     </div>
     // <div className="space-x-2">
