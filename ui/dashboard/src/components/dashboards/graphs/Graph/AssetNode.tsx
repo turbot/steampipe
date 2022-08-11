@@ -42,7 +42,7 @@ const AssetNode = ({
     };
 
     doRender();
-  }, [href, renderInterpolatedTemplates]);
+  }, [href, renderInterpolatedTemplates, row_data, setRenderedHref]);
 
   const node = (
     <div className="py-2 px-2 rounded-full w-[35px] h-[35px] text-sm leading-[35px] my-0 mx-auto border border-divide cursor-grab">
