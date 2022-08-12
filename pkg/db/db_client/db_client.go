@@ -291,6 +291,7 @@ SELECT
     column_default,
     is_nullable,
     data_type,
+    udt_name,
     table_schema,
     (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
     (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
