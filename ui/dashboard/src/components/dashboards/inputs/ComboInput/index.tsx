@@ -1,4 +1,4 @@
-import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import useSelectInputStyles from "../common/useSelectInputStyles";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getColumn } from "../../../../utils/data";
@@ -304,7 +304,7 @@ const SelectInput = ({
           {properties.label}
         </label>
       )}
-      <Select
+      <CreatableSelect
         aria-labelledby={`${name}.input`}
         className="basic-single"
         classNamePrefix="select"

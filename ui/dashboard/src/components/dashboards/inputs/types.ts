@@ -19,7 +19,14 @@ export type InputProps = BaseInputProps & {
   properties: InputProperties;
 };
 
-export type InputType = "hidden" | "multiselect" | "select" | "table" | "text";
+export type InputType =
+  | "combo"
+  | "hidden"
+  | "multicomo"
+  | "multiselect"
+  | "select"
+  | "table"
+  | "text";
 
 export interface IInput {
   type: InputType;

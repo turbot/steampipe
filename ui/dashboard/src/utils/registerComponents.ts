@@ -26,6 +26,7 @@ import "../components/dashboards/hierarchies/Hierarchy";
 
 // Inputs
 import "../components/dashboards/inputs/MultiSelectInput";
+import "../components/dashboards/inputs/SingleComboInput";
 import "../components/dashboards/inputs/SingleSelectInput";
 import "../components/dashboards/inputs/TextInput";
 import "../components/dashboards/inputs/Input";
