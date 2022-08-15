@@ -1,4 +1,4 @@
-import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import useSelectInputStyles from "../common/useSelectInputStyles";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getColumn } from "../../../../utils/data";
@@ -29,17 +29,43 @@ const getValueForState = (multi, option) => {
   }
 };
 
-const findOptions = (options, multi, value) => {
-  return multi
-    ? options.filter((option) =>
-        option.value ? value.indexOf(option.value.toString()) >= 0 : false
-      )
-    : options.find((option) =>
-        option.value ? option.value.toString() === value : false
+const findOptionsForUrlValue = (
+  options,
+  multi,
+  urlValue
+): SelectOption | SelectOption[] => {
+  // If we can't find any of the options in the data, we accept it, as this is a
+  // combo box and the user can enter anything they like.
+  if (multi) {
+    const matchingOptions: SelectOption[] = [];
+    for (const urlValuePart of urlValue) {
+      const existingOption = options.find(
+        (option) => option.value === urlValuePart
       );
+      if (existingOption) {
+        matchingOptions.push(existingOption);
+      } else {
+        matchingOptions.push({
+          label: urlValuePart,
+          value: urlValuePart,
+        } as SelectOption);
+      }
+    }
+    return matchingOptions;
+  } else {
+    const existingOption = options.find((option) => option.value === urlValue);
+    if (existingOption) {
+      return existingOption;
+    } else {
+      return {
+        label: urlValue,
+        value: urlValue,
+      } as SelectOption;
+    }
+  }
 };
 
-const SelectInput = ({
+const ComboInput = ({
   data,
   multi,
   name,
@@ -106,8 +132,12 @@ const SelectInput = ({
     // If this is first load, and we have a value from state, initialise it
     if (!initialisedFromState && stateValue) {
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-      const foundOptions = findOptions(options, multi, parsedUrlValue);
-      setValue(foundOptions || null);
+      const foundOptions = findOptionsForUrlValue(
+        options,
+        multi,
+        parsedUrlValue
+      );
+      setValue(foundOptions);
       setInitialisedFromState(true);
     } else if (!initialisedFromState && !stateValue && properties.placeholder) {
       setInitialisedFromState(true);
@@ -127,8 +157,12 @@ const SelectInput = ({
       });
     } else if (initialisedFromState && stateValue) {
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
-      const foundOptions = findOptions(options, multi, parsedUrlValue);
-      setValue(foundOptions || null);
+      const foundOptions = findOptionsForUrlValue(
+        options,
+        multi,
+        parsedUrlValue
+      );
+      setValue(foundOptions);
     } else if (initialisedFromState && !stateValue) {
       if (properties.placeholder) {
         setValue(null);
@@ -189,7 +223,7 @@ const SelectInput = ({
           {properties.label}
         </label>
       )}
-      <Select
+      <CreatableSelect
         aria-labelledby={`${name}.input`}
         className="basic-single"
         classNamePrefix="select"
@@ -201,6 +235,7 @@ const SelectInput = ({
           // @ts-ignore
           SingleValue: SingleValueWithTags,
         }}
+        formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
         menuPortalTarget={document.body}
         inputId={`${name}.input`}
         isDisabled={(!properties.options && !data) || dataMode === "snapshot"}
@@ -224,4 +259,4 @@ const SelectInput = ({
   );
 };
 
-export default SelectInput;
+export default ComboInput;
