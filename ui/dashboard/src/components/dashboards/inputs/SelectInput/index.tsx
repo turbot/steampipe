@@ -93,17 +93,6 @@ const SelectInput = ({
 
   // Bind the selected option to the reducer state
   useEffect(() => {
-    // console.log({
-    //   name,
-    //   status,
-    //   multi,
-    //   options,
-    //   initialisedFromState,
-    //   placeholder: properties.placeholder,
-    //   stateValue,
-    //   value,
-    // });
-    // console.log(name, status, options);
     // If we haven't got the data we need yet...
     if (
       // This property is only present in workspaces >=v0.16.x
@@ -113,10 +102,6 @@ const SelectInput = ({
     ) {
       return;
     }
-    //
-    // if (initialisedFromState) {
-    //   return;
-    // }
 
     // If this is first load, and we have a value from state, initialise it
     if (!initialisedFromState && stateValue) {
@@ -144,22 +129,11 @@ const SelectInput = ({
       const parsedUrlValue = multi ? stateValue.split(",") : stateValue;
       const foundOptions = findOptions(options, multi, parsedUrlValue);
       setValue(foundOptions || null);
-      // dispatch({
-      //   type: DashboardActions.SET_DASHBOARD_INPUT,
-      //   name,
-      //   value: getValueForState(multi, foundOptions),
-      //   recordInputsHistory: false,
-      // });
     } else if (initialisedFromState && !stateValue) {
       if (properties.placeholder) {
-        // console.log("Value cleared in state and no placeholder");
         setValue(null);
       } else {
-        // console.log(
-        //   "Value cleared in state and placeholder so choosing first item"
-        // );
         const newValue = multi ? [options[0]] : options[0];
-        // console.log(name, status, newValue);
         setValue(newValue);
         dispatch({
           type: DashboardActions.SET_DASHBOARD_INPUT,
@@ -179,95 +153,6 @@ const SelectInput = ({
     stateValue,
     status,
   ]);
-
-  // useEffect(() => {
-  //   if (!initialisedFromState) {
-  //     return;
-  //   }
-  //
-  //   // If we don't have a value in state and in the control, nothing to do
-  //   if (!stateValue && !value) {
-  //     // console.log("value changed - nothing to do");
-  //     return;
-  //   }
-  //
-  //   // const parsedStateValue = getValueFromState(multi, stateValue);
-  //   // const parsedOptionValue = multi
-  //   //   ? value
-  //   //     ? // @ts-ignore
-  //   //       value.map((v) => v.value)
-  //   //     : []
-  //   //   : // @ts-ignore
-  //   //     value.value;
-  //   // const sameValue = multi
-  //   //   ? JSON.stringify(parsedStateValue) === JSON.stringify(parsedOptionValue)
-  //   //   : parsedStateValue === parsedOptionValue;
-  //   //
-  //   // // If nothing has changed, don't dispatch changes
-  //   // if (sameValue) {
-  //   //   console.log("value changed - no change as same value", {
-  //   //     name,
-  //   //     multi,
-  //   //     stateValue,
-  //   //     value,
-  //   //     parsedStateValue,
-  //   //     parsedOptionValue,
-  //   //   });
-  //   //   return;
-  //   // }
-  //
-  //   // @ts-ignore
-  //   if (!value || value.length === 0) {
-  //     // console.log("value changed - deleting", {
-  //     //   initialisedFromState,
-  //     //   multi,
-  //     //   name,
-  //     //   stateValue,
-  //     //   // parsedStateValue,
-  //     //   // parsedOptionValue,
-  //     //   value,
-  //     // });
-  //     dispatch({
-  //       type: DashboardActions.DELETE_DASHBOARD_INPUT,
-  //       name,
-  //       recordInputsHistory: true,
-  //     });
-  //     if (properties.placeholder) {
-  //       // console.log("Value cleared in state and no placeholder");
-  //       setValue(null);
-  //     } else {
-  //       // console.log(
-  //       //   "Value cleared in state and placeholder so choosing first item"
-  //       // );
-  //       setValue(multi ? [options[0]] : options[0]);
-  //     }
-  //     return;
-  //   }
-  //
-  //   // console.log("value changed - setting", {
-  //   //   initialisedFromState,
-  //   //   multi,
-  //   //   name,
-  //   //   stateValue,
-  //   //   // parsedStateValue,
-  //   //   // parsedOptionValue,
-  //   //   value,
-  //   // });
-  //   dispatch({
-  //     type: DashboardActions.SET_DASHBOARD_INPUT,
-  //     name,
-  //     value: getValueForState(multi, value),
-  //     recordInputsHistory: true,
-  //   });
-  // }, [
-  //   dispatch,
-  //   initialisedFromState,
-  //   multi,
-  //   name,
-  //   properties.placeholder,
-  //   stateValue,
-  //   value,
-  // ]);
 
   const updateValue = (newValue) => {
     setValue(newValue);
