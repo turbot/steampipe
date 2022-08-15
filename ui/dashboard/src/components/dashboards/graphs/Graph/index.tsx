@@ -54,6 +54,7 @@ const buildGraphNodesAndEdges = (
     dagreGraph.setEdge(edge.from_id, edge.to_id);
   });
   dagre.layout(dagreGraph);
+  const innerGraph = dagreGraph.graph();
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   for (const node of nodesAndEdges.nodes) {
@@ -108,7 +109,7 @@ const buildGraphNodesAndEdges = (
     return node;
   });
 
-  return { nodes, edges };
+  return { nodes, edges, width: innerGraph.width, height: innerGraph.height };
 };
 
 const useGraphOptions = (
@@ -162,7 +163,15 @@ const useGraphOptions = (
     setEdges(nodesAndEdges.edges);
   }, [nodesAndEdges.edges]);
 
-  return { nodes, edges, setEdges, onNodesChange, onEdgesChange };
+  return {
+    nodes,
+    edges,
+    width: nodesAndEdges.width,
+    height: nodesAndEdges.height,
+    setEdges,
+    onNodesChange,
+    onEdgesChange,
+  };
 };
 
 const Graph = ({ props, theme, themeWrapperRef }) => {
@@ -192,7 +201,7 @@ const Graph = ({ props, theme, themeWrapperRef }) => {
       // @ts-ignore
       edgeTypes={edgeTypes}
       fitView
-      style={{ height: "400px" }}
+      style={{ height: Math.min(600, graphOptions.height) }}
       zoomOnScroll={false}
     >
       <Controls />
