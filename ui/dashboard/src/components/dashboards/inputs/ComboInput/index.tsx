@@ -65,7 +65,7 @@ const findOptionsForUrlValue = (
   }
 };
 
-const SelectInput = ({
+const ComboInput = ({
   data,
   multi,
   name,
@@ -259,4 +259,4 @@ const SelectInput = ({
   );
 };
 
-export default SelectInput;
+export default ComboInput;
