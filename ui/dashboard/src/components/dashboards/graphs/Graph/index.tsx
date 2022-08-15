@@ -12,148 +12,13 @@ import ReactFlow, {
   MarkerType,
   addEdge,
 } from "react-flow-renderer";
-import merge from "lodash/merge";
-import {
-  buildGraphDataInputs,
-  buildNodesAndEdges,
-  LeafNodeData,
-  NodesAndEdges,
-  toEChartsType,
-} from "../../common";
-import { formatChartTooltip } from "../../common/chart";
-import { GraphProperties, GraphProps, GraphType } from "../types";
+import { buildNodesAndEdges, LeafNodeData } from "../../common";
 import { getGraphComponent } from "..";
+import { GraphProperties, GraphProps } from "../types";
 import { registerComponent } from "../../index";
 import { Ref, useCallback, useEffect, useMemo, useState } from "react";
 import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
-
-const getCommonBaseOptions = () => ({
-  animation: false,
-  tooltip: {
-    appendToBody: true,
-    borderWidth: 0,
-    padding: 0,
-    trigger: "item",
-    triggerOn: "mousemove",
-  },
-});
-
-const getCommonBaseOptionsForGraphType = (type: GraphType = "graph") => {
-  switch (type) {
-    case "graph":
-      return {};
-    default:
-      return {};
-  }
-};
-
-const getSeriesForGraphType = (
-  type: GraphType = "graph",
-  data: LeafNodeData | undefined,
-  properties: GraphProperties | undefined,
-  nodesAndEdges: NodesAndEdges,
-  namedColors
-) => {
-  if (!data) {
-    return {};
-  }
-  const series: any[] = [];
-  const seriesLength = 1;
-  for (let seriesIndex = 0; seriesIndex < seriesLength; seriesIndex++) {
-    switch (type) {
-      case "graph": {
-        const { data: graphData, links } = buildGraphDataInputs(nodesAndEdges);
-        series.push({
-          type: toEChartsType(type),
-          layout: "force",
-          roam: true,
-          draggable: true,
-          label: {
-            show: true,
-            color: namedColors.foreground,
-            formatter: "{b}",
-            position: "bottom",
-          },
-          labelLayout: {
-            hideOverlap: true,
-          },
-          scaleLimit: {
-            min: 0.4,
-            max: 4,
-          },
-          edgeSymbol: ["none", "arrow"],
-          emphasis: {
-            focus: "adjacency",
-            blurScope: "coordinateSystem",
-          },
-          lineStyle: {
-            color: "source",
-            curveness: 0,
-          },
-          data: graphData,
-          links,
-          tooltip: {
-            formatter: (nodeData) => formatChartTooltip(nodeData),
-          },
-        });
-        break;
-      }
-    }
-  }
-
-  return { series };
-};
-
-const getOptionOverridesForGraphType = (
-  type: GraphType = "graph",
-  properties: GraphProperties | undefined
-) => {
-  if (!properties) {
-    return {};
-  }
-
-  return {};
-};
-
-const buildGraphOptions = (props: GraphProps, theme, themeWrapperRef) => {
-  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
-  // @ts-ignore
-  const style = window.getComputedStyle(themeWrapperRef);
-  const foreground = style.getPropertyValue("--color-foreground");
-  const foregroundLightest = style.getPropertyValue(
-    "--color-foreground-lightest"
-  );
-  const alert = style.getPropertyValue("--color-alert");
-  const info = style.getPropertyValue("--color-info");
-  const ok = style.getPropertyValue("--color-ok");
-  const namedColors = {
-    foreground,
-    foregroundLightest,
-    alert,
-    info,
-    ok,
-  };
-
-  const nodesAndEdges = buildNodesAndEdges(
-    props.data,
-    props.properties,
-    namedColors
-  );
-
-  return merge(
-    getCommonBaseOptions(),
-    getCommonBaseOptionsForGraphType(props.display_type),
-    getSeriesForGraphType(
-      props.display_type,
-      props.data,
-      props.properties,
-      nodesAndEdges,
-      namedColors
-    ),
-    getOptionOverridesForGraphType(props.display_type, props.properties)
-  );
-};
 
 const nodeWidth = 70;
 const nodeHeight = 70;
@@ -316,7 +181,6 @@ const Graph = ({ props, theme, themeWrapperRef }) => {
       ),
     [graphOptions.setEdges]
   );
-  // const {} = usePanel();
   return (
     <ReactFlow
       nodes={graphOptions.nodes}
@@ -329,6 +193,7 @@ const Graph = ({ props, theme, themeWrapperRef }) => {
       edgeTypes={edgeTypes}
       fitView
       style={{ height: "400px" }}
+      zoomOnScroll={false}
     >
       <Controls />
     </ReactFlow>
