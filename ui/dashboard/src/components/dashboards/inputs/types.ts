@@ -22,7 +22,7 @@ export type InputProps = BaseInputProps & {
 export type InputType =
   | "combo"
   | "hidden"
-  | "multicomo"
+  | "multicombo"
   | "multiselect"
   | "select"
   | "table"
