@@ -10,7 +10,7 @@ Steampipe reads live data from APIs into Postgres. Data sources include the majo
 
 With [Steampipe](https://steampipe.io) you can:
 
-- **Query** → Write SQL queries that report on -- and join across! -- clouds, business apps, code, logs, and more.
+- **Query** → Write SQL queries that report on (and join across!) clouds, business apps, code, logs, and more.
 
 - **Check** → Verify that your cloud resources comply with frameworks such as CIS, NIST, and HIPAA.
 
