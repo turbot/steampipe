@@ -3,7 +3,6 @@ import dagre from "dagre";
 import ErrorPanel from "../../Error";
 import FloatingEdge from "./FloatingEdge";
 import ReactFlow, {
-  addEdge,
   ControlButton,
   Controls,
   Edge,
@@ -27,9 +26,18 @@ import {
 } from "../../../../constants/icons";
 import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { TooltipsProvider, useTooltips } from "./Tooltip";
 
 const nodeWidth = 70;
 const nodeHeight = 70;
+
+const nodeTypes = {
+  asset: AssetNode,
+};
+
+const edgeTypes = {
+  floating: FloatingEdge,
+};
 
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
@@ -269,42 +277,14 @@ const CustomControls = ({ recalcLayout }) => {
 
 const Graph = ({ props, theme, themeWrapperRef }) => {
   const graphOptions = useGraphOptions(props, theme, themeWrapperRef);
-  const onConnect = useCallback(
-    (params) =>
-      graphOptions.setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            type: "floating",
-            markerEnd: { type: MarkerType.Arrow },
-          },
-          eds
-        )
-      ),
-    [graphOptions.setEdges]
-  );
-
-  const nodeTypes = useMemo(
-    () => ({
-      asset: AssetNode,
-    }),
-    []
-  );
-
-  const edgeTypes = useMemo(
-    () => ({
-      floating: FloatingEdge,
-    }),
-    []
-  );
-
+  const { closeTooltips } = useTooltips();
   return (
     <ReactFlow
       nodes={graphOptions.nodes}
       edges={graphOptions.edges}
-      onConnect={onConnect}
       onNodesChange={graphOptions.onNodesChange}
       onEdgesChange={graphOptions.onEdgesChange}
+      onPaneClick={() => closeTooltips()}
       nodeTypes={nodeTypes}
       // @ts-ignore
       edgeTypes={edgeTypes}
@@ -335,7 +315,9 @@ const GraphWrapper = (props: GraphProps) => {
   }
 
   return (
-    <Graph props={props} theme={theme} themeWrapperRef={themeWrapperRef} />
+    <TooltipsProvider>
+      <Graph props={props} theme={theme} themeWrapperRef={themeWrapperRef} />
+    </TooltipsProvider>
   );
 };
 
