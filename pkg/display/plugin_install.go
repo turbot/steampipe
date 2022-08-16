@@ -146,13 +146,11 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 			}
 			fmt.Println()
 			fmt.Printf(
-				"To update %s which %s already installed, please run %s\n",
-				utils.Pluralize("plugin", len(canBeUpdated)),
-				utils.Pluralize("is", len(canBeUpdated)),
-				constants.Bold(fmt.Sprintf(
-					"steampipe plugin update %s",
-					strings.Join(pluginList, " "),
-				)),
+				"To update %s %s: %s\nTo update all plugins: %s",
+				utils.Pluralize("this", len(pluginList)),
+				utils.Pluralize("plugin", len(pluginList)),
+				constants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(pluginList, " "))),
+				constants.Bold(fmt.Sprintln("steampipe plugin update --all")),
 			)
 		}
 	}

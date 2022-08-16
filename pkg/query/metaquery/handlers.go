@@ -291,7 +291,7 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 					return inspectTable(schema, tableOrConnection, input)
 				}
 			}
-			return fmt.Errorf("Could not find connection or table called %s", tableOrConnection)
+			return fmt.Errorf("Could not find connection or table called %s. Is the plugin installed? Is the connection configured?", tableOrConnection)
 		}
 
 		fmt.Printf(`
