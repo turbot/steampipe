@@ -73,12 +73,12 @@ where
 
 Steampipe [mods](https://hub.steampipe.io/mods) build on the query layer. Some run suites of controls that check for compliance with frameworks (e.g. CIS, NIST, GDPR). 
 
-(screencast)
+![readme-dns-best-practices](https://user-images.githubusercontent.com/46509/184996087-06b9dcaa-8833-4908-8d3d-58d76ac81e0d.gif)
 
 Others visualize query results as charts, tables, and [other widgets](https://steampipe.io/docs/reference/mod-resources/overview).
 
-(screencast)
-
+![readme-aws-s3-bucket-dashboard](https://user-images.githubusercontent.com/46509/184996162-bf7e3c23-2a5e-4118-a9ba-ba90d3d7ea2c.gif)
+ 
 ### Get started with benchmarks and dashboards
 
 The [Net Insights](https://hub.steampipe.io/mods/turbot/net_insights) mod works with the Net plugin shown above. To run it, first clone its repo and change to that directory.
