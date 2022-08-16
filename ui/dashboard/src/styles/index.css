@@ -254,10 +254,28 @@
   stroke: #aaa !important;
 }
 
+/*.react-flow__connection {*/
+/*  position: relative;*/
+/*}*/
+
+/*.react-flow__edge-textwrapper {*/
+/*  max-width: 20px;*/
+/*  overflow: hidden;*/
+/*  text-overflow: ellipsis;*/
+/*  white-space: nowrap;*/
+/*}*/
+
+.react-flow__edge-textbg {
+  fill: var(--color-dashboard-panel);
+}
+
 .react-flow__edge-text {
   font-size: 7px !important;
   font-style: italic;
-  fill: #999;
+  fill: var(--color-foreground-light);
+  /*overflow: hidden;*/
+  /*text-overflow: ellipsis;*/
+  /*white-space: nowrap;*/
 }
 
 @keyframes barberpole {
