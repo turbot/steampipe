@@ -25,11 +25,11 @@ import {
   ZoomOutIcon,
 } from "../../../../constants/icons";
 import { Theme } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
 import { TooltipsProvider, useTooltips } from "./Tooltip";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
-const nodeWidth = 70;
-const nodeHeight = 70;
+const nodeWidth = 100;
+const nodeHeight = 100;
 
 const nodeTypes = {
   asset: AssetNode,
@@ -53,7 +53,11 @@ const buildGraphNodesAndEdges = (
   const nodesAndEdges = buildNodesAndEdges(data, properties, namedColors);
   const direction = properties?.direction || "TB";
   const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setGraph({ rankdir: direction });
+  dagreGraph.setGraph({
+    rankdir: direction,
+    nodesep: direction === "LR" || direction === "RL" ? 15 : 110,
+    ranksep: direction === "LR" || direction === "RL" ? 200 : 60,
+  });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   nodesAndEdges.nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
@@ -67,6 +71,7 @@ const buildGraphNodesAndEdges = (
   const edges: Edge[] = [];
   for (const node of nodesAndEdges.nodes) {
     const matchingNode = dagreGraph.node(node.id);
+    // console.log({ node, dagreNode: matchingNode });
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
       : null;
@@ -91,11 +96,16 @@ const buildGraphNodesAndEdges = (
       label: edge.title,
       labelBgPadding: [11, 0],
       markerEnd: {
-        type: MarkerType.ArrowClosed,
+        color: namedColors.blackScale3,
+        width: 20,
+        height: 20,
+        strokeWidth: 2,
+        type: MarkerType.Arrow,
       },
       data: {
         row_data: edge.row_data,
         label: edge.title,
+        namedColors,
       },
     });
   }
@@ -152,14 +162,18 @@ const useGraphOptions = (
     : null;
   let namedColors;
   if (style) {
-    const foreground = style.getPropertyValue("--color-foreground");
-    const foregroundLightest = style.getPropertyValue(
-      "--color-foreground-lightest"
-    );
-    const alert = style.getPropertyValue("--color-alert");
-    const info = style.getPropertyValue("--color-info");
-    const ok = style.getPropertyValue("--color-ok");
+    const blackScale3 = style.getPropertyValue("--color-black-scale-3").trim();
+    const blackScale4 = style.getPropertyValue("--color-black-scale-4").trim();
+    const foreground = style.getPropertyValue("--color-foreground").trim();
+    const foregroundLightest = style
+      .getPropertyValue("--color-foreground-lightest")
+      .trim();
+    const alert = style.getPropertyValue("--color-alert").trim();
+    const info = style.getPropertyValue("--color-info").trim();
+    const ok = style.getPropertyValue("--color-ok").trim();
     namedColors = {
+      blackScale3,
+      blackScale4,
       foreground,
       foregroundLightest,
       alert,

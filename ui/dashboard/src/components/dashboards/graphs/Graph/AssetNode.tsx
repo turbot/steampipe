@@ -45,7 +45,7 @@ const AssetNode = ({
   }, [href, renderInterpolatedTemplates, row_data, setRenderedHref]);
 
   const node = (
-    <div className="py-2 px-2 rounded-full w-[35px] h-[35px] text-sm leading-[35px] my-0 mx-auto border border-divide cursor-grab">
+    <div className="p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border border-black-scale-3 cursor-grab">
       {icon && <img className="max-w-full" src={icon} />}
     </div>
   );
@@ -68,7 +68,7 @@ const AssetNode = ({
           </Tooltip>
         )}
         {(!row_data || !row_data.properties) && node}
-        <div className="text-center text-[7px] mt-1 bg-dashboard-panel text-foreground min-w-[35px]">
+        <div className="text-center text-sm mt-1 bg-dashboard-panel text-foreground min-w-[35px]">
           {renderedHref && (
             <ExternalLink to={renderedHref}>{label}</ExternalLink>
           )}

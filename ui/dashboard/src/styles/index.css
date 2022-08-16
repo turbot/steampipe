@@ -249,10 +249,14 @@
   display: none;
 }
 
-.react-flow__edge-path {
-  stroke-width: 0.5 !important;
-  stroke: #aaa !important;
-}
+/*.react-flow__edge-path {*/
+/*  !*stroke-width: 1 !important;*!*/
+/*  !*stroke: #aaa !important;*!*/
+/*}*/
+
+/*.react-flow__arrowhead {*/
+/*  stroke: var(--color-foreground) !important;*/
+/*}*/
 
 /*.react-flow__connection {*/
 /*  position: relative;*/
@@ -270,7 +274,7 @@
 }
 
 .react-flow__edge-text {
-  font-size: 7px !important;
+  /*font-size: 7px !important;*/
   font-style: italic;
   fill: var(--color-foreground-light);
   /*overflow: hidden;*/
