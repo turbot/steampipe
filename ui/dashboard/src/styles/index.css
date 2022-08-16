@@ -83,7 +83,7 @@
   --color-error: red;
   --color-warning: #f9a825;
   --color-dashboard: #1e2329;
-  --color-dashboard-panel: #2d333b; /*var(--color-black-scale-1);*/
+  --color-dashboard-panel: #262B32; /* #2d333b;*/ /*var(--color-black-scale-1);*/
   --color-foreground: #fff;
   --color-foreground-light: #ccc;
   --color-foreground-lighter: #888;
