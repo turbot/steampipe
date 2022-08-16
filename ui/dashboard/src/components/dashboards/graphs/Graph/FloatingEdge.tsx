@@ -44,7 +44,7 @@ const FloatingEdge = ({
   });
 
   const edge = (
-    <g className="react-flow__connection">
+    <g className="relative">
       <path
         id={id}
         // className="stroke-[0.5] stroke-[#aaa]"
@@ -53,18 +53,31 @@ const FloatingEdge = ({
         markerEnd={markerEnd}
         style={style}
       />
-      <EdgeText
-        // className="italic text-[5px] fill-foreground-light"
-        // className="react-flow__edge-path"
-        x={mx}
-        y={my}
-        label={label}
-        labelStyle={labelStyle}
-        labelShowBg={labelShowBg}
-        labelBgStyle={labelBgStyle}
-        labelBgPadding={labelBgPadding}
-        labelBgBorderRadius={labelBgBorderRadius}
-      />
+      <foreignObject
+        className="flex items-center text-xs bg-dashboard-panel text-foreground-light italic z-50"
+        height="16"
+        width="60"
+        x={mx - 30}
+        y={my - 8}
+        requiredExtensions="http://www.w3.org/1999/xhtml"
+      >
+        <span className="block items-center truncate" title={label}>
+          {label}
+        </span>
+      </foreignObject>
+      {/*<EdgeText*/}
+      {/*  // className="italic text-[5px] fill-foreground-light"*/}
+      {/*  // className="react-flow__edge-text"*/}
+      {/*  // className="text-alert"*/}
+      {/*  x={mx}*/}
+      {/*  y={my}*/}
+      {/*  label={label}*/}
+      {/*  labelStyle={labelStyle}*/}
+      {/*  labelShowBg={labelShowBg}*/}
+      {/*  labelBgStyle={labelBgStyle}*/}
+      {/*  labelBgPadding={labelBgPadding}*/}
+      {/*  labelBgBorderRadius={labelBgBorderRadius}*/}
+      {/*/>*/}
     </g>
   );
 
