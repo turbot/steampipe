@@ -1,9 +1,11 @@
 import Properties from "./Properties";
 import Tooltip from "./Tooltip";
+import { classNames } from "../../../../utils/styles";
 import { Handle } from "react-flow-renderer";
+import { LeafNodeDataRow } from "../../common";
 import { memo, useEffect, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
-import { LeafNodeDataRow } from "../../common";
+import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface AssetNodeProps {
@@ -18,6 +20,7 @@ interface AssetNodeProps {
 const AssetNode = ({
   data: { href, icon, row_data, label },
 }: AssetNodeProps) => {
+  const { theme } = useTheme();
   const {
     components: { ExternalLink },
   } = useDashboard();
@@ -45,8 +48,22 @@ const AssetNode = ({
   }, [href, renderInterpolatedTemplates, row_data, setRenderedHref]);
 
   const node = (
-    <div className="p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border border-black-scale-3 cursor-grab">
-      {icon && <img className="max-w-full" src={icon} />}
+    <div
+      className={classNames(
+        "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border border-black-scale-3 cursor-grab"
+      )}
+    >
+      {icon && (
+        <img
+          className={classNames(
+            "max-w-full",
+            theme.name === ThemeNames.STEAMPIPE_DARK
+              ? "brightness-[1.75]"
+              : null
+          )}
+          src={icon}
+        />
+      )}
     </div>
   );
 
