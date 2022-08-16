@@ -3,6 +3,9 @@ import {
   ChevronDownIcon as ChevronDownIconOutline,
   ChevronUpIcon as ChevronUpIconOutline,
   ClipboardListIcon as ClipboardListIconOutline,
+  MinusIcon as MinusIconOutline,
+  PlusIcon as PlusIconOutline,
+  RewindIcon as RewindIconOutline,
   SearchIcon as SearchIconOutline,
   SaveIcon as SaveIconOutline,
   XIcon as XIconOutline,
@@ -41,6 +44,11 @@ export const InfoIcon = InformationCircleIconSolid;
 export const OKIcon = CheckCircleIconSolid;
 export const SkipIcon = ArrowCircleRightIconSolid;
 export const UnknownIcon = QuestionMarkCircleIconSolid;
+
+// Graph
+export const ZoomInIcon = PlusIconOutline;
+export const ZoomOutIcon = MinusIconOutline;
+export const ResetLayoutIcon = RewindIconOutline;
 
 // Table
 export const SortAscendingIcon = ChevronUpIconSolid;

@@ -3,33 +3,33 @@ import dagre from "dagre";
 import ErrorPanel from "../../Error";
 import FloatingEdge from "./FloatingEdge";
 import ReactFlow, {
+  addEdge,
+  ControlButton,
   Controls,
   Edge,
+  MarkerType,
   Node,
   Position,
   useNodesState,
   useEdgesState,
-  MarkerType,
-  addEdge,
+  useReactFlow,
 } from "react-flow-renderer";
 import { buildNodesAndEdges, LeafNodeData } from "../../common";
 import { getGraphComponent } from "..";
 import { GraphProperties, GraphProps } from "../types";
-import { registerComponent } from "../../index";
 import { Ref, useCallback, useEffect, useMemo, useState } from "react";
+import { registerComponent } from "../../index";
+import {
+  ResetLayoutIcon,
+  ZoomIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from "../../../../constants/icons";
 import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 const nodeWidth = 70;
 const nodeHeight = 70;
-
-const nodeTypes = {
-  asset: AssetNode,
-};
-
-const edgeTypes = {
-  floating: FloatingEdge,
-};
 
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
@@ -112,6 +112,26 @@ const buildGraphNodesAndEdges = (
   return { nodes, edges, width: innerGraph.width, height: innerGraph.height };
 };
 
+const useGraphNodesAndEdges = (
+  data: LeafNodeData | undefined,
+  properties: GraphProperties | undefined,
+  namedColors
+) => {
+  const [rand, setRand] = useState<number>(0);
+  const nodesAndEdges = useMemo(
+    () => buildGraphNodesAndEdges(data, properties, namedColors),
+    [data, properties, rand]
+  );
+  const recalc = useCallback(
+    () => setRand(Math.random() * Math.random()),
+    [setRand]
+  );
+  return {
+    nodesAndEdges,
+    recalc,
+  };
+};
+
 const useGraphOptions = (
   props: GraphProps,
   theme: Theme,
@@ -142,9 +162,10 @@ const useGraphOptions = (
     namedColors = {};
   }
 
-  const nodesAndEdges = useMemo(
-    () => buildGraphNodesAndEdges(props.data, props.properties, namedColors),
-    [props.data, props.properties]
+  const { nodesAndEdges, recalc } = useGraphNodesAndEdges(
+    props.data,
+    props.properties,
+    namedColors
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
@@ -166,12 +187,84 @@ const useGraphOptions = (
   return {
     nodes,
     edges,
+    recalc,
     width: nodesAndEdges.width,
     height: nodesAndEdges.height,
     setEdges,
     onNodesChange,
     onEdgesChange,
   };
+};
+
+const ZoomInControl = () => {
+  const { zoomIn } = useReactFlow();
+  return (
+    <ControlButton
+      className="bg-dashboard text-foreground border-0"
+      onClick={() => zoomIn()}
+      title="Zoom In"
+    >
+      <ZoomInIcon className="w-5 h-5" />
+    </ControlButton>
+  );
+};
+
+const ZoomOutControl = () => {
+  const { zoomOut } = useReactFlow();
+  return (
+    <ControlButton
+      className="bg-dashboard text-foreground border-0"
+      onClick={() => zoomOut()}
+      title="Zoom Out"
+    >
+      <ZoomOutIcon className="w-5 h-5" />
+    </ControlButton>
+  );
+};
+
+const ResetZoomControl = () => {
+  const { fitView } = useReactFlow();
+  return (
+    <ControlButton
+      className="bg-dashboard text-foreground border-0"
+      onClick={() => fitView()}
+      title="Fit View"
+    >
+      <ZoomIcon className="w-5 h-5" />
+    </ControlButton>
+  );
+};
+
+const RecalcLayoutControl = ({ recalc }) => (
+  <ControlButton
+    className="bg-dashboard text-foreground border-0"
+    onClick={() => recalc()}
+    title="Reset Layout"
+  >
+    <ResetLayoutIcon className="w-5 h-5" />
+  </ControlButton>
+);
+
+const CustomControls = ({ recalcLayout }) => {
+  const { fitView } = useReactFlow();
+  return (
+    <Controls
+      className="flex flex-col space-y-px border-0 shadow-0"
+      showFitView={false}
+      showInteractive={false}
+      showZoom={false}
+    >
+      <ZoomInControl />
+      <ZoomOutControl />
+      <ResetZoomControl />
+      <RecalcLayoutControl
+        recalc={() => {
+          recalcLayout();
+          fitView();
+        }}
+      />
+    </Controls>
+  );
 };
 
 const Graph = ({ props, theme, themeWrapperRef }) => {
@@ -190,6 +283,21 @@ const Graph = ({ props, theme, themeWrapperRef }) => {
       ),
     [graphOptions.setEdges]
   );
+
+  const nodeTypes = useMemo(
+    () => ({
+      asset: AssetNode,
+    }),
+    []
+  );
+
+  const edgeTypes = useMemo(
+    () => ({
+      floating: FloatingEdge,
+    }),
+    []
+  );
+
   return (
     <ReactFlow
       nodes={graphOptions.nodes}
@@ -204,7 +312,7 @@ const Graph = ({ props, theme, themeWrapperRef }) => {
       style={{ height: Math.min(600, graphOptions.height) }}
       zoomOnScroll={false}
     >
-      <Controls />
+      <CustomControls recalcLayout={() => graphOptions.recalc()} />
     </ReactFlow>
   );
 };
@@ -229,13 +337,6 @@ const GraphWrapper = (props: GraphProps) => {
   return (
     <Graph props={props} theme={theme} themeWrapperRef={themeWrapperRef} />
   );
-
-  // return (
-  //   <Chart
-  //     options={buildGraphOptions(props, theme, wrapperRef)}
-  //     type={props.display_type || "graph"}
-  //   />
-  // );
 };
 
 const renderGraph = (definition: GraphProps) => {

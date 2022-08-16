@@ -232,6 +232,19 @@
   display: none;
 }
 
+/*.react-flow__controls {*/
+/*  display: flex;*/
+/*  flex-direction: column;*/
+/*  border: none;*/
+/*  box-shadow: none;*/
+/*}*/
+
+/*.react-flow__controls-button {*/
+/*  background-color: var(--color-dashboard);*/
+/*  border: none;*/
+/*  color: var(--color-foreground);*/
+/*}*/
+
 .react-flow__handle {
   display: none;
 }
