@@ -73,11 +73,15 @@ where
 
 Steampipe [mods](https://hub.steampipe.io/mods) build on the query layer. Some run suites of controls that check for compliance with frameworks (e.g. CIS, NIST, GDPR). 
 
+<br/>
 ![readme-dns-best-practices](https://user-images.githubusercontent.com/46509/184996087-06b9dcaa-8833-4908-8d3d-58d76ac81e0d.gif)
+<br/>
 
 Others visualize query results as charts, tables, and [other widgets](https://steampipe.io/docs/reference/mod-resources/overview).
 
+<br/>
 ![readme-aws-s3-bucket-dashboard](https://user-images.githubusercontent.com/46509/184996162-bf7e3c23-2a5e-4118-a9ba-ba90d3d7ea2c.gif)
+<br/>
  
 ### Get started with benchmarks and dashboards
 
