@@ -9,11 +9,11 @@ Steampipe reads live data from APIs into Postgres. Data sources include the majo
 
 With [Steampipe](https://steampipe.io) you can:
 
-- **Query** → Write SQL queries that report on -- and join across -- clouds, business apps, code, logs, and more
+- **Query** → Write SQL queries that report on -- and join across! -- clouds, business apps, code, logs, and more.
 
-- **Check** → Verify that your cloud resources comply with frameworks such as CIS, NIST, and HIPAA
+- **Check** → Verify that your cloud resources comply with frameworks such as CIS, NIST, and HIPAA.
 
-- **View** → Explore query results on dashboards 
+- **View** → Explore query results on dashboards.
 
 ## Steampipe CLI: The console for API queries
 
@@ -130,25 +130,25 @@ Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`
 
  **Benchmarks**
 
-- Use [search paths](https://steampipe.io/docs/check/overview#more-examples) to specify connections
+- Use [search paths](https://steampipe.io/docs/check/overview#more-examples) to specify connections.
 
 - Review `steampipe check` [commands](https://steampipe.io/docs/reference/cli/check) to filter on control tags or set  variables.
 
-- Output results in a variety of [formats](https://steampipe.io/docs/reference/cli/check#output-formats)
+- Output results in a variety of [formats](https://steampipe.io/docs/reference/cli/check#output-formats).
 
-- Write your own [custom ouput template](https://steampipe.io/docs/develop/writing-control-output-templates)
+- Write your own [custom ouput template](https://steampipe.io/docs/develop/writing-control-output-templates).
 
-- Build your own [custom benchmark](https://steampipe.io/docs/mods/overview)
+- Build your own [custom benchmark](https://steampipe.io/docs/mods/overview).
 
 **Dashboards**
 
-- Reveal the [HCL and SQL source code](https://steampipe.io/docs/dashboard/panel) for dashboard panels, and download the data
+- Reveal the [HCL and SQL source code](https://steampipe.io/docs/dashboard/panel) for dashboard panels, and download the data.
 
-- Review [dashboard commands](https://steampipe.io/docs/reference/cli/dashboard) to search paths, dashboard ports, and variables
+- Review [dashboard commands](https://steampipe.io/docs/reference/cli/dashboard) to search paths, dashboard ports, and variables.
 
-- Explore [dashboard widgets](https://steampipe.io/docs/reference/mod-resources/overview#dashboards)
+- Explore [dashboard widgets](https://steampipe.io/docs/reference/mod-resources/overview#dashboards).
 
-- Build your own [custom dashboard](https://steampipe.io/docs/mods/writing-dashboards)
+- Build your own [custom dashboard](https://steampipe.io/docs/mods/writing-dashboards).
  
 ## Community
 
