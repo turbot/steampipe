@@ -1,9 +1,10 @@
 <img width="524px" src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg" />
 
 <img src="https://img.shields.io/badge/api_plugins-83-green"> &nbsp; 
+<img src="https://img.shields.io/badge/dashboards-153-green"> 
 <img src="https://img.shields.io/badge/compliance_frameworks-21-green"> &nbsp;
 <img src="https://img.shields.io/badge/controls-12,257-green"> &nbsp;
-<img src="https://img.shields.io/badge/dashboards-153-green"> 
+
 
 Steampipe reads live data from APIs into Postgres. Data sources include the major clouds (AWS, Azure, GCP), security services and tools (PAN-OS, Trivy), business apps (Google Workspace, Salesforce, Slack), infrastructure definitions (CloudFormation, Terraform), and more. 
 
@@ -79,7 +80,7 @@ Steampipe [mods](https://hub.steampipe.io/mods) build on the query layer. Some r
 
 <br/>
 
-Others visualize query results as charts, tables, and [other widgets](https://steampipe.io/docs/reference/mod-resources/overview).
+Others visualize query results using charts, tables, and [other widgets](https://steampipe.io/docs/reference/mod-resources/overview).
 
 <br/>
 
