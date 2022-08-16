@@ -1,39 +1,50 @@
 <img width="524px" src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg" />
 
-[![plugins](https://img.shields.io/badge/plugins-83-green)](https://hub.steampipe.io/plugins) &nbsp; [![mods](https://img.shields.io/badge/controls-3000-green)](https://hub.steampipe.io/mods) &nbsp; [![dashboards](https://img.shields.io/badge/dashboards-744-green)](https://hub.steampipe.io/mods) &nbsp; [![slack](https://img.shields.io/badge/slack-800-E01563)](https://steampipe.io/community/join) &nbsp; [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-gold)](https://turbot.com)
+<img src="https://img.shields.io/badge/api_plugins-83-green"> &nbsp; 
+<img src="https://img.shields.io/badge/compliance_frameworks-21-green"> &nbsp;
+<img src="https://img.shields.io/badge/controls-12,257-green"> &nbsp;
+<img src="https://img.shields.io/badge/dashboards-153-green"> 
 
-Steampipe from [Turbot](https://turbot.com) exposes APIs and services as a high-performance relational database, giving you the ability to write SQL-based queries to explore dynamic data through [plugins](https://hub.steampipe.io/plugins). [Mods](https://hub.steampipe.io/plugins) extend Steampipe's capabilities with dashboards, reports, and controls built with simple HCL + SQL.
+Steampipe reads live data from APIs into Postgres. Data sources include the major clouds (AWS, Azure, GCP), security services and tools (PAN-OS, Trivy), business apps (Google Workspace, Salesforce, Slack), infrastructure definitions (CloudFormation, Terraform), and more. 
 
 With [Steampipe](https://steampipe.io) you can:
 
-- **Query**, join & report on your cloud, SaaS, containers, code, logs & more in a common SQL interface
-- **Visualize** insights of your resource configurations with dashboards
-- **Check** for compliance with security benchmarks such as CIS, NIST, HIPAA, and with DevSecOps best practices
+- **Query** → Write SQL queries that report on -- and join across -- clouds, business apps, code, logs, and more
 
-## Steampipe CLI - plugins & SQL
+- **Check** → Verify that your cloud resources comply with frameworks such as CIS, NIST, and HIPAA
 
-Steampipe provides an [interactive query shell](https://steampipe.io/docs/query/query-shell) that provides features like auto-complete, syntax highlighting, and command history to assist you in writing queries.
+- **View** → Explore query results on dashboards 
 
-<img width="524" src="https://steampipe.io/images/steampipe-sql-demo.gif" />
+## Steampipe CLI: The console for API queries
 
-**To get started:**
+Steampipe provides a growing suite of [plugins](https://hub.steampipe.io) that map APIs to Postgres tables. The [interactive query shell](https://steampipe.io/docs/query/query-shell) is one way you can query those tables. 
 
-**[Install Steampipe](https://steampipe.io/downloads) in your terminal:** *(example on Linux)*
+<br/>
+
+<img marginTop="200" width="524" src="https://steampipe.io/images/steampipe-sql-demo.gif" />
+
+<br/>
+
+You can also use psql, pgcli, Metabase, Tableau, or any client can connect to Postgres.
+
+### Get started with the CLI
+
+[Install](https://steampipe.io/downloads) Steampipe.
 ```
 sudo /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh)"
 ```
 
-**Add your first [plugins](https://hub.steampipe.io/plugins):** *(example to install the Net plugin)*
+Add your first [plugin](https://hub.steampipe.io/plugins).
 ```
 steampipe plugin install net
 ```
 
-**Open the CLI, run `steampipe query` with no arguments:**
+Run `steampipe query` to launch the interactive shell.
 ```
 steampipe query
 ```
 
-**Run your first query!**
+Run your first query!
 ```
 select
   *
@@ -43,81 +54,98 @@ where
   domain = 'google.com';
 ```
 
-What's next? Install more [plugins](https://hub.steampipe.io/plugins), test additional queries, try out [Mods](https://hub.steampipe.io/mods) (more info below).
+### Learn more about the CLI
 
-<details>
-  <summary><b>More information about Steampipe CLI</b></summary>
- 
-- It's just SQL -- [refresh on SQL basics](https://steampipe.io/docs/sql/steampipe-sql)
-- You can also run queries in [non-interactive mode](https://steampipe.io/docs/query/overview#non-interactive-batch-query-mode) in your terminal e.g. `steampipe query "select * from aws_account;" `
-- Learn more about [Steampipe CLI commands](https://steampipe.io/docs/reference/cli/overview), [meta-commands](https://steampipe.io/docs/reference/dot-commands/overview) for caching & more, setting [environment variables](https://steampipe.io/docs/reference/env-vars/overview), and other [configs](https://steampipe.io/docs/reference/config-files/overview).
-- Run [multiple SQL queries](https://steampipe.io/docs/query/batch-query) from `.sql` files
-- Steampipe by default queries APIs live, however you can enable [service mode](https://steampipe.io/docs/managing/service) for a Postgres endpoint to connect 3rd party tools.
-- In service mode or through [Steampipe Cloud](https://cloud.steampipe.io) you can [connect to Steampipe](https://steampipe.io/docs/cloud/integrations/overview) with any SQL IDE or BI tool
-- Get familiar with your [plugin connection configurations](https://steampipe.io/docs/managing/connections) -- learn configure multiple connections and setup aggegators
-- Tip and tricks for [managing multiple connections & search_paths](https://steampipe.io/docs/guides/search-path) 
-</details>
+- It's [just SQL](https://steampipe.io/docs/sql/steampipe-sql)!
+
+- You can run queries [on the command line](https://steampipe.io/docs/query/overview#non-interactive-batch-query-mode) and include them in scripts.
+
+- Other [commands](https://steampipe.io/docs/reference/cli/overview) run benchmarks, launch Steampipe as a service, and start the dashboard server.
+
+- [meta-commands](https://steampipe.io/docs/reference/dot-commands/overview) control caching, [environment variables](https://steampipe.io/docs/reference/env-vars/overview), the [search path](https://steampipe.io/docs/guides/search-path), and more.
+
+- Queries can run in [batch mode](https://steampipe.io/docs/query/batch-query).
+
+- You can bundle connections (e.g. for many AWS accounts) using an [aggregator](https://steampipe.io/docs/managing/connections#using-aggregators).
+
   
-## Steampipe Mods - benchmarks & dashboards
+## Steampipe mods: Benchmarks and dashboards
 
-While Steampipe plugins provide an easy way to query your resources, Steampipe [mods](https://hub.steampipe.io/mods) are collections of named queries, cofified controls, and dashboards that organize and display key pieces of information.
+Steampipe [mods](https://hub.steampipe.io/mods) build on the query layer. Some run suites of controls that check for compliance with frameworks (e.g. CIS, NIST, GDPR). 
 
 (screencast)
 
-<img width="524" src="https://github.com/turbot/steampipe-mod-net-insights/blob/main/docs/images/net_dns_best_practices_dashboard.png" />
+Others visualize query results as charts, tables, and [other widgets](https://steampipe.io/docs/reference/mod-resources/overview).
 
-**To get started:**
+(screencast)
 
-**Download a [Mod](https://hub.steampipe.io/mods) and view its dashboards:** *([Net plugin](https://hub.steampipe.io/mods/turbot/net_insights) example)*
-```
-git clone https://github.com/turbot/steampipe-mod-net-insights.git
-```
+### Get started with benchmarks and dashboards
 
-**Change to that directory and run `steampipe dashboard`:**
+The [Net Insights](https://hub.steampipe.io/mods/turbot/net_insights) mod works with the Net plugin shown above. To run it, first clone its repo and change to that directory.
+
 ```
+git clone https://github.com/turbot/steampipe-mod-net-insights
 cd steampipe-mod-net-insights
-steampipe dashboard
 ```
 
-**View your first Dashboard:**
+### Run benchmarks in the CLI
 
-Steampipe will load the embedded web server on port 9194 and open `http://localhost:9194` in your browser. 
-
-The home page lists the available dashboards, and is searchable by title or tags. Click the `DNS Best Practices` to view your first dashboard. 
-
-*Note that the default domains checked are `microsoft.com` and `github.com`. To check different domains, [configure the variables](https://hub.steampipe.io/mods/turbot/net_insights#configuration).*
-
-**Run individual controls from your terminal:**
-
-Instead of running benchmarks in a dashboard, you can also run them within your terminal with the `steampipe check` command:
-
-Run all benchmarks:
+All the benchmarks:
 
 ```sh
 steampipe check all
 ```
 
-Run a single benchmark:
+A single benchmark:
 
 ```sh
 steampipe check benchmark.dns_best_practices
 ```
 
-Run a specific control:
+A single control:
 
 ```sh
 steampipe check control.dns_ns_name_valid
 ```
 
-Different output formats are also available, for more information please see
-[Output Formats](https://steampipe.io/docs/reference/cli/check#output-formats).
+### Run benchmarks as dashboards
 
-<details>
-  <summary><b>More information about Steampipe Mods</b></summary>
+Launch the dashboard server: `steampipe dashboard`
 
+Open `http://localhost:9194` in your browser. The home page lists available dashboards. Click `DNS Best Practices` to view that dashboard.
 
-</details>
+Note that the default domains are `microsoft.com` and `github.com`. You can [change those defaults](https://hub.steampipe.io/mods/turbot/net_insights#configuration) to check other domains.
 
+### Explore AWS dashboards
+
+The [AWS Insights](https://hub.steampipe.io/mods/turbot/aws_insights) provides dozens of dashboards that exercise the full set of widgets. To explore these dashboards, first install the [AWS plugin](https://hub.steampipe.io/plugins/turbot/aws) and [authenticate](https://hub.steampipe.io/plugins/turbot/aws#configuration).
+
+Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`, and open `localhost:9194`.
+
+### Learn more about benchmarks and dashboards
+
+ **Benchmarks**
+
+- Use [search paths](https://steampipe.io/docs/check/overview#more-examples) to specify connections
+
+- Review `steampipe check` [commands](https://steampipe.io/docs/reference/cli/check) to filter on control tags or set  variables.
+
+- Output results in a variety of [formats](https://steampipe.io/docs/reference/cli/check#output-formats)
+
+- Write your own [custom ouput template](https://steampipe.io/docs/develop/writing-control-output-templates)
+
+- Build your own [custom benchmark](https://steampipe.io/docs/mods/overview)
+
+**Dashboards**
+
+- Reveal the [HCL and SQL source code](https://steampipe.io/docs/dashboard/panel) for dashboard panels, and download the data
+
+- Review [dashboard commands](https://steampipe.io/docs/reference/cli/dashboard) to search paths, dashboard ports, and variables
+
+- Explore [dashboard widgets](https://steampipe.io/docs/reference/mod-resources/overview#dashboards)
+
+- Build your own [custom dashboard](https://steampipe.io/docs/mods/writing-dashboards)
+ 
 ## Community
 
 We thrive on feedback and community involvement!
