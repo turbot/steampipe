@@ -20,7 +20,7 @@ export type GraphCategories = {
 
 export type GraphProperties = {
   categories?: GraphCategories;
-  direction: "LR" | "TB";
+  direction: "LR" | "RL" | "TB" | "BT";
 };
 
 export type GraphProps = BaseChartProps & {

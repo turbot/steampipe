@@ -1,6 +1,6 @@
 import { Position } from "react-flow-renderer";
 
-export const CIRCLE_SIZE = 35;
+export const CIRCLE_SIZE = 50;
 
 // this helper function returns the intersection point
 // of the line between the center of the intersectionNode and the target node
@@ -20,7 +20,7 @@ function getNodeIntersection(intersectionNode, targetNode) {
   const y1 = targetPosition.y + h;
 
   // Algorithm from https://stackoverflow.com/a/18009621.1,
-  const padding = 3;
+  const padding = 5;
   const r = CIRCLE_SIZE / 2 + padding;
   const phi = Math.atan2(y1 - y2, x1 - x2);
   const x = x2 + r * Math.cos(phi);
@@ -185,7 +185,7 @@ export function circleGetBezierPath({
   targetX,
   targetY,
   targetPosition = Position.Top,
-  curvature = 0.1,
+  curvature = 0,
 }) {
   const [sourceControlX, sourceControlY] = circleGetControlWithCurvature({
     pos: sourcePosition,
