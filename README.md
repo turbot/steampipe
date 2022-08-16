@@ -158,9 +158,9 @@ Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`
 
 We thrive on feedback and community involvement!
 
-**Have a question?** → Join our [Slack community](https://steampipe.io/community/join) or open a [GitHub issue](https://github.com/turbot/steampipe/issues/new/choose)
+**Have a question?** → Join our [Slack community](https://steampipe.io/community/join) or open a [GitHub issue](https://github.com/turbot/steampipe/issues/new/choose).
 
-**Want to get involved?** → Learn how to [contribute](https://github.com/turbot/steampipe/blob/main/CONTRIBUTING.md)
+**Want to get involved?** → Learn how to [contribute](https://github.com/turbot/steampipe/blob/main/CONTRIBUTING.md).
 
 **Want to work with the team?** → We are [hiring](https://turbot.com/careers)!
 
