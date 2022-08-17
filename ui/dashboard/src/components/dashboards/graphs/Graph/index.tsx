@@ -133,12 +133,13 @@ const buildGraphNodesAndEdges = (
 const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
-  namedColors
+  namedColors: {},
+  randVal: number
 ) => {
   const [rand, setRand] = useState<number>(0);
   const nodesAndEdges = useMemo(
     () => buildGraphNodesAndEdges(data, properties, namedColors),
-    [data, properties, rand]
+    [data, properties, rand, randVal]
   );
   const recalc = useCallback(
     () => setRand(Math.random() * Math.random()),
@@ -152,6 +153,7 @@ const useGraphNodesAndEdges = (
 
 const useGraphOptions = (
   props: GraphProps,
+  randVal: number,
   theme: Theme,
   themeWrapperRef: ((instance: null) => void) | Ref<null>
 ) => {
@@ -187,7 +189,8 @@ const useGraphOptions = (
   const { nodesAndEdges, recalc } = useGraphNodesAndEdges(
     props.data,
     props.properties,
-    namedColors
+    namedColors,
+    randVal
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
@@ -289,8 +292,8 @@ const CustomControls = ({ recalcLayout }) => {
   );
 };
 
-const Graph = ({ props, theme, themeWrapperRef }) => {
-  const graphOptions = useGraphOptions(props, theme, themeWrapperRef);
+const Graph = ({ props, randVal, theme, themeWrapperRef }) => {
+  const graphOptions = useGraphOptions(props, randVal, theme, themeWrapperRef);
   const { closeTooltips } = useTooltips();
   return (
     <ReactFlow
@@ -312,13 +315,13 @@ const Graph = ({ props, theme, themeWrapperRef }) => {
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  const [, setRandomVal] = useState(0);
+  const [randVal, setRandomVal] = useState(0);
   const {
     themeContext: { theme, wrapperRef: themeWrapperRef },
   } = useDashboard();
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
+  useEffect(() => setRandomVal(Math.random() * Math.random()), [theme.name]);
 
   if (!themeWrapperRef) {
     return null;
@@ -330,7 +333,12 @@ const GraphWrapper = (props: GraphProps) => {
 
   return (
     <TooltipsProvider>
-      <Graph props={props} theme={theme} themeWrapperRef={themeWrapperRef} />
+      <Graph
+        props={props}
+        randVal={randVal}
+        theme={theme}
+        themeWrapperRef={themeWrapperRef}
+      />
     </TooltipsProvider>
   );
 };
