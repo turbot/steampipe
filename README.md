@@ -81,7 +81,10 @@ Steampipe [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=githu
 
 <br/>
 
-![readme-dns-best-practices](https://user-images.githubusercontent.com/46509/184996087-06b9dcaa-8833-4908-8d3d-58d76ac81e0d.gif)
+
+![readme-aws-cis-1 4](https://user-images.githubusercontent.com/46509/185204883-54311f57-759d-410f-92bb-d1e92373a35b.gif)
+
+
 
 <br/>
 
@@ -89,7 +92,9 @@ Others visualize query results using charts, tables, and [other widgets](https:/
 
 <br/>
 
-![readme-aws-s3-bucket-dashboard](https://user-images.githubusercontent.com/46509/184996162-bf7e3c23-2a5e-4118-a9ba-ba90d3d7ea2c.gif)
+![readme-aws-vpc-dashboard](https://user-images.githubusercontent.com/46509/185204989-05d594e7-8f6b-4998-8550-0934f6ace522.gif)
+
+<br/>
 
 ### Get started with benchmarks and dashboards
 
