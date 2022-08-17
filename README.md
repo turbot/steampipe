@@ -149,7 +149,7 @@ Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`
 
 - Reveal the [HCL and SQL source code](https://steampipe.io/docs/dashboard/panel) for dashboard panels, and download the data.
 
-- Review [dashboard commands](https://steampipe.io/docs/reference/cli/dashboard) to search paths, dashboard ports, and variables.
+- Review [dashboard commands](https://steampipe.io/docs/reference/cli/dashboard) to set search paths, dashboard ports, and variables.
 
 - Explore [dashboard widgets](https://steampipe.io/docs/reference/mod-resources/overview#dashboards).
 
