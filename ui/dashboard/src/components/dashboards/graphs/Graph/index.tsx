@@ -27,6 +27,7 @@ import {
 import { Theme } from "../../../../hooks/useTheme";
 import { TooltipsProvider, useTooltips } from "./Tooltip";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { v4 as uuid } from "uuid";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -134,26 +135,20 @@ const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
   namedColors: {},
-  randVal: number
+  id: number
 ) => {
-  const [rand, setRand] = useState<number>(0);
   const nodesAndEdges = useMemo(
     () => buildGraphNodesAndEdges(data, properties, namedColors),
-    [data, properties, rand, randVal]
-  );
-  const recalc = useCallback(
-    () => setRand(Math.random() * Math.random()),
-    [setRand]
+    [data, properties, id]
   );
   return {
     nodesAndEdges,
-    recalc,
   };
 };
 
 const useGraphOptions = (
   props: GraphProps,
-  randVal: number,
+  id: number,
   theme: Theme,
   themeWrapperRef: ((instance: null) => void) | Ref<null>
 ) => {
@@ -186,11 +181,11 @@ const useGraphOptions = (
     namedColors = {};
   }
 
-  const { nodesAndEdges, recalc } = useGraphNodesAndEdges(
+  const { nodesAndEdges } = useGraphNodesAndEdges(
     props.data,
     props.properties,
     namedColors,
-    randVal
+    id
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
@@ -212,7 +207,6 @@ const useGraphOptions = (
   return {
     nodes,
     edges,
-    recalc,
     width: nodesAndEdges.width,
     height: nodesAndEdges.height,
     setEdges,
@@ -292,8 +286,8 @@ const CustomControls = ({ recalcLayout }) => {
   );
 };
 
-const Graph = ({ props, randVal, theme, themeWrapperRef }) => {
-  const graphOptions = useGraphOptions(props, randVal, theme, themeWrapperRef);
+const Graph = ({ id, props, recalc, theme, themeWrapperRef }) => {
+  const graphOptions = useGraphOptions(props, id, theme, themeWrapperRef);
   const { closeTooltips } = useTooltips();
   return (
     <ReactFlow
@@ -309,19 +303,19 @@ const Graph = ({ props, randVal, theme, themeWrapperRef }) => {
       style={{ height: Math.min(600, graphOptions.height) }}
       zoomOnScroll={false}
     >
-      <CustomControls recalcLayout={() => graphOptions.recalc()} />
+      <CustomControls recalcLayout={() => recalc()} />
     </ReactFlow>
   );
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  const [randVal, setRandomVal] = useState(0);
+  const [id, setId] = useState(uuid());
   const {
     themeContext: { theme, wrapperRef: themeWrapperRef },
   } = useDashboard();
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random() * Math.random()), [theme.name]);
+  useEffect(() => setId(uuid()), [theme.name]);
 
   if (!themeWrapperRef) {
     return null;
@@ -334,8 +328,9 @@ const GraphWrapper = (props: GraphProps) => {
   return (
     <TooltipsProvider>
       <Graph
+        id={id}
         props={props}
-        randVal={randVal}
+        recalc={() => setId(uuid())}
         theme={theme}
         themeWrapperRef={themeWrapperRef}
       />
