@@ -26,7 +26,7 @@ Steampipe provides a growing suite of [plugins](https://hub.steampipe.io) that m
 
 <br/>
 
-You can also use psql, pgcli, Metabase, Tableau, or any client can connect to Postgres.
+You can also use psql, pgcli, Metabase, Tableau, or any client that can connect to Postgres.
 
 ### Get started with the CLI
 
