@@ -93,6 +93,7 @@ const buildGraphNodesAndEdges = (
         color: matchingCategory ? matchingCategory.color : null,
         href: matchingCategory ? matchingCategory.href : null,
         icon: matchingCategory ? matchingCategory.icon : null,
+        fields: matchingCategory ? matchingCategory.fields : null,
         label: node.title,
         row_data: node.row_data,
         namedColors,
@@ -123,6 +124,10 @@ const buildGraphNodesAndEdges = (
       },
       data: {
         color: matchingCategory ? matchingCategory.color : null,
+        fields:
+          matchingCategory && matchingCategory.fields
+            ? JSON.parse(matchingCategory.fields)
+            : null,
         row_data: edge.row_data,
         label: edge.title,
         namedColors,
