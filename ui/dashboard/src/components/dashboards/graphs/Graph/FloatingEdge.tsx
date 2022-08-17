@@ -1,7 +1,7 @@
 import Properties from "./Properties";
 import Tooltip from "./Tooltip";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { useStore } from "react-flow-renderer";
 
 const FloatingEdge = ({
@@ -15,9 +15,9 @@ const FloatingEdge = ({
   labelShowBg,
   labelBgPadding,
   labelBgBorderRadius,
-  data: { row_data, label, namedColors },
+  data: { color, row_data, label, namedColors },
 }) => {
-  const edgeLabelRef = useRef(null);
+  // const edgeLabelRef = useRef(null);
   const sourceNode = useStore(
     useCallback((store) => store.nodeInternals.get(source), [source])
   );
@@ -54,7 +54,7 @@ const FloatingEdge = ({
         markerEnd={markerEnd}
         style={{
           ...(style || {}),
-          stroke: namedColors.blackScale3,
+          stroke: color || namedColors.blackScale3,
           strokeWidth: 1,
         }}
       />

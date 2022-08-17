@@ -10,15 +10,17 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface AssetNodeProps {
   data: {
+    color?: string;
     href?: string;
     icon?: string;
     label: string;
     row_data?: LeafNodeDataRow;
+    namedColors;
   };
 }
 
 const AssetNode = ({
-  data: { href, icon, row_data, label },
+  data: { color, href, icon, row_data, label, namedColors },
 }: AssetNodeProps) => {
   const { theme } = useTheme();
   const {
@@ -50,8 +52,11 @@ const AssetNode = ({
   const node = (
     <div
       className={classNames(
-        "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border border-black-scale-3 cursor-grab"
+        "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border cursor-grab"
       )}
+      style={{
+        borderColor: color ? color : namedColors.blackScale3,
+      }}
     >
       {icon && (
         <img
