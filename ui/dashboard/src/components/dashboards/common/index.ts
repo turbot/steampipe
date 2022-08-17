@@ -361,7 +361,8 @@ const createNode = (
 const buildNodesAndEdges = (
   rawData: LeafNodeData | undefined,
   properties: FlowProperties | GraphProperties | HierarchyProperties = {},
-  namedColors = {}
+  namedColors = {},
+  defaultCategoryColor = true
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
     return {
@@ -421,8 +422,9 @@ const buildNodesAndEdges = (
       if (overrides) {
         // @ts-ignore
         categorySettings.color =
-          getColorOverride(overrides.color, namedColors) ||
-          themeColors[colorIndex++];
+          getColorOverride(overrides.color, namedColors) || defaultCategoryColor
+            ? themeColors[colorIndex++]
+            : null;
         // @ts-ignore
         categorySettings.depth = has(overrides, "depth")
           ? overrides.depth
@@ -432,7 +434,9 @@ const buildNodesAndEdges = (
         categorySettings.href = has(overrides, "href") ? overrides.href : null;
       } else {
         // @ts-ignore
-        categorySettings.color = themeColors[colorIndex++];
+        categorySettings.color = defaultCategoryColor
+          ? themeColors[colorIndex++]
+          : null;
       }
       categories[category] = categorySettings;
     }

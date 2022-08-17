@@ -51,7 +51,12 @@ const buildGraphNodesAndEdges = (
       edges: [],
     };
   }
-  const nodesAndEdges = buildNodesAndEdges(data, properties, namedColors);
+  const nodesAndEdges = buildNodesAndEdges(
+    data,
+    properties,
+    namedColors,
+    false
+  );
   const direction = properties?.direction || "TB";
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setGraph({
@@ -76,19 +81,25 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
       : null;
+    console.log(matchingCategory);
     nodes.push({
       type: "asset",
       id: node.id,
       position: { x: matchingNode.x, y: matchingNode.y },
       data: {
+        color: matchingCategory ? matchingCategory.color : null,
         href: matchingCategory ? matchingCategory.href : null,
         icon: matchingCategory ? matchingCategory.icon : null,
         label: node.title,
         row_data: node.row_data,
+        namedColors,
       },
     });
   }
   for (const edge of nodesAndEdges.edges) {
+    const matchingCategory = edge.category
+      ? nodesAndEdges.categories[edge.category]
+      : null;
     edges.push({
       type: "floating",
       id: edge.id,
@@ -97,13 +108,16 @@ const buildGraphNodesAndEdges = (
       label: edge.title,
       labelBgPadding: [11, 0],
       markerEnd: {
-        color: namedColors.blackScale3,
+        color: matchingCategory
+          ? matchingCategory.color
+          : namedColors.blackScale3,
         width: 20,
         height: 20,
         strokeWidth: 2,
         type: MarkerType.Arrow,
       },
       data: {
+        color: matchingCategory ? matchingCategory.color : null,
         row_data: edge.row_data,
         label: edge.title,
         namedColors,
