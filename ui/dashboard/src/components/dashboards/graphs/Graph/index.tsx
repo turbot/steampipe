@@ -81,7 +81,6 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
       : null;
-    console.log(matchingCategory);
     nodes.push({
       type: "asset",
       id: node.id,
