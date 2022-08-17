@@ -118,9 +118,9 @@ Open `http://localhost:9194` in your browser. The home page lists available dash
 
 Note that the default domains are `microsoft.com` and `github.com`. You can [change those defaults](https://hub.steampipe.io/mods/turbot/net_insights#configuration?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) to check other domains.
 
-### Explore insights from dashboards
+### Explore query results on dashboards
 
-Dashboards provide many visualization elements to gain insights about your resources.  For example, the [AWS Insights](https://hub.steampipe.io/mods/turbot/aws_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) provides dozens of dashboards that exercise the full set of widgets. To explore these dashboards, first install the [AWS plugin](https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [authenticate](https://hub.steampipe.io/plugins/turbot/aws#configuration?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+Dashboards use charts, tables, and interactive widgets to help you explore and visualize your resources. The [AWS Insights](https://hub.steampipe.io/mods/turbot/aws_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example, provides dozens of dashboards that exercise the full set of widgets. To explore these dashboards, first install the [AWS plugin](https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [authenticate](https://hub.steampipe.io/plugins/turbot/aws#configuration?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
 
 Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`, and open `localhost:9194`.
 
