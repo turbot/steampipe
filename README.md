@@ -26,9 +26,19 @@ You can also use psql, pgcli, Metabase, Tableau, or [any client](https://steampi
 
 ### Get started with the CLI
 
-[Install](https://steampipe.io/downloads?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) Steampipe.
+[Install](https://steampipe.io/downloads?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) Steampipe for:
+
+Linux or WSL
+
 ```
 sudo /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh)"
+```
+
+MacOS
+
+```
+brew tap turbot/tap
+brew install steampipe
 ```
 
 Add your first [plugin](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
