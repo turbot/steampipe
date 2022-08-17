@@ -26,6 +26,8 @@ type DashboardGraph struct {
 	CategoryList DashboardGraphCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardGraphCategory `cty:"categories" json:"categories"`
 
+	Direction *string `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
+
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
@@ -169,6 +171,10 @@ func (g *DashboardGraph) Diff(other *DashboardGraph) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Type")
 	}
 
+	if !utils.SafeStringsEqual(g.Direction, other.Direction) {
+		res.AddPropertyDiff("Direction")
+	}
+
 	if len(g.CategoryList) != len(other.CategoryList) {
 		res.AddPropertyDiff("Categories")
 	} else {
@@ -305,6 +311,10 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvi
 		g.CategoryList = g.Base.CategoryList
 	} else {
 		g.CategoryList.Merge(g.Base.CategoryList)
+	}
+
+	if g.Direction == nil {
+		g.Direction = g.Base.Direction
 	}
 
 	g.MergeRuntimeDependencies(g.Base)
