@@ -13,10 +13,14 @@ import ReactFlow, {
   useEdgesState,
   useReactFlow,
 } from "react-flow-renderer";
-import { buildNodesAndEdges, LeafNodeData } from "../../common";
+import {
+  buildNodesAndEdges,
+  getColorOverride,
+  LeafNodeData,
+} from "../../common";
 import { getGraphComponent } from "..";
 import { GraphProperties, GraphProps } from "../types";
-import { Ref, useCallback, useEffect, useMemo, useState } from "react";
+import { Ref, useEffect, useMemo, useState } from "react";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -99,6 +103,10 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = edge.category
       ? nodesAndEdges.categories[edge.category]
       : null;
+    const edgeColor = getColorOverride(
+      matchingCategory ? matchingCategory.color : null,
+      namedColors
+    );
     edges.push({
       type: "floating",
       id: edge.id,
@@ -107,9 +115,7 @@ const buildGraphNodesAndEdges = (
       label: edge.title,
       labelBgPadding: [11, 0],
       markerEnd: {
-        color: matchingCategory
-          ? matchingCategory.color
-          : namedColors.blackScale3,
+        color: edgeColor ? edgeColor : namedColors.blackScale3,
         width: 20,
         height: 20,
         strokeWidth: 2,

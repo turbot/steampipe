@@ -420,11 +420,13 @@ const buildNodesAndEdges = (
         href: null,
       };
       if (overrides) {
+        const overrideColor = getColorOverride(overrides.color, namedColors);
         // @ts-ignore
-        categorySettings.color =
-          getColorOverride(overrides.color, namedColors) || defaultCategoryColor
-            ? themeColors[colorIndex++]
-            : null;
+        categorySettings.color = overrideColor
+          ? overrideColor
+          : defaultCategoryColor
+          ? themeColors[colorIndex++]
+          : null;
         // @ts-ignore
         categorySettings.depth = has(overrides, "depth")
           ? overrides.depth
