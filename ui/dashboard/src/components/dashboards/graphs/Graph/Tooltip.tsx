@@ -47,32 +47,32 @@ export function off<T extends Window | Document | HTMLElement | EventTarget>(
 
 const defaultEvents = ["mousedown", "touchstart"];
 
-const useClickAway = <E extends Event = Event>(
-  ref: Element | null,
-  onClickAway: (event: E) => void,
-  events: string[] = defaultEvents
-) => {
-  const savedCallback = useRef(onClickAway);
-  useEffect(() => {
-    savedCallback.current = onClickAway;
-  }, [onClickAway]);
-  useEffect(() => {
-    if (!ref) {
-      return;
-    }
-    const handler = (event) => {
-      ref && !ref.contains(event.target) && savedCallback.current(event);
-    };
-    for (const eventName of events) {
-      on(document, eventName, handler);
-    }
-    return () => {
-      for (const eventName of events) {
-        off(document, eventName, handler);
-      }
-    };
-  }, [events, ref]);
-};
+// const useClickAway = <E extends Event = Event>(
+//   ref: Element | null,
+//   onClickAway: (event: E) => void,
+//   events: string[] = defaultEvents
+// ) => {
+//   const savedCallback = useRef(onClickAway);
+//   useEffect(() => {
+//     savedCallback.current = onClickAway;
+//   }, [onClickAway]);
+//   useEffect(() => {
+//     if (!ref) {
+//       return;
+//     }
+//     const handler = (event) => {
+//       ref && !ref.contains(event.target) && savedCallback.current(event);
+//     };
+//     for (const eventName of events) {
+//       on(document, eventName, handler);
+//     }
+//     return () => {
+//       for (const eventName of events) {
+//         off(document, eventName, handler);
+//       }
+//     };
+//   }, [events, ref]);
+// };
 // End: adapted from https://github.com/streamich/react-use
 
 interface ITooltipsContext {
@@ -132,28 +132,40 @@ const Tooltip = ({ children, overlay, show = false, title }: TooltipProps) => {
     ref: setReferenceElement,
     onMouseEnter: overlay
       ? () => {
-          closeTooltips(id);
+          // closeTooltips(id);
           setShowOverlay(true);
+        }
+      : undefined,
+    onMouseLeave: overlay
+      ? () => {
+          // closeTooltips(id);
+          setShowOverlay(false);
         }
       : undefined,
     onTouchStart: overlay
       ? () => {
-          closeTooltips(id);
+          // closeTooltips(id);
           setShowOverlay(true);
+        }
+      : undefined,
+    onTouchEnd: overlay
+      ? () => {
+          // closeTooltips(id);
+          setShowOverlay(false);
         }
       : undefined,
     // onMouseLeave: overlay ? () => setShowOverlay(false) : undefined,
   });
 
-  useEffect(() => {
-    if (!shouldCloseTooltips || retainTooltipId === id) {
-      return;
-    }
-    setShowOverlay(false);
-  }, [id, retainTooltipId, shouldCloseTooltips]);
-
-  // @ts-ignore
-  useClickAway(popperElement, () => setShowOverlay(false));
+  // useEffect(() => {
+  //   if (!shouldCloseTooltips || retainTooltipId === id) {
+  //     return;
+  //   }
+  //   setShowOverlay(false);
+  // }, [id, retainTooltipId, shouldCloseTooltips]);
+  //
+  // // @ts-ignore
+  // useClickAway(popperElement, () => setShowOverlay(false));
 
   return (
     <>
