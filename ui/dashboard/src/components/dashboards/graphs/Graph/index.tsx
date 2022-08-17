@@ -308,8 +308,10 @@ const CustomControls = ({ recalcLayout }) => {
 const Graph = ({ id, props, recalc, theme, themeWrapperRef }) => {
   const graphOptions = useGraphOptions(props, id, theme, themeWrapperRef);
   const { closeTooltips } = useTooltips();
+
   return (
     <ReactFlow
+      noWheelClassName="foo"
       nodes={graphOptions.nodes}
       edges={graphOptions.edges}
       onNodesChange={graphOptions.onNodesChange}
@@ -321,6 +323,7 @@ const Graph = ({ id, props, recalc, theme, themeWrapperRef }) => {
       fitView
       style={{ height: Math.min(600, graphOptions.height) }}
       zoomOnScroll={false}
+      preventScrolling={false}
     >
       <CustomControls recalcLayout={() => recalc()} />
     </ReactFlow>
