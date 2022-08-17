@@ -156,18 +156,6 @@ const Tooltip = ({
     // onMouseLeave: overlay ? () => setShowOverlay(false) : undefined,
   });
 
-  // const hoverAwareOverlay = cloneElement(overlay, {
-  //   onMouseEnter: () => {
-  //     // closeTooltips(id);
-  //     console.log("Clearing timeout");
-  //     clearTimeout(timeoutId.current);
-  //   },
-  //   onMouseLeave: () => {
-  //     // closeTooltips(id);
-  //     timeoutId.current = setTimeout(() => setShowOverlay(false), hideDelay);
-  //   },
-  // });
-
   useEffect(() => {
     return () => clearTimeout(timeoutId.current);
   }, []);
