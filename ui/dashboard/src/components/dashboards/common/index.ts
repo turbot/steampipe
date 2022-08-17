@@ -272,6 +272,7 @@ interface EdgeMap {
 
 interface Category {
   color: string | null;
+  fields: string | null;
   icon: string | null;
   href: string | null;
 }
@@ -385,7 +386,6 @@ const buildNodesAndEdges = (
   const title_col = getColumn(rawData.columns, "title");
   const category_col = getColumn(rawData.columns, "category");
   const depth_col = getColumn(rawData.columns, "depth");
-  const properties_col = getColumn(rawData.columns, "properties");
 
   if (!id_col && !from_col && !to_col) {
     throw new Error("No node or edge rows defined in the dataset");
@@ -415,6 +415,7 @@ const buildNodesAndEdges = (
       const overrides = categoryProperties[category];
       const categorySettings = {
         color: null,
+        fields: null,
         depth: null,
         icon: null,
         href: null,
@@ -431,7 +432,9 @@ const buildNodesAndEdges = (
         categorySettings.depth = has(overrides, "depth")
           ? overrides.depth
           : null;
-
+        categorySettings.fields = has(overrides, "fields")
+          ? JSON.parse(overrides.fields)
+          : null;
         categorySettings.icon = has(overrides, "icon") ? overrides.icon : null;
         categorySettings.href = has(overrides, "href") ? overrides.href : null;
       } else {
@@ -595,7 +598,12 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides: Category = { color: null, icon: null, href: null };
+    let categoryOverrides: Category = {
+      color: null,
+      fields: null,
+      icon: null,
+      href: null,
+    };
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
@@ -725,7 +733,12 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides: Category = { color: null, icon: null, href: null };
+    let categoryOverrides: Category = {
+      color: null,
+      fields: null,
+      icon: null,
+      href: null,
+    };
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
