@@ -54,8 +54,10 @@ const AssetNode = ({
     <div
       className={classNames(
         "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border cursor-grab"
+        // color ? "opacity-10" : null
       )}
       style={{
+        // backgroundColor: color,
         borderColor: color ? color : namedColors.blackScale3,
       }}
     >
