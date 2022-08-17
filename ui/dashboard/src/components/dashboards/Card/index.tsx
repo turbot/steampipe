@@ -1,3 +1,4 @@
+import DashboardIcon from "../common/DashboardIcon";
 import get from "lodash/get";
 import has from "lodash/has";
 import Icon from "../../Icon";
@@ -247,12 +248,10 @@ const Card = (props: CardProps) => {
     >
       <dt>
         <div className="absolute">
-          {state.icon && (
-            <Icon
-              className={classNames(getIconClasses(state.type), "h-8 w-8")}
-              icon={state.icon}
-            />
-          )}
+          <DashboardIcon
+            className={classNames(getIconClasses(state.type), "h-8 w-8")}
+            icon={state.icon}
+          />
         </div>
         <p
           className={classNames(
