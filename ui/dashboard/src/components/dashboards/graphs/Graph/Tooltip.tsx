@@ -7,15 +7,15 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { noop } from "../../../../utils/func";
 import { ThemeProvider, ThemeWrapper } from "../../../../hooks/useTheme";
 import { usePopper } from "react-popper";
 import { v4 as uuidv4 } from "uuid";
-import { noop } from "../../../../utils/func";
-import { CheckGroupingContext } from "../../../../hooks/useCheckGrouping";
 
 interface TooltipProps {
   children: JSX.Element;
-  overlay?: JSX.Element | JSX.Element[];
+  hideDelay?: number;
+  overlay: JSX.Element;
   show?: boolean;
   title: string;
 }
@@ -117,7 +117,14 @@ const useTooltips = () => {
   return context as ITooltipsContext;
 };
 
-const Tooltip = ({ children, overlay, show = false, title }: TooltipProps) => {
+const Tooltip = ({
+  children,
+  hideDelay = 500,
+  overlay,
+  show = false,
+  title,
+}: TooltipProps) => {
+  const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
   const [id] = useState(uuidv4());
   const [showOverlay, setShowOverlay] = useState(false);
   const [referenceElement, setReferenceElement] = useState(null);
@@ -130,32 +137,40 @@ const Tooltip = ({ children, overlay, show = false, title }: TooltipProps) => {
 
   const trigger = cloneElement(children, {
     ref: setReferenceElement,
-    onMouseEnter: overlay
-      ? () => {
-          // closeTooltips(id);
-          setShowOverlay(true);
-        }
-      : undefined,
-    onMouseLeave: overlay
-      ? () => {
-          // closeTooltips(id);
-          setShowOverlay(false);
-        }
-      : undefined,
-    onTouchStart: overlay
-      ? () => {
-          // closeTooltips(id);
-          setShowOverlay(true);
-        }
-      : undefined,
-    onTouchEnd: overlay
-      ? () => {
-          // closeTooltips(id);
-          setShowOverlay(false);
-        }
-      : undefined,
+    onMouseEnter: () => {
+      // closeTooltips(id);
+      setShowOverlay(true);
+    },
+    onMouseLeave: () => {
+      // closeTooltips(id);
+      timeoutId.current = setTimeout(() => setShowOverlay(false), hideDelay);
+    },
+    onTouchStart: () => {
+      // closeTooltips(id);
+      setShowOverlay(true);
+    },
+    onTouchEnd: () => {
+      // closeTooltips(id);
+      setShowOverlay(false);
+    },
     // onMouseLeave: overlay ? () => setShowOverlay(false) : undefined,
   });
+
+  // const hoverAwareOverlay = cloneElement(overlay, {
+  //   onMouseEnter: () => {
+  //     // closeTooltips(id);
+  //     console.log("Clearing timeout");
+  //     clearTimeout(timeoutId.current);
+  //   },
+  //   onMouseLeave: () => {
+  //     // closeTooltips(id);
+  //     timeoutId.current = setTimeout(() => setShowOverlay(false), hideDelay);
+  //   },
+  // });
+
+  useEffect(() => {
+    return () => clearTimeout(timeoutId.current);
+  }, []);
 
   // useEffect(() => {
   //   if (!shouldCloseTooltips || retainTooltipId === id) {
@@ -177,9 +192,20 @@ const Tooltip = ({ children, overlay, show = false, title }: TooltipProps) => {
               <div
                 // @ts-ignore
                 ref={setPopperElement}
+                className="z-50 bg-dashboard p-3 border border-divide rounded-md text-sm flex flex-col space-y-2 bg-dashboard-panel"
                 style={styles.popper}
                 {...attributes.popper}
-                className="z-50 bg-dashboard p-3 border border-divide rounded-md text-sm flex flex-col space-y-2 bg-dashboard-panel"
+                onMouseEnter={() => {
+                  // closeTooltips(id);
+                  clearTimeout(timeoutId.current);
+                }}
+                onMouseLeave={() => {
+                  // closeTooltips(id);
+                  timeoutId.current = setTimeout(
+                    () => setShowOverlay(false),
+                    hideDelay
+                  );
+                }}
               >
                 <Title title={title} />
                 {overlay}
