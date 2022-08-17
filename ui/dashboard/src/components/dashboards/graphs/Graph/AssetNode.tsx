@@ -1,3 +1,4 @@
+import DashboardIcon from "../../common/DashboardIcon";
 import Properties from "./Properties";
 import Tooltip from "./Tooltip";
 import { classNames } from "../../../../utils/styles";
@@ -58,17 +59,13 @@ const AssetNode = ({
         borderColor: color ? color : namedColors.blackScale3,
       }}
     >
-      {icon && (
-        <img
-          className={classNames(
-            "max-w-full",
-            theme.name === ThemeNames.STEAMPIPE_DARK
-              ? "brightness-[1.75]"
-              : null
-          )}
-          src={icon}
-        />
-      )}
+      <DashboardIcon
+        className={classNames(
+          "max-w-full",
+          theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
+        )}
+        icon={icon}
+      />
     </div>
   );
 
