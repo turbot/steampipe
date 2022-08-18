@@ -30,29 +30,32 @@ You can also use psql, pgcli, Metabase, Tableau, or [any client](https://steampi
 
 Linux or WSL
 
-```
+```sh
 sudo /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh)"
 ```
 
 MacOS
 
-```
+```sh
 brew tap turbot/tap
 brew install steampipe
 ```
 
 Add your first [plugin](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
-```
+
+```sh
 steampipe plugin install net
 ```
 
 Run `steampipe query` to launch the interactive shell.
-```
+
+```sh
 steampipe query
 ```
 
 Run your first query!
-```
+
+```sh
 select
   *
 from
@@ -100,7 +103,7 @@ Others visualize query results using charts, tables, and [other widgets](https:/
 
 The [Net Insights](https://hub.steampipe.io/mods/turbot/net_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) mod works with the Net plugin shown above. To run it, first clone its repo and change to that directory.
 
-```
+```sh
 git clone https://github.com/turbot/steampipe-mod-net-insights
 cd steampipe-mod-net-insights
 ```
