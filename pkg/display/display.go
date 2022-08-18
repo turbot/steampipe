@@ -202,7 +202,6 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 		fmt.Print("Error displaying result as JSON", err)
 		return
 	}
-	fmt.Println()
 }
 
 func displayCSV(ctx context.Context, result *queryresult.Result) {
