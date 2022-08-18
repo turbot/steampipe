@@ -68,7 +68,8 @@ func executeQueries(ctx context.Context, queries []string, client db_common.Clie
 			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
 		}
 		// TODO move into display layer
-		if showBlankLineBetweenResults() {
+		// Only show the blank line between queries, not after the last one
+		if (i < len(queries)-1) && showBlankLineBetweenResults() {
 			fmt.Println()
 		}
 	}
