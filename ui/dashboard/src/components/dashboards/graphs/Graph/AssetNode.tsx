@@ -1,9 +1,9 @@
 import DashboardIcon from "../../common/DashboardIcon";
-import Properties from "./Properties";
+import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
+import { CategoryFields, KeyValuePairs } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { Handle } from "react-flow-renderer";
-import { LeafNodeDataRow } from "../../common";
 import { memo, useEffect, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
@@ -12,16 +12,17 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 interface AssetNodeProps {
   data: {
     color?: string;
+    fields?: CategoryFields;
     href?: string;
     icon?: string;
     label: string;
-    row_data?: LeafNodeDataRow;
+    row_data?: KeyValuePairs;
     namedColors;
   };
 }
 
 const AssetNode = ({
-  data: { color, href, icon, row_data, label, namedColors },
+  data: { color, fields, href, icon, row_data, label, namedColors },
 }: AssetNodeProps) => {
   const { theme } = useTheme();
   const {
@@ -82,7 +83,12 @@ const AssetNode = ({
       <div className="flex flex-col items-center cursor-auto">
         {row_data && row_data.properties && (
           <Tooltip
-            overlay={<Properties properties={row_data.properties} />}
+            overlay={
+              <RowProperties
+                fields={fields || null}
+                properties={row_data.properties}
+              />
+            }
             title={label}
           >
             {node}

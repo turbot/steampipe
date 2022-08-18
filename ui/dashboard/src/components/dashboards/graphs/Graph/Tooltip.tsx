@@ -10,7 +10,6 @@ import { createPortal } from "react-dom";
 import { noop } from "../../../../utils/func";
 import { ThemeProvider, ThemeWrapper } from "../../../../hooks/useTheme";
 import { usePopper } from "react-popper";
-import { v4 as uuidv4 } from "uuid";
 
 interface TooltipProps {
   children: JSX.Element;
@@ -45,7 +44,7 @@ export function off<T extends Window | Document | HTMLElement | EventTarget>(
   }
 }
 
-const defaultEvents = ["mousedown", "touchstart"];
+// const defaultEvents = ["mousedown", "touchstart"];
 
 // const useClickAway = <E extends Event = Event>(
 //   ref: Element | null,
@@ -125,7 +124,7 @@ const Tooltip = ({
   title,
 }: TooltipProps) => {
   const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
-  const [id] = useState(uuidv4());
+  // const [id] = useState(uuidv4());
   const [showOverlay, setShowOverlay] = useState(false);
   const [referenceElement, setReferenceElement] = useState(null);
   const [popperElement, setPopperElement] = useState(null);
@@ -133,7 +132,7 @@ const Tooltip = ({
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     modifiers: [{ name: "arrow", options: { element: arrowElement } }],
   });
-  const { closeTooltips, retainTooltipId, shouldCloseTooltips } = useTooltips();
+  // const { closeTooltips, retainTooltipId, shouldCloseTooltips } = useTooltips();
 
   const trigger = cloneElement(children, {
     ref: setReferenceElement,
@@ -180,7 +179,7 @@ const Tooltip = ({
               <div
                 // @ts-ignore
                 ref={setPopperElement}
-                className="z-50 p-3 border border-table-divide rounded-md text-sm flex flex-col space-y-2 bg-dashboard-panel"
+                className="z-50 p-3 border border-table-divide rounded-md text-sm flex flex-col space-y-2 bg-dashboard-panel max-w-[300px]"
                 style={styles.popper}
                 {...attributes.popper}
                 onMouseEnter={() => {
