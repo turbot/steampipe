@@ -2,11 +2,13 @@
 
 [![plugins](https://img.shields.io/badge/plugins-83-green)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; [![mods](https://img.shields.io/badge/controls-3000-green)](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; [![dashboards](https://img.shields.io/badge/dashboards-744-green)](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; [![slack](https://img.shields.io/badge/slack-800-E01563)](https://steampipe.io/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-gold)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-Steampipe reads live data from APIs into Postgres. Data sources ([plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)) include clouds (AWS, Azure, GCP), SaaS (Airtable, GitHub, Slack, Stripe, Zendesk), containers (Docker, Kubernetes), security tools and services (CrowdStrike, Duo, Trivy), IaC (Terraform, CloudFormation), logs (Splunk, Algolia), and [more](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme). 
+Steampipe reads live data from APIs into Postgres. Data sources ([plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)) are queried with SQL spanning cloud providers (AWS, Azure, GCP), SaaS (Airtable, GitHub, Slack, Stripe, Zendesk), containers (Docker, Kubernetes), security tools (CrowdStrike, Trivy), identity services (Okta, Duo, LDAP), IaC (Terraform, CloudFormation), logs (Splunk, Algolia), and more. 
+
+Dashboards & benchmarks ([mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)) provide rich visualizations of Steampipe data with 1000s of ready to use examples to leverage immediately or customize with with HCL + SQL. 
 
 With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) you can:
 
-- **Query** → Write SQL queries that report on (and join across!) clouds, business apps, code, logs, and more.
+- **Query** → Write SQL queries that report on (and join across!) clouds, SaaS, code, logs, and more.
 
 - **Report** → Verify that your cloud resources comply with security & compliance benchmarks such as CIS, NIST, and HIPAA.
 
@@ -16,11 +18,7 @@ With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_med
 
 Steampipe provides a growing suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to Postgres tables. The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables. 
 
-<br/>
-
 <img marginTop="200" width="524" src="https://steampipe.io/images/steampipe-sql-demo.gif" />
-
-<br/>
 
 You can also use psql, pgcli, Metabase, Tableau, or [any client](https://steampipe.io/docs/cloud/integrations/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that can connect to Postgres.
 
@@ -55,7 +53,7 @@ steampipe query
 
 Run your first query!
 
-```sh
+```sql
 select
   *
 from
@@ -68,7 +66,7 @@ where
 
 - It's [just SQL](https://steampipe.io/docs/sql/steampipe-sql?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)!
 
-- You can run queries [on the command line](https://steampipe.io/docs/query/overview#non-interactive-batch-query-mode?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and include them in scripts.
+- You can run queries [on the command line](https://steampipe.io/docs/query/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#non-interactive-batch-query-mode) and include them in scripts.
 
 - Other [commands](https://steampipe.io/docs/reference/cli/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) run benchmarks, launch Steampipe as a service, and start the dashboard server.
 
@@ -78,26 +76,18 @@ where
 
 - You can bundle connections (e.g. for many AWS accounts) using an [aggregator](https://steampipe.io/docs/managing/connections?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#using-aggregators).
   
-## Steampipe mods: Benchmarks and dashboards
+## Steampipe mods: Developer centric benchmarks & dashboards
 
 Steampipe [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) build on the plugins. Some run suites of controls that check for compliance with security & compliance benchmarks (e.g. CIS, NIST, HIPAA). 
 
-<br/>
-
-
 ![readme-aws-cis-1 4](https://user-images.githubusercontent.com/46509/185204883-54311f57-759d-410f-92bb-d1e92373a35b.gif)
 
-
-
 <br/>
 
-Others visualize query results using charts, tables, and [other widgets](https://steampipe.io/docs/reference/mod-resources/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+Other mods visualize query results using charts, tables, and [other widgets](https://steampipe.io/docs/reference/mod-resources/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) in dashboards.
 
-<br/>
 
-![readme-aws-vpc-dashboard](https://user-images.githubusercontent.com/46509/185204989-05d594e7-8f6b-4998-8550-0934f6ace522.gif)
-
-<br/>
+![aws_s3_bucket_dashboard](https://user-images.githubusercontent.com/17007758/185409103-4eeaccd7-29e6-415c-94f7-dcab01a351c0.png)
 
 ### Get started with benchmarks and dashboards
 
@@ -138,7 +128,7 @@ Note that the default domains are `microsoft.com` and `github.com`. You can [cha
 
 ### Explore query results on dashboards
 
-Dashboards use charts, tables, and interactive widgets to help you explore and visualize your resources. The [AWS Insights](https://hub.steampipe.io/mods/turbot/aws_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example, provides dozens of dashboards that exercise the full set of widgets. To explore these dashboards, first install the [AWS plugin](https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [authenticate](https://hub.steampipe.io/plugins/turbot/aws#configuration?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+Dashboards use charts, tables, and interactive widgets to help you explore and visualize your resources. The [AWS Insights](https://hub.steampipe.io/mods/turbot/aws_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example, provides dozens of dashboards that exercise the full set of widgets. To explore these dashboards, first install the [AWS plugin](https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [authenticate](https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#configuration).
 
 Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`, and open `localhost:9194`.
 
