@@ -33,8 +33,8 @@ import { ThemeNames } from "../../../hooks/useTheme";
 import { useSortBy, useTable } from "react-table";
 import { registerComponent } from "../index";
 
-type TableColumnDisplay = "all" | "none";
-type TableColumnWrap = "all" | "none";
+export type TableColumnDisplay = "all" | "none";
+export type TableColumnWrap = "all" | "none";
 
 interface TableColumnInfo {
   Header: string;
