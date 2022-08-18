@@ -109,7 +109,7 @@
 
   /* Borders */
   --color-table-border: theme("colors.gray.700");
-  --color-table-divide: theme("colors.gray.800");
+  --color-table-divide: var(--color-black-scale-2);
   --color-table-head: var(--color-black-scale-6);
   --color-table-alternating-row: #23282f;
 }
