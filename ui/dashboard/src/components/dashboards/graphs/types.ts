@@ -7,11 +7,18 @@ import {
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
+interface GraphCategoryFoldOption {
+  threshold: number;
+  title?: string;
+  icon?: string;
+}
+
 interface GraphCategoryOptions {
   title?: string;
   color?: ColorOverride;
   depth?: number;
   icon?: string;
+  fold?: GraphCategoryFoldOption;
 }
 
 export type GraphCategories = {
