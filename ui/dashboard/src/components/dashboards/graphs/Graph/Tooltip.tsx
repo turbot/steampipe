@@ -180,7 +180,7 @@ const Tooltip = ({
               <div
                 // @ts-ignore
                 ref={setPopperElement}
-                className="z-50 bg-dashboard p-3 border border-divide rounded-md text-sm flex flex-col space-y-2 bg-dashboard-panel"
+                className="z-50 bg-dashboard p-3 border border-black-scale-3 rounded-md text-sm flex flex-col space-y-2 bg-dashboard-panel"
                 style={styles.popper}
                 {...attributes.popper}
                 onMouseEnter={() => {
