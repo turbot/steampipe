@@ -1,4 +1,4 @@
-import Properties from "./Properties";
+import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
 import { useCallback } from "react";
@@ -15,7 +15,7 @@ const FloatingEdge = ({
   labelShowBg,
   labelBgPadding,
   labelBgBorderRadius,
-  data: { color, row_data, label, namedColors },
+  data: { color, fields, row_data, label, namedColors },
 }) => {
   // const edgeLabelRef = useRef(null);
   const sourceNode = useStore(
@@ -95,7 +95,12 @@ const FloatingEdge = ({
     <>
       {row_data && row_data.properties && (
         <Tooltip
-          overlay={<Properties properties={row_data.properties} />}
+          overlay={
+            <RowProperties
+              fields={fields || null}
+              properties={row_data.properties}
+            />
+          }
           title={label}
         >
           {edge}
