@@ -810,79 +810,6 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   };
 };
 
-const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
-  const data: any[] = [];
-  const links: any[] = [];
-  const nodeDepths = {};
-
-  nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides: Category = {
-      color: null,
-      fields: null,
-      icon: null,
-      href: null,
-      fold: null,
-    };
-    if (edge.category && nodesAndEdges.categories[edge.category]) {
-      categoryOverrides = nodesAndEdges.categories[edge.category];
-    }
-
-    const existingFromDepth = nodeDepths[edge.from_id];
-    if (!existingFromDepth) {
-      nodeDepths[edge.from_id] = 0;
-    }
-    const existingToDepth = nodeDepths[edge.to_id];
-    if (!existingToDepth) {
-      nodeDepths[edge.to_id] = nodeDepths[edge.from_id] + 1;
-    }
-    links.push({
-      source: edge.from_id,
-      target: edge.to_id,
-      value: 0.01,
-      lineStyle: {
-        color:
-          categoryOverrides && categoryOverrides.color
-            ? categoryOverrides.color
-            : "target",
-      },
-      row_data: edge.row_data,
-    });
-  });
-
-  nodesAndEdges.nodes.forEach((node) => {
-    let categoryOverrides;
-    if (node.category && nodesAndEdges.categories[node.category]) {
-      categoryOverrides = nodesAndEdges.categories[node.category];
-    }
-    const dataNode = {
-      id: node.id,
-      name: node.title,
-      depth:
-        node.depth !== null
-          ? node.depth
-          : has(categoryOverrides, "depth")
-          ? categoryOverrides.depth
-          : nodeDepths[node.id],
-      itemStyle: {
-        color:
-          categoryOverrides && categoryOverrides.color
-            ? categoryOverrides.color
-            : themeColors[nodesAndEdges.next_color_index++],
-      },
-      row_data: node.row_data,
-      symbol: node.symbol,
-      symbolSize: 15,
-      href: node.href,
-    };
-    data.push(dataNode);
-  });
-
-  return {
-    data,
-    links,
-  };
-};
-
 interface Item {
   [key: string]: any;
 }
@@ -954,94 +881,6 @@ const nodesAndEdgesToTree = (nodesAndEdges: NodesAndEdges): TreeItem[] => {
   return Object.values(lookup).filter(
     (node) => nodesAndEdges.root_nodes[node.id]
   );
-
-  // idea of this loop:
-  // whenever an item has a parent, but the parent is not yet in the lookup object, we store a preliminary parent
-  // in the lookup object and fill it with the data of the parent later
-  // if an item has no parentId, add it as a root element to rootItems
-  // for (const rawRow of rawData.rows) {
-  //   const row: HierarchyDataRow = {
-  //     parent: null,
-  //     category: "",
-  //     id: "",
-  //     name: "",
-  //   };
-  //   for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
-  //     const column = rawData.columns[colIndex];
-  //     row[column.name] = rawRow[colIndex];
-  //   }
-  //
-  //   const itemId = row.id;
-  //   const parentId = row.parent;
-  //
-  //   if (rootParentIds[itemId]) {
-  //     throw new Error(
-  //       `The row contains a node whose parent both exists in another node and is in ` +
-  //         `\`rootParentIds\` (\`itemId\`: "${itemId}", \`rootParentIds\`: ${Object.keys(
-  //           rootParentIds
-  //         )
-  //           .map((r) => `"${r}"`)
-  //           .join(", ")}).`
-  //     );
-  //   }
-  //
-  //   // look whether item already exists in the lookup table
-  //   if (!Object.prototype.hasOwnProperty.call(lookup, itemId)) {
-  //     // item is not yet there, so add a preliminary item (its data will be added later)
-  //     lookup[itemId] = { children: [] };
-  //   }
-  //
-  //   // if we track orphans, delete this item from the orphan set if it is in it
-  //   if (orphanIds) {
-  //     orphanIds.delete(itemId);
-  //   }
-  //
-  //   // add the current item's data to the item in the lookup table
-  //
-  //   lookup[itemId] = {
-  //     ...row,
-  //     children: lookup[itemId].children,
-  //   };
-  //
-  //   const treeItem = lookup[itemId];
-  //
-  //   if (
-  //     parentId === null ||
-  //     parentId === undefined ||
-  //     rootParentIds[parentId]
-  //   ) {
-  //     // is a root item
-  //     rootItems.push(treeItem);
-  //   } else {
-  //     // has a parent
-  //
-  //     // look whether the parent already exists in the lookup table
-  //     if (!Object.prototype.hasOwnProperty.call(lookup, parentId)) {
-  //       // parent is not yet there, so add a preliminary parent (its data will be added later)
-  //       lookup[parentId] = { children: [] };
-  //
-  //       // if we track orphans, add the generated parent to the orphan list
-  //       if (orphanIds) {
-  //         orphanIds.add(parentId);
-  //       }
-  //     }
-  //
-  //     // add the current item to the parent
-  //     lookup[parentId].children.push(treeItem);
-  //   }
-  // }
-
-  // if (orphanIds?.size) {
-  //   throw new Error(
-  //     `The items array contains orphans that point to the following parentIds: ` +
-  //       `[${Array.from(
-  //         orphanIds
-  //       )}]. These parentIds do not exist in the items array. Hint: prevent orphans to result ` +
-  //       `in an error by passing the following option: { throwIfOrphans: false }`
-  //   );
-  // }
-
-  // return rootItems;
 };
 
 const buildTreeDataInputs = (nodesAndEdges: NodesAndEdges) => {
@@ -1110,7 +949,6 @@ export {
   adjustMinValue,
   adjustMaxValue,
   buildChartDataset,
-  buildGraphDataInputs,
   buildNodesAndEdges,
   buildSankeyDataInputs,
   buildTreeDataInputs,
