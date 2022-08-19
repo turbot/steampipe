@@ -2,19 +2,24 @@ import DashboardIcon from "../../common/DashboardIcon";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import { CategoryFields, KeyValuePairs } from "../../common/types";
+import { CategoryFold } from "../../common";
 import { classNames } from "../../../../utils/styles";
 import { Handle } from "react-flow-renderer";
 import { memo, useEffect, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { useGraph } from "../common/useGraph";
 
 interface AssetNodeProps {
   data: {
+    category?: string;
     color?: string;
     fields?: CategoryFields;
+    fold?: CategoryFold;
     href?: string;
     icon?: string;
+    isFolded: boolean;
     label: string;
     row_data?: KeyValuePairs;
     namedColors;
@@ -22,8 +27,20 @@ interface AssetNodeProps {
 }
 
 const AssetNode = ({
-  data: { color, fields, href, icon, row_data, label, namedColors },
+  data: {
+    category,
+    color,
+    fields,
+    fold,
+    href,
+    icon,
+    isFolded,
+    row_data,
+    label,
+    namedColors,
+  },
 }: AssetNodeProps) => {
+  const { expandCategory } = useGraph();
   const { theme } = useTheme();
   const {
     components: { ExternalLink },
@@ -32,7 +49,7 @@ const AssetNode = ({
   const [renderedHref, setRenderedHref] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!href) {
+    if (isFolded || !href) {
       setRenderedHref(null);
       return;
     }
@@ -49,7 +66,7 @@ const AssetNode = ({
     };
 
     doRender();
-  }, [href, renderInterpolatedTemplates, row_data, setRenderedHref]);
+  }, [isFolded, href, renderInterpolatedTemplates, row_data, setRenderedHref]);
 
   const node = (
     <div
@@ -60,6 +77,7 @@ const AssetNode = ({
       style={{
         // backgroundColor: color,
         borderColor: color ? color : namedColors.blackScale3,
+        color: isFolded ? (color ? color : namedColors.blackScale3) : undefined,
       }}
     >
       <DashboardIcon
@@ -67,7 +85,7 @@ const AssetNode = ({
           "max-w-full",
           theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
         )}
-        icon={icon}
+        icon={isFolded ? fold?.icon : icon}
       />
     </div>
   );
@@ -81,7 +99,7 @@ const AssetNode = ({
       {/*@ts-ignore*/}
       <Handle type="source" />
       <div className="flex flex-col items-center cursor-auto">
-        {row_data && row_data.properties && (
+        {row_data && row_data.properties && !isFolded && (
           <Tooltip
             overlay={
               <RowProperties
@@ -94,12 +112,21 @@ const AssetNode = ({
             {node}
           </Tooltip>
         )}
-        {(!row_data || !row_data.properties) && node}
-        <div className="text-center text-sm mt-1 bg-dashboard-panel text-foreground min-w-[35px]">
+        {(isFolded || !row_data || !row_data.properties) && node}
+        <div
+          className={classNames(
+            isFolded ? "text-link cursor-pointer" : null,
+            "text-center text-sm mt-1 bg-dashboard-panel text-foreground min-w-[35px]"
+          )}
+          onClick={
+            isFolded ? () => expandCategory(category as string) : undefined
+          }
+        >
           {renderedHref && (
             <ExternalLink to={renderedHref}>{label}</ExternalLink>
           )}
-          {!renderedHref && label}
+          {!renderedHref && !isFolded && label}
+          {!renderedHref && isFolded && fold?.title}
         </div>
       </div>
     </>

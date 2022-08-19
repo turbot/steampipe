@@ -1,24 +1,18 @@
-import React from "react";
+import { BaseCategoryOptions } from "../common/types";
 import {
   BasePrimitiveProps,
   ColorOverride,
   ExecutablePrimitiveProps,
 } from "../common";
+import { ComponentType } from "react";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
-interface GraphCategoryFoldOption {
-  threshold: number;
-  title?: string;
-  icon?: string;
-}
-
-interface GraphCategoryOptions {
+interface GraphCategoryOptions extends BaseCategoryOptions {
   title?: string;
   color?: ColorOverride;
   depth?: number;
   icon?: string;
-  fold?: GraphCategoryFoldOption;
 }
 
 export type GraphCategories = {
@@ -39,5 +33,5 @@ export type GraphType = "graph" | "table";
 
 export interface IGraph {
   type: GraphType;
-  component: React.ComponentType<any>;
+  component: ComponentType<any>;
 }

@@ -20,7 +20,8 @@ import {
 } from "../../common";
 import { getGraphComponent } from "..";
 import { GraphProperties, GraphProps } from "../types";
-import { Ref, useEffect, useMemo, useState } from "react";
+import { KeyValuePairs } from "../../common/types";
+import { Ref, useEffect, useMemo } from "react";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -29,9 +30,9 @@ import {
   ZoomOutIcon,
 } from "../../../../constants/icons";
 import { Theme } from "../../../../hooks/useTheme";
-import { TooltipsProvider, useTooltips } from "./Tooltip";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { v4 as uuid } from "uuid";
+import { useTooltips } from "./Tooltip";
+import { GraphProvider, useGraph } from "../common/useGraph";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -47,7 +48,8 @@ const edgeTypes = {
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
-  namedColors: any
+  namedColors: any,
+  expandedCategories: KeyValuePairs
 ) => {
   if (!data) {
     return {
@@ -59,7 +61,8 @@ const buildGraphNodesAndEdges = (
     data,
     properties,
     namedColors,
-    false
+    false,
+    expandedCategories
   );
   const direction = properties?.direction || "TB";
   const dagreGraph = new dagre.graphlib.Graph();
@@ -90,10 +93,13 @@ const buildGraphNodesAndEdges = (
       id: node.id,
       position: { x: matchingNode.x, y: matchingNode.y },
       data: {
+        category: node.category,
         color: matchingCategory ? matchingCategory.color : null,
+        fields: matchingCategory ? matchingCategory.fields : null,
         href: matchingCategory ? matchingCategory.href : null,
         icon: matchingCategory ? matchingCategory.icon : null,
-        fields: matchingCategory ? matchingCategory.fields : null,
+        fold: matchingCategory ? matchingCategory.fold : null,
+        isFolded: node.isFolded,
         label: node.title,
         row_data: node.row_data,
         namedColors,
@@ -155,24 +161,8 @@ const buildGraphNodesAndEdges = (
   return { nodes, edges, width: innerGraph.width, height: innerGraph.height };
 };
 
-const useGraphNodesAndEdges = (
-  data: LeafNodeData | undefined,
-  properties: GraphProperties | undefined,
-  namedColors: {},
-  id: number
-) => {
-  const nodesAndEdges = useMemo(
-    () => buildGraphNodesAndEdges(data, properties, namedColors),
-    [data, properties, id]
-  );
-  return {
-    nodesAndEdges,
-  };
-};
-
 const useGraphOptions = (
   props: GraphProps,
-  id: number,
   theme: Theme,
   themeWrapperRef: ((instance: null) => void) | Ref<null>
 ) => {
@@ -204,12 +194,10 @@ const useGraphOptions = (
   } else {
     namedColors = {};
   }
-
   const { nodesAndEdges } = useGraphNodesAndEdges(
     props.data,
     props.properties,
-    namedColors,
-    id
+    namedColors
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
@@ -236,6 +224,27 @@ const useGraphOptions = (
     setEdges,
     onNodesChange,
     onEdgesChange,
+  };
+};
+
+const useGraphNodesAndEdges = (
+  data: LeafNodeData | undefined,
+  properties: GraphProperties | undefined,
+  namedColors: {}
+) => {
+  const { layoutId, expandedCategories } = useGraph();
+  const nodesAndEdges = useMemo(
+    () =>
+      buildGraphNodesAndEdges(
+        data,
+        properties,
+        namedColors,
+        expandedCategories
+      ),
+    [data, expandedCategories, layoutId, properties]
+  );
+  return {
+    nodesAndEdges,
   };
 };
 
@@ -278,18 +287,34 @@ const ResetZoomControl = () => {
   );
 };
 
-const RecalcLayoutControl = ({ recalc }) => (
-  <ControlButton
-    className="bg-dashboard text-foreground border-0"
-    onClick={() => recalc()}
-    title="Reset Layout"
-  >
-    <ResetLayoutIcon className="w-5 h-5" />
-  </ControlButton>
-);
+const RecalcLayoutControl = () => {
+  const { layoutId, recalcLayout } = useGraph();
+  // const { fitView } = useReactFlow();
 
-const CustomControls = ({ recalcLayout }) => {
-  const { fitView } = useReactFlow();
+  // useEffect(() => {
+  //   if (!layoutId) {
+  //     return;
+  //   }
+  //   fitView();
+  // }, [layoutId]);
+
+  // console.log("Layout", layoutId);
+
+  return (
+    <ControlButton
+      className="bg-dashboard text-foreground border-0"
+      onClick={() => {
+        // console.log("Laying out", layoutId);
+        recalcLayout();
+      }}
+      title="Reset Layout"
+    >
+      <ResetLayoutIcon className="w-5 h-5" />
+    </ControlButton>
+  );
+};
+
+const CustomControls = () => {
   return (
     <Controls
       className="flex flex-col space-y-px border-0 shadow-0"
@@ -300,18 +325,13 @@ const CustomControls = ({ recalcLayout }) => {
       <ZoomInControl />
       <ZoomOutControl />
       <ResetZoomControl />
-      <RecalcLayoutControl
-        recalc={() => {
-          recalcLayout();
-          fitView();
-        }}
-      />
+      <RecalcLayoutControl />
     </Controls>
   );
 };
 
-const Graph = ({ id, props, recalc, theme, themeWrapperRef }) => {
-  const graphOptions = useGraphOptions(props, id, theme, themeWrapperRef);
+const Graph = ({ props, theme, themeWrapperRef }) => {
+  const graphOptions = useGraphOptions(props, theme, themeWrapperRef);
   const { closeTooltips } = useTooltips();
 
   return (
@@ -330,19 +350,15 @@ const Graph = ({ id, props, recalc, theme, themeWrapperRef }) => {
       zoomOnScroll={false}
       preventScrolling={false}
     >
-      <CustomControls recalcLayout={() => recalc()} />
+      <CustomControls />
     </ReactFlow>
   );
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  const [id, setId] = useState(uuid());
   const {
     themeContext: { theme, wrapperRef: themeWrapperRef },
   } = useDashboard();
-
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setId(uuid()), [theme.name]);
 
   if (!themeWrapperRef) {
     return null;
@@ -353,15 +369,9 @@ const GraphWrapper = (props: GraphProps) => {
   }
 
   return (
-    <TooltipsProvider>
-      <Graph
-        id={id}
-        props={props}
-        recalc={() => setId(uuid())}
-        theme={theme}
-        themeWrapperRef={themeWrapperRef}
-      />
-    </TooltipsProvider>
+    <GraphProvider>
+      <Graph props={props} theme={theme} themeWrapperRef={themeWrapperRef} />
+    </GraphProvider>
   );
 };
 

@@ -18,3 +18,17 @@ export interface CategoryField {
 export interface KeyValuePairs {
   [key: string]: any;
 }
+
+export interface KeyValueStringPairs {
+  [key: string]: string;
+}
+
+export interface CategoryFoldOptions {
+  threshold: number;
+  title?: string;
+  icon?: string;
+}
+
+export interface BaseCategoryOptions {
+  fold?: CategoryFoldOptions;
+}
