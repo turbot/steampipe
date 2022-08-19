@@ -66,7 +66,7 @@ const AssetNode = ({
     };
 
     doRender();
-  }, [isFolded, href, renderInterpolatedTemplates, row_data, setRenderedHref]);
+  }, [isFolded, href, row_data, setRenderedHref]);
 
   const node = (
     <div

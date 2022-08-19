@@ -30,7 +30,6 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import isEmpty from "lodash/isEmpty";
 
 interface IBreakpointContext {
   currentBreakpoint: string | null;
