@@ -15,7 +15,7 @@ const FloatingEdge = ({
   labelShowBg,
   labelBgPadding,
   labelBgBorderRadius,
-  data: { color, fields, row_data, label, namedColors },
+  data: { color, fields, row_data, label, themeColors },
 }) => {
   // const edgeLabelRef = useRef(null);
   const sourceNode = useStore(
@@ -54,7 +54,7 @@ const FloatingEdge = ({
         markerEnd={markerEnd}
         style={{
           ...(style || {}),
-          stroke: color || namedColors.blackScale3,
+          stroke: color || themeColors.blackScale3,
           strokeWidth: 1,
         }}
       />

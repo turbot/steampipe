@@ -7,7 +7,7 @@ import { classNames } from "../../../../utils/styles";
 import { Handle } from "react-flow-renderer";
 import { memo, useEffect, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
-import { ThemeNames, useTheme } from "../../../../hooks/useTheme";
+import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useGraph } from "../common/useGraph";
 
@@ -22,7 +22,7 @@ interface AssetNodeProps {
     isFolded: boolean;
     label: string;
     row_data?: KeyValuePairs;
-    namedColors;
+    themeColors;
   };
 }
 
@@ -37,11 +37,13 @@ const AssetNode = ({
     isFolded,
     row_data,
     label,
-    namedColors,
+    themeColors,
   },
 }: AssetNodeProps) => {
   const { expandCategory } = useGraph();
-  const { theme } = useTheme();
+  const {
+    themeContext: { theme },
+  } = useDashboard();
   const {
     components: { ExternalLink },
   } = useDashboard();
@@ -76,8 +78,8 @@ const AssetNode = ({
       )}
       style={{
         // backgroundColor: color,
-        borderColor: color ? color : namedColors.blackScale3,
-        color: isFolded ? (color ? color : namedColors.blackScale3) : undefined,
+        borderColor: color ? color : themeColors.blackScale3,
+        color: isFolded ? (color ? color : themeColors.blackScale3) : undefined,
       }}
     >
       <DashboardIcon

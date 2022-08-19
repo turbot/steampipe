@@ -13,6 +13,7 @@ import ReactFlow, {
   useEdgesState,
   useReactFlow,
 } from "react-flow-renderer";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import {
   buildNodesAndEdges,
   getColorOverride,
@@ -20,8 +21,8 @@ import {
 } from "../../common";
 import { getGraphComponent } from "..";
 import { GraphProperties, GraphProps } from "../types";
+import { GraphProvider, useGraph } from "../common/useGraph";
 import { KeyValuePairs } from "../../common/types";
-import { Ref, useEffect, useMemo } from "react";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -29,10 +30,8 @@ import {
   ZoomInIcon,
   ZoomOutIcon,
 } from "../../../../constants/icons";
-import { Theme } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
+import { useEffect, useMemo } from "react";
 import { useTooltips } from "./Tooltip";
-import { GraphProvider, useGraph } from "../common/useGraph";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -48,7 +47,7 @@ const edgeTypes = {
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
-  namedColors: any,
+  themeColors: any,
   expandedCategories: KeyValuePairs
 ) => {
   if (!data) {
@@ -60,7 +59,7 @@ const buildGraphNodesAndEdges = (
   const nodesAndEdges = buildNodesAndEdges(
     data,
     properties,
-    namedColors,
+    themeColors,
     false,
     expandedCategories
   );
@@ -102,7 +101,7 @@ const buildGraphNodesAndEdges = (
         isFolded: node.isFolded,
         label: node.title,
         row_data: node.row_data,
-        namedColors,
+        themeColors,
       },
     });
   }
@@ -112,7 +111,7 @@ const buildGraphNodesAndEdges = (
       : null;
     const edgeColor = getColorOverride(
       matchingCategory ? matchingCategory.color : null,
-      namedColors
+      themeColors
     );
     edges.push({
       type: "floating",
@@ -122,7 +121,7 @@ const buildGraphNodesAndEdges = (
       label: edge.title,
       labelBgPadding: [11, 0],
       markerEnd: {
-        color: edgeColor ? edgeColor : namedColors.blackScale3,
+        color: edgeColor ? edgeColor : themeColors.blackScale3,
         width: 20,
         height: 20,
         strokeWidth: 2,
@@ -136,7 +135,7 @@ const buildGraphNodesAndEdges = (
             : null,
         row_data: edge.row_data,
         label: edge.title,
-        namedColors,
+        themeColors,
       },
     });
   }
@@ -161,44 +160,8 @@ const buildGraphNodesAndEdges = (
   return { nodes, edges, width: innerGraph.width, height: innerGraph.height };
 };
 
-const useGraphOptions = (
-  props: GraphProps,
-  theme: Theme,
-  themeWrapperRef: ((instance: null) => void) | Ref<null>
-) => {
-  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
-  const style = themeWrapperRef
-    ? // @ts-ignore
-      window.getComputedStyle(themeWrapperRef)
-    : null;
-  let namedColors;
-  if (style) {
-    const blackScale3 = style.getPropertyValue("--color-black-scale-3").trim();
-    const blackScale4 = style.getPropertyValue("--color-black-scale-4").trim();
-    const foreground = style.getPropertyValue("--color-foreground").trim();
-    const foregroundLightest = style
-      .getPropertyValue("--color-foreground-lightest")
-      .trim();
-    const alert = style.getPropertyValue("--color-alert").trim();
-    const info = style.getPropertyValue("--color-info").trim();
-    const ok = style.getPropertyValue("--color-ok").trim();
-    namedColors = {
-      blackScale3,
-      blackScale4,
-      foreground,
-      foregroundLightest,
-      alert,
-      info,
-      ok,
-    };
-  } else {
-    namedColors = {};
-  }
-  const { nodesAndEdges } = useGraphNodesAndEdges(
-    props.data,
-    props.properties,
-    namedColors
-  );
+const useGraphOptions = (props: GraphProps) => {
+  const { nodesAndEdges } = useGraphNodesAndEdges(props.data, props.properties);
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
   // const onConnect = useCallback(
@@ -229,19 +192,19 @@ const useGraphOptions = (
 
 const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
-  properties: GraphProperties | undefined,
-  namedColors: {}
+  properties: GraphProperties | undefined
 ) => {
-  const { layoutId, expandedCategories } = useGraph();
+  const themeColors = useChartThemeColors();
+  const { expandedCategories } = useGraph();
   const nodesAndEdges = useMemo(
     () =>
       buildGraphNodesAndEdges(
         data,
         properties,
-        namedColors,
+        themeColors,
         expandedCategories
       ),
-    [data, expandedCategories, layoutId, properties]
+    [data, expandedCategories, properties, themeColors]
   );
   return {
     nodesAndEdges,
@@ -330,8 +293,8 @@ const CustomControls = () => {
   );
 };
 
-const Graph = ({ props, theme, themeWrapperRef }) => {
-  const graphOptions = useGraphOptions(props, theme, themeWrapperRef);
+const Graph = ({ props }) => {
+  const graphOptions = useGraphOptions(props);
   const { closeTooltips } = useTooltips();
 
   return (
@@ -356,21 +319,13 @@ const Graph = ({ props, theme, themeWrapperRef }) => {
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  const {
-    themeContext: { theme, wrapperRef: themeWrapperRef },
-  } = useDashboard();
-
-  if (!themeWrapperRef) {
-    return null;
-  }
-
   if (!props.data) {
     return null;
   }
 
   return (
     <GraphProvider>
-      <Graph props={props} theme={theme} themeWrapperRef={themeWrapperRef} />
+      <Graph props={props} />
     </GraphProvider>
   );
 };

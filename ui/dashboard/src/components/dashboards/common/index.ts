@@ -434,7 +434,7 @@ function getFoldedCategoryNodeIdsByNodeId(
 const buildNodesAndEdges = (
   rawData: LeafNodeData | undefined,
   properties: FlowProperties | GraphProperties | HierarchyProperties = {},
-  namedColors = {},
+  namedThemeColors = {},
   defaultCategoryColor = true,
   expandedCategories: KeyValuePairs = {}
 ): NodesAndEdges => {
@@ -502,7 +502,10 @@ const buildNodesAndEdges = (
         fold: null,
       };
       if (overrides) {
-        const overrideColor = getColorOverride(overrides.color, namedColors);
+        const overrideColor = getColorOverride(
+          overrides.color,
+          namedThemeColors
+        );
         // @ts-ignore
         categorySettings.color = overrideColor
           ? overrideColor
@@ -878,74 +881,6 @@ const buildGraphDataInputs = (nodesAndEdges: NodesAndEdges) => {
     data,
     links,
   };
-
-  // const objectData = rawData.rows.map((dataRow) => {
-  //   const row: HierarchyDataRow = {
-  //     parent: null,
-  //     category: "",
-  //     id: "",
-  //     name: "",
-  //   };
-  //   for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
-  //     const column = rawData.columns[colIndex];
-  //     row[column.name] = dataRow[colIndex];
-  //   }
-  //
-  //   if (row.category && !categories[row.category]) {
-  //     let color;
-  //     if (
-  //       properties &&
-  //       properties.categories &&
-  //       properties.categories[row.category] &&
-  //       properties.categories[row.category].color
-  //     ) {
-  //       color = properties.categories[row.category].color;
-  //       colorIndex++;
-  //     } else {
-  //       color = themeColors[colorIndex++];
-  //     }
-  //     categories[row.category] = { color };
-  //   }
-  //
-  //   if (!usedIds[row.id]) {
-  //     builtData.push({
-  //       ...row,
-  //       itemStyle: {
-  //         // @ts-ignore
-  //         color: getColorOverride(categories[row.category].color, themeColors),
-  //       },
-  //     });
-  //     usedIds[row.id] = true;
-  //   }
-  //   return row;
-  // });
-  // const edges: HierarchyDataRowEdge[] = [];
-  // const edgeValues = {};
-  // for (const d of objectData) {
-  //   // TODO remove <null> after Kai fixes base64 issue and removes col string conversion
-  //   if (d.parent === null || d.parent === "<null>") {
-  //     d.parent = null;
-  //     continue;
-  //   }
-  //   edges.push({ source: d.parent, target: d.id, value: 0.01 });
-  //   edgeValues[d.parent] = (edgeValues[d.parent] || 0) + 0.01;
-  // }
-  // for (const e of edges) {
-  //   var v = 0;
-  //   if (edgeValues[e.target]) {
-  //     for (const e2 of edges) {
-  //       if (e.target === e2.source) {
-  //         v += edgeValues[e2.target] || 0.01;
-  //       }
-  //     }
-  //     e.value = v;
-  //   }
-  // }
-  //
-  // return {
-  //   data: builtData,
-  //   links: edges,
-  // };
 };
 
 interface Item {
