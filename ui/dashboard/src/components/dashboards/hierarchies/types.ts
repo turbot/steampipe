@@ -1,13 +1,14 @@
-import React from "react";
+import { BaseCategoryOptions } from "../common/types";
 import {
   BasePrimitiveProps,
   ColorOverride,
   ExecutablePrimitiveProps,
 } from "../common";
+import { ComponentType } from "react";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
-interface HierarchyCategoryOptions {
+interface HierarchyCategoryOptions extends BaseCategoryOptions {
   title?: string;
   color?: ColorOverride;
 }
@@ -29,5 +30,5 @@ export type HierarchyType = "table" | "tree";
 
 export interface IHierarchy {
   type: HierarchyType;
-  component: React.ComponentType<any>;
+  component: ComponentType<any>;
 }

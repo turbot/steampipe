@@ -161,6 +161,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
       ],
       root_nodes: {
@@ -172,6 +173,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
       },
     });
@@ -208,6 +210,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "node", from_id: "from_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
         {
           id: "from_node",
@@ -217,6 +220,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: null,
           href: null,
           symbol: null,
+          isFolded: false,
         },
       ],
       root_nodes: {
@@ -228,6 +232,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: null,
           href: null,
           symbol: null,
+          isFolded: false,
         },
       },
     });
@@ -264,6 +269,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "node", to_id: "to_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
         {
           id: "to_node",
@@ -273,6 +279,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: null,
           href: null,
           symbol: null,
+          isFolded: false,
         },
       ],
       root_nodes: {
@@ -284,6 +291,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "node", to_id: "to_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
       },
     });
@@ -321,6 +329,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "node", from_id: "from_node", to_id: "to_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
         {
           id: "from_node",
@@ -330,6 +339,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: null,
           href: null,
           symbol: null,
+          isFolded: false,
         },
         {
           id: "to_node",
@@ -339,6 +349,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: null,
           href: null,
           symbol: null,
+          isFolded: false,
         },
       ],
       root_nodes: {
@@ -350,6 +361,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "node", from_id: "from_node", to_id: "to_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
         from_node: {
           id: "from_node",
@@ -359,6 +371,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: null,
           href: null,
           symbol: null,
+          isFolded: false,
         },
       },
     });
@@ -400,6 +413,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "from_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
         {
           id: "to_node",
@@ -409,6 +423,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "to_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
       ],
       root_nodes: {
@@ -420,6 +435,7 @@ describe("common.buildNodesAndEdges", () => {
           row_data: { id: "from_node" },
           href: null,
           symbol: null,
+          isFolded: false,
         },
       },
     });
@@ -477,6 +493,7 @@ describe("common.buildNodesAndEdges", () => {
           },
           href: null,
           symbol: null,
+          isFolded: false,
         },
         {
           id: "to_node",
@@ -490,6 +507,7 @@ describe("common.buildNodesAndEdges", () => {
           },
           href: null,
           symbol: null,
+          isFolded: false,
         },
       ],
       root_nodes: {
@@ -505,6 +523,7 @@ describe("common.buildNodesAndEdges", () => {
           },
           href: null,
           symbol: null,
+          isFolded: false,
         },
       },
     });
