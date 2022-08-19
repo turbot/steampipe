@@ -710,7 +710,7 @@ const buildNodesAndEdges = (
         edge_lookup,
         foldAwareFromId,
         foldAwareToId,
-        title,
+        is_from_folded || is_to_folded ? null : title,
         is_from_folded || is_to_folded ? null : category,
         is_from_folded || is_to_folded
           ? null
