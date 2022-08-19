@@ -14,7 +14,7 @@ const Modal = ({ icon, message, title }) => {
         open={open}
         onClose={setOpen}
       >
-        <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="min-h-screen pt-4 px-4 text-center">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -29,7 +29,7 @@ const Modal = ({ icon, message, title }) => {
 
           {/* This element is to trick the browser into centering the modal contents. */}
           <span
-            className="hidden sm:inline-block sm:align-middle sm:h-screen"
+            className="inline-block align-middle h-screen"
             aria-hidden="true"
           >
             &#8203;
@@ -37,14 +37,14 @@ const Modal = ({ icon, message, title }) => {
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
-            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            enterTo="opacity-100 translate-y-0 sm:scale-100"
+            enterFrom="opacity-0 translate-y-0 scale-95"
+            enterTo="opacity-100 translate-y-0 scale-100"
             leave="ease-in duration-200"
-            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            leaveFrom="opacity-100 translate-y-0 scale-100"
+            leaveTo="opacity-0 translate-y-0 scale-95"
           >
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full sm:p-6">
-              <div className="hidden sm:block absolute top-0 right-0 pt-4 pr-4">
+            <div className="inline-block h-full sm:h-auto align-middle bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all my-8 w-full sm:max-w-xl sm:p-6 lg:max-w-3xl">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
                 <button
                   type="button"
                   className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -54,11 +54,11 @@ const Modal = ({ icon, message, title }) => {
                   <CloseIcon className="h-6 w-6" aria-hidden="true" />
                 </button>
               </div>
-              <div className="sm:flex sm:items-start">
-                <div className="mx-auto flex-shrink-0 flex items-center sm:items-start justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-12 sm:w-12">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 flex items-start justify-center h-12 w-12 rounded-full h-12 w-12">
                   {icon}
                 </div>
-                <div className="mt-1 text-center sm:ml-4 sm:text-left">
+                <div className="mt-1 ml-4 text-left">
                   <Dialog.Title
                     as="h2"
                     className="text-xl leading-6 font-medium text-gray-900"
