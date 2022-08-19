@@ -235,6 +235,7 @@ const ComboInput = ({
           // @ts-ignore
           SingleValue: SingleValueWithTags,
         }}
+        createOptionPosition="first"
         formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
         menuPortalTarget={document.body}
         inputId={`${name}.input`}
