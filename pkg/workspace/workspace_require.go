@@ -148,6 +148,17 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 		))
 	}
 
+	// add help message for missing plugins
+	msg := fmt.Sprintf("\nPlease install the %s with: \n", utils.Pluralize("plugin", len(pluginsNotInstalled)))
+	notificationLines = append(notificationLines, msg)
+
+	for _, req := range pluginsNotInstalled {
+		_, plugin, _ := strings.Cut(req.plugin, "/")
+		notificationLines = append(notificationLines, fmt.Sprintf(
+			"  steampipe plugin install %s", plugin,
+		))
+	}
+
 	// add blank line (hack - bold the empty string to force it to print blank line as part of error)
 	notificationLines = append(notificationLines, fmt.Sprintf("%s", constants.Bold("")))
 
