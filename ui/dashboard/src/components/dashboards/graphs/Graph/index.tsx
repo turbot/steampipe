@@ -209,12 +209,12 @@ const useGraphOptions = (
   useEffect(() => {
     // console.log("nodes changes", nodesAndEdges.nodes);
     setNodes(nodesAndEdges.nodes);
-  }, [nodesAndEdges.nodes]);
+  }, [nodesAndEdges.nodes, setNodes]);
 
   useEffect(() => {
     // console.log("edges changes", nodesAndEdges.edges);
     setEdges(nodesAndEdges.edges);
-  }, [nodesAndEdges.edges]);
+  }, [nodesAndEdges.edges, setEdges]);
 
   return {
     nodes,
@@ -288,7 +288,7 @@ const ResetZoomControl = () => {
 };
 
 const RecalcLayoutControl = () => {
-  const { layoutId, recalcLayout } = useGraph();
+  const { recalcLayout } = useGraph();
   // const { fitView } = useReactFlow();
 
   // useEffect(() => {

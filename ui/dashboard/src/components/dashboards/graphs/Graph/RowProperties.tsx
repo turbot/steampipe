@@ -2,15 +2,12 @@ import isEmpty from "lodash/isEmpty";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import { CategoryFields, KeyValuePairs } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
-import {
-  DashboardDataMode,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
 import { isRelativeUrl } from "../../../../utils/url";
 import {
   renderInterpolatedTemplates,
   RowRenderResult,
 } from "../../../../utils/template";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 import { ErrorIcon } from "../../../../constants/icons";
 
@@ -62,7 +59,7 @@ const RowPropertyItemValue = ({
       setHref(null);
       setError(renderedTemplateForField.error);
     }
-  }, [name, rowTemplateData]);
+  }, [dataMode, name, rowTemplateData]);
 
   const wrapClassName = wrap ? "whitespace-normal" : "truncate";
   const linkClassName = classNames("link-highlight", wrapClassName);

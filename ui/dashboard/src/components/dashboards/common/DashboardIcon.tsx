@@ -36,7 +36,7 @@ const getIconType = (icon) => {
 };
 
 const DashboardImageIcon = ({ className, icon }) => (
-  <img className={className} src={icon} />
+  <img className={className} src={icon} alt="" />
 );
 
 const DashboardHeroIcon = ({ className, icon }: DashboardHeroIconProps) => (

@@ -147,7 +147,7 @@ const CellValue = ({
       setHref(null);
       setError(renderedTemplateForColumn.error);
     }
-  }, [column, rowIndex, rowTemplateData]);
+  }, [column, dataMode, rowIndex, rowTemplateData]);
 
   let cellContent;
   const dataType = column.data_type.toLowerCase();

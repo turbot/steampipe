@@ -4,7 +4,13 @@ import {
   CopyToClipboardIcon,
   CopyToClipboardSuccessIcon,
 } from "../../constants/icons";
-import { useState, useEffect, createContext, useContext } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface ICopyToClipboardContext {
   doCopy: boolean;
@@ -35,15 +41,18 @@ const CopyToClipboard = ({
     : ({} as ICopyToClipboardContext);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const handleCopy = async (e) => {
-    if (e && stopPropagation) {
-      e.stopPropagation();
-    }
-    const copyOutput = copy(data);
-    if (copyOutput) {
-      setCopySuccess(true);
-    }
-  };
+  const handleCopy = useCallback(
+    async (e) => {
+      if (e && stopPropagation) {
+        e.stopPropagation();
+      }
+      const copyOutput = copy(data);
+      if (copyOutput) {
+        setCopySuccess(true);
+      }
+    },
+    [data, setCopySuccess, stopPropagation]
+  );
 
   useEffect(() => {
     let timeoutId;
@@ -64,7 +73,7 @@ const CopyToClipboard = ({
     if (doCopy) {
       triggerCopy();
     }
-  }, [doCopy, setDoCopy]);
+  }, [handleCopy, doCopy, setDoCopy]);
 
   return (
     <>

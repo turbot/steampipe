@@ -7,8 +7,7 @@ import { Listbox, Transition } from "@headlessui/react";
 import { useParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {
-  const { availableDashboardsLoaded, dashboardTags, dispatch, search } =
-    useDashboard();
+  const { availableDashboardsLoaded, dispatch, search } = useDashboard();
   const { dashboard_name } = useParams();
 
   const options = useMemo(() => {
@@ -40,7 +39,7 @@ const DashboardTagGroupSelect = () => {
     //   }
     // }
     return sortBy(o, ["label"]);
-  }, [dashboardTags.keys]);
+  }, []);
 
   const findOption = useCallback(
     (groupBy) => {
