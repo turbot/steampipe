@@ -149,19 +149,36 @@ where
 
 The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of:
 
-**Benchmarks** that check your cloud resources for compliance.
+- **Benchmarks** that check your cloud resources for compliance.
 
-**Dashboards** that visualize your resources.
+- **Dashboards** that visualize your resources.
 
-There are mods for:
-
-- **Insights:** view dashboards and reports for your resources across AWS, GCP, Kubernetes, etc 
-- **Compliance:** assess compliance for HIPAA, PCI, GxP and more across AWS, Azure, etc 
-- **Security:** run security benchmarks for CIS, NIST, FedRAMP, and more across AWS, OCI, Terraform, etc.
-- **Tagging:** review tagging controls across all your AWS, Azure and GCP accounts
-- **Cost:** check for unused and under utilized resources across AWS, OCI, Digital Ocean, etc.
-- **Custom:** Build your [custom mods, benchmarks & dashboards](https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
-
+<table>
+  <tr>
+   <td>Compliance</td>
+   <td>Check AWS, Azure, GCP, and other clouds for compliance with HIPAA, PCI, GxP and other standards
+  </tr>
+  <tr>
+   <td>Cost</td>
+   <td>Review what AWS, Azure, GCP, and other clouds are costing you</td>
+  </tr>
+  <tr>
+   <td>Insights</td>
+   <td>Visualize cloud resources with charts, tables, and interactive widgets</td>
+  </tr>
+  <tr>
+   <td>Security</td>
+   <td>Use CIS, NIST, FedRAMP , and other benchmarks to asses the security of AWS, Azure, GCP, and other clouds</td>
+  </tr>
+  <tr>
+   <td>Tagging</td>
+   <td>Verify the consistency of tags applied to AWS, Azure, and GCP resources</td>
+  </tr>
+  <tr>
+   <td>Your own mod</td>
+   <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a></td>
+  </tr>
+ </table>
 
 Steampipe controls and benchmarks provide a generic mechanism for defining and running compliance, security, tagging, and cost controls, as well as your own customized groups of controls.
 
