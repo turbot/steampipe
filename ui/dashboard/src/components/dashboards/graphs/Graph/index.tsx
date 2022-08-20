@@ -16,13 +16,13 @@ import ReactFlow, {
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import {
   buildNodesAndEdges,
+  foldNodesAndEdges,
   getColorOverride,
   LeafNodeData,
 } from "../../common";
 import { getGraphComponent } from "..";
 import { GraphProperties, GraphProps } from "../types";
 import { GraphProvider, useGraph } from "../common/useGraph";
-import { KeyValuePairs } from "../../common/types";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -47,8 +47,7 @@ const edgeTypes = {
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
-  themeColors: any,
-  expandedCategories: KeyValuePairs
+  themeColors: any
 ) => {
   if (!data) {
     return {
@@ -60,9 +59,10 @@ const buildGraphNodesAndEdges = (
     data,
     properties,
     themeColors,
-    false,
-    expandedCategories
+    false
   );
+  const foldedNodesAndEdges = foldNodesAndEdges(nodesAndEdges);
+  console.log(foldedNodesAndEdges);
   const direction = properties?.direction || "TB";
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setGraph({
@@ -195,16 +195,9 @@ const useGraphNodesAndEdges = (
   properties: GraphProperties | undefined
 ) => {
   const themeColors = useChartThemeColors();
-  const { expandedCategories } = useGraph();
   const nodesAndEdges = useMemo(
-    () =>
-      buildGraphNodesAndEdges(
-        data,
-        properties,
-        themeColors,
-        expandedCategories
-      ),
-    [data, expandedCategories, properties, themeColors]
+    () => buildGraphNodesAndEdges(data, properties, themeColors),
+    [data, properties, themeColors]
   );
   return {
     nodesAndEdges,

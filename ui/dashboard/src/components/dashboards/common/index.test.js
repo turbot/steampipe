@@ -141,6 +141,10 @@ describe("common.adjustMaxValue", () => {
   });
 });
 
+describe("common.foldNodesAndEdges", () => {
+  test("basic fold", () => {});
+});
+
 describe("common.buildNodesAndEdges", () => {
   test("single node", () => {
     const rawData = {

@@ -431,12 +431,27 @@ function getFoldedCategoryNodeIdsByNodeId(
   return foldedCategoryNodeIdsByNodeId;
 }
 
+const foldNodesAndEdges = (nodesAndEdges: NodesAndEdges) => {
+  console.log(nodesAndEdges.categories);
+  // Find all nodes of a given category
+
+  // const foldedCategoryNodeIdsByNodeId = getFoldedCategoryNodeIdsByNodeId(
+  //   rawData.rows,
+  //   categoryProperties,
+  //   category_col,
+  //   expandedCategories
+  // );
+  // const { id: foldAwareNodeId, is_folded } = getFoldAwareNodeId(
+  //   node_id,
+  //   foldedCategoryNodeIdsByNodeId
+  // );
+};
+
 const buildNodesAndEdges = (
   rawData: LeafNodeData | undefined,
   properties: FlowProperties | GraphProperties | HierarchyProperties = {},
   namedThemeColors = {},
-  defaultCategoryColor = true,
-  expandedCategories: KeyValuePairs = {}
+  defaultCategoryColor = true
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
     return {
@@ -473,13 +488,6 @@ const buildNodesAndEdges = (
 
   let contains_duplicate_edges = false;
   let colorIndex = 0;
-
-  const foldedCategoryNodeIdsByNodeId = getFoldedCategoryNodeIdsByNodeId(
-    rawData.rows,
-    categoryProperties,
-    category_col,
-    expandedCategories
-  );
 
   rawData.rows.forEach((row) => {
     const node_id: string | null = id_col ? row[id_col.name] : null;
@@ -539,12 +547,12 @@ const buildNodesAndEdges = (
     // from_id & to_id     = edge         2 4    6
     // id, from_id & to_id = node & edge  1 2 4  7
 
-    const nodeAndEndMask =
+    const nodeAndEdgeMask =
       (node_id ? 1 : 0) + (from_id ? 2 : 0) + (to_id ? 4 : 0);
     const allowedNodeAndEdgeMasks = [1, 3, 5, 6, 7];
 
     // We must have at least a node id or an edge from_id / to_id pairing
-    if (!allowedNodeAndEdgeMasks.includes(nodeAndEndMask)) {
+    if (!allowedNodeAndEdgeMasks.includes(nodeAndEdgeMask)) {
       return new Error(
         `Encountered dataset row with no node or edge definition: ${JSON.stringify(
           row
@@ -554,28 +562,23 @@ const buildNodesAndEdges = (
 
     // If this row is a node
     if (!!node_id) {
-      const { id: foldAwareNodeId, is_folded } = getFoldAwareNodeId(
-        node_id,
-        foldedCategoryNodeIdsByNodeId
-      );
-      const existingNode = node_lookup[foldAwareNodeId];
+      const existingNode = node_lookup[node_id];
 
       if (!existingNode) {
         const node = createNode(
-          foldAwareNodeId,
+          node_id,
           title,
           category,
           depth,
           row,
-          categories,
-          is_folded
+          categories
         );
-        node_lookup[foldAwareNodeId] = node;
+        node_lookup[node_id] = node;
 
         nodes.push(node);
 
         // Record this as a root node for now - we may remove that once we process the edges
-        root_node_lookup[foldAwareNodeId] = node;
+        root_node_lookup[node_id] = node;
       } else {
         existingNode.title = title;
         existingNode.category = category;
@@ -585,147 +588,87 @@ const buildNodesAndEdges = (
       // If this has an edge from another node
       if (!!from_id && !to_id) {
         // If we've previously recorded this as a root node, remove it
-        delete root_node_lookup[foldAwareNodeId];
+        delete root_node_lookup[node_id];
 
-        // Is this coming from a folded node?
-        const { id: foldAwareFromId, is_folded } = getFoldAwareNodeId(
-          from_id,
-          foldedCategoryNodeIdsByNodeId
-        );
-
-        const existingNode = node_lookup[foldAwareFromId];
+        const existingNode = node_lookup[from_id];
         if (!existingNode) {
-          const node = createNode(
-            foldAwareFromId,
-            null,
-            null,
-            null,
-            null,
-            {},
-            is_folded
-          );
-          node_lookup[foldAwareFromId] = node;
+          const node = createNode(from_id, null, null, null, null, {});
+          node_lookup[from_id] = node;
 
           nodes.push(node);
 
           // Record this as a root node for now - we may remove that once we process the edges
-          root_node_lookup[foldAwareFromId] = node;
+          root_node_lookup[from_id] = node;
         }
 
         const { edge, duplicate_edge } = recordEdge(
           edge_lookup,
-          foldAwareFromId,
-          foldAwareNodeId
+          from_id,
+          node_id
         );
         if (duplicate_edge) {
           contains_duplicate_edges = true;
-        } else {
-          edges.push(edge);
         }
+        edges.push(edge);
       }
       // Else if this has an edge to another node
       else if (!!to_id && !from_id) {
-        // Is this going to a folded node?
-        const { id: foldAwareToId, is_folded } = getFoldAwareNodeId(
-          to_id,
-          foldedCategoryNodeIdsByNodeId
-        );
-
         // If we've previously recorded the target as a root node, remove it
-        delete root_node_lookup[foldAwareToId];
+        delete root_node_lookup[to_id];
 
-        const existingNode = node_lookup[foldAwareToId];
+        const existingNode = node_lookup[to_id];
         if (!existingNode) {
-          const node = createNode(
-            foldAwareToId,
-            null,
-            null,
-            null,
-            null,
-            {},
-            is_folded
-          );
-          node_lookup[foldAwareToId] = node;
+          const node = createNode(to_id, null, null, null, null, {});
+          node_lookup[to_id] = node;
 
           nodes.push(node);
         }
 
         const { edge, duplicate_edge } = recordEdge(
           edge_lookup,
-          foldAwareNodeId,
-          foldAwareToId
+          node_id,
+          to_id
         );
         if (duplicate_edge) {
           contains_duplicate_edges = true;
-        } else {
-          edges.push(edge);
         }
+        edges.push(edge);
       }
     }
 
     // If this row looks like an edge
     if (!!from_id && !!to_id) {
-      // Is this coming from a folded node?
-      const { id: foldAwareFromId, is_folded: is_from_folded } =
-        getFoldAwareNodeId(from_id, foldedCategoryNodeIdsByNodeId);
-      // Is this going to a folded node?
-      const { id: foldAwareToId, is_folded: is_to_folded } = getFoldAwareNodeId(
-        to_id,
-        foldedCategoryNodeIdsByNodeId
-      );
-
       // If we've previously recorded this as a root node, remove it
-      delete root_node_lookup[foldAwareToId];
+      delete root_node_lookup[to_id];
 
       // Record implicit nodes from edge definition
-      const existingFromNode = node_lookup[foldAwareFromId];
+      const existingFromNode = node_lookup[from_id];
       if (!existingFromNode) {
-        const node = createNode(
-          foldAwareFromId,
-          null,
-          null,
-          null,
-          null,
-          {},
-          is_from_folded
-        );
-        node_lookup[foldAwareFromId] = node;
+        const node = createNode(from_id, null, null, null, null, {});
+        node_lookup[from_id] = node;
         nodes.push(node);
         // Record this as a root node for now - we may remove that once we process the edges
-        root_node_lookup[foldAwareFromId] = node;
+        root_node_lookup[from_id] = node;
       }
-      const existingToNode = node_lookup[foldAwareToId];
+      const existingToNode = node_lookup[to_id];
       if (!existingToNode) {
-        const node = createNode(
-          foldAwareToId,
-          null,
-          null,
-          null,
-          null,
-          {},
-          is_to_folded
-        );
-        node_lookup[foldAwareToId] = node;
+        const node = createNode(to_id, null, null, null, null, {});
+        node_lookup[to_id] = node;
         nodes.push(node);
       }
 
       const { edge, duplicate_edge } = recordEdge(
         edge_lookup,
-        foldAwareFromId,
-        foldAwareToId,
-        is_from_folded || is_to_folded ? null : title,
-        is_from_folded || is_to_folded ? null : category,
-        is_from_folded || is_to_folded
-          ? null
-          : nodeAndEndMask === 6
-          ? row
-          : null
+        from_id,
+        to_id,
+        title,
+        category,
+        nodeAndEdgeMask === 6 ? row : null
       );
       if (duplicate_edge) {
         contains_duplicate_edges = true;
-      } else {
-        edges.push(edge);
       }
+      edges.push(edge);
     }
   });
 
@@ -952,6 +895,7 @@ export {
   buildNodesAndEdges,
   buildSankeyDataInputs,
   buildTreeDataInputs,
+  foldNodesAndEdges,
   getColorOverride,
   isNumericCol,
   themeColors,
