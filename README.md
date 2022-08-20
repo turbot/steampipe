@@ -16,8 +16,6 @@ With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_med
 - **Check** → Ensure that cloud resources comply with [security benchmarks](https://steampipe.io/docs/check/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) such as CIS, NIST, and SOC2.
 
 - **Visualize** → View [prebuilt dashboards](https://hub.steampipe.io/mods?objectives=dashboard&utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or [build your own](https://steampipe.io/docs/mods/writing-dashboards?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
-
-## Steampipe CLI - The SQL console for API queries
  
 The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. There are plugins for:
 
@@ -63,18 +61,24 @@ The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/
    <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
   </tr>
  </table>
+  
+## Steampipe CLI - The SQL console for API queries
 
- 
 The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables. 
 
-<img marginTop="200" width="524" src="https://steampipe.io/images/steampipe-sql-demo.gif" />
+<img width="524" src="https://steampipe.io/images/steampipe-sql-demo.gif" />
 
 You can also use psql, pgcli, Metabase, Tableau, or [any client](https://steampipe.io/docs/cloud/integrations/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that can connect to Postgres.
 
 ### Get started with the CLI
 
-[Install](https://steampipe.io/downloads?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) Steampipe for:
+<details>
 
+ <summary>Install Steampipe</summary>
+ <br/>
+
+ The <a href="https://steampipe.io/downloads?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">downloads</a> page shows you how but tl;dr:
+ 
 Linux or WSL
 
 ```sh
@@ -88,13 +92,25 @@ brew tap turbot/tap
 brew install steampipe
 ```
 
-Add your first [plugin](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+</details>
+
+<details>
+ <summary>Add a plugin</summary>
+ <br>
+ 
+ Choose a plugin from the [hub](https://hub.steampipe.io), for example: [Net](https://hub.steampipe.io/plugins/turbot/net).
+
+ Run the `steampipe plugin` command to install it.
 
 ```sh
 steampipe plugin install net
 ```
-
-Run `steampipe query` to launch the interactive shell.
+ </details>
+ 
+ <details>
+ <summary>Run <tt>steampipe query</tt></summary>
+<br/>
+Launch the interactive shell.
 
 ```sh
 steampipe query
@@ -110,8 +126,10 @@ from
 where
   domain = 'google.com';
 ```
+</details>
 
-### Learn more about the CLI
+<details>
+ <summary>Learn more about the CLI</summary>
 
 - It's [just SQL](https://steampipe.io/docs/sql/steampipe-sql?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)!
 
@@ -124,6 +142,8 @@ where
 - Queries can run in [batch mode](https://steampipe.io/docs/query/batch-query?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
 
 - You can bundle connections (e.g. for many AWS accounts) using an [aggregator](https://steampipe.io/docs/managing/connections?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#using-aggregators).
+ 
+ </details>
   
 ## Steampipe Mods - Developer centric benchmarks & dashboards
 
