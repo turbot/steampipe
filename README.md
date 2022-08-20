@@ -17,9 +17,10 @@ With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_med
 
 - **Visualize** → View [prebuilt dashboards](https://hub.steampipe.io/mods?objectives=dashboard&utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or [build your own](https://steampipe.io/docs/mods/writing-dashboards?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
  
-The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. 
 
-### Kinds of plugins
+## Steampipe CLI - The SQL console for API queries
+
+The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. 
 
 <table>
   <tr>
@@ -64,7 +65,6 @@ The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/
   </tr>
  </table>
   
-## Steampipe CLI - The SQL console for API queries
 
 The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables. 
 
@@ -149,27 +149,8 @@ where
   
 ## Steampipe Mods - Benchmarks & dashboards
 
-The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of benchmarks and dashboards.
+The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of **benchmarks** that check your cloud resources for compliance, and **dashboards** that visualize your resources.
 
-**Benchmarks** check your cloud resources for compliance.
-
-<details>
- <summary>A benchmark in action</summary>
- 
-![readme-aws-cis-1 4](https://user-images.githubusercontent.com/46509/185204883-54311f57-759d-410f-92bb-d1e92373a35b.gif) 
- 
- </details>
-
-**Dashboards** visualize your resources.
-
-<details>
- <summary>A dashboard in action</summary>
- 
-![aws_s3_bucket_dashboard](https://user-images.githubusercontent.com/17007758/185409103-4eeaccd7-29e6-415c-94f7-dcab01a351c0.png)
- 
- </details>
- 
- ### Kinds of benchmarks and dashboards
 
 <table>
   <tr>
@@ -197,6 +178,22 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
    <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a></td>
   </tr>
  </table>
+
+
+<details>
+ <summary>A benchmark in action</summary>
+ 
+![readme-aws-cis-1 4](https://user-images.githubusercontent.com/46509/185204883-54311f57-759d-410f-92bb-d1e92373a35b.gif) 
+ 
+ </details>
+
+<details>
+ <summary>A dashboard in action</summary>
+ 
+![aws_s3_bucket_dashboard](https://user-images.githubusercontent.com/17007758/185409103-4eeaccd7-29e6-415c-94f7-dcab01a351c0.png)
+ 
+ </details>
+ 
 
 Benchmarks and dashboards use SQL to gather data and HCL to flow the data into [benchmark controls](https://steampipe.io/blog/release-0-11-0#composable-mods) and  [dashboard widgets](https://steampipe.io/blog/dashboards-as-code). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own. 
 ### Get started with benchmarks and dashboards
