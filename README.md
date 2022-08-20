@@ -145,9 +145,15 @@ where
  
  </details>
   
-## Steampipe Mods - Developer centric benchmarks & dashboards
+## Steampipe Mods - Benchmarks & dashboards
 
-Steampipe's community have grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are collections of named `queries`, `benchmarks` & `controls` that can be used to test current configurations of your cloud resources, and `dashboards` that organize and display key pieces of information. Within Steampipe Mods there are a huge library of interactive dashboards, and thousands of industry benchmarks to assess your compliance, security and cost controls.  There are mods for:
+The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of:
+
+- `benchmarks` that check your cloud resources for compliance
+
+- `dashboards` that visualize your resources
+
+There are mods for:
 
 - **Insights:** view dashboards and reports for your resources across AWS, GCP, Kubernetes, etc 
 - **Compliance:** assess compliance for HIPAA, PCI, GxP and more across AWS, Azure, etc 
