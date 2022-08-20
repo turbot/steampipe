@@ -149,9 +149,9 @@ where
 
 The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of:
 
-- `benchmarks` that check your cloud resources for compliance
+**Benchmarks** that check your cloud resources for compliance.
 
-- `dashboards` that visualize your resources
+**Dashboards** that visualize your resources.
 
 There are mods for:
 
