@@ -8,7 +8,7 @@
 [![slack](https://img.shields.io/badge/slack-825-gold)](https://steampipe.io/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-gold)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-Steampipe turns cloud APIs into database tables. Use it to query cloud infrastructure, SaaS, devops tools, code, logs, and more. SQL is the common interface to data everywhere.
+Steampipe turns cloud APIs into database tables. Use SQL to query cloud infrastructure, SaaS, devops tools, code, logs, and more. 
 
 With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) you can:
 
