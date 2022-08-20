@@ -151,7 +151,7 @@ where
 
 The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of benchmarks and dashboards.
 
-### Benchmarks check your cloud resources for compliance
+**Benchmarks** check your cloud resources for compliance.
 
 <details>
  <summary>A benchmark in action</summary>
@@ -160,7 +160,7 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
  
  </details>
 
-### Dashboards visualize your resources
+**Dashboards** visualize your resources.
 
 <details>
  <summary>A dashboard in action</summary>
@@ -199,17 +199,22 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
  </table>
 
 Benchmarks and dashboards use SQL to gather data and HCL to flow the data into [benchmark controls](https://steampipe.io/blog/release-0-11-0#composable-mods) and  [dashboard widgets](https://steampipe.io/blog/dashboards-as-code). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own. 
-
 ### Get started with benchmarks and dashboards
 
-The [Net Insights](https://hub.steampipe.io/mods/turbot/net_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) mod works with the Net plugin shown above. To run it, first clone its repo and change to that directory.
+<details>
+<summary>Install the Net Insights mod</summary>
+<br/>
+The <a href="https://hub.steampipe.io/mods/turbot/net_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Net Insights</a> mod works with the Net plugin shown above. To run it, first clone its repo and change to that directory.
 
 ```sh
 git clone https://github.com/turbot/steampipe-mod-net-insights
 cd steampipe-mod-net-insights
 ```
+</details>
 
-### Run benchmarks in the CLI
+<details>
+<br/>
+<summary>Run benchmarks in the CLI</summary>
 
 All the benchmarks:
 
@@ -228,23 +233,36 @@ A single control:
 ```sh
 steampipe check control.dns_ns_name_valid
 ```
+</details>
 
-Results can be outputed into a variety of [formats](https://steampipe.io/docs/reference/cli/check?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#output-formats) such as JSON, CSV, HTML, etc. [Custom ouput templates](https://steampipe.io/docs/develop/writing-control-output-templates?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) can be created as well.
+<details>
+<summary>Capture output</summary>
+<br/>
+Available <a href="https://steampipe.io/docs/reference/cli/check?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#output-formats">formats</a> include JSON, CSV, HTML, and ASFF. 
 
+You can use <a href="https://steampipe.io/docs/develop/writing-control-output-templates?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom ouput templates</a> to create new output formats
+</details>
 
-### Run benchmarks as dashboards
+<details>
+<summary>Run benchmarks as dashboards</summary>
 
-Launch the dashboard server: `steampipe dashboard`
+Launch the dashboard server: `steampipe dashboard`.
 
-Open `http://localhost:9194` in your browser. The home page lists available dashboards. Click `DNS Best Practices` to view that dashboard.
+Open `http://localhost:9194` in your browser. 
 
-Note that the default domains are `microsoft.com` and `github.com`. You can [change those defaults](https://hub.steampipe.io/mods/turbot/net_insights#configuration?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) to check other domains.
+The home page lists available dashboards. Click `DNS Best Practices` to view that dashboard.
 
-### Explore query results on dashboards
+Note that the default domains are `microsoft.com` and `github.com`. You can <a href="https://hub.steampipe.io/mods/turbot/net_insights#configuration?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">change those defaults</a> to check other domains.
+</details>
 
-Dashboards use charts, tables, and interactive [widgets](https://steampipe.io/docs/reference/mod-resources/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#dashboards) to help you explore and visualize your resources. The [AWS Insights](https://hub.steampipe.io/mods/turbot/aws_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example, provides dozens of dashboards that exercise the full set of widgets. To explore these dashboards, first install the [AWS plugin](https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [authenticate](https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#configuration).
+<details>
+<summary>Explore your resources</summary>
+<br/>
+Dashboards use charts, tables, and interactive <a href="https://steampipe.io/docs/reference/mod-resources/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#dashboards">widgets</a> to help you explore and visualize your resources. 
 
-Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`, and open `localhost:9194`.
+The <a href="https://hub.steampipe.io/mods/turbot/aws_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">AWS Insights</a> mod, for example, provides dozens of dashboards that exercise the full set of widgets. To use these dashboards, first install the <a href="https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">AWS plugin</a> and <a href="https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#configuration">authenticate</a>. Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`, and open `localhost:9194`.
+</details>
+
 
 ## Community
 
