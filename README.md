@@ -12,13 +12,11 @@ Steampipe turns cloud APIs into database tables. Use SQL to query cloud infrastr
 
 With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) you can:
 
-- **Query** → Write SQL queries that report on (and join across!) clouds, SaaS, code, logs, and more.
+- **Query** → Use SQL to query (and join across!) supported APIs.
 
-- **Report** → Verify that your cloud resources comply with security benchmarks such as CIS, NIST, SOC2, etc.
+- **Check** → Ensure that cloud resources comply with security benchmarks such as CIS, NIST, and SOC2.
 
-- **Visualize** → Leverage a huge library of interactive dashboards, or build your own dashboards as code.
-
-- **Collaborate** → Clone. Edit. Query. Steampipe's design promotes community and sharing. 
+- **Visualize** → View ![prebuilt dashboards](https://hub.steampipe.io/mods?objectives=dashboard) or ![build your own](https://steampipe.io/docs/mods/writing-dashboards).
 
 ## Steampipe CLI - The SQL console for API queries
  
