@@ -12,11 +12,11 @@ Steampipe turns cloud APIs into database tables. Use SQL to query cloud infrastr
 
 With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) you can:
 
-- **Query** → Use SQL to query (and join across!) supported APIs.
+- **Query** → Use SQL to [query](https://steampipe.io/docs/query/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) (and join across!) [APIs](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
 
-- **Check** → Ensure that cloud resources comply with security benchmarks such as CIS, NIST, and SOC2.
+- **Check** → Ensure that cloud resources comply with [security benchmarks](https://steampipe.io/docs/check/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) such as CIS, NIST, and SOC2.
 
-- **Visualize** → View ![prebuilt dashboards](https://hub.steampipe.io/mods?objectives=dashboard) or ![build your own](https://steampipe.io/docs/mods/writing-dashboards).
+- **Visualize** → View [prebuilt dashboards](https://hub.steampipe.io/mods?objectives=dashboard&utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or [build your own](https://steampipe.io/docs/mods/writing-dashboards?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
 
 ## Steampipe CLI - The SQL console for API queries
  
