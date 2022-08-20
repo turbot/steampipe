@@ -1,6 +1,5 @@
 [<img width="80%" src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg" />](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-
 [![plugins](https://img.shields.io/badge/apis_supported-83-gold)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; 
 [![benchmarks](https://img.shields.io/badge/benchmarks-2K-gold)](https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![dashboards](https://img.shields.io/badge/dashboards-350-gold)](https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
@@ -8,7 +7,7 @@
 [![slack](https://img.shields.io/badge/slack-825-gold)](https://steampipe.io/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-gold)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-Steampipe turns cloud APIs into database tables. Use SQL to query cloud infrastructure, SaaS, devops tools, code, logs, and more. 
+Steampipe turns cloud APIs into Postgres tables. Use SQL to query cloud infrastructure, SaaS, devops tools, code, logs, and more. 
 
 With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) you can:
 
@@ -20,17 +19,51 @@ With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_med
 
 ## Steampipe CLI - The SQL console for API queries
  
-Steampipe's community have grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to Postgres tables. There are plugins for:
-- **Public Cloud:** AWS, Azure, GCP, Oracle, Alibaba, IBM, etc
-- **SaaS:** Airtable, GitHub, Slack, Stripe, Zoom, Salesforce, etc
-- **Containers:** Docker, Kubernetes, Prometheus, Grafana, etc
-- **Security:** CrowdStrike, VirusTotal, Shodan, PAN-OS, etc
-- **Identity:** Azure AD, LDAP, Duo, Google Directory, etc
-- **Web:** Cloudflare, Gandi, updown.io, WHOIS, Requests, etc 
-- **Code:** Terrafrom, Docker, Code Secrets, CSV, etc
-- **Logs:** AWS CloudWatch, Splunk, Datadog, Algolia, etc
-- **Social:** Twitter, Reddit, HackerNews, RSS, etc
-- **Custom:** Build your own [custom plugins](https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
+The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. There are plugins for:
+
+<table>
+  <tr>
+   <td>Cloud</td>
+   <td>AWS, Alibaba, Azure, GCP, IBM, Oracle …</td>
+  </tr>
+  <tr>
+   <td>SaaS</td>
+   <td>Airtable, Jira, GitHub, Google Workspace, Salesforce, Slack, Stripe, Zoom …</td>
+  </tr>
+  <tr>
+   <td>Security</td>
+   <td>CrowdStrike, PAN-OS, VirusTotal, Shodan, Trivy …</td>
+  </tr>
+  <tr>
+   <td>Identity</td>
+   <td>Azure AD, Duo, Keycloack, Google Directory, LDAP …</td>
+  </tr>
+  <tr>
+   <td>DevOps</td>
+   <td>Docker, Grafana, Kubernetes, Prometheus …</td>
+  </tr>
+  <tr>
+   <td>Net</td>
+   <td>Baleen, Cloudflare, crt.sh, Gandi, IMAP, ipstack, updown.io, WHOIS …</td>
+  </tr>
+  <tr>
+   <td>IaC</td>
+   <td>CloudFormation, Terraform</td>
+  </tr>
+  <tr>
+   <td>Logs</td>
+   <td>AWS CloudWatch, Splunk, Datadog, Algolia</td>
+  </tr>
+  <tr>
+   <td>Social</td>
+   <td>HackerNews, Twitter, Reddit, RSS</td>
+  </tr>
+  <tr>
+   <td>Your API</td>
+   <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
+  </tr>
+ </table>
+
  
 The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables. 
 
