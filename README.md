@@ -153,7 +153,7 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
 <table>
   <tr>
    <td><b>Compliance</b></td>
-   <td>Check AWS, Azure, GCP, and other clouds for compliance with HIPAA, PCI, GxP and other standards
+   <td>Check AWS, Azure, GCP, etc for compliance with HIPAA, PCI …
   </tr>
   <tr>
    <td><b>Cost</b></td>
@@ -165,7 +165,7 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
   </tr>
   <tr>
    <td><b>Security</b></td>
-   <td>Use CIS, NIST, FedRAMP , and other benchmarks to asses the security of AWS, Azure, GCP, and other clouds</td>
+   <td>Use CIS, NIST, FedRAMP etc to assess the security of AWS, Azure, GCP etcs</td>
   </tr>
   <tr>
    <td><b>Tagging</b></td>
