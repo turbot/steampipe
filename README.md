@@ -228,8 +228,7 @@ steampipe check control.dns_ns_name_valid
 ```
  
 Available <a href="https://steampipe.io/docs/reference/cli/check?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#output-formats">formats</a> include JSON, CSV, HTML, and ASFF. 
-
-You can use <a href="https://steampipe.io/docs/develop/writing-control-output-templates?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom ouput templates</a> to create new output formats
+You can use <a href="https://steampipe.io/docs/develop/writing-control-output-templates?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom ouput templates</a> to create new output formats.
 </details>
 
 <details>
