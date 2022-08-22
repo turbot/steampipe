@@ -60,7 +60,7 @@ The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/
   </tr>
   <tr>
    <td><b>Your API</b></td>
-   <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a>.</td>
+   <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
   </tr>
  </table>
   
@@ -172,8 +172,8 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
    <td>Verify the consistency of tags applied to AWS, Azure, and GCP resources</td>
   </tr>
   <tr>
-   <td><b>Your own mod</b></td>
-   <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a>.</td>
+   <td><b>Your mod</b></td>
+   <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a></td>
   </tr>
  </table>
 
