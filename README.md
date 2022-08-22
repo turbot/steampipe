@@ -152,23 +152,23 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
 
 <table>
   <tr>
-   <td><b>Compliance</b></td>
+   <td><b><a href="https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Compliance</a></b></td>
    <td>Check AWS, Azure, GCP, etc for compliance with HIPAA, PCI, etc
   </tr>
   <tr>
-   <td><b>Cost</b></td>
+   <td><b><a href="https://hub.steampipe.io/mods?objectives=cost?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Cost</a></b></td>
    <td>Review what AWS, Azure, GCP, and other clouds are costing you</td>
   </tr>
   <tr>
-   <td><b>Insights</b></td>
+   <td><b><a href="https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Insights</a></b></td>
    <td>Visualize cloud resources with charts, tables, and interactive widgets</td>
   </tr>
   <tr>
-   <td><b>Security</b></td>
+   <td><b><a href="https://hub.steampipe.io/mods?objectives=security?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Security</a></b></td>
    <td>Use CIS, NIST, FedRAMP etc to assess the security of AWS, Azure, GCP, etc</td>
   </tr>
   <tr>
-   <td><b>Tagging</b></td>
+   <td><b><a href="https://hub.steampipe.io/mods?objectives=tags?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Tags</a></b></td>
    <td>Verify the consistency of tags applied to AWS, Azure, and GCP resources</td>
   </tr>
   <tr>
