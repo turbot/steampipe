@@ -1,4 +1,4 @@
-[<img width="80%" src="https://steampipe.io/images/steampipe_logo_wordmark_color.svg" />](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
+[<picture><source media="(prefers-color-scheme: dark)" srcset="https://cloud.steampipe.io/images/steampipe-logo-wordmark-white.svg"><source media="(prefers-color-scheme: light)" srcset="https://cloud.steampipe.io/images/steampipe-logo-wordmark-color.svg"><img width="67%" alt="Steampipe Logo" src="https://cloud.steampipe.io/images/steampipe-logo-wordmark-color.svg"></picture>](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
 [![plugins](https://img.shields.io/badge/apis_supported-83-gold)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; 
 [![benchmarks](https://img.shields.io/badge/benchmarks-2K-gold)](https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
