@@ -20,47 +20,46 @@ With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_med
 ## Steampipe CLI - The SQL console for API queries
 
 The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. 
-
 <table>
   <tr>
-   <td>Cloud</td>
+   <td><b>Cloud</b></td>
    <td>AWS, Alibaba, Azure, GCP, IBM, Oracle …</td>
   </tr>
   <tr>
-   <td>SaaS</td>
+   <td><b>SaaS</b></td>
    <td>Airtable, Jira, GitHub, Google Workspace, Salesforce, Slack, Stripe, Zoom …</td>
   </tr>
   <tr>
-   <td>Security</td>
+   <td><b>Security</b></td>
    <td>CrowdStrike, PAN-OS, VirusTotal, Shodan, Trivy …</td>
   </tr>
   <tr>
-   <td>Identity</td>
+   <td><b>Identity</b></td>
    <td>Azure AD, Duo, Keycloack, Google Directory, LDAP …</td>
   </tr>
   <tr>
-   <td>DevOps</td>
+   <td><b>DevOps</b></td>
    <td>Docker, Grafana, Kubernetes, Prometheus …</td>
   </tr>
   <tr>
-   <td>Net</td>
+   <td><b>Net</b></td>
    <td>Baleen, Cloudflare, crt.sh, Gandi, IMAP, ipstack, updown.io, WHOIS …</td>
   </tr>
   <tr>
-   <td>IaC</td>
-   <td>CloudFormation, Terraform</td>
+   <td><b>IaC</b></td>
+   <td>CloudFormation, Terraform …</td>
   </tr>
   <tr>
-   <td>Logs</td>
-   <td>AWS CloudWatch, Splunk, Datadog, Algolia</td>
+   <td><b>Logs</b></td>
+   <td>Algolia, AWS CloudWatch, Splunk, Datadog …</td>
   </tr>
   <tr>
-   <td>Social</td>
-   <td>HackerNews, Twitter, Reddit, RSS</td>
+   <td><b>Social</b></td>
+   <td>HackerNews, Twitter, Reddit, RSS …</td>
   </tr>
   <tr>
-   <td>Your API</td>
-   <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
+   <td><b>Your API</b></td>
+   <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a>.</td>
   </tr>
  </table>
   
