@@ -179,15 +179,14 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
   </tr>
  </table>
 
+### The CIS 1.4 benchmark in `AWS Compliance`
 
-A benchmark in action
+![gh-readme-cis-benchmark-in-dashboard](https://user-images.githubusercontent.com/46509/186024940-7ae9f42f-241b-44a7-84d6-244f5d488e1f.gif)
  
-![readme-aws-cis-1 4](https://user-images.githubusercontent.com/46509/185204883-54311f57-759d-410f-92bb-d1e92373a35b.gif) 
+### The AWS EC2 Instance dashboard in `AWS Insights`
  
- <details>
- <summary>A dashboard in action</summary>
- 
-![aws_s3_bucket_dashboard](https://user-images.githubusercontent.com/17007758/185409103-4eeaccd7-29e6-415c-94f7-dcab01a351c0.png)
+ ![aws-ec2-dashboard-in-cloud](https://user-images.githubusercontent.com/46509/186023273-d2be66c9-c050-4576-a46b-ed3f82f2e14a.jpg)
+
  
  </details>
  
