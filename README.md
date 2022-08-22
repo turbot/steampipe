@@ -2,8 +2,7 @@
 
 [![plugins](https://img.shields.io/badge/apis_supported-83-gold)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; 
 [![benchmarks](https://img.shields.io/badge/benchmarks-2K-gold)](https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
-[![dashboards](https://img.shields.io/badge/dashboards-350-gold)](https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
-[![downloads](https://img.shields.io/badge/downloads-2M-gold)](https://steampipe.io/downloads) &nbsp;
+[![dashboards](https://img.shields.io/badge/dashboards-320-gold)](https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![slack](https://img.shields.io/badge/slack-825-gold)](https://steampipe.io/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-gold)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
