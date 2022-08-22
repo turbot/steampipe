@@ -375,7 +375,7 @@ const createNode = (
   };
   node_lookup[id] = node;
   if (category) {
-    nodes_by_category[category] = nodes_by_category[category] = {};
+    nodes_by_category[category] = nodes_by_category[category] || {};
     nodes_by_category[category][id] = node;
   }
   return node;
