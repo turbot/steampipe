@@ -663,11 +663,15 @@ func (m *PluginManager) getConnectionChanges(newConfigMap map[string]*sdkproto.C
 	deletedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	changedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 
+	// TODO if anything other than the plugin specific connection config has changed,
+	// treat as a deletion and addition of a new connection
+	// https://github.com/turbot/steampipe/issues/2348
+
 	for currentName, currentConnection := range m.connectionConfigMap {
 		if newConnection, ok := newConfigMap[currentName]; !ok {
 			deletedConnections[currentConnection.Plugin] = append(deletedConnections[currentConnection.Plugin], currentConnection)
-		} else if !currentConnection.Equals(newConnection) {
-			changedConnections[currentConnection.Plugin] = append(changedConnections[currentConnection.Plugin], currentConnection)
+		} else if currentConnection.Config != newConnection.Config {
+			changedConnections[currentConnection.Plugin] = append(changedConnections[currentConnection.Plugin], newConnection)
 		}
 	}
 	for newName, newConnection := range newConfigMap {
