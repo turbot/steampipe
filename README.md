@@ -232,10 +232,8 @@ You can use <a href="https://steampipe.io/docs/develop/writing-control-output-te
 
 <details>
 <summary>Run benchmarks as dashboards</summary>
-
-Launch the dashboard server: `steampipe dashboard`.
-
-Open `http://localhost:9194` in your browser. 
+<br/>
+Launch the dashboard server: `steampipe dashboard`, then open `http://localhost:9194` in your browser. 
 
 The home page lists available dashboards. Click `DNS Best Practices` to view that dashboard.
 
