@@ -81,19 +81,22 @@ func (s *Server) Start() chan struct{} {
 
 // Shutdown stops the API server
 func (s *Server) Shutdown() {
-	log.Println("[TRACE] Server shutdown")
+	log.Println("[TRACE] server shutdown")
 
 	if s.webSocket != nil {
+		log.Println("[TRACE] closing websocket")
 		_ = s.webSocket.Close()
+		log.Println("[TRACE] closed websocket")
 	}
 
 	// Close the workspace
 	if s.workspace != nil {
+		log.Println("[TRACE] closing workspace")
 		s.workspace.Close()
+		log.Println("[TRACE] closed workspace")
 	}
 
-	log.Println("[TRACE] Server shutdown complete")
-
+	log.Println("[TRACE] server shutdown complete")
 }
 
 func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
