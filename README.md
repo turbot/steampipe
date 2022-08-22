@@ -24,47 +24,47 @@ The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/
 <table>
   <tr>
    <td><b>Cloud</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/aws">AWS</a>, <a href="https://hub.steampipe.io/plugins/turbot/alicloud">Alibaba</a>, <a href="https://hub.steampipe.io/plugins/turbot/azure">Azure</a>, <a href="https://hub.steampipe.io/plugins/turbot/gcp">GCP</a>, <a href="https://hub.steampipe.io/plugins/turbot/ibm">IBM</a>, <a href="https://hub.steampipe.io/plugins/turbot/oci">Oracle</a> …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">AWS</a>, <a href="https://hub.steampipe.io/plugins/turbot/alicloud?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Alibaba</a>, <a href="https://hub.steampipe.io/plugins/turbot/azure?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Azure</a>, <a href="https://hub.steampipe.io/plugins/turbot/gcp?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">GCP</a>, <a href="https://hub.steampipe.io/plugins/turbot/ibm?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">IBM</a>, <a href="https://hub.steampipe.io/plugins/turbot/oci?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Oracle</a> …</td>
   </tr>
   <tr>
    <td><b>SaaS</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/francois2metz/airtable">Airtable</a>, <a href="https://hub.steampipe.io/plugins/turbot/jira">Jira</a>, <a href="https://hub.steampipe.io/plugins/turbot/github">GitHub</a>, <a href="https://hub.steampipe.io/plugins/turbot/googleworkspace">Google Workspace</a>, <a href="https://hub.steampipe.io/plugins/turbot/salesforce">Salesforce</a>, <a href="https://hub.steampipe.io/plugins/turbot/slack">Slack</a>, <a href="https://hub.steampipe.io/plugins/turbot/stripe">Stripe</a>, <a href="">Zoom …</a></td>
+   <td><a href="https://hub.steampipe.io/plugins/francois2metz/airtable?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Airtable</a>, <a href="https://hub.steampipe.io/plugins/turbot/jira?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Jira</a>, <a href="https://hub.steampipe.io/plugins/turbot/github?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">GitHub</a>, <a href="https://hub.steampipe.io/plugins/turbot/googleworkspace?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Google Workspace</a>, <a href="https://hub.steampipe.io/plugins/turbot/salesforce?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Salesforce</a>, <a href="https://hub.steampipe.io/plugins/turbot/slack?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Slack</a>, <a href="https://hub.steampipe.io/plugins/turbot/stripe?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Stripe</a>, <a href="https://hub.steampipe.io/plugins/turbot/stripe?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Zoom …</a></td>
   </tr>
   <tr>
    <td><b>Security</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/crowdstrike">CrowdStrike</a>, <a href="https://hub.steampipe.io/plugins/turbot/panos">PAN-OS</a>, <a href="https://hub.steampipe.io/plugins/turbot/virustotal">VirusTotal</a>, <a href="https://hub.steampipe.io/plugins/turbot/shodan">Shodan</a>, <a href="https://hub.steampipe.io/plugins/turbot/trivy">Trivy</a> …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/crowdstrike?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">CrowdStrike</a>, <a href="https://hub.steampipe.io/plugins/turbot/panos?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">PAN-OS</a>, <a href="https://hub.steampipe.io/plugins/turbot/virustotal?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">VirusTotal</a>, <a href="https://hub.steampipe.io/plugins/turbot/shodan?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Shodan</a>, <a href="https://hub.steampipe.io/plugins/turbot/trivy?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Trivy</a> …</td>
   </tr>
   <tr>
    <td><b>Identity</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/azuread">Azure AD</a>, <a href="https://hub.steampipe.io/plugins/turbot/duo">Duo</a>, <a href="https://hub.steampipe.io/plugins/theapsgroup/keycloak">Keycloack</a>, <a href="https://hub.steampipe.io/plugins/turbot/googledirectory">Google Directory</a>, <a href="https://hub.steampipe.io/plugins/turbot/ldap">LDAP</a> …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/azuread?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Azure AD</a>, <a href="https://hub.steampipe.io/plugins/turbot/duo?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Duo</a>, <a href="https://hub.steampipe.io/plugins/theapsgroup/keycloak?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Keycloack</a>, <a href="https://hub.steampipe.io/plugins/turbot/googledirectory?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Google Directory</a>, <a href="https://hub.steampipe.io/plugins/turbot/ldap?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">LDAP</a> …</td>
   </tr>
   <tr>
    <td><b>DevOps</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/docker">Docker</a>, <a href="https://hub.steampipe.io/plugins/turbot/grafana">Grafana</a>, <a href="https://hub.steampipe.io/plugins/turbot/kubernetes">Kubernetes</a>, <a href="https://hub.steampipe.io/plugins/turbot/prometheus">Prometheus</a> …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/docker?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Docker</a>, <a href="https://hub.steampipe.io/plugins/turbot/grafana?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Grafana</a>, <a href="https://hub.steampipe.io/plugins/turbot/kubernetes?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Kubernetes</a>, <a href="https://hub.steampipe.io/plugins/turbot/prometheus?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Prometheus</a> …</td>
   </tr>
   <tr>
    <td><b>Net</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/francois2metz/baleen">Baleen</a>, <a href="https://hub.steampipe.io/plugins/turbot/cloudflare">Cloudflare</a>, <a href="https://hub.steampipe.io/plugins/turbot/crtsh">crt.sh</a>, <a href="https://hub.steampipe.io/plugins/francois2metz/gandi">Gandi</a>, <a href="https://hub.steampipe.io/plugins/turbot/imap">IMAP</a>, <a href="https://hub.steampipe.io/plugins/turbot/ipstack">ipstack</a>, <a href="https://hub.steampipe.io/plugins/turbot/updown">updown.io</a>, <a href="https://hub.steampipe.io/plugins/turbot/whois">WHOIS</a> …</td>
-  </tr>
-
+   <td><a href="https://hub.steampipe.io/plugins/francois2metz/baleen?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Baleen</a>, <a href="https://hub.steampipe.io/plugins/turbot/cloudflare?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Cloudflare</a>, <a href="https://hub.steampipe.io/plugins/turbot/crtsh?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">crt.sh</a>, <a href="https://hub.steampipe.io/plugins/francois2metz/gandi?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Gandi</a>, <a href="https://hub.steampipe.io/plugins/turbot/imap?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">IMAP</a>, <a href="https://hub.steampipe.io/plugins/turbot/ipstack?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">ipstack</a>, <a href="https://hub.steampipe.io/plugins/turbot/updown?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">updown.io</a>, <a href="https://hub.steampipe.io/plugins/turbot/whois?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">WHOIS</a> …</td>
+</tr>
 <tr>
    <td><b>IaC</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/awscfn">CloudFormation</a>, <a href="https://hub.steampipe.io/plugins/turbot/terraform">Terraform</a> …</td>
-  </tr>
-  <tr>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/awscfn?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">CloudFormation</a>, <a href="https://hub.steampipe.io/plugins/turbot/terraform?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Terraform</a> …</td>
+</tr>
+<tr>
    <td><b>Logs</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/algolia">Algolia</a>, <a href="https://hub.steampipe.io/plugins/turbot/aws/tables/aws_cloudwatch_log_event">AWS CloudWatch</a>, <a href="https://hub.steampipe.io/plugins/turbot/splunk">Splunk</a>, <a href="https://hub.steampipe.io/plugins/turbot/datadog">Datadog</a> …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/algolia?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Algolia</a>, <a href="https://hub.steampipe.io/plugins/turbot/aws/tables/aws_cloudwatch_log_event?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">AWS CloudWatch</a>, <a href="https://hub.steampipe.io/plugins/turbot/splunk?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Splunk</a>, <a href="https://hub.steampipe.io/plugins/turbot/datadog?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Datadog</a> …</td>
   </tr>
   <tr>
    <td><b>Social</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/hackernews">HackerNews</a>, <a href="https://hub.steampipe.io/plugins/turbot/twitter">Twitter</a>, <a href="https://hub.steampipe.io/plugins/turbot/reddit">Reddit</a>, <a href="https://hub.steampipe.io/plugins/turbot/rss">RSS</a> …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/hackernews?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">HackerNews</a>, <a href="https://hub.steampipe.io/plugins/turbot/twitter?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Twitter</a>, <a href="https://hub.steampipe.io/plugins/turbot/reddit?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Reddit</a>, <a href="https://hub.steampipe.io/plugins/turbot/rss?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">RSS</a> …</td>
   </tr>
   <tr>
    <td><b>Your API</b></td>
-   <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
+   <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
   </tr>
 </table>
   
+
 
 The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables. 
 
