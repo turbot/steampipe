@@ -592,7 +592,7 @@ describe("common.buildNodesAndEdges", () => {
 });
 
 describe("common.foldNodesAndEdges", () => {
-  test("basic fold", () => {
+  test("Basic fold", () => {
     const graph = new Graph({ directed: true });
     graph.setNode("c1-1");
     graph.setNode("c2-1");
@@ -632,16 +632,10 @@ describe("common.foldNodesAndEdges", () => {
       source: "c1-1",
       target: "c2-3",
     };
-    const category_1 = {};
-    const category_2 = { fold: { threshold: 2 } };
+    const category_1 = { id: "c1" };
+    const category_2 = { id: "c2", fold: { threshold: 2 } };
     const nodesAndEdgesInput = {
       graph,
-      edgeMap: {
-        [edge_c1_1_c2_1.id]: edge_c1_1_c2_1,
-        [edge_c1_1_c2_2.id]: edge_c1_1_c2_2,
-        [edge_c1_1_c2_3.id]: edge_c1_1_c2_3,
-      },
-      edges: [edge_c1_1_c2_1, edge_c1_1_c2_2, edge_c1_1_c2_3],
       nodeCategoryMap: {
         c1: {
           [node_c1_1.id]: node_c1_1,
@@ -659,8 +653,14 @@ describe("common.foldNodesAndEdges", () => {
         [node_c2_3.id]: node_c2_3,
       },
       nodes: [node_c1_1, node_c2_1, node_c2_2, node_c2_3],
+      edgeMap: {
+        [edge_c1_1_c2_1.id]: edge_c1_1_c2_1,
+        [edge_c1_1_c2_2.id]: edge_c1_1_c2_2,
+        [edge_c1_1_c2_3.id]: edge_c1_1_c2_3,
+      },
+      edges: [edge_c1_1_c2_1, edge_c1_1_c2_2, edge_c1_1_c2_3],
       root_nodes: { [node_c1_1.id]: node_c1_1 },
-      categories: { c1: category_1, c2: category_2 },
+      categories: { [category_1.id]: category_1, [category_2.id]: category_2 },
     };
     const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
     delete nodesAndEdges.graph;
@@ -704,11 +704,421 @@ describe("common.foldNodesAndEdges", () => {
         },
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1 },
-      categories: { c1: category_1, c2: category_2 },
+      categories: { [category_1.id]: category_1, [category_2.id]: category_2 },
     });
   });
 
-  test("multiple inheritance", () => {
+  test("Middle fold", () => {
+    const graph = new Graph({ directed: true });
+    graph.setNode("c1-1");
+    graph.setNode("c2-1");
+    graph.setNode("c2-2");
+    graph.setNode("c2-3");
+    graph.setNode("c3-1");
+    graph.setEdge("c1-1", "c2-1");
+    graph.setEdge("c1-1", "c2-2");
+    graph.setEdge("c1-1", "c2-3");
+    graph.setEdge("c3-1", "c2-1");
+    graph.setEdge("c3-1", "c2-2");
+    graph.setEdge("c3-1", "c2-3");
+    const node_c1_1 = {
+      id: "c1-1",
+      category: "c1",
+    };
+    const node_c2_1 = {
+      id: "c2-1",
+      category: "c2",
+    };
+    const node_c2_2 = {
+      id: "c2-2",
+      category: "c2",
+    };
+    const node_c2_3 = {
+      id: "c2-3",
+      category: "c2",
+    };
+    const node_c3_1 = {
+      id: "c3-1",
+      category: "c3",
+    };
+    const edge_c1_1_c2_1 = {
+      id: "c1-1_c2-1",
+      source: "c1-1",
+      target: "c2-1",
+    };
+    const edge_c1_1_c2_2 = {
+      id: "c1-1_c2-2",
+      source: "c1-1",
+      target: "c2-2",
+    };
+    const edge_c1_1_c2_3 = {
+      id: "c1-1_c2-3",
+      source: "c1-1",
+      target: "c2-3",
+    };
+    const edge_c3_1_c2_1 = {
+      id: "c3-1_c2-1",
+      source: "c3-1",
+      target: "c2-1",
+    };
+    const edge_c3_1_c2_2 = {
+      id: "c3-1_c2-2",
+      source: "c3-1",
+      target: "c2-2",
+    };
+    const edge_c3_1_c2_3 = {
+      id: "c3-1_c2-3",
+      source: "c3-1",
+      target: "c2-3",
+    };
+    const category_1 = { id: "c1" };
+    const category_2 = { id: "c2", fold: { threshold: 2 } };
+    const category_3 = { id: "c3" };
+    const nodesAndEdgesInput = {
+      graph,
+      nodeCategoryMap: {
+        c1: {
+          [node_c1_1.id]: node_c1_1,
+        },
+        c2: {
+          [node_c2_1.id]: node_c2_1,
+          [node_c2_2.id]: node_c2_2,
+          [node_c2_3.id]: node_c2_3,
+        },
+        c3: {
+          [node_c3_1.id]: node_c3_1,
+        },
+      },
+      nodeMap: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c2_1.id]: node_c2_1,
+        [node_c2_2.id]: node_c2_2,
+        [node_c2_3.id]: node_c2_3,
+        [node_c3_1.id]: node_c3_1,
+      },
+      nodes: [node_c1_1, node_c2_1, node_c2_2, node_c2_3, node_c3_1],
+      edgeMap: {
+        [edge_c1_1_c2_1.id]: edge_c1_1_c2_1,
+        [edge_c1_1_c2_2.id]: edge_c1_1_c2_2,
+        [edge_c1_1_c2_3.id]: edge_c1_1_c2_3,
+        [edge_c3_1_c2_1.id]: edge_c3_1_c2_1,
+        [edge_c3_1_c2_2.id]: edge_c3_1_c2_2,
+        [edge_c3_1_c2_3.id]: edge_c3_1_c2_3,
+      },
+      edges: [
+        edge_c1_1_c2_1,
+        edge_c1_1_c2_2,
+        edge_c1_1_c2_3,
+        edge_c3_1_c2_1,
+        edge_c3_1_c2_2,
+        edge_c3_1_c2_3,
+      ],
+      root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
+      categories: {
+        [category_1.id]: category_1,
+        [category_2.id]: category_2,
+        [category_3.id]: category_3,
+      },
+    };
+    const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
+    delete nodesAndEdges.graph;
+    const foldedNode = {
+      id: "fold-c2-1",
+      category: "c2",
+      depth: null,
+      href: null,
+      icon: undefined,
+      isFolded: true,
+      row_data: null,
+      symbol: null,
+      title: null,
+    };
+    expect(nodesAndEdges).toEqual({
+      nodeCategoryMap: {
+        c1: {
+          [node_c1_1.id]: node_c1_1,
+        },
+        c2: {
+          [foldedNode.id]: foldedNode,
+        },
+        c3: {
+          [node_c3_1.id]: node_c3_1,
+        },
+      },
+      nodeMap: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c3_1.id]: node_c3_1,
+        [foldedNode.id]: foldedNode,
+      },
+      nodes: [node_c1_1, node_c3_1, foldedNode],
+      edgeMap: {
+        "c1-1_fold-c2-1": {
+          id: "c1-1_fold-c2-1",
+          source: "c1-1",
+          target: "fold-c2-1",
+        },
+        "c3-1_fold-c2-1": {
+          id: "c3-1_fold-c2-1",
+          source: "c3-1",
+          target: "fold-c2-1",
+        },
+      },
+      edges: [
+        {
+          id: "c1-1_fold-c2-1",
+          source: "c1-1",
+          target: "fold-c2-1",
+        },
+        {
+          id: "c3-1_fold-c2-1",
+          source: "c3-1",
+          target: "fold-c2-1",
+        },
+      ],
+      root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
+      categories: {
+        [category_1.id]: category_1,
+        [category_2.id]: category_2,
+        [category_3.id]: category_3,
+      },
+    });
+  });
+
+  test("3-way fold", () => {
+    const graph = new Graph({ directed: true });
+    graph.setNode("c1-1");
+    graph.setNode("c2-1");
+    graph.setNode("c2-2");
+    graph.setNode("c2-3");
+    graph.setNode("c3-1");
+    graph.setNode("c4-1");
+    graph.setEdge("c1-1", "c2-1");
+    graph.setEdge("c1-1", "c2-2");
+    graph.setEdge("c1-1", "c2-3");
+    graph.setEdge("c3-1", "c2-1");
+    graph.setEdge("c3-1", "c2-2");
+    graph.setEdge("c3-1", "c2-3");
+    graph.setEdge("c4-1", "c2-1");
+    graph.setEdge("c4-1", "c2-2");
+    graph.setEdge("c4-1", "c2-3");
+    const node_c1_1 = {
+      id: "c1-1",
+      category: "c1",
+    };
+    const node_c2_1 = {
+      id: "c2-1",
+      category: "c2",
+    };
+    const node_c2_2 = {
+      id: "c2-2",
+      category: "c2",
+    };
+    const node_c2_3 = {
+      id: "c2-3",
+      category: "c2",
+    };
+    const node_c3_1 = {
+      id: "c3-1",
+      category: "c3",
+    };
+    const node_c4_1 = {
+      id: "c4-1",
+      category: "c4",
+    };
+    const edge_c1_1_c2_1 = {
+      id: "c1-1_c2-1",
+      source: "c1-1",
+      target: "c2-1",
+    };
+    const edge_c1_1_c2_2 = {
+      id: "c1-1_c2-2",
+      source: "c1-1",
+      target: "c2-2",
+    };
+    const edge_c1_1_c2_3 = {
+      id: "c1-1_c2-3",
+      source: "c1-1",
+      target: "c2-3",
+    };
+    const edge_c3_1_c2_1 = {
+      id: "c3-1_c2-1",
+      source: "c3-1",
+      target: "c2-1",
+    };
+    const edge_c3_1_c2_2 = {
+      id: "c3-1_c2-2",
+      source: "c3-1",
+      target: "c2-2",
+    };
+    const edge_c3_1_c2_3 = {
+      id: "c3-1_c2-3",
+      source: "c3-1",
+      target: "c2-3",
+    };
+    const edge_c4_1_c2_1 = {
+      id: "c4-1_c2-1",
+      source: "c4-1",
+      target: "c2-1",
+    };
+    const edge_c4_1_c2_2 = {
+      id: "c4-1_c2-2",
+      source: "c4-1",
+      target: "c2-2",
+    };
+    const edge_c4_1_c2_3 = {
+      id: "c4-1_c2-3",
+      source: "c4-1",
+      target: "c2-3",
+    };
+    const category_1 = { id: "c1" };
+    const category_2 = { id: "c2", fold: { threshold: 2 } };
+    const category_3 = { id: "c3" };
+    const category_4 = { id: "c4" };
+    const nodesAndEdgesInput = {
+      graph,
+      nodeCategoryMap: {
+        c1: {
+          [node_c1_1.id]: node_c1_1,
+        },
+        c2: {
+          [node_c2_1.id]: node_c2_1,
+          [node_c2_2.id]: node_c2_2,
+          [node_c2_3.id]: node_c2_3,
+        },
+        c3: {
+          [node_c3_1.id]: node_c3_1,
+        },
+        c4: {
+          [node_c4_1.id]: node_c4_1,
+        },
+      },
+      edgeMap: {
+        [edge_c1_1_c2_1.id]: edge_c1_1_c2_1,
+        [edge_c1_1_c2_2.id]: edge_c1_1_c2_2,
+        [edge_c1_1_c2_3.id]: edge_c1_1_c2_3,
+        [edge_c3_1_c2_1.id]: edge_c3_1_c2_1,
+        [edge_c3_1_c2_2.id]: edge_c3_1_c2_2,
+        [edge_c3_1_c2_3.id]: edge_c3_1_c2_3,
+        [edge_c4_1_c2_1.id]: edge_c4_1_c2_1,
+        [edge_c4_1_c2_2.id]: edge_c4_1_c2_2,
+        [edge_c4_1_c2_3.id]: edge_c4_1_c2_3,
+      },
+      edges: [
+        edge_c1_1_c2_1,
+        edge_c1_1_c2_2,
+        edge_c1_1_c2_3,
+        edge_c3_1_c2_1,
+        edge_c3_1_c2_2,
+        edge_c3_1_c2_3,
+        edge_c4_1_c2_1,
+        edge_c4_1_c2_2,
+        edge_c4_1_c2_3,
+      ],
+      nodeMap: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c2_1.id]: node_c2_1,
+        [node_c2_2.id]: node_c2_2,
+        [node_c2_3.id]: node_c2_3,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+      },
+      nodes: [node_c1_1, node_c2_1, node_c2_2, node_c2_3, node_c3_1, node_c4_1],
+      root_nodes: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+      },
+      categories: {
+        [category_1.id]: category_1,
+        [category_2.id]: category_2,
+        [category_3.id]: category_3,
+        [category_4.id]: category_4,
+      },
+    };
+    const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
+    delete nodesAndEdges.graph;
+    const foldedNode = {
+      id: "fold-c2-1",
+      category: "c2",
+      depth: null,
+      href: null,
+      icon: undefined,
+      isFolded: true,
+      row_data: null,
+      symbol: null,
+      title: null,
+    };
+    expect(nodesAndEdges).toEqual({
+      nodeCategoryMap: {
+        c1: {
+          [node_c1_1.id]: node_c1_1,
+        },
+        c2: {
+          [foldedNode.id]: foldedNode,
+        },
+        c3: {
+          [node_c3_1.id]: node_c3_1,
+        },
+        c4: {
+          [node_c4_1.id]: node_c4_1,
+        },
+      },
+      nodeMap: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+        [foldedNode.id]: foldedNode,
+      },
+      nodes: [node_c1_1, node_c3_1, node_c4_1, foldedNode],
+      edgeMap: {
+        "c1-1_fold-c2-1": {
+          id: "c1-1_fold-c2-1",
+          source: "c1-1",
+          target: "fold-c2-1",
+        },
+        "c3-1_fold-c2-1": {
+          id: "c3-1_fold-c2-1",
+          source: "c3-1",
+          target: "fold-c2-1",
+        },
+        "c4-1_fold-c2-1": {
+          id: "c4-1_fold-c2-1",
+          source: "c4-1",
+          target: "fold-c2-1",
+        },
+      },
+      edges: [
+        {
+          id: "c1-1_fold-c2-1",
+          source: "c1-1",
+          target: "fold-c2-1",
+        },
+        {
+          id: "c3-1_fold-c2-1",
+          source: "c3-1",
+          target: "fold-c2-1",
+        },
+        {
+          id: "c4-1_fold-c2-1",
+          source: "c4-1",
+          target: "fold-c2-1",
+        },
+      ],
+      root_nodes: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+      },
+      categories: {
+        [category_1.id]: category_1,
+        [category_2.id]: category_2,
+        [category_3.id]: category_3,
+        [category_4.id]: category_4,
+      },
+    });
+  });
+
+  test("Multiple inheritance", () => {
     const graph = new Graph({ directed: true });
     graph.setNode("c1-1");
     graph.setNode("c2-1");
@@ -848,6 +1258,312 @@ describe("common.foldNodesAndEdges", () => {
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
       categories: { c1: category_1, c2: category_2, c3: category_3 },
+    });
+  });
+
+  test("Edge direction is included in fold group decision, so this does not collapse", () => {
+    const graph = new Graph({ directed: true });
+    graph.setNode("c1-1");
+    graph.setNode("c2-1");
+    graph.setNode("c2-2");
+    graph.setNode("c3-1");
+    graph.setEdge("c1-1", "c2-1");
+    graph.setEdge("c1-1", "c2-2");
+    graph.setEdge("c3-1", "c2-1");
+    graph.setEdge("c2-2", "c3-1");
+    const node_c1_1 = {
+      id: "c1-1",
+      category: "c1",
+    };
+    const node_c2_1 = {
+      id: "c2-1",
+      category: "c2",
+    };
+    const node_c2_2 = {
+      id: "c2-2",
+      category: "c2",
+    };
+    const node_c3_1 = {
+      id: "c3-1",
+      category: "c3",
+    };
+    const edge_c1_1_c2_1 = {
+      id: "c1-1_c2-1",
+      source: "c1-1",
+      target: "c2-1",
+    };
+    const edge_c1_1_c2_2 = {
+      id: "c1-1_c2-2",
+      source: "c1-1",
+      target: "c2-2",
+    };
+    const edge_c3_1_c2_1 = {
+      id: "c3-1_c2-1",
+      source: "c3-1",
+      target: "c2-1",
+    };
+    const edge_c2_2_c3_1 = {
+      id: "c2-2_c3-1",
+      source: "c2-2",
+      target: "c3-1",
+    };
+    const category_1 = { id: "c1" };
+    const category_2 = { id: "c2", fold: { threshold: 2 } };
+    const category_3 = { id: "c3" };
+    const nodesAndEdgesInput = {
+      graph,
+      nodeCategoryMap: {
+        c1: {
+          [node_c1_1.id]: node_c1_1,
+        },
+        c2: {
+          [node_c2_1.id]: node_c2_1,
+          [node_c2_2.id]: node_c2_2,
+        },
+        c3: {
+          [node_c3_1.id]: node_c3_1,
+        },
+      },
+      nodeMap: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c2_1.id]: node_c2_1,
+        [node_c2_2.id]: node_c2_2,
+        [node_c3_1.id]: node_c3_1,
+      },
+      nodes: [node_c1_1, node_c2_1, node_c2_2, node_c3_1],
+      edgeMap: {
+        [edge_c1_1_c2_1.id]: edge_c1_1_c2_1,
+        [edge_c1_1_c2_2.id]: edge_c1_1_c2_2,
+        [edge_c3_1_c2_1.id]: edge_c3_1_c2_1,
+        [edge_c2_2_c3_1.id]: edge_c2_2_c3_1,
+      },
+      edges: [edge_c1_1_c2_1, edge_c1_1_c2_2, edge_c3_1_c2_1, edge_c2_2_c3_1],
+      root_nodes: { [node_c1_1.id]: node_c1_1 },
+      categories: {
+        [category_1.id]: category_1,
+        [category_2.id]: category_2,
+        [category_3.id]: category_3,
+      },
+    };
+    const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
+    delete nodesAndEdges.graph;
+    delete nodesAndEdgesInput.graph;
+    expect(nodesAndEdges).toEqual(nodesAndEdgesInput);
+  });
+
+  test("All edges are included in fold group decision", () => {
+    const graph = new Graph({ directed: true });
+    graph.setNode("c1-1");
+    graph.setNode("c2-1");
+    graph.setNode("c2-2");
+    graph.setNode("c2-3");
+    graph.setNode("c3-1");
+    graph.setNode("c4-1");
+    graph.setEdge("c1-1", "c2-1");
+    graph.setEdge("c1-1", "c2-2");
+    graph.setEdge("c1-1", "c2-3");
+    graph.setEdge("c3-1", "c2-1");
+    graph.setEdge("c3-1", "c2-2");
+    graph.setEdge("c3-1", "c2-3");
+    graph.setEdge("c4-1", "c2-3");
+    const node_c1_1 = {
+      id: "c1-1",
+      category: "c1",
+    };
+    const node_c2_1 = {
+      id: "c2-1",
+      category: "c2",
+    };
+    const node_c2_2 = {
+      id: "c2-2",
+      category: "c2",
+    };
+    const node_c2_3 = {
+      id: "c2-3",
+      category: "c2",
+    };
+    const node_c3_1 = {
+      id: "c3-1",
+      category: "c3",
+    };
+    const node_c4_1 = {
+      id: "c4-1",
+      category: "c4",
+    };
+    const edge_c1_1_c2_1 = {
+      id: "c1-1_c2-1",
+      source: "c1-1",
+      target: "c2-1",
+    };
+    const edge_c1_1_c2_2 = {
+      id: "c1-1_c2-2",
+      source: "c1-1",
+      target: "c2-2",
+    };
+    const edge_c1_1_c2_3 = {
+      id: "c1-1_c2-3",
+      source: "c1-1",
+      target: "c2-3",
+    };
+    const edge_c3_1_c2_1 = {
+      id: "c3-1_c2-1",
+      source: "c3-1",
+      target: "c2-1",
+    };
+    const edge_c3_1_c2_2 = {
+      id: "c3-1_c2-2",
+      source: "c3-1",
+      target: "c2-2",
+    };
+    const edge_c3_1_c2_3 = {
+      id: "c3-1_c2-3",
+      source: "c3-1",
+      target: "c2-3",
+    };
+    const edge_c4_1_c2_3 = {
+      id: "c4-1_c2-3",
+      source: "c4-1",
+      target: "c2-3",
+    };
+    const category_1 = { id: "c1" };
+    const category_2 = { id: "c2", fold: { threshold: 2 } };
+    const category_3 = { id: "c3" };
+    const category_4 = { id: "c4" };
+    const nodesAndEdgesInput = {
+      graph,
+      nodeCategoryMap: {
+        c1: {
+          [node_c1_1.id]: node_c1_1,
+        },
+        c2: {
+          [node_c2_1.id]: node_c2_1,
+          [node_c2_2.id]: node_c2_2,
+          [node_c2_3.id]: node_c2_3,
+        },
+        c3: {
+          [node_c3_1.id]: node_c3_1,
+        },
+        c4: {
+          [node_c4_1.id]: node_c4_1,
+        },
+      },
+      nodeMap: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c2_1.id]: node_c2_1,
+        [node_c2_2.id]: node_c2_2,
+        [node_c2_3.id]: node_c2_3,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+      },
+      nodes: [node_c1_1, node_c2_1, node_c2_2, node_c2_3, node_c3_1, node_c4_1],
+      edgeMap: {
+        [edge_c1_1_c2_1.id]: edge_c1_1_c2_1,
+        [edge_c1_1_c2_2.id]: edge_c1_1_c2_2,
+        [edge_c1_1_c2_3.id]: edge_c1_1_c2_3,
+        [edge_c3_1_c2_1.id]: edge_c3_1_c2_1,
+        [edge_c3_1_c2_2.id]: edge_c3_1_c2_2,
+        [edge_c3_1_c2_3.id]: edge_c3_1_c2_3,
+        [edge_c4_1_c2_3.id]: edge_c4_1_c2_3,
+      },
+      edges: [
+        edge_c1_1_c2_1,
+        edge_c1_1_c2_2,
+        edge_c1_1_c2_3,
+        edge_c3_1_c2_1,
+        edge_c3_1_c2_2,
+        edge_c3_1_c2_3,
+        edge_c4_1_c2_3,
+      ],
+      root_nodes: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+      },
+      categories: {
+        [category_1.id]: category_1,
+        [category_2.id]: category_2,
+        [category_3.id]: category_3,
+        [category_4.id]: category_4,
+      },
+    };
+    const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
+    delete nodesAndEdges.graph;
+    const foldedNode = {
+      id: "fold-c2-1",
+      category: "c2",
+      depth: null,
+      href: null,
+      icon: undefined,
+      isFolded: true,
+      row_data: null,
+      symbol: null,
+      title: null,
+    };
+    expect(nodesAndEdges).toEqual({
+      nodeCategoryMap: {
+        c1: {
+          [node_c1_1.id]: node_c1_1,
+        },
+        c2: {
+          [node_c2_3.id]: node_c2_3,
+          [foldedNode.id]: foldedNode,
+        },
+        c3: {
+          [node_c3_1.id]: node_c3_1,
+        },
+        c4: {
+          [node_c4_1.id]: node_c4_1,
+        },
+      },
+      nodeMap: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c2_3.id]: node_c2_3,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+        [foldedNode.id]: foldedNode,
+      },
+      nodes: [node_c1_1, node_c2_3, node_c3_1, node_c4_1, foldedNode],
+      edgeMap: {
+        [edge_c1_1_c2_3.id]: edge_c1_1_c2_3,
+        [edge_c3_1_c2_3.id]: edge_c3_1_c2_3,
+        [edge_c4_1_c2_3.id]: edge_c4_1_c2_3,
+        "c1-1_fold-c2-1": {
+          id: "c1-1_fold-c2-1",
+          source: "c1-1",
+          target: "fold-c2-1",
+        },
+        "c3-1_fold-c2-1": {
+          id: "c3-1_fold-c2-1",
+          source: "c3-1",
+          target: "fold-c2-1",
+        },
+      },
+      edges: [
+        edge_c1_1_c2_3,
+        edge_c3_1_c2_3,
+        edge_c4_1_c2_3,
+        {
+          id: "c1-1_fold-c2-1",
+          source: "c1-1",
+          target: "fold-c2-1",
+        },
+        {
+          id: "c3-1_fold-c2-1",
+          source: "c3-1",
+          target: "fold-c2-1",
+        },
+      ],
+      root_nodes: {
+        [node_c1_1.id]: node_c1_1,
+        [node_c3_1.id]: node_c3_1,
+        [node_c4_1.id]: node_c4_1,
+      },
+      categories: {
+        [category_1.id]: category_1,
+        [category_2.id]: category_2,
+        [category_3.id]: category_3,
+        [category_4.id]: category_4,
+      },
     });
   });
 });
