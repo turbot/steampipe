@@ -28,7 +28,7 @@ The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/
   </tr>
   <tr>
    <td><b>SaaS</b></td>
-   <td><a href="https://hub.steampipe.io/plugins/turbot/francois2metz/airtable">Airtable</a>, <a href="https://hub.steampipe.io/plugins/turbot/jira">Jira</a>, <a href="https://hub.steampipe.io/plugins/turbot/github">GitHub</a>, <a href="https://hub.steampipe.io/plugins/turbot/googleworkspace">Google Workspace</a>, <a href="https://hub.steampipe.io/plugins/turbot/salesforce">Salesforce</a>, <a href="https://hub.steampipe.io/plugins/turbot/slack">Slack</a>, <a href="https://hub.steampipe.io/plugins/turbot/stripe">Stripe</a>, <a href="">Zoom …</a></td>
+   <td><a href="https://hub.steampipe.io/plugins/francois2metz/airtable">Airtable</a>, <a href="https://hub.steampipe.io/plugins/turbot/jira">Jira</a>, <a href="https://hub.steampipe.io/plugins/turbot/github">GitHub</a>, <a href="https://hub.steampipe.io/plugins/turbot/googleworkspace">Google Workspace</a>, <a href="https://hub.steampipe.io/plugins/turbot/salesforce">Salesforce</a>, <a href="https://hub.steampipe.io/plugins/turbot/slack">Slack</a>, <a href="https://hub.steampipe.io/plugins/turbot/stripe">Stripe</a>, <a href="">Zoom …</a></td>
   </tr>
   <tr>
    <td><b>Security</b></td>
