@@ -4,6 +4,7 @@ import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
 import { DashboardRunState } from "../../../hooks/useDashboard";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
+import { Graph } from "graphlib";
 import { GraphProperties, GraphType } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 import { KeyValuePairs, KeyValueStringPairs } from "./types";
@@ -289,9 +290,12 @@ interface NodesAndEdgesMetadata {
 }
 
 export interface NodesAndEdges {
+  graph: Graph;
   nodes: Node[];
-  root_nodes: NodeMap;
   edges: Edge[];
+  nodeMap: KeyValuePairs;
+  edgeMap: KeyValuePairs;
+  root_nodes: NodeMap;
   categories: CategoryMap;
   metadata?: NodesAndEdgesMetadata;
   next_color_index: number;
@@ -309,11 +313,6 @@ const recordEdge = (
   // Find any existing edge
   const edge_id = `${from_id}:${to_id}`;
   const existingNode = edge_lookup[edge_id];
-  if (existingNode) {
-    duplicate_edge = true;
-  } else {
-    edge_lookup[edge_id] = true;
-  }
 
   const edge: Edge = {
     id: edge_id,
@@ -323,6 +322,13 @@ const recordEdge = (
     category,
     row_data,
   };
+
+  if (existingNode) {
+    duplicate_edge = true;
+  } else {
+    edge_lookup[edge_id] = edge;
+  }
+
   return {
     edge,
     duplicate_edge,
@@ -330,6 +336,7 @@ const recordEdge = (
 };
 
 const createNode = (
+  node_lookup,
   id: string,
   title: string | null = null,
   category: string | null = null,
@@ -360,6 +367,7 @@ const createNode = (
     href,
     isFolded,
   };
+  node_lookup[id] = node;
   return node;
 };
 
@@ -432,7 +440,7 @@ function getFoldedCategoryNodeIdsByNodeId(
 }
 
 const foldNodesAndEdges = (nodesAndEdges: NodesAndEdges) => {
-  console.log(nodesAndEdges.categories);
+  console.log(nodesAndEdges);
   // Find all nodes of a given category
 
   // const foldedCategoryNodeIdsByNodeId = getFoldedCategoryNodeIdsByNodeId(
@@ -455,13 +463,18 @@ const buildNodesAndEdges = (
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
     return {
+      graph: new Graph(),
       nodes: [],
-      root_nodes: {},
       edges: [],
+      nodeMap: {},
+      edgeMap: {},
+      root_nodes: {},
       categories: {},
       next_color_index: 0,
     };
   }
+
+  const graph = new Graph({ directed: true });
 
   let categoryProperties = {};
   if (properties && properties.categories) {
@@ -566,6 +579,7 @@ const buildNodesAndEdges = (
 
       if (!existingNode) {
         const node = createNode(
+          node_lookup,
           node_id,
           title,
           category,
@@ -573,8 +587,7 @@ const buildNodesAndEdges = (
           row,
           categories
         );
-        node_lookup[node_id] = node;
-
+        graph.setNode(node_id);
         nodes.push(node);
 
         // Record this as a root node for now - we may remove that once we process the edges
@@ -592,9 +605,16 @@ const buildNodesAndEdges = (
 
         const existingNode = node_lookup[from_id];
         if (!existingNode) {
-          const node = createNode(from_id, null, null, null, null, {});
-          node_lookup[from_id] = node;
-
+          const node = createNode(
+            node_lookup,
+            from_id,
+            null,
+            null,
+            null,
+            null,
+            {}
+          );
+          graph.setNode(from_id);
           nodes.push(node);
 
           // Record this as a root node for now - we may remove that once we process the edges
@@ -609,6 +629,7 @@ const buildNodesAndEdges = (
         if (duplicate_edge) {
           contains_duplicate_edges = true;
         }
+        graph.setEdge(from_id, node_id);
         edges.push(edge);
       }
       // Else if this has an edge to another node
@@ -618,9 +639,16 @@ const buildNodesAndEdges = (
 
         const existingNode = node_lookup[to_id];
         if (!existingNode) {
-          const node = createNode(to_id, null, null, null, null, {});
-          node_lookup[to_id] = node;
-
+          const node = createNode(
+            node_lookup,
+            to_id,
+            null,
+            null,
+            null,
+            null,
+            {}
+          );
+          graph.setNode(to_id);
           nodes.push(node);
         }
 
@@ -632,6 +660,7 @@ const buildNodesAndEdges = (
         if (duplicate_edge) {
           contains_duplicate_edges = true;
         }
+        graph.setEdge(node_id, to_id);
         edges.push(edge);
       }
     }
@@ -644,16 +673,24 @@ const buildNodesAndEdges = (
       // Record implicit nodes from edge definition
       const existingFromNode = node_lookup[from_id];
       if (!existingFromNode) {
-        const node = createNode(from_id, null, null, null, null, {});
-        node_lookup[from_id] = node;
+        const node = createNode(
+          node_lookup,
+          from_id,
+          null,
+          null,
+          null,
+          null,
+          {}
+        );
+        graph.setNode(from_id);
         nodes.push(node);
         // Record this as a root node for now - we may remove that once we process the edges
         root_node_lookup[from_id] = node;
       }
       const existingToNode = node_lookup[to_id];
       if (!existingToNode) {
-        const node = createNode(to_id, null, null, null, null, {});
-        node_lookup[to_id] = node;
+        const node = createNode(node_lookup, to_id, null, null, null, null, {});
+        graph.setNode(to_id);
         nodes.push(node);
       }
 
@@ -668,14 +705,18 @@ const buildNodesAndEdges = (
       if (duplicate_edge) {
         contains_duplicate_edges = true;
       }
+      graph.setEdge(from_id, to_id);
       edges.push(edge);
     }
   });
 
   return {
+    graph,
     nodes,
-    root_nodes: root_node_lookup,
     edges,
+    nodeMap: node_lookup,
+    edgeMap: edge_lookup,
+    root_nodes: root_node_lookup,
     categories,
     metadata: {
       has_multiple_roots: Object.keys(root_node_lookup).length > 1,
