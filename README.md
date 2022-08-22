@@ -20,6 +20,7 @@ With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_med
 ## Steampipe CLI - The SQL console for API queries
 
 The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. 
+
 <table>
   <tr>
    <td><b>Cloud</b></td>
@@ -149,7 +150,6 @@ where
 
 The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of **benchmarks** that check your cloud resources for compliance, and **dashboards** that visualize your resources.
 
-
 <table>
   <tr>
    <td><b>Compliance</b></td>
@@ -173,10 +173,9 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
   </tr>
   <tr>
    <td><b>Your own mod</b></td>
-   <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a></td>.
+   <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a>.</td>
   </tr>
  </table>
-
 
 
 ### The CIS 1.4 benchmark in `AWS Compliance`
