@@ -100,7 +100,7 @@ brew install steampipe
  <summary>Add a plugin</summary>
  <br>
  
- Choose a plugin from the [hub](https://hub.steampipe.io), for example: [Net](https://hub.steampipe.io/plugins/turbot/net).
+ Choose a plugin from the [hub](https://hub.steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example: [Net](https://hub.steampipe.io/plugins/turbot/net?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
 
  Run the `steampipe plugin` command to install it.
 
