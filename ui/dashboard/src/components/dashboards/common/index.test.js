@@ -1,5 +1,10 @@
 import "../../../test/matchMedia";
-import { adjustMinValue, adjustMaxValue, buildNodesAndEdges } from "./index";
+import {
+  adjustMinValue,
+  adjustMaxValue,
+  buildNodesAndEdges,
+  foldNodesAndEdges,
+} from "./index";
 
 describe("common.adjustMinValue", () => {
   test("5", () => {
@@ -151,34 +156,28 @@ describe("common.buildNodesAndEdges", () => {
       columns: [{ name: "id", data_type: "text" }],
       rows: [{ id: "node" }],
     };
-    expect(buildNodesAndEdges(rawData)).toEqual({
+    const node = {
+      id: "node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: { id: "node" },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const nodesAndEdges = buildNodesAndEdges(rawData);
+    delete nodesAndEdges.graph;
+    expect(nodesAndEdges).toEqual({
       categories: {},
+      edgeMap: {},
       edges: [],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
-      nodes: [
-        {
-          id: "node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-      ],
+      nodeMap: { [node.id]: node },
+      nodes: [node],
       root_nodes: {
-        node: {
-          id: "node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
+        node,
       },
     });
   });
@@ -191,53 +190,46 @@ describe("common.buildNodesAndEdges", () => {
       ],
       rows: [{ id: "node", from_id: "from_node" }],
     };
-    expect(buildNodesAndEdges(rawData)).toEqual({
+    const nodesAndEdges = buildNodesAndEdges(rawData);
+    delete nodesAndEdges.graph;
+    const sourceNode = {
+      id: "from_node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: null,
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const targetNode = {
+      id: "node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: { id: "node", from_id: "from_node" },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const edge = {
+      id: "from_node:node",
+      from_id: "from_node",
+      to_id: "node",
+      title: null,
+      category: null,
+      row_data: null,
+    };
+    expect(nodesAndEdges).toEqual({
       categories: {},
-      edges: [
-        {
-          id: "from_node:node",
-          from_id: "from_node",
-          to_id: "node",
-          title: null,
-          category: null,
-          row_data: null,
-        },
-      ],
+      edgeMap: { [edge.id]: edge },
+      edges: [edge],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
-      nodes: [
-        {
-          id: "node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "node", from_id: "from_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-        {
-          id: "from_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: null,
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-      ],
+      nodeMap: { [targetNode.id]: targetNode, [sourceNode.id]: sourceNode },
+      nodes: [targetNode, sourceNode],
       root_nodes: {
-        from_node: {
-          id: "from_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: null,
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
+        [sourceNode.id]: sourceNode,
       },
     });
   });
@@ -250,53 +242,46 @@ describe("common.buildNodesAndEdges", () => {
       ],
       rows: [{ id: "node", to_id: "to_node" }],
     };
-    expect(buildNodesAndEdges(rawData)).toEqual({
+    const sourceNode = {
+      id: "node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: { id: "node", to_id: "to_node" },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const targetNode = {
+      id: "to_node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: null,
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const edge = {
+      id: "node:to_node",
+      from_id: "node",
+      to_id: "to_node",
+      title: null,
+      category: null,
+      row_data: null,
+    };
+    const nodesAndEdges = buildNodesAndEdges(rawData);
+    delete nodesAndEdges.graph;
+    expect(nodesAndEdges).toEqual({
       categories: {},
-      edges: [
-        {
-          id: "node:to_node",
-          from_id: "node",
-          to_id: "to_node",
-          title: null,
-          category: null,
-          row_data: null,
-        },
-      ],
+      edgeMap: { [edge.id]: edge },
+      edges: [edge],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
-      nodes: [
-        {
-          id: "node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "node", to_id: "to_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-        {
-          id: "to_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: null,
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-      ],
+      nodeMap: { [sourceNode.id]: sourceNode, [targetNode.id]: targetNode },
+      nodes: [sourceNode, targetNode],
       root_nodes: {
-        node: {
-          id: "node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "node", to_id: "to_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
+        node: sourceNode,
       },
     });
   });
@@ -310,73 +295,61 @@ describe("common.buildNodesAndEdges", () => {
       ],
       rows: [{ id: "node", from_id: "from_node", to_id: "to_node" }],
     };
-    expect(buildNodesAndEdges(rawData)).toEqual({
+    const edge = {
+      id: "from_node:to_node",
+      from_id: "from_node",
+      to_id: "to_node",
+      title: null,
+      category: null,
+      row_data: null,
+    };
+    const node = {
+      id: "node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: { id: "node", from_id: "from_node", to_id: "to_node" },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const sourceNode = {
+      id: "from_node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: null,
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const targetNode = {
+      id: "to_node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: null,
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const nodesAndEdges = buildNodesAndEdges(rawData);
+    delete nodesAndEdges.graph;
+    expect(nodesAndEdges).toEqual({
       categories: {},
-      edges: [
-        {
-          id: "from_node:to_node",
-          from_id: "from_node",
-          to_id: "to_node",
-          title: null,
-          category: null,
-          row_data: null,
-        },
-      ],
+      edgeMap: { [edge.id]: edge },
+      edges: [edge],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: true },
       next_color_index: 0,
-      nodes: [
-        {
-          id: "node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "node", from_id: "from_node", to_id: "to_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-        {
-          id: "from_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: null,
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-        {
-          id: "to_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: null,
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-      ],
+      nodeMap: {
+        [node.id]: node,
+        [sourceNode.id]: sourceNode,
+        [targetNode.id]: targetNode,
+      },
+      nodes: [node, sourceNode, targetNode],
       root_nodes: {
-        node: {
-          id: "node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "node", from_id: "from_node", to_id: "to_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-        from_node: {
-          id: "from_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: null,
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
+        node,
+        from_node: sourceNode,
       },
     });
   });
@@ -394,53 +367,46 @@ describe("common.buildNodesAndEdges", () => {
         { from_id: "from_node", to_id: "to_node" },
       ],
     };
-    expect(buildNodesAndEdges(rawData)).toEqual({
+    const edge = {
+      id: "from_node:to_node",
+      from_id: "from_node",
+      to_id: "to_node",
+      title: null,
+      category: null,
+      row_data: { from_id: "from_node", to_id: "to_node" },
+    };
+    const sourceNode = {
+      id: "from_node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: { id: "from_node" },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const targetNode = {
+      id: "to_node",
+      title: null,
+      category: null,
+      depth: null,
+      row_data: { id: "to_node" },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const nodesAndEdges = buildNodesAndEdges(rawData);
+    delete nodesAndEdges.graph;
+    expect(nodesAndEdges).toEqual({
       categories: {},
-      edges: [
-        {
-          id: "from_node:to_node",
-          from_id: "from_node",
-          to_id: "to_node",
-          title: null,
-          category: null,
-          row_data: { from_id: "from_node", to_id: "to_node" },
-        },
-      ],
+      edgeMap: { [edge.id]: edge },
+      edges: [edge],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
-      nodes: [
-        {
-          id: "from_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "from_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-        {
-          id: "to_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "to_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-      ],
+      nodeMap: { [sourceNode.id]: sourceNode, [targetNode.id]: targetNode },
+      nodes: [sourceNode, targetNode],
       root_nodes: {
-        from_node: {
-          id: "from_node",
-          title: null,
-          category: null,
-          depth: null,
-          row_data: { id: "from_node" },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
+        from_node: sourceNode,
       },
     });
   });
@@ -465,70 +431,59 @@ describe("common.buildNodesAndEdges", () => {
         },
       ],
     };
-    expect(buildNodesAndEdges(rawData)).toEqual({
+    const edge = {
+      id: "from_node:to_node",
+      from_id: "from_node",
+      to_id: "to_node",
+      title: "The Edge",
+      category: null,
+      row_data: {
+        from_id: "from_node",
+        to_id: "to_node",
+        title: "The Edge",
+        properties: { foobar: "barfoo" },
+      },
+    };
+    const sourceNode = {
+      id: "from_node",
+      title: "From Node",
+      category: null,
+      depth: null,
+      row_data: {
+        id: "from_node",
+        title: "From Node",
+        properties: { foo: "bar" },
+      },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const targetNode = {
+      id: "to_node",
+      title: "To Node",
+      category: null,
+      depth: null,
+      row_data: {
+        id: "to_node",
+        title: "To Node",
+        properties: { bar: "foo" },
+      },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const nodesAndEdges = buildNodesAndEdges(rawData);
+    delete nodesAndEdges.graph;
+    expect(nodesAndEdges).toEqual({
       categories: {},
-      edges: [
-        {
-          id: "from_node:to_node",
-          from_id: "from_node",
-          to_id: "to_node",
-          title: "The Edge",
-          category: null,
-          row_data: {
-            from_id: "from_node",
-            to_id: "to_node",
-            title: "The Edge",
-            properties: { foobar: "barfoo" },
-          },
-        },
-      ],
+      edgeMap: { [edge.id]: edge },
+      edges: [edge],
       metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
       next_color_index: 0,
-      nodes: [
-        {
-          id: "from_node",
-          title: "From Node",
-          category: null,
-          depth: null,
-          row_data: {
-            id: "from_node",
-            title: "From Node",
-            properties: { foo: "bar" },
-          },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-        {
-          id: "to_node",
-          title: "To Node",
-          category: null,
-          depth: null,
-          row_data: {
-            id: "to_node",
-            title: "To Node",
-            properties: { bar: "foo" },
-          },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
-      ],
+      nodeMap: { [sourceNode.id]: sourceNode, [targetNode.id]: targetNode },
+      nodes: [sourceNode, targetNode],
       root_nodes: {
-        from_node: {
-          id: "from_node",
-          title: "From Node",
-          category: null,
-          depth: null,
-          row_data: {
-            id: "from_node",
-            title: "From Node",
-            properties: { foo: "bar" },
-          },
-          href: null,
-          symbol: null,
-          isFolded: false,
-        },
+        from_node: sourceNode,
       },
     });
   });
