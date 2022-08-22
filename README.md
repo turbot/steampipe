@@ -24,45 +24,46 @@ The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/
 <table>
   <tr>
    <td><b>Cloud</b></td>
-   <td>AWS, Alibaba, Azure, GCP, IBM, Oracle …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/aws">AWS</a>, <a href="https://hub.steampipe.io/plugins/turbot/alicloud">Alibaba</a>, <a href="https://hub.steampipe.io/plugins/turbot/azure">Azure</a>, <a href="https://hub.steampipe.io/plugins/turbot/gcp">GCP</a>, <a href="https://hub.steampipe.io/plugins/turbot/ibm">IBM</a>, <a href="https://hub.steampipe.io/plugins/turbot/oci">Oracle</a> …</td>
   </tr>
   <tr>
    <td><b>SaaS</b></td>
-   <td>Airtable, Jira, GitHub, Google Workspace, Salesforce, Slack, Stripe, Zoom …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/francois2metz/airtable">Airtable</a>, <a href="https://hub.steampipe.io/plugins/turbot/jira">Jira</a>, <a href="https://hub.steampipe.io/plugins/turbot/github">GitHub</a>, <a href="https://hub.steampipe.io/plugins/turbot/googleworkspace">Google Workspace</a>, <a href="https://hub.steampipe.io/plugins/turbot/salesforce">Salesforce</a>, <a href="https://hub.steampipe.io/plugins/turbot/slack">Slack</a>, <a href="https://hub.steampipe.io/plugins/turbot/stripe">Stripe</a>, <a href="">Zoom …</a></td>
   </tr>
   <tr>
    <td><b>Security</b></td>
-   <td>CrowdStrike, PAN-OS, VirusTotal, Shodan, Trivy …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/crowdstrike">CrowdStrike</a>, <a href="https://hub.steampipe.io/plugins/turbot/panos">PAN-OS</a>, <a href="https://hub.steampipe.io/plugins/turbot/virustotal">VirusTotal</a>, <a href="https://hub.steampipe.io/plugins/turbot/shodan">Shodan</a>, <a href="https://hub.steampipe.io/plugins/turbot/trivy">Trivy</a> …</td>
   </tr>
   <tr>
    <td><b>Identity</b></td>
-   <td>Azure AD, Duo, Keycloack, Google Directory, LDAP …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/azuread">Azure AD</a>, <a href="https://hub.steampipe.io/plugins/turbot/duo">Duo</a>, <a href="https://hub.steampipe.io/plugins/theapsgroup/keycloak">Keycloack</a>, <a href="https://hub.steampipe.io/plugins/turbot/googledirectory">Google Directory</a>, <a href="https://hub.steampipe.io/plugins/turbot/ldap">LDAP</a> …</td>
   </tr>
   <tr>
    <td><b>DevOps</b></td>
-   <td>Docker, Grafana, Kubernetes, Prometheus …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/docker">Docker</a>, <a href="https://hub.steampipe.io/plugins/turbot/grafana">Grafana</a>, <a href="https://hub.steampipe.io/plugins/turbot/kubernetes">Kubernetes</a>, <a href="https://hub.steampipe.io/plugins/turbot/prometheus">Prometheus</a> …</td>
   </tr>
   <tr>
    <td><b>Net</b></td>
-   <td>Baleen, Cloudflare, crt.sh, Gandi, IMAP, ipstack, updown.io, WHOIS …</td>
+   <td><a href="https://hub.steampipe.io/plugins/francois2metz/baleen">Baleen</a>, <a href="https://hub.steampipe.io/plugins/turbot/cloudflare">Cloudflare</a>, <a href="https://hub.steampipe.io/plugins/turbot/crtsh">crt.sh</a>, <a href="https://hub.steampipe.io/plugins/francois2metz/gandi">Gandi</a>, <a href="https://hub.steampipe.io/plugins/turbot/imap">IMAP</a>, <a href="https://hub.steampipe.io/plugins/turbot/ipstack">ipstack</a>, <a href="https://hub.steampipe.io/plugins/turbot/updown">updown.io</a>, <a href="https://hub.steampipe.io/plugins/turbot/whois">WHOIS</a> …</td>
   </tr>
-  <tr>
+
+<tr>
    <td><b>IaC</b></td>
-   <td>CloudFormation, Terraform …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/awscfn">CloudFormation</a>, <a href="https://hub.steampipe.io/plugins/turbot/terraform">Terraform</a> …</td>
   </tr>
   <tr>
    <td><b>Logs</b></td>
-   <td>Algolia, AWS CloudWatch, Splunk, Datadog …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/algolia">Algolia</a>, <a href="https://hub.steampipe.io/plugins/turbot/aws/tables/aws_cloudwatch_log_event">AWS CloudWatch</a>, <a href="https://hub.steampipe.io/plugins/turbot/splunk">Splunk</a>, <a href="https://hub.steampipe.io/plugins/turbot/datadog">Datadog</a> …</td>
   </tr>
   <tr>
    <td><b>Social</b></td>
-   <td>HackerNews, Twitter, Reddit, RSS …</td>
+   <td><a href="https://hub.steampipe.io/plugins/turbot/hackernews">HackerNews</a>, <a href="https://hub.steampipe.io/plugins/turbot/twitter">Twitter</a>, <a href="https://hub.steampipe.io/plugins/turbot/reddit">Reddit</a>, <a href="https://hub.steampipe.io/plugins/turbot/rss">RSS</a> …</td>
   </tr>
   <tr>
    <td><b>Your API</b></td>
    <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
   </tr>
- </table>
+</table>
   
 
 The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables. 
