@@ -150,7 +150,33 @@ where
 ## Steampipe Mods - Benchmarks & dashboards
 
 The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of **benchmarks** that check your cloud resources for compliance, and **dashboards** that visualize your resources.
-
+<table>
+  <tr>
+   <td><b>Compliance</b></td>
+   <td>Check AWS, Azure, GCP, etc for compliance with HIPAA, PCI, etc
+  </tr>
+  <tr>
+   <td><b>Cost</b></td>
+   <td>Review what AWS, Azure, GCP, and other clouds are costing you</td>
+  </tr>
+  <tr>
+   <td><b>Insights</b></td>
+   <td>Visualize cloud resources with charts, tables, and interactive widgets</td>
+  </tr>
+  <tr>
+   <td><b>Security</b></td>
+   <td>Use CIS, NIST, FedRAMP etc to assess the security of AWS, Azure, GCP, etc</td>
+  </tr>
+  <tr>
+   <td><b>Tags</b></td>
+   <td>Verify the consistency of tags applied to AWS, Azure, and GCP resources</td>
+  </tr>
+  <tr>
+   <td><b>Your mod</b></td>
+   <td>Build your own <a href="https://steampipe.io/docs/mods/overview">benchmarks and dashboards</a></td>
+  </tr>
+ </table>
+<!--
 <table>
   <tr>
    <td><b><a href="https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">Compliance</a></b></td>
@@ -177,6 +203,7 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
    <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a></td>
   </tr>
  </table>
+-->
 
 
 ### The CIS 1.4 benchmark in `AWS Compliance`
