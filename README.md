@@ -180,14 +180,11 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
  </table>
 
 
-<details>
- <summary>A benchmark in action</summary>
+A benchmark in action
  
 ![readme-aws-cis-1 4](https://user-images.githubusercontent.com/46509/185204883-54311f57-759d-410f-92bb-d1e92373a35b.gif) 
  
- </details>
-
-<details>
+ <details>
  <summary>A dashboard in action</summary>
  
 ![aws_s3_bucket_dashboard](https://user-images.githubusercontent.com/17007758/185409103-4eeaccd7-29e6-415c-94f7-dcab01a351c0.png)
