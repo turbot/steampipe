@@ -40,7 +40,7 @@ const AssetNode = ({
     themeColors,
   },
 }: AssetNodeProps) => {
-  const { expandCategory } = useGraph();
+  const { expandNode } = useGraph();
   const {
     themeContext: { theme },
   } = useDashboard();
@@ -121,7 +121,7 @@ const AssetNode = ({
             "text-center text-sm mt-1 bg-dashboard-panel text-foreground min-w-[35px]"
           )}
           onClick={
-            isFolded ? () => expandCategory(category as string) : undefined
+            isFolded ? () => expandNode([], category as string) : undefined
           }
         >
           {renderedHref && (

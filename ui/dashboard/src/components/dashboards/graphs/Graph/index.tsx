@@ -32,6 +32,7 @@ import {
 } from "../../../../constants/icons";
 import { useEffect, useMemo } from "react";
 import { useTooltips } from "./Tooltip";
+import { KeyValueStringPairs } from "../../common/types";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -47,7 +48,8 @@ const edgeTypes = {
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
-  themeColors: any
+  themeColors: any,
+  expandedNodes: KeyValueStringPairs
 ) => {
   if (!data) {
     return {
@@ -55,14 +57,8 @@ const buildGraphNodesAndEdges = (
       edges: [],
     };
   }
-  const nodesAndEdges = buildNodesAndEdges(
-    data,
-    properties,
-    themeColors,
-    false
-  );
-  const foldedNodesAndEdges = foldNodesAndEdges(nodesAndEdges);
-  console.log(foldedNodesAndEdges);
+  let nodesAndEdges = buildNodesAndEdges(data, properties, themeColors, false);
+  nodesAndEdges = foldNodesAndEdges(nodesAndEdges, expandedNodes);
   const direction = properties?.direction || "TB";
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setGraph({
@@ -194,9 +190,10 @@ const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined
 ) => {
+  const { expandedNodes } = useGraph();
   const themeColors = useChartThemeColors();
   const nodesAndEdges = useMemo(
-    () => buildGraphNodesAndEdges(data, properties, themeColors),
+    () => buildGraphNodesAndEdges(data, properties, themeColors, expandedNodes),
     [data, properties, themeColors]
   );
   return {

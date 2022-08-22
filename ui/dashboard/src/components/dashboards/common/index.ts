@@ -1,4 +1,3 @@
-import groupBy from "lodash/groupBy";
 import has from "lodash/has";
 import isEmpty from "lodash/isEmpty";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
@@ -317,7 +316,7 @@ const recordEdge = (
 ) => {
   let duplicate_edge = false;
   // Find any existing edge
-  const edge_id = `${from_id}:${to_id}`;
+  const edge_id = `${from_id}_${to_id}`;
   const existingNode = edge_lookup[edge_id];
 
   const edge: Edge = {
@@ -382,80 +381,12 @@ const createNode = (
   return node;
 };
 
-// Get fold aware node ID
-const getFoldAwareNodeId = (
-  nodeId: string,
-  foldedCategoryNodeIdsByNodeId: KeyValueStringPairs
-) => {
-  const lookup = foldedCategoryNodeIdsByNodeId[nodeId];
-  return { id: lookup || nodeId, is_folded: !!lookup };
-};
-
-function getFoldedCategoryNodeIdsByNodeId(
-  rows: LeafNodeDataRow[],
-  categoryProperties: {},
-  category_col: LeafNodeDataColumn | undefined,
-  expandedCategories: KeyValuePairs
-): KeyValueStringPairs {
-  // If we don't have a category column in the data set then we cannot fold nodes
-  if (!category_col) {
-    return {};
-  }
-
-  // Get a grouping of the category counts
-  const categoryCounts = groupBy(rows, (r) =>
-    category_col ? r[category_col.name] : "<null>"
-  );
-
-  const foldedCategoryNodeIdsByNodeId = {};
-  for (const row of rows) {
-    // Ignore anything that isn't an explicit node - we can't collapse a node unless
-    // there is a row defining it with both an id and a category
-    const id = row["id"];
-    // If no id, continue
-    if (!id) {
-      continue;
-    }
-
-    // Get the category for the row
-    const category = row["category"];
-    // If no category, continue
-    if (!category) {
-      continue;
-    }
-
-    // See if this category is expanded
-    if (expandedCategories[category]) {
-      continue;
-    }
-
-    const categorySettings = categoryProperties[category];
-    // If no category settings, continue
-    if (!categorySettings) {
-      continue;
-    }
-
-    const foldSettings = categorySettings.fold;
-    // If no fold settings, continue
-    if (!foldSettings) {
-      continue;
-    }
-
-    // If we need to fold this node, calculate its folded ID
-    if (categoryCounts[category].length >= foldSettings.threshold) {
-      foldedCategoryNodeIdsByNodeId[id] = `steampipe__${category}__fold`;
-    }
-  }
-
-  return foldedCategoryNodeIdsByNodeId;
-}
-
 const getCategoriesWithFold = (categories: CategoryMap): CategoryMap => {
   if (!categories) {
     return {};
   }
   return Object.entries(categories)
-    .filter(([category, info]) => !!info.fold)
+    .filter(([_, info]) => !!info.fold)
     .reduce((res, [category, info]) => ((res[category] = info), res), {});
 };
 
@@ -472,6 +403,8 @@ const foldNodesAndEdges = (
   const newNodesAndEdges = {
     ...nodesAndEdges,
   };
+
+  console.log(newNodesAndEdges);
 
   const graph = json.read(json.write(nodesAndEdges.graph));
 
@@ -490,6 +423,7 @@ const foldNodesAndEdges = (
     // If the number of nodes for this category is less than the threshold, it's
     // not possible that any would require folding, regardless of the graph structure
     const categoryNodesById = Object.entries(nodesForCategory);
+
     if (categoryNodesById.length < (info.fold?.threshold || 0)) {
       continue;
     }
@@ -548,11 +482,14 @@ const foldNodesAndEdges = (
     }
 
     // Find any nodes that can be folded
-    for (const [groupingKey, groupingInfo] of Object.entries(
-      categoryEdgeGroupings
-    )
+    for (const [_, groupingInfo] of Object.entries(categoryEdgeGroupings)
       // @ts-ignore
-      .filter(([k, g]) => g.nodes.length >= g.threshold)) {
+      .filter(
+        ([_, g]) =>
+          g.threshold !== null &&
+          g.threshold !== undefined &&
+          g.nodes.length >= g.threshold
+      )) {
       let removedNodeCount = 0;
       // We want to fold nodes that are not expanded
       for (const node of groupingInfo.nodes) {
@@ -773,6 +710,9 @@ const buildNodesAndEdges = (
         existingNode.title = title;
         existingNode.category = category;
         if (category) {
+          nodes_by_category[category] = nodes_by_category[category] || {};
+          nodes_by_category[category][node_id] =
+            nodes_by_category[category][node_id] || {};
           nodes_by_category[category][node_id].category = category;
         }
         existingNode.depth = depth;
