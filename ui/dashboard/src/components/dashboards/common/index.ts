@@ -404,8 +404,6 @@ const foldNodesAndEdges = (
     ...nodesAndEdges,
   };
 
-  console.log(newNodesAndEdges);
-
   const graph = json.read(json.write(nodesAndEdges.graph));
 
   for (const [category, info] of Object.entries(categoriesWithFold)) {
@@ -537,8 +535,8 @@ const foldNodesAndEdges = (
           graph.setEdge(sourceNode, foldedNode.id);
           const edge = {
             id: `${sourceNode}_${foldedNode.id}`,
-            source: sourceNode,
-            target: foldedNode.id,
+            from_id: sourceNode,
+            to_id: foldedNode.id,
           };
           newNodesAndEdges.edgeMap[edge.id] = edge;
         }
@@ -548,8 +546,8 @@ const foldNodesAndEdges = (
           graph.setEdge(foldedNode.id, targetNode);
           const edge = {
             id: `${foldedNode.id}_${targetNode}`,
-            source: foldedNode.id,
-            target: targetNode,
+            from_id: foldedNode.id,
+            to_id: targetNode,
           };
           newNodesAndEdges.edgeMap[edge.id] = edge;
         }

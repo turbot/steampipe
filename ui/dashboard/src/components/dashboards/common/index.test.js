@@ -256,7 +256,7 @@ describe("common.buildNodesAndEdges", () => {
       isFolded: false,
     };
     const edge = {
-      id: "from_node:node",
+      id: "from_node_node",
       from_id: "from_node",
       to_id: "node",
       title: null,
@@ -307,7 +307,7 @@ describe("common.buildNodesAndEdges", () => {
       isFolded: false,
     };
     const edge = {
-      id: "node:to_node",
+      id: "node_to_node",
       from_id: "node",
       to_id: "to_node",
       title: null,
@@ -341,7 +341,7 @@ describe("common.buildNodesAndEdges", () => {
       rows: [{ id: "node", from_id: "from_node", to_id: "to_node" }],
     };
     const edge = {
-      id: "from_node:to_node",
+      id: "from_node_to_node",
       from_id: "from_node",
       to_id: "to_node",
       title: null,
@@ -414,7 +414,7 @@ describe("common.buildNodesAndEdges", () => {
       ],
     };
     const edge = {
-      id: "from_node:to_node",
+      id: "from_node_to_node",
       from_id: "from_node",
       to_id: "to_node",
       title: null,
@@ -479,7 +479,7 @@ describe("common.buildNodesAndEdges", () => {
       ],
     };
     const edge = {
-      id: "from_node:to_node",
+      id: "from_node_to_node",
       from_id: "from_node",
       to_id: "to_node",
       title: "The Edge",
@@ -619,18 +619,18 @@ describe("common.foldNodesAndEdges", () => {
     };
     const edge_c1_1_c2_1 = {
       id: "c1-1_c2-1",
-      source: "c1-1",
-      target: "c2-1",
+      from_id: "c1-1",
+      to_id: "c2-1",
     };
     const edge_c1_1_c2_2 = {
       id: "c1-1_c2-2",
-      source: "c1-1",
-      target: "c2-2",
+      from_id: "c1-1",
+      to_id: "c2-2",
     };
     const edge_c1_1_c2_3 = {
       id: "c1-1_c2-3",
-      source: "c1-1",
-      target: "c2-3",
+      from_id: "c1-1",
+      to_id: "c2-3",
     };
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
@@ -692,15 +692,15 @@ describe("common.foldNodesAndEdges", () => {
       edgeMap: {
         "c1-1_fold-c2-1": {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
       },
       edges: [
         {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1 },
@@ -743,33 +743,33 @@ describe("common.foldNodesAndEdges", () => {
     };
     const edge_c1_1_c2_1 = {
       id: "c1-1_c2-1",
-      source: "c1-1",
-      target: "c2-1",
+      from_id: "c1-1",
+      to_id: "c2-1",
     };
     const edge_c1_1_c2_2 = {
       id: "c1-1_c2-2",
-      source: "c1-1",
-      target: "c2-2",
+      from_id: "c1-1",
+      to_id: "c2-2",
     };
     const edge_c1_1_c2_3 = {
       id: "c1-1_c2-3",
-      source: "c1-1",
-      target: "c2-3",
+      from_id: "c1-1",
+      to_id: "c2-3",
     };
     const edge_c3_1_c2_1 = {
       id: "c3-1_c2-1",
-      source: "c3-1",
-      target: "c2-1",
+      from_id: "c3-1",
+      to_id: "c2-1",
     };
     const edge_c3_1_c2_2 = {
       id: "c3-1_c2-2",
-      source: "c3-1",
-      target: "c2-2",
+      from_id: "c3-1",
+      to_id: "c2-2",
     };
     const edge_c3_1_c2_3 = {
       id: "c3-1_c2-3",
-      source: "c3-1",
-      target: "c2-3",
+      from_id: "c3-1",
+      to_id: "c2-3",
     };
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
@@ -854,25 +854,25 @@ describe("common.foldNodesAndEdges", () => {
       edgeMap: {
         "c1-1_fold-c2-1": {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
         "c3-1_fold-c2-1": {
           id: "c3-1_fold-c2-1",
-          source: "c3-1",
-          target: "fold-c2-1",
+          from_id: "c3-1",
+          to_id: "fold-c2-1",
         },
       },
       edges: [
         {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
         {
           id: "c3-1_fold-c2-1",
-          source: "c3-1",
-          target: "fold-c2-1",
+          from_id: "c3-1",
+          to_id: "fold-c2-1",
         },
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
@@ -927,48 +927,48 @@ describe("common.foldNodesAndEdges", () => {
     };
     const edge_c1_1_c2_1 = {
       id: "c1-1_c2-1",
-      source: "c1-1",
-      target: "c2-1",
+      from_id: "c1-1",
+      to_id: "c2-1",
     };
     const edge_c1_1_c2_2 = {
       id: "c1-1_c2-2",
-      source: "c1-1",
-      target: "c2-2",
+      from_id: "c1-1",
+      to_id: "c2-2",
     };
     const edge_c1_1_c2_3 = {
       id: "c1-1_c2-3",
-      source: "c1-1",
-      target: "c2-3",
+      from_id: "c1-1",
+      to_id: "c2-3",
     };
     const edge_c3_1_c2_1 = {
       id: "c3-1_c2-1",
-      source: "c3-1",
-      target: "c2-1",
+      from_id: "c3-1",
+      to_id: "c2-1",
     };
     const edge_c3_1_c2_2 = {
       id: "c3-1_c2-2",
-      source: "c3-1",
-      target: "c2-2",
+      from_id: "c3-1",
+      to_id: "c2-2",
     };
     const edge_c3_1_c2_3 = {
       id: "c3-1_c2-3",
-      source: "c3-1",
-      target: "c2-3",
+      from_id: "c3-1",
+      to_id: "c2-3",
     };
     const edge_c4_1_c2_1 = {
       id: "c4-1_c2-1",
-      source: "c4-1",
-      target: "c2-1",
+      from_id: "c4-1",
+      to_id: "c2-1",
     };
     const edge_c4_1_c2_2 = {
       id: "c4-1_c2-2",
-      source: "c4-1",
-      target: "c2-2",
+      from_id: "c4-1",
+      to_id: "c2-2",
     };
     const edge_c4_1_c2_3 = {
       id: "c4-1_c2-3",
-      source: "c4-1",
-      target: "c2-3",
+      from_id: "c4-1",
+      to_id: "c2-3",
     };
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
@@ -1073,35 +1073,35 @@ describe("common.foldNodesAndEdges", () => {
       edgeMap: {
         "c1-1_fold-c2-1": {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
         "c3-1_fold-c2-1": {
           id: "c3-1_fold-c2-1",
-          source: "c3-1",
-          target: "fold-c2-1",
+          from_id: "c3-1",
+          to_id: "fold-c2-1",
         },
         "c4-1_fold-c2-1": {
           id: "c4-1_fold-c2-1",
-          source: "c4-1",
-          target: "fold-c2-1",
+          from_id: "c4-1",
+          to_id: "fold-c2-1",
         },
       },
       edges: [
         {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
         {
           id: "c3-1_fold-c2-1",
-          source: "c3-1",
-          target: "fold-c2-1",
+          from_id: "c3-1",
+          to_id: "fold-c2-1",
         },
         {
           id: "c4-1_fold-c2-1",
-          source: "c4-1",
-          target: "fold-c2-1",
+          from_id: "c4-1",
+          to_id: "fold-c2-1",
         },
       ],
       root_nodes: {
@@ -1151,23 +1151,23 @@ describe("common.foldNodesAndEdges", () => {
     };
     const edge_c1_1_c2_1 = {
       id: "c1-1_c2-1",
-      source: "c1-1",
-      target: "c2-1",
+      from_id: "c1-1",
+      to_id: "c2-1",
     };
     const edge_c1_1_c2_2 = {
       id: "c1-1_c2-2",
-      source: "c1-1",
-      target: "c2-2",
+      from_id: "c1-1",
+      to_id: "c2-2",
     };
     const edge_c1_1_c2_3 = {
       id: "c1-1_c2-3",
-      source: "c1-1",
-      target: "c2-3",
+      from_id: "c1-1",
+      to_id: "c2-3",
     };
     const edge_c3_1_c2_3 = {
       id: "c3-1_c2-3",
-      source: "c3-1",
-      target: "c2-3",
+      from_id: "c3-1",
+      to_id: "c2-3",
     };
     const category_1 = {};
     const category_2 = { fold: { threshold: 2 } };
@@ -1243,8 +1243,8 @@ describe("common.foldNodesAndEdges", () => {
         [edge_c3_1_c2_3.id]: edge_c3_1_c2_3,
         "c1-1_fold-c2-1": {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
       },
       edges: [
@@ -1252,8 +1252,8 @@ describe("common.foldNodesAndEdges", () => {
         edge_c3_1_c2_3,
         {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
@@ -1289,23 +1289,23 @@ describe("common.foldNodesAndEdges", () => {
     };
     const edge_c1_1_c2_1 = {
       id: "c1-1_c2-1",
-      source: "c1-1",
-      target: "c2-1",
+      from_id: "c1-1",
+      to_id: "c2-1",
     };
     const edge_c1_1_c2_2 = {
       id: "c1-1_c2-2",
-      source: "c1-1",
-      target: "c2-2",
+      from_id: "c1-1",
+      to_id: "c2-2",
     };
     const edge_c3_1_c2_1 = {
       id: "c3-1_c2-1",
-      source: "c3-1",
-      target: "c2-1",
+      from_id: "c3-1",
+      to_id: "c2-1",
     };
     const edge_c2_2_c3_1 = {
       id: "c2-2_c3-1",
-      source: "c2-2",
-      target: "c3-1",
+      from_id: "c2-2",
+      to_id: "c3-1",
     };
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
@@ -1392,38 +1392,38 @@ describe("common.foldNodesAndEdges", () => {
     };
     const edge_c1_1_c2_1 = {
       id: "c1-1_c2-1",
-      source: "c1-1",
-      target: "c2-1",
+      from_id: "c1-1",
+      to_id: "c2-1",
     };
     const edge_c1_1_c2_2 = {
       id: "c1-1_c2-2",
-      source: "c1-1",
-      target: "c2-2",
+      from_id: "c1-1",
+      to_id: "c2-2",
     };
     const edge_c1_1_c2_3 = {
       id: "c1-1_c2-3",
-      source: "c1-1",
-      target: "c2-3",
+      from_id: "c1-1",
+      to_id: "c2-3",
     };
     const edge_c3_1_c2_1 = {
       id: "c3-1_c2-1",
-      source: "c3-1",
-      target: "c2-1",
+      from_id: "c3-1",
+      to_id: "c2-1",
     };
     const edge_c3_1_c2_2 = {
       id: "c3-1_c2-2",
-      source: "c3-1",
-      target: "c2-2",
+      from_id: "c3-1",
+      to_id: "c2-2",
     };
     const edge_c3_1_c2_3 = {
       id: "c3-1_c2-3",
-      source: "c3-1",
-      target: "c2-3",
+      from_id: "c3-1",
+      to_id: "c2-3",
     };
     const edge_c4_1_c2_3 = {
       id: "c4-1_c2-3",
-      source: "c4-1",
-      target: "c2-3",
+      from_id: "c4-1",
+      to_id: "c2-3",
     };
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
@@ -1529,13 +1529,13 @@ describe("common.foldNodesAndEdges", () => {
         [edge_c4_1_c2_3.id]: edge_c4_1_c2_3,
         "c1-1_fold-c2-1": {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
         "c3-1_fold-c2-1": {
           id: "c3-1_fold-c2-1",
-          source: "c3-1",
-          target: "fold-c2-1",
+          from_id: "c3-1",
+          to_id: "fold-c2-1",
         },
       },
       edges: [
@@ -1544,13 +1544,13 @@ describe("common.foldNodesAndEdges", () => {
         edge_c4_1_c2_3,
         {
           id: "c1-1_fold-c2-1",
-          source: "c1-1",
-          target: "fold-c2-1",
+          from_id: "c1-1",
+          to_id: "fold-c2-1",
         },
         {
           id: "c3-1_fold-c2-1",
-          source: "c3-1",
-          target: "fold-c2-1",
+          from_id: "c3-1",
+          to_id: "fold-c2-1",
         },
       ],
       root_nodes: {
