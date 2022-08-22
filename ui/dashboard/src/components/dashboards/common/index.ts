@@ -514,15 +514,11 @@ const foldNodesAndEdges = (
       // Record the nodes pointing to this node
       for (const inEdge of inEdges) {
         sourceNodes.push(inEdge.v);
-        // nodeEdgeInfo.inNode[inEdge.v] = nodeEdgeInfo.inNode[inEdge.v] || {};
-        // nodeEdgeInfo.inNode[inEdge.v][inEdge.w] = node.category;
       }
 
       // Record the nodes this node points to
       for (const outEdge of outEdges) {
         targetNodes.push(outEdge.w);
-        // nodeEdgeInfo.outNode[outEdge.v] = nodeEdgeInfo.outNode[outEdge.v] || {};
-        // nodeEdgeInfo.outNode[outEdge.v][outEdge.w] = node.category;
       }
 
       // Sort to ensure consistent
@@ -622,56 +618,7 @@ const foldNodesAndEdges = (
         }
       }
     }
-
-    // const node = categoryNodesById[0][1];
-
-    // let canFoldFromInEdge;
-    // for (const inEdge of inEdges) {
-    //   // Get all the out edges from this node pointing to me
-    //   const outEdges = graph.outEdges(inEdge.v);
-    //
-    //   // Examine each out edge and see if it's pointing back to a node of the same category
-    //   for (const outEdge of outEdges) {
-    //     // Ignore the edge pointing back to me
-    //     if (outEdge.w === node.id) {
-    //       continue;
-    //     }
-    //
-    //     // Ignore any edges pointing to a different category
-    //     if (!nodesForCategory[outEdge.w]) {
-    //       continue;
-    //     }
-    //
-    //     console.log({ outEdge });
-    //   }
-    // }
-
-    // // Get its parent
-    // const nodeParent = graph.parent(node.id);
-    //
-    // // Get its children
-    // const nodeChildren = graph.children(node.id);
-    //
-    // // Get its neighbours
-    // const nodePredecessors = graph.predecessors(node.id);
-    // const nodeSuccessors = graph.predecessors(node.id);
-    // const nodeNeighbours = graph.neighbors(node.id);
-    // console.log({
-    //   nodeEdgeInfo: JSON.stringify(nodeEdgeInfo, null, 2),
-    //   // inEdges,
-    // });
   }
-
-  // const foldedCategoryNodeIdsByNodeId = getFoldedCategoryNodeIdsByNodeId(
-  //   rawData.rows,
-  //   categoryProperties,
-  //   category_col,
-  //   expandedCategories
-  // );
-  // const { id: foldAwareNodeId, is_folded } = getFoldAwareNodeId(
-  //   node_id,
-  //   foldedCategoryNodeIdsByNodeId
-  // );
 
   return {
     ...newNodesAndEdges,
