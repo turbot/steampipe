@@ -1,10 +1,11 @@
 import groupBy from "lodash/groupBy";
 import has from "lodash/has";
+import isEmpty from "lodash/isEmpty";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
 import { DashboardRunState } from "../../../hooks/useDashboard";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
-import { Graph } from "graphlib";
+import { Graph, json } from "graphlib";
 import { GraphProperties, GraphType } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 import { KeyValuePairs, KeyValueStringPairs } from "./types";
@@ -280,6 +281,10 @@ interface Category {
   fold: CategoryFold | null;
 }
 
+interface NodeCategoryMap {
+  [category: string]: NodeMap;
+}
+
 interface CategoryMap {
   [category: string]: Category;
 }
@@ -293,12 +298,13 @@ export interface NodesAndEdges {
   graph: Graph;
   nodes: Node[];
   edges: Edge[];
+  nodeCategoryMap: NodeCategoryMap;
   nodeMap: KeyValuePairs;
   edgeMap: KeyValuePairs;
   root_nodes: NodeMap;
   categories: CategoryMap;
   metadata?: NodesAndEdgesMetadata;
-  next_color_index: number;
+  next_color_index?: number;
 }
 
 const recordEdge = (
@@ -337,6 +343,7 @@ const recordEdge = (
 
 const createNode = (
   node_lookup,
+  nodes_by_category,
   id: string,
   title: string | null = null,
   category: string | null = null,
@@ -368,6 +375,10 @@ const createNode = (
     isFolded,
   };
   node_lookup[id] = node;
+  if (category) {
+    nodes_by_category[category] = nodes_by_category[category] = {};
+    nodes_by_category[category][id] = node;
+  }
   return node;
 };
 
@@ -439,9 +450,217 @@ function getFoldedCategoryNodeIdsByNodeId(
   return foldedCategoryNodeIdsByNodeId;
 }
 
-const foldNodesAndEdges = (nodesAndEdges: NodesAndEdges) => {
-  console.log(nodesAndEdges);
-  // Find all nodes of a given category
+const getCategoriesWithFold = (categories: CategoryMap): CategoryMap => {
+  if (!categories) {
+    return {};
+  }
+  return Object.entries(categories)
+    .filter(([category, info]) => !!info.fold)
+    .reduce((res, [category, info]) => ((res[category] = info), res), {});
+};
+
+const foldNodesAndEdges = (
+  nodesAndEdges: NodesAndEdges,
+  expandedNodes: KeyValueStringPairs = {}
+): NodesAndEdges => {
+  const categoriesWithFold = getCategoriesWithFold(nodesAndEdges.categories);
+
+  if (isEmpty(categoriesWithFold)) {
+    return nodesAndEdges;
+  }
+
+  const newNodesAndEdges = {
+    ...nodesAndEdges,
+  };
+
+  const graph = json.read(json.write(nodesAndEdges.graph));
+
+  for (const [category, info] of Object.entries(categoriesWithFold)) {
+    // Keep track of the number of folded nodes we've added
+    let foldedNodeCount = 0;
+
+    // Find all nodes of this given category
+    const nodesForCategory = nodesAndEdges.nodeCategoryMap[category];
+
+    // If we have no nodes for this category, continue
+    if (!nodesForCategory) {
+      continue;
+    }
+
+    // If the number of nodes for this category is less than the threshold, it's
+    // not possible that any would require folding, regardless of the graph structure
+    const categoryNodesById = Object.entries(nodesForCategory);
+    if (categoryNodesById.length < (info.fold?.threshold || 0)) {
+      continue;
+    }
+
+    // Now we're here we know that we have enough nodes of this category in the
+    // graph that it "might" be possible to fold, but we'll examine the
+    // node and edge structure now to determine that
+
+    const categoryEdgeGroupings: KeyValuePairs = {};
+
+    // Iterate over the category nodes
+    for (const [_, node] of categoryNodesById) {
+      let sourceNodes: string[] = [];
+      let targetNodes: string[] = [];
+
+      // Get all the in edges to this node
+      const inEdges = graph.inEdges(node.id);
+
+      // Get all the out edges from this node
+      const outEdges = graph.outEdges(node.id);
+
+      // Record the nodes pointing to this node
+      for (const inEdge of inEdges) {
+        sourceNodes.push(inEdge.v);
+        // nodeEdgeInfo.inNode[inEdge.v] = nodeEdgeInfo.inNode[inEdge.v] || {};
+        // nodeEdgeInfo.inNode[inEdge.v][inEdge.w] = node.category;
+      }
+
+      // Record the nodes this node points to
+      for (const outEdge of outEdges) {
+        targetNodes.push(outEdge.w);
+        // nodeEdgeInfo.outNode[outEdge.v] = nodeEdgeInfo.outNode[outEdge.v] || {};
+        // nodeEdgeInfo.outNode[outEdge.v][outEdge.w] = node.category;
+      }
+
+      // Sort to ensure consistent
+      sourceNodes = sourceNodes.sort();
+      targetNodes = targetNodes.sort();
+
+      // Build a key that we can uniquely identify each unique combo category / source nodes / target nodes
+      // and record all the nodes for that key. If we have any keys that have >= fold threshold, fold them
+      const categoryGroupingKey = `category:${node.category}`;
+      const edgeSourceGroupingKey =
+        sourceNodes.length > 0 ? `source:${sourceNodes.join(",")}` : null;
+      const edgeTargetGroupingKey =
+        targetNodes.length > 0 ? `target:${targetNodes.join(",")}` : null;
+      const edgeGroupingKey = `${categoryGroupingKey}${
+        edgeSourceGroupingKey ? `_${edgeSourceGroupingKey}` : ""
+      }${edgeTargetGroupingKey ? `_${edgeTargetGroupingKey}` : ""}`;
+      categoryEdgeGroupings[edgeGroupingKey] = categoryEdgeGroupings[
+        edgeGroupingKey
+      ] || {
+        category: info,
+        threshold: info.fold?.threshold,
+        nodes: [],
+        source: sourceNodes,
+        target: targetNodes,
+      };
+      categoryEdgeGroupings[edgeGroupingKey].nodes.push(node);
+    }
+
+    // Find any nodes that can be folded
+    for (const [groupingKey, groupingInfo] of Object.entries(
+      categoryEdgeGroupings
+    )
+      // @ts-ignore
+      .filter(([k, g]) => g.nodes.length >= g.threshold)) {
+      let removedNodeCount = 0;
+      // We want to fold nodes that are not expanded
+      for (const node of groupingInfo.nodes) {
+        // This node is expanded, don't fold it
+        if (expandedNodes[node.id]) {
+          continue;
+        }
+
+        // Remove this node
+        graph.removeNode(node.id);
+        delete newNodesAndEdges.nodeMap[node.id];
+        delete newNodesAndEdges.nodeCategoryMap[category][node.id];
+        // Remove edges pointing to this node
+        for (const sourceNode of groupingInfo.source) {
+          delete newNodesAndEdges.edgeMap[`${sourceNode}_${node.id}`];
+          graph.removeEdge(sourceNode, node.id);
+        }
+        // Remove edges coming from this node
+        for (const targetNode of groupingInfo.target) {
+          delete newNodesAndEdges.edgeMap[`${node.id}_${targetNode}`];
+          graph.removeEdge(node.id, targetNode);
+        }
+        removedNodeCount++;
+      }
+
+      // Now let's add a folded node
+      if (removedNodeCount > 0) {
+        const foldedNode = {
+          id: `fold-${category}-${++foldedNodeCount}`,
+          category,
+          icon: info.fold?.icon,
+          title: info.fold?.title ? info.fold.title : null,
+          isFolded: true,
+          row_data: null,
+          href: null,
+          depth: null,
+          symbol: null,
+        };
+        graph.setNode(foldedNode.id);
+        newNodesAndEdges.nodeCategoryMap[category][foldedNode.id] = foldedNode;
+        newNodesAndEdges.nodeMap[foldedNode.id] = foldedNode;
+
+        // Add the source edges back to the folded node
+        for (const sourceNode of groupingInfo.source) {
+          graph.setEdge(sourceNode, foldedNode.id);
+          const edge = {
+            id: `${sourceNode}_${foldedNode.id}`,
+            source: sourceNode,
+            target: foldedNode.id,
+          };
+          newNodesAndEdges.edgeMap[edge.id] = edge;
+        }
+
+        // Add the target edges back from the folded node
+        for (const targetNode of groupingInfo.target) {
+          graph.setEdge(foldedNode.id, targetNode);
+          const edge = {
+            id: `${foldedNode.id}_${targetNode}`,
+            source: foldedNode.id,
+            target: targetNode,
+          };
+          newNodesAndEdges.edgeMap[edge.id] = edge;
+        }
+      }
+    }
+
+    // const node = categoryNodesById[0][1];
+
+    // let canFoldFromInEdge;
+    // for (const inEdge of inEdges) {
+    //   // Get all the out edges from this node pointing to me
+    //   const outEdges = graph.outEdges(inEdge.v);
+    //
+    //   // Examine each out edge and see if it's pointing back to a node of the same category
+    //   for (const outEdge of outEdges) {
+    //     // Ignore the edge pointing back to me
+    //     if (outEdge.w === node.id) {
+    //       continue;
+    //     }
+    //
+    //     // Ignore any edges pointing to a different category
+    //     if (!nodesForCategory[outEdge.w]) {
+    //       continue;
+    //     }
+    //
+    //     console.log({ outEdge });
+    //   }
+    // }
+
+    // // Get its parent
+    // const nodeParent = graph.parent(node.id);
+    //
+    // // Get its children
+    // const nodeChildren = graph.children(node.id);
+    //
+    // // Get its neighbours
+    // const nodePredecessors = graph.predecessors(node.id);
+    // const nodeSuccessors = graph.predecessors(node.id);
+    // const nodeNeighbours = graph.neighbors(node.id);
+    // console.log({
+    //   nodeEdgeInfo: JSON.stringify(nodeEdgeInfo, null, 2),
+    //   // inEdges,
+    // });
+  }
 
   // const foldedCategoryNodeIdsByNodeId = getFoldedCategoryNodeIdsByNodeId(
   //   rawData.rows,
@@ -453,6 +672,14 @@ const foldNodesAndEdges = (nodesAndEdges: NodesAndEdges) => {
   //   node_id,
   //   foldedCategoryNodeIdsByNodeId
   // );
+
+  return {
+    ...newNodesAndEdges,
+    nodes: graph.nodes().map((nodeId) => newNodesAndEdges.nodeMap[nodeId]),
+    edges: graph
+      .edges()
+      .map((edgeObj) => newNodesAndEdges.edgeMap[`${edgeObj.v}_${edgeObj.w}`]),
+  };
 };
 
 const buildNodesAndEdges = (
@@ -466,6 +693,7 @@ const buildNodesAndEdges = (
       graph: new Graph(),
       nodes: [],
       edges: [],
+      nodeCategoryMap: {},
       nodeMap: {},
       edgeMap: {},
       root_nodes: {},
@@ -494,6 +722,7 @@ const buildNodesAndEdges = (
 
   const node_lookup: NodeMap = {};
   const root_node_lookup: NodeMap = {};
+  const nodes_by_category: NodeCategoryMap = {};
   const edge_lookup: EdgeMap = {};
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -580,6 +809,7 @@ const buildNodesAndEdges = (
       if (!existingNode) {
         const node = createNode(
           node_lookup,
+          nodes_by_category,
           node_id,
           title,
           category,
@@ -595,6 +825,9 @@ const buildNodesAndEdges = (
       } else {
         existingNode.title = title;
         existingNode.category = category;
+        if (category) {
+          nodes_by_category[category][node_id].category = category;
+        }
         existingNode.depth = depth;
       }
 
@@ -607,6 +840,7 @@ const buildNodesAndEdges = (
         if (!existingNode) {
           const node = createNode(
             node_lookup,
+            nodes_by_category,
             from_id,
             null,
             null,
@@ -641,6 +875,7 @@ const buildNodesAndEdges = (
         if (!existingNode) {
           const node = createNode(
             node_lookup,
+            nodes_by_category,
             to_id,
             null,
             null,
@@ -675,6 +910,7 @@ const buildNodesAndEdges = (
       if (!existingFromNode) {
         const node = createNode(
           node_lookup,
+          nodes_by_category,
           from_id,
           null,
           null,
@@ -689,7 +925,16 @@ const buildNodesAndEdges = (
       }
       const existingToNode = node_lookup[to_id];
       if (!existingToNode) {
-        const node = createNode(node_lookup, to_id, null, null, null, null, {});
+        const node = createNode(
+          node_lookup,
+          nodes_by_category,
+          to_id,
+          null,
+          null,
+          null,
+          null,
+          {}
+        );
         graph.setNode(to_id);
         nodes.push(node);
       }
@@ -714,6 +959,7 @@ const buildNodesAndEdges = (
     graph,
     nodes,
     edges,
+    nodeCategoryMap: nodes_by_category,
     nodeMap: node_lookup,
     edgeMap: edge_lookup,
     root_nodes: root_node_lookup,
@@ -782,7 +1028,12 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
         color:
           categoryOverrides && categoryOverrides.color
             ? categoryOverrides.color
-            : themeColors[nodesAndEdges.next_color_index++],
+            : themeColors[
+                has(nodesAndEdges, "next_color_index")
+                  ? // @ts-ignore
+                    nodesAndEdges.next_color_index++
+                  : 0
+              ],
       },
     };
     data.push(dataNode);
