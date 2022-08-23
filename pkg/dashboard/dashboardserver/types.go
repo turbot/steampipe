@@ -1,16 +1,12 @@
 package dashboardserver
 
 import (
-	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -38,15 +34,6 @@ func (lp ListenPort) IsValid() error {
 		return fmt.Errorf("invalid port - must be within range (1:65535)")
 	}
 	return nil
-}
-
-type Server struct {
-	context          context.Context
-	dbClient         db_common.Client
-	mutex            *sync.Mutex
-	dashboardClients map[string]*DashboardClientInfo
-	webSocket        *melody.Melody
-	workspace        *workspace.Workspace
 }
 
 type ErrorPayload struct {
