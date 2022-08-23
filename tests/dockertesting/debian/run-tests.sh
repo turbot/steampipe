@@ -14,3 +14,4 @@ git submodule update --recursive
 
 # run test suite
 ./tests/acceptance/run.sh
+echo "test run complete"

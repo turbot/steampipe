@@ -170,6 +170,7 @@ jobs:
       - name: Create a container and run the test suite
         run: |
           docker run --name steampipe-deb `docker images -q spdebian`
+          echo "docker run complete"
 
   docker_acceptance_test_oraclelinux:
     name: Acceptance tests(Docker - OracleLinux)
@@ -209,6 +210,7 @@ jobs:
       - name: Create a container and run the test suite
         run: |
           docker run --name steampipe-oracle `docker images -q sporacle`
+          echo "docker run complete"
 
   create_release_tag:
     name: Tag Release
