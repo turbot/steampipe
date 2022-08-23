@@ -89,10 +89,6 @@ func startAPIAsync(ctx context.Context, webSocket *melody.Melody) chan struct{} 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		if err := webSocket.Close(); err != nil {
-			utils.ShowErrorWithMessage(ctx, err, "Websocket shutdown failed")
-		}
-
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			utils.ShowErrorWithMessage(ctx, err, "Server shutdown failed")
 		}
