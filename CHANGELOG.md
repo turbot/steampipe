@@ -9,7 +9,10 @@ _What's new?_
 * Timing terminal output now uses appropriate fidelity (secs, ms) for easier readability. ([#2246](https://github.com/turbot/steampipe-postgres-fdw/issues/2246))
 * Disable FDW update message during plugin update. ([#2312](https://github.com/turbot/steampipe-postgres-fdw/issues/2312))
 * Update dashboard `ExecutionComplete` event to include only variables referenced by the dashboard/benchmark being run. ([#2283](https://github.com/turbot/steampipe-postgres-fdw/issues/2283))
+* Add support for single and multi-select combo inputs in dashboards, allowing for a combination of static/query-driven and custom options.
 * Improve display of connection validation errors.
+* Improve handling of dashboards with multiple inputs.
+* Improve layout of dashboard error modal.
 
 _Bug fixes_
 * Fix interactive multi-line mode. ([#2260](https://github.com/turbot/steampipe-postgres-fdw/issues/2260))
