@@ -149,7 +149,7 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 	}
 
 	// add help message for missing plugins
-	msg := fmt.Sprintf("\nPlease install/update the %s with: \n", utils.Pluralize("plugin", len(pluginsNotInstalled)))
+	msg := fmt.Sprintf("\nPlease %s the %s with: \n", checkInstallOrUpdate(pluginsNotInstalled), utils.Pluralize("plugin", len(pluginsNotInstalled)))
 	notificationLines = append(notificationLines, msg)
 
 	for i, req := range pluginsNotInstalled {
@@ -171,4 +171,23 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 	notificationLines = append(notificationLines, fmt.Sprintf("%s", constants.Bold("")))
 
 	return strings.Join(notificationLines, "\n")
+}
+
+// function to check whether the missing plugins require to be installed or updated, or both
+func checkInstallOrUpdate(pluginsNotInstalled []requiredPluginVersion) string {
+	updateFlag := 0
+	installFlag := 0
+	for _, req := range pluginsNotInstalled {
+		if strings.Contains(req.installedVersion, "none") {
+			installFlag++
+		} else {
+			updateFlag++
+		}
+	}
+	if updateFlag != 0 && installFlag != 0 {
+		return "install/update"
+	} else if updateFlag != 0 && installFlag == 0 {
+		return "update"
+	}
+	return "install"
 }
