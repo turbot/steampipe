@@ -947,7 +947,7 @@ func init() {
 							ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
 							UnqualifiedName: "graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
 							Title:           toStringPointer("example graph"),
-							Type:            toStringPointer("sankey"),
+							Type:            toStringPointer("graph"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -1050,7 +1050,7 @@ func init() {
 							ShortName:       "dashboard_dashboard_with_child_res_anonymous_graph_0",
 							UnqualifiedName: "graph.dashboard_dashboard_with_child_res_anonymous_graph_0",
 							Title:           toStringPointer("example graph"),
-							Type:            toStringPointer("sankey"),
+							Type:            toStringPointer("graph"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -1329,10 +1329,10 @@ func init() {
 						},
 					},
 					DashboardGraphs: map[string]*modconfig.DashboardGraph{
-						"dashboard_with_children.graph.f1": {
-							FullName:        "dashboard_with_children.graph.f1",
-							ShortName:       "f1",
-							UnqualifiedName: "graph.f1",
+						"dashboard_with_children.graph.g1": {
+							FullName:        "dashboard_with_children.graph.g1",
+							ShortName:       "g1",
+							UnqualifiedName: "graph.g1",
 							Title:           toStringPointer("example graph"),
 							Type:            toStringPointer("graph"),
 						},
