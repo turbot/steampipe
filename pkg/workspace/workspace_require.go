@@ -175,19 +175,22 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 
 // function to check whether the missing plugins require to be installed or updated, or both
 func checkInstallOrUpdate(pluginsNotInstalled []requiredPluginVersion) string {
-	updateFlag := 0
-	installFlag := 0
+	var updateFlag, installFlag bool
+
 	for _, req := range pluginsNotInstalled {
 		if strings.Contains(req.installedVersion, "none") {
-			installFlag++
+			installFlag = true
 		} else {
-			updateFlag++
+			updateFlag = true
 		}
 	}
-	if updateFlag != 0 && installFlag != 0 {
-		return "install/update"
-	} else if updateFlag != 0 && installFlag == 0 {
-		return "update"
+
+	if updateFlag {
+		if installFlag {
+			return "install/update"
+		} else {
+			return "update"
+		}
 	}
 	return "install"
 }
