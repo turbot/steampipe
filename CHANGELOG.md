@@ -1,4 +1,27 @@
+## v0.16.0 [tbd]
+_What's new?_
+* Add support for plugin processes to handle multiple connections (rather than a process per connection), improving startup time and reducing memory usage.  ([#2262](https://github.com/turbot/steampipe-postgres-fdw/issues/2262))
+* Limit the maximum memory used by the plugin query cache can using the environment variable STEAMPIPE_CACHE_MAX_SIZE_MB ([#2363](https://github.com/turbot/steampipe-postgres-fdw/issues/2363))
+* Update base image for the steampipe docker container. ([#2233](https://github.com/turbot/steampipe-postgres-fdw/issues/2233))
+* Improve help messages when a plugin is installed but the connection is not configured. ([#2319](https://github.com/turbot/steampipe-postgres-fdw/issues/2319))
+* Only add a blank line between query results, not after the final result. ([#2333](https://github.com/turbot/steampipe-postgres-fdw/issues/2333), [#2340](https://github.com/turbot/steampipe-postgres-fdw/issues/2340), [#2341](https://github.com/turbot/steampipe-postgres-fdw/issues/2341))
+* Timing terminal output now uses appropriate fidelity (secs, ms) for easier readability. ([#2246](https://github.com/turbot/steampipe-postgres-fdw/issues/2246))
+* Disable FDW update message during plugin update. ([#2312](https://github.com/turbot/steampipe-postgres-fdw/issues/2312))
+* Update dashboard `ExecutionComplete` event to include only variables referenced by the dashboard/benchmark being run. ([#2283](https://github.com/turbot/steampipe-postgres-fdw/issues/2283))
+* Add support for single and multi-select combo inputs in dashboards, allowing for a combination of static/query-driven and custom options.
+* Improve display of connection validation errors.
+* Improve handling of dashboards with multiple inputs.
+* Improve layout of dashboard error modal.
+
+_Bug fixes_
+* Fix interactive multi-line mode. ([#2260](https://github.com/turbot/steampipe-postgres-fdw/issues/2260))
+* Fix intermittent failure for dashboard server shutting down when pressing ctrl+c. ([#2328](https://github.com/turbot/steampipe-postgres-fdw/issues/2328))
+* Fix Steampipe terminating if query (or empty line) is entered before initialisation completes. ([#2300](https://github.com/turbot/steampipe-postgres-fdw/issues/2300))
+* Fix pasting a query during cli initialization causing it to be duplicated on the screen. ([#1980](https://github.com/turbot/steampipe-postgres-fdw/issues/1980))
+* Fix connecting to remote database using `--workspace-database`. ([#2324](https://github.com/turbot/steampipe-postgres-fdw/issues/2324))
+
 ## v0.15.4 [2022-07-14]
+
 _Bug fixes_
 * Fix dashboard UI not rendering for chart/flow/hierarchy/input when type is set to table. ([#2250](https://github.com/turbot/steampipe/issues/2250))
 * Fix flow/hierarchy dashboard UI bug where id/to_id and id/from_id/to_id rows would not render the expected results. ([#2254](https://github.com/turbot/steampipe/issues/2254))
