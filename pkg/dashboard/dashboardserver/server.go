@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"os"
 	"reflect"
@@ -19,6 +20,15 @@ import (
 	"github.com/turbot/steampipe/pkg/workspace"
 	"gopkg.in/olahol/melody.v1"
 )
+
+type Server struct {
+	context          context.Context
+	dbClient         db_common.Client
+	mutex            *sync.Mutex
+	dashboardClients map[string]*DashboardClientInfo
+	webSocket        *melody.Melody
+	workspace        *workspace.Workspace
+}
 
 func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Workspace) (*Server, error) {
 	initLogSink()
@@ -47,31 +57,6 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 	return server, err
 }
 
-func getDashboardsInterestedInResourceChanges(dashboardsBeingWatched []string, existingChangedDashboardNames []string, changedItems []*modconfig.DashboardTreeItemDiffs) []string {
-	var changedDashboardNames []string
-
-	for _, changedItem := range changedItems {
-		paths := changedItem.Item.GetPaths()
-		for _, nodePath := range paths {
-			for _, nodeName := range nodePath {
-				resourceParts, _ := modconfig.ParseResourceName(nodeName)
-				// We only care about changes from these resource types
-				if !helpers.StringSliceContains([]string{modconfig.BlockTypeDashboard, modconfig.BlockTypeBenchmark}, resourceParts.ItemType) {
-					continue
-				}
-
-				if helpers.StringSliceContains(existingChangedDashboardNames, nodeName) || helpers.StringSliceContains(changedDashboardNames, nodeName) || !helpers.StringSliceContains(dashboardsBeingWatched, nodeName) {
-					continue
-				}
-
-				changedDashboardNames = append(changedDashboardNames, nodeName)
-			}
-		}
-	}
-
-	return changedDashboardNames
-}
-
 // Start starts the API server
 // it returns a channel which is signalled when the API server terminates
 func (s *Server) Start() chan struct{} {
@@ -84,7 +69,11 @@ func (s *Server) Shutdown() {
 	log.Println("[TRACE] Server shutdown")
 
 	if s.webSocket != nil {
-		_ = s.webSocket.Close()
+		log.Println("[TRACE] closing websocket")
+		if err := s.webSocket.Close(); err != nil {
+			utils.ShowErrorWithMessage(s.context, err, "Websocket shutdown failed")
+		}
+		log.Println("[TRACE] closed websocket")
 	}
 
 	// Close the workspace
@@ -456,4 +445,29 @@ func (s *Server) deleteDashboardClient(sessionId string) {
 	s.mutex.Lock()
 	delete(s.dashboardClients, sessionId)
 	s.mutex.Unlock()
+}
+
+func getDashboardsInterestedInResourceChanges(dashboardsBeingWatched []string, existingChangedDashboardNames []string, changedItems []*modconfig.DashboardTreeItemDiffs) []string {
+	var changedDashboardNames []string
+
+	for _, changedItem := range changedItems {
+		paths := changedItem.Item.GetPaths()
+		for _, nodePath := range paths {
+			for _, nodeName := range nodePath {
+				resourceParts, _ := modconfig.ParseResourceName(nodeName)
+				// We only care about changes from these resource types
+				if !helpers.StringSliceContains([]string{modconfig.BlockTypeDashboard, modconfig.BlockTypeBenchmark}, resourceParts.ItemType) {
+					continue
+				}
+
+				if helpers.StringSliceContains(existingChangedDashboardNames, nodeName) || helpers.StringSliceContains(changedDashboardNames, nodeName) || !helpers.StringSliceContains(dashboardsBeingWatched, nodeName) {
+					continue
+				}
+
+				changedDashboardNames = append(changedDashboardNames, nodeName)
+			}
+		}
+	}
+
+	return changedDashboardNames
 }
