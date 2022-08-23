@@ -247,7 +247,7 @@ interface Node {
   symbol: string | null;
   href: string | null;
   isFolded: boolean;
-  foldedIds?: string[];
+  foldedNodeIds?: string[];
 }
 
 interface Edge {
@@ -522,7 +522,7 @@ const foldNodesAndEdges = (
           icon: info.fold?.icon,
           title: info.fold?.title ? info.fold.title : null,
           isFolded: true,
-          foldedIds: removedNodes,
+          foldedNodeIds: removedNodes,
           row_data: null,
           href: null,
           depth: null,
