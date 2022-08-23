@@ -1,16 +1,18 @@
-import React from "react";
+import { BaseCategoryOptions } from "../common/types";
 import {
   BasePrimitiveProps,
   ColorOverride,
   ExecutablePrimitiveProps,
 } from "../common";
+import { ComponentType } from "react";
 
 export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
-interface FlowCategoryOptions {
+interface FlowCategoryOptions extends BaseCategoryOptions {
   title?: string;
   color?: ColorOverride;
   depth?: number;
+  icon?: string;
 }
 
 export type FlowCategories = {
@@ -30,5 +32,5 @@ export type FlowType = "sankey" | "table";
 
 export interface IFlow {
   type: FlowType;
-  component: React.ComponentType<any>;
+  component: ComponentType<any>;
 }

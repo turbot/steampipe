@@ -910,7 +910,15 @@ func init() {
 							FullName:        "container_with_children.container.dashboard_container_with_child_res_anonymous_container_0",
 							UnqualifiedName: "container.dashboard_container_with_child_res_anonymous_container_0",
 							Title:           toStringPointer("example container with all possible child resources"),
-							ChildNames:      []string{"container_with_children.chart.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_chart_0", "container_with_children.card.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_card_0", "container_with_children.flow.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_flow_0", "container_with_children.hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0", "container_with_children.image.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_image_0", "container_with_children.table.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_table_0", "container_with_children.text.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_text_0"},
+							ChildNames: []string{
+								"container_with_children.chart.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_chart_0",
+								"container_with_children.card.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_card_0",
+								"container_with_children.flow.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_flow_0",
+								"container_with_children.graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
+								"container_with_children.hierarchy.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_hierarchy_0",
+								"container_with_children.image.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_image_0",
+								"container_with_children.table.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_table_0",
+								"container_with_children.text.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_text_0"},
 						},
 					},
 					DashboardCards: map[string]*modconfig.DashboardCard{
@@ -939,6 +947,15 @@ func init() {
 							UnqualifiedName: "flow.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_flow_0",
 							Title:           toStringPointer("example flow"),
 							Type:            toStringPointer("sankey"),
+						},
+					},
+					DashboardGraphs: map[string]*modconfig.DashboardGraph{
+						"container_with_children.graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0": {
+							FullName:        "container_with_children.graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
+							ShortName:       "container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
+							UnqualifiedName: "graph.container_dashboard_container_with_child_res_anonymous_container_0_anonymous_graph_0",
+							Title:           toStringPointer("example graph"),
+							Type:            toStringPointer("graph"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -995,8 +1012,18 @@ func init() {
 							FullName:        "dashboard_with_children.dashboard.dashboard_with_child_res",
 							UnqualifiedName: "dashboard.dashboard_with_child_res",
 							Title:           toStringPointer("dashboard with child resources"),
-							ChildNames:      []string{"dashboard_with_children.container.dashboard_dashboard_with_child_res_anonymous_container_0", "dashboard_with_children.chart.dashboard_dashboard_with_child_res_anonymous_chart_0", "dashboard_with_children.card.dashboard_dashboard_with_child_res_anonymous_card_0", "dashboard_with_children.flow.dashboard_dashboard_with_child_res_anonymous_flow_0", "dashboard_with_children.hierarchy.dashboard_dashboard_with_child_res_anonymous_hierarchy_0", "dashboard_with_children.image.dashboard_dashboard_with_child_res_anonymous_image_0", "dashboard_with_children.input.i1", "dashboard_with_children.table.dashboard_dashboard_with_child_res_anonymous_table_0", "dashboard_with_children.text.dashboard_dashboard_with_child_res_anonymous_text_0"},
-							HclType:         "dashboard",
+							ChildNames: []string{
+								"dashboard_with_children.container.dashboard_dashboard_with_child_res_anonymous_container_0",
+								"dashboard_with_children.chart.dashboard_dashboard_with_child_res_anonymous_chart_0",
+								"dashboard_with_children.card.dashboard_dashboard_with_child_res_anonymous_card_0",
+								"dashboard_with_children.flow.dashboard_dashboard_with_child_res_anonymous_flow_0",
+								"dashboard_with_children.graph.dashboard_dashboard_with_child_res_anonymous_graph_0",
+								"dashboard_with_children.hierarchy.dashboard_dashboard_with_child_res_anonymous_hierarchy_0",
+								"dashboard_with_children.image.dashboard_dashboard_with_child_res_anonymous_image_0",
+								"dashboard_with_children.input.i1",
+								"dashboard_with_children.table.dashboard_dashboard_with_child_res_anonymous_table_0",
+								"dashboard_with_children.text.dashboard_dashboard_with_child_res_anonymous_text_0"},
+							HclType: "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -1033,6 +1060,15 @@ func init() {
 							UnqualifiedName: "flow.dashboard_dashboard_with_child_res_anonymous_flow_0",
 							Title:           toStringPointer("example flow"),
 							Type:            toStringPointer("sankey"),
+						},
+					},
+					DashboardGraphs: map[string]*modconfig.DashboardGraph{
+						"dashboard_with_children.graph.dashboard_dashboard_with_child_res_anonymous_graph_0": {
+							FullName:        "dashboard_with_children.graph.dashboard_dashboard_with_child_res_anonymous_graph_0",
+							ShortName:       "dashboard_dashboard_with_child_res_anonymous_graph_0",
+							UnqualifiedName: "graph.dashboard_dashboard_with_child_res_anonymous_graph_0",
+							Title:           toStringPointer("example graph"),
+							Type:            toStringPointer("graph"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{
@@ -1266,6 +1302,7 @@ func init() {
 								"dashboard_with_children.chart.c1",
 								"dashboard_with_children.card.crd1",
 								"dashboard_with_children.flow.f1",
+								"dashboard_with_children.graph.g1",
 								"dashboard_with_children.hierarchy.h1",
 								"dashboard_with_children.image.i1",
 								"dashboard_with_children.input.ip1",
@@ -1308,6 +1345,15 @@ func init() {
 							UnqualifiedName: "flow.f1",
 							Title:           toStringPointer("example flow"),
 							Type:            toStringPointer("sankey"),
+						},
+					},
+					DashboardGraphs: map[string]*modconfig.DashboardGraph{
+						"dashboard_with_children.graph.g1": {
+							FullName:        "dashboard_with_children.graph.g1",
+							ShortName:       "g1",
+							UnqualifiedName: "graph.g1",
+							Title:           toStringPointer("example graph"),
+							Type:            toStringPointer("graph"),
 						},
 					},
 					DashboardHierarchies: map[string]*modconfig.DashboardHierarchy{

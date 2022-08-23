@@ -83,7 +83,7 @@
   --color-error: red;
   --color-warning: #f9a825;
   --color-dashboard: #1e2329;
-  --color-dashboard-panel: #2d333b; /*var(--color-black-scale-1);*/
+  --color-dashboard-panel: #262B32; /* #2d333b;*/ /*var(--color-black-scale-1);*/
   --color-foreground: #fff;
   --color-foreground-light: #ccc;
   --color-foreground-lighter: #888;
@@ -109,7 +109,7 @@
 
   /* Borders */
   --color-table-border: theme("colors.gray.700");
-  --color-table-divide: theme("colors.gray.800");
+  --color-table-divide: var(--color-black-scale-2);
   --color-table-head: var(--color-black-scale-6);
   --color-table-alternating-row: #23282f;
 }
@@ -226,6 +226,60 @@
           );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+/*.react-flow__controls {*/
+/*  display: flex;*/
+/*  flex-direction: column;*/
+/*  border: none;*/
+/*  box-shadow: none;*/
+/*}*/
+
+/*.react-flow__controls-button {*/
+/*  background-color: var(--color-dashboard);*/
+/*  border: none;*/
+/*  color: var(--color-foreground);*/
+/*}*/
+
+.react-flow__handle {
+  display: none;
+}
+
+/*.react-flow__edge-path {*/
+/*  !*stroke-width: 1 !important;*!*/
+/*  !*stroke: #aaa !important;*!*/
+/*}*/
+
+/*.react-flow__arrowhead {*/
+/*  stroke: var(--color-foreground) !important;*/
+/*}*/
+
+/*.react-flow__connection {*/
+/*  position: relative;*/
+/*}*/
+
+/*.react-flow__edge-textwrapper {*/
+/*  max-width: 20px;*/
+/*  overflow: hidden;*/
+/*  text-overflow: ellipsis;*/
+/*  white-space: nowrap;*/
+/*}*/
+
+.react-flow__edge-textbg {
+  fill: var(--color-dashboard-panel);
+}
+
+.react-flow__edge-text {
+  /*font-size: 7px !important;*/
+  font-style: italic;
+  fill: var(--color-foreground-light);
+  /*overflow: hidden;*/
+  /*text-overflow: ellipsis;*/
+  /*white-space: nowrap;*/
 }
 
 @keyframes barberpole {

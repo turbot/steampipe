@@ -81,6 +81,10 @@ var WorkspaceBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
+			Type:       modconfig.BlockTypeGraph,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type:       modconfig.BlockTypeHierarchy,
 			LabelNames: []string{"name"},
 		},
@@ -162,6 +166,9 @@ var DashboardBlockSchema = &hcl.BodySchema{
 			Type: modconfig.BlockTypeFlow,
 		},
 		{
+			Type: modconfig.BlockTypeGraph,
+		},
+		{
 			Type: modconfig.BlockTypeHierarchy,
 		},
 		{
@@ -207,6 +214,9 @@ var DashboardContainerBlockSchema = &hcl.BodySchema{
 		},
 		{
 			Type: modconfig.BlockTypeFlow,
+		},
+		{
+			Type: modconfig.BlockTypeGraph,
 		},
 		{
 			Type: modconfig.BlockTypeHierarchy,

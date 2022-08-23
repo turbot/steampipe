@@ -1,8 +1,8 @@
 package modconfig
 
-type DashboardFlowCategoryList []*DashboardFlowCategory
+type DashboardGraphCategoryList []*DashboardGraphCategory
 
-func (c *DashboardFlowCategoryList) Merge(other DashboardFlowCategoryList) {
+func (c *DashboardGraphCategoryList) Merge(other DashboardGraphCategoryList) {
 	if other == nil {
 		return
 	}

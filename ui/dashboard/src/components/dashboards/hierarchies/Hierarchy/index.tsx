@@ -1,5 +1,6 @@
 import ErrorPanel from "../../Error";
 import merge from "lodash/merge";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import {
   buildNodesAndEdges,
   buildTreeDataInputs,
@@ -11,7 +12,6 @@ import { getHierarchyComponent } from "..";
 import { HierarchyProps, HierarchyProperties, HierarchyType } from "../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useEffect, useState } from "react";
 
 const getCommonBaseOptions = () => ({
   animation: false,
@@ -33,7 +33,7 @@ const getSeriesForHierarchyType = (
   data: LeafNodeData | undefined,
   properties: HierarchyProperties | undefined,
   nodesAndEdges: NodesAndEdges,
-  namedColors
+  themeColors
 ) => {
   if (!data) {
     return {};
@@ -53,7 +53,7 @@ const getSeriesForHierarchyType = (
           right: "20%",
           symbolSize: 7,
           label: {
-            color: namedColors.foreground,
+            color: themeColors.foreground,
             position: "left",
             verticalAlign: "middle",
             align: "right",
@@ -90,33 +90,11 @@ const getOptionOverridesForHierarchyType = (
   return {};
 };
 
-const buildHierarchyOptions = (
-  props: HierarchyProps,
-  theme,
-  themeWrapperRef
-) => {
-  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
-  // @ts-ignore
-  const style = window.getComputedStyle(themeWrapperRef);
-  const foreground = style.getPropertyValue("--color-foreground");
-  const foregroundLightest = style.getPropertyValue(
-    "--color-foreground-lightest"
-  );
-  const alert = style.getPropertyValue("--color-alert");
-  const info = style.getPropertyValue("--color-info");
-  const ok = style.getPropertyValue("--color-ok");
-  const namedColors = {
-    foreground,
-    foregroundLightest,
-    alert,
-    info,
-    ok,
-  };
-
+const buildHierarchyOptions = (props: HierarchyProps, themeColors) => {
   const nodesAndEdges = buildNodesAndEdges(
     props.data,
     props.properties,
-    namedColors
+    themeColors
   );
 
   return merge(
@@ -127,20 +105,17 @@ const buildHierarchyOptions = (
       props.data,
       props.properties,
       nodesAndEdges,
-      namedColors
+      themeColors
     ),
     getOptionOverridesForHierarchyType(props.display_type, props.properties)
   );
 };
 
 const HierarchyWrapper = (props: HierarchyProps) => {
-  const [, setRandomVal] = useState(0);
+  const themeColors = useChartThemeColors();
   const {
-    themeContext: { theme, wrapperRef },
+    themeContext: { wrapperRef },
   } = useDashboard();
-
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
 
   if (!wrapperRef) {
     return null;
@@ -152,7 +127,7 @@ const HierarchyWrapper = (props: HierarchyProps) => {
 
   return (
     <Chart
-      options={buildHierarchyOptions(props, theme, wrapperRef)}
+      options={buildHierarchyOptions(props, themeColors)}
       type={props.display_type || "tree"}
     />
   );

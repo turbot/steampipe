@@ -7,6 +7,7 @@ import set from "lodash/set";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import {
   BarChart,
+  GraphChart,
   LineChart,
   PieChart,
   SankeyChart,
@@ -44,11 +45,15 @@ import { Theme } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import * as echarts from "echarts/core";
 import { registerComponent } from "../../index";
+import { renderInterpolatedTemplates } from "../../../../utils/template";
+import { GraphType } from "../../graphs/types";
+import { useNavigate } from "react-router-dom";
 
 echarts.use([
   BarChart,
   CanvasRenderer,
   DatasetComponent,
+  GraphChart,
   GridComponent,
   LabelLayout,
   LegendComponent,
@@ -680,10 +685,34 @@ const buildChartOptions = (
 
 interface ChartComponentProps {
   options: EChartsOption;
-  type: ChartType | FlowType | HierarchyType;
+  type: ChartType | FlowType | GraphType | HierarchyType;
 }
 
+const handleClick = async (params: any, navigate) => {
+  const componentType = params.componentType;
+  if (componentType !== "series") {
+    return;
+  }
+  // const componentSubType = params.componentSubType;
+  const dataType = params.dataType;
+
+  switch (dataType) {
+    case "node":
+      console.log(params);
+      if (!params.data.href) {
+        return;
+      }
+      const renderedResults = await renderInterpolatedTemplates(
+        { graph_node: params.data.href as string },
+        [params.data]
+      );
+      let rowRenderResult = renderedResults[0];
+      navigate(rowRenderResult.graph_node.result);
+  }
+};
+
 const Chart = ({ options, type }: ChartComponentProps) => {
+  const navigate = useNavigate();
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const mediaMode = useMediaMode();
@@ -694,7 +723,7 @@ const Chart = ({ options, type }: ChartComponentProps) => {
     }
 
     const echartInstance = chartRef.current.getEchartsInstance();
-    const dataURL = echartInstance.getDataURL();
+    const dataURL = echartInstance.getDataURL({});
     if (dataURL === imageUrl) {
       return;
     }
@@ -705,6 +734,10 @@ const Chart = ({ options, type }: ChartComponentProps) => {
     return null;
   }
 
+  const eventsDict = {
+    click: (params) => handleClick(params, navigate),
+  };
+
   return (
     <>
       {mediaMode !== "print" && (
@@ -713,6 +746,7 @@ const Chart = ({ options, type }: ChartComponentProps) => {
             ref={chartRef}
             echarts={echarts}
             className="chart-canvas"
+            onEvents={eventsDict}
             option={options}
             notMerge={true}
             lazyUpdate={true}

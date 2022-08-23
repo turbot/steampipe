@@ -1,14 +1,11 @@
 import jq from "jq-web";
+import { KeyValuePairs } from "../components/dashboards/common/types";
 
 const interpolatedStringSplitter = /({{.*?}})/gs;
 const interpolatedMatcher = /{{(.*?)}}/gs;
 
 interface TemplatesMap {
   [key: string]: string;
-}
-
-interface DataMap {
-  [key: string]: any;
 }
 
 export interface RowRenderResult {
@@ -88,7 +85,7 @@ const buildCombinedJQFilter = (templates: TemplatesMap) => {
 
 const renderInterpolatedTemplates = async (
   templates: TemplatesMap,
-  data: DataMap[]
+  data: KeyValuePairs[]
 ): Promise<RowRenderResult[]> => {
   try {
     const finalFilter = buildCombinedJQFilter(templates);
