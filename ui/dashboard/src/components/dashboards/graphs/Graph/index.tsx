@@ -95,6 +95,7 @@ const buildGraphNodesAndEdges = (
         icon: matchingCategory ? matchingCategory.icon : null,
         fold: matchingCategory ? matchingCategory.fold : null,
         isFolded: node.isFolded,
+        foldedIds: node.foldedIds,
         label: node.title,
         row_data: node.row_data,
         themeColors,
@@ -190,11 +191,11 @@ const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined
 ) => {
-  const { expandedNodes } = useGraph();
+  const { expandedNodes, layoutId } = useGraph();
   const themeColors = useChartThemeColors();
   const nodesAndEdges = useMemo(
     () => buildGraphNodesAndEdges(data, properties, themeColors, expandedNodes),
-    [data, properties, themeColors]
+    [data, properties, themeColors, layoutId]
   );
   return {
     nodesAndEdges,

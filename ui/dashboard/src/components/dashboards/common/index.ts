@@ -247,6 +247,7 @@ interface Node {
   symbol: string | null;
   href: string | null;
   isFolded: boolean;
+  foldedIds?: string[];
 }
 
 interface Edge {
@@ -488,7 +489,7 @@ const foldNodesAndEdges = (
           g.threshold !== undefined &&
           g.nodes.length >= g.threshold
       )) {
-      let removedNodeCount = 0;
+      let removedNodes: string[] = [];
       // We want to fold nodes that are not expanded
       for (const node of groupingInfo.nodes) {
         // This node is expanded, don't fold it
@@ -510,17 +511,18 @@ const foldNodesAndEdges = (
           delete newNodesAndEdges.edgeMap[`${node.id}_${targetNode}`];
           graph.removeEdge(node.id, targetNode);
         }
-        removedNodeCount++;
+        removedNodes.push(node.id);
       }
 
       // Now let's add a folded node
-      if (removedNodeCount > 0) {
+      if (removedNodes.length > 0) {
         const foldedNode = {
           id: `fold-${category}-${++foldedNodeCount}`,
           category,
           icon: info.fold?.icon,
           title: info.fold?.title ? info.fold.title : null,
           isFolded: true,
+          foldedIds: removedNodes,
           row_data: null,
           href: null,
           depth: null,

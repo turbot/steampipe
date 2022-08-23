@@ -41,6 +41,7 @@ const GraphProvider = ({ children }) => {
       }
       return newExpandedNodes;
     });
+    setLayoutId(uuid());
   };
 
   return (

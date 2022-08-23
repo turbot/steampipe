@@ -20,6 +20,7 @@ interface AssetNodeProps {
     href?: string;
     icon?: string;
     isFolded: boolean;
+    foldedIds?: string[];
     label: string;
     row_data?: KeyValuePairs;
     themeColors;
@@ -35,6 +36,7 @@ const AssetNode = ({
     href,
     icon,
     isFolded,
+    foldedIds,
     row_data,
     label,
     themeColors,
@@ -121,7 +123,9 @@ const AssetNode = ({
             "text-center text-sm mt-1 bg-dashboard-panel text-foreground min-w-[35px]"
           )}
           onClick={
-            isFolded ? () => expandNode([], category as string) : undefined
+            isFolded && foldedIds
+              ? () => expandNode(foldedIds, category as string)
+              : undefined
           }
         >
           {renderedHref && (
