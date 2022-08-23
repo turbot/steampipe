@@ -173,7 +173,7 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
   </tr>
   <tr>
    <td><b>Your mod</b></td>
-   <td>Build your own <a href="https://steampipe.io/docs/mods/overview">benchmarks and dashboards</a></td>
+   <td>Build your own <a href="https://steampipe.io/docs/mods/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">benchmarks and dashboards</a></td>
   </tr>
  </table>
 <!--
@@ -218,7 +218,7 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
  </details>
  
 
-Benchmarks and dashboards use SQL to gather data and HCL to flow the data into [benchmark controls](https://steampipe.io/blog/release-0-11-0#composable-mods) and  [dashboard widgets](https://steampipe.io/blog/dashboards-as-code). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own. 
+Benchmarks and dashboards use SQL to gather data and HCL to flow the data into [benchmark controls](https://steampipe.io/blog/release-0-11-0?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#composable-mods) and  [dashboard widgets](https://steampipe.io/blog/dashboards-as-code?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own. 
 ### Get started with benchmarks and dashboards
 
 <details>
@@ -265,7 +265,7 @@ Launch the dashboard server: `steampipe dashboard`, then open `http://localhost:
 
 The home page lists available dashboards. Click `DNS Best Practices` to view that dashboard.
 
-Note that the default domains are `microsoft.com` and `github.com`. You can <a href="https://hub.steampipe.io/mods/turbot/net_insights#configuration?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">change those defaults</a> to check other domains.
+Note that the default domains are `microsoft.com` and `github.com`. You can <a href="https://hub.steampipe.io/mods/turbot/net_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#configuration">change those defaults</a> to check other domains.
 </details>
 
 <details>
