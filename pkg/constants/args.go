@@ -47,6 +47,7 @@ const (
 	ArgServiceMode         = "service-mode"
 	ArgBrowser             = "browser"
 	ArgInput               = "input"
+	ArgDashboardInput      = "dashboard-input"
 	ArgMaxCacheSizeMb      = "max-cache-size-mb"
 	ArgIntrospection       = "introspection"
 )

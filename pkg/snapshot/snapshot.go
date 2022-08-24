@@ -76,7 +76,7 @@ func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel ch
 		errorChannel <- e.Error
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)
-		payload, payloadError = dashboardserver.BuildExecutionCompletePayload(e)
+		payload, payloadError = dashboardserver.BuildExecutionCompletePayload(e, true)
 		if payloadError != nil {
 			errorChannel <- payloadError
 		}

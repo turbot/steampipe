@@ -29,7 +29,7 @@ func (tf *TextFormatter) FileExtension() string {
 }
 
 func (tf TextFormatter) GetFormatName() string {
-	return constants.CheckOutputFormatText
+	return constants.OutputFormatText
 }
 
 func (tf *TextFormatter) getMaxCols(constraint RangeConstraint) int {

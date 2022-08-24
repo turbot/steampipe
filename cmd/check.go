@@ -63,7 +63,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", constants.CheckOutputFormatText, "Select a console output format: brief, csv, html, json, md, text or none").
+		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatText, "Select a console output format: brief, csv, html, json, md, text or none").
 		AddBoolFlag(constants.ArgTiming, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
@@ -158,7 +158,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// create the execution tree
 		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
-		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
+		utils.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of failures)
 		failures += executionTree.Execute(ctx)
@@ -267,7 +267,7 @@ func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
 	return (viper.GetBool(constants.ArgTiming) && !viper.GetBool(constants.ArgDryRun)) &&
-		(outputFormat == constants.CheckOutputFormatText || outputFormat == constants.CheckOutputFormatBrief)
+		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
 func exportCheckResult(ctx context.Context, d *control.ExportData) {
@@ -329,7 +329,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			continue
 		}
 		// tactical solution to prettify the json output
-		if target.Formatter.GetFormatName() == constants.CheckOutputFormatJSON {
+		if target.Formatter.GetFormatName() == constants.OutputFormatJSON {
 			dataToExport, err = prettifyJsonFromReader(dataToExport)
 			if err != nil {
 				errors = append(errors, err)

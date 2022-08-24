@@ -23,5 +23,5 @@ func (j *SnapshotFormatter) FileExtension() string {
 }
 
 func (tf SnapshotFormatter) GetFormatName() string {
-	return constants.CheckOutputFormatSnapshot
+	return constants.OutputFormatSnapshot
 }

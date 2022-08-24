@@ -23,7 +23,7 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspa
 	if !ok {
 		return nil, err
 	}
-	// if interactive inp[ut is disabled, return the missing variables error
+	// if interactive input is disabled, return the missing variables error
 	if !viper.GetBool(constants.ArgInput) {
 		return nil, missingVariablesError
 	}

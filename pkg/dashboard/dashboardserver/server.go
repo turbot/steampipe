@@ -129,7 +129,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)
-		payload, payloadError = BuildExecutionCompletePayload(e)
+		payload, payloadError = BuildExecutionCompletePayload(e, false)
 		if payloadError != nil {
 			return
 		}

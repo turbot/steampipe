@@ -64,6 +64,11 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 	if err != nil {
 		return nil, err
 	}
+	// if no mod is specified, assume the workspace mod
+	if parsedName.Mod == "" {
+		parsedName.Mod = e.workspace.Mod.ShortName
+		rootName = parsedName.ToFullName()
+	}
 	switch parsedName.ItemType {
 	case modconfig.BlockTypeDashboard:
 		dashboard, ok := e.workspace.GetResourceMaps().Dashboards[rootName]

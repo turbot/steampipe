@@ -52,7 +52,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		}
 	}
 
-	if viper.GetString(constants.ArgOutput) == constants.CheckOutputFormatNone {
+	if viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
 	}

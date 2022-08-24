@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/interactive"
+	"github.com/turbot/steampipe/pkg/snapshot"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -45,10 +46,13 @@ The current mod is the working directory, or the directory specified by the --wo
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
-		// Cobra will interpret values passed to a StringSliceFlag as CSV,
-		// where args passed to StringArrayFlag are not parsed and used raw
+		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
+		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatSnapshot, "Select a console output format: snapshot").
+		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -69,6 +73,16 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// first check whether a dashboard name has been passed as an arg
+	dashboardName, err := validateDashboardArgs(args)
+	utils.FailOnError(err)
+	if dashboardName != "" {
+		// run just this dashboard
+		runSingleDashboard(dashboardName)
+		// and we are done
+		return
+	}
+
 	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
 	utils.FailOnError(serverPort.IsValid())
 
@@ -85,7 +99,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	contexthelpers.StartCancelHandler(cancel)
 
 	// ensure dashboard assets are present and extract if not
-	err := dashboardassets.Ensure(dashboardCtx)
+	err = dashboardassets.Ensure(dashboardCtx)
 	utils.FailOnError(err)
 
 	// disable all status messages
@@ -120,6 +134,28 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	<-doneChan
 
 	log.Println("[TRACE] runDashboardCmd exiting")
+}
+
+func runSingleDashboard(dashboardName string) {
+	// so a dashboard name was specified - just call GenerateSnapshot
+	snapshot, err := snapshot.GenerateSnapshot(dashboardName)
+	utils.FailOnError(err)
+
+	// display result
+	fmt.Println(snapshot)
+}
+
+// dashboard command accepts 0 or 1 argument
+func validateDashboardArgs(args []string) (string, error) {
+	if len(args) > 1 {
+		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
+	}
+	dashboardName := ""
+	if len(args) == 1 {
+		dashboardName = args[0]
+	}
+	return dashboardName, nil
+
 }
 
 // inspect the init result ands
