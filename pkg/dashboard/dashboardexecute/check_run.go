@@ -110,8 +110,8 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	utils.LogTime("CheckRun.execute start")
 	defer utils.LogTime("CheckRun.execute end")
 
-	// create a context with a ControlEventHooks to report control execution progress
-	ctx = controlstatus.AddControlHooksToContext(ctx, NewControlEventHooks(r))
+	// create a context with a DashboardEventControlHooks to report control execution progress
+	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))
 	r.controlExecutionTree.Execute(ctx)
 
 	// set the summary on the CheckRun

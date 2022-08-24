@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"log"
 	"os"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/dashboard"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/interactive"
@@ -26,12 +26,12 @@ import (
 
 func dashboardCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "dashboard",
+		Use:              "dashboard [flags] [benchmark/dashboard]",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
 		Run:              runDashboardCmd,
-		Short:            "Start the local dashboard UI",
-		Long: `Starts a local web server that enables real-time development of dashboards within the current mod.
+		Short:            "Start the local dashboard UI or run a named dashboard",
+		Long: `Either runs the a named dashboard or benchmark, or starts a local web server that enables real-time development of dashboards within the current mod.
 
 The current mod is the working directory, or the directory specified by the --workspace-chdir flag.`,
 	}
@@ -45,6 +45,7 @@ The current mod is the working directory, or the directory specified by the --wo
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
+		AddBoolFlag(constants.ArgProgress, "", true, "Display dashboard execution progress respected when a dashboard name argument is passed").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
@@ -62,15 +63,19 @@ The current mod is the working directory, or the directory specified by the --wo
 func runDashboardCmd(cmd *cobra.Command, args []string) {
 	dashboardCtx := cmd.Context()
 
+	var err error
 	logging.LogTime("runDashboardCmd start")
 	defer func() {
 		logging.LogTime("runDashboardCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(dashboardCtx, helpers.ToError(r))
+			err = helpers.ToError(r)
+			utils.ShowError(dashboardCtx, err)
 			if isRunningAsService() {
-				saveErrorToDashboardState(helpers.ToError(r))
+				saveErrorToDashboardState(err)
 			}
 		}
+		setExitCodeForDashboardError(err)
+
 	}()
 
 	// first check whether a dashboard name has been passed as an arg
@@ -78,11 +83,13 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	utils.FailOnError(err)
 	if dashboardName != "" {
 		// run just this dashboard
-		runSingleDashboard(dashboardName)
+		err = runSingleDashboard(dashboardCtx, dashboardName)
+		utils.FailOnError(err)
 		// and we are done
 		return
 	}
 
+	// retrieve server params
 	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
 	utils.FailOnError(serverPort.IsValid())
 
@@ -106,21 +113,17 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	dashboardCtx = statushooks.DisableStatusHooks(dashboardCtx)
 
 	// load the workspace
-	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
-	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	initData := dashboard.NewInitData(dashboardCtx, w)
-	// shutdown the service on exit
+	initData := initDashboard(dashboardCtx, err)
 	defer initData.Cleanup(dashboardCtx)
-	err = handleDashboardInitResult(dashboardCtx, initData)
-	// if there was an error, display it
+	utils.FailOnError(initData.Result.Error)
+
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
+
+	// create the server
+	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
 	utils.FailOnError(err)
 
-	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
-	if err != nil {
-		utils.FailOnError(err)
-	}
 	// start the server asynchronously - this returns a chan which is signalled when the internal API server terminates
 	doneChan := server.Start()
 
@@ -136,13 +139,31 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	log.Println("[TRACE] runDashboardCmd exiting")
 }
 
-func runSingleDashboard(dashboardName string) {
+func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
+	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
+	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	// initialise
+	initData := initialisation.NewInitData(dashboardCtx, w)
+	// there must be a modfile
+	if !w.ModfileExists() {
+		initData.Result.Error = workspace.ErrorNoModDefinition
+	}
+
+	return initData
+}
+
+func runSingleDashboard(ctx context.Context, dashboardName string) error {
 	// so a dashboard name was specified - just call GenerateSnapshot
-	snapshot, err := snapshot.GenerateSnapshot(dashboardName)
-	utils.FailOnError(err)
+	snapshot, err := snapshot.GenerateSnapshot(ctx, dashboardName)
+	if err != nil {
+		return err
+	}
 
 	// display result
 	fmt.Println(snapshot)
+	return nil
 }
 
 // dashboard command accepts 0 or 1 argument
@@ -158,24 +179,12 @@ func validateDashboardArgs(args []string) (string, error) {
 
 }
 
-// inspect the init result ands
-func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) error {
-	// if there is an error or cancellation we bomb out
-	if err := initData.Result.Error; err != nil {
-		setExitCodeForDashboardError(err)
-		return initData.Result.Error
-	}
-	// cancelled?
-	if ctx != nil && ctx.Err() != nil {
-		return ctx.Err()
-	}
-	// if there is a usage warning we display it
-	initData.Result.DisplayMessages()
-
-	return nil
-}
-
 func setExitCodeForDashboardError(err error) {
+	// if exit code already set, leave as is
+	if exitCode != 0 {
+		return
+	}
+
 	if err == workspace.ErrorNoModDefinition {
 		exitCode = constants.ExitCodeNoModFile
 	} else {

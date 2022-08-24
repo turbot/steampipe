@@ -10,18 +10,18 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-// ControlStatusHooks is a struct which implements ControlHooks, and displays the control progress as a status message
-type ControlStatusHooks struct {
+// StatusControlHooks is a struct which implements ControlHooks, and displays the control progress as a status message
+type StatusControlHooks struct {
 	Enabled bool
 }
 
-func NewControlStatusHooks() *ControlStatusHooks {
-	return &ControlStatusHooks{
+func NewStatusControlHooks() *StatusControlHooks {
+	return &StatusControlHooks{
 		Enabled: viper.GetBool(constants.ArgProgress),
 	}
 }
 
-func (c *ControlStatusHooks) OnStart(ctx context.Context, _ *ControlProgress) {
+func (c *StatusControlHooks) OnStart(ctx context.Context, _ *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
@@ -29,7 +29,7 @@ func (c *ControlStatusHooks) OnStart(ctx context.Context, _ *ControlProgress) {
 	statushooks.SetStatus(ctx, "Starting controls...")
 }
 
-func (c *ControlStatusHooks) OnControlStart(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
+func (c *StatusControlHooks) OnControlStart(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
@@ -37,7 +37,7 @@ func (c *ControlStatusHooks) OnControlStart(ctx context.Context, _ ControlRunSta
 	c.setStatusFromProgress(ctx, p)
 }
 
-func (c *ControlStatusHooks) OnControlComplete(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
+func (c *StatusControlHooks) OnControlComplete(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
@@ -45,7 +45,7 @@ func (c *ControlStatusHooks) OnControlComplete(ctx context.Context, _ ControlRun
 	c.setStatusFromProgress(ctx, p)
 }
 
-func (c *ControlStatusHooks) OnControlError(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
+func (c *StatusControlHooks) OnControlError(ctx context.Context, _ ControlRunStatusProvider, p *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
@@ -53,7 +53,7 @@ func (c *ControlStatusHooks) OnControlError(ctx context.Context, _ ControlRunSta
 	c.setStatusFromProgress(ctx, p)
 }
 
-func (c *ControlStatusHooks) OnComplete(ctx context.Context, _ *ControlProgress) {
+func (c *StatusControlHooks) OnComplete(ctx context.Context, _ *ControlProgress) {
 	if !c.Enabled {
 		return
 	}
@@ -61,7 +61,7 @@ func (c *ControlStatusHooks) OnComplete(ctx context.Context, _ *ControlProgress)
 	statushooks.Done(ctx)
 }
 
-func (c *ControlStatusHooks) setStatusFromProgress(ctx context.Context, p *ControlProgress) {
+func (c *StatusControlHooks) setStatusFromProgress(ctx context.Context, p *ControlProgress) {
 	message := fmt.Sprintf("Running %d %s. (%d complete, %d running, %d pending, %d %s)",
 		p.Total,
 		utils.Pluralize("control", p.Total),

@@ -3,35 +3,37 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"github.com/mattn/go-isatty"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/dashboard"
+	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/utils"
 	"log"
+	"os"
 	"reflect"
 )
 
-func GenerateSnapshot(target string) (snapshot string, err error) {
+func GenerateSnapshot(ctx context.Context, target string) (snapshot string, err error) {
 	// create context for the dashboard execution
-	ctx, cancel := context.WithCancel(context.Background())
+	snapshotCtx, cancel := createSnapshotContext(ctx)
 	contexthelpers.StartCancelHandler(cancel)
 
-	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
+	w, err := interactive.LoadWorkspacePromptingForVariables(snapshotCtx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := dashboard.NewInitData(ctx, w)
+	// todo do we require a mod file?
+
+	initData := initialisation.NewInitData(snapshotCtx, w)
 	// shutdown the service on exit
-	defer initData.Cleanup(ctx)
+	defer initData.Cleanup(snapshotCtx)
 	if err := initData.Result.Error; err != nil {
 		return "", initData.Result.Error
 	}
-	// cancelled?
-	if ctx != nil && ctx.Err() != nil {
-		return "", ctx.Err()
-	}
+
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
@@ -46,7 +48,7 @@ func GenerateSnapshot(target string) (snapshot string, err error) {
 		handleDashboardEvent(event, resultChannel, errorChannel)
 	}
 	w.RegisterDashboardEventHandler(dashboardEventHandler)
-	dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, target, inputs, w, initData.Client)
+	dashboardexecute.Executor.ExecuteDashboard(snapshotCtx, sessionId, target, inputs, w, initData.Client)
 
 	select {
 	case err = <-errorChannel:
@@ -56,6 +58,24 @@ func GenerateSnapshot(target string) (snapshot string, err error) {
 
 	return snapshot, err
 
+}
+
+// create the context for the check run - add a control status renderer
+func createSnapshotContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	// create context for the dashboard execution
+	snapshotCtx, cancel := context.WithCancel(ctx)
+	contexthelpers.StartCancelHandler(cancel)
+
+	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
+	// if the client is a TTY, inject a status spinner
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		controlHooks = controlstatus.NewStatusControlHooks()
+	}
+
+	snapshotCtx = controlstatus.AddControlHooksToContext(snapshotCtx, controlHooks)
+	// create a context with a SnapshotControlHooks to report execution progress of any controls in this snapshot
+	snapshotCtx = controlstatus.AddControlHooksToContext(ctx, controlstatus.NewSnapshotControlHooks())
+	return snapshotCtx, cancel
 }
 
 func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel chan string, errorChannel chan error) {

@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -90,7 +90,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
-	initData := &control.InitData{}
+	initData := &initialisation.InitData{}
 
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
@@ -105,13 +105,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 
-		if initData.Client != nil {
-			log.Printf("[TRACE] close client")
-			initData.Client.Close(ctx)
-		}
-		if initData.Workspace != nil {
-			initData.Workspace.Close()
-		}
+		initData.Cleanup(ctx)
 	}()
 
 	// verify we have an argument
@@ -126,13 +120,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	initData = initialiseCheck(ctx)
-
-	// check the init result - should we quit?
-	if err := handleCheckInitResult(ctx, initData); err != nil {
-		initData.Cleanup(ctx)
-		// if there was an error, display it
-		utils.FailOnError(err)
-	}
+	utils.FailOnError(initData.Result.Error)
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
 
 	// pull out useful properties
 	workspace := initData.Workspace
@@ -199,7 +189,7 @@ func createCheckContext(ctx context.Context) context.Context {
 	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		controlHooks = controlstatus.NewControlStatusHooks()
+		controlHooks = controlstatus.NewStatusControlHooks()
 	}
 
 	return controlstatus.AddControlHooksToContext(ctx, controlHooks)
@@ -218,7 +208,7 @@ func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 	return true
 }
 
-func initialiseCheck(ctx context.Context) *control.InitData {
+func initialiseCheck(ctx context.Context) *initialisation.InitData {
 	statushooks.SetStatus(ctx, "Initializing...")
 	defer statushooks.Done(ctx)
 
@@ -226,28 +216,49 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := control.NewInitData(ctx, w)
+	initData := initialisation.NewInitData(ctx, w)
+	if initData.Result.Error != nil {
+		return initData
+	}
 
+	// control specific init
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition
+	}
+
+	if viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
+		// set progress to false
+		viper.Set(constants.ArgProgress, false)
+	}
+	// set color schema
+	err = initialiseCheckColorScheme()
+	if err != nil {
+		initData.Result.Error = err
+		return initData
+	}
+
+	if len(initData.Workspace.GetResourceMaps().Controls) == 0 {
+		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 
 	return initData
 }
 
-func handleCheckInitResult(ctx context.Context, initData *control.InitData) error {
-	// if there is an error or cancellation we bomb out
-	if initData.Result.Error != nil {
-		return initData.Result.Error
+func initialiseCheckColorScheme() error {
+	theme := viper.GetString(constants.ArgTheme)
+	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
+		// enforce plain output for non-terminals
+		theme = "plain"
 	}
-	// cancelled?
-	if ctx != nil && ctx.Err() != nil {
-		return ctx.Err()
+	themeDef, ok := controldisplay.ColorSchemes[theme]
+	if !ok {
+		return fmt.Errorf("invalid theme '%s'", theme)
 	}
-
-	// if there is a usage warning we display it
-	initData.Result.DisplayMessages()
-
+	scheme, err := controldisplay.NewControlColorScheme(themeDef)
+	if err != nil {
+		return err
+	}
+	controldisplay.ControlColors = scheme
 	return nil
 }
 

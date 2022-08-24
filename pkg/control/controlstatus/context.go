@@ -11,6 +11,12 @@ var (
 )
 
 func AddControlHooksToContext(ctx context.Context, statusHooks ControlHooks) context.Context {
+	// if the context already contains ControlHooks, do nothing
+	// this may happen when executing a dashboard snapshot -
+	if _, ok := ctx.Value(contextKeyControlHook).(ControlHooks); ok {
+		return ctx
+	}
+
 	return context.WithValue(ctx, contextKeyControlHook, statusHooks)
 }
 
