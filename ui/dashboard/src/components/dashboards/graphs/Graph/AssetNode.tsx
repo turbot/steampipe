@@ -1,4 +1,6 @@
-import DashboardIcon from "../../common/DashboardIcon";
+import DashboardIcon, {
+  useDashboardIconType,
+} from "../../common/DashboardIcon";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import { CategoryFields, KeyValuePairs } from "../../common/types";
@@ -49,6 +51,7 @@ const AssetNode = ({
   const {
     components: { ExternalLink },
   } = useDashboard();
+  const iconType = useDashboardIconType(icon);
 
   const [renderedHref, setRenderedHref] = useState<string | null>(null);
 
@@ -87,6 +90,7 @@ const AssetNode = ({
       <DashboardIcon
         className={classNames(
           "max-w-full",
+          iconType === "icon" && !color ? "text-foreground-lighter" : null,
           theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
         )}
         icon={isFolded ? fold?.icon : icon}
