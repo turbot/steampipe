@@ -300,7 +300,7 @@ const Graph = ({ props }) => {
       // @ts-ignore
       edgeTypes={edgeTypes}
       fitView
-      style={{ height: Math.min(600, graphOptions.height) }}
+      style={{ height: Math.min(600, graphOptions.height), minHeight: 150 }}
       zoomOnScroll={false}
       preventScrolling={false}
     >
