@@ -11,10 +11,6 @@ const (
 	CheckOutputFormatNone     = "none"
 	CheckOutputFormatText     = "text"
 	CheckOutputFormatBrief    = "brief"
-	CheckOutputFormatCSV      = "csv"
 	CheckOutputFormatJSON     = "json"
-	CheckOutputFormatHTML     = "html"
-	CheckOutputFormatMarkdown = "md"
-	CheckOutputFormatNUnit3   = "nunit3"
-	CheckOutputFormatAsffJson = "json-asff"
+	CheckOutputFormatSnapshot = "snapshot"
 )

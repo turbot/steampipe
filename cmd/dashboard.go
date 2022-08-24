@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -92,13 +93,12 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	// load the workspace
 	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
-	w, err := loadWorkspacePromptingForVariables(dashboardCtx)
+	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	initData := dashboard.NewInitData(dashboardCtx, w)
 	// shutdown the service on exit
 	defer initData.Cleanup(dashboardCtx)
-
 	err = handleDashboardInitResult(dashboardCtx, initData)
 	// if there was an error, display it
 	utils.FailOnError(err)

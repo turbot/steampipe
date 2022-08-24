@@ -35,6 +35,7 @@ func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
 type Formatter interface {
 	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
 	FileExtension() string
+	// TODO THIS SEEMS TO BE ONLY USED FOR PRETTIFYING JSON???
 	GetFormatName() string
 }
 

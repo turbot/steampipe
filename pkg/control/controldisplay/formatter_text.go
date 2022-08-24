@@ -16,23 +16,23 @@ const MaxColumns = 200
 
 type TextFormatter struct{}
 
-func (j *TextFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+func (tf *TextFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	renderer := NewTableRenderer(tree)
 	widthConstraint := NewRangeConstraint(renderer.MinimumWidth(), MaxColumns)
-	renderedText := renderer.Render(j.getMaxCols(widthConstraint))
+	renderedText := renderer.Render(tf.getMaxCols(widthConstraint))
 	res := strings.NewReader(fmt.Sprintf("\n%s\n", renderedText))
 	return res, nil
 }
 
-func (j *TextFormatter) FileExtension() string {
-	return ".txt"
+func (tf *TextFormatter) FileExtension() string {
+	return constants.TextExtension
 }
 
 func (tf TextFormatter) GetFormatName() string {
-	return "txt"
+	return constants.CheckOutputFormatText
 }
 
-func (j *TextFormatter) getMaxCols(constraint RangeConstraint) int {
+func (tf *TextFormatter) getMaxCols(constraint RangeConstraint) int {
 	colsAvailable, _, _ := gows.GetWinSize()
 	// check if STEAMPIPE_CHECK_DISPLAY_WIDTH env variable is set
 	if viper.IsSet(constants.ArgCheckDisplayWidth) {

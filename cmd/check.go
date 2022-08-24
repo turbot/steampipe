@@ -24,6 +24,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -222,7 +223,7 @@ func initialiseCheck(ctx context.Context) *control.InitData {
 	defer statushooks.Done(ctx)
 
 	// load the workspace
-	w, err := loadWorkspacePromptingForVariables(ctx)
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	initData := control.NewInitData(ctx, w)
@@ -328,7 +329,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			continue
 		}
 		// tactical solution to prettify the json output
-		if target.Formatter.GetFormatName() == "json" {
+		if target.Formatter.GetFormatName() == constants.CheckOutputFormatJSON {
 			dataToExport, err = prettifyJsonFromReader(dataToExport)
 			if err != nil {
 				errors = append(errors, err)

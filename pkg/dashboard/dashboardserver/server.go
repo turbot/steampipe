@@ -50,7 +50,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 		workspace:        w,
 	}
 
-	w.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
+	w.RegisterDashboardEventHandler(server.HandleDashboardEvent)
 	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	OutputMessage(ctx, "Workspace loaded")
 
@@ -85,7 +85,7 @@ func (s *Server) Shutdown() {
 
 }
 
-func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
+func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 	var payloadError error
 	var payload []byte
 	defer func() {
@@ -129,7 +129,7 @@ func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
 
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)
-		payload, payloadError = buildExecutionCompletePayload(e)
+		payload, payloadError = BuildExecutionCompletePayload(e)
 		if payloadError != nil {
 			return
 		}
