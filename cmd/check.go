@@ -188,6 +188,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 func createCheckContext(ctx context.Context) context.Context {
 	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
 	// if the client is a TTY, inject a status spinner
+	// TODO is this check nee3ded as we do it for status spinnner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		controlHooks = controlstatus.NewStatusControlHooks()
 	}

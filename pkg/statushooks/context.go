@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	contextKeyStatusHook      = contexthelpers.ContextKey("status_hook")
-	contextKeyMessageRenderer = contexthelpers.ContextKey("meddage_renderer")
+	contextKeySnapshotProgress = contexthelpers.ContextKey("snapshot_progress")
+	contextKeyStatusHook       = contexthelpers.ContextKey("status_hook")
+	contextKeyMessageRenderer  = contexthelpers.ContextKey("meddage_renderer")
 )
 
 func DisableStatusHooks(ctx context.Context) context.Context {
@@ -18,10 +19,6 @@ func DisableStatusHooks(ctx context.Context) context.Context {
 
 func AddStatusHooksToContext(ctx context.Context, statusHooks StatusHooks) context.Context {
 	return context.WithValue(ctx, contextKeyStatusHook, statusHooks)
-}
-
-func AddMessageRendererToContext(ctx context.Context, messageRenderer MessageRenderer) context.Context {
-	return context.WithValue(ctx, contextKeyMessageRenderer, messageRenderer)
 }
 
 func StatusHooksFromContext(ctx context.Context) StatusHooks {
@@ -33,6 +30,25 @@ func StatusHooksFromContext(ctx context.Context) StatusHooks {
 	}
 	// no status hook in context - return null status hook
 	return NullHooks
+}
+
+func AddSnapshotProgressToContext(ctx context.Context, snapshotProgress SnapshotProgress) context.Context {
+	return context.WithValue(ctx, contextKeySnapshotProgress, snapshotProgress)
+}
+
+func SnapshotProgressFromContext(ctx context.Context) SnapshotProgress {
+	if ctx == nil {
+		return NullProgress
+	}
+	if val, ok := ctx.Value(contextKeySnapshotProgress).(SnapshotProgress); ok {
+		return val
+	}
+	// no snapshot progress in context - return null progress
+	return NullProgress
+}
+
+func AddMessageRendererToContext(ctx context.Context, messageRenderer MessageRenderer) context.Context {
+	return context.WithValue(ctx, contextKeyMessageRenderer, messageRenderer)
 }
 
 func SetStatus(ctx context.Context, msg string) {

@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"os"
@@ -18,8 +19,11 @@ import (
 )
 
 func GenerateSnapshot(ctx context.Context, target string) (snapshot string, err error) {
+	// TODO WHAT AM I??
+	snapshotAddress := "http://snapshot/address"
 	// create context for the dashboard execution
-	snapshotCtx, cancel := createSnapshotContext(ctx)
+	snapshotCtx, cancel := createSnapshotContext(ctx, target, snapshotAddress)
+	
 	contexthelpers.StartCancelHandler(cancel)
 
 	w, err := interactive.LoadWorkspacePromptingForVariables(snapshotCtx)
@@ -61,20 +65,23 @@ func GenerateSnapshot(ctx context.Context, target string) (snapshot string, err 
 }
 
 // create the context for the check run - add a control status renderer
-func createSnapshotContext(ctx context.Context) (context.Context, context.CancelFunc) {
+func createSnapshotContext(ctx context.Context, target string, snapshotAddress string) (context.Context, context.CancelFunc) {
 	// create context for the dashboard execution
 	snapshotCtx, cancel := context.WithCancel(ctx)
 	contexthelpers.StartCancelHandler(cancel)
 
+	snapshotProgressReporter := NewSnapshotProgressReporter(target, snapshotAddress)
+	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
+
 	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
+	// TODO only do tty check for actual status spinner
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		controlHooks = controlstatus.NewStatusControlHooks()
+		controlHooks = controlstatus.NewSnapshotControlHooks()
 	}
 
-	snapshotCtx = controlstatus.AddControlHooksToContext(snapshotCtx, controlHooks)
 	// create a context with a SnapshotControlHooks to report execution progress of any controls in this snapshot
-	snapshotCtx = controlstatus.AddControlHooksToContext(ctx, controlstatus.NewSnapshotControlHooks())
+	snapshotCtx = controlstatus.AddControlHooksToContext(snapshotCtx, controlHooks)
 	return snapshotCtx, cancel
 }
 
