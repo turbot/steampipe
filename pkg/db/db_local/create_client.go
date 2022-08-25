@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -69,6 +70,11 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*sql.DB, e
 	utils.LogTime("db.createLocalDbClient connection open start")
 	db, err := sql.Open("pgx", psqlInfo)
 	db.SetMaxOpenConns(1)
+	// close idle connections after 1 minute
+	db.SetConnMaxIdleTime(1 * time.Minute)
+	// do not re-use a connection more than 10 minutes old - force a refresh
+	db.SetConnMaxLifetime(10 * time.Minute)
+
 	utils.LogTime("db.createLocalDbClient connection open end")
 
 	if err != nil {
