@@ -380,6 +380,7 @@ const createNode = (
     isFolded,
   };
   node_lookup[id] = node;
+
   if (category) {
     nodes_by_category[category] = nodes_by_category[category] || {};
     nodes_by_category[category][id] = node;
@@ -450,12 +451,12 @@ const foldNodesAndEdges = (
       const outEdges = graph.outEdges(node.id);
 
       // Record the nodes pointing to this node
-      for (const inEdge of inEdges) {
+      for (const inEdge of inEdges || []) {
         sourceNodes.push(inEdge.v);
       }
 
       // Record the nodes this node points to
-      for (const outEdge of outEdges) {
+      for (const outEdge of outEdges || []) {
         targetNodes.push(outEdge.w);
       }
 
@@ -762,33 +763,26 @@ const buildNodesAndEdges = (
     // If this row is a node
     if (!!node_id) {
       const existingNode = node_lookup[node_id];
+      // Even if the node already existed, it will only have minimal info, as it
+      // could only have been created implicitly through an edge definition, so
+      // build a full node and update it
+      const node = createNode(
+        node_lookup,
+        nodes_by_category,
+        node_id,
+        title,
+        category,
+        depth,
+        row,
+        categories
+      );
 
       if (!existingNode) {
-        const node = createNode(
-          node_lookup,
-          nodes_by_category,
-          node_id,
-          title,
-          category,
-          depth,
-          row,
-          categories
-        );
         graph.setNode(node_id);
         nodes.push(node);
 
         // Record this as a root node for now - we may remove that once we process the edges
         root_node_lookup[node_id] = node;
-      } else {
-        existingNode.title = title;
-        existingNode.category = category;
-        if (category) {
-          nodes_by_category[category] = nodes_by_category[category] || {};
-          nodes_by_category[category][node_id] =
-            nodes_by_category[category][node_id] || {};
-          nodes_by_category[category][node_id].category = category;
-        }
-        existingNode.depth = depth;
       }
 
       // If this has an edge from another node
