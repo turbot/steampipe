@@ -491,6 +491,9 @@ const foldNodesAndEdges = (
       )) {
       let removedNodes: string[] = [];
 
+      // Create a structure to capture the category and title of each edge that
+      // is being folded into this node. Later, if they are all the same, we can
+      // use that same category and title for the new folded edge.
       const deletedSourceEdges = { categories: {}, titles: {} };
       const deletedTargetEdges = { categories: {}, titles: {} };
 
