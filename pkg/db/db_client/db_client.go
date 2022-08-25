@@ -123,7 +123,6 @@ func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	// set max open connections to the max connections argument
 	db.SetMaxOpenConns(maxParallel)
 	// NOTE: leave max idle connections at default of 2
-
 	// close idle connections after 1 minute
 	db.SetConnMaxIdleTime(1 * time.Minute)
 	// do not re-use a connection more than 10 minutes old - force a refresh
