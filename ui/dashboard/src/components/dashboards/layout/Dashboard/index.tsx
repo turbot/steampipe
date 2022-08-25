@@ -28,6 +28,7 @@ const Dashboard = ({
   <>
     {isRoot ? <DashboardProgress state={state} progress={progress} /> : <></>}
     <LayoutPanel
+      className={isRoot ? "h-full overflow-y-auto" : undefined}
       definition={definition}
       isDashboard={true}
       withPadding={withPadding}
