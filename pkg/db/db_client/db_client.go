@@ -6,6 +6,7 @@ import (
 	"log"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
@@ -119,12 +120,14 @@ func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 		maxParallel = viper.GetInt(constants.ArgMaxParallel)
 	}
 
+	// set max open connections to the max connections argument
 	db.SetMaxOpenConns(maxParallel)
-	db.SetMaxIdleConns(maxParallel)
-	// never close connection even if idle
-	db.SetConnMaxIdleTime(0)
-	// never close connection because of age
-	db.SetConnMaxLifetime(0)
+	// NOTE: leave max idle connections at default of 2
+
+	// close idle connections after 1 minute
+	db.SetConnMaxIdleTime(1 * time.Minute)
+	// do not re-use a connection more than 10 minutes old - force a refresh
+	db.SetConnMaxLifetime(10 * time.Minute)
 
 	if err := db_common.WaitForConnection(ctx, db); err != nil {
 		return nil, err
