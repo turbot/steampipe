@@ -1,3 +1,7 @@
+## v0.16.1 [tbd]
+_Bug fixes_
+* Limit connection lifetime in db connection pool. ([#2375](https://github.com/turbot/steampipe/issues/2375))
+
 ## v0.16.0 [2022-08-24]
 _What's new?_
 * Add support for plugin processes to handle multiple connections (rather than a process per connection), improving startup time and reducing memory usage.  ([#2262](https://github.com/turbot/steampipe/issues/2262))
