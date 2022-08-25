@@ -137,6 +137,10 @@ const AssetNode = ({
           )}
           {!renderedHref && !isFolded && label}
           {!renderedHref && isFolded && fold?.title}
+          {!renderedHref &&
+            isFolded &&
+            !fold?.title &&
+            `${foldedNodeIds?.length} nodes...`}
         </div>
       </div>
     </>
