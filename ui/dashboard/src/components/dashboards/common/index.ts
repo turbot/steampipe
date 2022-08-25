@@ -238,6 +238,11 @@ const adjustMaxValue = (initial) => {
   return max;
 };
 
+export interface FoldedNode {
+  id: string;
+  title?: string;
+}
+
 interface Node {
   id: string;
   title: string | null;
@@ -247,7 +252,7 @@ interface Node {
   symbol: string | null;
   href: string | null;
   isFolded: boolean;
-  foldedNodeIds?: string[];
+  foldedNodes?: FoldedNode[];
 }
 
 interface Edge {
@@ -489,7 +494,7 @@ const foldNodesAndEdges = (
           g.threshold !== undefined &&
           g.nodes.length >= g.threshold
       )) {
-      let removedNodes: string[] = [];
+      const removedNodes: any[] = [];
 
       // Create a structure to capture the category and title of each edge that
       // is being folded into this node. Later, if they are all the same, we can
@@ -539,7 +544,7 @@ const foldNodesAndEdges = (
           delete newNodesAndEdges.edgeMap[targetEdgeKey];
           graph.removeEdge(node.id, targetNode);
         }
-        removedNodes.push(node.id);
+        removedNodes.push({ id: node.id, title: node.title });
       }
 
       // Now let's add a folded node
@@ -550,7 +555,7 @@ const foldNodesAndEdges = (
           icon: info.fold?.icon,
           title: info.fold?.title ? info.fold.title : null,
           isFolded: true,
-          foldedNodeIds: removedNodes,
+          foldedNodes: removedNodes,
           row_data: null,
           href: null,
           depth: null,

@@ -95,7 +95,7 @@ const buildGraphNodesAndEdges = (
         icon: matchingCategory ? matchingCategory.icon : null,
         fold: matchingCategory ? matchingCategory.fold : null,
         isFolded: node.isFolded,
-        foldedNodeIds: node.foldedNodeIds,
+        foldedNodes: node.foldedNodes,
         label: node.title,
         row_data: node.row_data,
         themeColors,

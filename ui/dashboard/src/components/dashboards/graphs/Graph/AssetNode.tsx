@@ -4,7 +4,7 @@ import DashboardIcon, {
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import { CategoryFields, KeyValuePairs } from "../../common/types";
-import { CategoryFold } from "../../common";
+import { CategoryFold, FoldedNode } from "../../common";
 import { classNames } from "../../../../utils/styles";
 import { Handle } from "react-flow-renderer";
 import { memo, useEffect, useState } from "react";
@@ -22,7 +22,7 @@ interface AssetNodeProps {
     href?: string;
     icon?: string;
     isFolded: boolean;
-    foldedNodeIds?: string[];
+    foldedNodes?: FoldedNode[];
     label: string;
     row_data?: KeyValuePairs;
     themeColors;
@@ -38,7 +38,7 @@ const AssetNode = ({
     href,
     icon,
     isFolded,
-    foldedNodeIds,
+    foldedNodes,
     row_data,
     label,
     themeColors,
@@ -107,28 +107,40 @@ const AssetNode = ({
       {/*@ts-ignore*/}
       <Handle type="source" />
       <div className="flex flex-col items-center cursor-auto">
-        {row_data && row_data.properties && !isFolded && (
+        {((row_data && row_data.properties) || isFolded) && (
           <Tooltip
             overlay={
-              <RowProperties
-                fields={fields || null}
-                properties={row_data.properties}
-              />
+              <>
+                {row_data && row_data.properties && !isFolded && (
+                  <RowProperties
+                    fields={fields || null}
+                    properties={row_data.properties}
+                  />
+                )}
+                {isFolded && (
+                  <div className="max-h-1/2-screen space-y-2">
+                    <div className="h-full overflow-y-auto">
+                      {(foldedNodes || []).map((n) => (
+                        <div key={n.id}>{n.title || n.id}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             }
             title={label}
           >
             {node}
           </Tooltip>
         )}
-        {(isFolded || !row_data || !row_data.properties) && node}
         <div
           className={classNames(
             isFolded ? "text-link cursor-pointer" : null,
             "text-center text-sm mt-1 bg-dashboard-panel text-foreground min-w-[35px]"
           )}
           onClick={
-            isFolded && foldedNodeIds
-              ? () => expandNode(foldedNodeIds, category as string)
+            isFolded && foldedNodes
+              ? () => expandNode(foldedNodes, category as string)
               : undefined
           }
         >
@@ -140,7 +152,7 @@ const AssetNode = ({
           {!renderedHref &&
             isFolded &&
             !fold?.title &&
-            `${foldedNodeIds?.length} nodes...`}
+            `${foldedNodes?.length} nodes...`}
         </div>
       </div>
     </>

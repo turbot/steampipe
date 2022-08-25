@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { FoldedNode } from "../../common";
 import { KeyValueStringPairs } from "../../common/types";
 import { noop } from "../../../../utils/func";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { v4 as uuid } from "uuid";
 
 interface IGraphContext {
-  expandNode: (foldedNodeIds: string[], category: string) => void;
+  expandNode: (foldedNodes: FoldedNode[], category: string) => void;
   expandedNodes: KeyValueStringPairs;
   layoutId: string;
   recalcLayout: () => void;
@@ -33,11 +34,11 @@ const GraphProvider = ({ children }) => {
     setLayoutId(uuid());
   };
 
-  const expandNode = (foldedNodeIds: string[] = [], category: string) => {
+  const expandNode = (foldedNodes: FoldedNode[] = [], category: string) => {
     setExpandedNodes((current) => {
       const newExpandedNodes = { ...current };
-      for (const foldedNodeId of foldedNodeIds) {
-        newExpandedNodes[foldedNodeId] = category;
+      for (const foldedNode of foldedNodes) {
+        newExpandedNodes[foldedNode.id] = category;
       }
       return newExpandedNodes;
     });
