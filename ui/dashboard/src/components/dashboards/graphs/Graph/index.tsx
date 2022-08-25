@@ -95,7 +95,7 @@ const buildGraphNodesAndEdges = (
         icon: matchingCategory ? matchingCategory.icon : null,
         fold: matchingCategory ? matchingCategory.fold : null,
         isFolded: node.isFolded,
-        foldedNodeIds: node.foldedNodeIds,
+        foldedNodes: node.foldedNodes,
         label: node.title,
         row_data: node.row_data,
         themeColors,
@@ -300,7 +300,7 @@ const Graph = ({ props }) => {
       // @ts-ignore
       edgeTypes={edgeTypes}
       fitView
-      style={{ height: Math.min(600, graphOptions.height) }}
+      style={{ height: Math.min(600, graphOptions.height), minHeight: 150 }}
       zoomOnScroll={false}
       preventScrolling={false}
     >

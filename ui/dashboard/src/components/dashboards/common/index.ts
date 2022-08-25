@@ -238,6 +238,11 @@ const adjustMaxValue = (initial) => {
   return max;
 };
 
+export interface FoldedNode {
+  id: string;
+  title?: string;
+}
+
 interface Node {
   id: string;
   title: string | null;
@@ -247,7 +252,7 @@ interface Node {
   symbol: string | null;
   href: string | null;
   isFolded: boolean;
-  foldedNodeIds?: string[];
+  foldedNodes?: FoldedNode[];
 }
 
 interface Edge {
@@ -375,6 +380,7 @@ const createNode = (
     isFolded,
   };
   node_lookup[id] = node;
+
   if (category) {
     nodes_by_category[category] = nodes_by_category[category] || {};
     nodes_by_category[category][id] = node;
@@ -445,12 +451,12 @@ const foldNodesAndEdges = (
       const outEdges = graph.outEdges(node.id);
 
       // Record the nodes pointing to this node
-      for (const inEdge of inEdges) {
+      for (const inEdge of inEdges || []) {
         sourceNodes.push(inEdge.v);
       }
 
       // Record the nodes this node points to
-      for (const outEdge of outEdges) {
+      for (const outEdge of outEdges || []) {
         targetNodes.push(outEdge.w);
       }
 
@@ -489,7 +495,14 @@ const foldNodesAndEdges = (
           g.threshold !== undefined &&
           g.nodes.length >= g.threshold
       )) {
-      let removedNodes: string[] = [];
+      const removedNodes: any[] = [];
+
+      // Create a structure to capture the category and title of each edge that
+      // is being folded into this node. Later, if they are all the same, we can
+      // use that same category and title for the new folded edge.
+      const deletedSourceEdges = { categories: {}, titles: {} };
+      const deletedTargetEdges = { categories: {}, titles: {} };
+
       // We want to fold nodes that are not expanded
       for (const node of groupingInfo.nodes) {
         // This node is expanded, don't fold it
@@ -503,15 +516,36 @@ const foldNodesAndEdges = (
         delete newNodesAndEdges.nodeCategoryMap[category][node.id];
         // Remove edges pointing to this node
         for (const sourceNode of groupingInfo.source) {
-          delete newNodesAndEdges.edgeMap[`${sourceNode}_${node.id}`];
+          const sourceEdgeKey = `${sourceNode}_${node.id}`;
+          const sourceEdge = newNodesAndEdges.edgeMap[sourceEdgeKey];
+          const sourceEdgeTitle = sourceEdge.title || "none";
+          const sourceEdgeCategory = sourceEdge.category || "none";
+          deletedSourceEdges.categories[sourceEdgeCategory] =
+            deletedSourceEdges.categories[sourceEdgeCategory] || 0;
+          deletedSourceEdges.categories[sourceEdgeCategory]++;
+          deletedSourceEdges.titles[sourceEdgeTitle] =
+            deletedSourceEdges.titles[sourceEdgeTitle] || 0;
+          deletedSourceEdges.titles[sourceEdgeTitle]++;
+          delete newNodesAndEdges.edgeMap[sourceEdgeKey];
           graph.removeEdge(sourceNode, node.id);
         }
         // Remove edges coming from this node
         for (const targetNode of groupingInfo.target) {
-          delete newNodesAndEdges.edgeMap[`${node.id}_${targetNode}`];
+          const targetEdgeKey = `${node.id}_${targetNode}`;
+          const targetEdge = newNodesAndEdges.edgeMap[targetEdgeKey];
+          const targetEdgeTitle =
+            targetEdge.title || targetEdge.category || "none";
+          const targetEdgeCategory = targetEdge.category || "none";
+          deletedTargetEdges.categories[targetEdgeCategory] =
+            deletedTargetEdges.categories[targetEdgeCategory] || 0;
+          deletedTargetEdges.categories[targetEdgeCategory]++;
+          deletedTargetEdges.titles[targetEdgeTitle] =
+            deletedTargetEdges.titles[targetEdgeTitle] || 0;
+          deletedTargetEdges.titles[targetEdgeTitle]++;
+          delete newNodesAndEdges.edgeMap[targetEdgeKey];
           graph.removeEdge(node.id, targetNode);
         }
-        removedNodes.push(node.id);
+        removedNodes.push({ id: node.id, title: node.title });
       }
 
       // Now let's add a folded node
@@ -522,7 +556,7 @@ const foldNodesAndEdges = (
           icon: info.fold?.icon,
           title: info.fold?.title ? info.fold.title : null,
           isFolded: true,
-          foldedNodeIds: removedNodes,
+          foldedNodes: removedNodes,
           row_data: null,
           href: null,
           depth: null,
@@ -532,6 +566,24 @@ const foldNodesAndEdges = (
         newNodesAndEdges.nodeCategoryMap[category][foldedNode.id] = foldedNode;
         newNodesAndEdges.nodeMap[foldedNode.id] = foldedNode;
 
+        // We want to add the color and category if all edges to this node have a common color or category
+        const deletedSourceEdgeCategoryKeys = Object.keys(
+          deletedSourceEdges.categories
+        );
+        const deletedSourceEdgeTitleKeys = Object.keys(
+          deletedSourceEdges.titles
+        );
+        const sourceEdgeCategory =
+          deletedSourceEdgeCategoryKeys.length === 1 &&
+          deletedSourceEdgeCategoryKeys[0] !== "none"
+            ? deletedSourceEdgeCategoryKeys[0]
+            : null;
+        const sourceEdgeTitle =
+          deletedSourceEdgeTitleKeys.length === 1 &&
+          deletedSourceEdgeTitleKeys[0] !== "none"
+            ? deletedSourceEdgeTitleKeys[0]
+            : null;
+
         // Add the source edges back to the folded node
         for (const sourceNode of groupingInfo.source) {
           graph.setEdge(sourceNode, foldedNode.id);
@@ -539,9 +591,29 @@ const foldNodesAndEdges = (
             id: `${sourceNode}_${foldedNode.id}`,
             from_id: sourceNode,
             to_id: foldedNode.id,
+            category: sourceEdgeCategory,
+            title: sourceEdgeTitle,
           };
           newNodesAndEdges.edgeMap[edge.id] = edge;
         }
+
+        // We want to add the category and title if all edges from this node have a common category or title
+        const deletedTargetEdgeCategoryKeys = Object.keys(
+          deletedTargetEdges.categories
+        );
+        const deletedTargetEdgeTitleKeys = Object.keys(
+          deletedTargetEdges.categories
+        );
+        const targetEdgeCategory =
+          deletedTargetEdgeCategoryKeys.length === 1 &&
+          deletedTargetEdgeCategoryKeys[0] !== "none"
+            ? deletedTargetEdgeCategoryKeys[0]
+            : null;
+        const targetEdgeTitle =
+          deletedTargetEdgeTitleKeys.length === 1 &&
+          deletedTargetEdgeTitleKeys[0] !== "none"
+            ? deletedTargetEdgeTitleKeys[0]
+            : null;
 
         // Add the target edges back from the folded node
         for (const targetNode of groupingInfo.target) {
@@ -550,6 +622,8 @@ const foldNodesAndEdges = (
             id: `${foldedNode.id}_${targetNode}`,
             from_id: foldedNode.id,
             to_id: targetNode,
+            category: targetEdgeCategory,
+            title: targetEdgeTitle,
           };
           newNodesAndEdges.edgeMap[edge.id] = edge;
         }
@@ -689,33 +763,26 @@ const buildNodesAndEdges = (
     // If this row is a node
     if (!!node_id) {
       const existingNode = node_lookup[node_id];
+      // Even if the node already existed, it will only have minimal info, as it
+      // could only have been created implicitly through an edge definition, so
+      // build a full node and update it
+      const node = createNode(
+        node_lookup,
+        nodes_by_category,
+        node_id,
+        title,
+        category,
+        depth,
+        row,
+        categories
+      );
 
       if (!existingNode) {
-        const node = createNode(
-          node_lookup,
-          nodes_by_category,
-          node_id,
-          title,
-          category,
-          depth,
-          row,
-          categories
-        );
         graph.setNode(node_id);
         nodes.push(node);
 
         // Record this as a root node for now - we may remove that once we process the edges
         root_node_lookup[node_id] = node;
-      } else {
-        existingNode.title = title;
-        existingNode.category = category;
-        if (category) {
-          nodes_by_category[category] = nodes_by_category[category] || {};
-          nodes_by_category[category][node_id] =
-            nodes_by_category[category][node_id] || {};
-          nodes_by_category[category][node_id].category = category;
-        }
-        existingNode.depth = depth;
       }
 
       // If this has an edge from another node

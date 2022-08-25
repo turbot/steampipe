@@ -1,6 +1,7 @@
 import Icon from "../../Icon";
 import Text from "react-svg-text";
 import { classNames } from "../../../utils/styles";
+import { memo, useMemo } from "react";
 
 interface DashboardIconProps {
   className?: string;
@@ -11,29 +12,34 @@ interface DashboardHeroIconProps extends DashboardIconProps {
   icon: string;
 }
 
-const getIconType = (icon) => {
-  // This gets parsed as a URL if we don't check first
-  if (
-    icon.startsWith("heroicons-outline:") ||
-    icon.startsWith("heroicons-solid:")
-  ) {
+const useDashboardIconType = (icon) =>
+  useMemo(() => {
+    if (!icon) {
+      return null;
+    }
+
+    // This gets parsed as a URL if we don't check first
+    if (
+      icon.startsWith("heroicons-outline:") ||
+      icon.startsWith("heroicons-solid:")
+    ) {
+      return "icon";
+    }
+
+    // Same for text - this gets parsed as a URL if we don't check first
+    if (icon.startsWith("text:")) {
+      return "text";
+    }
+
+    // If it looks like a URL, treat it like a URL
+    try {
+      new URL(icon);
+      return "url";
+    } catch {}
+
+    // Else fall back to hero icons
     return "icon";
-  }
-
-  // Same for text - this gets parsed as a URL if we don't check first
-  if (icon.startsWith("text:")) {
-    return "text";
-  }
-
-  // If it looks like a URL, treat it like a URL
-  try {
-    new URL(icon);
-    return "url";
-  } catch {}
-
-  // Else fall back to hero icons
-  return "icon";
-};
+  }, [icon]);
 
 const DashboardImageIcon = ({ className, icon }) => (
   <img className={className} src={icon} alt="" />
@@ -52,11 +58,12 @@ const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => (
 );
 
 const DashboardIcon = ({ className, icon }: DashboardIconProps) => {
-  if (!icon) {
+  // First work out the type of the provided icon
+  const iconType = useDashboardIconType(icon);
+
+  if (!icon || !iconType) {
     return null;
   }
-  // First work out the type of the provided icon
-  const iconType = getIconType(icon);
 
   switch (iconType) {
     case "icon":
@@ -70,4 +77,6 @@ const DashboardIcon = ({ className, icon }: DashboardIconProps) => {
   }
 };
 
-export default DashboardIcon;
+export default memo(DashboardIcon);
+
+export { useDashboardIconType };
