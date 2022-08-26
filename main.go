@@ -31,6 +31,9 @@ func main() {
 	// ensure steampipe is not being run as root
 	checkRoot(ctx)
 
+	// ensure steampipe is not run on WSL1
+	checkWsl1(ctx)
+
 	// increase the soft ULIMIT to match the hard limit
 	err := setULimit()
 	utils.FailOnErrorWithMessage(err, "failed to increase the file limit")
