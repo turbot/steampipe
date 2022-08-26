@@ -86,3 +86,73 @@ To reduce security risk, use an unprivileged user account instead.`))
 		os.Exit(exitCode)
 	}
 }
+<<<<<<< HEAD
+=======
+
+func checkLocaleSettings(ctx context.Context) {
+	// run the locale command
+	output, err := exec.Command("locale").CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error while checking locale settings %v", err.Error())
+		return
+	}
+	// store the output of 'locale | grep LC_CTYPE'
+	lc_output, err := exec.Command("bash", "-c", "locale | grep LC_CTYPE").Output()
+	if err != nil {
+		fmt.Printf("Error while checking locale settings %v", err.Error())
+		return
+	}
+
+	lc_val := strings.TrimSpace(string(lc_output))
+	// get the langpack name from the output
+	langpack_name := strings.TrimSpace(strings.Trim(string(lc_output), "LC_CTYPE="))
+
+	// check for cannot set LC_CTYPE error
+	flag := strings.Contains(string(output), "Cannot set LC_CTYPE to default locale")
+
+	// if there is a cannot set LC_CTYPE error, exit with an error message
+	if flag {
+		utils.ShowError(ctx, fmt.Errorf(`Failed to initialize database as the default langpack(%s) is not installed. 
+To fix, either set environment variable LC_ALL to "C" or "POSIX" or install the langpack %s. [https://www.postgresql.org/docs/current/multibyte.html]`, lc_val, langpack_name))
+		os.Exit(1)
+	}
+}
+
+func checkWsl1(ctx context.Context) {
+	// store the 'uname -r' output
+	output, err := exec.Command("uname", "-r").Output()
+	if err != nil {
+		fmt.Printf("Error while checking uname %v", err.Error())
+		return
+	}
+
+	// if WSL2, return
+	if strings.Contains(strings.ToLower(string(output)), "wsl2") {
+		return
+	}
+	// if output contains 'microsoft' or 'wsl', check the kernel version
+	if strings.Contains(strings.ToLower(string(output)), "microsoft") || strings.Contains(strings.ToLower(string(output)), "wsl") {
+
+		// store the system kernel version
+		sys_kernel, _, _ := strings.Cut(string(output), "-")
+		sys_kernel_ver, err := version.NewVersion(sys_kernel)
+		if err != nil {
+			fmt.Printf("Error while checking system kernel version %v", err.Error())
+			return
+		}
+		// if the kernel version >= 4.19, it's WSL Version 2.
+		kernel_ver, err := version.NewVersion("4.19")
+		if err != nil {
+			fmt.Printf("Error while checking kernel version %v", err.Error())
+			return
+		}
+		// if the kernel version >= 4.19, it's WSL version 2, else version 1
+		if sys_kernel_ver.GreaterThanOrEqual(kernel_ver) {
+			return
+		} else {
+			utils.ShowError(ctx, fmt.Errorf("Steampipe requires WSL2, please upgrade and try again."))
+			os.Exit(1)
+		}
+	}
+}
+>>>>>>> d93b3085 (updates)
