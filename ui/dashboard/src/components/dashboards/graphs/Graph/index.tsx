@@ -290,19 +290,22 @@ const Graph = ({ props }) => {
 
   return (
     <ReactFlow
-      noWheelClassName="foo"
-      nodes={graphOptions.nodes}
-      edges={graphOptions.edges}
-      onNodesChange={graphOptions.onNodesChange}
-      onEdgesChange={graphOptions.onEdgesChange}
-      onPaneClick={() => closeTooltips()}
-      nodeTypes={nodeTypes}
       // @ts-ignore
       edgeTypes={edgeTypes}
+      edges={graphOptions.edges}
       fitView
+      nodes={graphOptions.nodes}
+      nodeTypes={nodeTypes}
+      onEdgesChange={graphOptions.onEdgesChange}
+      onNodesChange={graphOptions.onNodesChange}
+      onPaneClick={() => closeTooltips()}
+      preventScrolling={false}
+      proOptions={{
+        account: "paid-pro",
+        hideAttribution: true,
+      }}
       style={{ height: Math.min(600, graphOptions.height), minHeight: 150 }}
       zoomOnScroll={false}
-      preventScrolling={false}
     >
       <CustomControls />
     </ReactFlow>
