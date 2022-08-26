@@ -18,13 +18,13 @@ type DashboardNodeRun interface {
 	Execute(ctx context.Context)
 	GetName() string
 	GetRunStatus() DashboardRunStatus
-	SetError(err error)
+	SetError(context.Context, error)
 	GetError() error
-	SetComplete()
+	SetComplete(context.Context)
 	RunComplete() bool
 	GetChildren() []DashboardNodeRun
 	ChildrenComplete() bool
-	GetInputsDependingOn(changedInputName string) []string
+	GetInputsDependingOn(string) []string
 	AsTreeNode() *SnapshotTreeNode
 }
 

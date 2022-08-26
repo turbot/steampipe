@@ -148,8 +148,8 @@ func (e *DashboardExecutionTree) GetRunStatus() dashboardtypes.DashboardRunStatu
 }
 
 // SetError sets the error on the Root run
-func (e *DashboardExecutionTree) SetError(err error) {
-	e.Root.SetError(err)
+func (e *DashboardExecutionTree) SetError(ctx context.Context, err error) {
+	e.Root.SetError(ctx, err)
 }
 
 // GetName implements DashboardNodeParent

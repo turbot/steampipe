@@ -132,7 +132,7 @@ func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 	for _, child := range r.Children {
 		child.Initialise(ctx)
 		if err := child.GetError(); err != nil {
-			r.SetError(err)
+			r.SetError(ctx, err)
 			return
 		}
 	}
@@ -161,9 +161,9 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	err := utils.CombineErrors(errors...)
 	if err == nil {
 		// set complete status on dashboard
-		r.SetComplete()
+		r.SetComplete(ctx)
 	} else {
-		r.SetError(err)
+		r.SetError(ctx, err)
 	}
 }
 
@@ -179,7 +179,7 @@ func (r *DashboardContainerRun) GetRunStatus() dashboardtypes.DashboardRunStatus
 
 // SetError implements DashboardNodeRun
 // tell parent we are done
-func (r *DashboardContainerRun) SetError(err error) {
+func (r *DashboardContainerRun) SetError(_ context.Context, err error) {
 	r.error = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
@@ -199,7 +199,7 @@ func (r *DashboardContainerRun) GetError() error {
 }
 
 // SetComplete implements DashboardNodeRun
-func (r *DashboardContainerRun) SetComplete() {
+func (r *DashboardContainerRun) SetComplete(context.Context) {
 	r.Status = dashboardtypes.DashboardRunComplete
 	// raise container complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{
@@ -237,5 +237,5 @@ func (r *DashboardContainerRun) ChildCompleteChan() chan dashboardtypes.Dashboar
 }
 
 // GetInputsDependingOn implements DashboardNodeRun
-//return nothing for DashboardContainerRun
+// return nothing for DashboardContainerRun
 func (r *DashboardContainerRun) GetInputsDependingOn(changedInputName string) []string { return nil }
