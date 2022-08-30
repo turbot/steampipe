@@ -48,6 +48,7 @@ const (
 	ArgBrowser             = "browser"
 	ArgInput               = "input"
 	ArgMaxCacheSizeMb      = "max-cache-size-mb"
+	ArgIntrospection       = "introspection"
 )
 
 /// metaquery mode arguments

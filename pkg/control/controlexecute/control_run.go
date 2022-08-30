@@ -211,6 +211,9 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 }
 
 func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
+	utils.LogTime("ControlRun.execute start")
+	defer utils.LogTime("ControlRun.execute end")
+
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 

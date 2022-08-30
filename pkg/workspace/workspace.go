@@ -50,6 +50,8 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send dashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
+	// count of workspace changed events - used to ignore first event
+	changeEventCount int
 }
 
 // Load creates a Workspace and loads the workspace mod

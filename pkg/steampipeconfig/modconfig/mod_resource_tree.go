@@ -4,11 +4,14 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // BuildResourceTree builds the control tree structure by setting the parent property for each control and benchmark
 // NOTE: this also builds the sorted benchmark list
 func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) (err error) {
+	utils.LogTime("BuildResourceTree start")
+	defer utils.LogTime("BuildResourceTree end")
 	defer func() {
 		if err == nil {
 			err = m.validateResourceTree()
