@@ -52,7 +52,7 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 		err = json.Unmarshal(fileContent, &installCache)
 		if err != nil {
 			log.Printf("[TRACE] failed to unmarshal %s: %s\n", lockPath, err.Error())
-			return nil, nil
+			return nil, err
 		}
 	}
 	res := &WorkspaceLock{
