@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
@@ -11,8 +14,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
-	"reflect"
-	"strings"
 )
 
 // TagColumn is the tag used to specify the column name and type in the introspection tables
@@ -67,6 +68,27 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	}
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()
+}
+
+func getCreateTablesSql(commonColumnSql []string) string {
+	var createSql []string
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
+	return strings.Join(createSql, "\n")
 }
 
 func getTableInsertSql(workspaceResources *modconfig.ModResources) string {
@@ -177,27 +199,6 @@ func getControlTableInsertSql(workspaceResources *modconfig.ModResources) string
 	}
 
 	return strings.Join(insertSql, "\n")
-}
-
-func getCreateTablesSql(commonColumnSql []string) string {
-	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
-	return strings.Join(createSql, "\n")
 }
 
 // getColumnDefinitions returns the sql column definitions for tagged properties of the item
