@@ -19,6 +19,7 @@ env:
   VERSION: ${{ github.event.inputs.version }}
   STEAMPIPE_UPDATE_CHECK: false
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  STEAMPIPE_INTROSPECTION: info
 
 jobs:
 
