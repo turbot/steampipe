@@ -149,8 +149,8 @@ jobs:
           REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
 
           oras push $REF \
-              --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
-              --manifest-annotations annotations.json \
+              --config config.json:application/vnd.turbot.steampipe.config.v1+json \
+              --annotation-file annotations.json \
               extracted-darwin-amd64:application/vnd.turbot.steampipe.db.darwin-amd64.layer.v1+tar \
               extracted-darwin-arm64:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
               extracted-linux-amd64:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \

@@ -219,8 +219,8 @@ jobs:
     - name: Push to registry
       run: |-
         oras push ${{ steps.image_ref.outputs.REF }} \
-          --manifest-config config.json:application/vnd.turbot.steampipe.config.v1+json \
-          --manifest-annotations annotations.json \
+          --config config.json:application/vnd.turbot.steampipe.config.v1+json \
+          --annotation-file annotations.json \
           dashboard_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
 
     - name: Set version tags on Pushed Image
