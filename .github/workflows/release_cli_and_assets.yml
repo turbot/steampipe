@@ -399,7 +399,7 @@ jobs:
       - name: Copy binary
         run: |
           cp ~/build/steampipe tests/dockertesting/debian
-      
+
       - name: Build steampipe docker images
         run: |
           docker build -t spdebian tests/dockertesting/debian
@@ -407,8 +407,8 @@ jobs:
 
       - name: Create a container and run the test suite
         run: |
-          docker run --name steampipe-deb `docker images -q spdebian`
-  
+          docker run --name steampipe-deb `docker images -q spdebian` --env STEAMPIPE_INTROSPECTION=info
+
   docker_acceptance_test_oraclelinux:
     name: Acceptance tests(Docker - OracleLinux)
     needs: [create_test_build,build_and_release_assets]
@@ -438,7 +438,7 @@ jobs:
       - name: Copy binary
         run: |
           cp ~/build/steampipe tests/dockertesting/oraclelinux
-      
+
       - name: Build steampipe docker images
         run: |
           docker build -t sporacle tests/dockertesting/oraclelinux
@@ -446,7 +446,8 @@ jobs:
 
       - name: Create a container and run the test suite
         run: |
-          docker run --name steampipe-oracle `docker images -q sporacle`
+          docker run --name steampipe-oracle `docker images -q sporacle` --env STEAMPIPE_INTROSPECTION=info
+
 
   create_release_tag:
     name: Tag Release
