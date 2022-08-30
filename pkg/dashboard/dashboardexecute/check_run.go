@@ -3,7 +3,6 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/utils"
 	"reflect"
 
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
@@ -11,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // CheckRun is a struct representing the execution of a control or benchmark
