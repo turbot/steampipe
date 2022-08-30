@@ -6,5 +6,3 @@ const (
 	IntrospectionInfo    = "info"
 	IntrospectionControl = "control"
 )
-
-var IntrospectionLevels = []string{IntrospectionNone, IntrospectionInfo, IntrospectionControl}
