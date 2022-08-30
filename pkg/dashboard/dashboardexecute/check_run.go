@@ -3,6 +3,7 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/utils"
 	"reflect"
 
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
@@ -106,6 +107,8 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 
 // Execute implements DashboardRunNode
 func (r *CheckRun) Execute(ctx context.Context) {
+	utils.LogTime("CheckRun.execute start")
+	defer utils.LogTime("CheckRun.execute end")
 
 	// create a context with a ControlEventHooks to report control execution progress
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewControlEventHooks(r))
@@ -184,7 +187,7 @@ func (r *CheckRun) ChildrenComplete() bool {
 func (*CheckRun) IsSnapshotPanel() {}
 
 // GetInputsDependingOn implements DashboardNodeRun
-//return nothing for CheckRun
+// return nothing for CheckRun
 func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }
 
 // custom implementation of buildSnapshotPanels - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics

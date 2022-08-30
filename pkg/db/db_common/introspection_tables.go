@@ -4,63 +4,69 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"strings"
-
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
+	"reflect"
+	"strings"
 )
 
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
 func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession) error {
-	utils.LogTime("db.CreateIntrospectionTables start")
-	defer utils.LogTime("db.CreateIntrospectionTables end")
-
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
+	switch viper.GetString(constants.ArgIntrospection) {
+	case constants.IntrospectionInfo:
+		return populateAllIntrospectionTables(ctx, workspaceResources, session, commonColumnSql)
+	case constants.IntrospectionControl:
+		return populateControlIntrospectionTables(ctx, workspaceResources, session, commonColumnSql)
+	default:
+		// just create (but do not populate) the create mod introspection table
+		// - this is used to check if the session is initialised
+		return createModIntrospectionTable(ctx, workspaceResources, session, commonColumnSql)
+	}
+}
+
+func createModIntrospectionTable(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession, commonColumnSql []string) error {
+	utils.LogTime("db.CreateIntrospectionTables start")
+	defer utils.LogTime("db.CreateIntrospectionTables end")
+
 	// get the create sql for each table type
-	createSql := getCreateTablesSql(commonColumnSql)
+	modTableSql := getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql)
 
-	// now get sql to populate the tables
-	insertSql := getTableInsertSql(workspaceResources)
-
-	sql := []string{createSql, insertSql}
-
-	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
+	_, err := session.Connection.ExecContext(ctx, modTableSql)
 	if err != nil {
-		return fmt.Errorf("failed to create introspection tables: %v", err)
+		return fmt.Errorf("failed to create mod introspection table: %v", err)
 	}
 
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()
 }
 
-func getCreateTablesSql(commonColumnSql []string) string {
-	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
-	return strings.Join(createSql, "\n")
+func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession, commonColumnSql []string) error {
+	utils.LogTime("db.CreateIntrospectionTables start")
+	defer utils.LogTime("db.CreateIntrospectionTables end")
+
+	// get the create sql for each table type
+	createSql := getCreateTablesSql(commonColumnSql)
+
+	// now get sql to populate the tables
+	insertSql := getTableInsertSql(workspaceResources)
+	sql := []string{createSql, insertSql}
+
+	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
+	if err != nil {
+		return fmt.Errorf("failed to create introspection tables: %v", err)
+	}
+	// return context error - this enables calling code to respond to cancellation
+	return ctx.Err()
 }
 
 func getTableInsertSql(workspaceResources *modconfig.ModResources) string {
@@ -134,7 +140,67 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 	return tableSql
 }
 
-// get the sql column definitions for tagged properties of the item
+func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession, commonColumnSql []string) error {
+	utils.LogTime("db.CreateIntrospectionTables start")
+	defer utils.LogTime("db.CreateIntrospectionTables end")
+
+	// get the create sql for control and benchmark tables
+	createSql := getCreateControlTablesSql(commonColumnSql)
+	// now get sql to populate the control and benchmark tables
+	insertSql := getControlTableInsertSql(workspaceResources)
+	sql := []string{createSql, insertSql}
+
+	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
+	if err != nil {
+		return fmt.Errorf("failed to create introspection tables: %v", err)
+	}
+
+	// return context error - this enables calling code to respond to cancellation
+	return ctx.Err()
+}
+
+func getCreateControlTablesSql(commonColumnSql []string) string {
+	var createSql []string
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
+	return strings.Join(createSql, "\n")
+}
+
+func getControlTableInsertSql(workspaceResources *modconfig.ModResources) string {
+	var insertSql []string
+
+	for _, control := range workspaceResources.Controls {
+		insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
+	}
+	for _, benchmark := range workspaceResources.Benchmarks {
+		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
+	}
+
+	return strings.Join(insertSql, "\n")
+}
+
+func getCreateTablesSql(commonColumnSql []string) string {
+	var createSql []string
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
+	return strings.Join(createSql, "\n")
+}
+
+// getColumnDefinitions returns the sql column definitions for tagged properties of the item
 func getColumnDefinitions(item interface{}) []string {
 	t := reflect.TypeOf(item)
 	var columnDef []string
