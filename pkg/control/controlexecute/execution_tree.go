@@ -151,6 +151,9 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 
 	// if we derived or were passed a where clause, run the filter
 	if len(controlFilterWhereClause) > 0 {
+		// if we have a control filter where clause, we must create the control introspection tables
+		viper.Set(constants.ArgIntrospection, constants.IntrospectionControl)
+
 		log.Println("[TRACE]", "filtering controls with", controlFilterWhereClause)
 		var err error
 		e.controlNameFilterMap, err = e.getControlMapFromWhereClause(ctx, controlFilterWhereClause)

@@ -66,6 +66,7 @@ type envMapping struct {
 func overrideDefaultsFromEnv() {
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
+		constants.EnvIntrospection:     {constants.ArgIntrospection, "string"},
 		constants.EnvTelemetry:         {constants.ArgTelemetry, "string"},
 		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
 		constants.EnvCloudHost:         {constants.ArgCloudHost, "string"},
