@@ -26,6 +26,9 @@ ENV STEAMPIPE_UPDATE_CHECK=false
 # disable telemetry
 ENV STEAMPIPE_TELEMETRY=none
 
+# enable introspection tables
+ENV STEAMPIPE_INTROSPECTION=info
+
 # expose postgres service default port
 EXPOSE 9193
 

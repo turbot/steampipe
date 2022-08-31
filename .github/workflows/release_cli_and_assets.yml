@@ -87,6 +87,7 @@ jobs:
         [ $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length') -eq 1 ]
         gcloud beta artifacts docker tags delete ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:"${{ env.VERSION }}"
 
+
   build_and_release_assets:
     name: Build and Release Assets
     needs: [verify_input,verify_asset_unreleased]
@@ -369,6 +370,7 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
         $GITHUB_WORKSPACE/tests/acceptance/run.sh
 
+
   docker_acceptance_test_debian:
     name: Acceptance tests(Docker - Debian)
     needs: [create_test_build,build_and_release_assets]
@@ -378,27 +380,22 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.branch }}
-
       - name: Prepare for downloads
         id: prepare-for-downloads
         run: |
           mkdir ~/artifacts
-
       - name: Download Linux Build Artifacts
         uses: actions/download-artifact@v3
         with:
           name: build-artifact-linux
           path: ~/artifacts
-
       - name: Extract Ubuntu Artifacts and Install Binary
         run: |
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
-
       - name: Copy binary
         run: |
           cp ~/build/steampipe tests/dockertesting/debian
-      
       - name: Build steampipe docker images
         run: |
           docker build -t spdebian tests/dockertesting/debian
@@ -408,6 +405,7 @@ jobs:
         run: |
           docker run --name steampipe-deb `docker images -q spdebian`
   
+
   docker_acceptance_test_oraclelinux:
     name: Acceptance tests(Docker - OracleLinux)
     needs: [create_test_build,build_and_release_assets]
@@ -447,6 +445,7 @@ jobs:
         run: |
           docker run --name steampipe-oracle `docker images -q sporacle`
 
+
   create_release_tag:
     name: Tag Release
     needs: [run_acceptance_tests, docker_acceptance_test_debian, docker_acceptance_test_oraclelinux]
@@ -480,6 +479,7 @@ jobs:
         git tag ${{ github.event.inputs.version }}
         git push origin ${{ github.event.inputs.version }}
 
+
   ensure_branch_in_homebrew:
     name: Ensure branch exists in homebrew-tap
     needs: [create_release_tag]
@@ -512,6 +512,7 @@ jobs:
         run: |
           git checkout -b bump-brew
           git push --set-upstream origin bump-brew
+
 
   build_and_release_cli:
     name: Release CLI
@@ -608,6 +609,7 @@ jobs:
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
           gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+
 
   clean_up:
     # let's clean up the artifacts.
