@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -63,8 +62,6 @@ func SendRequest(signature string, method string, sendRequestTo url.URL, payload
 	// Use a short timeout since checking for new versions is not critical
 	// enough to block on if the update server is broken/slow.
 	client.Timeout = timeout
-
-	log.Println("[TRACE]", "Sending HTTP Request", req)
 
 	return client.Do(req)
 }

@@ -261,7 +261,7 @@ func (m *PluginManager) handleUpdatedConnections(updatedConnections map[string][
 
 		for _, connection := range connections {
 			// add to updateConnectionConfigsRequest
-			req.Changed = append(req.Added, connection)
+			req.Changed = append(req.Changed, connection)
 		}
 		// write back to map
 		requestMap[p] = req
