@@ -1,3 +1,9 @@
+## v0.16.1 [2022-08-31]
+_Bug fixes_
+* Limit connection lifetime in the database connection pool. ([#2375](https://github.com/turbot/steampipe/issues/2375))
+* Fix connection watching when multiple connection configs are changed - ensure _all_ configs are updated. ([#2395](https://github.com/turbot/steampipe/issues/2395))
+* Reduce startup time when multiple mods are loaded - only create introspection tables if `STEAMPIPE_INTROSPECTION` environment variable is set. ([#2396](https://github.com/turbot/steampipe/issues/2396))
+
 ## v0.16.0 [2022-08-24]
 _What's new?_
 * Add support for plugin processes to handle multiple connections (rather than a process per connection), improving startup time and reducing memory usage.  ([#2262](https://github.com/turbot/steampipe/issues/2262))
