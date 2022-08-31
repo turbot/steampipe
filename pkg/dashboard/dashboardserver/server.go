@@ -76,11 +76,6 @@ func (s *Server) Shutdown() {
 		log.Println("[TRACE] closed websocket")
 	}
 
-	// Close the workspace
-	if s.workspace != nil {
-		s.workspace.Close()
-	}
-
 	log.Println("[TRACE] Server shutdown complete")
 
 }
