@@ -14,7 +14,6 @@ env:
   STEAMPIPE_UPDATE_CHECK: false
   VERSION: ${{ github.event.inputs.version }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-  STEAMPIPE_INTROSPECTION: info
 
 jobs:
   goreleaser:
@@ -170,7 +169,7 @@ jobs:
 
       - name: Create a container and run the test suite
         run: |
-          docker run --name steampipe-deb `docker images -q spdebian` --env STEAMPIPE_INTROSPECTION=info
+          docker run --name steampipe-deb `docker images -q spdebian`
 
   docker_acceptance_test_oraclelinux:
     name: Acceptance tests(Docker - OracleLinux)
@@ -209,7 +208,7 @@ jobs:
 
       - name: Create a container and run the test suite
         run: |
-          docker run --name steampipe-oracle `docker images -q sporacle` --env STEAMPIPE_INTROSPECTION=info
+          docker run --name steampipe-oracle `docker images -q sporacle`
 
   create_release_tag:
     name: Tag Release
