@@ -80,7 +80,9 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
 		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check").
-		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts")
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
+		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.")
 
 	return cmd
 }
@@ -109,7 +111,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// verify we have an argument
-	if !validateArgs(ctx, cmd, args) {
+	if !validateCheckArgs(ctx, cmd, args) {
 		return
 	}
 
@@ -188,7 +190,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 func createCheckContext(ctx context.Context) context.Context {
 	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
 	// if the client is a TTY, inject a status spinner
-	// TODO is this check nee3ded as we do it for status spinnner
+	// TODO KAI is this check needed as we do it for status spinnner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		controlHooks = controlstatus.NewStatusControlHooks()
 	}
@@ -196,7 +198,7 @@ func createCheckContext(ctx context.Context) context.Context {
 	return controlstatus.AddControlHooksToContext(ctx, controlHooks)
 }
 
-func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
+func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
 		utils.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
@@ -204,6 +206,11 @@ func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 		cmd.Help()
 		fmt.Println()
 		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		return false
+	}
+	// only 1 of 'share' and 'snapshot' may be set
+	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
+		utils.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'dashboard' may be set"))
 		return false
 	}
 	return true

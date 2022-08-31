@@ -50,6 +50,8 @@ const (
 	ArgDashboardInput      = "dashboard-input"
 	ArgMaxCacheSizeMb      = "max-cache-size-mb"
 	ArgIntrospection       = "introspection"
+	ArgShare               = "share"
+	ArgSnapshot            = "snapshot"
 )
 
 /// metaquery mode arguments

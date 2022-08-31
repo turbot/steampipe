@@ -72,7 +72,10 @@ Examples:
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts")
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
+		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.")
+
 	return cmd
 }
 
@@ -89,6 +92,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
 	}
+
+	// validate args
+	utils.FailOnError(validateQueryArgs())
 
 	cloudMetadata, err := cmdconfig.GetCloudMetadata()
 	utils.FailOnError(err)
@@ -119,6 +125,14 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initData)
 	}
+}
+
+func validateQueryArgs() error {
+	// only 1 of 'share' and 'snapshot' may be set
+	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
+		return fmt.Errorf("only 1 of 'share' and 'dashboard' may be set")
+	}
+	return nil
 }
 
 // getPipedStdinData reads the Standard Input and returns the available data as a string

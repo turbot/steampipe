@@ -51,12 +51,16 @@ The current mod is the working directory, or the directory specified by the --wo
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatSnapshot, "Select a console output format: snapshot").
+		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
+	cmd.Flag(constants.ArgShare).NoOptDefVal = "____default"
+	cmd.Flag(constants.ArgSnapshot).NoOptDefVal = "____default"
 	return cmd
 }
 
@@ -175,6 +179,19 @@ func validateDashboardArgs(args []string) (string, error) {
 	if len(args) == 1 {
 		dashboardName = args[0]
 	}
+
+	// only 1 of 'share' and 'snapshot' may be set
+	share := viper.IsSet(constants.ArgShare)
+	snapshot := viper.IsSet(constants.ArgShare)
+	if share && snapshot {
+		return "", fmt.Errorf("only 1 of --share and --dashboard may be set")
+	}
+
+	// if either share' or 'snapshot' are set, a dashboard name must be provided
+	if dashboardName == "" && (share || snapshot) {
+		return "", fmt.Errorf("dashboard name must be provided if --share or --snapshot args are used")
+	}
+
 	return dashboardName, nil
 
 }

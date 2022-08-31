@@ -23,7 +23,7 @@ func GenerateSnapshot(ctx context.Context, target string) (snapshot string, err 
 	snapshotAddress := "http://snapshot/address"
 	// create context for the dashboard execution
 	snapshotCtx, cancel := createSnapshotContext(ctx, target, snapshotAddress)
-	
+
 	contexthelpers.StartCancelHandler(cancel)
 
 	w, err := interactive.LoadWorkspacePromptingForVariables(snapshotCtx)
@@ -74,7 +74,7 @@ func createSnapshotContext(ctx context.Context, target string, snapshotAddress s
 	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
 
 	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
-	// TODO only do tty check for actual status spinner
+	// TODO KAI only do tty check for actual status spinner
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		controlHooks = controlstatus.NewSnapshotControlHooks()

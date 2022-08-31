@@ -82,18 +82,13 @@ func InitCmd() {
 	defer utils.LogTime("cmd.root.InitCmd end")
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", filepaths.DefaultInstallDir))
-	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
 	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "local", "Steampipe Cloud workspace database")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 
-	rootCmd.Flag(constants.ArgWorkspace).Deprecated = "please use workspace-chdir"
-
 	err := viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
-	utils.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace))
 	utils.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgWorkspaceChDir, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceChDir))
 	utils.FailOnError(err)
@@ -188,11 +183,6 @@ func validateConfig() error {
 
 func setWorkspaceChDir() string {
 	workspaceChdir := viper.GetString(constants.ArgWorkspaceChDir)
-	workspace := viper.GetString(constants.ArgWorkspace)
-	if workspace != "" {
-		workspaceChdir = workspace
-
-	}
 	if workspaceChdir == "" {
 		cwd, err := os.Getwd()
 		utils.FailOnError(err)
