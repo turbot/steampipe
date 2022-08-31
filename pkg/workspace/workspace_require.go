@@ -148,8 +148,49 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 		))
 	}
 
+	// add help message for missing plugins
+	msg := fmt.Sprintf("\nPlease %s the %s with: \n", checkInstallOrUpdate(pluginsNotInstalled), utils.Pluralize("plugin", len(pluginsNotInstalled)))
+	notificationLines = append(notificationLines, msg)
+
+	for i, req := range pluginsNotInstalled {
+		_, plugin, _ := strings.Cut(req.plugin, "/")
+
+		// check if plugin needs to be installed/updated
+		if strings.Contains(notInstalledStrings[i], "none") {
+			notificationLines = append(notificationLines, fmt.Sprintf(
+				"  steampipe plugin install %s", plugin,
+			))
+		} else {
+			notificationLines = append(notificationLines, fmt.Sprintf(
+				"  steampipe plugin update %s", plugin,
+			))
+		}
+	}
+
 	// add blank line (hack - bold the empty string to force it to print blank line as part of error)
 	notificationLines = append(notificationLines, fmt.Sprintf("%s", constants.Bold("")))
 
 	return strings.Join(notificationLines, "\n")
+}
+
+// function to check whether the missing plugins require to be installed or updated, or both
+func checkInstallOrUpdate(pluginsNotInstalled []requiredPluginVersion) string {
+	var updateFlag, installFlag bool
+
+	for _, req := range pluginsNotInstalled {
+		if strings.Contains(req.installedVersion, "none") {
+			installFlag = true
+		} else {
+			updateFlag = true
+		}
+	}
+
+	if updateFlag {
+		if installFlag {
+			return "install/update"
+		} else {
+			return "update"
+		}
+	}
+	return "install"
 }
