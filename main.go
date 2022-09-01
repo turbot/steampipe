@@ -125,13 +125,15 @@ func checkWsl1(ctx context.Context) {
 		fmt.Printf("Error while checking uname %v", err.Error())
 		return
 	}
+	// convert the ouptut to a string of lowercase characters for ease of use
+	op := strings.ToLower(string(output))
 
 	// if WSL2, return
-	if strings.Contains(strings.ToLower(string(output)), "wsl2") {
+	if strings.Contains(op, "wsl2") {
 		return
 	}
 	// if output contains 'microsoft' or 'wsl', check the kernel version
-	if strings.Contains(strings.ToLower(string(output)), "microsoft") || strings.Contains(strings.ToLower(string(output)), "wsl") {
+	if strings.Contains(op, "microsoft") || strings.Contains(op, "wsl") {
 
 		// store the system kernel version
 		sys_kernel, _, _ := strings.Cut(string(output), "-")
