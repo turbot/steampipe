@@ -241,6 +241,11 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 		initData.Result.AddWarnings("no controls found in current workspace")
 	}
 
+	if err := controldisplay.EnsureTemplates(); err != nil {
+		initData.Result.Error = err
+		return initData
+	}
+
 	return initData
 }
 
