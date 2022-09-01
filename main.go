@@ -122,7 +122,7 @@ func checkWsl1(ctx context.Context) {
 	// store the 'uname -r' output
 	output, err := exec.Command("uname", "-r").Output()
 	if err != nil {
-		fmt.Printf("Error while checking uname %v", err.Error())
+		utils.ShowErrorWithMessage(ctx, err, "Error while checking uname")
 		return
 	}
 	// convert the ouptut to a string of lowercase characters for ease of use
@@ -139,13 +139,13 @@ func checkWsl1(ctx context.Context) {
 		sys_kernel, _, _ := strings.Cut(string(output), "-")
 		sys_kernel_ver, err := version.NewVersion(sys_kernel)
 		if err != nil {
-			fmt.Printf("Error while checking system kernel version %v", err.Error())
+			utils.ShowErrorWithMessage(ctx, err, "Error while checking system kernel version")
 			return
 		}
 		// if the kernel version >= 4.19, it's WSL Version 2.
 		kernel_ver, err := version.NewVersion("4.19")
 		if err != nil {
-			fmt.Printf("Error while checking kernel version %v", err.Error())
+			utils.ShowErrorWithMessage(ctx, err, "Error while checking system kernel version")
 			return
 		}
 		// if the kernel version >= 4.19, it's WSL version 2, else version 1
