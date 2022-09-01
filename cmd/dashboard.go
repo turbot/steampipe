@@ -169,10 +169,11 @@ func runSingleDashboard(ctx context.Context, dashboardName string) error {
 	shouldUpload := viper.IsSet(constants.ArgSnapshot)
 	if shouldShare || shouldUpload {
 		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+		statushooks.Done(ctx)
 		if err != nil {
-			statushooks.UploadError(ctx, err)
+			return err
 		} else {
-			statushooks.UploadComplete(ctx, snapshotUrl)
+			fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
 		}
 		return err
 	}
@@ -180,8 +181,8 @@ func runSingleDashboard(ctx context.Context, dashboardName string) error {
 	// just display result
 	snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
 	utils.FailOnError(err)
-	fmt.Println(snapshotText)
-
+	fmt.Println(string(snapshotText))
+	fmt.Println("")
 	return nil
 }
 

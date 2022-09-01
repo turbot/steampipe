@@ -54,7 +54,6 @@ func GenerateSnapshot(ctx context.Context, target string) (snapshot *dashboardty
 	select {
 	case err = <-errorChannel:
 	case snapshot = <-resultChannel:
-		// publish if needed
 	}
 
 	return snapshot, err
@@ -66,7 +65,7 @@ func createSnapshotContext(ctx context.Context, target string) (context.Context,
 	// create context for the dashboard execution
 	snapshotCtx, cancel := context.WithCancel(ctx)
 	contexthelpers.StartCancelHandler(cancel)
-	dashboard aws_insights.dashboard.aws_iam_group_dashboard  --share=kaidaguerre/wk1 --cloud-token spt_cc7m5gph5ec8ouphecc0_35fd5ttwlvmbl8mk3p48xen9f
+
 	snapshotProgressReporter := NewSnapshotProgressReporter(target)
 	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
 

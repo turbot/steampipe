@@ -2,11 +2,10 @@ package statushooks
 
 import "context"
 
+// NullProgress is an empty implementation of SnapshotProgress
 var NullProgress = &NullSnapshotProgress{}
 
 type NullSnapshotProgress struct{}
 
-func (*NullSnapshotProgress) UpdateRowCount(context.Context, int)    {}
-func (*NullSnapshotProgress) UpdateErrorCount(context.Context, int)  {}
-func (*NullSnapshotProgress) UploadComplete(context.Context, string) {}
-func (*NullSnapshotProgress) UploadError(context.Context, error)     {}
+func (*NullSnapshotProgress) UpdateRowCount(context.Context, int)   {}
+func (*NullSnapshotProgress) UpdateErrorCount(context.Context, int) {}

@@ -35,7 +35,7 @@ func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	client := &http.Client{}
 
 	// set the visibility
-	visibility := "project"
+	visibility := "workspace"
 	if share {
 		visibility = "anyone_with_link"
 	}
@@ -67,13 +67,13 @@ func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	if err != nil {
 		return "", err
 	}
-	if resp.StatusCode < 200 || resp.StatusCode > 206 {
-		return "", fmt.Errorf("%s", resp.Status)
-	}
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 206 {
+		return "", fmt.Errorf("%s", resp.Status)
 	}
 
 	var result map[string]interface{}

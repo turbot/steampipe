@@ -9,15 +9,13 @@ import (
 	"sync"
 )
 
+// SnapshotProgressReporter is an empty implementation of SnapshotProgress
 type SnapshotProgressReporter struct {
-	rows            int
-	errors          int
-	nodeType        string
-	name            string
-	snapshotAddress string
-
-	mut         sync.Mutex
-	uploadError error
+	rows     int
+	errors   int
+	nodeType string
+	name     string
+	mut      sync.Mutex
 }
 
 func NewSnapshotProgressReporter(target string) *SnapshotProgressReporter {
@@ -40,34 +38,16 @@ func (r *SnapshotProgressReporter) UpdateErrorCount(ctx context.Context, errors 
 	r.errors += errors
 	r.showProgress(ctx)
 }
-func (r *SnapshotProgressReporter) UploadComplete(ctx context.Context, snapshotUrl string) {
-	r.mut.Lock()
-	defer r.mut.Unlock()
-
-	r.snapshotAddress = snapshotUrl
-	r.showProgress(ctx)
-}
-func (r *SnapshotProgressReporter) UploadError(ctx context.Context, err error) {
-	r.mut.Lock()
-	defer r.mut.Unlock()
-	r.uploadError = err
-
-	r.showProgress(ctx)
-}
 
 func (r *SnapshotProgressReporter) showProgress(ctx context.Context) {
 	var msg strings.Builder
 	msg.WriteString(fmt.Sprintf("Running %s", r.name))
 	if r.rows > 0 {
-		msg.WriteString(fmt.Sprintf(", %d %s returned.", r.rows, utils.Pluralize("row", r.rows)))
+		msg.WriteString(fmt.Sprintf(", %d %s returned", r.rows, utils.Pluralize("row", r.rows)))
 	}
 	if r.errors > 0 {
 		msg.WriteString(fmt.Sprintf(", %d %s, ", r.errors, utils.Pluralize("error", r.errors)))
 	}
-	if r.uploadError != nil {
-		msg.WriteString(fmt.Sprintf(", failed to publish snapshot: %s", r.uploadError.Error()))
-	} else if r.snapshotAddress != "" {
-		msg.WriteString(fmt.Sprintf(", published snapshot to %s", r.snapshotAddress))
-	}
+
 	statushooks.SetStatus(ctx, msg.String())
 }
