@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (map[string]interface{}, error) {
+func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
 
 	cloudWorkspace := viper.GetString(constants.ArgWorkspace)
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
+		return "", fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
 	}
 	user := parts[0]
 	worskpaceHandle := parts[1]
@@ -52,12 +52,12 @@ func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (map
 
 	bodyStr, err := json.Marshal(body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyStr))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
@@ -65,62 +65,28 @@ func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (map
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 206 {
-		return nil, fmt.Errorf("%s", resp.Status)
+		return "", fmt.Errorf("%s", resp.Status)
 	}
 	defer resp.Body.Close()
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	// TODO ```{
-	//"created_at": "string",
-	//"created_by": {
-	//"avatar_url": "string",
-	//"created_at": "string",
-	//"display_name": "string",
-	//"handle": "string",
-	//"id": "string",
-	//"preview_access_mode": "string",
-	//"status": "string",
-	//"updated_at": "string",
-	//"url": "string",
-	//"version_id": 0
-	//},
-	//"created_by_id": "string",
-	//"dashboard_name": "string",
-	//"dashboard_title": "string",
-	//"id": "string",
-	//"identity_id": "string",
-	//"inputs": null,
-	//"schema_version": "string",
-	//"state": "string",
-	//"tags": null,
-	//"updated_at": "string",
-	//"updated_by": {
-	//"avatar_url": "string",
-	//"created_at": "string",
-	//"display_name": "string",
-	//"handle": "string",
-	//"id": "string",
-	//"preview_access_mode": "string",
-	//"status": "string",
-	//"updated_at": "string",
-	//"url": "string",
-	//"version_id": 0
-	//},
-	//"updated_by_id": "string",
-	//"version_id": 0,
-	//"visibility": "string",
-	//"workspace_id": "string"
-	//}
 	var result map[string]interface{}
 	err = json.Unmarshal(bodyBytes, &result)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return result, nil
+	snapshotId := result["id"].(string)
+	snapshotUrl := fmt.Sprintf("https://%s/user/%s/workspace/%s/snapshot/%s",
+		viper.GetString(constants.ArgCloudHost),
+		user,
+		worskpaceHandle,
+		snapshotId)
+
+	return snapshotUrl, nil
 }

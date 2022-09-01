@@ -18,10 +18,8 @@ import (
 )
 
 func GenerateSnapshot(ctx context.Context, target string) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
-	// TODO WHAT AM I??
-	snapshotAddress := "http://snapshot/address"
 	// create context for the dashboard execution
-	snapshotCtx, cancel := createSnapshotContext(ctx, target, snapshotAddress)
+	snapshotCtx, cancel := createSnapshotContext(ctx, target)
 
 	contexthelpers.StartCancelHandler(cancel)
 
@@ -64,12 +62,12 @@ func GenerateSnapshot(ctx context.Context, target string) (snapshot *dashboardty
 }
 
 // create the context for the check run - add a control status renderer
-func createSnapshotContext(ctx context.Context, target string, snapshotAddress string) (context.Context, context.CancelFunc) {
+func createSnapshotContext(ctx context.Context, target string) (context.Context, context.CancelFunc) {
 	// create context for the dashboard execution
 	snapshotCtx, cancel := context.WithCancel(ctx)
 	contexthelpers.StartCancelHandler(cancel)
-
-	snapshotProgressReporter := NewSnapshotProgressReporter(target, snapshotAddress)
+	dashboard aws_insights.dashboard.aws_iam_group_dashboard  --share=kaidaguerre/wk1 --cloud-token spt_cc7m5gph5ec8ouphecc0_35fd5ttwlvmbl8mk3p48xen9f
+	snapshotProgressReporter := NewSnapshotProgressReporter(target)
 	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
 
 	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks

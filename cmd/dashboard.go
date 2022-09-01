@@ -168,8 +168,12 @@ func runSingleDashboard(ctx context.Context, dashboardName string) error {
 	shouldShare := viper.IsSet(constants.ArgShare)
 	shouldUpload := viper.IsSet(constants.ArgSnapshot)
 	if shouldShare || shouldUpload {
-		res, err := cloud.UploadSnapshot(snapshot, shouldShare)
-		log.Println("[WARN]", res)
+		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+		if err != nil {
+			statushooks.UploadError(ctx, err)
+		} else {
+			statushooks.UploadComplete(ctx, snapshotUrl)
+		}
 		return err
 	}
 
