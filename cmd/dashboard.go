@@ -186,7 +186,6 @@ func runSingleDashboard(ctx context.Context, dashboardName string) error {
 	return nil
 }
 
-// dashboard command accepts 0 or 1 argument
 func validateDashboardArgs(args []string) (string, error) {
 	if len(args) > 1 {
 		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")

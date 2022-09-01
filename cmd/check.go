@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -188,14 +187,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 // create the context for the check run - add a control status renderer
 func createCheckContext(ctx context.Context) context.Context {
-	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
-	// if the client is a TTY, inject a status spinner
-	// TODO KAI is this check needed as we do it for status spinnner
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		controlHooks = controlstatus.NewStatusControlHooks()
-	}
-
-	return controlstatus.AddControlHooksToContext(ctx, controlHooks)
+	return controlstatus.AddControlHooksToContext(ctx, controlstatus.NewStatusControlHooks())
 }
 
 func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {

@@ -2,7 +2,6 @@ package snapshot
 
 import (
 	"context"
-	"github.com/mattn/go-isatty"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -14,7 +13,6 @@ import (
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"log"
-	"os"
 )
 
 func GenerateSnapshot(ctx context.Context, target string) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
@@ -69,15 +67,8 @@ func createSnapshotContext(ctx context.Context, target string) (context.Context,
 	snapshotProgressReporter := NewSnapshotProgressReporter(target)
 	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
 
-	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
-	// TODO KAI only do tty check for actual status spinner
-	// if the client is a TTY, inject a status spinner
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		controlHooks = controlstatus.NewSnapshotControlHooks()
-	}
-
 	// create a context with a SnapshotControlHooks to report execution progress of any controls in this snapshot
-	snapshotCtx = controlstatus.AddControlHooksToContext(snapshotCtx, controlHooks)
+	snapshotCtx = controlstatus.AddControlHooksToContext(snapshotCtx, controlstatus.NewSnapshotControlHooks())
 	return snapshotCtx, cancel
 }
 
