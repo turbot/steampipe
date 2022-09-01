@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
+	"github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
@@ -86,37 +89,6 @@ To reduce security risk, use an unprivileged user account instead.`))
 		os.Exit(exitCode)
 	}
 }
-<<<<<<< HEAD
-=======
-
-func checkLocaleSettings(ctx context.Context) {
-	// run the locale command
-	output, err := exec.Command("locale").CombinedOutput()
-	if err != nil {
-		fmt.Printf("Error while checking locale settings %v", err.Error())
-		return
-	}
-	// store the output of 'locale | grep LC_CTYPE'
-	lc_output, err := exec.Command("bash", "-c", "locale | grep LC_CTYPE").Output()
-	if err != nil {
-		fmt.Printf("Error while checking locale settings %v", err.Error())
-		return
-	}
-
-	lc_val := strings.TrimSpace(string(lc_output))
-	// get the langpack name from the output
-	langpack_name := strings.TrimSpace(strings.Trim(string(lc_output), "LC_CTYPE="))
-
-	// check for cannot set LC_CTYPE error
-	flag := strings.Contains(string(output), "Cannot set LC_CTYPE to default locale")
-
-	// if there is a cannot set LC_CTYPE error, exit with an error message
-	if flag {
-		utils.ShowError(ctx, fmt.Errorf(`Failed to initialize database as the default langpack(%s) is not installed. 
-To fix, either set environment variable LC_ALL to "C" or "POSIX" or install the langpack %s. [https://www.postgresql.org/docs/current/multibyte.html]`, lc_val, langpack_name))
-		os.Exit(1)
-	}
-}
 
 func checkWsl1(ctx context.Context) {
 	// store the 'uname -r' output
@@ -157,4 +129,3 @@ func checkWsl1(ctx context.Context) {
 		}
 	}
 }
->>>>>>> d93b3085 (updates)
