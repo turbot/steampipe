@@ -434,6 +434,16 @@ func initDatabase() error {
 	utils.LogTime("db_local.install.initDatabase start")
 	defer utils.LogTime("db_local.install.initDatabase end")
 
+	// initdb sometimes fail due to invalid locale settings, to avoid this we update
+	// the locale settings to use 'C' only for the initdb process to complete, and
+	// then return back to the existing locale settings of the user.
+	// set LC_ALL env variable to override current locale settings
+	err := os.Setenv("LC_ALL", "C")
+	if err != nil {
+		log.Printf("[TRACE] failed to update locale settings:\n %s", err.Error())
+		return err
+	}
+
 	initDBExecutable := getInitDbBinaryExecutablePath()
 	initDbProcess := exec.Command(
 		initDBExecutable,
@@ -451,6 +461,13 @@ func initDatabase() error {
 	if runError != nil {
 		log.Printf("[TRACE] initdb failed:\n %s", string(output))
 		return runError
+	}
+
+	// unset LC_ALL to return back to original locale settings
+	err = os.Unsetenv("LC_ALL")
+	if err != nil {
+		log.Printf("[TRACE] failed to return back to original locale settings:\n %s", err.Error())
+		return err
 	}
 
 	// intentionally overwriting existing pg_hba.conf with a minimal config which only allows root
