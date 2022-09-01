@@ -54,6 +54,9 @@ const (
 	ArgSnapshot            = "snapshot"
 )
 
+// the default value for ArgShare and ArgSnapshot if no value is provided
+const ArgShareNoOptDefault = "__workspace__"
+
 /// metaquery mode arguments
 
 var ArgOutput = ArgFromMetaquery(CmdOutput)

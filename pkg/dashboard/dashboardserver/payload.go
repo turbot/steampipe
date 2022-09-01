@@ -198,24 +198,8 @@ func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, 
 	return json.Marshal(payload)
 }
 
-func BuildExecutionCompletePayload(event *dashboardevents.ExecutionComplete, prettify bool) ([]byte, error) {
-	payload := ExecutionCompletePayload{
-		SchemaVersion: fmt.Sprintf("%d", ExecutionCompleteSchemaVersion),
-		Action:        "execution_complete",
-		DashboardNode: event.Root,
-		ExecutionId:   event.ExecutionId,
-		Panels:        event.Panels,
-		Layout:        event.Root.AsTreeNode(),
-		Inputs:        event.Inputs,
-		Variables:     event.Variables,
-		SearchPath:    event.SearchPath,
-		StartTime:     event.StartTime,
-		EndTime:       event.EndTime,
-	}
-
-	if prettify {
-		return json.MarshalIndent(payload, "", "  ")
-	}
+func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
+	payload := ExecutionCompleteToSnapshot(event)
 	return json.Marshal(payload)
 }
 

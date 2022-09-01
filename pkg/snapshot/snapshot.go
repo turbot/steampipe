@@ -2,23 +2,22 @@ package snapshot
 
 import (
 	"context"
-	"fmt"
 	"github.com/mattn/go-isatty"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"os"
-	"reflect"
 )
 
-func GenerateSnapshot(ctx context.Context, target string) (snapshot string, err error) {
+func GenerateSnapshot(ctx context.Context, target string) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
 	// TODO WHAT AM I??
 	snapshotAddress := "http://snapshot/address"
 	// create context for the dashboard execution
@@ -35,7 +34,7 @@ func GenerateSnapshot(ctx context.Context, target string) (snapshot string, err 
 	// shutdown the service on exit
 	defer initData.Cleanup(snapshotCtx)
 	if err := initData.Result.Error; err != nil {
-		return "", initData.Result.Error
+		return nil, initData.Result.Error
 	}
 
 	// if there is a usage warning we display it
@@ -43,11 +42,11 @@ func GenerateSnapshot(ctx context.Context, target string) (snapshot string, err 
 
 	sessionId := "generateSnapshot"
 
-	// todo get inputs from command line
+	// todo KAI get inputs from command line
 	inputs := make(map[string]interface{})
 
 	errorChannel := make(chan error)
-	resultChannel := make(chan string)
+	resultChannel := make(chan *dashboardtypes.SteampipeSnapshot)
 	dashboardEventHandler := func(event dashboardevents.DashboardEvent) {
 		handleDashboardEvent(event, resultChannel, errorChannel)
 	}
@@ -85,17 +84,7 @@ func createSnapshotContext(ctx context.Context, target string, snapshotAddress s
 	return snapshotCtx, cancel
 }
 
-func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel chan string, errorChannel chan error) {
-	var payloadError error
-	var payload []byte
-	defer func() {
-		if payloadError != nil {
-			// we don't expect the build functions to ever error during marshalling
-			// this is because the data getting marshalled are not expected to have go specific
-			// properties/data in them
-			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), payloadError))
-		}
-	}()
+func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel chan *dashboardtypes.SteampipeSnapshot, errorChannel chan error) {
 
 	switch e := event.(type) {
 
@@ -103,10 +92,8 @@ func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel ch
 		errorChannel <- e.Error
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)
-		payload, payloadError = dashboardserver.BuildExecutionCompletePayload(e, true)
-		if payloadError != nil {
-			errorChannel <- payloadError
-		}
-		resultChannel <- string(payload)
+		snapshot := dashboardserver.ExecutionCompleteToSnapshot(e)
+
+		resultChannel <- snapshot
 	}
 }
