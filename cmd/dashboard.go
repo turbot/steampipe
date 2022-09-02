@@ -8,6 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -86,8 +87,11 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	dashboardName, err := validateDashboardArgs(args)
 	utils.FailOnError(err)
 	if dashboardName != "" {
+		inputs, err := collectInputs()
+		utils.FailOnError(err)
+
 		// run just this dashboard
-		err = runSingleDashboard(dashboardCtx, dashboardName)
+		err = runSingleDashboard(dashboardCtx, dashboardName, inputs)
 		utils.FailOnError(err)
 		// and we are done
 		return
@@ -158,9 +162,9 @@ func initDashboard(dashboardCtx context.Context, err error) *initialisation.Init
 	return initData
 }
 
-func runSingleDashboard(ctx context.Context, dashboardName string) error {
+func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) error {
 	// so a dashboard name was specified - just call GenerateSnapshot
-	snapshot, err := snapshot.GenerateSnapshot(ctx, dashboardName)
+	snapshot, err := snapshot.GenerateSnapshot(ctx, dashboardName, inputs)
 	if err != nil {
 		return err
 	}
@@ -297,4 +301,28 @@ func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dash
 		state.Listen = append(state.Listen, addrs...)
 	}
 	utils.FailOnError(dashboardserver.WriteServiceStateFile(state))
+}
+
+func collectInputs() (map[string]interface{}, error) {
+	res := make(map[string]interface{})
+	inputArgs := viper.GetStringSlice(constants.ArgDashboardInput)
+	for _, variableArg := range inputArgs {
+		// Value should be in the form "name=value", where value is a string
+		raw := variableArg
+		eq := strings.Index(raw, "=")
+		if eq == -1 {
+			return nil, fmt.Errorf("the --dashboard-input argument '%s' is not correctly specified. It must be an input name and value separated an equals sign: --dashboard-input key=value", raw)
+		}
+		name := raw[:eq]
+		rawVal := raw[eq+1:]
+		if _, ok := res[name]; ok {
+			return nil, fmt.Errorf("the dashboard-input option '%s' is provided more than once", name)
+		}
+		// TACTICAL: add `input. to start of name
+		key := fmt.Sprintf("input.%s", name)
+		res[key] = rawVal
+	}
+
+	return res, nil
+
 }
