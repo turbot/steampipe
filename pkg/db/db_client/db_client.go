@@ -2,22 +2,20 @@ package db_client
 
 import (
 	"context"
-	"database/sql"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v4/stdlib"
+	"github.com/spf13/viper"
+	"golang.org/x/sync/semaphore"
 	"log"
 	"sort"
 	"sync"
-	"time"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/stdlib"
-	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"golang.org/x/sync/semaphore"
-
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -25,7 +23,7 @@ import (
 type DbClient struct {
 	connectionString          string
 	ensureSessionFunc         db_common.EnsureSessionStateCallback
-	dbClient                  *sql.DB
+	dbClient                  *pgxpool.Pool
 	requiredSessionSearchPath []string
 
 	// concurrency management for db session access
@@ -56,13 +54,13 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	db, err := establishConnection(ctx, connectionString)
+	dbPool, err := establishConnection(ctx, connectionString)
 
 	if err != nil {
 		return nil, err
 	}
 	client := &DbClient{
-		dbClient: db,
+		dbClient: dbPool,
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
 		sessionInitWaitGroup: &sync.WaitGroup{},
@@ -99,7 +97,7 @@ func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
 }
 
-func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
+func establishConnection(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
 	utils.LogTime("db_client.establishConnection start")
 	defer utils.LogTime("db_client.establishConnection end")
 
@@ -110,28 +108,30 @@ func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
 	}
 	connStr = stdlib.RegisterConnConfig(connConfig)
 
-	db, err := sql.Open("pgx", connStr)
+	// this returns connection pool
+	dbPool, err := pgxpool.Connect(context.Background(), connStr)
 	if err != nil {
 		return nil, err
 	}
 
-	maxParallel := constants.DefaultMaxConnections
-	if viper.IsSet(constants.ArgMaxParallel) {
-		maxParallel = viper.GetInt(constants.ArgMaxParallel)
-	}
+	//
+	//maxParallel := constants.DefaultMaxConnections
+	//if viper.IsSet(constants.ArgMaxParallel) {
+	//	maxParallel = viper.GetInt(constants.ArgMaxParallel)
+	//}
+	//
+	//// set max open connections to the max connections argument
+	//db.SetMaxOpenConns(maxParallel)
+	//// NOTE: leave max idle connections at default of 2
+	//// close idle connections after 1 minute
+	//db.SetConnMaxIdleTime(1 * time.Minute)
+	//// do not re-use a connection more than 10 minutes old - force a refresh
+	//db.SetConnMaxLifetime(10 * time.Minute)
 
-	// set max open connections to the max connections argument
-	db.SetMaxOpenConns(maxParallel)
-	// NOTE: leave max idle connections at default of 2
-	// close idle connections after 1 minute
-	db.SetConnMaxIdleTime(1 * time.Minute)
-	// do not re-use a connection more than 10 minutes old - force a refresh
-	db.SetConnMaxLifetime(10 * time.Minute)
-
-	if err := db_common.WaitForConnection(ctx, db); err != nil {
+	if err := db_common.WaitForConnection(ctx, dbPool); err != nil {
 		return nil, err
 	}
-	return db, nil
+	return dbPool, nil
 }
 
 func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
