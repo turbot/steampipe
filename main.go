@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
+	"github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
@@ -30,6 +33,9 @@ func main() {
 
 	// ensure steampipe is not being run as root
 	checkRoot(ctx)
+
+	// ensure steampipe is not run on WSL1
+	checkWsl1(ctx)
 
 	// increase the soft ULIMIT to match the hard limit
 	err := setULimit()
@@ -81,5 +87,45 @@ To reduce security risk, use an unprivileged user account instead.`))
 		exitCode = constants.ExitCodeUnknownErrorPanic
 		utils.ShowError(ctx, fmt.Errorf("real and effective user IDs must match."))
 		os.Exit(exitCode)
+	}
+}
+
+func checkWsl1(ctx context.Context) {
+	// store the 'uname -r' output
+	output, err := exec.Command("uname", "-r").Output()
+	if err != nil {
+		utils.ShowErrorWithMessage(ctx, err, "Error while checking uname")
+		return
+	}
+	// convert the ouptut to a string of lowercase characters for ease of use
+	op := strings.ToLower(string(output))
+
+	// if WSL2, return
+	if strings.Contains(op, "wsl2") {
+		return
+	}
+	// if output contains 'microsoft' or 'wsl', check the kernel version
+	if strings.Contains(op, "microsoft") || strings.Contains(op, "wsl") {
+
+		// store the system kernel version
+		sys_kernel, _, _ := strings.Cut(string(output), "-")
+		sys_kernel_ver, err := version.NewVersion(sys_kernel)
+		if err != nil {
+			utils.ShowErrorWithMessage(ctx, err, "Error while checking system kernel version")
+			return
+		}
+		// if the kernel version >= 4.19, it's WSL Version 2.
+		kernel_ver, err := version.NewVersion("4.19")
+		if err != nil {
+			utils.ShowErrorWithMessage(ctx, err, "Error while checking system kernel version")
+			return
+		}
+		// if the kernel version >= 4.19, it's WSL version 2, else version 1
+		if sys_kernel_ver.GreaterThanOrEqual(kernel_ver) {
+			return
+		} else {
+			utils.ShowError(ctx, fmt.Errorf("Steampipe requires WSL2, please upgrade and try again."))
+			os.Exit(1)
+		}
 	}
 }
