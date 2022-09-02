@@ -15,9 +15,9 @@ var ErrFormatterNotFound = errors.New("Formatter not found")
 type FormatterMap map[string]Formatter
 
 var outputFormatters FormatterMap = FormatterMap{
-	constants.CheckOutputFormatNone:  &NullFormatter{},
-	constants.CheckOutputFormatText:  &TextFormatter{},
-	constants.CheckOutputFormatBrief: &TextFormatter{},
+	constants.OutputFormatNone:  &NullFormatter{},
+	constants.OutputFormatText:  &TextFormatter{},
+	constants.OutputFormatBrief: &TextFormatter{},
 }
 
 type CheckExportTarget struct {
@@ -35,6 +35,7 @@ func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
 type Formatter interface {
 	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
 	FileExtension() string
+	// TODO THIS SEEMS TO BE ONLY USED FOR PRETTIFYING JSON???
 	GetFormatName() string
 }
 

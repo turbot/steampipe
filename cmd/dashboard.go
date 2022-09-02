@@ -2,9 +2,13 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/cloud"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -16,20 +20,21 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/dashboard"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/interactive"
+	"github.com/turbot/steampipe/pkg/snapshot"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func dashboardCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "dashboard",
+		Use:              "dashboard [flags] [benchmark/dashboard]",
 		TraverseChildren: true,
 		Args:             cobra.ArbitraryArgs,
 		Run:              runDashboardCmd,
-		Short:            "Start the local dashboard UI",
-		Long: `Starts a local web server that enables real-time development of dashboards within the current mod.
+		Short:            "Start the local dashboard UI or run a named dashboard",
+		Long: `Either runs the a named dashboard or benchmark, or starts a local web server that enables real-time development of dashboards within the current mod.
 
 The current mod is the working directory, or the directory specified by the --workspace-chdir flag.`,
 	}
@@ -43,11 +48,17 @@ The current mod is the working directory, or the directory specified by the --wo
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
+		AddBoolFlag(constants.ArgProgress, "", true, "Display dashboard execution progress respected when a dashboard name argument is passed").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
-		// Cobra will interpret values passed to a StringSliceFlag as CSV,
-		// where args passed to StringArrayFlag are not parsed and used raw
+		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
+		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatSnapshot, "Select a console output format: snapshot").
+		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
+		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
+		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -57,17 +68,36 @@ The current mod is the working directory, or the directory specified by the --wo
 func runDashboardCmd(cmd *cobra.Command, args []string) {
 	dashboardCtx := cmd.Context()
 
+	var err error
 	logging.LogTime("runDashboardCmd start")
 	defer func() {
 		logging.LogTime("runDashboardCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(dashboardCtx, helpers.ToError(r))
+			err = helpers.ToError(r)
+			utils.ShowError(dashboardCtx, err)
 			if isRunningAsService() {
-				saveErrorToDashboardState(helpers.ToError(r))
+				saveErrorToDashboardState(err)
 			}
 		}
+		setExitCodeForDashboardError(err)
+
 	}()
 
+	// first check whether a dashboard name has been passed as an arg
+	dashboardName, err := validateDashboardArgs(args)
+	utils.FailOnError(err)
+	if dashboardName != "" {
+		inputs, err := collectInputs()
+		utils.FailOnError(err)
+
+		// run just this dashboard
+		err = runSingleDashboard(dashboardCtx, dashboardName, inputs)
+		utils.FailOnError(err)
+		// and we are done
+		return
+	}
+
+	// retrieve server params
 	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
 	utils.FailOnError(serverPort.IsValid())
 
@@ -84,29 +114,24 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	contexthelpers.StartCancelHandler(cancel)
 
 	// ensure dashboard assets are present and extract if not
-	err := dashboardassets.Ensure(dashboardCtx)
+	err = dashboardassets.Ensure(dashboardCtx)
 	utils.FailOnError(err)
 
 	// disable all status messages
 	dashboardCtx = statushooks.DisableStatusHooks(dashboardCtx)
 
 	// load the workspace
-	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
-	w, err := loadWorkspacePromptingForVariables(dashboardCtx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	initData := dashboard.NewInitData(dashboardCtx, w)
-	// shutdown the service on exit
+	initData := initDashboard(dashboardCtx, err)
 	defer initData.Cleanup(dashboardCtx)
+	utils.FailOnError(initData.Result.Error)
 
-	err = handleDashboardInitResult(dashboardCtx, initData)
-	// if there was an error, display it
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
+
+	// create the server
+	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
 	utils.FailOnError(err)
 
-	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
-	if err != nil {
-		utils.FailOnError(err)
-	}
 	// start the server asynchronously - this returns a chan which is signalled when the internal API server terminates
 	doneChan := server.Start()
 
@@ -122,24 +147,103 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	log.Println("[TRACE] runDashboardCmd exiting")
 }
 
-// inspect the init result ands
-func handleDashboardInitResult(ctx context.Context, initData *dashboard.InitData) error {
-	// if there is an error or cancellation we bomb out
-	if err := initData.Result.Error; err != nil {
-		setExitCodeForDashboardError(err)
-		return initData.Result.Error
-	}
-	// cancelled?
-	if ctx != nil && ctx.Err() != nil {
-		return ctx.Err()
-	}
-	// if there is a usage warning we display it
-	initData.Result.DisplayMessages()
+func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
+	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
+	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
+	// initialise
+	initData := initialisation.NewInitData(dashboardCtx, w)
+	// there must be a modfile
+	if !w.ModfileExists() {
+		initData.Result.Error = workspace.ErrorNoModDefinition
+	}
+
+	return initData
+}
+
+func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) error {
+	// so a dashboard name was specified - just call GenerateSnapshot
+	snapshot, err := snapshot.GenerateSnapshot(ctx, dashboardName, inputs)
+	if err != nil {
+		return err
+	}
+
+	shouldShare := viper.IsSet(constants.ArgShare)
+	shouldUpload := viper.IsSet(constants.ArgSnapshot)
+	if shouldShare || shouldUpload {
+		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+		statushooks.Done(ctx)
+		if err != nil {
+			return err
+		} else {
+			fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
+		}
+		return err
+	}
+
+	// just display result
+	snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
+	utils.FailOnError(err)
+	fmt.Println(string(snapshotText))
+	fmt.Println("")
 	return nil
 }
 
+func validateDashboardArgs(args []string) (string, error) {
+	if len(args) > 1 {
+		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
+	}
+	dashboardName := ""
+	if len(args) == 1 {
+		dashboardName = args[0]
+	}
+
+	// only 1 of 'share' and 'snapshot' may be set
+	shareArg := viper.GetString(constants.ArgShare)
+	snapshotArg := viper.GetString(constants.ArgSnapshot)
+	if shareArg != "" && snapshotArg != "" {
+		return "", fmt.Errorf("only 1 of --share and --dashboard may be set")
+	}
+
+	// if either share' or 'snapshot' are set, a dashboard name an dcloud token must be provided
+	if shareArg != "" || snapshotArg != "" {
+		if dashboardName == "" {
+			return "", fmt.Errorf("dashboard name must be provided if --share or --snapshot arg is used")
+		}
+		snapshotWorkspace := shareArg
+		argName := "share"
+		if snapshotWorkspace == "" {
+			snapshotWorkspace = snapshotArg
+			argName = "snapshot"
+		}
+
+		// is this is the no-option default, use the workspace arg
+		if snapshotWorkspace == constants.ArgShareNoOptDefault {
+			snapshotWorkspace = viper.GetString(constants.ArgWorkspace)
+		}
+		if snapshotWorkspace == "" {
+			return "", fmt.Errorf("a Steampipe Cloud workspace name must be provided, either by setting %s=<workspace> or --workspace=<workspace>", argName)
+		}
+
+		// now write back the workspace to viper
+		viper.Set(constants.ArgWorkspace, snapshotWorkspace)
+
+		// verify cloud token
+		if !viper.IsSet(constants.ArgCloudToken) {
+			return "", fmt.Errorf("a Steampipe Cloud token must be provided")
+		}
+	}
+
+	return dashboardName, nil
+}
+
 func setExitCodeForDashboardError(err error) {
+	// if exit code already set, leave as is
+	if exitCode != 0 {
+		return
+	}
+
 	if err == workspace.ErrorNoModDefinition {
 		exitCode = constants.ExitCodeNoModFile
 	} else {
@@ -197,4 +301,28 @@ func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dash
 		state.Listen = append(state.Listen, addrs...)
 	}
 	utils.FailOnError(dashboardserver.WriteServiceStateFile(state))
+}
+
+func collectInputs() (map[string]interface{}, error) {
+	res := make(map[string]interface{})
+	inputArgs := viper.GetStringSlice(constants.ArgDashboardInput)
+	for _, variableArg := range inputArgs {
+		// Value should be in the form "name=value", where value is a string
+		raw := variableArg
+		eq := strings.Index(raw, "=")
+		if eq == -1 {
+			return nil, fmt.Errorf("the --dashboard-input argument '%s' is not correctly specified. It must be an input name and value separated an equals sign: --dashboard-input key=value", raw)
+		}
+		name := raw[:eq]
+		rawVal := raw[eq+1:]
+		if _, ok := res[name]; ok {
+			return nil, fmt.Errorf("the dashboard-input option '%s' is provided more than once", name)
+		}
+		// TACTICAL: add `input. to start of name
+		key := fmt.Sprintf("input.%s", name)
+		res[key] = rawVal
+	}
+
+	return res, nil
+
 }

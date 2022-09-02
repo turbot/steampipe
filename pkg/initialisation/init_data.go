@@ -1,4 +1,4 @@
-package dashboard
+package initialisation
 
 import (
 	"context"
@@ -28,6 +28,12 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		Result:    &db_common.InitResult{},
 	}
 
+	defer func() {
+		// if there is no error, return context cancellation error (if any)
+		if initData.Result.Error == nil {
+			initData.Result.Error = ctx.Err()
+		}
+	}()
 	// initialise telemetry
 	shutdownTelemetry, err := telemetry.Init(constants.AppName)
 	if err != nil {
@@ -36,11 +42,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		initData.ShutdownTelemetry = shutdownTelemetry
 	}
 
-	if !w.ModfileExists() {
-		initData.Result.Error = workspace.ErrorNoModDefinition
-		return initData
-	}
-
+	// install mod dependencies if needed
 	if viper.GetBool(constants.ArgModInstall) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
@@ -49,6 +51,8 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 			return initData
 		}
 	}
+
+	// retrieve cloud metadata
 	cloudMetadata, err := cmdconfig.GetCloudMetadata()
 	if err != nil {
 		initData.Result.Error = err
@@ -65,8 +69,8 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		return initData
 	}
 
-	statushooks.SetStatus(ctx, "Connecting to service...")
 	// get a client
+	statushooks.SetStatus(ctx, "Connecting to service...")
 	var client db_common.Client
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(ctx, connectionString)
@@ -74,13 +78,14 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		// when starting the database, installers may trigger their own spinners
 		client, err = db_local.GetLocalClient(ctx, constants.InvokerDashboard)
 	}
-
 	if err != nil {
 		initData.Result.Error = err
 		return initData
 	}
 	initData.Client = client
+	statushooks.Done(ctx)
 
+	// refresh connections
 	refreshResult := initData.Client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		initData.Result.Error = refreshResult.Error
@@ -99,16 +104,17 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	})
 
 	return initData
-
 }
 
 func (i InitData) Cleanup(ctx context.Context) {
-	// if a client was initialised, close it
 	if i.Client != nil {
 		i.Client.Close(ctx)
 	}
 
 	if i.ShutdownTelemetry != nil {
 		i.ShutdownTelemetry()
+	}
+	if i.Workspace != nil {
+		i.Workspace.Close()
 	}
 }

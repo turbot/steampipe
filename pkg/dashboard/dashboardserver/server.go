@@ -50,7 +50,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 		workspace:        w,
 	}
 
-	w.RegisterDashboardEventHandler(server.HandleWorkspaceUpdate)
+	w.RegisterDashboardEventHandler(server.HandleDashboardEvent)
 	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	OutputMessage(ctx, "Workspace loaded")
 
@@ -76,16 +76,11 @@ func (s *Server) Shutdown() {
 		log.Println("[TRACE] closed websocket")
 	}
 
-	// Close the workspace
-	if s.workspace != nil {
-		s.workspace.Close()
-	}
-
 	log.Println("[TRACE] Server shutdown complete")
 
 }
 
-func (s *Server) HandleWorkspaceUpdate(event dashboardevents.DashboardEvent) {
+func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 	var payloadError error
 	var payload []byte
 	defer func() {

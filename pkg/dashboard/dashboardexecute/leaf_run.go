@@ -3,6 +3,7 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -118,13 +119,13 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	// if there are any unresolved runtime dependencies, wait for them
 	if len(r.runtimeDependencies) > 0 {
 		if err := r.waitForRuntimeDependencies(ctx); err != nil {
-			r.SetError(err)
+			r.SetError(ctx, err)
 			return
 		}
 
 		// ok now we have runtime dependencies, we can resolve the query
 		if err := r.resolveSQL(); err != nil {
-			r.SetError(err)
+			r.SetError(ctx, err)
 			return
 		}
 	}
@@ -135,7 +136,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	if err != nil {
 		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
 		// set the error status on the counter - this will raise counter error event
-		r.SetError(err)
+		r.SetError(ctx, err)
 		return
 
 	}
@@ -143,7 +144,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 	r.Data = dashboardtypes.NewLeafData(queryResult)
 	// set complete status on counter - this will raise counter complete event
-	r.SetComplete()
+	r.SetComplete(ctx)
 }
 
 // GetName implements DashboardNodeRun
@@ -157,12 +158,13 @@ func (r *LeafRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
 }
 
 // SetError implements DashboardNodeRun
-func (r *LeafRun) SetError(err error) {
+func (r *LeafRun) SetError(ctx context.Context, err error) {
 	r.error = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
-
 	r.Status = dashboardtypes.DashboardRunError
+	// increment error count for snapshot hook
+	statushooks.SnapshotError(ctx)
 	// raise counter error event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
 		LeafNode:    r,
@@ -178,7 +180,7 @@ func (r *LeafRun) GetError() error {
 }
 
 // SetComplete implements DashboardNodeRun
-func (r *LeafRun) SetComplete() {
+func (r *LeafRun) SetComplete(ctx context.Context) {
 	r.Status = dashboardtypes.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
@@ -186,6 +188,10 @@ func (r *LeafRun) SetComplete() {
 		Session:     r.executionTree.sessionId,
 		ExecutionId: r.executionTree.id,
 	})
+
+	// call snapshot hooks with progress
+	statushooks.UpdateSnapshotProgress(ctx, 1)
+
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }
@@ -209,7 +215,7 @@ func (r *LeafRun) ChildrenComplete() bool {
 func (*LeafRun) IsSnapshotPanel() {}
 
 // GetInputsDependingOn implements DashboardNodeRun
-//return nothing for LeafRun
+// return nothing for LeafRun
 func (r *LeafRun) GetInputsDependingOn(changedInputName string) []string { return nil }
 
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {

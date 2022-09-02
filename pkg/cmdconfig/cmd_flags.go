@@ -14,13 +14,15 @@ type flagOpt func(c *cobra.Command, name string, key string)
 
 // FlagOptions :: shortcut for common flag options
 var FlagOptions = struct {
-	Required   func() flagOpt
-	Hidden     func() flagOpt
-	Deprecated func(string) flagOpt
+	Required    func() flagOpt
+	Hidden      func() flagOpt
+	Deprecated  func(string) flagOpt
+	NoOptDefVal func(string) flagOpt
 }{
-	Required:   requiredOpt,
-	Hidden:     hiddenOpt,
-	Deprecated: deprecatedOpt,
+	Required:    requiredOpt,
+	Hidden:      hiddenOpt,
+	Deprecated:  deprecatedOpt,
+	NoOptDefVal: noOptDefValOpt,
 }
 
 // Helper function to mark a flag as required
@@ -43,5 +45,11 @@ func hiddenOpt() flagOpt {
 func deprecatedOpt(replacement string) flagOpt {
 	return func(c *cobra.Command, name, key string) {
 		c.Flag(name).Deprecated = fmt.Sprintf("please use %s", replacement)
+	}
+}
+
+func noOptDefValOpt(noOptDefVal string) flagOpt {
+	return func(c *cobra.Command, name, key string) {
+		c.Flag(name).NoOptDefVal = noOptDefVal
 	}
 }

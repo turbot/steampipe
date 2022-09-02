@@ -47,9 +47,15 @@ const (
 	ArgServiceMode         = "service-mode"
 	ArgBrowser             = "browser"
 	ArgInput               = "input"
+	ArgDashboardInput      = "dashboard-input"
 	ArgMaxCacheSizeMb      = "max-cache-size-mb"
 	ArgIntrospection       = "introspection"
+	ArgShare               = "share"
+	ArgSnapshot            = "snapshot"
 )
+
+// the default value for ArgShare and ArgSnapshot if no value is provided
+const ArgShareNoOptDefault = "__workspace__"
 
 /// metaquery mode arguments
 

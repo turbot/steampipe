@@ -98,7 +98,7 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.DashboardNode.Name())
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
-		r.SetError(err)
+		r.SetError(ctx, err)
 		return
 	}
 	r.controlExecutionTree = executionTree
@@ -110,15 +110,15 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	utils.LogTime("CheckRun.execute start")
 	defer utils.LogTime("CheckRun.execute end")
 
-	// create a context with a ControlEventHooks to report control execution progress
-	ctx = controlstatus.AddControlHooksToContext(ctx, NewControlEventHooks(r))
+	// create a context with a DashboardEventControlHooks to report control execution progress
+	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))
 	r.controlExecutionTree.Execute(ctx)
 
 	// set the summary on the CheckRun
 	r.Summary = r.controlExecutionTree.Root.Summary
 
 	// set complete status on counter - this will raise counter complete event
-	r.SetComplete()
+	r.SetComplete(ctx)
 }
 
 // GetName implements DashboardNodeRun
@@ -132,7 +132,7 @@ func (r *CheckRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
 }
 
 // SetError implements DashboardNodeRun
-func (r *CheckRun) SetError(err error) {
+func (r *CheckRun) SetError(ctx context.Context, err error) {
 	r.error = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
@@ -155,7 +155,7 @@ func (r *CheckRun) GetError() error {
 }
 
 // SetComplete implements DashboardNodeRun
-func (r *CheckRun) SetComplete() {
+func (r *CheckRun) SetComplete(ctx context.Context) {
 	r.runStatus = dashboardtypes.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{

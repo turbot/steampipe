@@ -64,6 +64,11 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 	if err != nil {
 		return nil, err
 	}
+	// if no mod is specified, assume the workspace mod
+	if parsedName.Mod == "" {
+		parsedName.Mod = e.workspace.Mod.ShortName
+		rootName = parsedName.ToFullName()
+	}
 	switch parsedName.ItemType {
 	case modconfig.BlockTypeDashboard:
 		dashboard, ok := e.workspace.GetResourceMaps().Dashboards[rootName]
@@ -143,8 +148,8 @@ func (e *DashboardExecutionTree) GetRunStatus() dashboardtypes.DashboardRunStatu
 }
 
 // SetError sets the error on the Root run
-func (e *DashboardExecutionTree) SetError(err error) {
-	e.Root.SetError(err)
+func (e *DashboardExecutionTree) SetError(ctx context.Context, err error) {
+	e.Root.SetError(ctx, err)
 }
 
 // GetName implements DashboardNodeParent

@@ -2,8 +2,6 @@ package dashboardserver
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -69,22 +67,6 @@ type ControlEventPayload struct {
 type ExecutionErrorPayload struct {
 	Action string `json:"action"`
 	Error  string `json:"error"`
-}
-
-var ExecutionCompleteSchemaVersion int64 = 20220614
-
-type ExecutionCompletePayload struct {
-	SchemaVersion string                                  `json:"schema_version"`
-	Action        string                                  `json:"action"`
-	DashboardNode dashboardtypes.DashboardNodeRun         `json:"dashboard_node"`
-	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`
-	ExecutionId   string                                  `json:"execution_id"`
-	Inputs        map[string]interface{}                  `json:"inputs"`
-	Variables     map[string]string                       `json:"variables"`
-	SearchPath    []string                                `json:"search_path"`
-	StartTime     time.Time                               `json:"start_time"`
-	EndTime       time.Time                               `json:"end_time"`
-	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout"`
 }
 
 type InputValuesClearedPayload struct {

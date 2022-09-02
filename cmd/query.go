@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"bufio"
-	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -17,7 +15,6 @@ import (
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -75,7 +72,10 @@ Examples:
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts")
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
+		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault))
+
 	return cmd
 }
 
@@ -93,6 +93,9 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		args = append(args, stdinData)
 	}
 
+	// validate args
+	utils.FailOnError(validateQueryArgs())
+
 	cloudMetadata, err := cmdconfig.GetCloudMetadata()
 	utils.FailOnError(err)
 
@@ -102,7 +105,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
 	// load the workspace
-	w, err := loadWorkspacePromptingForVariables(ctx)
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// set cloud metadata (may be nil)
@@ -124,6 +127,14 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
+func validateQueryArgs() error {
+	// only 1 of 'share' and 'snapshot' may be set
+	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
+		return fmt.Errorf("only 1 of 'share' and 'dashboard' may be set")
+	}
+	return nil
+}
+
 // getPipedStdinData reads the Standard Input and returns the available data as a string
 // if and only if the data was piped to the process
 func getPipedStdinData() string {
@@ -140,31 +151,4 @@ func getPipedStdinData() string {
 		}
 	}
 	return stdinData
-}
-
-func loadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
-	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
-
-	w, err := workspace.Load(ctx, workspacePath)
-	if err == nil {
-		return w, nil
-	}
-	missingVariablesError, ok := err.(modconfig.MissingVariableError)
-	// if there was an error which is NOT a MissingVariableError, return it
-	if !ok {
-		return nil, err
-	}
-	// if interactive inp[ut is disabled, return the missing variables error
-	if !viper.GetBool(constants.ArgInput) {
-		return nil, missingVariablesError
-	}
-	// so we have missing variables - prompt for them
-	// first hide spinner if it is there
-	statushooks.Done(ctx)
-	if err := interactive.PromptForMissingVariables(ctx, missingVariablesError.MissingVariables, workspacePath); err != nil {
-		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
-		return nil, err
-	}
-	// ok we should have all variables now - reload workspace
-	return workspace.Load(ctx, workspacePath)
 }

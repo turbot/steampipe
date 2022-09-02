@@ -5,14 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -24,6 +23,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -62,7 +62,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", constants.CheckOutputFormatText, "Select a console output format: brief, csv, html, json, md, text or none").
+		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatText, "Select a console output format: brief, csv, html, json, md, text or none").
 		AddBoolFlag(constants.ArgTiming, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
@@ -79,7 +79,9 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
 		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check").
-		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts")
+		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
+		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault))
 
 	return cmd
 }
@@ -89,7 +91,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
-	initData := &control.InitData{}
+	initData := &initialisation.InitData{}
 
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
@@ -104,17 +106,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 
-		if initData.Client != nil {
-			log.Printf("[TRACE] close client")
-			initData.Client.Close(ctx)
-		}
-		if initData.Workspace != nil {
-			initData.Workspace.Close()
-		}
+		initData.Cleanup(ctx)
 	}()
 
 	// verify we have an argument
-	if !validateArgs(ctx, cmd, args) {
+	if !validateCheckArgs(ctx, cmd, args) {
 		return
 	}
 
@@ -125,13 +121,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	initData = initialiseCheck(ctx)
-
-	// check the init result - should we quit?
-	if err := handleCheckInitResult(ctx, initData); err != nil {
-		initData.Cleanup(ctx)
-		// if there was an error, display it
-		utils.FailOnError(err)
-	}
+	utils.FailOnError(initData.Result.Error)
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
 
 	// pull out useful properties
 	workspace := initData.Workspace
@@ -157,7 +149,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// create the execution tree
 		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
-		utils.FailOnErrorWithMessage(err, "failed to resolve controls from argument")
+		utils.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of failures)
 		failures += executionTree.Execute(ctx)
@@ -195,16 +187,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 // create the context for the check run - add a control status renderer
 func createCheckContext(ctx context.Context) context.Context {
-	var controlHooks controlstatus.ControlHooks = controlstatus.NullHooks
-	// if the client is a TTY, inject a status spinner
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		controlHooks = controlstatus.NewControlStatusHooks()
-	}
-
-	return controlstatus.AddControlHooksToContext(ctx, controlHooks)
+	return controlstatus.AddControlHooksToContext(ctx, controlstatus.NewStatusControlHooks())
 }
 
-func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
+func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
 		utils.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
@@ -214,39 +200,70 @@ func validateArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return false
 	}
+	// only 1 of 'share' and 'snapshot' may be set
+	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
+		utils.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'dashboard' may be set"))
+		return false
+	}
 	return true
 }
 
-func initialiseCheck(ctx context.Context) *control.InitData {
+func initialiseCheck(ctx context.Context) *initialisation.InitData {
 	statushooks.SetStatus(ctx, "Initializing...")
 	defer statushooks.Done(ctx)
 
 	// load the workspace
-	w, err := loadWorkspacePromptingForVariables(ctx)
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := control.NewInitData(ctx, w)
+	initData := initialisation.NewInitData(ctx, w)
+	if initData.Result.Error != nil {
+		return initData
+	}
 
+	// control specific init
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition
+	}
+
+	if viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
+		// set progress to false
+		viper.Set(constants.ArgProgress, false)
+	}
+	// set color schema
+	err = initialiseCheckColorScheme()
+	if err != nil {
+		initData.Result.Error = err
+		return initData
+	}
+
+	if len(initData.Workspace.GetResourceMaps().Controls) == 0 {
+		initData.Result.AddWarnings("no controls found in current workspace")
+	}
+
+	if err := controldisplay.EnsureTemplates(); err != nil {
+		initData.Result.Error = err
+		return initData
 	}
 
 	return initData
 }
 
-func handleCheckInitResult(ctx context.Context, initData *control.InitData) error {
-	// if there is an error or cancellation we bomb out
-	if initData.Result.Error != nil {
-		return initData.Result.Error
+func initialiseCheckColorScheme() error {
+	theme := viper.GetString(constants.ArgTheme)
+	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
+		// enforce plain output for non-terminals
+		theme = "plain"
 	}
-	// cancelled?
-	if ctx != nil && ctx.Err() != nil {
-		return ctx.Err()
+	themeDef, ok := controldisplay.ColorSchemes[theme]
+	if !ok {
+		return fmt.Errorf("invalid theme '%s'", theme)
 	}
-
-	// if there is a usage warning we display it
-	initData.Result.DisplayMessages()
-
+	scheme, err := controldisplay.NewControlColorScheme(themeDef)
+	if err != nil {
+		return err
+	}
+	controldisplay.ControlColors = scheme
 	return nil
 }
 
@@ -266,7 +283,7 @@ func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
 	return (viper.GetBool(constants.ArgTiming) && !viper.GetBool(constants.ArgDryRun)) &&
-		(outputFormat == constants.CheckOutputFormatText || outputFormat == constants.CheckOutputFormatBrief)
+		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
 func exportCheckResult(ctx context.Context, d *control.ExportData) {
@@ -328,7 +345,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			continue
 		}
 		// tactical solution to prettify the json output
-		if target.Formatter.GetFormatName() == "json" {
+		if target.Formatter.GetFormatName() == constants.OutputFormatJSON {
 			dataToExport, err = prettifyJsonFromReader(dataToExport)
 			if err != nil {
 				errors = append(errors, err)

@@ -199,20 +199,7 @@ func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, 
 }
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
-	payload := ExecutionCompletePayload{
-		SchemaVersion: fmt.Sprintf("%d", ExecutionCompleteSchemaVersion),
-		Action:        "execution_complete",
-		DashboardNode: event.Root,
-		ExecutionId:   event.ExecutionId,
-		Panels:        event.Panels,
-		Layout:        event.Root.AsTreeNode(),
-		Inputs:        event.Inputs,
-		Variables:     event.Variables,
-		SearchPath:    event.SearchPath,
-		StartTime:     event.StartTime,
-		EndTime:       event.EndTime,
-	}
-
+	payload := ExecutionCompleteToSnapshot(event)
 	return json.Marshal(payload)
 }
 

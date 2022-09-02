@@ -42,6 +42,14 @@ func (p *ParsedResourceName) ToResourceName() string {
 	return BuildModResourceName(p.ItemType, p.Name)
 }
 
+func (p *ParsedResourceName) ToFullName() string {
+	return BuildFullResourceName(p.Mod, p.ItemType, p.Name)
+}
+
+func BuildFullResourceName(mod, blockType, name string) string {
+	return fmt.Sprintf("%s.%s.%s", mod, blockType, name)
+}
+
 // UnqualifiedResourceName removes the mod prefix from the given name
 func UnqualifiedResourceName(fullName string) string {
 	parts := strings.Split(fullName, ".")
@@ -53,6 +61,6 @@ func UnqualifiedResourceName(fullName string) string {
 	}
 }
 
-func BuildModResourceName(blockType string, name string) string {
+func BuildModResourceName(blockType, name string) string {
 	return fmt.Sprintf("%s.%s", blockType, name)
 }

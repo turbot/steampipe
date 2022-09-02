@@ -48,7 +48,6 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	// create a context with status hooks disabled
 	noStatusCtx := statushooks.DisableStatusHooks(ctx)
 	err := executionTree.populateControlFilterMap(noStatusCtx)
-
 	if err != nil {
 		return nil, err
 	}
