@@ -15,7 +15,7 @@ import (
 	"log"
 )
 
-func GenerateSnapshot(ctx context.Context, target string) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
+func GenerateSnapshot(ctx context.Context, target string, inputs map[string]interface{}) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
 	// create context for the dashboard execution
 	snapshotCtx, cancel := createSnapshotContext(ctx, target)
 
@@ -37,9 +37,6 @@ func GenerateSnapshot(ctx context.Context, target string) (snapshot *dashboardty
 	initData.Result.DisplayMessages()
 
 	sessionId := "generateSnapshot"
-
-	// todo KAI get inputs from command line
-	inputs := make(map[string]interface{})
 
 	errorChannel := make(chan error)
 	resultChannel := make(chan *dashboardtypes.SteampipeSnapshot)
