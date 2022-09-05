@@ -69,6 +69,10 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		return initData
 	}
 
+	// setup the session data - prepared statements and introspection tables
+	//sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
+
+	// TODO KAI init session func
 	// get a client
 	statushooks.SetStatus(ctx, "Connecting to service...")
 	var client db_common.Client
@@ -93,15 +97,12 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	}
 	initData.Result.AddWarnings(refreshResult.Warnings...)
 
-	// setup the session data - prepared statements and introspection tables
-	sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
-
 	// register EnsureSessionData as a callback on the client.
 	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
 	// so our client object calls this callback to restore the session data
-	initData.Client.SetEnsureSessionDataFunc(func(localCtx context.Context, conn *db_common.DatabaseSession) (error, []string) {
-		return workspace.EnsureSessionData(localCtx, sessionDataSource, conn)
-	})
+	//initData.Client.SetEnsureSessionDataFunc(func(localCtx context.Context, conn *db_common.DatabaseSession) (error, []string) {
+	//	return workspace.EnsureSessionData(localCtx, sessionDataSource, conn)
+	//})
 
 	return initData
 }

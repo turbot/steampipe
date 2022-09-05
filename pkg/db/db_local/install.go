@@ -374,12 +374,12 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgxpool.Pool, erro
 		connMaxLifetime    = 10 * time.Minute
 	)
 
-	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable pool_max_conns=%d pool_max_conn_lifetime=%d pool_max_conn_idle_time=%d",
+	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable pool_max_conns=%d pool_max_conn_lifetime=%s pool_max_conn_idle_time=%s",
 		port,
 		constants.DatabaseSuperUser,
 		maxOpenConnections,
-		connMaxLifetime,
-		connMaxIdleTime)
+		connMaxLifetime.String(),
+		connMaxIdleTime.String())
 
 	log.Println("[TRACE] Connection string: ", psqlInfo)
 

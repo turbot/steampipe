@@ -6,9 +6,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
 )
 
 func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
@@ -67,22 +65,7 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgxpool.P
 	if err != nil {
 		return nil, err
 	}
-	return db_client.EstablishConnection(ctx, psqlInfo, 1)
+	// TODO KAI CB
+	return db_client.EstablishConnection(ctx, psqlInfo, 1, nil)
 
-	log.Println("[TRACE] Connection string: ", psqlInfo)
-
-	// connect to the database using the postgres driver
-	utils.LogTime("db.createLocalDbClient connection open start")
-	dbPool, err := pgxpool.Connect(context.Background(), psqlInfo)
-
-	utils.LogTime("db.createLocalDbClient connection open end")
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := db_common.WaitForConnection(ctx, dbPool); err != nil {
-		return nil, err
-	}
-	return dbPool, nil
 }

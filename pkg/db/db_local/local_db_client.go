@@ -83,11 +83,6 @@ func (c *LocalDbClient) Close(ctx context.Context) error {
 	return nil
 }
 
-// SetEnsureSessionDataFunc implements Client
-func (c *LocalDbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
-	c.client.SetEnsureSessionDataFunc(f)
-}
-
 // ForeignSchemaNames implements Client
 func (c *LocalDbClient) ForeignSchemaNames() []string {
 	return c.client.ForeignSchemaNames()
