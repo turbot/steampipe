@@ -42,7 +42,7 @@ func createModIntrospectionTable(ctx context.Context, workspaceResources *modcon
 	// get the create sql for each table type
 	modTableSql := getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql)
 
-	_, err := session.Connection.ExecContext(ctx, modTableSql)
+	_, err := session.Connection.Exec(ctx, modTableSql)
 	if err != nil {
 		return fmt.Errorf("failed to create mod introspection table: %v", err)
 	}
@@ -62,7 +62,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	insertSql := getTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
+	_, err := session.Connection.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
@@ -176,7 +176,7 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 	insertSql := getControlTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
+	_, err := session.Connection.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}

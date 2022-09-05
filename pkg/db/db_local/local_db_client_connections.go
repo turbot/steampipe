@@ -2,8 +2,8 @@ package db_local
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"strings"
 
@@ -95,7 +95,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	for c := range connectionUpdates.Delete {
 		log.Printf("[TRACE] delete connection %s\n ", c)
 		query := getDeleteConnectionQuery(c)
-		_, err := rootClient.ExecContext(ctx, query)
+		_, err := rootClient.Exec(ctx, query)
 		if err != nil {
 			res.Error = err
 			return res
@@ -105,7 +105,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	return res
 }
 
-func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
+func executeUpdateQueries(ctx context.Context, rootClient *pgxpool.Pool, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
 	idx := 0
 	numUpdates := len(updates)
 
@@ -117,7 +117,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
 		builder.WriteString(getUpdateConnectionQuery(connectionName, remoteSchema))
 
-		_, err := rootClient.ExecContext(ctx, builder.String())
+		_, err := rootClient.Exec(ctx, builder.String())
 		builder.Reset()
 		if err != nil {
 			return err
@@ -131,7 +131,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
 			query := getDeleteConnectionQuery(failure.ConnectionName)
-			_, err := rootClient.ExecContext(ctx, query)
+			_, err := rootClient.Exec(ctx, query)
 			if err != nil {
 				return err
 			}
@@ -148,7 +148,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *sql.DB, failures []*s
 			builder.WriteString(getCommentsQueryForPlugin(connectionName, connectionPlugin))
 
 		}
-		_, err := rootClient.ExecContext(ctx, builder.String())
+		_, err := rootClient.Exec(ctx, builder.String())
 		if err != nil {
 			return err
 		}

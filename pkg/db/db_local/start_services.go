@@ -3,8 +3,8 @@ package db_local
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"os"
 	"os/exec"
@@ -314,7 +314,7 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 	}
 	defer connection.Close()
 
-	out := connection.QueryRow("select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
+	out := connection.QueryRow(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
 
 	var databaseName string
 	err = out.Scan(&databaseName)
@@ -430,7 +430,7 @@ func setServicePassword(ctx context.Context, password string) error {
 		return err
 	}
 	defer connection.Close()
-	_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
+	_, err = connection.Exec(ctx, fmt.Sprintf(`alter user steampipe with password '%s'`, password))
 	return err
 }
 
@@ -484,7 +484,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 }
 
 // ensures that the necessary extensions are installed on the database
-func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
+func ensurePgExtensions(ctx context.Context, rootClient *pgxpool.Pool) error {
 	extensions := []string{
 		"tablefunc",
 		"ltree",
@@ -492,7 +492,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 
 	errors := []error{}
 	for _, extn := range extensions {
-		_, err := rootClient.Exec(fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
+		_, err := rootClient.Exec(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -501,12 +501,11 @@ func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 }
 
 // ensures that the 'steampipe' foreign server exists
-//  (re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
-	res := rootClient.QueryRowContext(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
-	if res.Err() != nil {
-		return res.Err()
-	}
+//
+//	(re)install FDW and creates server if it doesn't
+func ensureSteampipeServer(ctx context.Context, rootClient *pgxpool.Pool) error {
+	res := rootClient.QueryRow(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+
 	var serverName string
 	err := res.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
@@ -517,7 +516,7 @@ func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
 }
 
 // create the command schema and grant insert permission
-func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
+func ensureCommandSchema(ctx context.Context, rootClient *pgxpool.Pool) error {
 	commandSchemaStatements := []string{
 		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableCache),
@@ -525,7 +524,7 @@ func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 	}
 
 	for _, statement := range commandSchemaStatements {
-		if _, err := rootClient.ExecContext(ctx, statement); err != nil {
+		if _, err := rootClient.Exec(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -534,8 +533,8 @@ func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *sql.DB) error {
-	_, err := rootClient.ExecContext(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
+func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgxpool.Pool) error {
+	_, err := rootClient.Exec(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
 	if err != nil {
 		return err
 	}

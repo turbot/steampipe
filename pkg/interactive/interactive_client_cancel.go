@@ -15,7 +15,7 @@ func (c *InteractiveClient) createPromptContext(parentContext context.Context) c
 	return ctx
 }
 
-func (c *InteractiveClient) createQueryContext(ctx context.Context) context.Context {
+func (c *InteractiveClient) createQuery(ctx context.Context) context.Context {
 	ctx, cancel := context.WithCancel(ctx)
 	c.cancelActiveQuery = cancel
 	return ctx

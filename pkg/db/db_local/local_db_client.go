@@ -187,7 +187,7 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, 
 		return nil, err
 	}
 
-	tablesResult, err := acquireSessionResult.Session.Connection.QueryContext(ctx, query)
+	tablesResult, err := acquireSessionResult.Session.Connection.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}

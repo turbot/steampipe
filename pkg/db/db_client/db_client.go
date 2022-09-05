@@ -2,9 +2,7 @@ package db_client
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/semaphore"
 	"log"
@@ -12,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -54,7 +51,7 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	dbPool, err := establishConnection(ctx, connectionString)
+	dbPool, err := EstablishConnection(ctx, connectionString, maxDbConnections())
 
 	if err != nil {
 		return nil, err
@@ -93,45 +90,9 @@ func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.D
 
 	c.showTimingFlag = currentShowTimingFlag
 }
+
 func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
-}
-
-func establishConnection(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
-	utils.LogTime("db_client.establishConnection start")
-	defer utils.LogTime("db_client.establishConnection end")
-
-	connConfig, _ := pgx.ParseConfig(connStr)
-	connConfig.RuntimeParams = map[string]string{
-		// set an app name so that we can track connections from this execution
-		"application_name": runtime.PgClientAppName,
-	}
-	connStr = stdlib.RegisterConnConfig(connConfig)
-
-	// this returns connection pool
-	dbPool, err := pgxpool.Connect(context.Background(), connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	//
-	//maxParallel := constants.DefaultMaxConnections
-	//if viper.IsSet(constants.ArgMaxParallel) {
-	//	maxParallel = viper.GetInt(constants.ArgMaxParallel)
-	//}
-	//
-	//// set max open connections to the max connections argument
-	//db.SetMaxOpenConns(maxParallel)
-	//// NOTE: leave max idle connections at default of 2
-	//// close idle connections after 1 minute
-	//db.SetConnMaxIdleTime(1 * time.Minute)
-	//// do not re-use a connection more than 10 minutes old - force a refresh
-	//db.SetConnMaxLifetime(10 * time.Minute)
-
-	if err := db_common.WaitForConnection(ctx, dbPool); err != nil {
-		return nil, err
-	}
-	return dbPool, nil
 }
 
 func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
@@ -147,7 +108,7 @@ func (c *DbClient) Close(context.Context) error {
 
 		// clear the map - so that we can't reuse it
 		c.sessions = nil
-		return c.dbClient.Close()
+		c.dbClient.Close()
 	}
 
 	return nil
@@ -164,7 +125,7 @@ func (c *DbClient) ForeignSchemaNames() []string {
 
 // LoadForeignSchemaNames implements Client
 func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
-	res, err := c.dbClient.QueryContext(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	res, err := c.dbClient.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
 	if err != nil {
 		return err
 	}
@@ -208,11 +169,8 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	c.sessionInitWaitGroup.Wait()
 
 	// close the connection
-	err := c.dbClient.Close()
-	if err != nil {
-		return err
-	}
-	db, err := establishConnection(ctx, c.connectionString)
+	c.dbClient.Close()
+	db, err := EstablishConnection(ctx, c.connectionString, maxDbConnections())
 	if err != nil {
 		return err
 	}
@@ -237,12 +195,12 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampi
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
-	connection, err := c.dbClient.Conn(ctx)
+	connection, err := c.dbClient.Acquire(ctx)
 	utils.FailOnError(err)
 
 	query := c.buildSchemasQuery()
 
-	tablesResult, err := connection.QueryContext(ctx, query)
+	tablesResult, err := connection.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +209,7 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error
 	if err != nil {
 		return nil, err
 	}
-	connection.Close()
+	connection.Release()
 
 	searchPath, err := c.GetCurrentSearchPath(ctx)
 	if err != nil {
