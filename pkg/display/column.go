@@ -1,19 +1,29 @@
 package display
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/ahmetb/go-linq"
+	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"time"
 
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
+// ColumnNames :: extract names from columns
+func ColumnNames(columns []*queryresult.ColumnDef) []string {
+	var colNames []string
+	linq.From(columns).SelectT(func(c *sql.ColumnType) string { return c.Name() }).ToSlice(&colNames)
+	return colNames
+}
+
 // ColumnValuesAsString converts a slice of columns into strings
-func ColumnValuesAsString(values []interface{}, columnTypes []string) ([]string, error) {
-	rowAsString := make([]string, len(columnTypes))
+func ColumnValuesAsString(values []interface{}, columns []*queryresult.ColumnDef) ([]string, error) {
+	rowAsString := make([]string, len(columns))
 	for idx, val := range values {
-		val, err := ColumnValueAsString(val, columnTypes[idx])
+		val, err := ColumnValueAsString(val, columns[idx])
 		if err != nil {
 			return nil, err
 		}
@@ -23,7 +33,7 @@ func ColumnValuesAsString(values []interface{}, columnTypes []string) ([]string,
 }
 
 // ColumnValueAsString converts column value to string
-func ColumnValueAsString(val interface{}, colType string) (result string, err error) {
+func ColumnValueAsString(val interface{}, col *queryresult.ColumnDef) (result string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			result = fmt.Sprintf("%v", val)
@@ -36,8 +46,7 @@ func ColumnValueAsString(val interface{}, colType string) (result string, err er
 
 	//log.Printf("[TRACE] ColumnValueAsString type %s", colType.DatabaseTypeName())
 	// possible types for colType are defined in pq/oid/types.go
-	// TODO KAI
-	switch colType { //.DatabaseTypeName() {
+	switch col.DataType {
 	case "JSON", "JSONB":
 		bytes, err := json.Marshal(val)
 		if err != nil {
@@ -57,21 +66,20 @@ func ColumnValueAsString(val interface{}, colType string) (result string, err er
 	default:
 		return typeHelpers.ToString(val), nil
 	}
-
 }
 
-// segregate data types, ignore string conversion for certain data types :
+// ParseJSONOutputColumnValue segregate data types, ignore string conversion for certain data types :
 // JSON, JSONB, BOOL and so on..
-func ParseJSONOutputColumnValue(val interface{}, colType string) (interface{}, error) {
+func ParseJSONOutputColumnValue(val interface{}, col *queryresult.ColumnDef) (interface{}, error) {
 	if val == nil {
 		return nil, nil
 	}
-	// TODO KAI
-	switch colType { //.DatabaseTypeName() {
+
+	switch col.DataType {
 	// we can revise/increment the list of DT's in future
 	case "JSON", "JSONB", "BOOL", "INT2", "INT4", "INT8", "FLOAT8", "FLOAT4":
 		return val, nil
 	default:
-		return ColumnValueAsString(val, colType)
+		return ColumnValueAsString(val, col)
 	}
 }

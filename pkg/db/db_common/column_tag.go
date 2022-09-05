@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
+// ColumnTag is a struct used to display column info in introspection tables
 type ColumnTag struct {
-	Column     string
+	Column string
+	// the introspected go type
 	ColumnType string
 }
 

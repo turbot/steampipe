@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -11,6 +12,9 @@ import (
 )
 
 func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
+	if opts == nil {
+		opts = &CreateDbOptions{}
+	}
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
 
@@ -23,7 +27,11 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		return "", fmt.Errorf("steampipe service is not running")
 	}
 
-	// if no database name is passed, deduce it from the db status
+	// if no database name is passed, use constants.DatabaseUser
+	if len(opts.Username) == 0 {
+		opts.Username = constants.DatabaseUser
+	}
+	// if no username name is passed, deduce it from the db status
 	if len(opts.DatabaseName) == 0 {
 		opts.DatabaseName = info.Database
 	}
@@ -59,16 +67,7 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgxpool.P
 	if err != nil {
 		return nil, err
 	}
-	return db_client.EstablishConnection(ctx, p)
-	//const (
-	//	maxOpenConnections = 1
-	//	connMaxIdleTime    = 1 * time.Minute
-	//	connMaxLifetime    = 10 * time.Minute
-	//)
-	//,
-	//maxOpenConnections,
-	//	connMaxLifetime,
-	//	connMaxIdleTime
+	return db_client.EstablishConnection(ctx, psqlInfo, 1)
 
 	log.Println("[TRACE] Connection string: ", psqlInfo)
 

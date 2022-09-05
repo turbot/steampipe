@@ -52,7 +52,7 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbCli
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
-	connString, err := getLocalSteampipeConnectionString()
+	connString, err := getLocalSteampipeConnectionString(nil)
 	if err != nil {
 		return nil, err
 	}
