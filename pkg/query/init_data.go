@@ -8,22 +8,22 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 	"log"
 )
 
+// TODO KAI combine with initialisation.InitData
 type InitData struct {
-	Loaded            chan struct{}
-	Queries           []string
 	Workspace         *workspace.Workspace
 	Client            db_common.Client
 	Result            *db_common.InitResult
-	cancel            context.CancelFunc
+	Loaded            chan struct{}
 	ShutdownTelemetry func()
+	Queries           []string
+	cancel            context.CancelFunc
 }
 
 // NewInitData creates a new InitData object and returns it
@@ -116,16 +116,11 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// this defaults to creating prepared statements for all queries
 	sessionDataSource := workspace.NewSessionDataSource(w, preparedStatementSource)
 
-	//// register EnsureSessionData as a callback on the client.
-	//// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
-	//// so our client object calls this callback to restore the session data
-	//i.Client.SetEnsureSessionDataFunc(func(ctx context.Context, session *db_common.DatabaseSession) (error, []string) {
-	//	return workspace.EnsureSessionData(ctx, sessionDataSource, session)
-	//})
-
 	// get the client
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
+
+	// TODO KAI is FDW message working in interactive - does it rerender prompt??
 
 	// add a message rendering function to the context - this is used for the fdw update message and
 	// allows us to render it as a standard initialisation message
@@ -133,13 +128,15 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		i.Result.AddMessage(fmt.Sprintf(format, a...))
 	})
 
+	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
 		err, warnings := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+		// TODO KAI how do we display wanrings
 		log.Println("[WARN]", warnings)
 		return err
 	}
 
-	c, err := getClient(getClientCtx, ensureSessionData)
+	c, err := initialisation.GetDbClient(getClientCtx, ensureSessionData)
 	if err != nil {
 		i.Result.Error = err
 		return
@@ -153,23 +150,5 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	}
 	i.Result.AddWarnings(res.Warnings...)
 
-	//// force creation of session data - se we see any prepared statement errors at once
-	//sessionResult := i.Client.AcquireSession(ctx)
-	//i.Result.AddWarnings(sessionResult.Warnings...)
-	//if sessionResult.Error != nil {
-	//	i.Result.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
-	//} else {
-	//	sessionResult.Session.Close(utils.IsContextCancelled(ctx))
-	//}
-}
-
-func getClient(ctx context.Context, data db_client.DbConnectionCallback) (db_common.Client, error) {
-	var client db_common.Client
-	var err error
-	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(ctx, connectionString)
-	} else {
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerQuery)
-	}
-	return client, err
+	// TODO KAI ensure we display prepared statement warnings
 }

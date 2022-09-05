@@ -2,6 +2,7 @@ package db_client
 
 import (
 	"context"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/semaphore"
@@ -29,12 +30,6 @@ type DbClient struct {
 	// a wait group which lets others wait for any running DBSession init to complete
 	sessionInitWaitGroup *sync.WaitGroup
 
-	// map of database sessions, keyed to the backend_pid in postgres
-	// used to track database sessions that were created
-	sessions map[uint32]*db_common.DatabaseSession
-	// allows locked access to the 'sessions' map
-	sessionsMutex *sync.Mutex
-
 	// list of connection schemas
 	foreignSchemaNames []string
 	// if a custom search path or a prefix is used, store it here
@@ -44,15 +39,26 @@ type DbClient struct {
 	// (cached to avoid concurrent access error on viper)
 	showTimingFlag bool
 	// disable timing - set whilst in process of querying the timing
-	disableTiming bool
+	disableTiming        bool
+	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
+func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	// TODO KAI add CB
-	dbPool, err := EstablishConnection(ctx, connectionString, maxDbConnections(), nil)
+	log.Printf("[WARN] NewDbClient")
+	wg := &sync.WaitGroup{}
+	// wrap onConnectionCallback to use wait group
+	wrappedOnConnectionCallback := func(ctx context.Context, conn *pgx.Conn) error {
+		log.Printf("[WARN] onConnectionCallback")
+		wg.Add(1)
+		defer wg.Done()
+		return onConnectionCallback(ctx, conn)
+	}
+
+	const minConnections = 2
+	dbPool, err := EstablishConnection(ctx, connectionString, minConnections, maxDbConnections(), wrappedOnConnectionCallback)
 
 	if err != nil {
 		return nil, err
@@ -61,12 +67,12 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 		dbClient: dbPool,
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
-		sessionInitWaitGroup: &sync.WaitGroup{},
+		sessionInitWaitGroup: wg,
 		// a weighted semaphore to control the maximum number parallel
 		// initializations under way
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
-		sessions:                make(map[uint32]*db_common.DatabaseSession),
-		sessionsMutex:           &sync.Mutex{},
+		// store the callback
+		onConnectionCallback: wrappedOnConnectionCallback,
 	}
 
 	client.connectionString = connectionString
@@ -102,9 +108,6 @@ func (c *DbClient) Close(context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
 	if c.dbClient != nil {
 		c.sessionInitWaitGroup.Wait()
-
-		// clear the map - so that we can't reuse it
-		c.sessions = nil
 		c.dbClient.Close()
 	}
 
@@ -165,10 +168,13 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	// wait for any pending inits to finish
 	c.sessionInitWaitGroup.Wait()
 
+	// TODO kai think about this - will this solve all our file watching issues?
+
 	// close the connection
 	c.dbClient.Close()
-	// TODO KAI ADD CB
-	db, err := EstablishConnection(ctx, c.connectionString, maxDbConnections(), nil)
+	const minConnections = 2
+
+	db, err := EstablishConnection(ctx, c.connectionString, minConnections, maxDbConnections(), c.onConnectionCallback)
 	if err != nil {
 		return err
 	}
