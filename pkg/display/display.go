@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -340,4 +341,21 @@ func iterateResults(result *queryresult.Result, displayResult displayResultsFunc
 	}
 	// we will not get here
 	return nil
+}
+
+// DisplayErrorTiming shows the time taken for the query to fail
+func DisplayErrorTiming(t time.Time) {
+	elapsed := time.Since(t)
+	var sb strings.Builder
+	// large numbers should be formatted with commas
+	p := message.NewPrinter(language.English)
+
+	milliseconds := float64(elapsed.Microseconds()) / 1000
+	seconds := elapsed.Seconds()
+	if seconds < 0.5 {
+		sb.WriteString(p.Sprintf("\nTime: %dms.", int64(milliseconds)))
+	} else {
+		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
+	}
+	fmt.Println(sb.String())
 }

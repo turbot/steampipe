@@ -3,8 +3,10 @@ package queryexecute
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -62,10 +64,15 @@ func executeQueries(ctx context.Context, queries []string, client db_common.Clie
 
 	// run all queries
 	failures := 0
+	t := time.Now()
 	for i, q := range queries {
 		if err := executeQuery(ctx, q, client); err != nil {
 			failures++
 			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
+			// if timing flag is enabled, show the time taken for the query to fail
+			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+				display.DisplayErrorTiming(t)
+			}
 		}
 		// TODO move into display layer
 		// Only show the blank line between queries, not after the last one
