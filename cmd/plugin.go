@@ -253,7 +253,7 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return helpers.TruncateString(constants.PluginAlreadyInstalled, 20)
+			return utils.Resize(constants.PluginAlreadyInstalled, 20)
 		})
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
@@ -265,13 +265,13 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		// let the bar append itself with the current installation step
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			if report != nil && report.SkipReason == constants.PluginNotFound {
-				return helpers.TruncateString(constants.PluginNotFound, 20)
+				return utils.Resize(constants.PluginNotFound, 20)
 			} else {
 				if b.Current() == 0 {
 					// no install step to display yet
 					return ""
 				}
-				return helpers.TruncateString(pluginInstallSteps[b.Current()-1], 20)
+				return utils.Resize(pluginInstallSteps[b.Current()-1], 20)
 			}
 		})
 		report = installPlugin(ctx, pluginName, false, bar)
@@ -419,7 +419,7 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 	if skip, skipReason := plugin.SkipUpdate(pvr); skip {
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			// set the progress bar to append itself with "Already Installed"
-			return helpers.TruncateString(skipReason, 30)
+			return utils.Resize(skipReason, 30)
 		})
 		// set the progress bar to the maximum
 		bar.Set(len(pluginInstallSteps))
@@ -436,7 +436,7 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 				// no install step to display yet
 				return ""
 			}
-			return helpers.TruncateString(pluginInstallSteps[b.Current()-1], 20)
+			return utils.Resize(pluginInstallSteps[b.Current()-1], 20)
 		})
 		report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
 	}
@@ -447,7 +447,7 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 func createProgressBar(plugin string, parentProgressBars *uiprogress.Progress) *uiprogress.Bar {
 	bar := parentProgressBars.AddBar(len(pluginInstallSteps))
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return helpers.TruncateString(plugin, 20)
+		return utils.Resize(plugin, 20)
 	})
 	return bar
 }
