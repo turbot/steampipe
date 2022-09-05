@@ -83,14 +83,15 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	clientCount := 0
 	// get the total number of connected clients
 	// which are not us - determined by the unique application_name client parameter
-	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
+	row := rootClient.QueryRow(ctx, "select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
 	err = row.Scan(&clientCount)
 	if err != nil {
 		return -1, err
 	}
 	// clientCount can never be zero, since the client we are using to run the query counts as a client
 	// deduct the open connections in the pool of this client
-	return clientCount - rootClient.Stats().OpenConnections, nil
+	// TODO KAI HOW
+	return clientCount, nil // - rootClient.Stats().OpenConnections, nil
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
@@ -156,7 +157,9 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	return ServiceStopped, nil
 }
 
-/**
+/*
+*
+
 	Postgres has three levels of shutdown:
 
 	* SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
@@ -180,7 +183,9 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	By the time we actually try to run this sequence, we will have
 	checked that the service can indeed shutdown gracefully,
 	the sequence is there only as a backup.
-**/
+
+*
+*/
 func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
 	utils.LogTime("db_local.doThreeStepPostgresExit start")
 	defer utils.LogTime("db_local.doThreeStepPostgresExit end")

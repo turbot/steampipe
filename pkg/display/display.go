@@ -107,9 +107,9 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 }
 
 func displayLine(ctx context.Context, result *queryresult.Result) {
-	colNames := ColumnNames(result.ColTypes)
+
 	maxColNameLength := 0
-	for _, colName := range colNames {
+	for _, colName := range result.ColNames {
 		thisLength := utf8.RuneCountInString(colName)
 		if thisLength > maxColNameLength {
 			maxColNameLength = thisLength
@@ -135,12 +135,12 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 		for idx, column := range recordAsString {
 			lines := strings.Split(column, "\n")
 			if len(lines) == 1 {
-				fmt.Printf(lineFormat, colNames[idx], lines[0])
+				fmt.Printf(lineFormat, result.ColNames[idx], lines[0])
 			} else {
 				for lineIdx, line := range lines {
 					if lineIdx == 0 {
 						// the first line
-						fmt.Printf(multiLineFormat, colNames[idx], line)
+						fmt.Printf(multiLineFormat, result.ColNames[idx], line)
 					} else {
 						// next lines
 						fmt.Printf(multiLineFormat, "", line)
@@ -285,11 +285,11 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// if timer is turned on
 	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
-		displayTiming(result)
+		fmt.Println(buildTimingString(result))
 	}
 }
 
-func displayTiming(result *queryresult.Result) {
+func buildTimingString(result *queryresult.Result) string {
 	timingResult := <-result.TimingResult
 	var sb strings.Builder
 	// large numbers should be formatted with commas
@@ -323,7 +323,7 @@ func displayTiming(result *queryresult.Result) {
 		sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
 	}
 
-	fmt.Println(sb.String())
+	return sb.String()
 }
 
 type displayResultsFunc func(row []interface{}, result *queryresult.Result)

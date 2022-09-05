@@ -1,7 +1,6 @@
 package queryresult
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -21,7 +20,8 @@ type RowResult struct {
 }
 type Result struct {
 	RowChan      *chan *RowResult
-	ColTypes     []*sql.ColumnType
+	ColNames     []string
+	ColTypes     []string
 	TimingResult chan *TimingResult
 }
 
@@ -38,10 +38,11 @@ func (r Result) StreamError(err error) {
 	*r.RowChan <- &RowResult{Error: err}
 }
 
-func NewQueryResult(colTypes []*sql.ColumnType) *Result {
+func NewQueryResult(colNames, colTypes []string) *Result {
 	rowChan := make(chan *RowResult)
 	return &Result{
 		RowChan:      &rowChan,
+		ColNames:     colNames,
 		ColTypes:     colTypes,
 		TimingResult: make(chan *TimingResult, 1),
 	}
@@ -49,6 +50,7 @@ func NewQueryResult(colTypes []*sql.ColumnType) *Result {
 
 type SyncQueryResult struct {
 	Rows         []interface{}
-	ColTypes     []*sql.ColumnType
+	ColNames     []string
+	ColTypes     []string
 	TimingResult *TimingResult
 }

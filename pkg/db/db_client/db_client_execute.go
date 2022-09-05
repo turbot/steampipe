@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -84,7 +87,7 @@ func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Resu
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
 	if query == "" {
-		return queryresult.NewQueryResult(nil), nil
+		return queryresult.NewQueryResult(nil, nil), nil
 	}
 
 	// fail-safes
@@ -116,20 +119,15 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	statushooks.SetStatus(ctx, "Loading results...")
 
 	// start query
-	var rows *sql.Rows
+	var rows pgx.Rows
 	rows, err = c.startQuery(ctx, query, session.Connection)
 	if err != nil {
 		return
 	}
 
-	var colTypes []*sql.ColumnType
-	colTypes, err = rows.ColumnTypes()
-	if err != nil {
-		err = fmt.Errorf("error reading columns from query: %v", err)
-		return
-	}
+	colNames, colTypes := fieldDescriptionsToColumns(rows.FieldDescriptions(), session.Connection.Conn())
 
-	result := queryresult.NewQueryResult(colTypes)
+	result := queryresult.NewQueryResult(colNames, colTypes)
 
 	// read the rows in a go routine
 	go func() {
@@ -220,7 +218,7 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn) (rows *sql.Rows, err error) {
+func (c *DbClient) startQuery(ctx context.Context, query string, conn *pgxpool.Conn) (rows pgx.Rows, err error) {
 	doneChan := make(chan bool)
 	defer func() {
 		if err != nil {
@@ -233,7 +231,7 @@ func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn)
 	}()
 	go func() {
 		// start asynchronous query
-		rows, err = conn.QueryContext(ctx, query)
+		rows, err = conn.Query(ctx, query)
 		close(doneChan)
 	}()
 
@@ -245,12 +243,15 @@ func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn)
 	return
 }
 
-func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryresult.Result, timingCallback func()) {
+func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryresult.Result, timingCallback func()) {
+	timingDoneChan := make(chan (bool))
+
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. clear the status indication
 		statushooks.Done(ctx)
-		// call the timing callback BEFORE closing the rows
+		close(timingDoneChan)
+		// call the timing callback one last time BEFORE closing the rows
 		timingCallback()
 		// close the sql rows object
 		rows.Close()
@@ -263,18 +264,6 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 	}()
 
 	rowCount := 0
-	colTypes, err := rows.ColumnTypes()
-	if err != nil {
-		// we do not need to stream because
-		// defer takes care of it!
-		return
-	}
-	cols, err := rows.Columns()
-	if err != nil {
-		// we do not need to stream because
-		// defer takes care of it!
-		return
-	}
 
 	for rows.Next() {
 		continueToNext := true
@@ -283,7 +272,7 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 			statushooks.SetStatus(ctx, "Cancelling query")
 			continueToNext = false
 		default:
-			if rowResult, err := readRowContext(ctx, rows, cols, colTypes); err != nil {
+			if rowResult, err := readRowContext(ctx, rows, result.ColNames, result.ColTypes); err != nil {
 				result.StreamError(err)
 				continueToNext = false
 			} else {
@@ -297,7 +286,8 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 			}
 			// update the status message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
-			statushooks.SetStatus(ctx, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			status := fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount))
+			statushooks.SetStatus(ctx, status)
 			rowCount++
 		}
 		if !continueToNext {
@@ -306,11 +296,48 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 	}
 }
 
+func buildTimingString(result *queryresult.Result) string {
+	timingResult := <-result.TimingResult
+	var sb strings.Builder
+	// large numbers should be formatted with commas
+	p := message.NewPrinter(language.English)
+
+	milliseconds := float64(timingResult.Duration.Microseconds()) / 1000
+	seconds := timingResult.Duration.Seconds()
+	if seconds < 0.5 {
+		sb.WriteString(p.Sprintf("\nTime: %dms.", int64(milliseconds)))
+	} else {
+		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
+	}
+
+	if timingMetadata := timingResult.Metadata; timingMetadata != nil {
+		totalRows := timingMetadata.RowsFetched + timingMetadata.CachedRowsFetched
+		sb.WriteString(" Rows fetched: ")
+		if totalRows == 0 {
+			sb.WriteString("0")
+		} else {
+			if totalRows > 0 {
+				sb.WriteString(p.Sprintf("%d", timingMetadata.RowsFetched+timingMetadata.CachedRowsFetched))
+			}
+			if timingMetadata.CachedRowsFetched > 0 {
+				if timingMetadata.RowsFetched == 0 {
+					sb.WriteString(" (cached)")
+				} else {
+					sb.WriteString(p.Sprintf(" (%d cached)", timingMetadata.CachedRowsFetched))
+				}
+			}
+		}
+		sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
+	}
+
+	return sb.String()
+}
+
 func isStreamingOutput(outputFormat string) bool {
 	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }
 
-func readRowContext(ctx context.Context, rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
+func readRowContext(ctx context.Context, rows pgx.Rows, cols []string, colTypes []string) ([]interface{}, error) {
 	c := make(chan bool, 1)
 	var readRowResult []interface{}
 	var readRowError error
@@ -328,7 +355,7 @@ func readRowContext(ctx context.Context, rows *sql.Rows, cols []string, colTypes
 
 }
 
-func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]interface{}, error) {
+func readRow(rows pgx.Rows, cols []string, colTypes []string) ([]interface{}, error) {
 	// slice of interfaces to receive the row data
 	columnValues := make([]interface{}, len(cols))
 	// make a slice of pointers to the result to pass to scan
@@ -344,12 +371,13 @@ func readRow(rows *sql.Rows, cols []string, colTypes []*sql.ColumnType) ([]inter
 	return populateRow(columnValues, colTypes)
 }
 
-func populateRow(columnValues []interface{}, colTypes []*sql.ColumnType) ([]interface{}, error) {
+func populateRow(columnValues []interface{}, colTypes []string) ([]interface{}, error) {
 	result := make([]interface{}, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
 			colType := colTypes[i]
-			dbType := colType.DatabaseTypeName()
+			// TODO KAI
+			dbType := colType //.DatabaseTypeName()
 			switch dbType {
 			case "JSON", "JSONB":
 				var val interface{}

@@ -96,7 +96,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, results
 // InteractivePrompt starts an interactive prompt and return
 func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
-	// (registered when we call createQueryContext)
+	// (registered when we call createQuery)
 	quitChannel := c.startCancelHandler()
 
 	// create a cancel context for the prompt - this will set c.cancelPrompt
@@ -329,7 +329,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	// we successfully retrieved a query
 
 	// create a  context for the execution of the query
-	queryContext := c.createQueryContext(ctx)
+	queryContext := c.createQuery(ctx)
 
 	if metaquery.IsMetaQuery(query) {
 		if err := c.executeMetaquery(queryContext, query); err != nil {
@@ -377,7 +377,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
-		queryContext := c.createQueryContext(ctx)
+		Query := c.createQuery(ctx)
 		defer func() {
 			// cancel this context
 			c.cancelActiveQueryIfAny()
@@ -385,7 +385,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 
 		statushooks.SetStatus(ctx, "Initializing...")
 		// wait for client initialisation to complete
-		err := c.waitForInitData(queryContext)
+		err := c.waitForInitData(Query)
 		statushooks.Done(ctx)
 		if err != nil {
 			// clear history entry

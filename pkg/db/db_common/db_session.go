@@ -1,11 +1,9 @@
 package db_common
 
 import (
-	"context"
-	"database/sql"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"time"
 
-	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -19,7 +17,7 @@ type DatabaseSession struct {
 	Initialized bool                  `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
-	Connection *sql.Conn `json:"-"`
+	Connection *pgxpool.Conn `json:"-"`
 
 	// the id of the last scan metadata retrieved
 	ScanMetadataMaxId int64 `json:"-"`
@@ -38,26 +36,26 @@ func (s *DatabaseSession) UpdateUsage() {
 	s.LastUsed = time.Now()
 }
 
-func (s *DatabaseSession) Close(waitForCleanup bool) error {
-	var err error
+func (s *DatabaseSession) Close(waitForCleanup bool) {
 	if s.Connection != nil {
 		if waitForCleanup {
-			s.Connection.Raw(func(driverConn interface{}) error {
-				conn := driverConn.(*stdlib.Conn)
-				select {
-				case <-time.After(5 * time.Second):
-					return context.DeadlineExceeded
-				case <-conn.Conn().PgConn().CleanupDone():
-					return nil
-				}
-			})
+			// TODO KAI what to do here???
+			//s.Connection.Raw(func(driverConn interface{}) error {
+			//	conn := driverConn.(*stdlib.Conn)
+			//	select {
+			//	case <-time.After(5 * time.Second):
+			//		return context.DeadlineExceeded
+			//	case <-conn.Conn().PgConn().CleanupDone():
+			//		return nil
+			//	}
+			//})
 		}
 
-		err = s.Connection.Close()
+		s.Connection.Release()
 		s.Connection = nil
-		return err
 	}
 	c := s.Connection
 	s.Connection = nil
-	return c.Close()
+	c.Release()
+
 }

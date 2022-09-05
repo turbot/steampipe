@@ -2,14 +2,15 @@ package db_local
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"net"
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/fatih/color"
 	psutils "github.com/shirou/gopsutil/process"
@@ -366,25 +367,35 @@ func resolveDatabaseName(oldDbName *string) string {
 
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database and superuser
-func createMaintenanceClient(ctx context.Context, port int) (*sql.DB, error) {
-	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+func createMaintenanceClient(ctx context.Context, port int) (*pgxpool.Pool, error) {
+	const (
+		maxOpenConnections = 1
+		connMaxIdleTime    = 1 * time.Minute
+		connMaxLifetime    = 10 * time.Minute
+	)
+
+	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable pool_max_conns=%d pool_max_conn_lifetime=%d pool_max_conn_idle_time=%d",
+		port,
+		constants.DatabaseSuperUser,
+		maxOpenConnections,
+		connMaxLifetime,
+		connMaxIdleTime)
 
 	log.Println("[TRACE] Connection string: ", psqlInfo)
 
 	// connect to the database using the postgres driver
 	utils.LogTime("db_local.createClient connection open start")
-	db, err := sql.Open("pgx", psqlInfo)
-	db.SetMaxOpenConns(1)
+	dbPool, err := pgxpool.Connect(context.Background(), psqlInfo)
 	utils.LogTime("db_local.createClient connection open end")
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(ctx, db); err != nil {
+	if err := db_common.WaitForConnection(ctx, dbPool); err != nil {
 		return nil, err
 	}
-	return db, nil
+	return dbPool, nil
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
@@ -475,7 +486,7 @@ func initDatabase() error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
-func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *sql.DB) error {
+func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgxpool.Pool) error {
 	utils.LogTime("db_local.install.installDatabaseWithPermissions start")
 	defer utils.LogTime("db_local.install.installDatabaseWithPermissions end")
 
@@ -536,7 +547,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 	for _, statement := range statements {
 		// not logging here, since the password may get logged
 		// we don't want that
-		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
+		if _, err := rawClient.Exec(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -548,7 +559,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(ctx context.Context, rawClient *sql.DB) error {
+func installForeignServer(ctx context.Context, rawClient *pgxpool.Pool) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 
@@ -564,7 +575,7 @@ func installForeignServer(ctx context.Context, rawClient *sql.DB) error {
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
-		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
+		if _, err := rawClient.Exec(ctx, statement); err != nil {
 			return err
 		}
 	}

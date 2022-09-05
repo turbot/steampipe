@@ -19,7 +19,7 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *
 
 	// check for introspection tables
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
-	row := session.Connection.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
+	row := session.Connection.QueryRow(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
 
 	var count int
 	err = row.Scan(&count)

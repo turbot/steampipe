@@ -2,12 +2,10 @@ package db_client
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"time"
-
-	"github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -59,7 +57,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	// make sure that we close the acquired session, in case of error
 	defer func() {
 		if sessionResult.Error != nil && databaseConnection != nil {
-			databaseConnection.Close()
+			databaseConnection.Release()
 		}
 	}()
 
@@ -108,13 +106,13 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	return sessionResult
 }
 
-func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*sql.Conn, uint32, error) {
+func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
 	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var databaseConnection *sql.Conn
+	var databaseConnection *pgxpool.Conn
 	var backendPid uint32
 
 	retries := 0
@@ -124,10 +122,10 @@ func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*sql.C
 			return retryLocalCtx.Err()
 		}
 		// get a database connection from the pool
-		databaseConnection, err = c.dbClient.Conn(retryLocalCtx)
+		databaseConnection, err = c.dbClient.Acquire(retryLocalCtx)
 		if err != nil {
 			if databaseConnection != nil {
-				databaseConnection.Close()
+				databaseConnection.Release()
 			}
 			retries++
 			return retry.RetryableError(err)
@@ -143,11 +141,7 @@ func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*sql.C
 	if retries > 0 {
 		log.Printf("[TRACE] getDatabaseConnectionWithRetries succeeded after %d retries", retries)
 	}
-
-	databaseConnection.Raw(func(driverConn interface{}) error {
-		backendPid = driverConn.(*stdlib.Conn).Conn().PgConn().PID()
-		return nil
-	})
+	backendPid = databaseConnection.Conn().PgConn().PID()
 
 	return databaseConnection, uint32(backendPid), nil
 }

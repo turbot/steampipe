@@ -24,7 +24,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ModRe
 	}
 
 	for name, sql := range sqlMap {
-		if _, err := session.Connection.ExecContext(ctx, sql); err != nil {
+		if _, err := session.Connection.Exec(ctx, sql); err != nil {
 			warnings = append(warnings, fmt.Sprintf("failed to create prepared statement for %s: %v", name, err))
 		}
 	}
