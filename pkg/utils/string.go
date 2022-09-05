@@ -33,10 +33,10 @@ func Resize(s string, length uint) string {
 	if len(s) > n {
 		b := []byte(s)
 		var buf bytes.Buffer
-		for i := 0; i < n-3; i++ {
+		for i := 0; i < n-1; i++ {
 			buf.WriteByte(b[i])
 		}
-		buf.WriteString("…  ")
+		buf.WriteString("…")
 		s = buf.String()
 	}
 	return s
