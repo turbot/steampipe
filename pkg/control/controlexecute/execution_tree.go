@@ -266,8 +266,8 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 	// find the "resource_name" column index
 	resourceNameColumnIndex := -1
 
-	for i, c := range res.ColTypes {
-		if c.Name() == "resource_name" {
+	for i, c := range res.Cols {
+		if c.Name == "resource_name" {
 			resourceNameColumnIndex = i
 		}
 	}

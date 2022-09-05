@@ -414,7 +414,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			}
 
 			// so all is ok - create another result row
-			result, err := NewResultRow(r, row, r.queryResult.ColTypes)
+			result, err := NewResultRow(r, row, r.queryResult.Cols)
 			if err != nil {
 				r.setError(ctx, err)
 				return
@@ -426,14 +426,14 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 	}
 }
 
-func (r *ControlRun) getDimensionSchema() map[string]*dashboardtypes.ColumnSchema {
-	var dimensionsSchema = make(map[string]*dashboardtypes.ColumnSchema)
+func (r *ControlRun) getDimensionSchema() map[string]*queryresult.ColumnDef {
+	var dimensionsSchema = make(map[string]*queryresult.ColumnDef)
 
 	for _, row := range r.Rows {
 		for _, dim := range row.Dimensions {
 			if _, ok := dimensionsSchema[dim.Key]; !ok {
 				// add to map
-				dimensionsSchema[dim.Key] = &dashboardtypes.ColumnSchema{
+				dimensionsSchema[dim.Key] = &queryresult.ColumnDef{
 					Name:     dim.Key,
 					DataType: dim.SqlType,
 				}

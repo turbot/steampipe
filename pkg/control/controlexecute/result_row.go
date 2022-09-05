@@ -1,7 +1,6 @@
 package controlexecute
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 
@@ -17,9 +16,9 @@ import (
 type ResultRows []*ResultRow
 
 // ToLeafData converts the result rows to snapshot data format
-func (r ResultRows) ToLeafData(dimensionSchema map[string]*dashboardtypes.ColumnSchema) *dashboardtypes.LeafData {
+func (r ResultRows) ToLeafData(dimensionSchema map[string]*queryresult.ColumnDef) *dashboardtypes.LeafData {
 	var res = &dashboardtypes.LeafData{
-		Columns: []*dashboardtypes.ColumnSchema{
+		Columns: []*queryresult.ColumnDef{
 			{Name: "reason", DataType: "TEXT"},
 			{Name: "resource", DataType: "TEXT"},
 			{Name: "status", DataType: "TEXT"},
@@ -70,18 +69,18 @@ func (r *ResultRow) GetDimensionValue(key string) string {
 }
 
 // AddDimension checks whether a column value is a scalar type, and if so adds it to the Dimensions map
-func (r *ResultRow) AddDimension(c *sql.ColumnType, val interface{}) {
-	switch c.ScanType().Kind() {
+func (r *ResultRow) AddDimension(c *queryresult.ColumnDef, val interface{}) {
+	switch c.ScanType.Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.Struct:
 		return
 	default:
-		r.Dimensions = append(r.Dimensions, Dimension{Key: c.Name(), Value: typehelpers.ToString(val), SqlType: c.DatabaseTypeName()})
+		r.Dimensions = append(r.Dimensions, Dimension{Key: c.Name, Value: typehelpers.ToString(val), SqlType: c.DataType})
 	}
 }
 
-func NewResultRow(run *ControlRun, row *queryresult.RowResult, colTypes []*sql.ColumnType) (*ResultRow, error) {
+func NewResultRow(run *ControlRun, row *queryresult.RowResult, cols []*queryresult.ColumnDef) (*ResultRow, error) {
 	// validate the required columns exist in the result
-	if err := validateColumns(colTypes); err != nil {
+	if err := validateColumns(cols); err != nil {
 		return nil, err
 	}
 	res := &ResultRow{
@@ -95,8 +94,8 @@ func NewResultRow(run *ControlRun, row *queryresult.RowResult, colTypes []*sql.C
 		return nil, row.Error
 	}
 
-	for i, c := range colTypes {
-		switch c.Name() {
+	for i, c := range cols {
+		switch c.Name {
 		case "reason":
 			res.Reason = typehelpers.ToString(row.Data[i])
 		case "resource":
@@ -119,11 +118,11 @@ func IsValidControlStatus(status string) bool {
 	return helpers.StringSliceContains([]string{constants.ControlOk, constants.ControlAlarm, constants.ControlInfo, constants.ControlError, constants.ControlSkip}, status)
 }
 
-func validateColumns(colTypes []*sql.ColumnType) error {
+func validateColumns(cols []*queryresult.ColumnDef) error {
 	requiredColumns := []string{"reason", "resource", "status"}
 	var missingColumns []string
 	for _, col := range requiredColumns {
-		if !columnTypesContainsColumn(col, colTypes) {
+		if !columnTypesContainsColumn(col, cols) {
 			missingColumns = append(missingColumns, col)
 		}
 	}
@@ -133,9 +132,9 @@ func validateColumns(colTypes []*sql.ColumnType) error {
 	return nil
 }
 
-func columnTypesContainsColumn(col string, colTypes []*sql.ColumnType) bool {
+func columnTypesContainsColumn(col string, colTypes []*queryresult.ColumnDef) bool {
 	for _, ct := range colTypes {
-		if ct.Name() == col {
+		if ct.Name == col {
 			return true
 		}
 	}
