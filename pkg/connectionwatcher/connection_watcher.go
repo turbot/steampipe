@@ -81,7 +81,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	}
 	log.Printf("[TRACE] loaded updated config")
 
-	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
+	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
 	if err != nil {
 		log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
 	}

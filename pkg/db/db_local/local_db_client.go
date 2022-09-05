@@ -26,7 +26,7 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.Client, error) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (db_common.Client, error) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -40,7 +40,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.C
 		return nil, startResult.Error
 	}
 
-	client, err := NewLocalClient(ctx, invoker)
+	client, err := NewLocalClient(ctx, invoker, onConnectionCallback)
 	if err != nil {
 		ShutdownService(ctx, invoker)
 	}
@@ -48,7 +48,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.C
 }
 
 // NewLocalClient verifies that the local database instance is running and returns a Client to interact with it
-func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbClient, error) {
+func NewLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
@@ -56,7 +56,7 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbCli
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(ctx, connString)
+	dbClient, err := db_client.NewDbClient(ctx, connString, onConnectionCallback)
 	if err != nil {
 		log.Printf("[TRACE] error getting local client %s", err.Error())
 		return nil, err

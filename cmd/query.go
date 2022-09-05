@@ -3,9 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -17,6 +14,8 @@ import (
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
+	"os"
+	"strings"
 )
 
 func queryCmd() *cobra.Command {
@@ -88,7 +87,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 			utils.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
-
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
 	}

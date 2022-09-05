@@ -88,10 +88,10 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	if err != nil {
 		return -1, err
 	}
-	// clientCount can never be zero, since the client we are using to run the query counts as a client
-	// deduct the open connections in the pool of this client
-	// TODO KAI HOW
-	return clientCount, nil // - rootClient.Stats().OpenConnections, nil
+
+	// clientCount can never be zero, since the rootClient we are using to run the query counts as a client
+	// deduct 1 to account for this
+	return clientCount - 1, nil
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found

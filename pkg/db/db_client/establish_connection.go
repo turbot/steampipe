@@ -8,19 +8,22 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
+	"log"
 	"time"
 )
 
 type DbConnectionCallback func(context.Context, *pgx.Conn) error
 
-func EstablishConnection(ctx context.Context, connStr string, maxConnections int, connectionCallback DbConnectionCallback) (*pgxpool.Pool, error) {
+func EstablishConnection(ctx context.Context, connStr string, minConnections, maxConnections int, connectionCallback DbConnectionCallback) (*pgxpool.Pool, error) {
 	utils.LogTime("db_client.EstablishConnection start")
 	defer utils.LogTime("db_client.EstablishConnection end")
-
 	const (
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
+	if minConnections > maxConnections {
+		minConnections = maxConnections
+	}
 
 	// TODO KAI why application_name???
 
@@ -36,9 +39,14 @@ func EstablishConnection(ctx context.Context, connStr string, maxConnections int
 		return nil, err
 	}
 	config.MaxConns = int32(maxConnections)
+	config.MinConns = int32(minConnections)
 	config.MaxConnLifetime = connMaxLifetime
-	config.MaxConnIdleTime = connMaxLifetime
-	config.AfterConnect = connectionCallback
+	config.MaxConnIdleTime = connMaxIdleTime
+	if connectionCallback != nil {
+		config.AfterConnect = connectionCallback
+	}
+
+	log.Printf("[WARN] EstablishConnection %v", config)
 
 	// this returns connection pool
 	dbPool, err := pgxpool.ConnectConfig(context.Background(), config)

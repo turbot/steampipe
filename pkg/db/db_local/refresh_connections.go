@@ -8,7 +8,7 @@ import (
 
 // RefreshConnectionAndSearchPaths creates a local client and refreshed connections and search paths
 func RefreshConnectionAndSearchPaths(ctx context.Context, invoker constants.Invoker) error {
-	client, err := NewLocalClient(ctx, invoker)
+	client, err := NewLocalClient(ctx, invoker, nil)
 	if err != nil {
 		return err
 	}

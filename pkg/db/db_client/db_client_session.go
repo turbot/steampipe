@@ -14,8 +14,6 @@ import (
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
 	sessionResult = &db_common.AcquireSessionResult{}
-	c.sessionInitWaitGroup.Add(1)
-	defer c.sessionInitWaitGroup.Done()
 
 	defer func() {
 		if sessionResult != nil && sessionResult.Session != nil {
@@ -37,78 +35,49 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, backendPid, err := c.getDatabaseConnectionWithRetries(ctx)
+	databaseConnection, err := c.getDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
 	}
 
-	c.sessionsMutex.Lock()
-	session, found := c.sessions[backendPid]
-	if !found {
-		session = db_common.NewDBSession(backendPid)
-	}
+	session := db_common.NewDBSession()
+
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Connection = databaseConnection
 	sessionResult.Session = session
-	c.sessionsMutex.Unlock()
 
 	// make sure that we close the acquired session, in case of error
-	defer func() {
-		if sessionResult.Error != nil && databaseConnection != nil {
-			databaseConnection.Release()
-		}
-	}()
+	//defer func() {
+	//	if sessionResult.Error != nil && databaseConnection != nil {
+	//		databaseConnection.Release()
+	//	}
+	//}()
 
 	//// if there is no ensure session function, we are done
 	//if c.ensureSessionFunc == nil {
 	//	return sessionResult
 	//}
 
+	// TODO KAI WHAT??? NEEDED?
 	// update required session search path if needed
-	err = c.ensureSessionSearchPath(ctx, session)
-	if err != nil {
-		sessionResult.Error = err
-		return sessionResult
-	}
-	//
-	//if !session.Initialized {
-	//	err := c.parallelSessionInitLock.Acquire(ctx, 1)
-	//	if err != nil {
-	//		sessionResult.Error = err
-	//		return sessionResult
-	//	}
-	//	c.sessionInitWaitGroup.Add(1)
-	//
-	//	err, warnings := c.ensureSessionFunc(ctx, session)
-	//	sessionResult.Warnings = warnings
-	//	c.sessionInitWaitGroup.Done()
-	//	c.parallelSessionInitLock.Release(1)
-	//	if err != nil {
-	//		sessionResult.Error = err
-	//		return sessionResult
-	//	}
-	//
-	//	// if there is no error, mark session as initialized
-	//	session.Initialized = true
+	//err = c.ensureSessionSearchPath(ctx, session)
+	//if err != nil {
+	//	sessionResult.Error = err
+	//	return sessionResult
 	//}
-
-	// now write back to the map
-	c.sessionsMutex.Lock()
-	c.sessions[backendPid] = session
-	c.sessionsMutex.Unlock()
 
 	return sessionResult
 }
 
-func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
+// TODO kai remove retries
+func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, error) {
 	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	var databaseConnection *pgxpool.Conn
-	var backendPid uint32
 
 	retries := 0
 	const getSessionMaxRetries = 10
@@ -130,13 +99,12 @@ func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpo
 
 	if err != nil {
 		log.Printf("[TRACE] getDatabaseConnectionWithRetries failed after %d retries: %s", retries, err)
-		return nil, 0, err
+		return nil, err
 	}
 
 	if retries > 0 {
 		log.Printf("[TRACE] getDatabaseConnectionWithRetries succeeded after %d retries", retries)
 	}
-	backendPid = databaseConnection.Conn().PgConn().PID()
 
-	return databaseConnection, uint32(backendPid), nil
+	return databaseConnection, nil
 }

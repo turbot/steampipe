@@ -2,6 +2,8 @@ package initialisation
 
 import (
 	"context"
+	"github.com/jackc/pgx/v4"
+	"log"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
@@ -70,18 +72,19 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	}
 
 	// setup the session data - prepared statements and introspection tables
-	//sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
+	sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
+	// define db connection callback function
+	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
+		err, warnings := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+		// TODO KAI how do we display wanrings
+		log.Println("[WARN]", warnings)
+		return err
+	}
 
 	// TODO KAI init session func
 	// get a client
 	statushooks.SetStatus(ctx, "Connecting to service...")
-	var client db_common.Client
-	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(ctx, connectionString)
-	} else {
-		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerDashboard)
-	}
+	client, err := GetDbClient(ctx, ensureSessionData)
 	if err != nil {
 		initData.Result.Error = err
 		return initData
@@ -105,6 +108,17 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	//})
 
 	return initData
+}
+
+func GetDbClient(ctx context.Context, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
+	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
+	} else {
+		// TODO KAI SORT OUT INVOKER
+		// when starting the database, installers may trigger their own spinners
+		client, err = db_local.GetLocalClient(ctx, constants.InvokerDashboard, onConnectionCallback)
+	}
+	return client, err
 }
 
 func (i InitData) Cleanup(ctx context.Context) {
