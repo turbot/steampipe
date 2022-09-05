@@ -1,7 +1,7 @@
 package db_common
 
 import (
-	"database/sql"
+	"github.com/jackc/pgx/v4"
 	"strings"
 
 	typeHelpers "github.com/turbot/go-kit/types"
@@ -22,7 +22,7 @@ type schemaRecord struct {
 	TableDescription  string
 }
 
-func BuildSchemaMetadata(rows *sql.Rows) (_ *schema.Metadata, err error) {
+func BuildSchemaMetadata(rows pgx.Rows) (_ *schema.Metadata, err error) {
 	utils.LogTime("db.buildSchemaMetadata start")
 	defer func() {
 		utils.LogTime("db.buildSchemaMetadata end")
@@ -69,7 +69,7 @@ func BuildSchemaMetadata(rows *sql.Rows) (_ *schema.Metadata, err error) {
 	return schemaMetadata, err
 }
 
-func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
+func getSchemaRecordsFromRows(rows pgx.Rows) ([]schemaRecord, error) {
 	utils.LogTime("db.getSchemaRecordsFromRows start")
 	defer utils.LogTime("db.getSchemaRecordsFromRows end")
 

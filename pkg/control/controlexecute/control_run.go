@@ -206,7 +206,7 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 
 	// no execute the SQL to actuall set the search path
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
-	_, err = session.Connection.ExecContext(ctx, q)
+	_, err = session.Connection.Exec(ctx, q)
 	return err
 }
 
@@ -292,7 +292,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// get a context with a timeout for the control to execute within
 	// we don't use the cancelFn from this timeout context, since usage will lead to 'pgx'
 	// prematurely closing the database connection that this query executed in
-	controlExecutionCtx := r.getControlQueryContext(ctx)
+	controlExecutionCtx := r.getControlQuery(ctx)
 
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
@@ -344,7 +344,7 @@ func (r *ControlRun) acquireSession(ctx context.Context, client db_common.Client
 }
 
 // create a context with a deadline, and with status updates disabled (we do not want to show 'loading' results)
-func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context {
+func (r *ControlRun) getControlQuery(ctx context.Context) context.Context {
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
 	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'

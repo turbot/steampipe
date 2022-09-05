@@ -1,8 +1,6 @@
 package dashboardtypes
 
 import (
-	"database/sql"
-
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
@@ -11,10 +9,11 @@ type ColumnSchema struct {
 	DataType string `json:"data_type"`
 }
 
-func NewLeafDataColumnType(sqlType *sql.ColumnType) *ColumnSchema {
+func NewLeafDataColumnType(sqlType string) *ColumnSchema {
 	return &ColumnSchema{
-		Name:     sqlType.Name(),
-		DataType: sqlType.DatabaseTypeName(),
+		Name: sqlType,
+		// TODO KAI
+		DataType: sqlType, //.DatabaseTypeName(),
 	}
 }
 

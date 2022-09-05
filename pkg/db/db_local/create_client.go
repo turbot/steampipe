@@ -2,53 +2,25 @@ package db_local
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"log"
-	"time"
-
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
+	"log"
 )
 
-func getLocalSteampipeConnectionString() (string, error) {
+func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
 
+	// load the db status
 	info, err := GetState()
 	if err != nil {
 		return "", err
 	}
 	if info == nil {
 		return "", fmt.Errorf("steampipe service is not running")
-	}
-
-	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, constants.DatabaseUser, info.Database, sslMode())
-
-	return psqlInfo, nil
-}
-
-type CreateDbOptions struct {
-	DatabaseName, Username string
-}
-
-// createLocalDbClient connects and returns a connection to the given database using
-// the provided username
-// if the database is not provided (empty), it connects to the default database in the service
-// that was created during installation.
-func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*sql.DB, error) {
-	utils.LogTime("db.createLocalDbClient start")
-	defer utils.LogTime("db.createLocalDbClient end")
-
-	// load the db status
-	info, err := GetState()
-	if err != nil {
-		return nil, err
-	}
-	if info == nil {
-		return nil, fmt.Errorf("steampipe service is not running")
 	}
 
 	// if no database name is passed, deduce it from the db status
@@ -61,19 +33,48 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*sql.DB, e
 	}
 
 	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", info.Listen[0], info.Port, opts.Username, opts.DatabaseName, sslMode())
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s",
+		info.Listen[0],
+		info.Port,
+		opts.Username,
+		opts.DatabaseName,
+		sslMode())
 
-	log.Println("[TRACE] status: ", info)
+	return psqlInfo, nil
+}
+
+type CreateDbOptions struct {
+	DatabaseName, Username string
+}
+
+// createLocalDbClient connects and returns a connection to the given database using
+// the provided username
+// if the database is not provided (empty), it connects to the default database in the service
+// that was created during installation.
+func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgxpool.Pool, error) {
+	utils.LogTime("db.createLocalDbClient start")
+	defer utils.LogTime("db.createLocalDbClient end")
+
+	psqlInfo, err := getLocalSteampipeConnectionString(opts)
+	if err != nil {
+		return nil, err
+	}
+	return db_client.EstablishConnection(ctx, p)
+	//const (
+	//	maxOpenConnections = 1
+	//	connMaxIdleTime    = 1 * time.Minute
+	//	connMaxLifetime    = 10 * time.Minute
+	//)
+	//,
+	//maxOpenConnections,
+	//	connMaxLifetime,
+	//	connMaxIdleTime
+
 	log.Println("[TRACE] Connection string: ", psqlInfo)
 
 	// connect to the database using the postgres driver
 	utils.LogTime("db.createLocalDbClient connection open start")
-	db, err := sql.Open("pgx", psqlInfo)
-	db.SetMaxOpenConns(1)
-	// close idle connections after 1 minute
-	db.SetConnMaxIdleTime(1 * time.Minute)
-	// do not re-use a connection more than 10 minutes old - force a refresh
-	db.SetConnMaxLifetime(10 * time.Minute)
+	dbPool, err := pgxpool.Connect(context.Background(), psqlInfo)
 
 	utils.LogTime("db.createLocalDbClient connection open end")
 
@@ -81,8 +82,8 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*sql.DB, e
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(ctx, db); err != nil {
+	if err := db_common.WaitForConnection(ctx, dbPool); err != nil {
 		return nil, err
 	}
-	return db, nil
+	return dbPool, nil
 }
