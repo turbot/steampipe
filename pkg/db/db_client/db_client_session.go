@@ -47,7 +47,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	session, found := c.sessions[backendPid]
 	if !found {
 		session = db_common.NewDBSession(backendPid)
-		session.LifeCycle.Add("created")
 	}
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Connection = databaseConnection
@@ -61,10 +60,10 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	// if there is no ensure session function, we are done
-	if c.ensureSessionFunc == nil {
-		return sessionResult
-	}
+	//// if there is no ensure session function, we are done
+	//if c.ensureSessionFunc == nil {
+	//	return sessionResult
+	//}
 
 	// update required session search path if needed
 	err = c.ensureSessionSearchPath(ctx, session)
@@ -72,31 +71,27 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		sessionResult.Error = err
 		return sessionResult
 	}
-
-	if !session.Initialized {
-		session.LifeCycle.Add("queued_for_init")
-
-		err := c.parallelSessionInitLock.Acquire(ctx, 1)
-		if err != nil {
-			sessionResult.Error = err
-			return sessionResult
-		}
-		c.sessionInitWaitGroup.Add(1)
-
-		session.LifeCycle.Add("init_start")
-		err, warnings := c.ensureSessionFunc(ctx, session)
-		session.LifeCycle.Add("init_finish")
-		sessionResult.Warnings = warnings
-		c.sessionInitWaitGroup.Done()
-		c.parallelSessionInitLock.Release(1)
-		if err != nil {
-			sessionResult.Error = err
-			return sessionResult
-		}
-
-		// if there is no error, mark session as initialized
-		session.Initialized = true
-	}
+	//
+	//if !session.Initialized {
+	//	err := c.parallelSessionInitLock.Acquire(ctx, 1)
+	//	if err != nil {
+	//		sessionResult.Error = err
+	//		return sessionResult
+	//	}
+	//	c.sessionInitWaitGroup.Add(1)
+	//
+	//	err, warnings := c.ensureSessionFunc(ctx, session)
+	//	sessionResult.Warnings = warnings
+	//	c.sessionInitWaitGroup.Done()
+	//	c.parallelSessionInitLock.Release(1)
+	//	if err != nil {
+	//		sessionResult.Error = err
+	//		return sessionResult
+	//	}
+	//
+	//	// if there is no error, mark session as initialized
+	//	session.Initialized = true
+	//}
 
 	// now write back to the map
 	c.sessionsMutex.Lock()

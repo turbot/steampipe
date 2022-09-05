@@ -18,8 +18,8 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString          string
-	ensureSessionFunc         db_common.EnsureSessionStateCallback
+	connectionString string
+	//ensureSessionFunc         db_common.EnsureSessionStateCallback
 	dbClient                  *pgxpool.Pool
 	requiredSessionSearchPath []string
 
@@ -51,7 +51,8 @@ func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	dbPool, err := EstablishConnection(ctx, connectionString, maxDbConnections())
+	// TODO KAI add CB
+	dbPool, err := EstablishConnection(ctx, connectionString, maxDbConnections(), nil)
 
 	if err != nil {
 		return nil, err
@@ -93,10 +94,6 @@ func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.D
 
 func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
-}
-
-func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
-	c.ensureSessionFunc = f
 }
 
 // Close implements Client
@@ -170,7 +167,8 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 
 	// close the connection
 	c.dbClient.Close()
-	db, err := EstablishConnection(ctx, c.connectionString, maxDbConnections())
+	// TODO KAI ADD CB
+	db, err := EstablishConnection(ctx, c.connectionString, maxDbConnections(), nil)
 	if err != nil {
 		return err
 	}

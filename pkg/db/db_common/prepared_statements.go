@@ -6,12 +6,13 @@ import (
 	"log"
 	"strings"
 
+	"github.com/jackc/pgx/v4"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ModResources, session *DatabaseSession) (err error, warnings []string) {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ModResources, conn *pgx.Conn) (err error, warnings []string) {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -24,7 +25,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ModRe
 	}
 
 	for name, sql := range sqlMap {
-		if _, err := session.Connection.Exec(ctx, sql); err != nil {
+		if _, err := conn.Exec(ctx, sql); err != nil {
 			warnings = append(warnings, fmt.Sprintf("failed to create prepared statement for %s: %v", name, err))
 		}
 	}
