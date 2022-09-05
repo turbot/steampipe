@@ -5,11 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -243,14 +242,11 @@ func (c *DbClient) startQuery(ctx context.Context, query string, conn *pgxpool.C
 }
 
 func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryresult.Result, timingCallback func()) {
-	timingDoneChan := make(chan (bool))
-
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. clear the status indication
 		statushooks.Done(ctx)
-		close(timingDoneChan)
-		// call the timing callback one last time BEFORE closing the rows
+		// call the timing callback BEFORE closing the rows
 		timingCallback()
 		// close the sql rows object
 		rows.Close()
@@ -285,51 +281,13 @@ func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryres
 			}
 			// update the status message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
-			status := fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount))
-			statushooks.SetStatus(ctx, status)
+			statushooks.SetStatus(ctx, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
 		if !continueToNext {
 			break
 		}
 	}
-}
-
-func buildTimingString(result *queryresult.Result) string {
-	timingResult := <-result.TimingResult
-	var sb strings.Builder
-	// large numbers should be formatted with commas
-	p := message.NewPrinter(language.English)
-
-	milliseconds := float64(timingResult.Duration.Microseconds()) / 1000
-	seconds := timingResult.Duration.Seconds()
-	if seconds < 0.5 {
-		sb.WriteString(p.Sprintf("\nTime: %dms.", int64(milliseconds)))
-	} else {
-		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
-	}
-
-	if timingMetadata := timingResult.Metadata; timingMetadata != nil {
-		totalRows := timingMetadata.RowsFetched + timingMetadata.CachedRowsFetched
-		sb.WriteString(" Rows fetched: ")
-		if totalRows == 0 {
-			sb.WriteString("0")
-		} else {
-			if totalRows > 0 {
-				sb.WriteString(p.Sprintf("%d", timingMetadata.RowsFetched+timingMetadata.CachedRowsFetched))
-			}
-			if timingMetadata.CachedRowsFetched > 0 {
-				if timingMetadata.RowsFetched == 0 {
-					sb.WriteString(" (cached)")
-				} else {
-					sb.WriteString(p.Sprintf(" (%d cached)", timingMetadata.CachedRowsFetched))
-				}
-			}
-		}
-		sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
-	}
-
-	return sb.String()
 }
 
 func isStreamingOutput(outputFormat string) bool {

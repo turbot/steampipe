@@ -3,10 +3,10 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"time"
 
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
