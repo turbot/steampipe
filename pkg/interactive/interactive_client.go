@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/alecthomas/chroma/formatters"
 	"github.com/alecthomas/chroma/lexers"
@@ -19,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/metaquery"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
@@ -338,9 +340,14 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	} else {
 		// otherwise execute query
+		t := time.Now()
 		result, err := c.client().Execute(queryContext, query)
 		if err != nil {
 			utils.ShowError(ctx, utils.HandleCancelError(err))
+			// if timing flag is enabled, show the time taken for the query to fail
+			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+				display.DisplayErrorTiming(t)
+			}
 		} else {
 			c.resultsStreamer.StreamResult(result)
 		}
