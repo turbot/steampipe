@@ -20,8 +20,7 @@ type RowResult struct {
 }
 type Result struct {
 	RowChan      *chan *RowResult
-	ColNames     []string
-	ColTypes     []string
+	Cols         []*ColumnDef
 	TimingResult chan *TimingResult
 }
 
@@ -37,20 +36,18 @@ func (r Result) StreamRow(rowResult []interface{}) {
 func (r Result) StreamError(err error) {
 	*r.RowChan <- &RowResult{Error: err}
 }
+func NewQueryResult(cols []*ColumnDef) *Result {
 
-func NewQueryResult(colNames, colTypes []string) *Result {
 	rowChan := make(chan *RowResult)
 	return &Result{
 		RowChan:      &rowChan,
-		ColNames:     colNames,
-		ColTypes:     colTypes,
+		Cols:         cols,
 		TimingResult: make(chan *TimingResult, 1),
 	}
 }
 
 type SyncQueryResult struct {
 	Rows         []interface{}
-	ColNames     []string
-	ColTypes     []string
+	Cols         []*ColumnDef
 	TimingResult *TimingResult
 }

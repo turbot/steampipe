@@ -109,8 +109,8 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 func displayLine(ctx context.Context, result *queryresult.Result) {
 
 	maxColNameLength := 0
-	for _, colName := range result.ColNames {
-		thisLength := utf8.RuneCountInString(colName)
+	for _, col := range result.Cols {
+		thisLength := utf8.RuneCountInString(col.Name)
 		if thisLength > maxColNameLength {
 			maxColNameLength = thisLength
 		}
@@ -119,7 +119,7 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 
 	// define a function to display each row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		recordAsString, _ := ColumnValuesAsString(row, result.ColTypes)
+		recordAsString, _ := ColumnValuesAsString(row, result.Cols)
 		requiredTerminalColumnsForValuesOfRecord := 0
 		for _, colValue := range recordAsString {
 			colRequired := getTerminalColumnsRequiredForString(colValue)
@@ -135,12 +135,12 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 		for idx, column := range recordAsString {
 			lines := strings.Split(column, "\n")
 			if len(lines) == 1 {
-				fmt.Printf(lineFormat, result.ColNames[idx], lines[0])
+				fmt.Printf(lineFormat, result.Cols[idx].Name, lines[0])
 			} else {
 				for lineIdx, line := range lines {
 					if lineIdx == 0 {
 						// the first line
-						fmt.Printf(multiLineFormat, result.ColNames[idx], line)
+						fmt.Printf(multiLineFormat, result.Cols[idx].Name, line)
 					} else {
 						// next lines
 						fmt.Printf(multiLineFormat, "", line)
@@ -183,9 +183,9 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 	// define function to add each row to the JSON output
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		record := map[string]interface{}{}
-		for idx, colType := range result.ColTypes {
-			value, _ := ParseJSONOutputColumnValue(row[idx], colType)
-			record[colType.Name()] = value
+		for idx, col := range result.Cols {
+			value, _ := ParseJSONOutputColumnValue(row[idx], col)
+			record[col.Name] = value
 		}
 		jsonOutput = append(jsonOutput, record)
 	}
@@ -210,13 +210,13 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
 	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
-		_ = csvWriter.Write(ColumnNames(result.ColTypes))
+		_ = csvWriter.Write(ColumnNames(result.Cols))
 	}
 
 	// print the data as it comes
 	// define function display each csv row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
+		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
 		_ = csvWriter.Write(rowAsString)
 	}
 
@@ -243,12 +243,12 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 	t.Style().Format.Header = text.FormatDefault
 
 	colConfigs := []table.ColumnConfig{}
-	headers := make(table.Row, len(result.ColTypes))
+	headers := make(table.Row, len(result.Cols))
 
-	for idx, column := range result.ColTypes {
-		headers[idx] = column.Name()
+	for idx, column := range result.Cols {
+		headers[idx] = column.Name
 		colConfigs = append(colConfigs, table.ColumnConfig{
-			Name:     column.Name(),
+			Name:     column.Name,
 			Number:   idx + 1,
 			WidthMax: constants.MaxColumnWidth,
 		})
@@ -261,7 +261,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// define a function to execute for each row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
+		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
 			rowObj = append(rowObj, col)

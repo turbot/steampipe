@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4"
@@ -49,7 +48,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 	if err != nil {
 		return nil, err
 	}
-	syncResult := &queryresult.SyncQueryResult{ColTypes: result.ColTypes}
+	syncResult := &queryresult.SyncQueryResult{Cols: result.Cols}
 	for row := range *result.RowChan {
 		select {
 		case <-ctx.Done():
@@ -87,7 +86,7 @@ func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Resu
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
 	if query == "" {
-		return queryresult.NewQueryResult(nil, nil), nil
+		return queryresult.NewQueryResult(nil), nil
 	}
 
 	// fail-safes
@@ -125,9 +124,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		return
 	}
 
-	colNames, colTypes := fieldDescriptionsToColumns(rows.FieldDescriptions(), session.Connection.Conn())
+	colDefs := fieldDescriptionsToColumns(rows.FieldDescriptions(), session.Connection.Conn())
 
-	result := queryresult.NewQueryResult(colNames, colTypes)
+	result := queryresult.NewQueryResult(colDefs)
 
 	// read the rows in a go routine
 	go func() {
@@ -272,7 +271,7 @@ func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryres
 			statushooks.SetStatus(ctx, "Cancelling query")
 			continueToNext = false
 		default:
-			if rowResult, err := readRowContext(ctx, rows, result.ColNames, result.ColTypes); err != nil {
+			if rowResult, err := readRowContext(ctx, rows, result.Cols); err != nil {
 				result.StreamError(err)
 				continueToNext = false
 			} else {
@@ -337,12 +336,12 @@ func isStreamingOutput(outputFormat string) bool {
 	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }
 
-func readRowContext(ctx context.Context, rows pgx.Rows, cols []string, colTypes []string) ([]interface{}, error) {
+func readRowContext(ctx context.Context, rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
 	c := make(chan bool, 1)
 	var readRowResult []interface{}
 	var readRowError error
 	go func() {
-		readRowResult, readRowError = readRow(rows, cols, colTypes)
+		readRowResult, readRowError = readRow(rows, cols)
 		close(c)
 	}()
 
@@ -355,7 +354,7 @@ func readRowContext(ctx context.Context, rows pgx.Rows, cols []string, colTypes 
 
 }
 
-func readRow(rows pgx.Rows, cols []string, colTypes []string) ([]interface{}, error) {
+func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
 	// slice of interfaces to receive the row data
 	columnValues := make([]interface{}, len(cols))
 	// make a slice of pointers to the result to pass to scan
@@ -368,23 +367,22 @@ func readRow(rows pgx.Rows, cols []string, colTypes []string) ([]interface{}, er
 		// return error, handling cancellation error explicitly
 		return nil, utils.HandleCancelError(err)
 	}
-	return populateRow(columnValues, colTypes)
+	return populateRow(columnValues, cols)
 }
 
-func populateRow(columnValues []interface{}, colTypes []string) ([]interface{}, error) {
+func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]interface{}, error) {
 	result := make([]interface{}, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
-			colType := colTypes[i]
-			// TODO KAI
-			dbType := colType //.DatabaseTypeName()
-			switch dbType {
-			case "JSON", "JSONB":
-				var val interface{}
-				if err := json.Unmarshal(columnValue.([]byte), &val); err != nil {
-					return result, err
-				}
-				result[i] = val
+
+			switch cols[i].DataType {
+			// TODO KAI SEEMS NOT NECESSARY WITH PGX
+			//case "JSON", "JSONB":
+			//	var val interface{}
+			//	if err := json.Unmarshal(columnValue.([]byte), &val); err != nil {
+			//		return result, err
+			//	}
+			//	result[i] = val
 			default:
 				result[i] = columnValue
 			}

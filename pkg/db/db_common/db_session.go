@@ -50,12 +50,8 @@ func (s *DatabaseSession) Close(waitForCleanup bool) {
 			//	}
 			//})
 		}
-
-		s.Connection.Release()
-		s.Connection = nil
 	}
-	c := s.Connection
+	s.Connection.Release()
 	s.Connection = nil
-	c.Release()
 
 }
