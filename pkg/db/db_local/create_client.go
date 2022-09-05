@@ -57,6 +57,7 @@ type CreateDbOptions struct {
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
+// NOTE: no session data callback is used - no sesison data will be present
 func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgxpool.Pool, error) {
 	utils.LogTime("db.createLocalDbClient start")
 	defer utils.LogTime("db.createLocalDbClient end")
@@ -65,7 +66,6 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgxpool.P
 	if err != nil {
 		return nil, err
 	}
-	// TODO KAI CB
-	return db_client.EstablishConnection(ctx, psqlInfo, 1, nil)
 
+	return db_client.EstablishConnection(ctx, psqlInfo, 0, 1, nil)
 }

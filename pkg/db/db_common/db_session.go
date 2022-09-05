@@ -7,7 +7,6 @@ import (
 
 // DatabaseSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
 type DatabaseSession struct {
-	BackendPid  uint32    `json:"backend_pid"`
 	UsedCount   int       `json:"used"`
 	LastUsed    time.Time `json:"last_used"`
 	SearchPath  []string  `json:"-"`
@@ -20,10 +19,8 @@ type DatabaseSession struct {
 	ScanMetadataMaxId int64 `json:"-"`
 }
 
-func NewDBSession(backendPid uint32) *DatabaseSession {
-	return &DatabaseSession{
-		BackendPid: backendPid,
-	}
+func NewDBSession() *DatabaseSession {
+	return &DatabaseSession{}
 }
 
 // UpdateUsage updates the UsedCount of the DatabaseSession and also the lastUsed time
