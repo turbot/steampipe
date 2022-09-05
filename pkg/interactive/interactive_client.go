@@ -96,7 +96,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, results
 // InteractivePrompt starts an interactive prompt and return
 func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	// start a cancel handler for the interactive client - this will call activeQueryCancelFunc if it is set
-	// (registered when we call createQuery)
+	// (registered when we call createQueryContext)
 	quitChannel := c.startCancelHandler()
 
 	// create a cancel context for the prompt - this will set c.cancelPrompt
@@ -329,10 +329,10 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	// we successfully retrieved a query
 
 	// create a  context for the execution of the query
-	queryContext := c.createQuery(ctx)
+	queryCtx := c.createQueryContext(ctx)
 
 	if metaquery.IsMetaQuery(query) {
-		if err := c.executeMetaquery(queryContext, query); err != nil {
+		if err := c.executeMetaquery(queryCtx, query); err != nil {
 			utils.ShowError(ctx, err)
 		}
 		// cancel the context
@@ -341,7 +341,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		// otherwise execute query
 		t := time.Now()
-		result, err := c.client().Execute(queryContext, query)
+		result, err := c.client().Execute(queryCtx, query)
 		if err != nil {
 			utils.ShowError(ctx, utils.HandleCancelError(err))
 			// if timing flag is enabled, show the time taken for the query to fail
@@ -377,7 +377,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
-		Query := c.createQuery(ctx)
+		queryCtx := c.createQueryContext(ctx)
 		defer func() {
 			// cancel this context
 			c.cancelActiveQueryIfAny()
@@ -385,7 +385,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 
 		statushooks.SetStatus(ctx, "Initializing...")
 		// wait for client initialisation to complete
-		err := c.waitForInitData(Query)
+		err := c.waitForInitData(queryCtx)
 		statushooks.Done(ctx)
 		if err != nil {
 			// clear history entry
