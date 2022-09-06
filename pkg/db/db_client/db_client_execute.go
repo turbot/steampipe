@@ -247,12 +247,10 @@ func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn)
 }
 
 func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryresult.Result, timingCallback func()) {
-	timingDoneChan := make(chan (bool))
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. clear the status indication
 		statushooks.Done(ctx)
-		close(timingDoneChan)
 		// call the timing callback BEFORE closing the rows
 		timingCallback()
 		// close the sql rows object
@@ -279,26 +277,9 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 		return
 	}
 
+	t := time.Now()
 	timingString := ""
 	count := 0
-	timer := time.NewTimer(50 * time.Millisecond)
-	if c.shouldShowTiming() {
-
-		go func() {
-			for {
-				select {
-				case <-timingDoneChan:
-					return
-				case <-timer.C:
-					// timingCallback()
-					// timingString = buildTimingString(result)
-					timingString = fmt.Sprintf("Tick at %d", count)
-					count++
-				}
-			}
-		}()
-	}
-
 	for rows.Next() {
 		continueToNext := true
 		select {
@@ -306,6 +287,16 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 			statushooks.SetStatus(ctx, "Cancelling query")
 			continueToNext = false
 		default:
+			if time.Since(t) > 20*time.Millisecond {
+				t = time.Now()
+				go func() {
+					// timingCallback()
+					// timingString = buildTimingString(result)
+					timingString = fmt.Sprintf("Tick at %d", count)
+					count++
+				}()
+			}
+
 			if rowResult, err := readRowContext(ctx, rows, cols, colTypes); err != nil {
 				result.StreamError(err)
 				continueToNext = false
@@ -323,7 +314,6 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 			status := fmt.Sprintf("Loading results: %3s %s", humanizeRowCount(rowCount), timingString)
 			statushooks.SetStatus(ctx, status)
 			rowCount++
-			count++
 		}
 		if !continueToNext {
 			break
