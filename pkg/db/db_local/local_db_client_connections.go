@@ -3,7 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v4"
 	"log"
 	"strings"
 
@@ -70,7 +70,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 		res.Error = err
 		return res
 	}
-	defer rootClient.Close()
+	defer rootClient.Close(ctx)
 
 	numUpdates := len(connectionUpdates.Update)
 	log.Printf("[TRACE] executeConnectionUpdateQueries: num updates %d", numUpdates)
@@ -105,7 +105,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	return res
 }
 
-func executeUpdateQueries(ctx context.Context, rootClient *pgxpool.Pool, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
+func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
 	idx := 0
 	numUpdates := len(updates)
 

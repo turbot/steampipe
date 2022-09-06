@@ -4,18 +4,20 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v4"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pluginmanager"
 
+	"github.com/sethvargo/go-retry"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -84,7 +86,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			res.Error = err
 			res.Status = ServiceFailedToStart
 		}
-		defer rootClient.Close()
+		defer rootClient.Close(ctx)
 		// so db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
@@ -188,7 +190,20 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	databaseName, err := getDatabaseName(ctx, port)
+	// sometimes connecting to the db immediately after startup results in a dial error - so retry
+	backoff, err := retry.NewConstant(100 * time.Millisecond)
+	if err != nil {
+		return res.SetError(err)
+	}
+	var databaseName string
+	err = retry.Do(ctx, retry.WithMaxRetries(5, backoff), func(ctx context.Context) error {
+		log.Printf("[WARN] RETRY MAINTENANCE CLIENT")
+		databaseName, err = getDatabaseName(ctx, port)
+		if err != nil {
+			return retry.RetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -224,7 +239,7 @@ func ensureService(ctx context.Context, databaseName string) error {
 	if err != nil {
 		return err
 	}
-	defer rootClient.Close()
+	defer rootClient.Close(ctx)
 
 	// ensure the foreign server exists in the database
 	err = ensureSteampipeServer(ctx, rootClient)
@@ -312,7 +327,7 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 	if err != nil {
 		return "", err
 	}
-	defer connection.Close()
+	defer connection.Close(ctx)
 
 	out := connection.QueryRow(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
 
@@ -429,7 +444,7 @@ func setServicePassword(ctx context.Context, password string) error {
 	if err != nil {
 		return err
 	}
-	defer connection.Close()
+	defer connection.Close(ctx)
 	_, err = connection.Exec(ctx, fmt.Sprintf(`alter user steampipe with password '%s'`, password))
 	return err
 }
@@ -484,7 +499,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 }
 
 // ensures that the necessary extensions are installed on the database
-func ensurePgExtensions(ctx context.Context, rootClient *pgxpool.Pool) error {
+func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 	extensions := []string{
 		"tablefunc",
 		"ltree",
@@ -503,7 +518,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgxpool.Pool) error {
 // ensures that the 'steampipe' foreign server exists
 //
 //	(re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(ctx context.Context, rootClient *pgxpool.Pool) error {
+func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 	res := rootClient.QueryRow(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 
 	var serverName string
@@ -516,7 +531,7 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgxpool.Pool) error 
 }
 
 // create the command schema and grant insert permission
-func ensureCommandSchema(ctx context.Context, rootClient *pgxpool.Pool) error {
+func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 	commandSchemaStatements := []string{
 		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableCache),
@@ -533,7 +548,7 @@ func ensureCommandSchema(ctx context.Context, rootClient *pgxpool.Pool) error {
 
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgxpool.Pool) error {
+func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgx.Conn) error {
 	_, err := rootClient.Exec(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
 	if err != nil {
 		return err

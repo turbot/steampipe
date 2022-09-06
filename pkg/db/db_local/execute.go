@@ -13,7 +13,7 @@ func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.Comma
 	if err != nil {
 		return nil, err
 	}
-	defer rootClient.Close()
+	defer rootClient.Close(ctx)
 	for _, statement := range statements {
 		result, err := rootClient.Exec(ctx, statement)
 		if err != nil {
