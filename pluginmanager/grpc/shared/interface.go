@@ -26,6 +26,7 @@ var Handshake = plugin.HandshakeConfig{
 // PluginManager is the interface for the plugin manager service
 type PluginManager interface {
 	Get(req *pb.GetRequest) (*pb.GetResponse, error)
+	GetConnections(req *pb.GetConnectionsRequest) (*pb.GetConnectionsResponse, error)
 	Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error)
 }
 
