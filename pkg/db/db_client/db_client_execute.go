@@ -290,9 +290,9 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 			if time.Since(t) > 20*time.Millisecond {
 				t = time.Now()
 				go func() {
-					// timingCallback()
-					// timingString = buildTimingString(result)
-					timingString = fmt.Sprintf("Tick at %d", count)
+					timingCallback()
+					timingString = buildTimingString(result)
+					// timingString = fmt.Sprintf("Tick at %d", count)
 					count++
 				}()
 			}
