@@ -56,13 +56,11 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	log.Printf("[WARN] NewDbClient")
 	wg := &sync.WaitGroup{}
 	// wrap onConnectionCallback to use wait group
 	var wrappedOnConnectionCallback DbConnectionCallback
 	if onConnectionCallback != nil {
 		wrappedOnConnectionCallback = func(ctx context.Context, conn *pgx.Conn) error {
-			log.Printf("[WARN] onConnectionCallback")
 			wg.Add(1)
 			defer wg.Done()
 			return onConnectionCallback(ctx, conn)

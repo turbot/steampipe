@@ -6,13 +6,11 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
 )
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
 func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx.Conn) (err error, warnings []string) {
-	log.Printf("[WARN] ENSURE SESSION DATA!!!!!!!")
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 

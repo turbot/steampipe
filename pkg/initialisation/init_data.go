@@ -3,8 +3,6 @@ package initialisation
 import (
 	"context"
 	"github.com/jackc/pgx/v4"
-	"log"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -75,9 +73,9 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, invoker constants.
 	sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
-		err, warnings := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+		err, _ := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 		// TODO KAI how do we display wanrings
-		log.Println("[WARN]", warnings)
+		//log.Println("[WARN]", warnings)
 		return err
 	}
 
