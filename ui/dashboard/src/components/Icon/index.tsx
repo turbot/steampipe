@@ -135,7 +135,7 @@ const convertIconName = (name) => {
   return kebabCase(condensedName);
 };
 
-const getIcon = (name: string) => {
+const getDashboardIconName = (name?: string | null) => {
   if (!name) {
     return null;
   }
@@ -175,7 +175,7 @@ interface IconProps {
 }
 
 const Icon = ({ className = "h-6 w-6", icon }: IconProps) => {
-  const MatchingIcon = icons[getIcon(icon)];
+  const MatchingIcon = icons[getDashboardIconName(icon)];
   if (!MatchingIcon) {
     return null;
   }
@@ -183,3 +183,5 @@ const Icon = ({ className = "h-6 w-6", icon }: IconProps) => {
 };
 
 export default Icon;
+
+export { getDashboardIconName };
