@@ -66,7 +66,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
 	// get a database connection from the pool
-	databaseConnection, err := c.dbClient.Acquire(ctx)
+	databaseConnection, err := c.pool.Acquire(ctx)
 	if err != nil {
 		if databaseConnection != nil {
 			databaseConnection.Release()

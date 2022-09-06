@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-// TODO KAI CHECK THIS RETURNS PG FORMAT TYPES
 // ColumnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.
 func columnTypeDatabaseTypeName(field pgproto3.FieldDescription, connection *pgx.Conn) (typeName string, scanType reflect.Type) {
 	if dt, ok := connection.ConnInfo().DataTypeForOID(field.DataTypeOID); ok {

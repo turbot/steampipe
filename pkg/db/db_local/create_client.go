@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_client"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -67,5 +67,13 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 		return nil, err
 	}
 
-	return db_client.EstablishConnection(ctx, psqlInfo)
+	conn, err := pgx.Connect(ctx, psqlInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db_common.WaitForConnection(ctx, conn); err != nil {
+		return nil, err
+	}
+	return conn, nil
 }

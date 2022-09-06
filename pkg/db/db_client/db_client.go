@@ -23,7 +23,7 @@ import (
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
 	connectionString          string
-	dbClient                  *pgxpool.Pool
+	pool                      *pgxpool.Pool
 	requiredSessionSearchPath []string
 
 	// concurrency management for db session access
@@ -69,19 +69,12 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		}
 	}
 
-	minConnections := maxDbConnections()
-	dbPool, err := EstablishConnectionPool(ctx, connectionString, minConnections, maxDbConnections(), wrappedOnConnectionCallback)
-	if err != nil {
-		return nil, err
-	}
-
 	pluginManager, err := pluginmanager.GetPluginManager()
 	if err != nil {
 		return nil, err
 	}
 
 	client := &DbClient{
-		dbClient: dbPool,
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
 		sessionInitWaitGroup: wg,
@@ -93,10 +86,13 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		// store the callback
 		onConnectionCallback: wrappedOnConnectionCallback,
 		// store the plugin manager client
-		pluginManager: pluginManager,
+		pluginManager:    pluginManager,
+		connectionString: connectionString,
 	}
 
-	client.connectionString = connectionString
+	if err := client.establishConnectionPool(ctx); err != nil {
+		return nil, err
+	}
 
 	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
 	if err := client.LoadForeignSchemaNames(ctx); err != nil {
@@ -126,12 +122,12 @@ func (c *DbClient) shouldShowTiming() bool {
 // Close implements Client
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close(context.Context) error {
-	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
-	if c.dbClient != nil {
+	log.Printf("[TRACE] DbClient.Close %v", c.pool)
+	if c.pool != nil {
 		c.sessionInitWaitGroup.Wait()
 		// clear the sessions map - so that we can't reuse it
 		c.sessions = nil
-		c.dbClient.Close()
+		c.pool.Close()
 	}
 
 	return nil
@@ -180,16 +176,11 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	c.sessionInitWaitGroup.Wait()
 
 	// TODO kai think about this - will this solve all our file watching issues?
-
-	// close the connection
-	c.dbClient.Close()
-	const minConnections = 2
-
-	db, err := EstablishConnectionPool(ctx, c.connectionString, minConnections, maxDbConnections(), c.onConnectionCallback)
-	if err != nil {
+	// close the connection pool and recreate
+	c.pool.Close()
+	if err := c.establishConnectionPool(ctx); err != nil {
 		return err
 	}
-	c.dbClient = db
 
 	return nil
 }
@@ -210,7 +201,7 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampi
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
-	connection, err := c.dbClient.Acquire(ctx)
+	connection, err := c.pool.Acquire(ctx)
 	utils.FailOnError(err)
 
 	query := c.buildSchemasQuery()

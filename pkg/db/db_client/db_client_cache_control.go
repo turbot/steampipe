@@ -23,7 +23,7 @@ func (c *DbClient) CacheClear(ctx context.Context) error {
 }
 
 func (c *DbClient) executeCacheCommand(ctx context.Context, controlCommand string) error {
-	_, err := c.dbClient.Exec(ctx, fmt.Sprintf(
+	_, err := c.pool.Exec(ctx, fmt.Sprintf(
 		"insert into %s.%s (%s) values ('%s')",
 		constants.CommandSchema,
 		constants.CommandTableCache,
