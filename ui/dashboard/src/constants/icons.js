@@ -1,37 +1,37 @@
 import {
-  ArrowsExpandIcon as ArrowsExpandIconOutline,
+  ArrowDownOnSquareIcon as ArrowDownOnSquareIconOutline,
+  ArrowsPointingOutIcon as ArrowsPointingOutIconOutline,
+  BackwardIcon as BackwardIconOutline,
   ChevronDownIcon as ChevronDownIconOutline,
   ChevronUpIcon as ChevronUpIconOutline,
-  ClipboardListIcon as ClipboardListIconOutline,
+  ClipboardDocumentListIcon as ClipboardDocumentListIconOutline,
+  MagnifyingGlassIcon as MagnifyingGlassIconOutline,
   MinusIcon as MinusIconOutline,
   PlusIcon as PlusIconOutline,
-  RewindIcon as RewindIconOutline,
-  SearchIcon as SearchIconOutline,
-  SaveIcon as SaveIconOutline,
-  XIcon as XIconOutline,
-} from "@heroicons/react/outline";
+  XMarkIcon as XMarkIconOutline,
+} from "@heroicons/react/24/outline";
 import {
-  ArrowCircleRightIcon as ArrowCircleRightIconSolid,
-  BanIcon as BanIconSolid,
+  ArrowRightCircleIcon as ArrowRightCircleIconSolid,
   BellIcon as BellIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
   ChevronDownIcon as ChevronDownIconSolid,
   ChevronUpIcon as ChevronUpIconSolid,
-  ClipboardCheckIcon as ClipboardCheckIconSolid,
+  ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid,
   ExclamationCircleIcon as ExclamationCircleIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
+  NoSymbolIcon as NoSymbolIconSolid,
   QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
-} from "@heroicons/react/solid";
+} from "@heroicons/react/24/solid";
 
 // General
-export const ClearIcon = XIconOutline;
-export const CloseIcon = XIconOutline;
-export const CopyToClipboardIcon = ClipboardListIconOutline;
-export const CopyToClipboardSuccessIcon = ClipboardCheckIconSolid;
+export const ClearIcon = XMarkIconOutline;
+export const CloseIcon = XMarkIconOutline;
+export const CopyToClipboardIcon = ClipboardDocumentListIconOutline;
+export const CopyToClipboardSuccessIcon = ClipboardDocumentCheckIconSolid;
 export const ErrorIcon = ExclamationCircleIconSolid;
-export const SearchIcon = SearchIconOutline;
-export const SubmitIcon = SaveIconOutline;
-export const ZoomIcon = ArrowsExpandIconOutline;
+export const SearchIcon = MagnifyingGlassIconOutline;
+export const SubmitIcon = ArrowDownOnSquareIconOutline;
+export const ZoomIcon = ArrowsPointingOutIconOutline;
 
 // Check
 export const CollapseBenchmarkIcon = ChevronUpIconOutline;
@@ -39,16 +39,16 @@ export const ExpandCheckNodeIcon = ChevronDownIconOutline;
 
 // Control
 export const AlarmIcon = BellIconSolid;
-export const EmptyIcon = BanIconSolid;
+export const EmptyIcon = NoSymbolIconSolid;
 export const InfoIcon = InformationCircleIconSolid;
 export const OKIcon = CheckCircleIconSolid;
-export const SkipIcon = ArrowCircleRightIconSolid;
+export const SkipIcon = ArrowRightCircleIconSolid;
 export const UnknownIcon = QuestionMarkCircleIconSolid;
 
 // Graph
 export const ZoomInIcon = PlusIconOutline;
 export const ZoomOutIcon = MinusIconOutline;
-export const ResetLayoutIcon = RewindIconOutline;
+export const ResetLayoutIcon = BackwardIconOutline;
 
 // Table
 export const SortAscendingIcon = ChevronUpIconSolid;

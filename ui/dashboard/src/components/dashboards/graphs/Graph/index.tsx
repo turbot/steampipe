@@ -23,6 +23,7 @@ import {
 import { getGraphComponent } from "..";
 import { GraphProperties, GraphProps } from "../types";
 import { GraphProvider, useGraph } from "../common/useGraph";
+import { KeyValueStringPairs } from "../../common/types";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -31,8 +32,6 @@ import {
   ZoomOutIcon,
 } from "../../../../constants/icons";
 import { useEffect, useMemo } from "react";
-import { useTooltips } from "./Tooltip";
-import { KeyValueStringPairs } from "../../common/types";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -286,7 +285,6 @@ const CustomControls = () => {
 
 const Graph = ({ props }) => {
   const graphOptions = useGraphOptions(props);
-  const { closeTooltips } = useTooltips();
 
   return (
     <ReactFlow
@@ -298,7 +296,6 @@ const Graph = ({ props }) => {
       nodeTypes={nodeTypes}
       onEdgesChange={graphOptions.onEdgesChange}
       onNodesChange={graphOptions.onNodesChange}
-      onPaneClick={() => closeTooltips()}
       preventScrolling={false}
       proOptions={{
         account: "paid-pro",

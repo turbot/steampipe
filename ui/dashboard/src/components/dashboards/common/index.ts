@@ -394,7 +394,10 @@ const getCategoriesWithFold = (categories: CategoryMap): CategoryMap => {
   }
   return Object.entries(categories)
     .filter(([_, info]) => !!info.fold)
-    .reduce((res, [category, info]) => ((res[category] = info), res), {});
+    .reduce((res, [category, info]) => {
+      res[category] = info;
+      return res;
+    }, {});
 };
 
 const foldNodesAndEdges = (
@@ -440,7 +443,7 @@ const foldNodesAndEdges = (
     const categoryEdgeGroupings: KeyValuePairs = {};
 
     // Iterate over the category nodes
-    for (const [_, node] of categoryNodesById) {
+    for (const [, node] of categoryNodesById) {
       let sourceNodes: string[] = [];
       let targetNodes: string[] = [];
 
@@ -487,7 +490,7 @@ const foldNodesAndEdges = (
     }
 
     // Find any nodes that can be folded
-    for (const [_, groupingInfo] of Object.entries(categoryEdgeGroupings)
+    for (const [, groupingInfo] of Object.entries(categoryEdgeGroupings)
       // @ts-ignore
       .filter(
         ([_, g]) =>
