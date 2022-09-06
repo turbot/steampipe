@@ -2,18 +2,10 @@ package db_local
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"log"
-	"net"
-	"os"
-	"os/exec"
-	"sync"
-	"time"
-
 	"github.com/fatih/color"
+	"github.com/jackc/pgx/v4"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -23,6 +15,11 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"sync"
 )
 
 var ensureMux sync.Mutex
@@ -308,7 +305,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 	defer func() {
 		statushooks.SetStatus(ctx, "Completing configuration")
-		client.Close()
+		client.Close(ctx)
 		doThreeStepPostgresExit(ctx, process)
 	}()
 
@@ -368,44 +365,22 @@ func resolveDatabaseName(oldDbName *string) string {
 
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database and superuser
-func createMaintenanceClient(ctx context.Context, port int) (*pgxpool.Pool, error) {
-	const (
-		maxOpenConnections = 1
-		connMaxIdleTime    = 1 * time.Minute
-		connMaxLifetime    = 10 * time.Minute
-	)
-
+func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 
 	log.Println("[TRACE] Connection string: ", connStr)
 
-	config, err := pgxpool.ParseConfig(connStr)
-	if err != nil {
-		return nil, err
-	}
-	config.MaxConns = int32(maxOpenConnections)
-	config.MinConns = int32(0)
-	config.MaxConnLifetime = connMaxLifetime
-	config.MaxConnIdleTime = connMaxIdleTime
-
-	db, err := sql.Open("pgx", connStr)
-	if err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(1)
-	// connect to the database using the postgres driver
 	utils.LogTime("db_local.createClient connection open start")
-	dbPool, err := pgxpool.ConnectConfig(context.Background(), config)
+	conn, err := pgx.Connect(context.Background(), connStr)
 	utils.LogTime("db_local.createClient connection open end")
-
 	if err != nil {
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(ctx, dbPool); err != nil {
+	if err := db_common.WaitForConnection(ctx, conn); err != nil {
 		return nil, err
 	}
-	return dbPool, nil
+	return conn, nil
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
@@ -496,7 +471,7 @@ func initDatabase() error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
-func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgxpool.Pool) error {
+func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {
 	utils.LogTime("db_local.install.installDatabaseWithPermissions start")
 	defer utils.LogTime("db_local.install.installDatabaseWithPermissions end")
 
@@ -569,7 +544,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(ctx context.Context, rawClient *pgxpool.Pool) error {
+func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 

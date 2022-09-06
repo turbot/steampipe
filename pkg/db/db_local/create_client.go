@@ -3,7 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -58,7 +58,7 @@ type CreateDbOptions struct {
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
 // NOTE: no session data callback is used - no sesison data will be present
-func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgxpool.Pool, error) {
+func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
 	utils.LogTime("db.createLocalDbClient start")
 	defer utils.LogTime("db.createLocalDbClient end")
 
@@ -67,5 +67,5 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgxpool.P
 		return nil, err
 	}
 
-	return db_client.EstablishConnection(ctx, psqlInfo, 0, 1, nil)
+	return db_client.EstablishConnection(ctx, psqlInfo)
 }

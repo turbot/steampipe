@@ -50,15 +50,18 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	log.Printf("[WARN] NewDbClient")
 	wg := &sync.WaitGroup{}
 	// wrap onConnectionCallback to use wait group
-	wrappedOnConnectionCallback := func(ctx context.Context, conn *pgx.Conn) error {
-		log.Printf("[WARN] onConnectionCallback")
-		wg.Add(1)
-		defer wg.Done()
-		return onConnectionCallback(ctx, conn)
+	var wrappedOnConnectionCallback DbConnectionCallback
+	if onConnectionCallback != nil {
+		wrappedOnConnectionCallback = func(ctx context.Context, conn *pgx.Conn) error {
+			log.Printf("[WARN] onConnectionCallback")
+			wg.Add(1)
+			defer wg.Done()
+			return onConnectionCallback(ctx, conn)
+		}
 	}
 
 	const minConnections = 2
-	dbPool, err := EstablishConnection(ctx, connectionString, minConnections, maxDbConnections(), wrappedOnConnectionCallback)
+	dbPool, err := EstablishConnectionPool(ctx, connectionString, minConnections, maxDbConnections(), wrappedOnConnectionCallback)
 
 	if err != nil {
 		return nil, err
@@ -174,7 +177,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	c.dbClient.Close()
 	const minConnections = 2
 
-	db, err := EstablishConnection(ctx, c.connectionString, minConnections, maxDbConnections(), c.onConnectionCallback)
+	db, err := EstablishConnectionPool(ctx, c.connectionString, minConnections, maxDbConnections(), c.onConnectionCallback)
 	if err != nil {
 		return err
 	}

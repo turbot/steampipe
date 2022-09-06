@@ -47,7 +47,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	return client, err
 }
 
-// NewLocalClient verifies that the local database instance is running and returns a Client to interact with it
+// NewLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
 func NewLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
