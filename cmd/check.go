@@ -216,7 +216,7 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := initialisation.NewInitData(ctx, w)
+	initData := initialisation.NewInitData(ctx, w, constants.InvokerCheck)
 	if initData.Result.Error != nil {
 		return initData
 	}

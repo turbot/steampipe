@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -26,7 +27,7 @@ func GenerateSnapshot(ctx context.Context, target string, inputs map[string]inte
 
 	// todo do we require a mod file?
 
-	initData := initialisation.NewInitData(snapshotCtx, w)
+	initData := initialisation.NewInitData(snapshotCtx, w, constants.InvokerDashboard)
 	// shutdown the service on exit
 	defer initData.Cleanup(snapshotCtx)
 	if err := initData.Result.Error; err != nil {

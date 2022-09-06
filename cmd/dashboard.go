@@ -153,7 +153,7 @@ func initDashboard(dashboardCtx context.Context, err error) *initialisation.Init
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// initialise
-	initData := initialisation.NewInitData(dashboardCtx, w)
+	initData := initialisation.NewInitData(dashboardCtx, w, constants.InvokerDashboard)
 	// there must be a modfile
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition

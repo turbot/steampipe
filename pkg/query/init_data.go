@@ -136,7 +136,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		return err
 	}
 
-	c, err := initialisation.GetDbClient(getClientCtx, ensureSessionData)
+	c, err := initialisation.GetDbClient(getClientCtx, constants.InvokerQuery, ensureSessionData)
 	if err != nil {
 		i.Result.Error = err
 		return
