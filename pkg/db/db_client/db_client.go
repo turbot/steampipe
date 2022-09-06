@@ -19,8 +19,7 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString string
-	//ensureSessionFunc         db_common.EnsureSessionStateCallback
+	connectionString          string
 	dbClient                  *pgxpool.Pool
 	requiredSessionSearchPath []string
 
@@ -29,6 +28,12 @@ type DbClient struct {
 
 	// a wait group which lets others wait for any running DBSession init to complete
 	sessionInitWaitGroup *sync.WaitGroup
+
+	// map of database sessions, keyed to the backend_pid in postgres
+	// used to update session search path where necessary
+	sessions map[uint32]*db_common.DatabaseSession
+	// allows locked access to the 'sessions' map
+	sessionsMutex *sync.Mutex
 
 	// list of connection schemas
 	foreignSchemaNames []string
@@ -74,6 +79,8 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		// a weighted semaphore to control the maximum number parallel
 		// initializations under way
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
+		sessions:                make(map[uint32]*db_common.DatabaseSession),
+		sessionsMutex:           &sync.Mutex{},
 		// store the callback
 		onConnectionCallback: wrappedOnConnectionCallback,
 	}
@@ -111,6 +118,8 @@ func (c *DbClient) Close(context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
 	if c.dbClient != nil {
 		c.sessionInitWaitGroup.Wait()
+		// clear the sessions map - so that we can't reuse it
+		c.sessions = nil
 		c.dbClient.Close()
 	}
 

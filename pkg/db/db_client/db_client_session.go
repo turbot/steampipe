@@ -3,13 +3,9 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"log"
-	"time"
-
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/utils"
+	"log"
 )
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
@@ -35,76 +31,51 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, err := c.getDatabaseConnectionWithRetries(ctx)
+	databaseConnection, backendPid, err := c.getDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
 	}
 
-	session := db_common.NewDBSession()
-
+	c.sessionsMutex.Lock()
+	session, found := c.sessions[backendPid]
+	if !found {
+		session = db_common.NewDBSession(backendPid)
+	}
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Connection = databaseConnection
 	sessionResult.Session = session
+	c.sessionsMutex.Unlock()
 
 	// make sure that we close the acquired session, in case of error
-	//defer func() {
-	//	if sessionResult.Error != nil && databaseConnection != nil {
-	//		databaseConnection.Release()
-	//	}
-	//}()
+	defer func() {
+		if sessionResult.Error != nil && databaseConnection != nil {
+			databaseConnection.Release()
+		}
+	}()
 
-	//// if there is no ensure session function, we are done
-	//if c.ensureSessionFunc == nil {
-	//	return sessionResult
-	//}
-
-	// TODO KAI WHAT??? NEEDED?
 	// update required session search path if needed
-	//err = c.ensureSessionSearchPath(ctx, session)
-	//if err != nil {
-	//	sessionResult.Error = err
-	//	return sessionResult
-	//}
+	err = c.ensureSessionSearchPath(ctx, session)
+	if err != nil {
+		sessionResult.Error = err
+		return sessionResult
+	}
 
 	return sessionResult
 }
 
-// TODO kai remove retries
-func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, error) {
-	backoff, err := retry.NewFibonacci(100 * time.Millisecond)
+func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
+	// get a database connection from the pool
+	databaseConnection, err := c.dbClient.Acquire(ctx)
 	if err != nil {
-		return nil, err
-	}
-
-	var databaseConnection *pgxpool.Conn
-
-	retries := 0
-	const getSessionMaxRetries = 10
-	err = retry.Do(ctx, retry.WithMaxRetries(getSessionMaxRetries, backoff), func(retryLocalCtx context.Context) (e error) {
-		if utils.IsContextCancelled(retryLocalCtx) {
-			return retryLocalCtx.Err()
+		if databaseConnection != nil {
+			databaseConnection.Release()
 		}
-		// get a database connection from the pool
-		databaseConnection, err = c.dbClient.Acquire(retryLocalCtx)
-		if err != nil {
-			if databaseConnection != nil {
-				databaseConnection.Release()
-			}
-			retries++
-			return retry.RetryableError(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		log.Printf("[TRACE] getDatabaseConnectionWithRetries failed after %d retries: %s", retries, err)
-		return nil, err
+		log.Printf("[TRACE] getDatabaseConnectionWithRetries failed: %s", err.Error())
+		return nil, 0, err
 	}
 
-	if retries > 0 {
-		log.Printf("[TRACE] getDatabaseConnectionWithRetries succeeded after %d retries", retries)
-	}
+	backendPid := databaseConnection.Conn().PgConn().PID()
 
-	return databaseConnection, nil
+	return databaseConnection, backendPid, nil
 }
