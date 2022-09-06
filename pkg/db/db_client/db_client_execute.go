@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -246,10 +247,12 @@ func (c *DbClient) startQuery(ctx context.Context, query string, conn *sql.Conn)
 }
 
 func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryresult.Result, timingCallback func()) {
+	timingDoneChan := make(chan (bool))
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. clear the status indication
 		statushooks.Done(ctx)
+		close(timingDoneChan)
 		// call the timing callback BEFORE closing the rows
 		timingCallback()
 		// close the sql rows object
@@ -276,6 +279,26 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 		return
 	}
 
+	timingString := ""
+	count := 0
+	timer := time.NewTimer(50 * time.Millisecond)
+	if c.shouldShowTiming() {
+
+		go func() {
+			for {
+				select {
+				case <-timingDoneChan:
+					return
+				case <-timer.C:
+					// timingCallback()
+					// timingString = buildTimingString(result)
+					timingString = fmt.Sprintf("Tick at %d", count)
+					count++
+				}
+			}
+		}()
+	}
+
 	for rows.Next() {
 		continueToNext := true
 		select {
@@ -297,13 +320,52 @@ func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryre
 			}
 			// update the status message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
-			statushooks.SetStatus(ctx, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
+			status := fmt.Sprintf("Loading results: %3s %s", humanizeRowCount(rowCount), timingString)
+			statushooks.SetStatus(ctx, status)
 			rowCount++
+			count++
 		}
 		if !continueToNext {
 			break
 		}
 	}
+}
+
+func buildTimingString(result *queryresult.Result) string {
+	timingResult := <-result.TimingResult
+	var sb strings.Builder
+	// large numbers should be formatted with commas
+	p := message.NewPrinter(language.English)
+
+	milliseconds := float64(timingResult.Duration.Microseconds()) / 1000
+	seconds := timingResult.Duration.Seconds()
+	if seconds < 0.5 {
+		sb.WriteString(p.Sprintf("\nTime: %dms.", int64(milliseconds)))
+	} else {
+		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
+	}
+
+	// if timingMetadata := timingResult.Metadata; timingMetadata != nil {
+	// 	totalRows := timingMetadata.RowsFetched + timingMetadata.CachedRowsFetched
+	// 	sb.WriteString(" Rows fetched: ")
+	// 	if totalRows == 0 {
+	// 		sb.WriteString("0")
+	// 	} else {
+	// 		if totalRows > 0 {
+	// 			sb.WriteString(p.Sprintf("%d", timingMetadata.RowsFetched+timingMetadata.CachedRowsFetched))
+	// 		}
+	// 		if timingMetadata.CachedRowsFetched > 0 {
+	// 			if timingMetadata.RowsFetched == 0 {
+	// 				sb.WriteString(" (cached)")
+	// 			} else {
+	// 				sb.WriteString(p.Sprintf(" (%d cached)", timingMetadata.CachedRowsFetched))
+	// 			}
+	// 		}
+	// 	}
+	// 	sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
+	// }
+
+	return sb.String()
 }
 
 func isStreamingOutput(outputFormat string) bool {
