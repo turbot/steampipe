@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -374,18 +375,27 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgxpool.Pool, erro
 		connMaxLifetime    = 10 * time.Minute
 	)
 
-	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable pool_max_conns=%d pool_max_conn_lifetime=%s pool_max_conn_idle_time=%s",
-		port,
-		constants.DatabaseSuperUser,
-		maxOpenConnections,
-		connMaxLifetime.String(),
-		connMaxIdleTime.String())
+	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 
-	log.Println("[TRACE] Connection string: ", psqlInfo)
+	log.Println("[TRACE] Connection string: ", connStr)
 
+	config, err := pgxpool.ParseConfig(connStr)
+	if err != nil {
+		return nil, err
+	}
+	config.MaxConns = int32(maxOpenConnections)
+	config.MinConns = int32(0)
+	config.MaxConnLifetime = connMaxLifetime
+	config.MaxConnIdleTime = connMaxIdleTime
+
+	db, err := sql.Open("pgx", connStr)
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1)
 	// connect to the database using the postgres driver
 	utils.LogTime("db_local.createClient connection open start")
-	dbPool, err := pgxpool.Connect(context.Background(), psqlInfo)
+	dbPool, err := pgxpool.ConnectConfig(context.Background(), config)
 	utils.LogTime("db_local.createClient connection open end")
 
 	if err != nil {
