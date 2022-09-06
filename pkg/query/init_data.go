@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
-	"log"
 )
 
 // TODO KAI combine with initialisation.InitData
@@ -130,9 +129,9 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
-		err, warnings := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+		err, _ := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 		// TODO KAI how do we display wanrings
-		log.Println("[WARN]", warnings)
+		//log.Println("[WARN]", warnings)
 		return err
 	}
 
