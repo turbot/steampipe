@@ -78,7 +78,7 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	if err != nil {
 		return -1, err
 	}
-	defer rootClient.Close()
+	defer rootClient.Close(ctx)
 
 	clientCount := 0
 	// get the total number of connected clients
