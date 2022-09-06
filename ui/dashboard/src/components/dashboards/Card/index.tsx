@@ -1,7 +1,6 @@
 import DashboardIcon from "../common/DashboardIcon";
 import get from "lodash/get";
 import has from "lodash/has";
-import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
 import isNumber from "lodash/isNumber";
 import isObject from "lodash/isObject";
@@ -263,7 +262,7 @@ const Card = (props: CardProps) => {
         >
           {state.loading && "Loading..."}
           {!state.loading && !state.label && (
-            <Icon className="h-5 w-5" icon="heroicons-solid:minus" />
+            <DashboardIcon className="h-5 w-5" icon="heroicons-solid:minus" />
           )}
           {!state.loading && state.label}
         </p>
@@ -293,7 +292,10 @@ const Card = (props: CardProps) => {
           )}
           {!state.loading &&
             (state.value === null || state.value === undefined) && (
-              <Icon className="h-10 w-10" icon="heroicons-solid:minus" />
+              <DashboardIcon
+                className="h-10 w-10"
+                icon="heroicons-solid:minus"
+              />
             )}
           {state.value !== null &&
             state.value !== undefined &&

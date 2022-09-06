@@ -1,4 +1,4 @@
-import Icon from "../Icon";
+import DashboardIcon from "../dashboards/common/DashboardIcon";
 import { ThemeNames } from "../../hooks/useTheme";
 import { useDashboard } from "../../hooks/useDashboard";
 
@@ -42,7 +42,7 @@ const ThemeToggle = () => {
           }
           aria-hidden="true"
         >
-          <Icon icon="heroicons-solid:sun" />
+          <DashboardIcon icon="heroicons-solid:sun" />
         </span>
         <span
           className={
@@ -53,7 +53,7 @@ const ThemeToggle = () => {
           }
           aria-hidden="true"
         >
-          <Icon icon="heroicons-solid:moon" />
+          <DashboardIcon icon="heroicons-solid:moon" />
         </span>
       </span>
     </button>
