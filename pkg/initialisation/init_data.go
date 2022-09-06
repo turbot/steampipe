@@ -24,7 +24,7 @@ type InitData struct {
 	ShutdownTelemetry func()
 }
 
-func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
+func NewInitData(ctx context.Context, w *workspace.Workspace, invoker constants.Invoker) *InitData {
 	initData := &InitData{
 		Workspace: w,
 		Result:    &db_common.InitResult{},
@@ -84,7 +84,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	// TODO KAI init session func
 	// get a client
 	statushooks.SetStatus(ctx, "Connecting to service...")
-	client, err := GetDbClient(ctx, ensureSessionData)
+	client, err := GetDbClient(ctx, invoker, ensureSessionData)
 	if err != nil {
 		initData.Result.Error = err
 		return initData
@@ -110,13 +110,12 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 	return initData
 }
 
-func GetDbClient(ctx context.Context, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
+// GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
+func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
 	} else {
-		// TODO KAI SORT OUT INVOKER
-		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerDashboard, onConnectionCallback)
+		client, err = db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
 	}
 	return client, err
 }
