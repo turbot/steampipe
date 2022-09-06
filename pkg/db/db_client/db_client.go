@@ -15,6 +15,9 @@ import (
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pluginmanager"
+	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
@@ -46,6 +49,7 @@ type DbClient struct {
 	// disable timing - set whilst in process of querying the timing
 	disableTiming        bool
 	onConnectionCallback DbConnectionCallback
+	pluginManager        pluginshared.PluginManager
 }
 
 func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (*DbClient, error) {
@@ -67,10 +71,15 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 
 	minConnections := maxDbConnections()
 	dbPool, err := EstablishConnectionPool(ctx, connectionString, minConnections, maxDbConnections(), wrappedOnConnectionCallback)
-
 	if err != nil {
 		return nil, err
 	}
+
+	pluginManager, err := pluginmanager.GetPluginManager()
+	if err != nil {
+		return nil, err
+	}
+
 	client := &DbClient{
 		dbClient: dbPool,
 		// a waitgroup to keep track of active session initializations
@@ -83,6 +92,8 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		sessionsMutex:           &sync.Mutex{},
 		// store the callback
 		onConnectionCallback: wrappedOnConnectionCallback,
+		// store the plugin manager client
+		pluginManager: pluginManager,
 	}
 
 	client.connectionString = connectionString
@@ -137,23 +148,11 @@ func (c *DbClient) ForeignSchemaNames() []string {
 
 // LoadForeignSchemaNames implements Client
 func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
-	res, err := c.dbClient.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	connectionsResponse, err := c.pluginManager.GetConnections(&pb.GetConnectionsRequest{})
 	if err != nil {
 		return err
 	}
-	// clear foreign schemas
-	var foreignSchemaNames []string
-	var schema string
-	for res.Next() {
-		if err := res.Scan(&schema); err != nil {
-			return err
-		}
-		// ignore command schema
-		if schema != constants.CommandSchema {
-			foreignSchemaNames = append(foreignSchemaNames, schema)
-		}
-	}
-	c.foreignSchemaNames = foreignSchemaNames
+	c.foreignSchemaNames = connectionsResponse.Connections
 	return nil
 }
 

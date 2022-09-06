@@ -2,13 +2,11 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"io"
-	"log"
-	"os"
-	"strings"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"io"
+	"log"
+
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
@@ -18,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
 
 type ConnectionPluginData struct {
@@ -79,7 +76,7 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 	}
 
 	// get plugin manager
-	pluginManager, err := getPluginManager()
+	pluginManager, err := pluginmanager.GetPluginManager()
 	if err != nil {
 		res.Error = err
 		return nil, res
@@ -401,26 +398,6 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 
 	log.Printf("[TRACE] created connection plugin for connection: '%s', pluginName: '%s'", connectionName, pluginName)
 	return connectionPlugin, nil
-}
-
-// get plugin manager
-// if STEAMPIPE_PLUGIN_MANAGER_DEBUG is set, create in process - otherwise connection tro grpc plugin
-func getPluginManager() (pluginshared.PluginManager, error) {
-	var pluginManager pluginshared.PluginManager
-	var err error
-	if env := os.Getenv("STEAMPIPE_PLUGIN_MANAGER_DEBUG"); strings.ToLower(env) == "true" {
-		// run plugin manager locally - for debugging
-		log.Printf("[WARN] running plugin manager in-process for debugging")
-		pluginManager, err = runPluginManagerInProcess()
-	} else {
-		pluginManager, err = pluginmanager.GetPluginManager()
-	}
-	// check the error from the plugin manager startup
-	if err != nil {
-		log.Printf("[WARN] failed to start plugin manager: %s", err)
-		return nil, err
-	}
-	return pluginManager, nil
 }
 
 // use the reattach config to create a PluginClient for the plugin
