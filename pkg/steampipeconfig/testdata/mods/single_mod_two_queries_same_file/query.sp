@@ -1,4 +1,4 @@
-query "q1"{
+query "q3"{
     title ="Q1"
     description = "THIS IS QUERY 1"
     sql = "select 1"

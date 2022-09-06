@@ -14,13 +14,15 @@ import (
 
 type DbConnectionCallback func(context.Context, *pgx.Conn) error
 
-func EstablishConnectionPool(ctx context.Context, connStr string, minConnections, maxConnections int, connectionCallback DbConnectionCallback) (*pgxpool.Pool, error) {
-	utils.LogTime("db_client.EstablishConnectionPool start")
-	defer utils.LogTime("db_client.EstablishConnectionPool end")
+func (c *DbClient) establishConnectionPool(ctx context.Context) error {
+	utils.LogTime("db_client.establishConnectionPool start")
+	defer utils.LogTime("db_client.establishConnectionPool end")
 	const (
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
+	minConnections := 2
+	maxConnections := maxDbConnections()
 	if minConnections > maxConnections {
 		minConnections = maxConnections
 	}
@@ -34,45 +36,31 @@ func EstablishConnectionPool(ctx context.Context, connStr string, minConnections
 	//	"application_name": runtime.PgClientAppName,
 	//connStr = stdlib.RegisterConnConfig(connConfig)
 
-	config, err := pgxpool.ParseConfig(connStr)
+	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	config.MaxConns = int32(maxConnections)
 	config.MinConns = int32(minConnections)
 	config.MaxConnLifetime = connMaxLifetime
 	config.MaxConnIdleTime = connMaxIdleTime
-	if connectionCallback != nil {
-		config.AfterConnect = connectionCallback
+	if c.onConnectionCallback != nil {
+		config.AfterConnect = c.onConnectionCallback
 	}
 
-	log.Printf("[WARN] EstablishConnectionPool %v", config)
+	log.Printf("[WARN] establishConnectionPool %v", config)
 
 	// this returns connection pool
 	dbPool, err := pgxpool.ConnectConfig(context.Background(), config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := db_common.WaitForPool(ctx, dbPool); err != nil {
-		return nil, err
+		return err
 	}
-	return dbPool, nil
-}
-
-func EstablishConnection(ctx context.Context, connStr string) (*pgx.Conn, error) {
-	utils.LogTime("db_client.EstablishConnectionPool start")
-	defer utils.LogTime("db_client.EstablishConnectionPool end")
-
-	conn, err := pgx.Connect(context.Background(), connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := db_common.WaitForConnection(ctx, conn); err != nil {
-		return nil, err
-	}
-	return conn, nil
+	c.pool = dbPool
+	return nil
 }
 
 func maxDbConnections() int {
