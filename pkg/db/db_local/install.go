@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/jackc/pgx/v4"
+	"github.com/sethvargo/go-retry"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -20,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 var ensureMux sync.Mutex
@@ -366,21 +368,31 @@ func resolveDatabaseName(oldDbName *string) string {
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database and superuser
 func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
-	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
-
-	log.Println("[TRACE] Connection string: ", connStr)
-
-	utils.LogTime("db_local.createClient connection open start")
-	conn, err := pgx.Connect(context.Background(), connStr)
-	utils.LogTime("db_local.createClient connection open end")
+	backoff, err := retry.NewConstant(200 * time.Millisecond)
 	if err != nil {
 		return nil, err
 	}
+	var conn *pgx.Conn
 
-	if err := db_common.WaitForConnection(ctx, conn); err != nil {
+	err = retry.Do(ctx, retry.WithMaxRetries(5, backoff), func(ctx context.Context) error {
+		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+		log.Println("[TRACE] Connection string: ", connStr)
+		utils.LogTime("db_local.createClient connection open start")
+		conn, err = pgx.Connect(context.Background(), connStr)
+		utils.LogTime("db_local.createClient connection open end")
+		if err != nil {
+			return retry.RetryableError(err)
+		}
+		if err := db_common.WaitForConnection(ctx, conn); err != nil {
+			return retry.RetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	return conn, nil
+
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
