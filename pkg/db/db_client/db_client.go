@@ -60,7 +60,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		}
 	}
 
-	const minConnections = 2
+	minConnections := maxDbConnections()
 	dbPool, err := EstablishConnectionPool(ctx, connectionString, minConnections, maxDbConnections(), wrappedOnConnectionCallback)
 
 	if err != nil {
