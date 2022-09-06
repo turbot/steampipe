@@ -8,7 +8,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
 	"time"
 )
 
@@ -47,8 +46,6 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
 	}
-
-	log.Printf("[WARN] establishConnectionPool %v", config)
 
 	// this returns connection pool
 	dbPool, err := pgxpool.ConnectConfig(context.Background(), config)
