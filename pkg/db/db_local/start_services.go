@@ -5,19 +5,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pluginmanager"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pluginmanager"
-
-	"github.com/sethvargo/go-retry"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -191,19 +188,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 	}
 
 	// sometimes connecting to the db immediately after startup results in a dial error - so retry
-	backoff, err := retry.NewConstant(100 * time.Millisecond)
-	if err != nil {
-		return res.SetError(err)
-	}
-	var databaseName string
-	err = retry.Do(ctx, retry.WithMaxRetries(5, backoff), func(ctx context.Context) error {
-		log.Printf("[WARN] RETRY MAINTENANCE CLIENT")
-		databaseName, err = getDatabaseName(ctx, port)
-		if err != nil {
-			return retry.RetryableError(err)
-		}
-		return nil
-	})
+	databaseName, err := getDatabaseName(ctx, port)
 	if err != nil {
 		return res.SetError(err)
 	}
