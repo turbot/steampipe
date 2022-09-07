@@ -1,10 +1,8 @@
 package display
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/ahmetb/go-linq"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"time"
 
@@ -14,8 +12,11 @@ import (
 
 // ColumnNames :: extract names from columns
 func ColumnNames(columns []*queryresult.ColumnDef) []string {
-	var colNames []string
-	linq.From(columns).SelectT(func(c *sql.ColumnType) string { return c.Name() }).ToSlice(&colNames)
+	var colNames = make([]string, len(columns))
+	for i, c := range columns {
+		colNames[i] = c.Name
+	}
+
 	return colNames
 }
 
