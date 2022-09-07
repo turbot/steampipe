@@ -5,6 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
+	"net"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -259,70 +263,38 @@ func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryres
 	}()
 
 	rowCount := 0
-
+Loop:
 	for rows.Next() {
-		continueToNext := true
 		select {
 		case <-ctx.Done():
 			statushooks.SetStatus(ctx, "Cancelling query")
-			continueToNext = false
+			break Loop
 		default:
-			if rowResult, err := readRowContext(ctx, rows, result.Cols); err != nil {
-				result.StreamError(err)
-				continueToNext = false
-			} else {
-				// TACTICAL
-				// determine whether to stop the spinner as soon as we stream a row or to wait for completion
-				if isStreamingOutput(viper.GetString(constants.ArgOutput)) {
-					statushooks.Done(ctx)
-				}
-
-				result.StreamRow(rowResult)
+			rowResult, err := readRow(rows, result.Cols)
+			if err != nil {
+				// the error will be streamed in the defer
+				break Loop
 			}
+
+			// TACTICAL
+			// determine whether to stop the spinner as soon as we stream a row or to wait for completion
+			if isStreamingOutput(viper.GetString(constants.ArgOutput)) {
+				statushooks.Done(ctx)
+			}
+
+			result.StreamRow(rowResult)
+
 			// update the status message with the count of rows that have already been fetched
 			// this will not show if the spinner is not active
 			statushooks.SetStatus(ctx, fmt.Sprintf("Loading results: %3s", humanizeRowCount(rowCount)))
 			rowCount++
 		}
-		if !continueToNext {
-			break
-		}
 	}
-}
-
-func isStreamingOutput(outputFormat string) bool {
-	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
-}
-
-func readRowContext(ctx context.Context, rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
-	c := make(chan bool, 1)
-	var readRowResult []interface{}
-	var readRowError error
-	go func() {
-		readRowResult, readRowError = readRow(rows, cols)
-		close(c)
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-c:
-		return readRowResult, readRowError
-	}
-
 }
 
 func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
-	// slice of interfaces to receive the row data
-	columnValues := make([]interface{}, len(cols))
-	// make a slice of pointers to the result to pass to scan
-	resultPtrs := make([]interface{}, len(cols)) // A temporary interface{} slice
-	for i := range columnValues {
-		resultPtrs[i] = &columnValues[i]
-	}
-	err := rows.Scan(resultPtrs...)
+	columnValues, err := rows.Values()
 	if err != nil {
-		// return error, handling cancellation error explicitly
 		return nil, utils.HandleCancelError(err)
 	}
 	return populateRow(columnValues, cols)
@@ -332,21 +304,66 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 	result := make([]interface{}, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
+			result[i] = columnValue
 
 			switch cols[i].DataType {
-			// TODO KAI SEEMS NOT NECESSARY WITH PGX
-			//case "JSON", "JSONB":
-			//	var val interface{}
-			//	if err := json.Unmarshal(columnValue.([]byte), &val); err != nil {
-			//		return result, err
-			//	}
-			//	result[i] = val
-			default:
-				result[i] = columnValue
+			case "_TEXT":
+				if arr, ok := columnValue.(pgtype.TextArray); ok {
+					strs := make([]string, len(arr.Elements))
+					for i, s := range arr.Elements {
+						strs[i] = s.String
+					}
+					result[i] = strings.Join(strs, ",")
+				}
+			case "INET":
+				if inet, ok := columnValue.(*net.IPNet); ok {
+					result[i] = strings.TrimSuffix(inet.String(), "/32")
+				}
+			case "UUID":
+				if bytes, ok := columnValue.([16]uint8); ok {
+					if u, err := uuid.FromBytes(bytes[:]); err == nil {
+						result[i] = u
+					}
+				}
+			case "TIME":
+				result[i] = time.UnixMilli(columnValue.(int64)).UTC().Format("15:04:05")
+			case "INTERVAL":
+				if interval, ok := columnValue.(pgtype.Interval); ok {
+					var sb strings.Builder
+					years := interval.Months / 12
+					months := interval.Months % 12
+					if years > 0 {
+						sb.WriteString(fmt.Sprintf("%d %s ", years, utils.Pluralize("year", int(years))))
+					}
+					if months > 0 {
+						sb.WriteString(fmt.Sprintf("%d %s ", months, utils.Pluralize("mon", int(months))))
+					}
+					if interval.Days > 0 {
+						sb.WriteString(fmt.Sprintf("%d %s ", interval.Days, utils.Pluralize("day", int(interval.Days))))
+					}
+					if interval.Microseconds > 0 {
+						d := time.Duration(interval.Microseconds) * time.Microsecond
+						formatStr := time.Unix(0, 0).UTC().Add(d).Format("15:04:05")
+						sb.WriteString(formatStr)
+					}
+					result[i] = sb.String()
+				}
+
+			case "NUMERIC":
+				if numeric, ok := columnValue.(pgtype.Numeric); ok {
+					var f float64
+					if err := numeric.AssignTo(&f); err == nil {
+						result[i] = f
+					}
+				}
 			}
 		}
 	}
 	return result, nil
+}
+
+func isStreamingOutput(outputFormat string) bool {
+	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }
 
 func humanizeRowCount(count int) string {
