@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -96,6 +97,13 @@ func (l *WorkspaceLock) getInstalledMods() error {
 			// - it's parent is not a valid mod installation folder so it is probably a child folder of a mod
 			continue
 		}
+
+		// ensure the dependency mod folder is correctgly named
+		// - for old versions of steampipe the folder name would omit the patch number
+		if err := l.validateAndFixFolderNamingFormat(modName, version, modfilePath); err != nil {
+			continue
+		}
+
 		// add this mod version to the map
 		installedMods.Add(modName, version)
 	}
@@ -104,6 +112,20 @@ func (l *WorkspaceLock) getInstalledMods() error {
 		return error_helpers.CombineErrors(errors...)
 	}
 	l.installedMods = installedMods
+	return nil
+}
+
+func (l *WorkspaceLock) validateAndFixFolderNamingFormat(modName string, version *semver.Version, modfilePath string) error {
+	// verify folder name is of correct format (i.e. including patch number)
+	modFullName := modconfig.ModVersionFullName(modName, version)
+	modDir := filepath.Dir(modfilePath)
+	parts := strings.Split(modDir, "@")
+	currentVersionString := parts[1]
+	if modFullName != currentVersionString {
+		desiredDir := fmt.Sprintf("%s@v%s", parts[0], version.String())
+		log.Printf("[TRACE] renaming dependency mod folder %s to %s", modDir, desiredDir)
+		return os.Rename(modDir, desiredDir)
+	}
 	return nil
 }
 

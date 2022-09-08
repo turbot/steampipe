@@ -16,7 +16,7 @@ func ModVersionFullName(name string, version *semver.Version) string {
 }
 
 func ParseModFullName(fullName string) (modName string, modVersion *semver.Version, err error) {
-	// we expect modLongName to be of form github.com/turbot/steampipe-mod-m2@v1.0
+	// we expect modLongName to be of form github.com/turbot/steampipe-mod-m2@v1.0.0
 	// split to get the name and version
 	parts := strings.Split(fullName, "@")
 	if len(parts) != 2 {
