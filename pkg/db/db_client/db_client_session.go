@@ -41,6 +41,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	session, found := c.sessions[backendPid]
 	if !found {
 		session = db_common.NewDBSession(backendPid)
+		c.sessions[backendPid] = session
 	}
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Connection = databaseConnection
