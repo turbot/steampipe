@@ -375,7 +375,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	if modDef == nil {
 		return nil, fmt.Errorf("'%s' has no mod definition file", dependency.FullName())
 	}
-	// hack set mod dependency path
+	// TACTICAL: set mod dependency path
 	if err := i.setModDependencyPath(modDef, i.tmpPath); err != nil {
 		return nil, err
 	}

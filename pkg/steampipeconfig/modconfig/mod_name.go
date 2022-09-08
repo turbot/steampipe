@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -12,17 +11,8 @@ func ModVersionFullName(name string, version *semver.Version) string {
 	if version == nil {
 		return name
 	}
-	versionString := GetMonotonicVersionString(version)
-	return fmt.Sprintf("%s@v%s", name, versionString)
-}
 
-func GetMonotonicVersionString(v *semver.Version) string {
-	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%d.%d", v.Major(), v.Minor())
-	if v.Metadata() != "" {
-		fmt.Fprintf(&buf, "+%s", v.Metadata())
-	}
-	return buf.String()
+	return fmt.Sprintf("%s@v%s", name, version.String())
 }
 
 func ParseModFullName(fullName string) (modName string, modVersion *semver.Version, err error) {
