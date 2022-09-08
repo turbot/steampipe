@@ -73,14 +73,6 @@ func (c *PluginManagerClient) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	return res, nil
 }
 
-func (c *PluginManagerClient) GetConnections(req *pb.GetConnectionsRequest) (*pb.GetConnectionsResponse, error) {
-	res, err := c.manager.GetConnections(req)
-	if err != nil {
-		return nil, grpc.HandleGrpcError(err, "PluginManager", "GetConnections")
-	}
-	return res, nil
-}
-
 func (c *PluginManagerClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
 	log.Printf("[TRACE] PluginManagerClient Shutdown")
 	res, err := c.manager.Shutdown(req)

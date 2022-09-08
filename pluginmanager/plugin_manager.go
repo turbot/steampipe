@@ -120,20 +120,10 @@ func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 	return resp, nil
 }
 
-func (m *PluginManager) GetConnections(*proto.GetConnectionsRequest) (*proto.GetConnectionsResponse, error) {
-	resp := &proto.GetConnectionsResponse{
-		Connections: utils.SortedStringKeys(m.connectionConfigMap),
-	}
-
-	log.Printf("[TRACE] PluginManager GetConnections returning %+v", resp)
-	return resp, nil
-}
-
 func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.ConnectionConfig) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
-	// TODO add getMapKeys function
 	names := utils.SortedStringKeys(configMap)
 	log.Printf("[TRACE] SetConnectionConfigMap: %s", strings.Join(names, ","))
 
