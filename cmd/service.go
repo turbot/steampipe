@@ -218,7 +218,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	servicesStarted := (startResult.Status == db_local.ServiceStarted)
+	servicesStarted := startResult.Status == db_local.ServiceStarted
 
 	var dashboardState *dashboardserver.DashboardServiceState
 	if viper.GetBool(constants.ArgDashboard) {
@@ -231,8 +231,8 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		if dashboardState == nil {
 			dashboardState, err = startDashboardServer(ctx)
 			if err != nil {
-				tryToStopServices(ctx)
 				utils.ShowError(ctx, err)
+				tryToStopServices(ctx)
 				return
 			}
 			servicesStarted = true
@@ -247,7 +247,12 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 }
 
 func tryToStopServices(ctx context.Context) {
+	// stop db service
 	if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
+		utils.ShowError(ctx, err)
+	}
+	// stop the dashboard service
+	if err := dashboardserver.StopDashboardService(ctx); err != nil {
 		utils.ShowError(ctx, err)
 	}
 }
