@@ -117,12 +117,12 @@ func (l *WorkspaceLock) getInstalledMods() error {
 
 func (l *WorkspaceLock) validateAndFixFolderNamingFormat(modName string, version *semver.Version, modfilePath string) error {
 	// verify folder name is of correct format (i.e. including patch number)
-	modFullName := modconfig.ModVersionFullName(modName, version)
 	modDir := filepath.Dir(modfilePath)
 	parts := strings.Split(modDir, "@")
 	currentVersionString := parts[1]
-	if modFullName != currentVersionString {
-		desiredDir := fmt.Sprintf("%s@v%s", parts[0], version.String())
+	desiredVersionString := fmt.Sprintf("v%s", version.String())
+	if desiredVersionString != currentVersionString {
+		desiredDir := fmt.Sprintf("%s@%s", parts[0], desiredVersionString)
 		log.Printf("[TRACE] renaming dependency mod folder %s to %s", modDir, desiredDir)
 		return os.Rename(modDir, desiredDir)
 	}
