@@ -19,10 +19,6 @@ func (c *GRPCClient) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	return c.client.Get(c.ctx, req)
 }
 
-func (c *GRPCClient) GetConnections(req *pb.GetConnectionsRequest) (*pb.GetConnectionsResponse, error) {
-	return c.client.GetConnections(c.ctx, req)
-}
-
 func (c *GRPCClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
 	return c.client.Shutdown(c.ctx, req)
 }
@@ -36,10 +32,6 @@ type GRPCServer struct {
 
 func (m *GRPCServer) Get(_ context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
 	return m.Impl.Get(req)
-}
-
-func (m *GRPCServer) GetConnections(_ context.Context, req *pb.GetConnectionsRequest) (*pb.GetConnectionsResponse, error) {
-	return m.Impl.GetConnections(req)
 }
 
 func (m *GRPCServer) Shutdown(_ context.Context, req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
