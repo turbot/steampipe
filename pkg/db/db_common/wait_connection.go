@@ -17,7 +17,7 @@ func WaitForPool(ctx context.Context, db *pgxpool.Pool) (err error) {
 	defer utils.LogTime("db.waitForConnection end")
 
 	pingTimer := time.NewTicker(constants.ServicePingInterval)
-	timeoutAt := time.After(constants.ServiceStartTimeout)
+	timeoutAt := time.After(constants.DashboardServiceStartTimeout)
 	defer pingTimer.Stop()
 
 	for {
