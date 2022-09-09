@@ -1,3 +1,11 @@
+## v0.16.2 [2022-09-09]
+_Bug fixes_
+* Update FDW to not start scan until the first time IterateForeignScan is called. ([#237](https://github.com/turbot/steampipe-postgres-fdw/issues/237))
+* Fix database initialisation failures due to invalid locale. ([#2368](https://github.com/turbot/steampipe/issues/2368))
+* Use ellipsis char instead of 3 dots in plugin update/install when cutting off the plugin name. ([#2355](https://github.com/turbot/steampipe/issues/2355))
+* Add help message for WSL1 installation failures.([#2379](https://github.com/turbot/steampipe/issues/2379))
+* Show query timing information even if query returns an error.([#2331](https://github.com/turbot/steampipe/issues/2331))
+
 ## v0.16.1 [2022-08-31]
 _Bug fixes_
 * Limit connection lifetime in the database connection pool. ([#2375](https://github.com/turbot/steampipe/issues/2375))
