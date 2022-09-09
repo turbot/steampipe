@@ -69,7 +69,20 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 }
 
-// GetCountOfThirdPartyClients returns the number of connections to the service from other third party applications
+// GetCountOfThirdPartyClients returns the number of connections to the service from anyone other than
+// _this_execution_ of steampipe
+//
+// We assume that any connections from this execution will eventually be closed
+// - if there are any other external connections, we cannot shust down the database
+//
+// this is to handle cases where either a third party tool is connected to the database,
+// or other Steampipe sessions are attached to an already running Steampipe service
+// - we do not want the db service being closed underneath them
+//
+// note: we need the PgClientAppName chack to handle the case where there may be one or more open DB connections
+// from this instance at the time of shutdown - for example when a control run is cancelled
+// If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
+//
 func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))

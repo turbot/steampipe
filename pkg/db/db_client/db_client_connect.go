@@ -38,8 +38,9 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
 	}
+	// set an app name so that we can track database connections from this Steampipe execution
+	// this is used to determine whether the database can safely be closed
 	config.ConnConfig.Config.RuntimeParams = map[string]string{
-		// set an app name so that we can track connections from this execution
 		"application_name": runtime.PgClientAppName,
 	}
 

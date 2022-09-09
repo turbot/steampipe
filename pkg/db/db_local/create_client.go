@@ -73,8 +73,9 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 		return nil, err
 	}
 
+	// set an app name so that we can track database connections from this Steampipe execution
+	// this is used to determine whether the database can safely be closed
 	connConfig.Config.RuntimeParams = map[string]string{
-		// set an app name so that we can track connections from this execution
 		"application_name": runtime.PgClientAppName,
 	}
 
