@@ -69,7 +69,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 }
 
-// GetCountOfThirdPartyClients returns the number of connections to the service from other thrid party applications
+// GetCountOfThirdPartyClients returns the number of connections to the service from other third party applications
 func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
@@ -81,17 +81,15 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	defer rootClient.Close(ctx)
 
 	clientCount := 0
-	// get the total number of connected clients
-	// which are not us - determined by the unique application_name client parameter
+	// get the total number of connected clients which have not been created by this execution of steampipe
+	// - determined by the unique application_name client parameter
 	row := rootClient.QueryRow(ctx, "select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
 	err = row.Scan(&clientCount)
 	if err != nil {
 		return -1, err
 	}
 
-	// clientCount can never be zero, since the rootClient we are using to run the query counts as a client
-	// deduct 1 to account for this
-	return clientCount - 1, nil
+	return clientCount, nil
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found

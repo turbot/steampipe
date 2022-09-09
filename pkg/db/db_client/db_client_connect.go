@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
 	"time"
@@ -26,15 +27,6 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		minConnections = maxConnections
 	}
 
-	// TODO KAI why application_name???
-
-	//connConfig, _ := pgx.ParseConfig(connStr)
-	//connCon
-	//fig.RuntimeParams = map[string]string{
-	//	// set an app name so that we can track connections from this execution
-	//	"application_name": runtime.PgClientAppName,
-	//connStr = stdlib.RegisterConnConfig(connConfig)
-
 	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
 		return err
@@ -45,6 +37,10 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	config.MaxConnIdleTime = connMaxIdleTime
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
+	}
+	config.ConnConfig.Config.RuntimeParams = map[string]string{
+		// set an app name so that we can track connections from this execution
+		"application_name": runtime.PgClientAppName,
 	}
 
 	// this returns connection pool
