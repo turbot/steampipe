@@ -314,19 +314,23 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 			continue
 		}
 
-		go func(c context.Context, run *ControlRun) {
-			defer func() {
-				if r := recover(); r != nil {
-					// if the Execute panic'ed, set it as an error
-					run.setError(ctx, helpers.ToError(r))
-				}
-				// Release in defer, so that we don't retain the lock even if there's a panic inside
-				parallelismLock.Release(1)
-			}()
-			run.execute(c, client)
-		}(ctx, controlRun)
+		go executeRun(ctx, controlRun, parallelismLock, client)
 	}
 	for _, child := range r.Groups {
 		child.execute(ctx, client, parallelismLock)
 	}
+}
+
+func executeRun(ctx context.Context, run *ControlRun, parallelismLock *semaphore.Weighted, client db_common.Client) {
+	defer func() {
+		if r := recover(); r != nil {
+			// if the Execute panic'ed, set it as an error
+			run.setError(ctx, helpers.ToError(r))
+		}
+		// Release in defer, so that we don't retain the lock even if there's a panic inside
+		parallelismLock.Release(1)
+	}()
+
+	run.execute(ctx, client)
+
 }

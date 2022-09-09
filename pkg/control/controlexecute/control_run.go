@@ -352,23 +352,6 @@ func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, er
 }
 
 func (r *ControlRun) waitForResults(ctx context.Context) {
-	// create a channel to which will be closed when gathering has been done
-	gatherDoneChan := make(chan string)
-	go func() {
-		r.gatherResults(ctx)
-		close(gatherDoneChan)
-	}()
-
-	select {
-	// check for cancellation
-	case <-ctx.Done():
-		r.setError(ctx, ctx.Err())
-	case <-gatherDoneChan:
-		// do nothing
-	}
-}
-
-func (r *ControlRun) gatherResults(ctx context.Context) {
 	defer func() {
 		dimensionsSchema := r.getDimensionSchema()
 		// convert the data to snapshot format
@@ -377,6 +360,9 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 
 	for {
 		select {
+		case <-ctx.Done():
+			r.setError(ctx, ctx.Err())
+			return
 		case row := <-*r.queryResult.RowChan:
 			// nil row means control run is complete
 			if row == nil {
