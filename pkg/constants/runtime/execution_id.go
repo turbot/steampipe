@@ -9,6 +9,7 @@ import (
 )
 
 var (
-	ExecutionID     = utils.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))
+	ExecutionID = utils.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))
+	// PgClientAppName is unique identifier for this execution of Steampipe
 	PgClientAppName = fmt.Sprintf("%s_%s", constants.AppName, ExecutionID)
 )
