@@ -176,7 +176,7 @@ func waitForDashboardService(ctx context.Context) error {
 	defer utils.LogTime("db.waitForDashboardServerStartup end")
 
 	pingTimer := time.NewTicker(constants.ServicePingInterval)
-	timeoutAt := time.After(constants.ServiceStartTimeout)
+	timeoutAt := time.After(constants.DashboardServiceStartTimeout)
 	defer pingTimer.Stop()
 
 	for {

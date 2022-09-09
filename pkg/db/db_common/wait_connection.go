@@ -16,7 +16,7 @@ func WaitForConnection(ctx context.Context, db *sql.DB) (err error) {
 	defer utils.LogTime("db.waitForConnection end")
 
 	pingTimer := time.NewTicker(constants.ServicePingInterval)
-	timeoutAt := time.After(constants.ServiceStartTimeout)
+	timeoutAt := time.After(constants.DBConnectionTimeout)
 	defer pingTimer.Stop()
 
 	for {
