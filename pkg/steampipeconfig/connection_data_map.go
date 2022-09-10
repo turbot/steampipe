@@ -2,12 +2,10 @@ package steampipeconfig
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -77,30 +75,31 @@ func (m ConnectionDataMap) Connections() []*modconfig.Connection {
 }
 
 // NewConnectionDataMap populates a map of connection data for all connections in connectionMap
-func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (ConnectionDataMap, []string, error) {
+func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (ConnectionDataMap, map[string][]*modconfig.Connection, error) {
 	utils.LogTime("steampipeconfig.getRequiredConnections start")
 	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
 
 	requiredConnections := ConnectionDataMap{}
-	var missingPlugins []string
 
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
 	modTimeMap := make(map[string]time.Time)
+
+	// map ofd missing polugins, keyed by plugin, value is list of conections using missing plugin
+	missingPluginMap := make(map[string][]*modconfig.Connection)
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
 		remoteSchema := connection.Plugin
-		pluginPath, err := pluginmanager.GetPluginPath(connection.Plugin, connection.PluginShortName)
-		if err != nil {
-			err := fmt.Errorf("failed to load connection '%s': %v\n%v", connection.Name, err, connection.DeclRange)
-			return nil, nil, err
-		}
+		pluginPath, _ := pluginmanager.GetPluginPath(connection.Plugin, connection.PluginShortName)
+		// ignore error if plugin is not available
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {
-			if !helpers.StringSliceContains(missingPlugins, connection.Plugin) {
-				missingPlugins = append(missingPlugins, connection.Plugin)
-			}
+			missingPluginMap[connection.Plugin] = append(missingPluginMap[connection.Plugin], connection)
+
+			// if !helpers.StringSliceContains(missingPlugins, connection.Plugin) {
+			// 	missingPlugins = append(missingPlugins, connection.Plugin)
+			// }
 			continue
 		}
 
@@ -108,7 +107,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 		var modTime time.Time
 		var ok bool
 		if modTime, ok = modTimeMap[pluginPath]; !ok {
-			modTime, err = utils.FileModTime(pluginPath)
+			modTime, err := utils.FileModTime(pluginPath)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -119,5 +118,5 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
 
-	return requiredConnections, missingPlugins, nil
+	return requiredConnections, missingPluginMap, nil
 }
