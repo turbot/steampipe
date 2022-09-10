@@ -15,7 +15,7 @@ import (
 type ConnectionUpdates struct {
 	Update         ConnectionDataMap
 	Delete         ConnectionDataMap
-	MissingPlugins []string
+	MissingPlugins map[string][]*modconfig.Connection
 	// the connections which will exist after the update
 	RequiredConnectionState ConnectionDataMap
 	// connection plugins required to perform the updates
@@ -24,7 +24,7 @@ type ConnectionUpdates struct {
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(schemaNames []string) *RefreshConnectionResult {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 
@@ -35,7 +35,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
 	if err != nil {
 		res.Error = err
-		return nil, res
+		return res
 	}
 
 	updates := &ConnectionUpdates{
@@ -50,7 +50,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	currentConnectionState, err := GetConnectionState(schemaNames)
 	if err != nil {
 		res.Error = err
-		return nil, res
+		return res
 	}
 	updates.currentConnectionState = currentConnectionState
 
@@ -59,7 +59,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, currentConnectionState)
 	if err != nil {
 		res.Error = err
-		return nil, res
+		return res
 	}
 
 	// connections to create/update
@@ -97,14 +97,14 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	otherRes := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
 	res.Merge(otherRes)
 	if res.Error != nil {
-		return nil, res
+		return res
 	}
 
 	// set the schema mode and hash on the connection data in required state
 	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
-
-	return updates, res
+	res.Updates = updates
+	return res
 }
 
 // update requiredConnections - set the schema hash and schema mode for all elements of RequiredConnectionState

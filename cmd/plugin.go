@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -648,6 +649,9 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 	}
 	// display any initialisation warnings
 	res.ShowWarnings()
+
+	updates := res.Updates.MissingPlugins
+	log.Printf("[INFO] >>>> %v", updates)
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
 

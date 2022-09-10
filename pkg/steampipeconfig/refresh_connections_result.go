@@ -7,6 +7,7 @@ type RefreshConnectionResult struct {
 	UpdatedConnections bool
 	Warnings           []string
 	Error              error
+	Updates            *ConnectionUpdates
 }
 
 func (r *RefreshConnectionResult) AddWarning(warning string) {

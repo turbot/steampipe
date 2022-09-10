@@ -24,20 +24,21 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	defer utils.LogTime("db.refreshConnections end")
 
 	// determine any necessary connection updates
-	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames())
+	res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames())
 	if res.Error != nil {
 		return res
 	}
 
+	connectionUpdates := res.Updates
 	// if any plugins are missing, error for now but we could prompt for an install
-	missingCount := len(connectionUpdates.MissingPlugins)
-	if missingCount > 0 {
-		res.Error = fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
-			missingCount,
-			utils.Pluralize("plugin", missingCount),
-			strings.Join(connectionUpdates.MissingPlugins, "\n  "))
-		return res
-	}
+	// missingCount := len(connectionUpdates.MissingPlugins)
+	// if missingCount > 0 {
+	// 	res.Error = fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
+	// 		missingCount,
+	// 		utils.Pluralize("plugin", missingCount),
+	// 		strings.Join(connectionUpdates.MissingPlugins, "\n  "))
+	// 	return res
+	// }
 
 	if !connectionUpdates.HasUpdates() {
 		log.Println("[TRACE] RefreshConnections: no updates required")
