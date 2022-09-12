@@ -2,8 +2,7 @@ package modconfig
 
 import (
 	"fmt"
-
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 // ensure we have resolved all children in the resource tree
@@ -14,7 +13,7 @@ func (m *Mod) validateResourceTree() error {
 			errors = append(errors, err)
 		}
 	}
-	return utils.CombineErrorsWithPrefix(fmt.Sprintf("failed to resolve children for %d resources", len(errors)), errors...)
+	return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to resolve children for %d resources", len(errors)), errors...)
 }
 
 func (m *Mod) validateChildren(item ModTreeItem) error {

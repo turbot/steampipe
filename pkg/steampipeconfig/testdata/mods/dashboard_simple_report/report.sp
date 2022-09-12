@@ -7,8 +7,19 @@ dashboard "simple_report" {
 
   chart {
     title = "a simple query"
-    sql = "select 1"
+    query = query.q1
   }
 
 
+}
+
+
+query "q1"{
+    title ="Q1"
+    description = "THIS IS QUERY 1"
+    sql = "sel 1 dshhdsddddddd  foo "
+     param "p1"{
+            description = "desc"
+            default = "I am dt"
+        }
 }

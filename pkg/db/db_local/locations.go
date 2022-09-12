@@ -6,8 +6,8 @@ import (
 
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/platform"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func ServiceExecutableRelativeLocation() string {
@@ -18,7 +18,7 @@ func databaseInstanceDir() string {
 	loc := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion)
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not create db version directory")
+		error_helpers.FailOnErrorWithMessage(err, "could not create db version directory")
 	}
 	return loc
 }
@@ -27,7 +27,7 @@ func getDatabaseLocation() string {
 	loc := filepath.Join(databaseInstanceDir(), "postgres")
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not create postgres installation directory")
+		error_helpers.FailOnErrorWithMessage(err, "could not create postgres installation directory")
 	}
 	return loc
 }
@@ -36,7 +36,7 @@ func getDatabaseLogDirectory() string {
 	loc := filepaths.EnsureLogDir()
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not create postgres logging directory")
+		error_helpers.FailOnErrorWithMessage(err, "could not create postgres logging directory")
 	}
 	return loc
 }
@@ -45,7 +45,7 @@ func getDataLocation() string {
 	loc := filepath.Join(databaseInstanceDir(), "data")
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
-		utils.FailOnErrorWithMessage(err, "could not create data directory")
+		error_helpers.FailOnErrorWithMessage(err, "could not create data directory")
 	}
 	return loc
 }

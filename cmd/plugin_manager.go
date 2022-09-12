@@ -8,17 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/go-kit/types"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
+	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connectionwatcher"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 )
 
@@ -59,7 +58,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
-			utils.ShowError(ctx, err)
+			error_helpers.ShowError(ctx, err)
 			os.Exit(1)
 		}
 

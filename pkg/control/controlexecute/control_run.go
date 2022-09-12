@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -164,7 +165,7 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 	if r.runError == context.DeadlineExceeded {
 		r.runError = fmt.Errorf("control execution timed out")
 	} else {
-		r.runError = utils.TransformErrorToSteampipe(err)
+		r.runError = error_helpers.TransformErrorToSteampipe(err)
 	}
 	r.RunErrorString = r.runError.Error()
 	// update error count
@@ -234,7 +235,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// get a db connection
 	sessionResult := r.acquireSession(ctx, client)
 	if sessionResult.Error != nil {
-		if !utils.IsCancelledError(sessionResult.Error) {
+		if !error_helpers.IsCancelledError(sessionResult.Error) {
 			log.Printf("[TRACE] controlRun %s execute failed to acquire session: %s", r.ControlId, sessionResult.Error)
 			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 			r.setError(ctx, sessionResult.Error)
@@ -317,7 +318,7 @@ func (r *ControlRun) acquireSession(ctx context.Context, client db_common.Client
 	var sessionResult *db_common.AcquireSessionResult
 	for attempt := 0; attempt < 4; attempt++ {
 		sessionResult = client.AcquireSession(ctx)
-		if sessionResult.Error == nil || utils.IsCancelledError(sessionResult.Error) {
+		if sessionResult.Error == nil || error_helpers.IsCancelledError(sessionResult.Error) {
 			break
 		}
 

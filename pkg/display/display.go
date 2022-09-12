@@ -17,8 +17,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -162,7 +162,7 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return
 	}
 }
@@ -192,7 +192,7 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return
 	}
 	// display the JSON
@@ -222,13 +222,13 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return
 	}
 
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
-		utils.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
+		error_helpers.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
 	}
 }
 
@@ -274,7 +274,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 	if err != nil {
 		// display the error
 		fmt.Println()
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		fmt.Println()
 	}
 	// write out the table to the buffer

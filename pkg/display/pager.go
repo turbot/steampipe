@@ -12,7 +12,7 @@ import (
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 // ShowPaged displays the `content` in a system dependent pager
@@ -87,6 +87,6 @@ func execPager(ctx context.Context, cmd *exec.Cmd, content string) {
 	// run the command - it will block until the pager is exited
 	err := cmd.Run()
 	if err != nil {
-		utils.ShowErrorWithMessage(ctx, err, "could not display results")
+		error_helpers.ShowErrorWithMessage(ctx, err, "could not display results")
 	}
 }

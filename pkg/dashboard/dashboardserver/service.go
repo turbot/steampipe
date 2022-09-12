@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -127,8 +128,8 @@ func RunForService(ctx context.Context, serverListen ListenType, serverPort List
 		return err
 	}
 
-	utils.FailOnError(serverPort.IsValid())
-	utils.FailOnError(serverListen.IsValid())
+	error_helpers.FailOnError(serverPort.IsValid())
+	error_helpers.FailOnError(serverListen.IsValid())
 
 	// NOTE: args must be specified <arg>=<arg val>, as each entry in this array is a separate arg passed to cobra
 	args := []string{

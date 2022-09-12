@@ -9,6 +9,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 // allow a short delay before starting handler
@@ -261,7 +262,7 @@ func (w *FileWatcher) addDirectory(name string) {
 		}
 		childDirectories, err := filehelpers.ListFiles(name, opts)
 		if err != nil {
-			ShowWarning(fmt.Sprintf("failed to add recursive watch on directory '%s': %v", name, err))
+			error_helpers.ShowWarning(fmt.Sprintf("failed to add recursive watch on directory '%s': %v", name, err))
 		}
 		directories = append(directories, childDirectories...)
 	}

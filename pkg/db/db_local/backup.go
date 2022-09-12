@@ -16,6 +16,7 @@ import (
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -112,7 +113,7 @@ func killRunningDbInstance(ctx context.Context) error {
 		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
-				utils.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
+				error_helpers.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
 				return errDbInstanceRunning
 			}
 		}
@@ -285,11 +286,11 @@ func restoreDBBackup(ctx context.Context) error {
 		//
 		// WARN the user.
 		//
-		utils.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
+		error_helpers.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
 	}
 
 	if err := retainBackup(ctx); err != nil {
-		utils.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
+		error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
 	}
 
 	// get the location of the other instance which was backed up
@@ -353,7 +354,7 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 	withoutFile := filepath.Join(filepaths.EnsureDatabaseDir(), noMatViewRefreshListFileName)
 	onlyFile := filepath.Join(filepaths.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
 
-	err := utils.CombineErrors(
+	err := error_helpers.CombineErrors(
 		os.WriteFile(withoutFile, []byte(strings.Join(withoutRefresh, "\n")), 0644),
 		os.WriteFile(onlyFile, []byte(strings.Join(onlyRefresh, "\n")), 0644),
 	)
@@ -400,8 +401,9 @@ func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 
 // retainBackup creates a text dump of the backup binary and saves both in the $STEAMPIPE_INSTALL_DIR/backups directory
 // the backups are saved as:
-// 		binary: 'database-yyyy-MM-dd-hh-mm-ss.dump'
-//		text:   'database-yyyy-MM-dd-hh-mm-ss.sql'
+//
+//	binary: 'database-yyyy-MM-dd-hh-mm-ss.dump'
+//	text:   'database-yyyy-MM-dd-hh-mm-ss.sql'
 func retainBackup(ctx context.Context) error {
 	now := time.Now()
 	backupBaseFileName := fmt.Sprintf(
@@ -466,7 +468,7 @@ func trimBackups() {
 	backupDir := filepaths.BackupsDir()
 	files, err := os.ReadDir(backupDir)
 	if err != nil {
-		utils.ShowWarning(fmt.Sprintf("Failed to trim backups folder: %s", err.Error()))
+		error_helpers.ShowWarning(fmt.Sprintf("Failed to trim backups folder: %s", err.Error()))
 		return
 	}
 
@@ -498,9 +500,9 @@ func trimBackups() {
 		dumpFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupDumpFileExtension))
 		textFilePath := filepath.Join(backupDir, fmt.Sprintf("%s.%s", trim, backupTextFileExtension))
 
-		removeErr := utils.CombineErrors(os.Remove(dumpFilePath), os.Remove(textFilePath))
+		removeErr := error_helpers.CombineErrors(os.Remove(dumpFilePath), os.Remove(textFilePath))
 		if removeErr != nil {
-			utils.ShowWarning(fmt.Sprintf("Could not remove backup: %s", trim))
+			error_helpers.ShowWarning(fmt.Sprintf("Could not remove backup: %s", trim))
 		}
 	}
 }

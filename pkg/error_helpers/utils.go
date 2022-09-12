@@ -1,4 +1,4 @@
-package utils
+package error_helpers
 
 import (
 	"context"
@@ -19,6 +19,14 @@ var (
 
 func init() {
 	color.Output = ansicolor.NewAnsiColorWriter(os.Stderr)
+}
+
+func WrapError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return HandleCancelError(
+		WrapPreparedStatementError(err))
 }
 
 func FailOnError(err error) {

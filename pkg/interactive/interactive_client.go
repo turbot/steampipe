@@ -21,6 +21,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/metaquery"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
@@ -104,7 +105,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		quitChannel <- true
@@ -333,7 +334,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	if metaquery.IsMetaQuery(query) {
 		if err := c.executeMetaquery(queryCtx, query); err != nil {
-			utils.ShowError(ctx, err)
+			error_helpers.ShowError(ctx, err)
 		}
 		// cancel the context
 		c.cancelActiveQueryIfAny()
@@ -343,7 +344,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 		t := time.Now()
 		result, err := c.client().Execute(queryCtx, query)
 		if err != nil {
-			utils.ShowError(ctx, utils.HandleCancelError(err))
+			error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 				display.DisplayErrorTiming(t)
@@ -411,7 +412,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 		// - do not clear history item - we want to store bad entry in history
 		// - clear interactive buffer
 		c.interactiveBuffer = nil
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return ""
 	}
 	isNamedQuery := queryProvider != nil

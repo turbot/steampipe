@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"log"
 	"os"
 	"runtime/debug"
@@ -16,8 +15,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
@@ -89,17 +90,17 @@ func InitCmd() {
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 
 	err := viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgWorkspaceChDir, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceChDir))
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgCloudHost, rootCmd.PersistentFlags().Lookup(constants.ArgCloudHost))
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgCloudToken, rootCmd.PersistentFlags().Lookup(constants.ArgCloudToken))
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgWorkspaceDatabase, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceDatabase))
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgSchemaComments, rootCmd.PersistentFlags().Lookup(constants.ArgSchemaComments))
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	AddCommands()
 
@@ -140,11 +141,11 @@ func initGlobalConfig() {
 
 	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
 	err := migrateLegacyFiles()
-	utils.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
+	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
 
 	// load config (this sets the global config steampipeconfig.Config)
 	config, err := steampipeconfig.LoadSteampipeConfig(workspaceChdir, cmd.Name())
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	steampipeconfig.GlobalConfig = config
 
@@ -153,7 +154,7 @@ func initGlobalConfig() {
 
 	// now validate all config values have appropriate values
 	err = validateConfig()
-	utils.FailOnErrorWithMessage(err, "failed to validate config")
+	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
 }
 
 // migrate all data files to use snake casing for property names
@@ -164,7 +165,7 @@ func migrateLegacyFiles() error {
 	if viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name() == "plugin-manager" {
 		return nil
 	}
-	return utils.CombineErrors(
+	return error_helpers.CombineErrors(
 		migrate.Migrate(&statefile.State{}, filepaths.LegacyStateFilePath()),
 		migrate.Migrate(&steampipeconfig.ConnectionDataMap{}, filepaths.ConnectionStatePath()),
 		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
@@ -185,7 +186,7 @@ func setWorkspaceChDir() string {
 	workspaceChdir := viper.GetString(constants.ArgWorkspaceChDir)
 	if workspaceChdir == "" {
 		cwd, err := os.Getwd()
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 		workspaceChdir = cwd
 	}
 	viper.Set(constants.ArgWorkspaceChDir, workspaceChdir)
@@ -217,10 +218,10 @@ func setInstallDir() {
 	defer utils.LogTime("cmd.root.setInstallDir end")
 
 	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
-	utils.FailOnErrorWithMessage(err, "failed to sanitize install directory")
+	error_helpers.FailOnErrorWithMessage(err, "failed to sanitize install directory")
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)
-		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
+		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
 	filepaths.SteampipeDir = installDir
 }

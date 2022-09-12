@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -12,7 +13,7 @@ func UninstallWorkspaceDependencies(ctx context.Context, opts *InstallOpts) (*In
 	defer func() {
 		utils.LogTime("cmd.UninstallWorkspaceDependencies end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
 

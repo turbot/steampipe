@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 type InitResult struct {
@@ -33,7 +33,7 @@ func (r *InitResult) DisplayMessages() {
 		return
 	}
 	for _, w := range r.Warnings {
-		utils.ShowWarning(w)
+		error_helpers.ShowWarning(w)
 	}
 	for _, w := range r.Messages {
 		fmt.Println(w)

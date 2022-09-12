@@ -4,10 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pluginmanager"
 	"log"
 	"os"
 	"os/exec"
@@ -15,11 +11,16 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/jackc/pgx/v4"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -158,7 +159,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 
 	// Generate the certificate if it fails then set the ssl to off
 	if err := ensureSelfSignedCertificate(); err != nil {
-		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
+		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
 	if err := utils.IsPortBindable(port); err != nil {
@@ -497,7 +498,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 			errors = append(errors, err)
 		}
 	}
-	return utils.CombineErrors(errors...)
+	return error_helpers.CombineErrors(errors...)
 }
 
 // ensures that the 'steampipe' foreign server exists

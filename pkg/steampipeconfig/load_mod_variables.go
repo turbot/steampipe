@@ -3,12 +3,12 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
-
 	"sort"
 
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -105,7 +105,7 @@ func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 	fmt.Println()
 	for i, diag := range diags {
 
-		utils.ShowError(ctx, fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
+		error_helpers.ShowError(ctx, fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
 		fmt.Println(diag.Description().Detail)
 		if i < len(diags)-1 {
 			fmt.Println()

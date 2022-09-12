@@ -2,11 +2,6 @@ package pluginmanager
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"os"
 	"os/exec"
@@ -16,8 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v4/grpc/shared"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
@@ -176,7 +177,7 @@ func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkpr
 			errors = append(errors, err)
 		}
 	}
-	return utils.CombineErrors(errors...)
+	return error_helpers.CombineErrors(errors...)
 }
 
 // this mutates requestMap

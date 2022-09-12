@@ -12,6 +12,7 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -55,7 +56,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// we can shut down the database
 	stopStatus, err := StopServices(ctx, false, invoker)
 	if err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 	}
 	if stopStatus == ServiceStopped {
 		return
@@ -64,7 +65,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// shutdown failed - try to force stop
 	_, err = StopServices(ctx, true, invoker)
 	if err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 	}
 
 }
@@ -82,7 +83,6 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 // note: we need the PgClientAppName chack to handle the case where there may be one or more open DB connections
 // from this instance at the time of shutdown - for example when a control run is cancelled
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
-//
 func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
@@ -125,7 +125,7 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 	// stop the DB Service
 	stopResult, dbStopError := stopDBService(ctx, force)
 
-	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
+	return stopResult, error_helpers.CombineErrors(dbStopError, pluginManagerStopError)
 }
 
 func stopDBService(ctx context.Context, force bool) (StopStatus, error) {

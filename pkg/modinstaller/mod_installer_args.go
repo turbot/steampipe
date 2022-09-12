@@ -3,9 +3,9 @@ package modinstaller
 import (
 	"fmt"
 
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (i *ModInstaller) GetRequiredModVersionsFromArgs(modsArgs []string) (versionmap.VersionConstraintMap, error) {
@@ -37,7 +37,7 @@ func (i *ModInstaller) GetRequiredModVersionsFromArgs(modsArgs []string) (versio
 		mods[modVersion.Name] = modVersion
 	}
 	if len(errors) > 0 {
-		return nil, utils.CombineErrors(errors...)
+		return nil, error_helpers.CombineErrors(errors...)
 	}
 	return mods, nil
 }

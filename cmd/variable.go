@@ -9,11 +9,11 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
-//  Variable management commands
+// Variable management commands
 func variableCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "variable [command]",
@@ -60,7 +60,7 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 	ctx := cmd.Context()
 	defer func() {
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
@@ -68,7 +68,7 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 	// validate output arg
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains([]string{constants.OutputFormatTable, constants.OutputFormatJSON}, output) {
-		utils.ShowError(ctx, fmt.Errorf("output flag must be either 'json' or 'table'"))
+		error_helpers.ShowError(ctx, fmt.Errorf("output flag must be either 'json' or 'table'"))
 		return
 	}
 
@@ -76,7 +76,7 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 
 	vars, err := workspace.LoadVariables(ctx, workspacePath)
 	// load the workspace
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	if viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON {
 		display.ShowVarsListJson(vars)

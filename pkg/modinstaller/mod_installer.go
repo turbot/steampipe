@@ -11,6 +11,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -221,7 +222,7 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 		verb = "update"
 	}
 	prefix := fmt.Sprintf("%d %s failed to %s", len(errors), utils.Pluralize("dependency", len(errors)), verb)
-	err := utils.CombineErrorsWithPrefix(prefix, errors...)
+	err := error_helpers.CombineErrorsWithPrefix(prefix, errors...)
 	return err
 }
 
@@ -276,7 +277,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		}
 	}
 
-	return utils.CombineErrorsWithPrefix(fmt.Sprintf("%d child %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
+	return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("%d child %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
 }
 
 func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, forceUpdate bool) (*modconfig.Mod, error) {

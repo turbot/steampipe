@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 type tempDir struct {
@@ -26,7 +26,7 @@ func getOrCreateTempDir(parent string) string {
 
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
 		err = os.MkdirAll(cacheDir, 0755)
-		utils.FailOnErrorWithMessage(err, "could not create cache directory")
+		error_helpers.FailOnErrorWithMessage(err, "could not create cache directory")
 	}
 	return cacheDir
 }

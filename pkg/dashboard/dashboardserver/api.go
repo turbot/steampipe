@@ -14,8 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -90,7 +90,7 @@ func startAPIAsync(ctx context.Context, webSocket *melody.Melody) chan struct{} 
 		defer cancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
-			utils.ShowErrorWithMessage(ctx, err, "Server shutdown failed")
+			error_helpers.ShowErrorWithMessage(ctx, err, "Server shutdown failed")
 		}
 		log.Println("[TRACE] Server exiting")
 

@@ -2,18 +2,18 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
 	"io"
 	"log"
 
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 )
@@ -193,7 +193,7 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 
 	}
 	if len(errors) > 0 {
-		return utils.CombineErrors(errors...)
+		return error_helpers.CombineErrors(errors...)
 	}
 	return nil
 

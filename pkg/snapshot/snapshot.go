@@ -9,10 +9,10 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 )
 
@@ -23,7 +23,7 @@ func GenerateSnapshot(ctx context.Context, target string, inputs map[string]inte
 	contexthelpers.StartCancelHandler(cancel)
 
 	w, err := interactive.LoadWorkspacePromptingForVariables(snapshotCtx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// todo do we require a mod file?
 

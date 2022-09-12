@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -51,6 +52,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 	if err != nil {
 		return nil, err
 	}
+
 	syncResult := &queryresult.SyncQueryResult{Cols: result.Cols}
 	for row := range *result.RowChan {
 		select {
@@ -62,7 +64,8 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 	if c.shouldShowTiming() {
 		syncResult.TimingResult = <-result.TimingResult
 	}
-	return syncResult, nil
+
+	return syncResult, err
 }
 
 // Execute implements Client
@@ -295,7 +298,7 @@ Loop:
 func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
 	columnValues, err := rows.Values()
 	if err != nil {
-		return nil, utils.HandleCancelError(err)
+		return nil, error_helpers.WrapError(err)
 	}
 	return populateRow(columnValues, cols)
 }

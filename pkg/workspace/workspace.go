@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -164,7 +165,7 @@ func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, e
 	if w.fileWatcherErrorHandler == nil {
 		w.fileWatcherErrorHandler = func(ctx context.Context, err error) {
 			fmt.Println()
-			utils.ShowErrorWithMessage(ctx, err, "Failed to reload mod from file watcher")
+			error_helpers.ShowErrorWithMessage(ctx, err, "Failed to reload mod from file watcher")
 		}
 	}
 
