@@ -52,7 +52,8 @@ type Workspace struct {
 	// channel used to send dashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
 	// count of workspace changed events - used to ignore first event
-	changeEventCount int
+	changeEventCount          int
+	preparedStatementFailures map[string]error
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -404,4 +405,19 @@ func (w *Workspace) verifyResourceRuntimeDependencies() error {
 		}
 	}
 	return nil
+}
+
+func (w *Workspace) HandlePreparesStatementFailures(failures map[string]error) {
+	// replace the map of failures with the current map
+	w.preparedStatementFailures = failures
+}
+
+// GetPreparedStatementCreationFailure looks for a prepared statement error for the given query and if found,
+// returns the query and the prepared statement creation error (if any)
+func (w *Workspace) GetPreparedStatementCreationFailure(queryName string) (*modconfig.Query, error) {
+	query, ok := w.GetQuery(queryName)
+	if ok && w.preparedStatementFailures != nil {
+		return query, w.preparedStatementFailures[queryName]
+	}
+	return nil, nil
 }

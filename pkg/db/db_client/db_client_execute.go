@@ -50,7 +50,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 
 	result, err := c.ExecuteInSession(ctx, session, query, nil)
 	if err != nil {
-		return nil, err
+		return nil, error_helpers.WrapError(err)
 	}
 
 	syncResult := &queryresult.SyncQueryResult{Cols: result.Cols}
@@ -58,6 +58,10 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 		select {
 		case <-ctx.Done():
 		default:
+			// save the first row error to return
+			if row.Error != nil && err == nil {
+				err = error_helpers.WrapError(row.Error)
+			}
 			syncResult.Rows = append(syncResult.Rows, row)
 		}
 	}

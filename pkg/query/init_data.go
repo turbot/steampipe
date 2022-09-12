@@ -129,9 +129,8 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
-		err, _ := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
-		// TODO KAI how do we display wanrings
-		//log.Println("[WARN]", warnings)
+		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+		w.HandlePreparesStatementFailures(preparedStatementFailures)
 		return err
 	}
 

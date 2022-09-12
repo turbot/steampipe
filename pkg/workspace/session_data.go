@@ -10,7 +10,7 @@ import (
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx.Conn) (err error, warnings []string) {
+func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx.Conn) (error, map[string]error) {
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
@@ -23,20 +23,21 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx
 	row := conn.QueryRow(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
 
 	var count int
-	err = row.Scan(&count)
+	err := row.Scan(&count)
 	if err != nil {
-		return err, warnings
+		return err, nil
 	}
+	var preparedStatementFailures map[string]error
 	if count == 0 {
-		err, warnings = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), conn)
+		err, preparedStatementFailures = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), conn)
 		if err != nil {
-			return err, warnings
+			return err, preparedStatementFailures
 		}
 
 		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource(), conn)
 		if err != nil {
-			return err, warnings
+			return err, preparedStatementFailures
 		}
 	}
-	return nil, warnings
+	return nil, preparedStatementFailures
 }
