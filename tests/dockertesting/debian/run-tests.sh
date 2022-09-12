@@ -11,6 +11,8 @@ cd steampipe
 git init
 git submodule update --init
 git submodule update --recursive
+git checkout $1
+git branch
 
 # run test suite
 ./tests/acceptance/run.sh

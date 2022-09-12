@@ -380,32 +380,36 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.branch }}
+
       - name: Prepare for downloads
         id: prepare-for-downloads
         run: |
           mkdir ~/artifacts
+
       - name: Download Linux Build Artifacts
         uses: actions/download-artifact@v3
         with:
           name: build-artifact-linux
           path: ~/artifacts
+
       - name: Extract Ubuntu Artifacts and Install Binary
         run: |
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
+
       - name: Copy binary
         run: |
           cp ~/build/steampipe tests/dockertesting/debian
+
       - name: Build steampipe docker images
         run: |
-          docker build -t spdebian tests/dockertesting/debian
+          docker build -t spdebian tests/dockertesting/debian --build-arg TARGETBRANCH="${{ github.event.inputs.branch }}"
           docker images
 
       - name: Create a container and run the test suite
         run: |
           docker run --name steampipe-deb `docker images -q spdebian`
   
-
   docker_acceptance_test_oraclelinux:
     name: Acceptance tests(Docker - OracleLinux)
     needs: [create_test_build,build_and_release_assets]
@@ -438,13 +442,12 @@ jobs:
       
       - name: Build steampipe docker images
         run: |
-          docker build -t sporacle tests/dockertesting/oraclelinux
+          docker build -t sporacle tests/dockertesting/oraclelinux --build-arg TARGETBRANCH="${{ github.event.inputs.branch }}"
           docker images
 
       - name: Create a container and run the test suite
         run: |
           docker run --name steampipe-oracle `docker images -q sporacle`
-
 
   create_release_tag:
     name: Tag Release
@@ -479,7 +482,6 @@ jobs:
         git tag ${{ github.event.inputs.version }}
         git push origin ${{ github.event.inputs.version }}
 
-
   ensure_branch_in_homebrew:
     name: Ensure branch exists in homebrew-tap
     needs: [create_release_tag]
@@ -512,7 +514,6 @@ jobs:
         run: |
           git checkout -b bump-brew
           git push --set-upstream origin bump-brew
-
 
   build_and_release_cli:
     name: Release CLI
@@ -609,7 +610,6 @@ jobs:
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
           gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
-
 
   clean_up:
     # let's clean up the artifacts.
