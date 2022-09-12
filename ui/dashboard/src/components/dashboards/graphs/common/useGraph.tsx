@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { Edge, Node } from "react-flow-renderer";
 import { FoldedNode } from "../../common";
 import { KeyValueStringPairs } from "../../common/types";
 import { noop } from "../../../../utils/func";
@@ -10,6 +11,9 @@ interface IGraphContext {
   expandedNodes: KeyValueStringPairs;
   layoutId: string;
   recalcLayout: () => void;
+  setFitView: (fitView: typeof noop) => void;
+  setGraphEdges: (edges: Edge[]) => void;
+  setGraphNodes: (nodes: Node[]) => void;
 }
 
 const GraphContext = createContext<IGraphContext>({
@@ -17,6 +21,9 @@ const GraphContext = createContext<IGraphContext>({
   expandedNodes: {},
   layoutId: "",
   recalcLayout: noop,
+  setFitView: noop,
+  setGraphEdges: noop,
+  setGraphNodes: noop,
 });
 
 const GraphProvider = ({ children }) => {
@@ -24,7 +31,18 @@ const GraphProvider = ({ children }) => {
     themeContext: { theme },
   } = useDashboard();
   const [layoutId, setLayoutId] = useState(uuid());
+  const [fitView, setFitView] = useState<typeof noop>(noop);
+  const [graphEdges, setGraphEdges] = useState<Edge[]>([]);
+  const [graphNodes, setGraphNodes] = useState<Node[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<KeyValueStringPairs>({});
+
+  // When the edges or nodes change, update the layout
+  useEffect(() => {
+    if (!fitView || (!graphEdges && !graphNodes)) {
+      return;
+    }
+    fitView();
+  }, [graphEdges, graphNodes]);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setLayoutId(uuid()), [theme.name]);
@@ -47,7 +65,15 @@ const GraphProvider = ({ children }) => {
 
   return (
     <GraphContext.Provider
-      value={{ expandNode, expandedNodes, layoutId, recalcLayout }}
+      value={{
+        expandNode,
+        expandedNodes,
+        layoutId,
+        recalcLayout,
+        setFitView: (newFitView) => setFitView(() => newFitView),
+        setGraphEdges,
+        setGraphNodes,
+      }}
     >
       {children}
     </GraphContext.Provider>

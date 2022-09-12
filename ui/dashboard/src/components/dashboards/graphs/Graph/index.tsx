@@ -158,12 +158,18 @@ const buildGraphNodesAndEdges = (
 
 const useGraphOptions = (props: GraphProps) => {
   const { nodesAndEdges } = useGraphNodesAndEdges(props.data, props.properties);
+  const { setGraphEdges, setGraphNodes } = useGraph();
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
   // const onConnect = useCallback(
   //   (params) => setEdges((eds) => addEdge(params, eds)),
   //   []
   // );
+
+  useEffect(() => {
+    setGraphEdges(edges);
+    setGraphNodes(nodes);
+  }, [nodes, edges]);
 
   useEffect(() => {
     // console.log("nodes changes", nodesAndEdges.nodes);
@@ -228,7 +234,15 @@ const ZoomOutControl = () => {
 };
 
 const ResetZoomControl = () => {
+  const { setFitView } = useGraph();
   const { fitView } = useReactFlow();
+
+  // We need to capture this fit view function and pass it into our graph provider,
+  // so that we can call it when the edges or nodes change to update the layout
+  useEffect(() => {
+    setFitView(fitView);
+  }, [fitView]);
+
   return (
     <ControlButton
       className="bg-dashboard text-foreground border-0"
