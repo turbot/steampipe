@@ -398,10 +398,10 @@ jobs:
       - name: Copy binary
         run: |
           cp ~/build/steampipe tests/dockertesting/debian
-      
+
       - name: Build steampipe docker images
         run: |
-          docker build -t spdebian tests/dockertesting/debian
+          docker build -t spdebian tests/dockertesting/debian --build-arg TARGETBRANCH="${{ github.event.inputs.branch }}"
           docker images
 
       - name: Create a container and run the test suite
@@ -441,7 +441,7 @@ jobs:
       
       - name: Build steampipe docker images
         run: |
-          docker build -t sporacle tests/dockertesting/oraclelinux
+          docker build -t sporacle tests/dockertesting/oraclelinux --build-arg TARGETBRANCH="${{ github.event.inputs.branch }}"
           docker images
 
       - name: Create a container and run the test suite

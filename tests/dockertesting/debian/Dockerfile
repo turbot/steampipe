@@ -1,6 +1,9 @@
 FROM debian:bullseye-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
+# to run tests from the branch
+ARG TARGETBRANCH
+
 # add a non-root 'steampipe' user
 RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
 
@@ -29,6 +32,9 @@ ENV STEAMPIPE_TELEMETRY=none
 # enable introspection tables
 ENV STEAMPIPE_INTROSPECTION=info
 
+# use to run tests from the branch
+ENV BRANCH=$TARGETBRANCH
+
 # expose postgres service default port
 EXPOSE 9193
 
@@ -36,4 +42,4 @@ EXPOSE 9193
 EXPOSE 9194
 
 COPY run-tests.sh /usr/local/bin
-ENTRYPOINT [ "run-tests.sh" ]
+ENTRYPOINT [ "sh", "-c", "run-tests.sh $BRANCH" ]
