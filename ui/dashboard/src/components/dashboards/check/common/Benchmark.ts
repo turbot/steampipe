@@ -70,7 +70,10 @@ class Benchmark implements CheckNode {
       );
       nestedBenchmarks.push(
         new Benchmark(
-          padStart(benchmarkIndex.toString(), lengthMaxBenchmarkIndex),
+          `benchmark-${padStart(
+            benchmarkIndex.toString(),
+            lengthMaxBenchmarkIndex
+          )}`,
           nestedDefinition.name,
           nestedDefinition.title,
           nestedDefinition.description,
@@ -90,7 +93,7 @@ class Benchmark implements CheckNode {
       const control = panelsMap[nestedControl.name] as CheckControlRun;
       nestedControls.push(
         new Control(
-          padStart(controlIndex.toString(), lengthMaxControlIndex),
+          `control-${padStart(controlIndex.toString(), lengthMaxControlIndex)}`,
           this._name,
           this._title,
           this._description,

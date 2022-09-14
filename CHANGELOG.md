@@ -1,3 +1,7 @@
+## v0.16.2 [TBD]
+_Bug fixes_
+* Fix dashboard UI benchmarks with both child controls and benchmarks not rendering their controls. ([#2440](https://github.com/turbot/steampipe/issues/2440))
+
 ## v0.16.1 [2022-08-31]
 _Bug fixes_
 * Limit connection lifetime in the database connection pool. ([#2375](https://github.com/turbot/steampipe/issues/2375))
