@@ -1,3 +1,7 @@
+## v0.16.3 [TBD]
+_Bug fixes_
+* Fix dashboard UI benchmarks with both child controls and benchmarks not rendering their controls. ([#2440](https://github.com/turbot/steampipe/issues/2440))
+
 ## v0.16.2 [2022-09-09]
 _Bug fixes_
 * Update FDW to not start scan until the first time IterateForeignScan is called. ([#237](https://github.com/turbot/steampipe-postgres-fdw/issues/237))
