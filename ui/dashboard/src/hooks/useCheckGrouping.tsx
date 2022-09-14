@@ -230,12 +230,14 @@ const groupCheckItems = (
   return groupingsConfig
     .filter((groupConfig) => groupConfig.type !== "result")
     .reduce((cumulativeGrouping, currentGroupingConfig) => {
+      // Get this items grouping key - e.g. control or benchmark name
       const groupKey = getCheckGroupingKey(checkResult, currentGroupingConfig);
 
       if (!groupKey) {
         return cumulativeGrouping;
       }
 
+      // Collapse all benchmark trunk nodes
       if (currentGroupingConfig.type === "benchmark") {
         checkResult.benchmark_trunk.forEach(
           (benchmark) =>
@@ -249,6 +251,14 @@ const groupCheckItems = (
         };
       }
 
+      // If the grouping key for this has already been logged by another result,
+      // use the existing children from that - this covers cases where we may have
+      // benchmark 1 -> benchmark 2 -> control 1
+      // benchmark 1 -> control 2
+      // ...when we build the benchmark grouping node for control 1, its key will be
+      // for benchmark 2, but we'll add a hierarchical grouping node for benchmark 1 -> benchmark 2
+      // Wen we come to get the benchmark grouping node for control 2, we'll need to add
+      // the control to the existing children of benchmark 1
       if (
         currentGroupingConfig.type === "benchmark" &&
         benchmarkChildrenLookup[groupKey]
@@ -268,6 +278,7 @@ const groupCheckItems = (
 
         if (groupingNode) {
           if (currentGroupingConfig.type === "benchmark") {
+            // For benchmarks we need to get the benchmark nodes including the trunk
             addBenchmarkGroupingNode(cumulativeGrouping._, groupingNode);
           } else {
             cumulativeGrouping._.push(groupingNode);
@@ -426,7 +437,10 @@ const CheckGroupingProvider = ({
     const temp = { _: result };
     const benchmarkChildrenLookup = {};
 
+    // We'll loop over each control result and build up the grouped nodes from there
     b.all_control_results.forEach((checkResult) => {
+      // Build a grouping node - this will be the leaf node down from the root group
+      // e.g. benchmark -> control (where control is the leaf)
       const grouping = groupCheckItems(
         temp,
         checkResult,
@@ -434,6 +448,8 @@ const CheckGroupingProvider = ({
         checkNodeStates,
         benchmarkChildrenLookup
       );
+      // Build and add a check result node to the children of the trailing group.
+      // This will be used to calculate totals and severity, amongst other things.
       const node = getCheckResultNode(checkResult);
       grouping._.push(node);
     });
