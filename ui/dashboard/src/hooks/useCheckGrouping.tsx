@@ -71,16 +71,36 @@ const CheckGroupingContext = createContext<ICheckGroupingContext | null>(null);
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
-  children: CheckNode[]
-) => {
+  children: CheckNode[],
+  benchmarkChildrenLookup: { [name: string]: CheckNode[] }
+): CheckNode => {
   const currentNode = benchmark_trunk.length > 0 ? benchmark_trunk[0] : null;
+  let newChildren: CheckNode[];
+  if (benchmark_trunk.length > 1) {
+    newChildren = [
+      addBenchmarkTrunkNode(
+        benchmark_trunk.slice(1),
+        children,
+        benchmarkChildrenLookup
+      ),
+    ];
+  } else {
+    newChildren = children;
+  }
+  if (!!currentNode?.name) {
+    const existingChildren =
+      benchmarkChildrenLookup[currentNode?.name || "Other"];
+    if (existingChildren) {
+      existingChildren.push(...newChildren);
+    } else {
+      benchmarkChildrenLookup[currentNode?.name || "Other"] = newChildren;
+    }
+  }
   return new BenchmarkNode(
     currentNode?.sort || "Other",
     currentNode?.name || "Other",
     currentNode?.title || "Other",
-    benchmark_trunk.length > 1
-      ? [addBenchmarkTrunkNode(benchmark_trunk.slice(1), children)]
-      : children
+    newChildren
   );
 };
 
@@ -118,7 +138,8 @@ const getCheckGroupingKey = (
 const getCheckGroupingNode = (
   checkResult: CheckResult,
   group: CheckDisplayGroup,
-  children: CheckNode[]
+  children: CheckNode[],
+  benchmarkChildrenLookup: { [name: string]: CheckNode[] }
 ): CheckNode => {
   switch (group.type) {
     case "dimension":
@@ -167,8 +188,12 @@ const getCheckGroupingNode = (
       );
     case "benchmark":
       return checkResult.benchmark_trunk.length > 1
-        ? addBenchmarkTrunkNode(checkResult.benchmark_trunk.slice(1), children)
-        : children;
+        ? addBenchmarkTrunkNode(
+            checkResult.benchmark_trunk.slice(1),
+            children,
+            benchmarkChildrenLookup
+          )
+        : children[0];
     case "control":
       return new ControlNode(
         checkResult.control.sort,
@@ -199,11 +224,12 @@ const groupCheckItems = (
   temp: { _: CheckNode[] },
   checkResult: CheckResult,
   groupingsConfig: CheckDisplayGroup[],
-  checkNodeStates: CheckGroupNodeStates
+  checkNodeStates: CheckGroupNodeStates,
+  benchmarkChildrenLookup: { [name: string]: CheckNode[] }
 ) => {
   return groupingsConfig
     .filter((groupConfig) => groupConfig.type !== "result")
-    .reduce(function (cumulativeGrouping, currentGroupingConfig) {
+    .reduce((cumulativeGrouping, currentGroupingConfig) => {
       const groupKey = getCheckGroupingKey(checkResult, currentGroupingConfig);
 
       if (!groupKey) {
@@ -223,12 +249,21 @@ const groupCheckItems = (
         };
       }
 
+      if (
+        currentGroupingConfig.type === "benchmark" &&
+        benchmarkChildrenLookup[groupKey]
+      ) {
+        return { _: benchmarkChildrenLookup[groupKey] };
+      }
+
       if (!cumulativeGrouping[groupKey]) {
         cumulativeGrouping[groupKey] = { _: [] };
+
         const groupingNode = getCheckGroupingNode(
           checkResult,
           currentGroupingConfig,
-          cumulativeGrouping[groupKey]._
+          cumulativeGrouping[groupKey]._,
+          benchmarkChildrenLookup
         );
 
         if (groupingNode) {
@@ -341,7 +376,6 @@ const CheckGroupingProvider = ({
         // { type: "status" },
         // { type: "reason" },
         // { type: "resource" },
-        // { type: "status" },
         // { type: "severity" },
         // { type: "dimension", value: "account_id" },
         // { type: "dimension", value: "region" },
@@ -390,12 +424,15 @@ const CheckGroupingProvider = ({
     const checkNodeStates: CheckGroupNodeStates = {};
     const result: CheckNode[] = [];
     const temp = { _: result };
+    const benchmarkChildrenLookup = {};
+
     b.all_control_results.forEach((checkResult) => {
       const grouping = groupCheckItems(
         temp,
         checkResult,
         groupingsConfig,
-        checkNodeStates
+        checkNodeStates,
+        benchmarkChildrenLookup
       );
       const node = getCheckResultNode(checkResult);
       grouping._.push(node);
