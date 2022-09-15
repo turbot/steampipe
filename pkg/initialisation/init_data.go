@@ -74,7 +74,7 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, invoker constants.
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
 		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
-		w.HandlePreparesStatementFailures(preparedStatementFailures)
+		w.HandlePreparedStatementFailures(preparedStatementFailures)
 		return err
 	}
 
@@ -94,8 +94,10 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, invoker constants.
 		initData.Result.Error = refreshResult.Error
 		return initData
 	}
+	// add refresh connection warnings
 	initData.Result.AddWarnings(refreshResult.Warnings...)
-
+	// add warnings from prepared statement creation
+	initData.Result.AddPreparedStatementFailures(w.GetPreparedStatementFailures())
 	return initData
 }
 

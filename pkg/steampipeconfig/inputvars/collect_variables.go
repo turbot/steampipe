@@ -2,6 +2,7 @@ package inputvars
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
 	"regexp"
 	"strings"
@@ -15,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // CollectVariableValues inspects the various places that configuration input variable
@@ -64,7 +64,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	if _, err := os.Stat(defaultVarsPath); err == nil {
 		diags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
 		if diags.HasErrors() {
-			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", defaultVarsPath), diags)
+			return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", defaultVarsPath), diags)
 		}
 
 	}
@@ -78,7 +78,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 			}
 			diags := addVarsFromFile(name, ValueFromAutoFile, ret)
 			if diags.HasErrors() {
-				return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", name), diags)
+				return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", name), diags)
 			}
 
 		}
@@ -89,7 +89,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	for _, fileArg := range variableFileArgs {
 		diags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
 		if diags.HasErrors() {
-			return nil, utils.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", fileArg), diags)
+			return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", fileArg), diags)
 		}
 	}
 
@@ -119,7 +119,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	}
 
 	if diags.HasErrors() {
-		return nil, utils.DiagsToError(fmt.Sprintf("failed to evaluate var args:"), diags)
+		return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to evaluate var args:"), diags)
 	}
 
 	// check viper for any interactively added variables

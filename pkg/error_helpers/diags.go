@@ -1,4 +1,4 @@
-package utils
+package error_helpers
 
 import (
 	"errors"

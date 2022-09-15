@@ -223,7 +223,7 @@ func (m VariableParsingMode) Parse(name, value string) (cty.Value, hcl.Diagnosti
 		return val, diags
 	default:
 		// Should never happen
-		panic(fmt.Errorf("Parse called on invalid VariableParsingMode %#v", m))
+		panic(fmt.Errorf("parse called on invalid VariableParsingMode %#v", m))
 	}
 }
 

@@ -55,10 +55,11 @@ func (e *PreparedStatementError) Is(err error) bool {
 	return isPreparedStatementError
 }
 
-func (e *PreparedStatementError) Enrich(name string, err error, declRange hcl.Range) {
+func (e *PreparedStatementError) Enrich(name string, err error, declRange hcl.Range) *PreparedStatementError {
 	e.queryName = name
 	e.creationError = err
 	e.declRange = declRange
+	return e
 }
 
 // WrapPreparedStatementError modifies a context.Canceled error into a readable error that can

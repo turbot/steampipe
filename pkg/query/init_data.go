@@ -130,7 +130,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
 		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
-		w.HandlePreparesStatementFailures(preparedStatementFailures)
+		w.HandlePreparedStatementFailures(preparedStatementFailures)
 		return err
 	}
 
@@ -146,7 +146,8 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		i.Result.Error = res.Error
 		return
 	}
+	// add refresh connection warnings
 	i.Result.AddWarnings(res.Warnings...)
-
-	// TODO KAI ensure we display prepared statement warnings
+	// add warnings from prepared statement creation
+	i.Result.AddPreparedStatementFailures(w.GetPreparedStatementFailures())
 }

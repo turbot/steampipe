@@ -48,7 +48,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 	}
 
 	// display any initialisation messages/warnings
-	initData.Result.DisplayMessages()
+	initData.Result.DisplayMessages(nil)
 
 	failures := 0
 	if len(initData.Queries) > 0 {

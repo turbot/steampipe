@@ -53,7 +53,7 @@ type Workspace struct {
 	dashboardEventChan chan dashboardevents.DashboardEvent
 	// count of workspace changed events - used to ignore first event
 	changeEventCount          int
-	preparedStatementFailures map[string]error
+	preparedStatementFailures map[string]*steampipeconfig.PreparedStatementFailure
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -407,17 +407,25 @@ func (w *Workspace) verifyResourceRuntimeDependencies() error {
 	return nil
 }
 
-func (w *Workspace) HandlePreparesStatementFailures(failures map[string]error) {
+func (w *Workspace) HandlePreparedStatementFailures(failures map[string]error) {
 	// replace the map of failures with the current map
-	w.preparedStatementFailures = failures
+	w.preparedStatementFailures = make(map[string]*steampipeconfig.PreparedStatementFailure)
+	for queryName, err := range failures {
+		if query, ok := w.GetQuery(queryName); ok {
+			w.preparedStatementFailures[queryName] = &steampipeconfig.PreparedStatementFailure{
+				Query: query,
+				Error: err,
+			}
+		}
+	}
 }
 
 // GetPreparedStatementCreationFailure looks for a prepared statement error for the given query and if found,
 // returns the query and the prepared statement creation error (if any)
-func (w *Workspace) GetPreparedStatementCreationFailure(queryName string) (*modconfig.Query, error) {
-	query, ok := w.GetQuery(queryName)
-	if ok && w.preparedStatementFailures != nil {
-		return query, w.preparedStatementFailures[queryName]
-	}
-	return nil, nil
+func (w *Workspace) GetPreparedStatementCreationFailure(queryName string) *steampipeconfig.PreparedStatementFailure {
+	return w.preparedStatementFailures[queryName]
+}
+
+func (w *Workspace) GetPreparedStatementFailures() map[string]*steampipeconfig.PreparedStatementFailure {
+	return w.preparedStatementFailures
 }
