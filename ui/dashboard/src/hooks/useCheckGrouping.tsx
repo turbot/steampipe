@@ -251,21 +251,6 @@ const groupCheckItems = (
         };
       }
 
-      // If the grouping key for this has already been logged by another result,
-      // use the existing children from that - this covers cases where we may have
-      // benchmark 1 -> benchmark 2 -> control 1
-      // benchmark 1 -> control 2
-      // ...when we build the benchmark grouping node for control 1, its key will be
-      // for benchmark 2, but we'll add a hierarchical grouping node for benchmark 1 -> benchmark 2
-      // Wen we come to get the benchmark grouping node for control 2, we'll need to add
-      // the control to the existing children of benchmark 1
-      if (
-        currentGroupingConfig.type === "benchmark" &&
-        benchmarkChildrenLookup[groupKey]
-      ) {
-        return { _: benchmarkChildrenLookup[groupKey] };
-      }
-
       if (!cumulativeGrouping[groupKey]) {
         cumulativeGrouping[groupKey] = { _: [] };
 
@@ -284,6 +269,26 @@ const groupCheckItems = (
             cumulativeGrouping._.push(groupingNode);
           }
         }
+      }
+
+      // If the grouping key for this has already been logged by another result,
+      // use the existing children from that - this covers cases where we may have
+      // benchmark 1 -> benchmark 2 -> control 1
+      // benchmark 1 -> control 2
+      // ...when we build the benchmark grouping node for control 1, its key will be
+      // for benchmark 2, but we'll add a hierarchical grouping node for benchmark 1 -> benchmark 2
+      // When we come to get the benchmark grouping node for control 2, we'll need to add
+      // the control to the existing children of benchmark 1
+      if (
+        currentGroupingConfig.type === "benchmark" &&
+        benchmarkChildrenLookup[groupKey]
+      ) {
+        const groupingEntry = cumulativeGrouping[groupKey];
+        const { _, ...rest } = groupingEntry || {};
+        cumulativeGrouping[groupKey] = {
+          _: benchmarkChildrenLookup[groupKey],
+          ...rest,
+        };
       }
 
       return cumulativeGrouping[groupKey];
