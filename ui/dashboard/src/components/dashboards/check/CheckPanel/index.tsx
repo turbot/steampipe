@@ -222,7 +222,15 @@ const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
       ))}
       {results.map((resultNode) => (
         <CheckResultRow
-          key={`${resultNode.result.control.name}-${resultNode.result.resource}`}
+          key={`${resultNode.result.control.name}-${
+            resultNode.result.resource
+          }${
+            resultNode.result.dimensions
+              ? `-${resultNode.result.dimensions
+                  .map((d) => `${d.key}=${d.value}`)
+                  .join("-")}`
+              : ""
+          }`}
           result={resultNode.result}
         />
       ))}
