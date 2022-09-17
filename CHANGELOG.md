@@ -1,5 +1,10 @@
+## v0.16.3 [TBD]
+_Bug fixes_
+* Fix dashboard UI benchmark controls rendering a control node per control result, rather than a control node with multiple results within it. ([#2440](https://github.com/turbot/steampipe/issues/2440))
+* Fix `double` qual values not being passed to plugin. ([#243](https://github.com/turbot/steampipe-postgres-fdw/issues/243))
+
 ## v0.16.2 [2022-09-15]
-  _Bug fixes_
+_Bug fixes_
 * Update FDW to not start scan until the first time IterateForeignScan is called. ([#237](https://github.com/turbot/steampipe-postgres-fdw/issues/237))
 * Fix database initialisation failures due to invalid locale. ([#2368](https://github.com/turbot/steampipe/issues/2368))
 * Use ellipsis char instead of 3 dots in plugin update/install when cutting off the plugin name. ([#2355](https://github.com/turbot/steampipe/issues/2355))
