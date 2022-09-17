@@ -1,4 +1,4 @@
-## v0.16.3 [TBD]
+## v0.16.3 [2022-09-17]
 _Bug fixes_
 * Fix dashboard UI benchmark controls rendering a control node per control result, rather than a control node with multiple results within it. ([#2440](https://github.com/turbot/steampipe/issues/2440))
 * Fix `double` qual values not being passed to plugin. ([#243](https://github.com/turbot/steampipe-postgres-fdw/issues/243))
