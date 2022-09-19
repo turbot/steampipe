@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"io"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -197,7 +198,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// set global exit code
-	exitCode = failures
+	// exitCode = failures
 }
 
 // create the context for the check run - add a control status renderer
