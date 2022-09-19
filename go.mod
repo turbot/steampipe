@@ -4,7 +4,7 @@ go 1.19
 
 replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20220512154952-8a65716d8171
 
-replace github.com/turbot/go-kit => /Users/lalit/WORK/Turbot/steampipe/integrated-2/go-kit
+replace github.com/turbot/go-kit => github.com/turbot/go-kit v0.2.2-0.20220919041727-75252cee33c2
 
 require (
 	github.com/Machiel/slugify v1.0.1
