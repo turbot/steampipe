@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/initialisation"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/turbot/steampipe/pkg/cloud"
+	"github.com/turbot/steampipe/pkg/initialisation"
 
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -240,7 +241,7 @@ func validateDashboardArgs(args []string) (string, error) {
 
 func setExitCodeForDashboardError(err error) {
 	// if exit code already set, leave as is
-	if exitCode != 0 {
+	if exitCode != 0 || err == nil {
 		return
 	}
 
