@@ -13,6 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -35,7 +36,7 @@ type Workspace struct {
 	VariableValues map[string]string
 
 	CloudMetadata *steampipeconfig.CloudMetadata
-	watcher       *utils.FileWatcher
+	watcher       *filewatcher.FileWatcher
 	loadLock      sync.Mutex
 	exclusions    []string
 	modFilePath   string
@@ -137,7 +138,7 @@ func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, err
 }
 
 func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, errorHandler func(context.Context, error)) error {
-	watcherOptions := &utils.WatcherOptions{
+	watcherOptions := &filewatcher.WatcherOptions{
 		Directories: []string{w.Path},
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
@@ -150,7 +151,7 @@ func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, e
 			w.handleFileWatcherEvent(ctx, client, events)
 		},
 	}
-	watcher, err := utils.NewWatcher(watcherOptions)
+	watcher, err := filewatcher.NewWatcher(watcherOptions)
 	if err != nil {
 		return err
 	}
