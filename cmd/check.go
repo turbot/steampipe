@@ -198,6 +198,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// set global exit code
+	// TODO needs discussion: not setting the exitCode to failures for now
 	// exitCode = failures
 }
 
