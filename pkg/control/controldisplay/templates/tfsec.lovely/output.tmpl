@@ -1,0 +1,42 @@
+{{ define "control_row_template" }}
+Result{{ with .Control.Severity }} {{ . }}{{ end }} {{.Control.Title}} 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  {{ with index .Dimensions 0 }}{{ .Value }}{{ end }}
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+          ID {{ .Control.ShortName }}
+      Impact {{ .Reason }}
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+{{ end }}
+{{ define "output" -}}
+{{ range .Data.Root.ControlRuns -}}
+{{ template "control_run_template" . -}}
+{{ end -}}
+{{ range .Data.Root.Groups -}}
+{{ template "root_group_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ define "root_group_template" -}}
+{{ if .ControlRuns -}}
+{{ range .ControlRuns -}}
+{{ template "control_run_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ range .Groups -}}
+{{ template "group_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ define "group_template" -}}
+{{ if .ControlRuns -}}
+{{ range .ControlRuns -}}
+{{ template "control_run_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ range .Groups -}}
+{{ template "group_template" . -}}
+{{ end -}}
+{{ end -}}
+{{ define "control_run_template" -}}
+{{ range .Rows -}}
+{{ template "control_row_template" . }}
+{{ end -}}
+{{ end -}}
