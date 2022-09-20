@@ -1,7 +1,27 @@
 {{ define "control_row_template" }}
 Result{{ with .Control.Severity }} {{ . }}{{ end }} {{.Control.Title}} 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  {{ with index .Dimensions 0 }}{{ .Value }}{{ end }}
+{{ $source := dict "k" "v" -}}
+{{ range .Dimensions -}}
+{{ if eq .Key "path" }}{{ $_ := set $source "path" .Value }}{{ end -}}
+{{ if eq .Key "start_line" }}{{ $_ := set $source "start_line" .Value }}{{ end -}}
+{{ if eq .Key "end_line" }}{{ $_ := set $source "end_line" .Value }}{{ end -}}
+{{ if eq .Key "source" }}{{ $_ := set $source "source" .Value }}{{ end -}}
+{{ end -}}
+{{ with get $source "path" }}  {{ . -}}
+{{ with get $source "start_line" }}:{{ . }}{{ end -}}
+{{ with get $source "end_line" }}-{{ . }}{{ end -}}
+{{ end }}
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+{{ with get $source "source" -}}
+{{ range $i, $a := splitList "\n" . -}}
+{{ with get $source "start_line" }}
+{{ add $i . }}  {{ $a -}}
+{{ else }}
+  {{ $a -}}
+{{ end -}}
+{{ end }}
+{{ end }}
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
           ID {{ .Control.ShortName }}
       Impact {{ .Reason }}
