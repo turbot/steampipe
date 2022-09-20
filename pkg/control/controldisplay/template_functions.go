@@ -15,7 +15,19 @@ import (
 // templateFuncs merges desired functions from sprig with custom functions that we
 // define in steampipe
 func templateFuncs() template.FuncMap {
-	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now", "toPrettyJson"}
+	useFromSprigMap := []string{
+		"upper",
+		"toJson",
+		"quote",
+		"dict",
+		"add",
+		"now",
+		"toPrettyJson",
+		"atoi",
+		"splitList",
+		"get",
+		"set",
+	}
 
 	var funcs template.FuncMap = template.FuncMap{}
 	sprigMap := sprig.TxtFuncMap()
@@ -26,9 +38,8 @@ func templateFuncs() template.FuncMap {
 			// it does not slip through any crack
 			panic(fmt.Sprintf("%s not found", use))
 		}
-		if found {
-			funcs[use] = f
-		}
+
+		funcs[use] = f
 	}
 	for k, v := range formatterTemplateFuncMap {
 		funcs[k] = v
