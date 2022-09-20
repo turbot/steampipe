@@ -4,6 +4,7 @@ import { buildComponentsMap } from "../components";
 import { DashboardContext, DashboardSearch } from "../hooks/useDashboard";
 import { noop } from "./func";
 import { useStorybookTheme } from "../hooks/useStorybookTheme";
+import { BrowserRouter } from "react-router-dom";
 
 type PanelStoryDecoratorProps = {
   definition: any;
@@ -118,7 +119,9 @@ export const PanelStoryDecorator = ({
         progress: 100,
       }}
     >
-      <Dashboard />
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
     </DashboardContext.Provider>
   );
 };
