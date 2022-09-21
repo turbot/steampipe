@@ -14,13 +14,15 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/go-kit/helpers"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	sdkshared "github.com/turbot/steampipe-plugin-sdk/v4/grpc/shared"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/go-kit/helpers"
+	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
@@ -32,7 +34,7 @@ type runningPlugin struct {
 	initialized chan struct{}
 }
 
-// PluginManager is the real implementation of grpc.PluginManager
+// PluginManager is the implementation of grpc.PluginManager
 type PluginManager struct {
 	proto.UnimplementedPluginManagerServer
 
@@ -134,6 +136,30 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.Co
 	if err != nil {
 		log.Printf("[WARN] handleConnectionConfigChanges returned error: %s", err.Error())
 	}
+}
+
+func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
+	log.Printf("[TRACE] PluginManager Shutdown")
+	debug.PrintStack()
+
+	m.mut.Lock()
+	defer func() {
+		m.mut.Unlock()
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
+	}()
+
+	for name, p := range m.connectionPluginMap {
+		if p.client == nil {
+			log.Printf("[WARN] plugin %s has no client - cannot kill", name)
+			// shouldn't happen but has been observed in error situations
+			continue
+		}
+		log.Printf("[TRACE] killing plugin %s (%v)", name, p.reattach.Pid)
+		p.client.Kill()
+	}
+	return &proto.ShutdownResponse{}, nil
 }
 
 func (m *PluginManager) handleConnectionConfigChanges(configMap map[string]*sdkproto.ConnectionConfig) error {
@@ -263,30 +289,6 @@ func (m *PluginManager) handleUpdatedConnections(updatedConnections map[string][
 		// write back to map
 		requestMap[p] = req
 	}
-}
-
-func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
-	log.Printf("[TRACE] PluginManager Shutdown")
-	debug.PrintStack()
-
-	m.mut.Lock()
-	defer func() {
-		m.mut.Unlock()
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
-
-	for name, p := range m.connectionPluginMap {
-		if p.client == nil {
-			log.Printf("[WARN] plugin %s has no client - cannot kill", name)
-			// shouldn't happen but has been observed in error situations
-			continue
-		}
-		log.Printf("[TRACE] killing plugin %s (%v)", name, p.reattach.Pid)
-		p.client.Kill()
-	}
-	return &proto.ShutdownResponse{}, nil
 }
 
 func (m *PluginManager) getConnectionConfig(connectionName string) (*sdkproto.ConnectionConfig, error) {

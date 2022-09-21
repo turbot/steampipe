@@ -1,7 +1,7 @@
 package proto
 
 import (
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 )
 
 func SupportedOperationsFromSdk(s *sdkproto.GetSupportedOperationsResponse) *SupportedOperations {
