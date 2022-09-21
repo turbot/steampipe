@@ -16,7 +16,7 @@ Result{{ with .Control.Severity }} {{ . }}{{ end }} {{.Control.Title}}
 {{ with get $source "source" -}}
 {{ range $i, $a := splitList "\n" . -}}
 {{ with get $source "start_line" }}
-{{ add $i . }}  {{ $a -}}
+{{ add $i . | printf "%3d" }}  {{ $a -}}
 {{ else }}
   {{ $a -}}
 {{ end -}}
