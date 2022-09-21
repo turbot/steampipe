@@ -301,6 +301,7 @@ type SupportedOperations struct {
 
 	QueryCache          bool `protobuf:"varint,1,opt,name=query_cache,json=queryCache,proto3" json:"query_cache,omitempty"`
 	MultipleConnections bool `protobuf:"varint,2,opt,name=multiple_connections,json=multipleConnections,proto3" json:"multiple_connections,omitempty"`
+	MessageStream       bool
 }
 
 func (x *SupportedOperations) Reset() {
