@@ -8,5 +8,6 @@ func SupportedOperationsFromSdk(s *sdkproto.GetSupportedOperationsResponse) *Sup
 	return &SupportedOperations{
 		QueryCache:          s.QueryCache,
 		MultipleConnections: s.MultipleConnections,
+		MessageStream:       s.MessageStream,
 	}
 }

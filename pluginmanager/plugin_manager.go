@@ -2,6 +2,7 @@ package pluginmanager
 
 import (
 	"crypto/md5"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -666,6 +667,10 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 	}
 
 	return pluginClient.SetConnectionConfig(req)
+}
+
+func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection string) {
+	log.Printf("[WARN] UPDATE SCHEMA FOR %s", connection)
 }
 
 func (m *PluginManager) getConnectionChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {
