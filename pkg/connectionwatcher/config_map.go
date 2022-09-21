@@ -1,7 +1,7 @@
 package connectionwatcher
 
 import (
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
