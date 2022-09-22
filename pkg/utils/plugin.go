@@ -5,6 +5,28 @@ import (
 	"strings"
 )
 
+const maxSchemaNameLength = 63
+
+// PluginFQNToSchemaName convert a full plugin name to a schema name
+// schemas in postgres are limited to 63 chars - the name may be longer than this, in which case trim the length
+// and add a hash to the end to make unique
+func PluginFQNToSchemaName(pluginFQN string) string {
+	if len(pluginFQN) < maxSchemaNameLength {
+		return pluginFQN
+	}
+
+	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", StringHash(pluginFQN))
+	return schemaName
+}
+
+func trimSchemaName(pluginFQN string) string {
+	if len(pluginFQN) < maxSchemaNameLength {
+		return pluginFQN
+	}
+
+	return pluginFQN[:maxSchemaNameLength-9]
+}
+
 // GetPluginName function is used to get the plugin name required while
 // installing/updating/removing a plugin. External plugins require the repo
 // names to be prefixed(eg: francois2metz/scalingo).

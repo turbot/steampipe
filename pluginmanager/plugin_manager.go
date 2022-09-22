@@ -1,8 +1,8 @@
 package pluginmanager
 
 import (
-	"crypto/md5"
 	"context"
+	"crypto/md5"
 	"fmt"
 	"log"
 	"os"
@@ -15,15 +15,13 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/go-kit/helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/go-kit/helpers"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
 )
@@ -58,8 +56,9 @@ type PluginManager struct {
 	// map of max cache size, keyed by plugin name
 	pluginCacheSizeMap map[string]int64
 
-	mut    sync.Mutex
-	logger hclog.Logger
+	mut           sync.Mutex
+	logger        hclog.Logger
+	messageServer *PluginMessageServer
 }
 
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
@@ -71,7 +70,13 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, lo
 		connectionPluginMap:      make(map[string]*runningPlugin),
 		connectionConfigMap:      connectionConfig,
 		// pluginConnectionConfigMap is created by populatePluginConnectionConfigs
+
 	}
+	messageServer, err := NewPluginMessageServer(pluginManager)
+	if err != nil {
+		return nil, err
+	}
+	pluginManager.messageServer = messageServer
 
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
@@ -405,6 +410,7 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 
 	// store the client to our map
 	m.storeClientToMap(connectionName, client, reattach)
+
 	log.Printf("[TRACE] PluginManager getPlugin complete, returning reattach config with PID: %d", reattach.Pid)
 
 	// and return
@@ -526,7 +532,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 }
 
 func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ *proto.ReattachConfig, err error) {
-	log.Printf("[TRACE] ************ start plugin %s ********************\n", connectionName)
+	log.Printf("[WARN] ************ start plugin %s ********************\n", connectionName)
 
 	// get connection config
 	connectionConfig, err := m.getConnectionConfig(connectionName)
@@ -592,12 +598,12 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	}
 
 	log.Printf("[TRACE] supportedOperations: %v", supportedOperations)
-	var connections = []string{connectionName}
+	var connectionNames = []string{connectionName}
 
 	if supportedOperations.MultipleConnections {
 		// send the connection config for all connections for this plugin
 		// this returns a list of all connections provided by this plugin
-		connections, err = m.setAllConnectionConfigs(pluginClient, pluginName)
+		connectionNames, err = m.setAllConnectionConfigs(pluginClient, pluginName)
 	} else {
 		// send the connection config using legacy single connection function
 		err = m.setSingleConnectionConfig(pluginClient, connectionName)
@@ -607,8 +613,9 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 		return nil, nil, err
 	}
 
-	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connections)
+	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connectionNames)
 
+	m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
 	return client, reattach, nil
 }
 
@@ -671,6 +678,18 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection string) {
 	log.Printf("[WARN] UPDATE SCHEMA FOR %s", connection)
+	//// now refresh connections and search paths
+	//client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
+	//if err != nil {
+	//	log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
+	//}
+	//defer client.Close(ctx)
+	//
+	//refreshResult := client.RefreshConnectionAndSearchPaths(ctx, connection)
+	//if refreshResult.Error != nil {
+	//	log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
+	//	return
+	//}
 }
 
 func (m *PluginManager) getConnectionChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {

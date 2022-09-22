@@ -260,11 +260,11 @@ WHERE %s
 
 // local only functions
 
-func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, schemaNames ...string) *steampipeconfig.RefreshConnectionResult {
 	// NOTE: disable any status updates - we do not want 'loading' output from any queries
 	ctx = statushooks.DisableStatusHooks(ctx)
 
-	res := c.refreshConnections(ctx)
+	res := c.refreshConnections(ctx, schemaNames...)
 	if res.Error != nil {
 		return res
 	}

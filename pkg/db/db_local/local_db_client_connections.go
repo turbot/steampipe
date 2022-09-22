@@ -14,18 +14,21 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) refreshConnections(ctx context.Context, schemaNames ...string) *steampipeconfig.RefreshConnectionResult {
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
+	// if no schema names were passed, retrieve all connection names
+	if len(schemaNames) == 0 {
+		schemaNames = c.ForeignSchemaNames()
+	}
 	// determine any necessary connection updates
-	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames())
+	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(schemaNames)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 
 	if res.Error != nil {
@@ -143,7 +146,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 	for connectionName, connectionData := range updates {
 
-		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
+		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		builder.WriteString(getUpdateConnectionQuery(connectionName, remoteSchema))
 
 		_, err := rootClient.Exec(ctx, builder.String())
