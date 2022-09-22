@@ -2,6 +2,7 @@ package pluginmanager
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"os"
 	"path/filepath"
@@ -51,7 +52,7 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 	pluginDir := filepaths.EnsurePluginDir()
 
 	// first try searching by prefix - trim the schema name
-	globPattern := filepath.Join(pluginDir, trimSchemaName(remoteSchema)) + "*"
+	globPattern := filepath.Join(pluginDir, utils.TrimSchemaName(remoteSchema)) + "*"
 	matches, err := filepath.Glob(globPattern)
 	if err != nil {
 		return "", err
@@ -66,7 +67,7 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 			// do not fail on error here
 			continue
 		}
-		hashedName := PluginFQNToSchemaName(folderRelativePath)
+		hashedName := utils.PluginFQNToSchemaName(folderRelativePath)
 		if hashedName == remoteSchema {
 			return filepath.Join(pluginDir, folderRelativePath), nil
 		}

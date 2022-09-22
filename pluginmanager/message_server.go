@@ -20,19 +20,19 @@ func NewPluginMessageServer(pluginManager *PluginManager) (*PluginMessageServer,
 }
 
 func (m *PluginMessageServer) AddConnection(pluginClient *sdkgrpc.PluginClient, pluginName string, connectionNames ...string) error {
-	//log.Printf("[WARN] PluginMessageServer AddConnection for connections %v", connectionNames)
-	//
-	//for _, connection := range connectionNames {
-	//	cacheStream, err := m.openMessageStream(pluginClient, pluginName, connection)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	// if no cache stream was returned, this plugin cannot support cache streams
-	//	if cacheStream == nil {
-	//		return nil
-	//	}
-	//	go m.runMessageListener(cacheStream, connection)
-	//}
+	log.Printf("[WARN] PluginMessageServer AddConnection for connections %v", connectionNames)
+
+	for _, connection := range connectionNames {
+		cacheStream, err := m.openMessageStream(pluginClient, pluginName, connection)
+		if err != nil {
+			return err
+		}
+		// if no cache stream was returned, this plugin cannot support cache streams
+		if cacheStream == nil {
+			return nil
+		}
+		go m.runMessageListener(cacheStream, connection)
+	}
 	return nil
 }
 

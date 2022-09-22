@@ -15,11 +15,11 @@ func PluginFQNToSchemaName(pluginFQN string) string {
 		return pluginFQN
 	}
 
-	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", StringHash(pluginFQN))
+	schemaName := TrimSchemaName(pluginFQN) + fmt.Sprintf("-%x", StringHash(pluginFQN))
 	return schemaName
 }
 
-func trimSchemaName(pluginFQN string) string {
+func TrimSchemaName(pluginFQN string) string {
 	if len(pluginFQN) < maxSchemaNameLength {
 		return pluginFQN
 	}

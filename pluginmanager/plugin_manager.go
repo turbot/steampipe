@@ -20,6 +20,7 @@ import (
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
@@ -678,18 +679,18 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection string) {
 	log.Printf("[WARN] UPDATE SCHEMA FOR %s", connection)
-	//// now refresh connections and search paths
-	//client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
-	//if err != nil {
-	//	log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
-	//}
-	//defer client.Close(ctx)
-	//
-	//refreshResult := client.RefreshConnectionAndSearchPaths(ctx, connection)
-	//if refreshResult.Error != nil {
-	//	log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
-	//	return
-	//}
+	// now refresh connections and search paths
+	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
+	if err != nil {
+		log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
+	}
+	defer client.Close(ctx)
+
+	refreshResult := client.RefreshConnectionAndSearchPaths(ctx, connection)
+	if refreshResult.Error != nil {
+		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
+		return
+	}
 }
 
 func (m *PluginManager) getConnectionChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {
