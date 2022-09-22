@@ -57,6 +57,6 @@ Result{{ with .Control.Severity }} {{ . }}{{ end }} {{.Control.Title}}
 {{ end -}}
 {{ define "control_run_template" -}}
 {{ range .Rows -}}
-{{ template "control_row_template" . }}
+{{ if eq .Status "alarm" "error" }}{{ template "control_row_template" . }}{{ end }}
 {{ end -}}
 {{ end -}}
