@@ -34,7 +34,6 @@ Result{{ with .Control.Severity }} {{ . }}{{ end }} {{.Control.Title}}
 {{ range .Data.Root.Groups -}}
 {{ template "root_group_template" . -}}
 {{ end }}
-
   results
   ──────────────────────────────────────────
   passed               {{ add .Data.Root.Summary.Status.Ok .Data.Root.Summary.Status.Info }} 
