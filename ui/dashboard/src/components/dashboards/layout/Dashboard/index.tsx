@@ -10,6 +10,7 @@ import {
 import { registerComponent } from "../../index";
 
 interface DashboardProps {
+  allowPanelExpand?: boolean;
   definition: DashboardDefinition;
   isRoot?: boolean;
   progress?: number;
@@ -17,8 +18,13 @@ interface DashboardProps {
   withPadding?: boolean;
 }
 
+interface DashboardWrapperProps {
+  allowPanelExpand?: boolean;
+}
+
 // TODO allow full-screen of a panel
 const Dashboard = ({
+  allowPanelExpand = true,
   definition,
   progress = 0,
   isRoot = true,
@@ -33,12 +39,17 @@ const Dashboard = ({
       isDashboard={true}
       withPadding={withPadding}
     >
-      <Children children={definition.children} />
+      <Children
+        allowPanelExpand={allowPanelExpand}
+        children={definition.children}
+      />
     </LayoutPanel>
   </>
 );
 
-const DashboardWrapper = () => {
+const DashboardWrapper = ({
+  allowPanelExpand = true,
+}: DashboardWrapperProps) => {
   const {
     dashboard,
     dataMode,
@@ -63,6 +74,7 @@ const DashboardWrapper = () => {
 
   return (
     <Dashboard
+      allowPanelExpand={allowPanelExpand}
       definition={dashboard}
       progress={progress}
       withPadding={true}

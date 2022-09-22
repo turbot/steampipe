@@ -118,7 +118,7 @@ export const PanelStoryDecorator = ({
         progress: 100,
       }}
     >
-      <Dashboard />
+      <Dashboard allowPanelExpand={false} />
     </DashboardContext.Provider>
   );
 };
