@@ -33,7 +33,17 @@ Result{{ with .Control.Severity }} {{ . }}{{ end }} {{.Control.Title}}
 {{ end -}}
 {{ range .Data.Root.Groups -}}
 {{ template "root_group_template" . -}}
-{{ end -}}
+{{ end }}
+
+  results
+  ──────────────────────────────────────────
+  passed               {{ add .Data.Root.Summary.Status.Ok .Data.Root.Summary.Status.Info }} 
+  ignored              {{ .Data.Root.Summary.Status.Skip }}
+  critical             {{ add .Data.Root.Summary.Status.Alarm .Data.Root.Summary.Status.Error }}
+
+  {{ add .Data.Root.Summary.Status.Ok .Data.Root.Summary.Status.Info }} passed, {{ add .Data.Root.Summary.Status.Alarm .Data.Root.Summary.Status.Error }} potential problem(s) detected.
+
+
 {{ end -}}
 {{ define "root_group_template" -}}
 {{ if .ControlRuns -}}
