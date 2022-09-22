@@ -1,7 +1,6 @@
 package pluginmanager
 
 import (
-	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/error_helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -12,7 +11,7 @@ type PluginMessageServer struct {
 	pluginManager *PluginManager
 }
 
-func NewPluginMessageServer(maxCacheStorageMb int, pluginManager *PluginManager) (*PluginMessageServer, error) {
+func NewPluginMessageServer(pluginManager *PluginManager) (*PluginMessageServer, error) {
 
 	res := &PluginMessageServer{
 		pluginManager: pluginManager,
@@ -20,40 +19,42 @@ func NewPluginMessageServer(maxCacheStorageMb int, pluginManager *PluginManager)
 	return res, nil
 }
 
-func (m *PluginMessageServer) AddConnection(client *plugin.Client, connection string) error {
-	cacheStream, err := m.openMessageStream(client, connection)
-	if err != nil {
-		return err
-	}
-	// if no cache stream was returned, this plugin cannot support cache streams
-	if cacheStream == nil {
-		return nil
-	}
-	go m.runMessageListener(cacheStream, connection)
+func (m *PluginMessageServer) AddConnection(pluginClient *sdkgrpc.PluginClient, pluginName string, connectionNames ...string) error {
+	//log.Printf("[WARN] PluginMessageServer AddConnection for connections %v", connectionNames)
+	//
+	//for _, connection := range connectionNames {
+	//	cacheStream, err := m.openMessageStream(pluginClient, pluginName, connection)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	// if no cache stream was returned, this plugin cannot support cache streams
+	//	if cacheStream == nil {
+	//		return nil
+	//	}
+	//	go m.runMessageListener(cacheStream, connection)
+	//}
 	return nil
 }
 
-func (m *PluginMessageServer) openMessageStream(rawClient *plugin.Client, connection string) (sdkproto.WrapperPlugin_EstablishMessageStreamClient, error) {
-	log.Printf("[TRACE] openMessageStream for connection '%s'", connection)
-
-	pluginName := m.pluginManager.connectionPluginMap[connection].reattach.Plugin
-
-	client, err := sdkgrpc.NewPluginClient(rawClient, pluginName)
-	if err != nil {
-		return nil, err
-	}
+func (m *PluginMessageServer) openMessageStream(pluginClient *sdkgrpc.PluginClient, pluginName, connection string) (sdkproto.WrapperPlugin_EstablishMessageStreamClient, error) {
+	log.Printf("[WARN] openMessageStream for connection '%s'", connection)
 
 	// does this plugin support streaming cache
-	supportedOperations, err := client.GetSupportedOperations()
+	supportedOperations, err := pluginClient.GetSupportedOperations()
 	if err != nil {
 		return nil, err
 	}
 	if !supportedOperations.MessageStream {
-		log.Printf("[TRACE] plugin '%s' does not support message stream", pluginName)
+		log.Printf("[WARN] plugin '%s' does not support message stream", pluginName)
 		return nil, nil
 	}
-	cacheStream, err := client.EstablishMessageStream()
-	return cacheStream, nil
+
+	log.Printf("[WARN] calling EstablishMessageStream")
+
+	stream, err := pluginClient.EstablishMessageStream()
+	log.Printf("[WARN] EstablishMessageStream returned %v %v", stream, err)
+	return stream, err
+
 }
 
 func (m *PluginMessageServer) runMessageListener(stream sdkproto.WrapperPlugin_EstablishMessageStreamClient, connection string) {

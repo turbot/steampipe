@@ -11,8 +11,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
-const maxSchemaNameLength = 63
-
 func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	remoteSchema := plugin
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
@@ -46,26 +44,6 @@ func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	}
 
 	return filepath.Join(pluginFolder, matches[0]), nil
-}
-
-// PluginFQNToSchemaName convert a full plugin name to a schema name
-// schemas in postgres are limited to 63 chars - the name may be longer than this, in which case trim the length
-// and add a hash to the end to make unique
-func PluginFQNToSchemaName(pluginFQN string) string {
-	if len(pluginFQN) < maxSchemaNameLength {
-		return pluginFQN
-	}
-
-	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", helpers.StringFnvHash(pluginFQN))
-	return schemaName
-}
-
-func trimSchemaName(pluginFQN string) string {
-	if len(pluginFQN) < maxSchemaNameLength {
-		return pluginFQN
-	}
-
-	return pluginFQN[:maxSchemaNameLength-9]
 }
 
 // FindPluginFolder searches for a folder which when hashed would match the schema
