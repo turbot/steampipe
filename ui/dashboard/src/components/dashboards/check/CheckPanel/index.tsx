@@ -26,8 +26,6 @@ import {
   CheckSeveritySummary,
 } from "../common";
 import { classNames } from "../../../../utils/styles";
-import { ThemeNames } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo } from "react";
 
 interface CheckChildrenProps {
@@ -197,21 +195,14 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
 };
 
 const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
-  const {
-    themeContext: { theme },
-  } = useDashboard();
-
-  if (!empties || !errors || !results) {
+  if (empties.length === 0 && errors.length === 0 && results.length === 0) {
     return null;
   }
 
   return (
     <div
       className={classNames(
-        "border-t shadow-sm rounded-b-md divide-y divide-table-divide print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto",
-        theme.name === ThemeNames.STEAMPIPE_DARK
-          ? "border-table-divide"
-          : "border-background"
+        "border-t shadow-sm rounded-b-md divide-y divide-table-divide border-table-divide print:shadow-none print:border print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto"
       )}
     >
       {empties.map((emptyNode) => (
@@ -341,13 +332,13 @@ const CheckPanel = ({ depth, node }: CheckPanelProps) => {
       >
         <section
           className={classNames(
-            "bg-dashboard-panel print:bg-white shadow-sm rounded-md",
+            "bg-dashboard-panel shadow-sm rounded-md border-table-divide print:border print:bg-white print:shadow-none",
             can_be_expanded ? "cursor-pointer" : null,
             expanded &&
               (empty_nodes.length > 0 ||
                 error_nodes.length > 0 ||
                 result_nodes.length > 0)
-              ? "rounded-b-none"
+              ? "rounded-b-none border-b-0"
               : null
           )}
           onClick={() =>
