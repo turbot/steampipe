@@ -41,11 +41,16 @@ const useChartThemeColors = () => {
   };
 
   const [themeColors, setThemeColors] = useState(getThemeColors());
+  const [random, setRandom] = useState<number | null>(null);
 
   useEffect(() => {
     setThemeColors(getThemeColors());
     // getThemeColors uses a ref that can sit outside the hook dependencies
-  }, [theme.name, setThemeColors]);
+  }, [random, theme.name, setThemeColors]);
+
+  useEffect(() => {
+    setRandom(Math.random() * Math.random());
+  }, [theme]);
 
   return themeColors;
 };

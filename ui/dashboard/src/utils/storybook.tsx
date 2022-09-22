@@ -27,7 +27,7 @@ export const PanelStoryDecorator = ({
   panelType,
   additionalProperties = {},
 }: PanelStoryDecoratorProps) => {
-  const { wrapperRef } = useStorybookTheme();
+  const { theme, wrapperRef } = useStorybookTheme();
   const { properties, ...rest } = definition;
 
   const newPanel = {
@@ -103,10 +103,7 @@ export const PanelStoryDecorator = ({
         },
 
         themeContext: {
-          theme: {
-            label: "Steampipe Default",
-            name: "steampipe-default",
-          },
+          theme,
           setTheme: noop,
           wrapperRef,
         },
@@ -118,7 +115,7 @@ export const PanelStoryDecorator = ({
         progress: 100,
       }}
     >
-      <Dashboard />
+      <Dashboard allowPanelExpand={false} />
     </DashboardContext.Provider>
   );
 };

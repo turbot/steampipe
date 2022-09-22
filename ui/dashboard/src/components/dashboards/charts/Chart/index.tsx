@@ -4,6 +4,7 @@ import merge from "lodash/merge";
 import React, { useEffect, useRef, useState } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import set from "lodash/set";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import {
   BarChart,
@@ -39,15 +40,14 @@ import {
 } from "../types";
 import { FlowType } from "../../flows/types";
 import { getChartComponent } from "..";
+import { GraphType } from "../../graphs/types";
 import { HierarchyType } from "../../hierarchies/types";
 import { LabelLayout } from "echarts/features";
-import { Theme } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
-import * as echarts from "echarts/core";
 import { registerComponent } from "../../index";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
-import { GraphType } from "../../graphs/types";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useNavigate } from "react-router-dom";
+import * as echarts from "echarts/core";
 
 echarts.use([
   BarChart,
@@ -626,28 +626,7 @@ const getSeriesForChartType = (
   return series;
 };
 
-const buildChartOptions = (
-  props: ChartProps,
-  theme: Theme,
-  themeWrapperRef: ((instance: null) => void) | React.RefObject<null>
-) => {
-  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
-  // @ts-ignore
-  const style = window.getComputedStyle(themeWrapperRef);
-  const foreground = style.getPropertyValue("--color-foreground");
-  const foregroundLightest = style.getPropertyValue(
-    "--color-foreground-lightest"
-  );
-  const alert = style.getPropertyValue("--color-alert");
-  const info = style.getPropertyValue("--color-info");
-  const ok = style.getPropertyValue("--color-ok");
-  const themeColors = {
-    foreground,
-    foregroundLightest,
-    alert,
-    info,
-    ok,
-  };
+const buildChartOptions = (props: ChartProps, themeColors: any) => {
   const { dataset, rowSeriesLabels, transform } = buildChartDataset(
     props.data,
     props.properties
@@ -693,12 +672,10 @@ const handleClick = async (params: any, navigate) => {
   if (componentType !== "series") {
     return;
   }
-  // const componentSubType = params.componentSubType;
   const dataType = params.dataType;
 
   switch (dataType) {
     case "node":
-      console.log(params);
       if (!params.data.href) {
         return;
       }
@@ -766,13 +743,10 @@ const Chart = ({ options, type }: ChartComponentProps) => {
 };
 
 const ChartWrapper = (props: ChartProps) => {
-  const [, setRandomVal] = useState(0);
   const {
-    themeContext: { theme, wrapperRef },
+    themeContext: { wrapperRef },
   } = useDashboard();
-
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
+  const themeColors = useChartThemeColors();
 
   if (!wrapperRef) {
     return null;
@@ -784,7 +758,7 @@ const ChartWrapper = (props: ChartProps) => {
 
   return (
     <Chart
-      options={buildChartOptions(props, theme, wrapperRef)}
+      options={buildChartOptions(props, themeColors)}
       type={props.display_type || "column"}
     />
   );

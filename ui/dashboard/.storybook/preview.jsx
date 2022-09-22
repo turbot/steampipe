@@ -1,6 +1,7 @@
 import StoryWrapper from "./StoryWrapper";
 import { ThemeProvider } from "../src/hooks/useStorybookTheme";
 import { themes } from "@storybook/theming";
+import { withRouter } from "storybook-addon-react-router-v6";
 import "../src/styles/index.css";
 
 const viewports = {
@@ -55,6 +56,7 @@ const viewports = {
 };
 
 export const decorators = [
+  withRouter,
   (Story) => (
     <ThemeProvider>
       <StoryWrapper>

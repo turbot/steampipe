@@ -1,7 +1,5 @@
-import addons, { mockChannel } from "@storybook/addons";
 import React, { createContext, useContext, useState } from "react";
-import useLocalStorage from "./useLocalStorage";
-import useMediaQuery from "./useMediaQuery";
+import addons, { mockChannel } from "@storybook/addons";
 import { useDarkMode } from "storybook-dark-mode";
 
 if (!addons.hasChannel()) {
