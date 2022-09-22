@@ -693,12 +693,10 @@ const handleClick = async (params: any, navigate) => {
   if (componentType !== "series") {
     return;
   }
-  // const componentSubType = params.componentSubType;
   const dataType = params.dataType;
 
   switch (dataType) {
     case "node":
-      console.log(params);
       if (!params.data.href) {
         return;
       }

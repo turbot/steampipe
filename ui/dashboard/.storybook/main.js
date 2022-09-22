@@ -7,6 +7,7 @@ module.exports = {
     "@storybook/addon-essentials",
     "@storybook/preset-create-react-app",
     "storybook-dark-mode",
+    "storybook-addon-react-router-v6",
   ],
   core: {
     builder: "webpack5",
