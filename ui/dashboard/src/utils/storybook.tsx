@@ -113,6 +113,7 @@ export const PanelStoryDecorator = ({
         refetchDashboard: false,
         state: "complete",
         progress: 100,
+        view: "dashboard",
       }}
     >
       <Dashboard allowPanelExpand={false} />

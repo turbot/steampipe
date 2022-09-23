@@ -95,6 +95,8 @@ interface IDashboardContext {
 
   progress: number;
   state: DashboardRunState;
+
+  view: string;
 }
 
 export interface IActions {
@@ -261,6 +263,7 @@ export interface ContainerDefinition {
   data?: LeafNodeData;
   title?: string;
   width?: number;
+  view?: string[];
   children?: (ContainerDefinition | PanelDefinition)[];
 }
 
@@ -827,6 +830,8 @@ const getInitialState = (searchParams, defaults: any = {}) => {
     execution_id: null,
 
     progress: 0,
+
+    view: searchParams.get("view") || "dashboard",
   };
 };
 
