@@ -20,25 +20,6 @@ interface ContainerProps {
   withTitle?: boolean;
 }
 
-const showContainerForView = (
-  container: ContainerDefinition,
-  currentView: string
-): boolean => {
-  const containerViews = container.view || [];
-  // If the container does not specify views and the current view is dashboard, show this container
-  if (containerViews.length === 0 && currentView === "dashboard") {
-    return true;
-  }
-  // If the container does not specify views and the current view is not dashboard, do not this container
-  else if (containerViews.length === 0 && currentView !== "dashboard") {
-    return false;
-  }
-  // Else see if the container views include the current view
-  else {
-    return containerViews.includes(currentView);
-  }
-};
-
 const Container = ({
   allowChildPanelExpand = true,
   allowExpand = false,
@@ -49,7 +30,7 @@ const Container = ({
   withTitle,
 }: ContainerProps) => {
   const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const { dispatch, panelsMap, view } = useDashboard();
+  const { dispatch, panelsMap } = useDashboard();
 
   if (!definition && !layoutDefinition) {
     return null;
@@ -61,11 +42,7 @@ const Container = ({
     ? panelsMap[layoutDefinition.name]
     : layoutDefinition;
 
-  // Check if this panel should be shown according to the current view
-  if (
-    !panelDefinition ||
-    !showContainerForView(panelDefinition as ContainerDefinition, view)
-  ) {
+  if (!panelDefinition) {
     return null;
   }
 

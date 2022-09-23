@@ -48,6 +48,20 @@ export interface ComponentsMap {
   [name: string]: any;
 }
 
+interface LayoutNode {
+  name: string;
+  panel_type: string;
+  children?: LayoutNode[];
+}
+
+interface LayoutsMap {
+  [name: string]: LayoutNode;
+}
+
+interface LayoutTopLevelChildrenMap {
+  [view: string]: LayoutNode[];
+}
+
 export interface PanelsMap {
   [name: string]: PanelDefinition;
 }
@@ -395,7 +409,7 @@ const updateSelectedDashboard = (
   }
 };
 
-function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
+const buildSqlDataMap = (panels: PanelsMap): SQLDataMap => {
   const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
@@ -410,9 +424,12 @@ function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
     }
   }
   return sqlDataMap;
-}
+};
 
-function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
+const addDataToPanels = (
+  panels: PanelsMap,
+  sqlDataMap: SQLDataMap
+): PanelsMap => {
   const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
@@ -433,7 +450,54 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
     }
   }
   return panels;
-}
+};
+
+const calculateLayouts = (
+  layout: LayoutNode,
+  panels: PanelsMap,
+  currentView: string
+): LayoutsMap => {
+  const layouts: LayoutsMap = {};
+  const layoutChildren: LayoutTopLevelChildrenMap = {};
+  // We only check the top-level children to see if they are containers specifying
+  // views and record a map of the different layouts
+  for (const child of layout.children || []) {
+    if (child.panel_type === "container") {
+      const panel = panels[child.name];
+      const container = panel as ContainerDefinition;
+      // If a container
+      if (container.view && container.view.length > 0) {
+        for (const currentContainerView of container.view) {
+          layoutChildren[currentContainerView] =
+            layoutChildren[currentContainerView] || [];
+          layoutChildren[currentContainerView].push(child);
+        }
+      } else {
+        // If the container doesn't have a view specified, this will be included
+        // in the default dashboard layout
+        layoutChildren["dashboard"] = layoutChildren["dashboard"] || [];
+        layoutChildren["dashboard"].push(child);
+      }
+    } else {
+      // If it's not a container, include it in the dashboard view
+      layoutChildren["dashboard"] = layoutChildren["dashboard"] || [];
+      layoutChildren["dashboard"].push(child);
+    }
+  }
+  // If the user has specified an unknown view, use the dashboard view
+  if (!layoutChildren[currentView]) {
+    layoutChildren[currentView] = layoutChildren["dashboard"];
+  }
+  // Build layout object for each known view
+  for (const [view, children] of Object.entries(layoutChildren)) {
+    layouts[view] = {
+      name: layout.name,
+      panel_type: layout.panel_type,
+      children,
+    };
+  }
+  return layouts;
+};
 
 const wrapDefinitionInArtificialDashboard = (
   definition: DashboardDefinition,
@@ -523,6 +587,12 @@ function reducer(state, action) {
             : null,
       };
     case DashboardActions.EXECUTION_STARTED: {
+      const layouts = calculateLayouts(
+        action.layout,
+        action.panels,
+        state.view
+      );
+
       const originalDashboard = action.dashboard_node;
       let dashboard;
       // For benchmarks and controls that are run directly from a mod,
@@ -531,12 +601,12 @@ function reducer(state, action) {
       if (action.dashboard_node.panel_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(
           originalDashboard,
-          action.layout
+          layouts[state.view]
         );
       } else {
         dashboard = {
           ...originalDashboard,
-          ...action.layout,
+          ...layouts[state.view],
         };
       }
 
@@ -560,18 +630,24 @@ function reducer(state, action) {
         return state;
       }
 
+      const layouts = calculateLayouts(
+        action.layout,
+        action.panels,
+        state.view
+      );
+
       const originalDashboard = action.dashboard_node;
       let dashboard;
 
       if (action.dashboard_node.panel_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(
           originalDashboard,
-          action.layout
+          layouts[state.view]
         );
       } else {
         dashboard = {
           ...originalDashboard,
-          ...action.layout,
+          ...layouts[state.view],
         };
       }
 
