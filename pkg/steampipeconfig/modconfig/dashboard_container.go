@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
@@ -23,6 +24,7 @@ type DashboardContainer struct {
 	Title           *string           `cty:"title" hcl:"title" column:"title,text"`
 	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
 	Display         *string           `cty:"display" hcl:"display"`
+	View            *[]string         `cty:"view" hcl:"view"`
 	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 
 	References []*ResourceReference
@@ -67,7 +69,7 @@ func (c *DashboardContainer) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardContainer) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (c *DashboardContainer) OnDecoded(_ *hcl.Block, _ ModResourcesProvider) hcl.Diagnostics {
 	c.ChildNames = make([]string, len(c.children))
 	for i, child := range c.children {
 		c.ChildNames[i] = child.Name()
@@ -165,6 +167,10 @@ func (c *DashboardContainer) Diff(other *DashboardContainer) *DashboardTreeItemD
 
 	if !utils.SafeStringsEqual(c.Display, other.Display) {
 		res.AddPropertyDiff("Display")
+	}
+
+	if !reflect.DeepEqual(c.View, other.View) {
+		res.AddPropertyDiff("View")
 	}
 
 	res.populateChildDiffs(c, other)

@@ -18,6 +18,7 @@ type DashboardContainerRun struct {
 	Title            string                            `json:"title,omitempty"`
 	Width            int                               `json:"width,omitempty"`
 	Display          string                            `json:"display,omitempty"`
+	View             *[]string                         `json:"view,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
 	Children         []dashboardtypes.DashboardNodeRun `json:"-"`
 	NodeType         string                            `json:"panel_type"`
@@ -56,6 +57,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 		NodeType:         modconfig.BlockTypeContainer,
 		DashboardName:    executionTree.dashboardName,
 		Display:          typehelpers.SafeString(container.Display),
+		View:             container.View,
 		SourceDefinition: container.GetMetadata().SourceDefinition,
 		executionTree:    executionTree,
 		parent:           parent,
@@ -238,4 +240,4 @@ func (r *DashboardContainerRun) ChildCompleteChan() chan dashboardtypes.Dashboar
 
 // GetInputsDependingOn implements DashboardNodeRun
 // return nothing for DashboardContainerRun
-func (r *DashboardContainerRun) GetInputsDependingOn(changedInputName string) []string { return nil }
+func (r *DashboardContainerRun) GetInputsDependingOn(_ string) []string { return nil }
