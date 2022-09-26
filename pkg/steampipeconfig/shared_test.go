@@ -7,7 +7,6 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pluginmanager"
 )
 
 type findPluginFolderTest struct {
@@ -49,7 +48,7 @@ func TestFindPluginFolderTest(t *testing.T) {
 
 	setupFindPluginFolderTest(directories)
 	for name, test := range testCasesFindPluginFolderTest {
-		path, err := pluginmanager.FindPluginFolder(test.schema)
+		path, err := filepaths.FindPluginFolder(test.schema)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)

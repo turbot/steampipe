@@ -18,6 +18,8 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pluginmanager_service"
 	"github.com/turbot/steampipe/pluginmanager"
 )
 
@@ -46,7 +48,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
-	pluginManager, err := pluginmanager.NewPluginManager(configMap, logger)
+	pluginManager, err := pluginmanager_service.NewPluginManager(configMap, logger)
 	if err != nil {
 		log.Printf("[WARN] failed to create plugin manager: %s", err.Error())
 		os.Exit(1)

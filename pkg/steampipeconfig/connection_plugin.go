@@ -2,20 +2,18 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pluginmanager/pluginmanager_lifecycle"
-	"io"
 	"log"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 )
 
@@ -404,29 +402,4 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 // use the reattach config to create a PluginClient for the plugin
 func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string) (*sdkgrpc.PluginClient, error) {
 	return sdkgrpc.NewPluginClientFromReattach(reattach, pluginName)
-}
-
-// function used for debugging the plugin manager
-func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
-	steampipeConfig, err := LoadConnectionConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	// discard logging from the plugin client (plugin logs will still flow through)
-	loggOpts := &hclog.LoggerOptions{Name: "plugin", Output: io.Discard}
-	logger := logging.NewLogger(loggOpts)
-
-	// build config map
-	configMap := make(map[string]*sdkproto.ConnectionConfig)
-	for connectionName, connection := range steampipeConfig.Connections {
-		configMap[connectionName] = &sdkproto.ConnectionConfig{
-			Connection:       connection.Name,
-			Plugin:           connection.Plugin,
-			PluginShortName:  connection.PluginShortName,
-			Config:           connection.Config,
-			ChildConnections: connection.GetResolveConnectionNames(),
-		}
-	}
-	return pluginmanager.NewPluginManager(configMap, logger)
 }
