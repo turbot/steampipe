@@ -23,8 +23,8 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	CategoryList DashboardHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardHierarchyCategory `cty:"categories" json:"categories"`
+	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
+	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -81,7 +81,7 @@ func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider Mod
 	h.setBaseProperties(resourceMapProvider)
 	// populate categories map
 	if len(h.CategoryList) > 0 {
-		h.Categories = make(map[string]*DashboardHierarchyCategory, len(h.CategoryList))
+		h.Categories = make(map[string]*DashboardCategory, len(h.CategoryList))
 		for _, c := range h.CategoryList {
 			h.Categories[c.Name] = c
 		}

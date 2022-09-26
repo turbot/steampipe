@@ -23,8 +23,11 @@ type DashboardGraph struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	CategoryList DashboardGraphCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardGraphCategory `cty:"categories" json:"categories"`
+	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"-"`
+
+	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
+	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	Direction *string `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
 
@@ -83,7 +86,7 @@ func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModReso
 	g.setBaseProperties(resourceMapProvider)
 	// populate categories map
 	if len(g.CategoryList) > 0 {
-		g.Categories = make(map[string]*DashboardGraphCategory, len(g.CategoryList))
+		g.Categories = make(map[string]*DashboardCategory, len(g.CategoryList))
 		for _, c := range g.CategoryList {
 			g.Categories[c.Name] = c
 		}
@@ -124,7 +127,15 @@ func (g *DashboardGraph) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (g *DashboardGraph) GetChildren() []ModTreeItem {
-	return nil
+	children := make([]ModTreeItem, len(g.Nodes)+len(g.Edges))
+	for i, n := range g.Nodes {
+		children[i] = n
+	}
+	offset := len(g.Nodes)
+	for i, e := range g.Edges {
+		children[i+offset] = e
+	}
+	return children
 }
 
 // GetTitle implements ModTreeItem
