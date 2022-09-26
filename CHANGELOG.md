@@ -1,3 +1,7 @@
+## v0.16.4 [2022-09-26]
+_Bug fixes_
+* Fix `Plugin.GetSchema failed - no connection name passed and multiple connections loaded` error - update FDW to fix packaging issue affecting Arm Linux. ([#2464](https://github.com/turbot/steampipe/issues/2464))
+
 ## v0.16.3 [2022-09-17]
 _Bug fixes_
 * Fix dashboard UI benchmark controls rendering a control node per control result, rather than a control node with multiple results within it. ([#2440](https://github.com/turbot/steampipe/issues/2440))
