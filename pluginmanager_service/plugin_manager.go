@@ -1,4 +1,4 @@
-package pluginmanager
+package pluginmanager_service
 
 import (
 	"context"
@@ -15,6 +15,13 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/go-kit/helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -23,8 +30,8 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
+	"github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
 )
 
 type runningPlugin struct {
@@ -541,7 +548,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 		return nil, nil, err
 	}
 
-	pluginPath, err := GetPluginPath(connectionConfig.Plugin, connectionConfig.PluginShortName)
+	pluginPath, err := filepaths.GetPluginPath(connectionConfig.Plugin, connectionConfig.PluginShortName)
 	if err != nil {
 		return nil, nil, err
 	}

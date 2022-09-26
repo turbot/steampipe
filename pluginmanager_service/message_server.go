@@ -1,4 +1,4 @@
-package pluginmanager
+package pluginmanager_service
 
 import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/error_helpers"

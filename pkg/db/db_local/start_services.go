@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pluginmanager/pluginmanager_lifecycle"
 	"log"
 	"os"
 	"os/exec"
@@ -21,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -28,7 +28,7 @@ type StartResult struct {
 	Error              error
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
-	PluginManagerState *pluginmanager_lifecycle.PluginManagerState
+	PluginManagerState *pluginmanager.PluginManagerState
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -96,7 +96,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		return res
 	}
 
-	res.PluginManagerState, res.Error = pluginmanager_lifecycle.LoadPluginManagerState()
+	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
 		res.Status = ServiceFailedToStart
 		return res
@@ -110,7 +110,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
 			return res.SetError(err)
 		}
-		if err := pluginmanager_lifecycle.StartNewInstance(executable); err != nil {
+		if err := pluginmanager.StartNewInstance(executable); err != nil {
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}

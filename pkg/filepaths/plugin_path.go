@@ -1,22 +1,21 @@
-package pluginmanager
+package filepaths
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	remoteSchema := plugin
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
-	pluginFolder := filepath.Join(filepaths.EnsurePluginDir(), remoteSchema)
+	pluginFolder := filepath.Join(EnsurePluginDir(), remoteSchema)
 
 	// if the plugin folder is missing, it is possible the plugin path was truncated to create a schema name
 	// - so search for a folder which when truncated would match the schema
@@ -49,7 +48,7 @@ func GetPluginPath(plugin, pluginShortName string) (string, error) {
 
 // FindPluginFolder searches for a folder which when hashed would match the schema
 func FindPluginFolder(remoteSchema string) (string, error) {
-	pluginDir := filepaths.EnsurePluginDir()
+	pluginDir := EnsurePluginDir()
 
 	// first try searching by prefix - trim the schema name
 	globPattern := filepath.Join(pluginDir, utils.TrimSchemaName(remoteSchema)) + "*"

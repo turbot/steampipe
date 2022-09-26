@@ -12,6 +12,9 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -21,7 +24,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
 )
 
 func serviceCmd() *cobra.Command {
@@ -597,6 +599,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState, dashboardState *dashboardserver.DashboardServiceState, alreadyRunning bool) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
+
 		return
 	}
 

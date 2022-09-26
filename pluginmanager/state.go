@@ -1,4 +1,4 @@
-package pluginmanager_lifecycle
+package pluginmanager
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
+	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 )
 
 const PluginManagerStructVersion = 20220411
