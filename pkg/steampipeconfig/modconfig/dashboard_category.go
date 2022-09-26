@@ -4,7 +4,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-type DashboardGraphCategory struct {
+type DashboardCategory struct {
 	Name  string  `hcl:"name,label" json:"-"`
 	Title *string `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color *string `cty:"color" hcl:"color" json:"color,omitempty"`
@@ -12,11 +12,11 @@ type DashboardGraphCategory struct {
 	Icon  *string `cty:"icon" hcl:"icon" json:"icon,omitempty"`
 	HREF  *string `cty:"href" hcl:"href" json:"href,omitempty"`
 	// TODO ask Kai to add proper fields map of field objects
-	Fields *string                     `cty:"fields" hcl:"fields" json:"fields,omitempty"`
-	Fold   *DashboardGraphCategoryFold `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
+	Fields *string                `cty:"fields" hcl:"fields" json:"fields,omitempty"`
+	Fold   *DashboardCategoryFold `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
 }
 
-func (c DashboardGraphCategory) Equals(other *DashboardGraphCategory) bool {
+func (c DashboardCategory) Equals(other *DashboardCategory) bool {
 	if other == nil {
 		return false
 	}

@@ -23,8 +23,11 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	CategoryList DashboardFlowCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardFlowCategory `cty:"categories" json:"categories"`
+	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"-"`
+
+	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
+	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -81,7 +84,7 @@ func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResou
 	f.setBaseProperties(resourceMapProvider)
 	// populate categories map
 	if len(f.CategoryList) > 0 {
-		f.Categories = make(map[string]*DashboardFlowCategory, len(f.CategoryList))
+		f.Categories = make(map[string]*DashboardCategory, len(f.CategoryList))
 		for _, c := range f.CategoryList {
 			f.Categories[c.Name] = c
 		}
@@ -122,7 +125,15 @@ func (f *DashboardFlow) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (f *DashboardFlow) GetChildren() []ModTreeItem {
-	return nil
+	children := make([]ModTreeItem, len(f.Nodes)+len(f.Edges))
+	for i, n := range f.Nodes {
+		children[i] = n
+	}
+	offset := len(f.Nodes)
+	for i, e := range f.Edges {
+		children[i+offset] = e
+	}
+	return children
 }
 
 // GetTitle implements ModTreeItem
