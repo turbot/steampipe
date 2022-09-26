@@ -53,7 +53,7 @@ type Dashboard struct {
 	HclType string
 }
 
-func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
+func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &Dashboard{
 		HclType:         block.Type,
 		ShortName:       shortName,

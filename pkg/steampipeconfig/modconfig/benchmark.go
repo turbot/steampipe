@@ -45,7 +45,7 @@ type Benchmark struct {
 	Parents []ModTreeItem `json:"-"`
 }
 
-func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) *Benchmark {
+func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource{
 	benchmark := &Benchmark{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),

@@ -28,11 +28,6 @@ type DashboardEdge struct {
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 
-	// TODO NEEDED?
-	//Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	//Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
-	//Display *string `cty:"display" hcl:"display" json:"-"`
-
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `hcl:"query" json:"-"`
@@ -49,7 +44,7 @@ type DashboardEdge struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) *DashboardEdge {
+func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &DashboardEdge{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

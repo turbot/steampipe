@@ -74,7 +74,7 @@ func (i *DashboardInput) Clone() *DashboardInput {
 	}
 }
 
-func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) *DashboardInput {
+func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	// input cannot be anonymous
 	i := &DashboardInput{
 		ShortName:       shortName,
