@@ -28,6 +28,8 @@ type ModResources struct {
 	GlobalDashboardInputs map[string]*DashboardInput
 	DashboardTables       map[string]*DashboardTable
 	DashboardTexts        map[string]*DashboardText
+	DashboardNodes        map[string]*DashboardNode
+	DashboardEdges        map[string]*DashboardEdge
 	References            map[string]*ResourceReference
 
 	Locals          map[string]*Local
@@ -57,6 +59,8 @@ func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 		GlobalDashboardInputs: make(map[string]*DashboardInput),
 		DashboardTables:       make(map[string]*DashboardTable),
 		DashboardTexts:        make(map[string]*DashboardText),
+		DashboardNodes:        make(map[string]*DashboardNode),
+		DashboardEdges:        make(map[string]*DashboardEdge),
 		References:            make(map[string]*ResourceReference),
 		LocalQueries:          make(map[string]*Query),
 		LocalControls:         make(map[string]*Control),
@@ -77,6 +81,7 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 	for _, inputs := range m.DashboardInputs {
 		numDashboardInputs += len(inputs)
 	}
+	// TODO KAI WRITE GENERIC MAPVALUES FUNCTION
 	res := make([]QueryProvider,
 		len(m.Queries)+
 			len(m.Controls)+
@@ -85,6 +90,8 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 			len(m.DashboardFlows)+
 			len(m.DashboardGraphs)+
 			len(m.DashboardHierarchies)+
+			len(m.DashboardNodes)+
+			len(m.DashboardEdges)+
 			numDashboardInputs+
 			len(m.GlobalDashboardInputs)+
 			len(m.DashboardTables))
@@ -115,6 +122,14 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 		idx++
 	}
 	for _, p := range m.DashboardHierarchies {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardEdges {
+		res[idx] = p
+		idx++
+	}
+	for _, p := range m.DashboardNodes {
 		res[idx] = p
 		idx++
 	}
@@ -277,8 +292,15 @@ func (m *ModResources) Equals(other *ModResources) bool {
 			return false
 		}
 	}
-	for name := range other.DashboardHierarchies {
-		if _, ok := m.DashboardHierarchies[name]; !ok {
+
+	for name := range other.DashboardNodes {
+		if _, ok := m.DashboardNodes[name]; !ok {
+			return false
+		}
+	}
+
+	for name := range other.DashboardEdges {
+		if _, ok := m.DashboardEdges[name]; !ok {
 			return false
 		}
 	}
@@ -413,6 +435,8 @@ func (m *ModResources) Empty() bool {
 		len(m.DashboardFlows)+
 		len(m.DashboardGraphs)+
 		len(m.DashboardHierarchies)+
+		len(m.DashboardNodes)+
+		len(m.DashboardEdges)+
 		len(m.DashboardImages)+
 		len(m.DashboardInputs)+
 		len(m.DashboardTables)+
@@ -483,6 +507,16 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 		}
 	}
 	for _, r := range m.DashboardHierarchies {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardNodes {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardEdges {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -617,6 +651,22 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 		}
 		m.DashboardHierarchies[name] = r
 
+	case *DashboardNode:
+		name := r.Name()
+		if existing, ok := m.DashboardNodes[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardNodes[name] = r
+
+	case *DashboardEdge:
+		name := r.Name()
+		if existing, ok := m.DashboardEdges[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardEdges[name] = r
+
 	case *DashboardImage:
 		name := r.Name()
 		if existing, ok := m.DashboardImages[name]; ok {
@@ -740,6 +790,12 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		}
 		for k, v := range source.DashboardHierarchies {
 			res.DashboardHierarchies[k] = v
+		}
+		for k, v := range source.DashboardNodes {
+			res.DashboardNodes[k] = v
+		}
+		for k, v := range source.DashboardEdges {
+			res.DashboardEdges[k] = v
 		}
 		for k, v := range source.DashboardImages {
 			res.DashboardImages[k] = v

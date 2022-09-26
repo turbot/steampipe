@@ -51,7 +51,7 @@ type DashboardFlow struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) *DashboardFlow {
+func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	h := &DashboardFlow{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

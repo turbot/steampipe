@@ -38,7 +38,7 @@ type DashboardContainer struct {
 	runtimeDependencyGraph *topsort.Graph
 }
 
-func NewDashboardContainer(block *hcl.Block, mod *Mod, shortName string) *DashboardContainer {
+func NewDashboardContainer(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &DashboardContainer{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

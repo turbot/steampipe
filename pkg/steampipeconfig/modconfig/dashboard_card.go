@@ -49,7 +49,7 @@ type DashboardCard struct {
 	metadata *ResourceMetadata
 }
 
-func NewDashboardCard(block *hcl.Block, mod *Mod, shortName string) *DashboardCard {
+func NewDashboardCard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &DashboardCard{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

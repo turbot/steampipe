@@ -16,22 +16,16 @@ type DashboardNode struct {
 	QueryProviderBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain" json:"-"`
-
-	FullName        string `cty:"name" json:"-"`
-	ShortName       string `json:"-"`
-	UnqualifiedName string `json:"-"`
+	Remain          hcl.Body `hcl:",remain" json:"-"`
+	FullName        string   `cty:"name" json:"-"`
+	ShortName       string   `json:"-"`
+	UnqualifiedName string   `json:"-"`
 
 	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-
-	// TODO NEEDED?
-	//Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	//Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
-	//Display *string `cty:"display" hcl:"display" json:"-"`
 
 	// QueryProvider
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
@@ -49,7 +43,7 @@ type DashboardNode struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardNode(block *hcl.Block, mod *Mod, shortName string) *DashboardNode {
+func NewDashboardNode(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &DashboardNode{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

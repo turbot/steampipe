@@ -23,8 +23,8 @@ type DashboardGraph struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"-"`
+	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
 
 	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
@@ -53,7 +53,7 @@ type DashboardGraph struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) *DashboardGraph {
+func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	h := &DashboardGraph{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
@@ -91,6 +91,18 @@ func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModReso
 			g.Categories[c.Name] = c
 		}
 	}
+	// when we reference resources (i.e. nodes/edges), not all properties are retrieved as they are no cty serialisable
+	// repopulate all nodes/edges from resourceMapProvider
+	edges := make(DashboardEdgeList, len(g.Edges))
+	for i, e := range g.Edges {
+		edges[i] = resourceMapProvider.GetResourceMaps().DashboardEdges[e.Name()]
+	}
+	g.Edges = edges
+	nodes := make(DashboardNodeList, len(g.Nodes))
+	for i, e := range g.Nodes {
+		nodes[i] = resourceMapProvider.GetResourceMaps().DashboardNodes[e.Name()]
+	}
+	g.Nodes = nodes
 	return nil
 }
 

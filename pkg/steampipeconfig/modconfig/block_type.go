@@ -20,6 +20,8 @@ const (
 	BlockTypeVariable       = "variable"
 	BlockTypeParam          = "param"
 	BlockTypeRequire        = "require"
+	BlockTypeNode           = "node"
+	BlockTypeEdge           = "edge"
 	BlockTypeLegacyRequires = "requires"
 )
 
@@ -34,6 +36,8 @@ var QueryProviderBlocks = []string{
 	BlockTypeFlow,
 	BlockTypeGraph,
 	BlockTypeHierarchy,
+	BlockTypeNode,
+	BlockTypeEdge,
 }
 
 // ReferenceBlockTypes is a list of block types we store references for

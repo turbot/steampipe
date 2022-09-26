@@ -48,7 +48,7 @@ type Query struct {
 
 }
 
-func NewQuery(block *hcl.Block, mod *Mod, shortName string) *Query {
+func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	// queries cannot be anonymous
 	q := &Query{
 		ShortName:       shortName,
