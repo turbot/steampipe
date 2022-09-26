@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pluginmanager/pluginmanager_lifecycle"
 	"log"
 	"os"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // StopStatus is a pseudoEnum for service stop result
@@ -120,7 +120,7 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
-	pluginManagerStopError := pluginmanager.Stop()
+	pluginManagerStopError := pluginmanager_lifecycle.Stop()
 
 	// stop the DB Service
 	stopResult, dbStopError := stopDBService(ctx, force)

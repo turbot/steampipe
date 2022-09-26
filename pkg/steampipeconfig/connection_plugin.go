@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pluginmanager/pluginmanager_lifecycle"
 	"io"
 	"log"
 
