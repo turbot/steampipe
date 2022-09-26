@@ -1,4 +1,4 @@
-package pluginmanager
+package pluginmanager_lifecycle
 
 import (
 	"encoding/json"

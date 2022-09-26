@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pluginmanager/pluginmanager_lifecycle"
 	"log"
 	"os"
 	"os/exec"
@@ -20,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -28,7 +28,7 @@ type StartResult struct {
 	Error              error
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
-	PluginManagerState *pluginmanager.PluginManagerState
+	PluginManagerState *pluginmanager_lifecycle.PluginManagerState
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -96,7 +96,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		return res
 	}
 
-	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
+	res.PluginManagerState, res.Error = pluginmanager_lifecycle.LoadPluginManagerState()
 	if res.Error != nil {
 		res.Status = ServiceFailedToStart
 		return res
@@ -110,7 +110,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
 			return res.SetError(err)
 		}
-		if err := pluginmanager.StartNewInstance(executable); err != nil {
+		if err := pluginmanager_lifecycle.StartNewInstance(executable); err != nil {
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
@@ -506,7 +506,9 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 //	(re)install FDW and creates server if it doesn't
 func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 	res := rootClient.QueryRow(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
-
+	if res.Err() != nil {
+		return res.Err()
+	}
 	var serverName string
 	err := res.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server

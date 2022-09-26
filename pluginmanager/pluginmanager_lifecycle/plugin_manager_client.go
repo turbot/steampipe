@@ -1,4 +1,4 @@
-package pluginmanager
+package pluginmanager_lifecycle
 
 import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc"
