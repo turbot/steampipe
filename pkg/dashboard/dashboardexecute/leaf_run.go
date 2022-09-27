@@ -15,15 +15,14 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	Name    string                `json:"name"`
-	Title   string                `json:"title,omitempty"`
-	Width   int                   `json:"width,omitempty"`
-	Type    string                `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
-	Display string                `cty:"display" hcl:"display" json:"display,omitempty"`
-	RawSQL  string                `json:"sql,omitempty"`
-	Args    []string              `json:"args,omitempty"`
-	Params  []*modconfig.ParamDef ` json:"params,omitempty"`
-
+	Name             string                            `json:"name"`
+	Title            string                            `json:"title,omitempty"`
+	Width            int                               `json:"width,omitempty"`
+	Type             string                            `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
+	Display          string                            `cty:"display" hcl:"display" json:"display,omitempty"`
+	RawSQL           string                            `json:"sql,omitempty"`
+	Args             []string                          `json:"args,omitempty"`
+	Params           []*modconfig.ParamDef             `json:"params,omitempty"`
 	Data             *dashboardtypes.LeafData          `json:"data,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
 	DashboardNode    modconfig.DashboardLeafNode       `json:"properties,omitempty"`
@@ -32,14 +31,14 @@ type LeafRun struct {
 	DashboardName    string                            `json:"dashboard"`
 	SourceDefinition string                            `json:"source_definition"`
 
+	// child runs (nodes/edges)
+	children            []dashboardtypes.DashboardNodeRun
 	executeSQL          string
 	error               error
 	parent              dashboardtypes.DashboardNodeParent
 	executionTree       *DashboardExecutionTree
 	runtimeDependencies map[string]*ResolvedRuntimeDependency
 	childComplete       chan dashboardtypes.DashboardNodeRun
-	// child runs (nodes/edges)
-	children []*LeafRun
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -113,7 +112,7 @@ func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTre
 	// create buffered child complete chan
 	r.childComplete = make(chan dashboardtypes.DashboardNodeRun, len(children))
 
-	r.children = make([]*LeafRun, len(children))
+	r.children = make([]dashboardtypes.DashboardNodeRun, len(children))
 	var errors []error
 
 	// if the leaf run has children (nodes/edges) create a run for this too
@@ -235,7 +234,7 @@ func (r *LeafRun) RunComplete() bool {
 
 // GetChildren implements DashboardNodeRun
 func (r *LeafRun) GetChildren() []dashboardtypes.DashboardNodeRun {
-	return nil
+	return r.children
 }
 
 // ChildrenComplete implements DashboardNodeRun
@@ -415,11 +414,33 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 	// so all children have completed - check for errors
 	err := utils.CombineErrors(errors...)
 	if err == nil {
+		r.combineChildData()
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
 		r.SetError(ctx, err)
 	}
+}
+
+func (r *LeafRun) combineChildData() {
+	r.Data = &dashboardtypes.LeafData{}
+	// build map of columns for the schema
+	schemaMap := make(map[string]*dashboardtypes.ColumnSchema)
+	for _, c := range r.children {
+		childLeafRun := c.(*LeafRun)
+		data := childLeafRun.Data
+		for _, s := range data.Columns {
+			if _, ok := schemaMap[s.Name]; !ok {
+				schemaMap[s.Name] = s
+			}
+		}
+		r.Data.Rows = append(r.Data.Rows, data.Rows...)
+
+		// TODO CHECK
+		// remove data from the child
+		childLeafRun.Data = nil
+	}
+	r.Data.Columns = utils.MapValues(schemaMap)
 }
 
 // format a string for use as a postgres string param
