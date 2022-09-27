@@ -375,10 +375,6 @@ func (r *LeafRun) executeQuery(ctx context.Context) {
 // if this leaf run has children (nodes/edges), execute them
 func (r *LeafRun) executeChildren(ctx context.Context) {
 	for _, c := range r.children {
-		// if this child does not have its own args defined, inherit the parent args (ours)
-		if len(c.Args) == 0 {
-			c.Args = r.Args
-		}
 		go c.Execute(ctx)
 	}
 	// wait for children to complete
