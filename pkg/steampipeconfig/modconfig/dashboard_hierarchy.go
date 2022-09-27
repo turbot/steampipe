@@ -338,5 +338,16 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesP
 		h.CategoryList.Merge(h.Base.CategoryList)
 	}
 
+	if h.Edges == nil {
+		h.Edges = h.Base.Edges
+	} else {
+		h.Edges.Merge(h.Base.Edges)
+	}
+	if h.Nodes == nil {
+		h.Nodes = h.Base.Nodes
+	} else {
+		h.Nodes.Merge(h.Base.Nodes)
+	}
+
 	h.MergeRuntimeDependencies(h.Base)
 }

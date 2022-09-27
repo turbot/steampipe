@@ -82,6 +82,7 @@ type (
 		GetWidth() int
 		GetPaths() []NodePath
 		GetMetadata() *ResourceMetadata
+		GetChildren() []ModTreeItem
 	}
 	ModResourcesProvider interface {
 		GetResourceMaps() *ModResources

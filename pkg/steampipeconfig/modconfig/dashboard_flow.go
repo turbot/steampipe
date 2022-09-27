@@ -338,5 +338,16 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvid
 		f.CategoryList.Merge(f.Base.CategoryList)
 	}
 
+	if f.Edges == nil {
+		f.Edges = f.Base.Edges
+	} else {
+		f.Edges.Merge(f.Base.Edges)
+	}
+	if f.Nodes == nil {
+		f.Nodes = f.Base.Nodes
+	} else {
+		f.Nodes.Merge(f.Base.Nodes)
+	}
+
 	f.MergeRuntimeDependencies(f.Base)
 }
