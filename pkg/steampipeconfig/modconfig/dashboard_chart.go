@@ -65,6 +65,24 @@ func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) *DashboardC
 	return c
 }
 
+// NewQueryDashboardChart creates a chart to wrap a query.
+// This is used in order to execute queries as dashboards
+func NewQueryDashboardChart(query *Query) *DashboardChart {
+	c := &DashboardChart{
+		ResourceWithMetadataBase: query.ResourceWithMetadataBase,
+		ShortName:                query.ShortName,
+		FullName:                 fmt.Sprintf("%s.%s.%s", query.Mod.ShortName, "dashboard", query.ShortName),
+		UnqualifiedName:          fmt.Sprintf("%s.%s", "dashboard", query.ShortName),
+		Title:                    query.Title,
+		References:               query.References,
+		Mod:                      query.Mod,
+		Query:                    query,
+		DeclRange:                query.DeclRange,
+	}
+
+	return c
+}
+
 func (c *DashboardChart) Equals(other *DashboardChart) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()

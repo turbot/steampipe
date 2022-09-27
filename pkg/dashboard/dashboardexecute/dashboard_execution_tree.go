@@ -82,6 +82,15 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
 		}
 		return NewCheckRun(benchmark, e, e)
+	case modconfig.BlockTypeQuery:
+		// wrap in a table
+		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
+		if !ok {
+			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
+		}
+		// wrap this in a chart and a dashboard
+		dashboard := modconfig.NewQueryDashboard(query)
+		return NewDashboardRun(dashboard, e, e)
 	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
 
