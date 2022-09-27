@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/hashicorp/hcl/v2"
 	"log"
 	"strings"
 
@@ -100,4 +101,24 @@ func (b *QueryProviderBase) MergeRuntimeDependencies(other QueryProvider) {
 
 func (b *QueryProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependency {
 	return b.runtimeDependencies
+}
+
+// MergeParentArgs merges our args with our parent args (ours take precedence)
+func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent QueryProvider) (diags hcl.Diagnostics) {
+	parentArgs := parent.GetArgs()
+	if parentArgs == nil {
+		return nil
+	}
+
+	args, err := parentArgs.Merge(queryProvider.GetArgs(), parent)
+	if err != nil {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  err.Error(),
+			Subject:  parent.(HclResource).GetDeclRange(),
+		}}
+	}
+
+	queryProvider.SetArgs(args)
+	return nil
 }

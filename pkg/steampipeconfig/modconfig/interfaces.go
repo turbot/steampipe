@@ -18,23 +18,7 @@ type (
 		SetMetadata(*ResourceMetadata)
 		GetDeclRange() *hcl.Range
 	}
-	// ModTreeItem must be implemented by elements of the mod resource hierarchy
-	// i.e. Control, Benchmark, Dashboard
-	ModTreeItem interface {
-		AddParent(ModTreeItem) error
-		GetParents() []ModTreeItem
-		GetChildren() []ModTreeItem
-		Name() string
-		GetUnqualifiedName() string
-		GetTitle() string
-		GetDescription() string
-		GetDocumentation() string
-		GetTags() map[string]string
-		// GetPaths returns an array resource paths
-		GetPaths() []NodePath
-		SetPaths()
-		GetMod() *Mod
-	}
+
 	// HclResource must be implemented by resources defined in HCL
 	HclResource interface {
 		Name() string
@@ -45,6 +29,24 @@ type (
 		GetReferences() []*ResourceReference
 		GetDeclRange() *hcl.Range
 	}
+	// ModTreeItem must be implemented by elements of the mod resource hierarchy
+	// i.e. Control, Benchmark, Dashboard
+	ModTreeItem interface {
+		Name() string
+		GetUnqualifiedName() string
+		AddParent(ModTreeItem) error
+		GetParents() []ModTreeItem
+		GetChildren() []ModTreeItem
+		GetTitle() string
+		GetDescription() string
+		GetDocumentation() string
+		GetTags() map[string]string
+		// GetPaths returns an array resource paths
+		GetPaths() []NodePath
+		SetPaths()
+		GetMod() *Mod
+	}
+
 	// ResourceWithMetadata must be implemented by resources which supports reflection metadata
 	ResourceWithMetadata interface {
 		Name() string
@@ -55,7 +57,7 @@ type (
 	}
 	// QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 	QueryProvider interface {
-		Name() string
+		HclResource
 		GetArgs() *QueryArgs
 		GetParams() []*ParamDef
 		GetSQL() *string
@@ -69,11 +71,11 @@ type (
 		GetRuntimeDependencies() map[string]*RuntimeDependency
 		RequiresExecution(QueryProvider) bool
 		VerifyQuery(QueryProvider) error
+		MergeParentArgs(QueryProvider, QueryProvider) (diags hcl.Diagnostics)
 	}
 	// DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
 	DashboardLeafNode interface {
-		Name() string
-		GetUnqualifiedName() string
+		HclResource
 		GetTitle() string
 		GetDisplay() string
 		GetDescription() string
@@ -91,13 +93,10 @@ type (
 	// EdgeAndNodeProvider must be implemented by any dashboard leaf node which supports edges and nodes
 	// (DashboardGraph, DashboardFlow, DashboardHierarchy)
 	EdgeAndNodeProvider interface {
-		Name() string
+		QueryProvider
 		GetEdges() DashboardEdgeList
 		SetEdges(DashboardEdgeList)
 		GetNodes() DashboardNodeList
 		SetNodes(DashboardNodeList)
-		GetSQL() *string
-		GetQuery() *Query
-		GetDeclRange() *hcl.Range
 	}
 )

@@ -3,6 +3,7 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // validate that the provider does not contains both edges/nodes and a query/sql
@@ -28,6 +29,8 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 	// repopulate all nodes/edges from resourceMapProvider
 	resourceMaps := resourceMapProvider.GetResourceMaps()
 
+	parentRuntimeDependencies := utils.MapValues[*RuntimeDependency](p.GetRuntimeDependencies())
+	var diags hcl.Diagnostics
 	edges := make(DashboardEdgeList, len(existingEdges))
 	for i, e := range existingEdges {
 		fullEdge, ok := resourceMaps.DashboardEdges[e.Name()]
