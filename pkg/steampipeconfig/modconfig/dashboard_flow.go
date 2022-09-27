@@ -23,9 +23,8 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"-"`
-
+	Nodes        DashboardNodeList             `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
+	Edges        DashboardEdgeList             `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
 	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
@@ -125,6 +124,7 @@ func (f *DashboardFlow) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (f *DashboardFlow) GetChildren() []ModTreeItem {
+	// return nodes and edges (if any)
 	children := make([]ModTreeItem, len(f.Nodes)+len(f.Edges))
 	for i, n := range f.Nodes {
 		children[i] = n
@@ -268,6 +268,26 @@ func (f *DashboardFlow) GetPreparedStatementName() string {
 func (f *DashboardFlow) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return f.getPreparedStatementExecuteSQL(f, runtimeArgs)
+}
+
+// GetEdges implements EdgeAndNodeProvider
+func (f *DashboardFlow) GetEdges() DashboardEdgeList {
+	return f.Edges
+}
+
+// GetNodes implements NodeAndNodeProvider
+func (f *DashboardFlow) GetNodes() DashboardNodeList {
+	return f.Nodes
+}
+
+// SetEdges implements EdgeAndNodeProvider
+func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
+	f.Edges = edges
+}
+
+// SetNodes implements NodeAndNodeProvider
+func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
+	f.Nodes = nodes
 }
 
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvider) {

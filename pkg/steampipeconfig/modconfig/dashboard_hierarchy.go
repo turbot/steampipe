@@ -23,6 +23,8 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
+	Nodes        DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
+	Edges        DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
 	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
@@ -86,7 +88,7 @@ func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider Mod
 			h.Categories[c.Name] = c
 		}
 	}
-	return nil
+	return initialiseEdgesAndNodes(h, resourceMapProvider)
 }
 
 // AddReference implements HclResource
@@ -122,7 +124,16 @@ func (h *DashboardHierarchy) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
-	return nil
+	// return nodes and edges (if any)
+	children := make([]ModTreeItem, len(h.Nodes)+len(h.Edges))
+	for i, n := range h.Nodes {
+		children[i] = n
+	}
+	offset := len(h.Nodes)
+	for i, e := range h.Edges {
+		children[i+offset] = e
+	}
+	return children
 }
 
 // GetTitle implements ModTreeItem
@@ -257,6 +268,26 @@ func (h *DashboardHierarchy) GetPreparedStatementName() string {
 func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return h.getPreparedStatementExecuteSQL(h, runtimeArgs)
+}
+
+// GetEdges implements EdgeAndNodeProvider
+func (h *DashboardHierarchy) GetEdges() DashboardEdgeList {
+	return h.Edges
+}
+
+// GetNodes implements NodeAndNodeProvider
+func (h *DashboardHierarchy) GetNodes() DashboardNodeList {
+	return h.Nodes
+}
+
+// SetEdges implements EdgeAndNodeProvider
+func (h *DashboardHierarchy) SetEdges(edges DashboardEdgeList) {
+	h.Edges = edges
+}
+
+// SetNodes implements NodeAndNodeProvider
+func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
+	h.Nodes = nodes
 }
 
 func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesProvider) {
