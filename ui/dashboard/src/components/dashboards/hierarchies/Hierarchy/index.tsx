@@ -1,6 +1,7 @@
 import ErrorPanel from "../../Error";
 import merge from "lodash/merge";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   buildTreeDataInputs,
@@ -117,17 +118,19 @@ const HierarchyWrapper = (props: HierarchyProps) => {
     themeContext: { wrapperRef },
   } = useDashboard();
 
+  const data = useNodeAndEdgeData(props.data, props.properties, props.status);
+
   if (!wrapperRef) {
     return null;
   }
 
-  if (!props.data) {
+  if (!data || data.rows.length === 0) {
     return null;
   }
 
   return (
     <Chart
-      options={buildHierarchyOptions(props, themeColors)}
+      options={buildHierarchyOptions({ ...props, data }, themeColors)}
       type={props.display_type || "tree"}
     />
   );

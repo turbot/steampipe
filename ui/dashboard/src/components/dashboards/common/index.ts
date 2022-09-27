@@ -1,13 +1,17 @@
 import has from "lodash/has";
 import isEmpty from "lodash/isEmpty";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
-import { DashboardRunState } from "../../../hooks/useDashboard";
+import { DashboardRunState, PanelsMap } from "../../../hooks/useDashboard";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
 import { Graph, json } from "graphlib";
 import { GraphProperties, GraphType } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
-import { KeyValuePairs, KeyValueStringPairs } from "./types";
+import {
+  KeyValuePairs,
+  KeyValueStringPairs,
+  NodeAndEdgeProperties,
+} from "./types";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -1137,6 +1141,23 @@ const getColorOverride = (colorOverride, namedThemeColors) => {
   return colorOverride;
 };
 
+const nodeAndEdgeResourceHasData = (
+  data: LeafNodeData,
+  properties: NodeAndEdgeProperties,
+  panelsMap: PanelsMap
+): boolean => {
+  console.log({ data, properties, panelsMap });
+  if (!!data) {
+    return true;
+  }
+  const nodePanelNames = (properties?.nodes || []).map((n) => n.name);
+  const edgePanelNames = (properties?.edges || []).map((n) => n.name);
+  if (nodePanelNames.some((p) => panelsMap[p] && !!panelsMap[p].data)) {
+    return true;
+  }
+  return edgePanelNames.some((p) => panelsMap[p] && !!panelsMap[p].data);
+};
+
 export {
   adjustMinValue,
   adjustMaxValue,
@@ -1147,6 +1168,7 @@ export {
   foldNodesAndEdges,
   getColorOverride,
   isNumericCol,
+  nodeAndEdgeResourceHasData,
   themeColors,
   toEChartsType,
 };

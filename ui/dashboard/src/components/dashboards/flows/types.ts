@@ -1,4 +1,4 @@
-import { BaseCategoryOptions } from "../common/types";
+import { BaseCategoryOptions, NodeAndEdgeProperties } from "../common/types";
 import {
   BasePrimitiveProps,
   ColorOverride,
@@ -19,7 +19,7 @@ export type FlowCategories = {
   [category: string]: FlowCategoryOptions;
 };
 
-export type FlowProperties = {
+export type FlowProperties = NodeAndEdgeProperties & {
   categories?: FlowCategories;
 };
 

@@ -1,8 +1,10 @@
 import {
   ContainerDefinition,
   PanelDefinition,
+  useDashboard,
 } from "../../../../hooks/useDashboard";
 import { getComponent } from "../../index";
+import { nodeAndEdgeResourceHasData } from "../../common";
 
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
@@ -15,6 +17,7 @@ const Children = ({
   allowPanelExpand = true,
   withTitle = true,
 }: ChildrenProps) => {
+  const { panelsMap } = useDashboard();
   const Panel = getComponent("panel");
   return (
     <>
@@ -91,7 +94,13 @@ const Children = ({
               <Panel
                 key={child.name}
                 layoutDefinition={child}
-                ready={(definition) => !!definition.data}
+                ready={(definition) =>
+                  nodeAndEdgeResourceHasData(
+                    definition.data,
+                    definition.properties,
+                    panelsMap
+                  )
+                }
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
@@ -104,7 +113,13 @@ const Children = ({
               <Panel
                 key={child.name}
                 layoutDefinition={child}
-                ready={(definition) => !!definition.data}
+                ready={(definition) =>
+                  nodeAndEdgeResourceHasData(
+                    definition.data,
+                    definition.properties,
+                    panelsMap
+                  )
+                }
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
@@ -117,7 +132,13 @@ const Children = ({
               <Panel
                 key={child.name}
                 layoutDefinition={child}
-                ready={(definition) => !!definition.data}
+                ready={(definition) =>
+                  nodeAndEdgeResourceHasData(
+                    definition.data,
+                    definition.properties,
+                    panelsMap
+                  )
+                }
                 allowExpand={allowPanelExpand}
                 withTitle={withTitle}
               >
