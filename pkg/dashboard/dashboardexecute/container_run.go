@@ -19,25 +19,26 @@ type DashboardContainerRun struct {
 	Width            int                               `json:"width,omitempty"`
 	Display          string                            `json:"display,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
-	Children         []dashboardtypes.DashboardNodeRun `json:"-"`
 	NodeType         string                            `json:"panel_type"`
 	Status           dashboardtypes.DashboardRunStatus `json:"status"`
 	DashboardName    string                            `json:"dashboard"`
 	SourceDefinition string                            `json:"source_definition"`
-	error            error
-	dashboardNode    *modconfig.DashboardContainer
-	parent           dashboardtypes.DashboardNodeParent
-	executionTree    *DashboardExecutionTree
-	childComplete    chan dashboardtypes.DashboardNodeRun
+
+	children      []dashboardtypes.DashboardNodeRun
+	error         error
+	dashboardNode *modconfig.DashboardContainer
+	parent        dashboardtypes.DashboardNodeParent
+	executionTree *DashboardExecutionTree
+	childComplete chan dashboardtypes.DashboardNodeRun
 }
 
 func (r *DashboardContainerRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	res := &dashboardtypes.SnapshotTreeNode{
 		Name:     r.Name,
 		NodeType: r.NodeType,
-		Children: make([]*dashboardtypes.SnapshotTreeNode, len(r.Children)),
+		Children: make([]*dashboardtypes.SnapshotTreeNode, len(r.children)),
 	}
-	for i, c := range r.Children {
+	for i, c := range r.children {
 		res.Children[i] = c.AsTreeNode()
 	}
 	return res
@@ -116,7 +117,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 		if childRun.GetRunStatus() == dashboardtypes.DashboardRunReady {
 			r.Status = dashboardtypes.DashboardRunReady
 		}
-		r.Children = append(r.Children, childRun)
+		r.children = append(r.children, childRun)
 	}
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
@@ -129,7 +130,7 @@ func (*DashboardContainerRun) IsSnapshotPanel() {}
 // Initialise implements DashboardRunNode
 func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 	// initialise our children
-	for _, child := range r.Children {
+	for _, child := range r.children {
 		child.Initialise(ctx)
 		if err := child.GetError(); err != nil {
 			r.SetError(ctx, err)
@@ -142,7 +143,7 @@ func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 // execute all children and wait for them to complete
 func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	// execute all children asynchronously
-	for _, child := range r.Children {
+	for _, child := range r.children {
 		go child.Execute(ctx)
 	}
 
@@ -218,12 +219,12 @@ func (r *DashboardContainerRun) RunComplete() bool {
 
 // GetChildren implements DashboardNodeRun
 func (r *DashboardContainerRun) GetChildren() []dashboardtypes.DashboardNodeRun {
-	return r.Children
+	return r.children
 }
 
 // ChildrenComplete implements DashboardNodeRun
 func (r *DashboardContainerRun) ChildrenComplete() bool {
-	for _, child := range r.Children {
+	for _, child := range r.children {
 		if !child.RunComplete() {
 			return false
 		}

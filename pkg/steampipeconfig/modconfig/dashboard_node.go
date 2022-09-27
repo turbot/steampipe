@@ -17,12 +17,12 @@ type DashboardNode struct {
 
 	// required to allow partial decoding
 	Remain          hcl.Body `hcl:",remain" json:"-"`
-	FullName        string   `cty:"name" json:"-"`
+	FullName        string   `cty:"name" json:"name"`
 	ShortName       string   `json:"-"`
 	UnqualifiedName string   `json:"-"`
 
 	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
+	Categories   map[string]*DashboardCategory `cty:"categories" json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -247,6 +247,9 @@ func (n *DashboardNode) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (
 	// defer to base
 	return n.getPreparedStatementExecuteSQL(n, runtimeArgs)
 }
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*DashboardNode) IsSnapshotPanel() {}
 
 func (n *DashboardNode) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
