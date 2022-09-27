@@ -438,7 +438,7 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
       set(panels, dataPath, data);
     }
   }
-  return panels;
+  return { ...panels };
 }
 
 const wrapDefinitionInArtificialDashboard = (

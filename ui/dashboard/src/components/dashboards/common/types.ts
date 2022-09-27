@@ -32,3 +32,12 @@ export interface CategoryFoldOptions {
 export interface BaseCategoryOptions {
   fold?: CategoryFoldOptions;
 }
+
+interface NodeAndEdgeIdentifier {
+  name: string;
+}
+
+export interface NodeAndEdgeProperties {
+  nodes?: NodeAndEdgeIdentifier[];
+  edges?: NodeAndEdgeIdentifier[];
+}

@@ -14,6 +14,7 @@ import ReactFlow, {
   useReactFlow,
 } from "react-flow-renderer";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   foldNodesAndEdges,
@@ -324,13 +325,15 @@ const Graph = ({ props }) => {
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  if (!props.data) {
+  const data = useNodeAndEdgeData(props.data, props.properties, props.status);
+
+  if (!data || data.rows.length === 0) {
     return null;
   }
 
   return (
     <GraphProvider>
-      <Graph props={props} />
+      <Graph props={{ ...props, data }} />
     </GraphProvider>
   );
 };

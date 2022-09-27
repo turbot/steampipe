@@ -1,6 +1,7 @@
 import ErrorPanel from "../../Error";
 import merge from "lodash/merge";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   buildSankeyDataInputs,
@@ -113,17 +114,19 @@ const FlowWrapper = (props: FlowProps) => {
     themeContext: { wrapperRef },
   } = useDashboard();
 
+  const data = useNodeAndEdgeData(props.data, props.properties, props.status);
+
   if (!wrapperRef) {
     return null;
   }
 
-  if (!props.data) {
+  if (!data || data.rows.length === 0) {
     return null;
   }
 
   return (
     <Chart
-      options={buildFlowOptions(props, themeColors)}
+      options={buildFlowOptions({ ...props, data }, themeColors)}
       type={props.display_type || "sankey"}
     />
   );

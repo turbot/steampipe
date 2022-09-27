@@ -1,4 +1,4 @@
-import { BaseCategoryOptions } from "../common/types";
+import { BaseCategoryOptions, NodeAndEdgeProperties } from "../common/types";
 import {
   BasePrimitiveProps,
   ColorOverride,
@@ -17,7 +17,7 @@ export type HierarchyCategories = {
   [category: string]: HierarchyCategoryOptions;
 };
 
-export type HierarchyProperties = {
+export type HierarchyProperties = NodeAndEdgeProperties & {
   categories?: HierarchyCategories;
 };
 
