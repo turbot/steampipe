@@ -1,13 +1,15 @@
 import { useDashboard } from "../../../hooks/useDashboard";
 
 const SnapshotRenderComplete = () => {
-  const { renderSnapshotCompleteDiv } = useDashboard();
+  const {
+    render: { showSnapshotCompleteDiv },
+  } = useDashboard();
 
-  if (!renderSnapshotCompleteDiv) {
+  if (!showSnapshotCompleteDiv) {
     return null;
   }
 
-  return <div id="snapshot-complete" />;
+  return <div id="snapshot-complete" className="hidden" />;
 };
 
 export default SnapshotRenderComplete;

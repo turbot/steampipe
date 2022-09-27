@@ -7,7 +7,9 @@ import "@testing-library/jest-dom";
 test("return null when should not render snapshot complete div", async () => {
   // ARRANGE
   const { container } = render(
-    <DashboardContext.Provider value={{ renderSnapshotCompleteDiv: false }}>
+    <DashboardContext.Provider
+      value={{ render: { showSnapshotCompleteDiv: false } }}
+    >
       <SnapshotRenderComplete />
     </DashboardContext.Provider>
   );
@@ -19,7 +21,9 @@ test("return null when should not render snapshot complete div", async () => {
 test("return null when should not render snapshot complete div", async () => {
   // ARRANGE
   render(
-    <DashboardContext.Provider value={{ renderSnapshotCompleteDiv: true }}>
+    <DashboardContext.Provider
+      value={{ render: { showSnapshotCompleteDiv: true } }}
+    >
       <SnapshotRenderComplete />
     </DashboardContext.Provider>
   );

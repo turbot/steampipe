@@ -13,7 +13,6 @@ import React, {
 } from "react";
 import set from "lodash/set";
 import sortBy from "lodash/sortBy";
-import SnapshotRenderComplete from "../components/snapshot/SnapshotRenderComplete";
 import useDashboardWebSocket, {
   SocketActions,
   SocketURLFactory,
@@ -96,7 +95,10 @@ interface IDashboardContext {
 
   progress: number;
   state: DashboardRunState;
-  renderSnapshotCompleteDiv: boolean;
+  render: {
+    headless: boolean;
+    showSnapshotCompleteDiv: boolean;
+  };
 }
 
 export interface IActions {
@@ -316,6 +318,10 @@ export interface DashboardDataOptions {
   snapshotId?: string;
 }
 
+export interface DashboardRenderOptions {
+  headless?: boolean;
+}
+
 interface DashboardProviderProps {
   analyticsContext: any;
   breakpointContext: any;
@@ -324,6 +330,7 @@ interface DashboardProviderProps {
   dataOptions?: DashboardDataOptions;
   eventHooks?: {};
   featureFlags?: string[];
+  renderOptions?: DashboardRenderOptions;
   socketUrlFactory?: SocketURLFactory;
   stateDefaults?: {};
   themeContext: any;
@@ -844,6 +851,9 @@ const DashboardProvider = ({
   },
   eventHooks,
   featureFlags = [],
+  renderOptions = {
+    headless: false,
+  },
   socketUrlFactory,
   stateDefaults = {},
   themeContext,
@@ -853,7 +863,11 @@ const DashboardProvider = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, dispatchInner] = useReducer(
     reducer,
-    getInitialState(searchParams, { ...stateDefaults, ...dataOptions })
+    getInitialState(searchParams, {
+      ...stateDefaults,
+      ...dataOptions,
+      ...renderOptions,
+    })
   );
   const dispatch = useCallback((action) => {
     // console.log(action.type, action);
@@ -1298,7 +1312,10 @@ const DashboardProvider = ({
         dispatch,
         closePanelDetail,
         themeContext,
-        renderSnapshotCompleteDiv,
+        render: {
+          headless: renderOptions?.headless,
+          showSnapshotCompleteDiv: renderSnapshotCompleteDiv,
+        },
       }}
     >
       <GlobalHotKeys
@@ -1307,7 +1324,6 @@ const DashboardProvider = ({
         handlers={hotKeysHandlers}
       />
       {children}
-      <SnapshotRenderComplete />
     </DashboardContext.Provider>
   );
 };

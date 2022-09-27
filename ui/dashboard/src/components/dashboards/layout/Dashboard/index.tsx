@@ -2,6 +2,7 @@ import Children from "../common/Children";
 import DashboardProgress from "./DashboardProgress";
 import LayoutPanel from "../common/LayoutPanel";
 import PanelDetail from "../PanelDetail";
+import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
 import {
   DashboardDefinition,
   useDashboard,
@@ -61,11 +62,14 @@ const DashboardWrapper = ({
   }
 
   return (
-    <Dashboard
-      allowPanelExpand={allowPanelExpand}
-      definition={dashboard}
-      withPadding={true}
-    />
+    <>
+      <Dashboard
+        allowPanelExpand={allowPanelExpand}
+        definition={dashboard}
+        withPadding={true}
+      />
+      <SnapshotRenderComplete />
+    </>
   );
 };
 
