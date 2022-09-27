@@ -35,13 +35,24 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 	for i, e := range existingEdges {
 		fullEdge, ok := resourceMaps.DashboardEdges[e.Name()]
 		if !ok {
-			return hcl.Diagnostics{&hcl.Diagnostic{
+			diags.Append(&hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("%s contains edge %s but this has not been loaded", p.Name(), e.Name()),
 				Subject:  p.GetDeclRange(),
-			}}
+			})
+			continue
 
 		}
+		// merge the parent args with the edge
+		moreDiags := fullEdge.MergeParentArgs(fullEdge, p)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+			continue
+		}
+
+		// copy runtime dependencies from parent to the edge
+		fullEdge.AddRuntimeDependencies(parentRuntimeDependencies)
+
 		edges[i] = fullEdge
 	}
 
@@ -55,6 +66,17 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 				Subject:  p.GetDeclRange(),
 			}}
 		}
+
+		// merge the parent args with the node
+		moreDiags := fullNode.MergeParentArgs(fullNode, p)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+			continue
+		}
+
+		// copy runtime dependencies from parent to the NODE
+		fullNode.AddRuntimeDependencies(parentRuntimeDependencies)
+
 		nodes[i] = fullNode
 	}
 
