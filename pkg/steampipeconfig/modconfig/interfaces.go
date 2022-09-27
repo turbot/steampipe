@@ -87,4 +87,16 @@ type (
 	ModResourcesProvider interface {
 		GetResourceMaps() *ModResources
 	}
+	// EdgeAndNodeProvider must be implemented by any dashboard leaf node which supports edges and nodes
+	// (DashboardGraph, DashboardFlow, DashboardHierarchy)
+	EdgeAndNodeProvider interface {
+		Name() string
+		GetEdges() DashboardEdgeList
+		SetEdges(DashboardEdgeList)
+		GetNodes() DashboardNodeList
+		SetNodes(DashboardNodeList)
+		GetSQL() *string
+		GetQuery() *Query
+		GetDeclRange() *hcl.Range
+	}
 )

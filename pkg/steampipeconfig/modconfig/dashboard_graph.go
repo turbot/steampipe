@@ -23,13 +23,11 @@ type DashboardGraph struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
-
+	Nodes        DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
+	Edges        DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
 	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
-
-	Direction *string `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
+	Direction    *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -91,19 +89,8 @@ func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModReso
 			g.Categories[c.Name] = c
 		}
 	}
-	// when we reference resources (i.e. nodes/edges), not all properties are retrieved as they are no cty serialisable
-	// repopulate all nodes/edges from resourceMapProvider
-	edges := make(DashboardEdgeList, len(g.Edges))
-	for i, e := range g.Edges {
-		edges[i] = resourceMapProvider.GetResourceMaps().DashboardEdges[e.Name()]
-	}
-	g.Edges = edges
-	nodes := make(DashboardNodeList, len(g.Nodes))
-	for i, e := range g.Nodes {
-		nodes[i] = resourceMapProvider.GetResourceMaps().DashboardNodes[e.Name()]
-	}
-	g.Nodes = nodes
-	return nil
+
+	return initialiseEdgesAndNodes(g, resourceMapProvider)
 }
 
 // AddReference implements HclResource
@@ -139,6 +126,7 @@ func (g *DashboardGraph) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (g *DashboardGraph) GetChildren() []ModTreeItem {
+	// return nodes and edges (if any)
 	children := make([]ModTreeItem, len(g.Nodes)+len(g.Edges))
 	for i, n := range g.Nodes {
 		children[i] = n
@@ -286,6 +274,26 @@ func (g *DashboardGraph) GetPreparedStatementName() string {
 func (g *DashboardGraph) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return g.getPreparedStatementExecuteSQL(g, runtimeArgs)
+}
+
+// GetEdges implements EdgeAndNodeProvider
+func (g *DashboardGraph) GetEdges() DashboardEdgeList {
+	return g.Edges
+}
+
+// GetNodes implements NodeAndNodeProvider
+func (g *DashboardGraph) GetNodes() DashboardNodeList {
+	return g.Nodes
+}
+
+// SetEdges implements EdgeAndNodeProvider
+func (g *DashboardGraph) SetEdges(edges DashboardEdgeList) {
+	g.Edges = edges
+}
+
+// SetNodes implements NodeAndNodeProvider
+func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
+	g.Nodes = nodes
 }
 
 func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvider) {
