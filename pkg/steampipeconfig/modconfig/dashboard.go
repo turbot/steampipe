@@ -49,13 +49,10 @@ type Dashboard struct {
 	// TODO [reports] can a dashboard ever have multiple parents??
 	parents                []ModTreeItem
 	runtimeDependencyGraph *topsort.Graph
-
-	HclType string
 }
 
 func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 	c := &Dashboard{
-		HclType:         block.Type,
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -66,6 +63,28 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 	c.setUrlPath()
 
 	return c
+}
+
+func NewQueryDashboard(query *Query) *Dashboard {
+	dashboard := &Dashboard{
+		ResourceWithMetadataBase: query.ResourceWithMetadataBase,
+		ShortName:                query.ShortName,
+		FullName:                 fmt.Sprintf("%s.%s.%s", query.Mod.ShortName, "dashboard", query.ShortName),
+		UnqualifiedName:          fmt.Sprintf("%s.%s", "dashboard", query.ShortName),
+		Title:                    query.Title,
+		Description:              query.Description,
+		Documentation:            query.Documentation,
+		Tags:                     query.Tags,
+		References:               query.References,
+		Mod:                      query.Mod,
+		DeclRange:                query.DeclRange,
+	}
+	dashboard.setUrlPath()
+
+	chart := NewQueryDashboardChart(query)
+	dashboard.children = []ModTreeItem{chart}
+
+	return dashboard
 }
 
 func (d *Dashboard) setUrlPath() {
