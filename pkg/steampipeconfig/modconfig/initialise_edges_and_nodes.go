@@ -8,7 +8,6 @@ import (
 // validate that the provider does not contains both edges/nodes and a query/sql
 // enrich the loaded nodes and edges with the fully parsed resources from the resourceMapProvider
 func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
-
 	existingEdges := p.GetEdges()
 	existingNodes := p.GetNodes()
 
@@ -56,5 +55,8 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 		nodes[i] = fullNode
 	}
 
+	// write back the enriched nodes and edges
+	p.SetNodes(nodes)
+	p.SetEdges(edges)
 	return nil
 }

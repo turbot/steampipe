@@ -3,13 +3,14 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
@@ -36,6 +37,9 @@ type LeafRun struct {
 	parent              dashboardtypes.DashboardNodeParent
 	executionTree       *DashboardExecutionTree
 	runtimeDependencies map[string]*ResolvedRuntimeDependency
+	childComplete       chan dashboardtypes.DashboardNodeRun
+	// child runs (nodes/edges)
+	children []*LeafRun
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -73,12 +77,9 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		return nil, err
 	}
 	r.NodeType = parsedName.ItemType
-	// if we have a query provider which requires execution, set status to ready
-	if provider, ok := resource.(modconfig.QueryProvider); ok && provider.RequiresExecution(provider) {
-		// if the provider has sql or a query, set status to ready
-		r.Status = dashboardtypes.DashboardRunReady
 
-	}
+	// determine whether we need to execute this node or its children
+	r.setStatus()
 
 	// if this node has runtime dependencies, create runtime depdency instances which we use to resolve the values
 	// only QueryProvider resources support runtime dependencies
@@ -95,12 +96,46 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 				return nil, err
 			}
 		}
-
 	}
 
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
+
+	// if we have children (nodes/edges), create runs for them
+	if children := resource.GetChildren(); len(children) > 0 {
+		// create the child runs
+		return r.createChildRuns(children, executionTree)
+	}
 	return r, nil
+}
+
+func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) (*LeafRun, error) {
+	// create buffered child complete chan
+	r.childComplete = make(chan dashboardtypes.DashboardNodeRun, len(children))
+
+	r.children = make([]*LeafRun, len(children))
+	var errors []error
+
+	// if the leaf run has children (nodes/edges) create a run for this too
+	for i, c := range children {
+		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), r, executionTree)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		r.children[i] = childRun
+	}
+	return r, utils.CombineErrors(errors...)
+}
+
+// if we have a query provider which requires execution OR we have children, set status to ready
+func (r *LeafRun) setStatus() {
+	resource := r.DashboardNode
+	if provider, ok := resource.(modconfig.QueryProvider); ok {
+		if provider.RequiresExecution(provider) || len(resource.GetChildren()) > 0 {
+			r.Status = dashboardtypes.DashboardRunReady
+		}
+	}
 }
 
 // Initialise implements DashboardRunNode
@@ -131,30 +166,13 @@ func (r *LeafRun) Execute(ctx context.Context) {
 		}
 	}
 
-	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
-
-	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
-	if err != nil {
-		queryName := r.DashboardNode.(modconfig.QueryProvider).GetQuery().Name()
-		// get the query and any prepared statement error from the workspace
-		preparedStatementFailure := r.executionTree.workspace.GetPreparedStatementCreationFailure(queryName)
-		if preparedStatementFailure != nil {
-			declRange := preparedStatementFailure.Query.DeclRange
-			preparedStatementError := preparedStatementFailure.Error
-			err = error_helpers.EnrichPreparedStatementError(err, queryName, preparedStatementError, declRange)
-		}
-
-		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
-		// set the error status on the counter - this will raise counter error event
-		r.SetError(ctx, err)
-		return
-
+	// we can either have children (i.e. edges/nodes) or we have sql/query
+	// we have already validated that both are not set so no need to check here
+	if len(r.children) > 0 {
+		r.executeChildren(ctx)
+	} else {
+		r.executeQuery(ctx)
 	}
-	log.Printf("[TRACE] LeafRun '%s' complete", r.DashboardNode.Name())
-
-	r.Data = dashboardtypes.NewLeafData(queryResult)
-	// set complete status on counter - this will raise counter complete event
-	r.SetComplete(ctx)
 }
 
 // GetName implements DashboardNodeRun
@@ -191,6 +209,8 @@ func (r *LeafRun) GetError() error {
 
 // SetComplete implements DashboardNodeRun
 func (r *LeafRun) SetComplete(ctx context.Context) {
+	log.Printf("[WARN] SetComplete run %s", r.Name)
+
 	r.Status = dashboardtypes.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
@@ -202,8 +222,10 @@ func (r *LeafRun) SetComplete(ctx context.Context) {
 	// call snapshot hooks with progress
 	statushooks.UpdateSnapshotProgress(ctx, 1)
 
+	log.Printf("[WARN] SetComplete run %s tell parent we are done", r.Name)
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
+	log.Printf("[WARN] SetComplete run %s told parent", r.Name)
 }
 
 // RunComplete implements DashboardNodeRun
@@ -218,6 +240,11 @@ func (r *LeafRun) GetChildren() []dashboardtypes.DashboardNodeRun {
 
 // ChildrenComplete implements DashboardNodeRun
 func (r *LeafRun) ChildrenComplete() bool {
+	for _, child := range r.children {
+		if !child.RunComplete() {
+			return false
+		}
+	}
 	return true
 }
 
@@ -227,6 +254,11 @@ func (*LeafRun) IsSnapshotPanel() {}
 // GetInputsDependingOn implements DashboardNodeRun
 // return nothing for LeafRun
 func (r *LeafRun) GetInputsDependingOn(changedInputName string) []string { return nil }
+
+// ChildCompleteChan implements DashboardNodeParent
+func (r *LeafRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
+	return r.childComplete
+}
 
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.DashboardNode.Name())
@@ -320,6 +352,78 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 		}
 	}
 	return res, nil
+}
+
+// if this leaf run has a query or sql, execute it now
+func (r *LeafRun) executeQuery(ctx context.Context) {
+
+	ERROR HANDLING CODE
+
+		if err != nil {
+			queryName := r.DashboardNode.(modconfig.QueryProvider).GetQuery().Name()
+			// get the query and any prepared statement error from the workspace
+			preparedStatementFailure := r.executionTree.workspace.GetPreparedStatementCreationFailure(queryName)
+			if preparedStatementFailure != nil {
+				declRange := preparedStatementFailure.Query.DeclRange
+				preparedStatementError := preparedStatementFailure.Error
+				err = error_helpers.EnrichPreparedStatementError(err, queryName, preparedStatementError, declRange)
+			}
+
+			log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
+			// set the error status on the counter - this will raise counter error event
+			r.SetError(ctx, err)
+			return
+
+		}
+
+	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
+
+	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
+	if err != nil {
+		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
+		// set the error status on the counter - this will raise counter error event
+		r.SetError(ctx, err)
+		return
+
+	}
+	log.Printf("[TRACE] LeafRun '%s' complete", r.DashboardNode.Name())
+
+	r.Data = dashboardtypes.NewLeafData(queryResult)
+	// set complete status on counter - this will raise counter complete event
+	r.SetComplete(ctx)
+}
+
+// if this leaf run has children (nodes/edges), execute them
+func (r *LeafRun) executeChildren(ctx context.Context) {
+	for _, c := range r.children {
+		// if this child does not have its own args defined, inherit the parent args (ours)
+		if len(c.Args) == 0 {
+			c.Args = r.Args
+		}
+		go c.Execute(ctx)
+	}
+	// wait for children to complete
+	var errors []error
+
+	for !r.ChildrenComplete() {
+		log.Printf("[WARN] run %s waiting for children", r.Name)
+		completeChild := <-r.childComplete
+		log.Printf("[WARN] run %s got child complete", r.Name)
+		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
+			errors = append(errors, completeChild.GetError())
+		}
+		// fall through to recheck ChildrenComplete
+	}
+
+	log.Printf("[WARN] run %s ALL children complete", r.Name)
+	// so all children have completed - check for errors
+	err := utils.CombineErrors(errors...)
+	if err == nil {
+		// set complete status on dashboard
+		r.SetComplete(ctx)
+	} else {
+		r.SetError(ctx, err)
+	}
 }
 
 // format a string for use as a postgres string param

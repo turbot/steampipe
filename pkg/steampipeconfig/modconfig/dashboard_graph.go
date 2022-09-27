@@ -348,5 +348,16 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvi
 		g.Direction = g.Base.Direction
 	}
 
+	if g.Edges == nil {
+		g.Edges = g.Base.Edges
+	} else {
+		g.Edges.Merge(g.Base.Edges)
+	}
+	if g.Nodes == nil {
+		g.Nodes = g.Base.Nodes
+	} else {
+		g.Nodes.Merge(g.Base.Nodes)
+	}
+
 	g.MergeRuntimeDependencies(g.Base)
 }
