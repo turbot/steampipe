@@ -2,15 +2,7 @@ import get from "lodash/get";
 import has from "lodash/has";
 import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
-import set from "lodash/set";
-import sortBy from "lodash/sortBy";
-import useDashboardWebSocket, {
-  SocketActions,
-  SocketURLFactory,
-} from "./useDashboardWebSocket";
-import usePrevious from "./usePrevious";
-import { buildComponentsMap } from "../components";
-import {
+import React, {
   createContext,
   Ref,
   useCallback,
@@ -19,6 +11,15 @@ import {
   useReducer,
   useState,
 } from "react";
+import set from "lodash/set";
+import sortBy from "lodash/sortBy";
+import SnapshotRenderComplete from "../components/snapshot/SnapshotRenderComplete";
+import useDashboardWebSocket, {
+  SocketActions,
+  SocketURLFactory,
+} from "./useDashboardWebSocket";
+import usePrevious from "./usePrevious";
+import { buildComponentsMap } from "../components";
 import { GlobalHotKeys } from "react-hotkeys";
 import { LeafNodeData, Width } from "../components/dashboards/common";
 import { noop } from "../utils/func";
@@ -95,6 +96,7 @@ interface IDashboardContext {
 
   progress: number;
   state: DashboardRunState;
+  renderSnapshotCompleteDiv: boolean;
 }
 
 export interface IActions {
@@ -923,11 +925,6 @@ const DashboardProvider = ({
       searchParams.get("tag") ||
       get(stateDefaults, "search.groupBy.tag", "service");
     const inputs = buildSelectedDashboardInputsFromSearchParams(searchParams);
-    // console.log({
-    //   // @ts-ignore
-    //   previous: previousSelectedDashboardStates?.selectedDashboardInputs,
-    //   current: inputs,
-    // });
     dispatch({
       type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
       value: goneFromDashboardToDashboard ? "" : search,
@@ -943,7 +940,6 @@ const DashboardProvider = ({
         previousSelectedDashboardStates?.selectedDashboardInputs
       ) !== JSON.stringify(inputs)
     ) {
-      // console.log("dispatching inputs", inputs);
       dispatch({
         type: DashboardActions.SET_DASHBOARD_INPUTS,
         value: inputs,
@@ -1282,6 +1278,16 @@ const DashboardProvider = ({
     });
   }, [closePanelDetail]);
 
+  const [renderSnapshotCompleteDiv, setRenderSnapshotCompleteDiv] =
+    useState(false);
+
+  useEffect(() => {
+    if (dataOptions?.dataMode !== "snapshot" || state.state !== "complete") {
+      return;
+    }
+    setRenderSnapshotCompleteDiv(true);
+  }, [dataOptions?.dataMode, state.state]);
+
   return (
     <DashboardContext.Provider
       value={{
@@ -1292,6 +1298,7 @@ const DashboardProvider = ({
         dispatch,
         closePanelDetail,
         themeContext,
+        renderSnapshotCompleteDiv,
       }}
     >
       <GlobalHotKeys
@@ -1300,6 +1307,7 @@ const DashboardProvider = ({
         handlers={hotKeysHandlers}
       />
       {children}
+      <SnapshotRenderComplete />
     </DashboardContext.Provider>
   );
 };

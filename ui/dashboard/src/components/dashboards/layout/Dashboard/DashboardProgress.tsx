@@ -1,11 +1,13 @@
-import { DashboardRunState } from "../../../../hooks/useDashboard";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
-interface DashboardProgressProps {
-  state?: DashboardRunState;
-  progress?: number;
-}
+const DashboardProgress = () => {
+  const { dataMode, progress, state } = useDashboard();
 
-const DashboardProgress = ({ state, progress }: DashboardProgressProps) => {
+  // We only show a progress indicator in live mode
+  if (dataMode === "snapshot") {
+    return null;
+  }
+
   return (
     <div className="w-full h-[4px] bg-dashboard print:hidden">
       {state === "ready" ? (
