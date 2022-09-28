@@ -32,16 +32,6 @@ const SteampipeConfContent = `
 # see documentation on this behavior in the postgresql docs:
 # https://www.postgresql.org/docs/11/config-setting.html#CONFIG-INCLUDES
 
-
-bgwriter_lru_maxpages=0
-effective_cache_size=64kB
-fsync=off
-full_page_writes=off
-maintenance_work_mem=1024kB
-password_encryption=scram-sha-256
-random_page_cost=0.01
-seq_page_cost=0.01
-
 # If the shared buffers are too small then large tables in memory can create
 # "no unpinned buffers available" errors.
 #
@@ -56,14 +46,9 @@ seq_page_cost=0.01
 # In that case, set synchronous_commit in an overriding config file
 # synchronous_commit=off
 
-temp_buffers=800kB
 timezone=UTC
 track_activities=off
-track_counts = on
-wal_buffers=32kB
-work_mem=64kB
 jit=off
-max_locks_per_transaction = 2048 
 
 # postgres log collection
 log_connections=on
