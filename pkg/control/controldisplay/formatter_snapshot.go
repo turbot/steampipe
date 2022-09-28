@@ -33,7 +33,7 @@ func (f *SnapshotFormatter) Format(_ context.Context, tree *controlexecute.Execu
 }
 
 func (f *SnapshotFormatter) FileExtension() string {
-	return constants.JsonExtension
+	return ".snapshot.json"
 }
 
 func (f SnapshotFormatter) Name() string {

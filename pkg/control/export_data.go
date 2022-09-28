@@ -9,7 +9,7 @@ import (
 
 type ExportData struct {
 	ExecutionTree *controlexecute.ExecutionTree
-	Targets       []controldisplay.CheckExportTarget
+	Targets       []*controldisplay.CheckExportTarget
 	ErrorsLock    *sync.Mutex
 	Errors        []error
 	WaitGroup     *sync.WaitGroup
