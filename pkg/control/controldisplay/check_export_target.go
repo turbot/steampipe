@@ -5,8 +5,8 @@ type CheckExportTarget struct {
 	File      string
 }
 
-func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
-	return CheckExportTarget{
+func NewCheckExportTarget(formatter Formatter, file string) *CheckExportTarget {
+	return &CheckExportTarget{
 		Formatter: formatter,
 		File:      file,
 	}

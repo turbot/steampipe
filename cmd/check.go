@@ -131,8 +131,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	client := initData.Client
 	failures := 0
 	var exportErrors []error
-	exportErrorsLock := sync.Mutex{}
-	exportWaitGroup := sync.WaitGroup{}
+	exportErrorsLock := &sync.Mutex{}
+	exportWaitGroup := &sync.WaitGroup{}
 	var durations []time.Duration
 
 	// treat each arg as a separate execution
@@ -158,14 +158,14 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(err)
 
 		if len(exportTargets) > 0 {
-			d := control.ExportData{
+			d := &control.ExportData{
 				ExecutionTree: executionTree,
 				Targets:       exportTargets,
-				ErrorsLock:    &exportErrorsLock,
+				ErrorsLock:    exportErrorsLock,
 				Errors:        exportErrors,
-				WaitGroup:     &exportWaitGroup,
+				WaitGroup:     exportWaitGroup,
 			}
-			exportCheckResult(ctx, &d)
+			exportCheckResult(ctx, d)
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
@@ -320,7 +320,7 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	return err
 }
 
-func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []controldisplay.CheckExportTarget) []error {
+func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []*controldisplay.CheckExportTarget) []error {
 	errors := []error{}
 	for _, target := range targets {
 		if utils.IsContextCancelled(ctx) {
@@ -380,41 +380,28 @@ func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
 	return dataToExport, nil
 }
 
-func getExportTargets(arg string) ([]controldisplay.CheckExportTarget, error) {
-	var targets = make(map[string]controldisplay.CheckExportTarget)
+func getExportTargets(executionName string) ([]*controldisplay.CheckExportTarget, error) {
+	var targets = make(map[string]*controldisplay.CheckExportTarget)
 	var targetErrors []error
 
 	exports := viper.GetStringSlice(constants.ArgExport)
 	for _, export := range exports {
 		export = strings.TrimSpace(export)
-
 		if len(export) == 0 {
 			// if this is an empty string, ignore
 			continue
 		}
 
-		formatter, err := parseExportArg(export)
+		newTarget, err := getExportTarget(executionName, export)
 		if err != nil {
 			targetErrors = append(targetErrors, err)
 			continue
 		}
-		if formatter == nil {
+		if newTarget == nil {
 			targetErrors = append(targetErrors, fmt.Errorf("formatter satisfying '%s' not found", export))
 			continue
 		}
-
-		// if the name of the formatter is different from the arg,
-		// the arg is a filename and we have deduced the format from the file extension
-		// use the export arg directly as a filename
-		var fileName string
-		if export != formatter.Name() {
-			fileName = export
-		} else {
-			// otherwise we need to generate a filename
-			fileName = generateDefaultExportFileName(formatter, arg)
-		}
-
-		newTarget := controldisplay.NewCheckExportTarget(formatter, fileName)
+		// add to map if not already there
 		if _, ok := targets[newTarget.File]; !ok {
 			targets[newTarget.File] = newTarget
 		}
@@ -426,19 +413,36 @@ func getExportTargets(arg string) ([]controldisplay.CheckExportTarget, error) {
 	return targetList, error_helpers.CombineErrors(targetErrors...)
 }
 
-// parseExportArg parses the flag value and returns a Formatter based on the value
-func parseExportArg(arg string) (controldisplay.Formatter, error) {
+// getExportTarget parses the flag value, finds a matching formatter and returns an export target
+func getExportTarget(executionName string, export string) (*controldisplay.CheckExportTarget, error) {
 	formatResolver, err := controldisplay.NewFormatResolver()
 	if err != nil {
 		return nil, err
 	}
 
-	formatter, err := formatResolver.GetFormatter(arg)
-	if err == nil {
-		return formatter, nil
+	var fileName string
+	formatter, err := formatResolver.GetFormatter(export)
+	if err != nil {
+		// as we are resolving the format by extension, the arg will be the filename so return it
+		formatter, err = formatResolver.GetFormatterByExtension(export)
+		if err != nil {
+			return nil, err
+		}
+		if formatter == nil {
+			return nil, nil
+		}
+		// use the export arg as the filename
+		fileName = export
 	}
 
-	return formatResolver.GetFormatterByExtension(arg)
+	if fileName == "" {
+		//  we need to generate a filename
+		fileName = generateDefaultExportFileName(formatter, executionName)
+	}
+
+	target := controldisplay.NewCheckExportTarget(formatter, fileName)
+
+	return target, nil
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
@@ -451,8 +455,8 @@ func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) 
 	return formatResolver.GetFormatter(arg)
 }
 
-func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
+func generateDefaultExportFileName(formatter controldisplay.Formatter, executionName string) string {
 	now := time.Now()
 	timeFormatted := fmt.Sprintf("%d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	return fmt.Sprintf("%s-%s%s", executing, timeFormatted, formatter.FileExtension())
+	return fmt.Sprintf("%s-%s%s", executionName, timeFormatted, formatter.FileExtension())
 }
