@@ -36,7 +36,7 @@ func (f *SnapshotFormatter) FileExtension() string {
 	return constants.JsonExtension
 }
 
-func (f SnapshotFormatter) GetFormatName() string {
+func (f SnapshotFormatter) Name() string {
 	return constants.OutputFormatSnapshot
 }
 

@@ -300,7 +300,7 @@ func exportCheckResult(ctx context.Context, d *control.ExportData) {
 
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
 	output := viper.GetString(constants.ArgOutput)
-	formatter, _, err := parseOutputArg(output)
+	formatter, err := parseOutputArg(output)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -346,7 +346,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			continue
 		}
 		// tactical solution to prettify the json output
-		if target.Formatter.GetFormatName() == constants.OutputFormatJSON {
+		if target.Formatter.Name() == constants.OutputFormatJSON {
 			dataToExport, err = prettifyJsonFromReader(dataToExport)
 			if err != nil {
 				errors = append(errors, err)
@@ -380,9 +380,9 @@ func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
 	return dataToExport, nil
 }
 
-func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, error) {
-	targets := []controldisplay.CheckExportTarget{}
-	targetErrors := []error{}
+func getExportTargets(arg string) ([]controldisplay.CheckExportTarget, error) {
+	var targets = make(map[string]controldisplay.CheckExportTarget)
+	var targetErrors []error
 
 	exports := viper.GetStringSlice(constants.ArgExport)
 	for _, export := range exports {
@@ -393,52 +393,62 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 			continue
 		}
 
-		var fileName string
-		var formatter controldisplay.Formatter
-
-		formatter, fileName, err := parseExportArg(export)
+		formatter, err := parseExportArg(export)
 		if err != nil {
 			targetErrors = append(targetErrors, err)
 			continue
 		}
 		if formatter == nil {
-			targetErrors = append(targetErrors, controldisplay.ErrFormatterNotFound)
+			targetErrors = append(targetErrors, fmt.Errorf("formatter satisfying '%s' not found", export))
 			continue
 		}
 
-		if len(fileName) == 0 {
-			fileName = generateDefaultExportFileName(formatter, executing)
+		// if the name of the formatter is different from the arg,
+		// the arg is a filename and we have deduced the format from the file extension
+		// use the export arg directly as a filename
+		var fileName string
+		if export != formatter.Name() {
+			fileName = export
+		} else {
+			// otherwise we need to generate a filename
+			fileName = generateDefaultExportFileName(formatter, arg)
 		}
 
 		newTarget := controldisplay.NewCheckExportTarget(formatter, fileName)
-		isAlreadyAdded := false
-		for _, t := range targets {
-			if t.File == newTarget.File {
-				isAlreadyAdded = true
-				break
-			}
-		}
-
-		if !isAlreadyAdded {
-			targets = append(targets, newTarget)
+		if _, ok := targets[newTarget.File]; !ok {
+			targets[newTarget.File] = newTarget
 		}
 	}
 
-	return targets, error_helpers.CombineErrors(targetErrors...)
+
+	// convert target map into array
+	targetList := utils.MapValues(targets)
+	return targetList, error_helpers.CombineErrors(targetErrors...)
 }
 
 // parseExportArg parses the flag value and returns a Formatter based on the value
-func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
-	return controldisplay.GetTemplateExportFormatter(arg, true)
+func parseExportArg(arg string) (controldisplay.Formatter, error) {
+	formatResolver, err := controldisplay.NewFormatResolver()
+	if err != nil {
+		return nil, err
+	}
+
+	formatter, err := formatResolver.GetFormatter(arg)
+	if err == nil {
+		return formatter, nil
+	}
+
+	return formatResolver.GetFormatterByExtension(arg)
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
-func parseOutputArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
-	var found bool
-	if formatter, found = controldisplay.GetDefinedOutputFormatter(arg); found {
-		return
+func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) {
+	formatResolver, err := controldisplay.NewFormatResolver()
+	if err != nil {
+		return nil, err
 	}
-	return controldisplay.GetTemplateExportFormatter(arg, false)
+
+	return formatResolver.GetFormatter(arg)
 }
 
 func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
