@@ -2,10 +2,10 @@ import { useDashboard } from "../../../hooks/useDashboard";
 
 const SnapshotRenderComplete = () => {
   const {
-    render: { showSnapshotCompleteDiv },
+    render: { snapshotCompleteDiv },
   } = useDashboard();
 
-  if (!showSnapshotCompleteDiv) {
+  if (!snapshotCompleteDiv) {
     return null;
   }
 

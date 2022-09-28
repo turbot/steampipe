@@ -8,7 +8,7 @@ test("return null when should not render snapshot complete div", async () => {
   // ARRANGE
   const { container } = render(
     <DashboardContext.Provider
-      value={{ render: { showSnapshotCompleteDiv: false } }}
+      value={{ render: { snapshotCompleteDiv: false } }}
     >
       <SnapshotRenderComplete />
     </DashboardContext.Provider>
@@ -22,7 +22,7 @@ test("return null when should not render snapshot complete div", async () => {
   // ARRANGE
   render(
     <DashboardContext.Provider
-      value={{ render: { showSnapshotCompleteDiv: true } }}
+      value={{ render: { snapshotCompleteDiv: true } }}
     >
       <SnapshotRenderComplete />
     </DashboardContext.Provider>

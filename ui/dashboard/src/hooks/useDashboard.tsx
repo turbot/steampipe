@@ -97,7 +97,7 @@ interface IDashboardContext {
   state: DashboardRunState;
   render: {
     headless: boolean;
-    showSnapshotCompleteDiv: boolean;
+    snapshotCompleteDiv: boolean;
   };
 }
 
@@ -1314,7 +1314,7 @@ const DashboardProvider = ({
         themeContext,
         render: {
           headless: renderOptions?.headless,
-          showSnapshotCompleteDiv: renderSnapshotCompleteDiv,
+          snapshotCompleteDiv: renderSnapshotCompleteDiv,
         },
       }}
     >
