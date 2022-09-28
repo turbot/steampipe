@@ -2,72 +2,12 @@ package controldisplay
 
 import (
 	"context"
-	"errors"
-	"io"
-	"strings"
-
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
+	"io"
 )
-
-var ErrFormatterNotFound = errors.New("Formatter not found")
-
-type FormatterMap map[string]Formatter
-
-var outputFormatters FormatterMap = FormatterMap{
-	constants.OutputFormatNone:     &NullFormatter{},
-	constants.OutputFormatText:     &TextFormatter{},
-	constants.OutputFormatBrief:    &TextFormatter{},
-	constants.OutputFormatSnapshot: &SnapshotFormatter{},
-}
-
-type CheckExportTarget struct {
-	Formatter Formatter
-	File      string
-}
-
-func NewCheckExportTarget(formatter Formatter, file string) CheckExportTarget {
-	return CheckExportTarget{
-		Formatter: formatter,
-		File:      file,
-	}
-}
 
 type Formatter interface {
 	Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error)
 	FileExtension() string
-	// TODO THIS SEEMS TO BE ONLY USED FOR PRETTIFYING JSON???
-	GetFormatName() string
-}
-
-func GetTemplateExportFormatter(arg string, allowFilenameEvaluation bool) (Formatter, string, error) {
-	templateFormat, fileName, err := ResolveExportTemplate(arg, allowFilenameEvaluation)
-	if err != nil {
-		return nil, "", err
-	}
-	formatter, err := NewTemplateFormatter(*templateFormat)
-	return formatter, fileName, err
-}
-
-func GetDefinedOutputFormatter(outputFormat string) (Formatter, bool) {
-	formatter, found := outputFormatters[outputFormat]
-	return formatter, found
-}
-
-// NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
-// reads an empty string
-type NullFormatter struct{}
-
-func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	return strings.NewReader(""), nil
-}
-
-func (j *NullFormatter) FileExtension() string {
-	// will not be called
-	return ""
-}
-
-func (j *NullFormatter) GetFormatName() string {
-	// will not be called
-	return ""
+	Name() string
 }

@@ -28,7 +28,7 @@ func (tf *TextFormatter) FileExtension() string {
 	return constants.TextExtension
 }
 
-func (tf TextFormatter) GetFormatName() string {
+func (tf TextFormatter) Name() string {
 	return constants.OutputFormatText
 }
 

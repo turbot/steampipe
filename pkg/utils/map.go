@@ -52,3 +52,13 @@ func StringMapsEqual(l, r map[string]string) bool {
 	}
 	return true
 }
+
+func MapValues[V any](m map[string]V) []V {
+	res := make([]V, len(m))
+	idx := 0
+	for _, v := range m {
+		res[idx] = v
+		idx++
+	}
+	return res
+}

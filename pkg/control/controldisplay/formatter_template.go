@@ -31,7 +31,7 @@ type TemplateRenderContext struct {
 // for 'check' execution trees
 type TemplateFormatter struct {
 	template     *template.Template
-	exportFormat ExportTemplate
+	exportFormat *OutputTemplate
 }
 
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
@@ -83,11 +83,11 @@ func (tf TemplateFormatter) FileExtension() string {
 	}
 }
 
-func (tf TemplateFormatter) GetFormatName() string {
+func (tf TemplateFormatter) Name() string {
 	return tf.exportFormat.FormatName
 }
 
-func NewTemplateFormatter(input ExportTemplate) (*TemplateFormatter, error) {
+func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
 	templateFuncs := templateFuncs()
 
 	// add a stub "render_context" function
