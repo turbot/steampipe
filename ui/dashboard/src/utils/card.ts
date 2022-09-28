@@ -42,7 +42,7 @@ const getWrapperClasses = (type) => {
     case "severity":
       return "bg-yellow border-yellow print:border-2 print:bg-white";
     default:
-      return "bg-dashboard-panel shadow-sm border-divide print:border-2 print:shadow-none print:bg-white";
+      return "bg-dashboard-panel shadow-sm border-gray-400 print:border-2 print:shadow-none print:bg-white";
   }
 };
 
