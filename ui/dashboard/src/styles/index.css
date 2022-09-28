@@ -83,7 +83,7 @@
   --color-error: red;
   --color-warning: #f9a825;
   --color-dashboard: #1e2329;
-  --color-dashboard-panel: #262B32; /* #2d333b;*/ /*var(--color-black-scale-1);*/
+  --color-dashboard-panel: #262b32; /* #2d333b;*/ /*var(--color-black-scale-1);*/
   --color-foreground: #fff;
   --color-foreground-light: #ccc;
   --color-foreground-lighter: #888;
@@ -216,14 +216,13 @@
 }
 
 .dashboard-loading-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-skip-animate),
-                  var(--color-skip-animate) 0.5rem,
-                  var(--color-skip) 0.5rem,
-                  var(--color-skip) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-skip-animate),
+    var(--color-skip-animate) 0.5rem,
+    var(--color-skip) 0.5rem,
+    var(--color-skip) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
@@ -280,6 +279,10 @@
 }
 
 @media print {
+  @page {
+    size: 2550px 3300px;
+  }
+
   #root {
     -webkit-print-color-adjust: exact;
   }
