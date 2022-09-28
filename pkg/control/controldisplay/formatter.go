@@ -15,9 +15,10 @@ var ErrFormatterNotFound = errors.New("Formatter not found")
 type FormatterMap map[string]Formatter
 
 var outputFormatters FormatterMap = FormatterMap{
-	constants.OutputFormatNone:  &NullFormatter{},
-	constants.OutputFormatText:  &TextFormatter{},
-	constants.OutputFormatBrief: &TextFormatter{},
+	constants.OutputFormatNone:     &NullFormatter{},
+	constants.OutputFormatText:     &TextFormatter{},
+	constants.OutputFormatBrief:    &TextFormatter{},
+	constants.OutputFormatSnapshot: &SnapshotFormatter{},
 }
 
 type CheckExportTarget struct {

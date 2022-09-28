@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 	"golang.org/x/sync/semaphore"
 )
@@ -30,9 +31,10 @@ type ExecutionTree struct {
 	Progress    *controlstatus.ControlProgress `json:"progress"`
 	// map of dimension property name to property value to color map
 	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
-
-	workspace *workspace.Workspace
-	client    db_common.Client
+	// the current session search path (this may be overidden for specific controls)
+	SearchPath []string             `json:"-"`
+	Workspace  *workspace.Workspace `json:"-"`
+	client     db_common.Client
 	// an optional map of control names used to filter the controls which are run
 	controlNameFilterMap map[string]bool
 }
@@ -41,8 +43,9 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	// TODO [reports] FAIL IF any resources in the tree have runtime dependencies
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
-		workspace: workspace,
-		client:    client,
+		Workspace:  workspace,
+		client:     client,
+		SearchPath: utils.UnquoteStringArray(client.GetRequiredSessionSearchPath()),
 	}
 	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
 	// create a context with status hooks disabled
@@ -216,12 +219,12 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 
 		// to achieve this, use a  DirectChildrenModDecorator
 
-		return DirectChildrenModDecorator{e.workspace.Mod}, nil
+		return DirectChildrenModDecorator{e.Workspace.Mod}, nil
 	}
 
 	// if the arg is the name of one of the workspace dependendencies, wrap it in DirectChildrenModDecorator
 	// so we only execute _its_ direct children
-	for _, mod := range e.workspace.Mods {
+	for _, mod := range e.Workspace.Mods {
 		if mod.ShortName == arg {
 			return DirectChildrenModDecorator{mod}, nil
 		}
@@ -234,7 +237,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 		return nil, fmt.Errorf("failed to parse check argument '%s': %v", arg, err)
 	}
 
-	resource, found := modconfig.GetResource(e.workspace, parsedName)
+	resource, found := modconfig.GetResource(e.Workspace, parsedName)
 
 	root, ok := resource.(modconfig.ModTreeItem)
 	if !found || !ok {
@@ -247,7 +250,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 // This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, _, err := e.workspace.ResolveQueryAndArgsFromSQLString(whereClause)
+	query, _, err := e.Workspace.ResolveQueryAndArgsFromSQLString(whereClause)
 	if err != nil {
 		return nil, err
 	}
