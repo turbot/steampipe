@@ -238,6 +238,12 @@ const Card = (props: CardProps) => {
     doRender();
   }, [state, props.data]);
 
+  // return (
+  //   <div className="bg-alert text-alert print:bg-white print:border-2 print:border-alert">
+  //     Hello
+  //   </div>
+  // );
+
   const card = (
     <div
       className={classNames(

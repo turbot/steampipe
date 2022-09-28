@@ -85,7 +85,7 @@ const FullHeightThemeWrapper = ({ children }) => {
     <div
       ref={setWrapperRef}
       className={classNames(
-        `h-screen flex flex-col theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground print:text-black`,
+        `h-screen flex flex-col theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground`,
         withFooterPadding ? "pb-4" : ""
       )}
     >
