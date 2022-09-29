@@ -179,7 +179,7 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 		modconfig.BlockTypeText:      modconfig.NewDashboardText,
 		modconfig.BlockTypeNode:      modconfig.NewDashboardNode,
 		modconfig.BlockTypeEdge:      modconfig.NewDashboardEdge,
-	}
+		modconfig.BlockTypeCategory:  modconfig.NewDashboardCategory}
 
 	factoryFunc, ok := factoryFuncs[block.Type]
 	if !ok {

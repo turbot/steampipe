@@ -49,7 +49,6 @@ query "aws_ec2_instance_input" {
 }
 
 
-
 node "aws_ec2_instance_node" {
   category = category.aws_ec2_instance
 
@@ -124,4 +123,20 @@ edge "aws_ec2_instance_to_ebs_volume_edge" {
   EOQ
 
   param "instance_id" {}
+}
+
+category "aws_ec2_instance" {
+  href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
+  fold {
+    title     = "EC2 Classic Load Balancers"
+    threshold = 3
+  }
+}
+
+category "aws_ebs_volume" {
+  href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
+  fold {
+    title     = "EC2 Classic Load Balancers"
+    threshold = 3
+  }
 }

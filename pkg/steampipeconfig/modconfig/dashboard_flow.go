@@ -85,7 +85,7 @@ func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResou
 	if len(f.CategoryList) > 0 {
 		f.Categories = make(map[string]*DashboardCategory, len(f.CategoryList))
 		for _, c := range f.CategoryList {
-			f.Categories[c.Name] = c
+			f.Categories[c.Name()] = c
 		}
 	}
 	return nil

@@ -85,7 +85,7 @@ func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider Mod
 	if len(h.CategoryList) > 0 {
 		h.Categories = make(map[string]*DashboardCategory, len(h.CategoryList))
 		for _, c := range h.CategoryList {
-			h.Categories[c.Name] = c
+			h.Categories[c.Name()] = c
 		}
 	}
 	return initialiseEdgesAndNodes(h, resourceMapProvider)
