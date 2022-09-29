@@ -115,6 +115,10 @@ var WorkspaceBlockSchema = &hcl.BodySchema{
 		{
 			Type: modconfig.BlockTypeLocals,
 		},
+		{
+			Type:       modconfig.BlockTypeCategory,
+			LabelNames: []string{"name"},
+		},
 	},
 }
 

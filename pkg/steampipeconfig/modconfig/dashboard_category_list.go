@@ -8,11 +8,11 @@ func (c *DashboardCategoryList) Merge(other DashboardCategoryList) {
 	}
 	var categoryMap = make(map[string]bool)
 	for _, category := range *c {
-		categoryMap[category.Name] = true
+		categoryMap[category.Name()] = true
 	}
 
 	for _, otherCategory := range other {
-		if !categoryMap[otherCategory.Name] {
+		if !categoryMap[otherCategory.Name()] {
 			*c = append(*c, otherCategory)
 		}
 	}

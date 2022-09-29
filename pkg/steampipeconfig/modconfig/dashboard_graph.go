@@ -86,7 +86,7 @@ func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModReso
 	if len(g.CategoryList) > 0 {
 		g.Categories = make(map[string]*DashboardCategory, len(g.CategoryList))
 		for _, c := range g.CategoryList {
-			g.Categories[c.Name] = c
+			g.Categories[c.Name()] = c
 		}
 	}
 

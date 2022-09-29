@@ -21,8 +21,7 @@ type DashboardNode struct {
 	ShortName       string   `json:"-"`
 	UnqualifiedName string   `json:"-"`
 
-	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardCategory `cty:"categories" json:"-"`
+	Category *DashboardCategory `cty:"category" hcl:"category" column:"category,jsonb" json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -75,13 +74,6 @@ func (n *DashboardNode) Name() string {
 // OnDecoded implements HclResource
 func (n *DashboardNode) OnDecoded(_ *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	n.setBaseProperties(resourceMapProvider)
-	// populate categories map
-	if len(n.CategoryList) > 0 {
-		n.Categories = make(map[string]*DashboardCategory, len(n.CategoryList))
-		for _, c := range n.CategoryList {
-			n.Categories[c.Name] = c
-		}
-	}
 	return nil
 }
 
@@ -161,14 +153,8 @@ func (n *DashboardNode) Diff(other *DashboardNode) *DashboardTreeItemDiffs {
 		Name: n.Name(),
 	}
 
-	if len(n.CategoryList) != len(other.CategoryList) {
-		res.AddPropertyDiff("Categories")
-	} else {
-		for i, c := range n.Categories {
-			if !c.Equals(other.Categories[i]) {
-				res.AddPropertyDiff("Categories")
-			}
-		}
+	if !n.Category.Equals(other.Category) {
+		res.AddPropertyDiff("Category")
 	}
 
 	res.populateChildDiffs(n, other)
@@ -281,10 +267,8 @@ func (n *DashboardNode) setBaseProperties(resourceMapProvider ModResourcesProvid
 		n.Params = n.Base.Params
 	}
 
-	if n.CategoryList == nil {
-		n.CategoryList = n.Base.CategoryList
-	} else {
-		n.CategoryList.Merge(n.Base.CategoryList)
+	if n.Category == nil {
+		n.Category = n.Base.Category
 	}
 
 	n.MergeRuntimeDependencies(n.Base)
