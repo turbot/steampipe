@@ -60,13 +60,13 @@ func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
 	t.Render()
 }
 
-func ShowWrappedPluginTable(headers []string, rows [][]string, autoMerge bool, tableTitle string) {
+var maxLength []int
+
+func ShowInstalledPluginTable(headers []string, rows [][]string, autoMerge bool) {
 	t := table.NewWriter()
 
-	// table title required for plugin list, will only be rendered if tableTitle is passed
-	if tableTitle != "" {
-		t.SetTitle(tableTitle)
-	}
+	t.SetTitle("Installed Plugins")
+	// t.HideBottomBorder(true)
 
 	t.SetStyle(table.StyleDefault)
 	t.Style().Format.Header = text.FormatDefault
@@ -86,6 +86,34 @@ func ShowWrappedPluginTable(headers []string, rows [][]string, autoMerge bool, t
 		t.AppendRow(rowObj, rowConfig)
 	}
 	t.Render()
+	maxLength = t.MaxColumnLengths()
+}
+
+func ShowMissingPluginTable(headers []string, rows [][]string, autoMerge bool) {
+	t := table.NewWriter()
+
+	t.SetTitle("Missing Plugins")
+	t.SetMaxColumnLengths(maxLength)
+
+	t.SetStyle(table.StyleDefault)
+	t.Style().Format.Header = text.FormatDefault
+	t.SetOutputMirror(os.Stdout)
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+	colConfigs, headerRow := getColumnSettings(headers, rows)
+
+	t.SetColumnConfigs(colConfigs)
+	t.AppendHeader(headerRow)
+
+	for _, row := range rows {
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
+	}
+	t.Render()
+	maxLength = t.MaxColumnLengths()
 }
 
 // calculate and returns column configuration based on header and row content
