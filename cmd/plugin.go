@@ -592,21 +592,21 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	for _, item := range list {
 		rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 	}
-	display.ShowWrappedPluginTable(headers, rows, false, "Installed Plugins")
+	display.ShowInstalledPluginTable(headers, rows, false)
 
 	// List missing plugins which have connections
 	if len(missingPluginMap) != 0 {
-		headers := []string{"Name", "Connections"}
+		headers := []string{"Name", "Version", "Connections"}
 		conns := []string{}
 		missingRows := [][]string{}
 		for p, item := range missingPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ",")})
+			missingRows = append(missingRows, []string{p, "", strings.Join(conns, ",")})
 			conns = []string{}
 		}
-		display.ShowWrappedPluginTable(headers, missingRows, false, "Missing Plugins")
+		display.ShowMissingPluginTable(headers, missingRows, false)
 	}
 }
 

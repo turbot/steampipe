@@ -225,3 +225,5 @@ replace github.com/docker/distribution => github.com/distribution/distribution v
 replace github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
 
 replace github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
+
+replace github.com/jedib0t/go-pretty/v6 => /Users/pskrbasu/turbot-delivery/Steampipe/go-pretty
