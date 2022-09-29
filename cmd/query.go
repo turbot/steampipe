@@ -89,6 +89,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// TODO VALIDATE --OUTPUT ARG
+
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
 	}

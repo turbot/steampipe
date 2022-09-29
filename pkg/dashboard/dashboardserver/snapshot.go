@@ -10,7 +10,6 @@ import (
 func ExecutionCompleteToSnapshot(event *dashboardevents.ExecutionComplete) *dashboardtypes.SteampipeSnapshot {
 	return &dashboardtypes.SteampipeSnapshot{
 		SchemaVersion: fmt.Sprintf("%d", dashboardtypes.SteampipeSnapshotSchemaVersion),
-		DashboardNode: event.Root,
 		Panels:        event.Panels,
 		Layout:        event.Root.AsTreeNode(),
 		Inputs:        event.Inputs,

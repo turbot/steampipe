@@ -16,11 +16,11 @@ import (
 // GetQueriesFromArgs retrieves queries from args
 //
 // For each arg check if it is a named query or a file, before falling back to treating it as sql
-func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.ModResources, error) {
+func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]string, *modconfig.ModResources, error) {
 	utils.LogTime("execute.GetQueriesFromArgs start")
 	defer utils.LogTime("execute.GetQueriesFromArgs end")
 
-	var queries []string
+	var queries = make(map[string]string)
 	var queryProviders []modconfig.QueryProvider
 	// build map of just the required prepared statement providers
 	for _, arg := range args {
@@ -29,8 +29,12 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]string, *modconfig.ModR
 			return nil, nil, err
 		}
 		if len(query) > 0 {
-			queries = append(queries, query)
-			queryProviders = append(queryProviders, queryProvider)
+			queryName := "user_query"
+			if queryProvider != nil {
+				queryName = queryProvider.Name()
+				queryProviders = append(queryProviders, queryProvider)
+			}
+			queries[queryName] = query
 
 		}
 	}

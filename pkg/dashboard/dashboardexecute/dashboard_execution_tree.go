@@ -93,7 +93,6 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		return NewDashboardRun(dashboard, e, e)
 	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
-
 	}
 }
 

@@ -16,8 +16,9 @@ import (
 )
 
 type InitData struct {
-	Loaded            chan struct{}
-	Queries           []string
+	Loaded chan struct{}
+	// map of query name to query
+	Queries           map[string]string
 	Workspace         *workspace.Workspace
 	Client            db_common.Client
 	Result            *db_common.InitResult
