@@ -428,7 +428,7 @@ const TableView = ({
       >
         <thead
           className={classNames(
-            "bg-table-head text-table-head",
+            "text-table-head",
             theme.name === ThemeNames.STEAMPIPE_DARK
               ? "border-b border-table-divide"
               : "border-b border-background"

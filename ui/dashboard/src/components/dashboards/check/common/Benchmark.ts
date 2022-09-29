@@ -100,7 +100,7 @@ class Benchmark implements CheckNode {
           control.name,
           control.title,
           control.description,
-          control.severity,
+          control.properties?.severity || control.severity,
           control.data,
           control.summary,
           control.tags,

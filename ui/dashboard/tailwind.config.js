@@ -48,9 +48,6 @@ module.exports = {
       maxHeight: {
         "1/2-screen": "50vh",
       },
-      screens: {
-        print: { raw: "print" },
-      },
       typography: (theme) => ({
         DEFAULT: {
           css: {
