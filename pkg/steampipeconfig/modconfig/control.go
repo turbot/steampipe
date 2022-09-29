@@ -266,7 +266,7 @@ func (c *Control) GetReferences() []*ResourceReference {
 	return c.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (c *Control) GetMod() *Mod {
 	return c.Mod
 }

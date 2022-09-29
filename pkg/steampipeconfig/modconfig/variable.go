@@ -97,7 +97,7 @@ func (v *Variable) GetReferences() []*ResourceReference {
 	return nil
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (v *Variable) GetMod() *Mod {
 	return v.Mod
 }

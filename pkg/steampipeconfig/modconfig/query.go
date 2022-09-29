@@ -200,7 +200,7 @@ func (q *Query) GetReferences() []*ResourceReference {
 	return q.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (q *Query) GetMod() *Mod {
 	return q.Mod
 }

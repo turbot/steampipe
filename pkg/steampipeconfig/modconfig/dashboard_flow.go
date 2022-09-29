@@ -101,7 +101,7 @@ func (f *DashboardFlow) GetReferences() []*ResourceReference {
 	return f.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (f *DashboardFlow) GetMod() *Mod {
 	return f.Mod
 }

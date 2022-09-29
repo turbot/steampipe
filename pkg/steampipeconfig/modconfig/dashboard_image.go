@@ -88,7 +88,7 @@ func (i *DashboardImage) GetReferences() []*ResourceReference {
 	return i.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (i *DashboardImage) GetMod() *Mod {
 	return i.Mod
 }
