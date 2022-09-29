@@ -3,6 +3,7 @@ package queryexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"time"
 
 	"github.com/spf13/viper"
@@ -27,7 +28,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(ctx, r)
+		display.ShowOutput(ctx, r, nil)
 		// signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.AllResultsRead()
 	}
@@ -53,23 +54,31 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 	failures := 0
 	if len(initData.Queries) > 0 {
 		// if we have resolved any queries, run them
-		failures = executeQueries(ctx, initData.Queries, initData.Client)
+		failures = executeQueries(ctx, initData)
 	}
 	// set global exit code
 	return failures
 }
 
-func executeQueries(ctx context.Context, queries []string, client db_common.Client) int {
+func executeQueries(ctx context.Context, initData *query.InitData) int {
+	queries := initData.Queries
 	utils.LogTime("queryexecute.executeQueries start")
 	defer utils.LogTime("queryexecute.executeQueries end")
 
 	// run all queries
 	failures := 0
 	t := time.Now()
-	for i, q := range queries {
-		if err := executeQuery(ctx, q, client); err != nil {
+	idx := 0
+	for name, q := range queries {
+		// try to resolve the source qwuery provider
+		var queryProvider modconfig.HclResource
+		if parsedName, err := modconfig.ParseResourceName(name); err == nil {
+			queryProvider, _ = modconfig.GetResource(initData.Workspace, parsedName)
+		}
+
+		if err := executeQuery(ctx, q, queryProvider, initData.Client); err != nil {
 			failures++
-			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
+			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", idx+1, len(queries), err))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 				display.DisplayErrorTiming(t)
@@ -77,7 +86,7 @@ func executeQueries(ctx context.Context, queries []string, client db_common.Clie
 		}
 		// TODO move into display layer
 		// Only show the blank line between queries, not after the last one
-		if (i < len(queries)-1) && showBlankLineBetweenResults() {
+		if (idx < len(queries)-1) && showBlankLineBetweenResults() {
 			fmt.Println()
 		}
 	}
@@ -85,7 +94,7 @@ func executeQueries(ctx context.Context, queries []string, client db_common.Clie
 	return failures
 }
 
-func executeQuery(ctx context.Context, queryString string, client db_common.Client) error {
+func executeQuery(ctx context.Context, queryString string, queryProvider modconfig.HclResource, client db_common.Client) error {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
@@ -97,7 +106,8 @@ func executeQuery(ctx context.Context, queryString string, client db_common.Clie
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(ctx, r)
+		display.ShowOutput(ctx, r, queryProvider)
+
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}
