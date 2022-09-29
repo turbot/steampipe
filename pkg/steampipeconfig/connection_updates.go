@@ -15,7 +15,7 @@ import (
 type ConnectionUpdates struct {
 	Update         ConnectionDataMap
 	Delete         ConnectionDataMap
-	MissingPlugins map[string][]*modconfig.Connection
+	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
 	RequiredConnectionState ConnectionDataMap
 	// connection plugins required to perform the updates
