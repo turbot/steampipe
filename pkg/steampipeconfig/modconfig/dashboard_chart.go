@@ -105,7 +105,7 @@ func (c *DashboardChart) GetReferences() []*ResourceReference {
 	return c.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (c *DashboardChart) GetMod() *Mod {
 	return c.Mod
 }

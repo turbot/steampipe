@@ -96,7 +96,7 @@ func (e *DashboardEdge) GetReferences() []*ResourceReference {
 	return e.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (e *DashboardEdge) GetMod() *Mod {
 	return e.Mod
 }
