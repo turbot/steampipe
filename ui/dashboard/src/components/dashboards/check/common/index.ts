@@ -99,11 +99,16 @@ export interface CheckResult {
   type: CheckResultType;
 }
 
+interface CheckControlRunProperties {
+  severity?: CheckSeverity | undefined;
+}
+
 export interface CheckControlRun {
   name: string;
   title?: string;
   description?: string;
   panel_type: "control";
+  properties?: CheckControlRunProperties;
   severity?: CheckSeverity | undefined;
   tags?: CheckTags;
   data: LeafNodeData;
@@ -121,7 +126,6 @@ export interface CheckBenchmarkRun {
   panel_type: "benchmark";
   tags?: CheckTags;
   type: CheckGroupType;
-  session_id: string;
   source_definition: string;
   summary: CheckLeafNodeDataGroupSummary;
   children?: CheckBenchmarkRun[] | CheckControlRun[];

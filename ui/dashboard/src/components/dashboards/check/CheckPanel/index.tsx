@@ -202,7 +202,7 @@ const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
   return (
     <div
       className={classNames(
-        "border-t shadow-sm rounded-b-md divide-y divide-table-divide border-table-divide print:shadow-none print:border print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto"
+        "border-t shadow-sm rounded-b-md divide-y divide-table-divide border-divide print:shadow-none print:border print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto"
       )}
     >
       {empties.map((emptyNode) => (
@@ -332,7 +332,7 @@ const CheckPanel = ({ depth, node }: CheckPanelProps) => {
       >
         <section
           className={classNames(
-            "bg-dashboard-panel shadow-sm rounded-md border-table-divide print:border print:bg-white print:shadow-none",
+            "bg-dashboard-panel shadow-sm rounded-md border-divide print:border print:bg-white print:shadow-none",
             can_be_expanded ? "cursor-pointer" : null,
             expanded &&
               (empty_nodes.length > 0 ||

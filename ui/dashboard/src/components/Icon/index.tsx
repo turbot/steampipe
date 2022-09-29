@@ -54,6 +54,7 @@ const migratedV2IconNames = {
   duplicate: "square-2-stack",
   "emoji-happy": "face-smile",
   "emoji-sad": "face-frown",
+  exclamation: "exclamation-triangle",
   "external-link": "arrow-top-right-on-square",
   "eye-off": "eye-slash",
   "fast-forward": "forward",

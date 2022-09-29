@@ -279,10 +279,6 @@
 }
 
 @media print {
-  @page {
-    size: 2550px 3300px;
-  }
-
   #root {
     -webkit-print-color-adjust: exact;
   }

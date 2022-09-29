@@ -3,21 +3,11 @@ module.exports = {
   darkMode: "class",
   theme: {
     extend: {
-      backgroundColor: {
-        app: "var(--color-bg-app)",
-        counter: "var(--color-bg-counter)",
-        report: "var(--color-bg-report)",
-        "table-head": "var(--color-bg-table-head)",
-      },
       divideColor: {
         default: "var(--color-border-divide)",
       },
       textColor: {
-        "alert-inverse": "var(--color-alert-inverse)",
-        "info-inverse": "var(--color-info-inverse)",
-        "ok-inverse": "var(--color-ok-inverse)",
         default: "var(--color-text-default)",
-        "table-head": "var(--color-table-head)",
       },
       colors: {
         dashboard: "var(--color-dashboard)",
@@ -28,10 +18,13 @@ module.exports = {
         "foreground-lightest": "var(--color-foreground-lightest)",
         alert: "var(--color-alert)",
         "alert-light": "var(--color-alert-light)",
+        "alert-inverse": "var(--color-alert-inverse)",
         orange: "var(--color-orange)",
         yellow: "var(--color-yellow)",
         ok: "var(--color-ok)",
+        "ok-inverse": "var(--color-ok-inverse)",
         info: "var(--color-info)",
+        "info-inverse": "var(--color-info-inverse)",
         skip: "var(--color-skip)",
         link: "var(--color-link)",
         "table-border": "var(--color-table-border)",
@@ -54,9 +47,6 @@ module.exports = {
       },
       maxHeight: {
         "1/2-screen": "50vh",
-      },
-      screens: {
-        print: { raw: "print" },
       },
       typography: (theme) => ({
         DEFAULT: {
