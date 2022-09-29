@@ -39,6 +39,35 @@ func ShowOutput(ctx context.Context, result *queryresult.Result) {
 
 func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
 	t := table.NewWriter()
+
+	t.SetStyle(table.StyleDefault)
+	t.Style().Format.Header = text.FormatDefault
+	t.SetOutputMirror(os.Stdout)
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+	colConfigs, headerRow := getColumnSettings(headers, rows)
+
+	t.SetColumnConfigs(colConfigs)
+	t.AppendHeader(headerRow)
+
+	for _, row := range rows {
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
+	}
+	t.Render()
+}
+
+func ShowWrappedPluginTable(headers []string, rows [][]string, autoMerge bool, tableTitle string) {
+	t := table.NewWriter()
+
+	// table title required for plugin list, will only be rendered if tableTitle is passed
+	if tableTitle != "" {
+		t.SetTitle(tableTitle)
+	}
+
 	t.SetStyle(table.StyleDefault)
 	t.Style().Format.Header = text.FormatDefault
 	t.SetOutputMirror(os.Stdout)
