@@ -27,8 +27,8 @@ type CheckRun struct {
 	NodeType         string                       `json:"panel_type"`
 	DashboardName    string                       `json:"dashboard"`
 	SourceDefinition string                       `json:"source_definition"`
-	SessionId        string                       `json:"session_id"`
 	Summary          *controlexecute.GroupSummary `json:"summary"`
+	SessionId        string                       `json:"-"`
 	// if the dashboard node is a control, serialise to json as 'properties'
 	Control *modconfig.Control `json:"properties,omitempty"`
 

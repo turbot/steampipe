@@ -3,7 +3,6 @@ package dashboardserver
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/spf13/viper"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -199,7 +198,13 @@ func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, 
 }
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
-	payload := ExecutionCompleteToSnapshot(event)
+	snapshot := ExecutionCompleteToSnapshot(event)
+	payload := &ExecutionCompletePayload{
+		Action:        "execution_complete",
+		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
+		ExecutionId:   event.ExecutionId,
+		Snapshot:      snapshot,
+	}
 	return json.Marshal(payload)
 }
 

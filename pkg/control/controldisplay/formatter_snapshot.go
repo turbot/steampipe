@@ -82,8 +82,6 @@ func ExecutionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 	// create the snapshot
 	res := &dashboardtypes.SteampipeSnapshot{
 		SchemaVersion: fmt.Sprintf("%d", dashboardtypes.SteampipeSnapshotSchemaVersion),
-		Action:        "execution_complete",
-		ExecutionId:   fmt.Sprintf("%p", e),
 		DashboardNode: checkRun,
 		Panels:        panels,
 		Layout:        checkRun.Root.AsTreeNode(),

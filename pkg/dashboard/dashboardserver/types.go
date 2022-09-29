@@ -69,6 +69,15 @@ type ExecutionErrorPayload struct {
 	Error  string `json:"error"`
 }
 
+var ExecutionCompletePayloadSchemaVersion int64 = 20220929
+
+type ExecutionCompletePayload struct {
+	Action        string                            `json:"action"`
+	SchemaVersion string                            `json:"schema_version"`
+	Snapshot      *dashboardtypes.SteampipeSnapshot `json:"snapshot"`
+	ExecutionId   string                            `json:"execution_id"`
+}
+
 type InputValuesClearedPayload struct {
 	Action        string   `json:"action"`
 	ClearedInputs []string `json:"cleared_inputs"`
