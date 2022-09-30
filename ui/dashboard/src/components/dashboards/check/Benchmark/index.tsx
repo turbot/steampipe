@@ -1,5 +1,6 @@
 import Card, { CardProps, CardType } from "../../Card";
 import CheckGrouping from "../CheckGrouping";
+import CheckGroupingConfig from "../CheckGroupingConfig";
 import ContainerTitle from "../../titles/ContainerTitle";
 import Error from "../../Error";
 import Grid from "../../layout/Grid";
@@ -16,6 +17,7 @@ import {
   CheckGroupingProvider,
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
+import { classNames } from "../../../../utils/styles";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
 import { noop } from "../../../../utils/func";
@@ -321,6 +323,22 @@ const BenchmarkWrapper = (props: BenchmarkProps) => {
   );
 };
 
+const BenchmarkTitle = ({ title, properties: { is_root } }) => {
+  const className = classNames("col-span-12 grow");
+  const benchmarkTitle = is_root ? (
+    <h1 className={className}>{title}</h1>
+  ) : (
+    <h2 className={className}>{title}</h2>
+  );
+  return (
+    <div className="col-span-12 flex justify-between items-baseline">
+      {benchmarkTitle}
+      <CheckGroupingConfig />
+    </div>
+  );
+};
+
 registerComponent("benchmark", BenchmarkWrapper);
+registerComponent("benchmark_title", BenchmarkTitle);
 
 export default BenchmarkWrapper;

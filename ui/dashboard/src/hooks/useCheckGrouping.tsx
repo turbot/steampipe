@@ -6,10 +6,10 @@ import ControlResultNode from "../components/dashboards/check/common/node/Contro
 import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
+import useCheckGroupingConfig from "./useCheckGroupingConfig";
 import usePrevious from "./usePrevious";
 import {
   CheckDisplayGroup,
-  CheckDisplayGroupType,
   CheckNode,
   CheckResult,
   CheckSummary,
@@ -23,9 +23,12 @@ import {
   useReducer,
 } from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
-import { ElementType, IActions, PanelDefinition } from "../types";
+import {
+  ElementType,
+  IActions,
+  PanelDefinition,
+} from "../types";
 import { useDashboard } from "./useDashboard";
-import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
 
@@ -371,35 +374,7 @@ const CheckGroupingProvider = ({
 }: CheckGroupingProviderProps) => {
   const { panelsMap } = useDashboard();
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
-  const [searchParams] = useSearchParams();
-
-  const groupingsConfig = useMemo(() => {
-    const rawGrouping = searchParams.get("grouping");
-    if (rawGrouping) {
-      const groupings: CheckDisplayGroup[] = [];
-      const groupingParts = rawGrouping.split(",");
-      for (const groupingPart of groupingParts) {
-        const typeValueParts = groupingPart.split("|");
-        if (typeValueParts.length > 1) {
-          groupings.push({
-            type: typeValueParts[0] as CheckDisplayGroupType,
-            value: typeValueParts[1],
-          });
-        } else {
-          groupings.push({
-            type: typeValueParts[0] as CheckDisplayGroupType,
-          });
-        }
-      }
-      return groupings;
-    } else {
-      return [
-        { type: "benchmark" },
-        { type: "control" },
-        { type: "result" },
-      ] as CheckDisplayGroup[];
-    }
-  }, [searchParams]);
+  const groupingsConfig = useCheckGroupingConfig();
 
   const [
     benchmark,
