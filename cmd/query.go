@@ -137,9 +137,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
 		// as a dashboard
 		if snapshotRequired() {
-
 			exitCode = executeSnapshotQuery(initData, w, ctx)
+			return
 		}
+
+		// fall through to running a batch query
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initData)
 	}
@@ -181,7 +183,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 				// otherwise convert the snapshot into a query result
 				result, err := snapshotToQueryResult(snap, targetName)
 				utils.FailOnErrorWithMessage(err, "error displaying result as snapshot")
-				display.ShowOutput(ctx, result, nil)
+				display.ShowOutput(ctx, result)
 			}
 
 			// share the snapshot if necessary
@@ -214,6 +216,9 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	}
 	res := queryresult.NewQueryResult(colTypes)
 
+	// TODO for now we do not support timing for snapshot query output - this need implementation
+	// close timing channel to avoid lockup
+	close(res.TimingResult)
 	// start a goroutine to stream the results as rows
 	go func() {
 		for _, d := range chartRun.Data.Rows {
