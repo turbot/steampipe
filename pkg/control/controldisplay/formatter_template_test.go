@@ -10,9 +10,136 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
-type Testcase struct {
+type resolveOutputTemplateTestCase struct {
 	input    string // --export <val>
 	expected interface{}
+}
+
+// TODO KAI change this test to GetFormatter and GetFormatterByExtension
+
+var resolveOutputTemplateTestCases = map[string]resolveOutputTemplateTestCase{
+	"html": {
+		input: "html",
+		expected: OutputTemplate{
+			FormatFullName:  "html.html",
+			OutputExtension: ".html",
+		},
+	},
+	"nunit3": {
+		input: "nunit3",
+		expected: OutputTemplate{
+			FormatFullName:  "nunit3.xml",
+			OutputExtension: ".xml",
+		},
+	},
+	"markdown": {
+		input: "md",
+		expected: OutputTemplate{
+			FormatFullName:  "md.md",
+			OutputExtension: ".md",
+		},
+	},
+
+	"nunit3.xml": {
+		input: "nunit3.xml",
+		expected: OutputTemplate{
+			FormatFullName:  "nunit3.xml",
+			OutputExtension: ".xml",
+		},
+	},
+	"markdown.md": {
+		input:    "markdown.md",
+		expected: "ERROR",
+		//OutputTemplate{
+		//	FormatFullName:  "md.md",
+		//	OutputExtension: ".md",
+		//},
+	},
+	// "txt.dat": {
+	// 	input: "txt.dat",
+	// 	expected: OutputTemplate{
+	// 		FormatFullName:  "txt.dat",
+	// 		OutputExtension: ".dat",
+	// 	},
+	// },
+	// "custom.txt": {
+	// 	input: "custom.txt",
+	// 	expected: OutputTemplate{
+	// 		FormatFullName:  "custom.txt",
+	// 		OutputExtension: ".txt",
+	// 	},
+	// },
+	"foo.xml": {
+		input: "foo.xml",
+
+		expected: "ERROR",
+		//	OutputTemplate{
+		//	FormatFullName:  "nunit3.xml",
+		//	OutputExtension: ".xml",
+		//},
+	},
+	"brief.html": {
+		input:    "brief.html",
+		expected: "ERROR",
+		//	OutputTemplate{
+		//	FormatFullName:  "html.html",
+		//	OutputExtension: ".html",
+		//},
+	},
+	"output.html": {
+		input:    "output.html",
+		expected: "ERROR",
+		//	OutputTemplate{
+		//	FormatFullName:  "html.html",
+		//	OutputExtension: ".html",
+		//},
+	},
+	"output.md": {
+		input:    "output.md",
+		expected: "ERROR",
+		//	OutputTemplate{
+		//	FormatFullName:  "md.md",
+		//	OutputExtension: ".md",
+		//},
+	},
+	// "output.txt": {
+	// 	input: "output.txt",
+	// 	expected: OutputTemplate{
+	// 		FormatFullName:  "custom.txt",
+	// 		OutputExtension: ".txt",
+	// 	},
+	// },
+	// "output.dat": {
+	// 	input: "output.dat",
+	// 	expected: OutputTemplate{
+	// 		FormatFullName:  "txt.dat",
+	// 		OutputExtension: ".dat",
+	// 	},
+	// },
+	"output.brief.html": {
+		input:    "output.brief.html",
+		expected: "ERROR",
+		//	OutputTemplate{
+		//	FormatFullName:  "html.html",
+		//	OutputExtension: ".html",
+		//},
+	},
+	"output.nunit3.xml": {
+		input:    "output.nunit3.xml",
+		expected: "ERROR",
+		//	OutputTemplate{
+		//	FormatFullName:  "nunit3.xml",
+		//	OutputExtension: ".xml",
+		//},
+	},
+	"output.foo.xml": {
+		input:    "output.foo.xml",
+		expected: "ERROR",
+		//	OutputTemplate{
+		//	FormatFullName:  "nunit3.xml",
+		//	OutputExtension: ".xml",
+		//},
+	},
 }
 
 func setup() {
@@ -37,10 +164,10 @@ func teardown() {
 	os.RemoveAll("~/.steampipe/check/templates")
 }
 
-func TestExportFormat(t *testing.T) {
+func TestResolveOutputTemplate(t *testing.T) {
 	setup()
 	resolver, _ := NewFormatResolver()
-	for name, test := range exportFormatTestCases {
+	for name, test := range resolveOutputTemplateTestCases {
 		outputTemplate, err := resolver.resolveOutputTemplate(test.input)
 		if err != nil {
 			if test.expected != "ERROR" {
@@ -62,119 +189,4 @@ func TestExportFormat(t *testing.T) {
 
 func FormatEqual(l, r *OutputTemplate) bool {
 	return (l.FormatFullName == r.FormatFullName)
-}
-
-var exportFormatTestCases = map[string]Testcase{
-	"html": {
-		input: "html",
-		expected: OutputTemplate{
-			FormatFullName:  "html.html",
-			OutputExtension: ".html",
-		},
-	},
-	"nunit3": {
-		input: "nunit3",
-		expected: OutputTemplate{
-			FormatFullName:  "nunit3.xml",
-			OutputExtension: ".xml",
-		},
-	},
-	"markdown": {
-		input: "md",
-		expected: OutputTemplate{
-			FormatFullName:  "md.md",
-			OutputExtension: ".md",
-		},
-	},
-	"brief.html": {
-		input: "brief.html",
-		expected: OutputTemplate{
-			FormatFullName:  "html.html",
-			OutputExtension: ".html",
-		},
-	},
-	"nunit3.xml": {
-		input: "nunit3.xml",
-		expected: OutputTemplate{
-			FormatFullName:  "nunit3.xml",
-			OutputExtension: ".xml",
-		},
-	},
-	"markdown.md": {
-		input: "markdown.md",
-		expected: OutputTemplate{
-			FormatFullName:  "md.md",
-			OutputExtension: ".md",
-		},
-	},
-	// "txt.dat": {
-	// 	input: "txt.dat",
-	// 	expected: OutputTemplate{
-	// 		FormatFullName:  "txt.dat",
-	// 		OutputExtension: ".dat",
-	// 	},
-	// },
-	// "custom.txt": {
-	// 	input: "custom.txt",
-	// 	expected: OutputTemplate{
-	// 		FormatFullName:  "custom.txt",
-	// 		OutputExtension: ".txt",
-	// 	},
-	// },
-	"foo.xml": {
-		input: "foo.xml",
-		expected: OutputTemplate{
-			FormatFullName:  "nunit3.xml",
-			OutputExtension: ".xml",
-		},
-	},
-	"output.html": {
-		input: "output.html",
-		expected: OutputTemplate{
-			FormatFullName:  "html.html",
-			OutputExtension: ".html",
-		},
-	},
-	"output.md": {
-		input: "output.md",
-		expected: OutputTemplate{
-			FormatFullName:  "md.md",
-			OutputExtension: ".md",
-		},
-	},
-	// "output.txt": {
-	// 	input: "output.txt",
-	// 	expected: OutputTemplate{
-	// 		FormatFullName:  "custom.txt",
-	// 		OutputExtension: ".txt",
-	// 	},
-	// },
-	// "output.dat": {
-	// 	input: "output.dat",
-	// 	expected: OutputTemplate{
-	// 		FormatFullName:  "txt.dat",
-	// 		OutputExtension: ".dat",
-	// 	},
-	// },
-	"output.brief.html": {
-		input: "output.brief.html",
-		expected: OutputTemplate{
-			FormatFullName:  "html.html",
-			OutputExtension: ".html",
-		},
-	},
-	"output.nunit3.xml": {
-		input: "output.nunit3.xml",
-		expected: OutputTemplate{
-			FormatFullName:  "nunit3.xml",
-			OutputExtension: ".xml",
-		},
-	},
-	"output.foo.xml": {
-		input: "output.foo.xml",
-		expected: OutputTemplate{
-			FormatFullName:  "nunit3.xml",
-			OutputExtension: ".xml",
-		},
-	},
 }
