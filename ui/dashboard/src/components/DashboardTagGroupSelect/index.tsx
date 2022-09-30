@@ -1,56 +1,75 @@
+import sortBy from "lodash/sortBy";
+import useDeepCompareEffect from "use-deep-compare-effect";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { classNames } from "../../utils/styles";
 import { DashboardActions } from "../../types";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
-
-const options = [
-  {
-    groupBy: "tag",
-    tag: "category",
-    label: "Category",
-  },
-  { groupBy: "mod", tag: "", label: "Mod" },
-  {
-    groupBy: "tag",
-    tag: "service",
-    label: "Service",
-  },
-  {
-    groupBy: "tag",
-    tag: "type",
-    label: "Type",
-  },
-];
-
-const findOption = (groupBy) => {
-  if (groupBy.value === "tag") {
-    return options.find((o) => o.tag === groupBy.tag);
-  }
-  return options.find((o) => o.groupBy === "mod");
-};
 
 const DashboardTagGroupSelect = () => {
   const { availableDashboardsLoaded, dispatch, search } = useDashboard();
   const { dashboard_name } = useParams();
 
+  const options = useMemo(() => {
+    const o = [
+      { groupBy: "mod", tag: "", label: "Mod" },
+      {
+        groupBy: "tag",
+        tag: "category",
+        label: "Category",
+      },
+      {
+        groupBy: "tag",
+        tag: "service",
+        label: "Service",
+      },
+      {
+        groupBy: "tag",
+        tag: "type",
+        label: "Type",
+      },
+    ];
+    // for (const dashboardTagKey of dashboardTags.keys) {
+    //   if (!o.find((i) => i.tag === dashboardTagKey)) {
+    //     o.push({
+    //       groupBy: "tag",
+    //       tag: dashboardTagKey,
+    //       label: startCase(dashboardTagKey),
+    //     });
+    //   }
+    // }
+    return sortBy(o, ["label"]);
+  }, []);
+
+  const findOption = useCallback(
+    (groupBy) => {
+      if (groupBy.value === "tag") {
+        return options.find((o) => o.tag === groupBy.tag);
+      }
+      return options.find((o) => o.groupBy === "mod");
+    },
+    [options]
+  );
+
   const [value, setValue] = useState(() => findOption(search.groupBy));
 
   const updateState = useCallback(
-    (option) =>
+    (option) => {
+      console.log("Updating state");
       dispatch({
         type: DashboardActions.SET_DASHBOARD_SEARCH_GROUP_BY,
         value: option.groupBy,
         tag: option.tag,
-      }),
+      });
+    },
     [dispatch]
   );
 
-  useEffect(() => {
+  useDeepCompareEffect(() => {
     setValue(findOption(search.groupBy));
-  }, [search.groupBy]);
+  }, [findOption, search.groupBy]);
 
   if (
     !availableDashboardsLoaded ||

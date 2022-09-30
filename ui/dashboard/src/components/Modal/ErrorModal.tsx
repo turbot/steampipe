@@ -9,7 +9,7 @@ const ErrorModal = ({ error, title }) => {
   return show ? (
     <Modal
       actions={[
-        <NeutralButton onClick={() => setShow(false)}>
+        <NeutralButton key="close" onClick={() => setShow(false)}>
           <>Close</>
         </NeutralButton>,
       ]}

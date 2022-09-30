@@ -331,7 +331,7 @@ const BenchmarkTitle = ({ title, properties: { is_root } }) => {
     <h2 className={className}>{title}</h2>
   );
   return (
-    <div className="col-span-12 flex justify-between items-baseline">
+    <div className="col-span-12 flex flex-col sm:flex-row sm:justify-between sm:items-baseline space-y-3 sm:space-y-0">
       {benchmarkTitle}
       <CheckGroupingConfig />
     </div>

@@ -7,7 +7,7 @@ import { useMemo } from "react";
 
 const useCheckGroupingConfig = () => {
   const [searchParams] = useSearchParams();
-  const groupingsConfig = useMemo(() => {
+  return useMemo(() => {
     const rawGrouping = searchParams.get("grouping");
     if (rawGrouping) {
       const groupings: CheckDisplayGroup[] = [];
@@ -16,11 +16,13 @@ const useCheckGroupingConfig = () => {
         const typeValueParts = groupingPart.split("|");
         if (typeValueParts.length > 1) {
           groupings.push({
+            id: `${typeValueParts[0]}-${typeValueParts[1]}`,
             type: typeValueParts[0] as CheckDisplayGroupType,
             value: typeValueParts[1],
           });
         } else {
           groupings.push({
+            id: typeValueParts[0],
             type: typeValueParts[0] as CheckDisplayGroupType,
           });
         }
@@ -43,8 +45,6 @@ const useCheckGroupingConfig = () => {
       ] as CheckDisplayGroup[];
     }
   }, [searchParams]);
-
-  return groupingsConfig;
 };
 
 export default useCheckGroupingConfig;

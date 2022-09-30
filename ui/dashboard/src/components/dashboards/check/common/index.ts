@@ -125,6 +125,7 @@ export type CheckDisplayGroupType =
   | "status";
 
 export type CheckDisplayGroup = {
+  id: string;
   type: CheckDisplayGroupType;
   value?: string;
 };

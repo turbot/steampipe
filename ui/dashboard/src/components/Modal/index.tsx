@@ -67,13 +67,13 @@ const Modal = ({
                 leaveFrom="opacity-100 translate-y-0 scale-100"
                 leaveTo="opacity-0 translate-y-0 scale-95"
               >
-                <div className="inline-block w-full sm:max-w-xl lg:max-w-3xl h-full sm:h-auto align-middle bg-white rounded-lg p-4 text-left overflow-hidden shadow-xl transform transition-all my-8 space-y-4">
+                <div className="inline-block w-full sm:max-w-xl lg:max-w-3xl h-full sm:h-auto align-middle bg-dashboard rounded-lg p-4 text-left overflow-hidden shadow-xl transform transition-all my-8 space-y-4">
                   <div className="flex items-center space-x-3">
                     <div className="flex-shrink-0 flex items-start">{icon}</div>
                     <div className="text-left">
                       <Dialog.Title
                         as="h2"
-                        className="text-xl leading-6 font-medium text-gray-900"
+                        className="text-xl leading-6 font-medium text-foreground"
                       >
                         {title}
                       </Dialog.Title>
@@ -81,8 +81,8 @@ const Modal = ({
                     <div className="absolute top-0 right-0 pt-4 pr-4">
                       <button
                         type="button"
-                        className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        onClick={() => setOpen(false)}
+                        className="bg-dashboard rounded-md text-foreground-light hover:text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        onClick={handleOnClose}
                       >
                         <span className="sr-only">Close</span>
                         <CloseIcon className="h-6 w-6" aria-hidden="true" />
