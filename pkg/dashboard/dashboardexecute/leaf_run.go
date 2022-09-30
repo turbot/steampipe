@@ -442,7 +442,7 @@ func (r *LeafRun) combineChildData() {
 
 		// TODO CHECK
 		// remove data from the child
-		childLeafRun.Data = nil
+		//childLeafRun.Data = nil
 	}
 	r.Data.Columns = utils.MapValues(schemaMap)
 }
