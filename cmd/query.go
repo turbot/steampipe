@@ -86,7 +86,8 @@ Examples:
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
-		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault))
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
 
 	return cmd
 }
@@ -187,8 +188,8 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			}
 
 			// share the snapshot if necessary
-			//err = shareSnapshot(ctx, snap)
-			//utils.FailOnErrorWithMessage(err, "error sharing snapshot")
+			err = shareSnapshot(ctx, snap)
+			utils.FailOnErrorWithMessage(err, "error sharing snapshot")
 		}
 	}
 	return 0
@@ -200,12 +201,12 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	if err != nil {
 		return nil, err
 	}
-	chartName := modconfig.BuildFullResourceName(parsedName.Mod, modconfig.BlockTypeChart, parsedName.Name)
-	chartPanel, ok := snap.Panels[chartName]
+	tableName := modconfig.BuildFullResourceName(parsedName.Mod, modconfig.BlockTypeTable, parsedName.Name)
+	tablePanel, ok := snap.Panels[tableName]
 	if !ok {
-		return nil, fmt.Errorf("dashboard does not contain chart result for query")
+		return nil, fmt.Errorf("dashboard does not contain table result for query")
 	}
-	chartRun := chartPanel.(*dashboardexecute.LeafRun)
+	chartRun := tablePanel.(*dashboardexecute.LeafRun)
 	if !ok {
 		return nil, fmt.Errorf("failed to read query result from snapshot")
 	}

@@ -65,41 +65,6 @@ func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) *DashboardC
 	return c
 }
 
-// TODO simplify
-// NewQueryDashboardChart creates a chart to wrap a query.
-// This is used in order to execute queries as dashboards
-func NewQueryDashboardChart(queryProvider HclResource) (*DashboardChart, error) {
-	var c *DashboardChart
-	switch q := queryProvider.(type) {
-	case *Control:
-		c = &DashboardChart{
-			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
-			ShortName:                q.ShortName,
-			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "chart", q.ShortName),
-			UnqualifiedName:          fmt.Sprintf("%s.%s", "chart", q.ShortName),
-			Title:                    q.Title,
-			Mod:                      q.Mod,
-			Query:                    q.Query,
-			SQL:                      q.SQL,
-			DeclRange:                q.DeclRange,
-		}
-	case *Query:
-		c = &DashboardChart{
-			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
-			ShortName:                q.ShortName,
-			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "chart", q.ShortName),
-			UnqualifiedName:          fmt.Sprintf("%s.%s", "chart", q.ShortName),
-			Title:                    q.Title,
-			Mod:                      q.Mod,
-			Query:                    q,
-			DeclRange:                q.DeclRange,
-		}
-	default:
-		return nil, fmt.Errorf("NewQueryDashboard expects either a Control or a Query")
-	}
-	return c, nil
-}
-
 func (c *DashboardChart) Equals(other *DashboardChart) bool {
 	diff := c.Diff(other)
 	return !diff.HasChanges()

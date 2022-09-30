@@ -81,7 +81,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
 		}
 		return NewCheckRun(benchmark, e, e)
-	case modconfig.BlockTypeQuery:
+	case modconfig.BlockTypeQuery, modconfig.BlockTypeControl:
 		// wrap in a table
 		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
 		if !ok {
