@@ -15,67 +15,27 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/snapshot"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
 // ShowOutput displays the output using the proper formatter as applicable
-func ShowOutput(ctx context.Context, result *queryresult.Result, query modconfig.HclResource) {
+func ShowOutput(ctx context.Context, result *queryresult.Result) {
 	output := cmdconfig.Viper().GetString(constants.ArgOutput)
-
-	// buffer the results in case we need to export a snapshot
-	var rows [][]interface{}
-	var snap *dashboardtypes.SteampipeSnapshot
-
-	switch output {
-	case constants.OutputFormatJSON:
-		rows = displayJSON(ctx, result)
-	case constants.OutputFormatCSV:
-		rows = displayCSV(ctx, result)
-	case constants.OutputFormatLine:
-		rows = displayLine(ctx, result)
-	case constants.OutputFormatSnapshot:
-		// displaySnapshot returns the snapshot in case we need to share it
-		snap = displaySnapshot(ctx, result, query)
-	default:
+	if output == constants.OutputFormatJSON {
+		displayJSON(ctx, result)
+	} else if output == constants.OutputFormatCSV {
+		displayCSV(ctx, result)
+	} else if output == constants.OutputFormatLine {
+		displayLine(ctx, result)
+	} else {
 		// default
-		rows = displayTable(ctx, result)
+		displayTable(ctx, result)
 	}
-
-	shareSnapshot(ctx, rows, result, query, snap)
-}
-
-func shareSnapshot(ctx context.Context, rows [][]interface{}, result *queryresult.Result, query modconfig.HclResource, existingSnapshot *dashboardtypes.SteampipeSnapshot) error {
-	shouldShare := viper.IsSet(constants.ArgShare)
-	shouldUpload := viper.IsSet(constants.ArgSnapshot)
-	if shouldShare || shouldUpload {
-		// if we were not passed a snapshot, use rows to generate snapshot
-		if existingSnapshot == nil {
-			var err error
-			existingSnapshot, err = snapshot.QueryResultToSnapshot(rows, result.ColTypes, query)
-			if err != nil {
-				return err
-			}
-		}
-
-		snapshotUrl, err := cloud.UploadSnapshot(existingSnapshot, shouldShare)
-		statushooks.Done(ctx)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
-
-	}
-	return nil
 }
 
 func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
@@ -146,7 +106,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 	return colConfigs, headerRow
 }
 
-func displayLine(ctx context.Context, result *queryresult.Result) [][]interface{} {
+func displayLine(ctx context.Context, result *queryresult.Result) {
 	colNames := ColumnNames(result.ColTypes)
 	maxColNameLength := 0
 	for _, colName := range colNames {
@@ -156,9 +116,6 @@ func displayLine(ctx context.Context, result *queryresult.Result) [][]interface{
 		}
 	}
 	itemIdx := 0
-
-	// return the raw rows
-	var rows [][]interface{}
 
 	// define a function to display each row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
@@ -201,16 +158,13 @@ func displayLine(ctx context.Context, result *queryresult.Result) [][]interface{
 		}
 		itemIdx++
 
-		rows = append(rows, row)
-
 	}
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		utils.ShowError(ctx, err)
-		return nil
+		return
 	}
-	return rows
 }
 
 func getTerminalColumnsRequiredForString(str string) int {
@@ -223,8 +177,8 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(ctx context.Context, result *queryresult.Result) [][]interface{} {
-	var rows [][]interface{}
+func displayJSON(ctx context.Context, result *queryresult.Result) {
+	var jsonOutput []map[string]interface{}
 
 	// define function to add each row to the JSON output
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
@@ -233,32 +187,27 @@ func displayJSON(ctx context.Context, result *queryresult.Result) [][]interface{
 			value, _ := ParseJSONOutputColumnValue(row[idx], colType)
 			record[colType.Name()] = value
 		}
-		rows = append(rows, row)
+		jsonOutput = append(jsonOutput, record)
 	}
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		utils.ShowError(ctx, err)
-		return nil
+		return
 	}
 	// display the JSON
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", " ")
 	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(rows); err != nil {
+	if err := encoder.Encode(jsonOutput); err != nil {
 		fmt.Print("Error displaying result as JSON", err)
-		return nil
+		return
 	}
-	// return the raw rows
-	return rows
 }
 
-func displayCSV(ctx context.Context, result *queryresult.Result) [][]interface{} {
+func displayCSV(ctx context.Context, result *queryresult.Result) {
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
-
-	// return the raw rows
-	var rows [][]interface{}
 
 	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
 		_ = csvWriter.Write(ColumnNames(result.ColTypes))
@@ -269,25 +218,21 @@ func displayCSV(ctx context.Context, result *queryresult.Result) [][]interface{}
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
 		_ = csvWriter.Write(rowAsString)
-		rows = append(rows, row)
 	}
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		utils.ShowError(ctx, err)
-		return nil
+		return
 	}
 
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
 		utils.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
 	}
-	return rows
 }
 
-func displayTable(ctx context.Context, result *queryresult.Result) [][]interface{} {
-	var rows [][]interface{}
-
+func displayTable(ctx context.Context, result *queryresult.Result) {
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
@@ -322,7 +267,6 @@ func displayTable(ctx context.Context, result *queryresult.Result) [][]interface
 			rowObj = append(rowObj, col)
 		}
 		t.AppendRow(rowObj)
-		rows = append(rows, row)
 	}
 
 	// iterate each row, adding each to the table
@@ -343,44 +287,13 @@ func displayTable(ctx context.Context, result *queryresult.Result) [][]interface
 	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 		displayTiming(result)
 	}
-
-	return rows
-}
-
-func displaySnapshot(ctx context.Context, result *queryresult.Result, query modconfig.HclResource) *dashboardtypes.SteampipeSnapshot {
-	var rows [][]interface{}
-
-	// define function to add each row to the JSON output
-	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rows = append(rows, row)
-	}
-	// iterate each row, adding each to the table
-	err := iterateResults(result, rowFunc)
-	if err != nil {
-		// display the error
-		fmt.Println()
-		utils.ShowError(ctx, err)
-		fmt.Println()
-	}
-
-	snap, err := snapshot.QueryResultToSnapshot(rows, result.ColTypes, query)
-	if err != nil {
-		utils.ShowErrorWithMessage(ctx, err, "error displaying result as snapshot")
-		return nil
-	}
-
-	jsonOutput, err := json.MarshalIndent(snap, "", "  ")
-	if err != nil {
-		utils.ShowErrorWithMessage(ctx, err, "error displaying result as snapshot")
-		return nil
-	}
-
-	fmt.Print(jsonOutput)
-	return snap
 }
 
 func displayTiming(result *queryresult.Result) {
 	timingResult := <-result.TimingResult
+	if timingResult == nil {
+		return
+	}
 	var sb strings.Builder
 	// large numbers should be formatted with commas
 	p := message.NewPrinter(language.English)
