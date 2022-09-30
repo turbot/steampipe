@@ -59,6 +59,41 @@ func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) *DashboardT
 	return t
 }
 
+// TODO simplify
+// NewQueryDashboardTable creates a Table to wrap a query.
+// This is used in order to execute queries as dashboards
+func NewQueryDashboardTable(queryProvider HclResource) (*DashboardTable, error) {
+	var c *DashboardTable
+	switch q := queryProvider.(type) {
+	case *Control:
+		c = &DashboardTable{
+			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
+			ShortName:                q.ShortName,
+			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "table", q.ShortName),
+			UnqualifiedName:          fmt.Sprintf("%s.%s", "table", q.ShortName),
+			Title:                    q.Title,
+			Mod:                      q.Mod,
+			Query:                    q.Query,
+			SQL:                      q.SQL,
+			DeclRange:                q.DeclRange,
+		}
+	case *Query:
+		c = &DashboardTable{
+			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
+			ShortName:                q.ShortName,
+			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "table", q.ShortName),
+			UnqualifiedName:          fmt.Sprintf("%s.%s", "table", q.ShortName),
+			Title:                    q.Title,
+			Mod:                      q.Mod,
+			Query:                    q,
+			DeclRange:                q.DeclRange,
+		}
+	default:
+		return nil, fmt.Errorf("NewQueryDashboard expects either a Control or a Query")
+	}
+	return c, nil
+}
+
 func (t *DashboardTable) Equals(other *DashboardTable) bool {
 	diff := t.Diff(other)
 	return !diff.HasChanges()

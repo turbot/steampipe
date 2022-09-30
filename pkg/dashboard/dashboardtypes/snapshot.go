@@ -15,4 +15,8 @@ type SteampipeSnapshot struct {
 	StartTime     time.Time                `json:"start_time"`
 	EndTime       time.Time                `json:"end_time"`
 	Layout        *SnapshotTreeNode        `json:"layout"`
+
+	// TACTICAL
+	Action        string           `json:"action"`
+	DashboardNode DashboardNodeRun `json:"dashboard_node"`
 }

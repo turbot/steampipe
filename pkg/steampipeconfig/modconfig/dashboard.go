@@ -106,7 +106,7 @@ func NewQueryDashboard(queryProvider HclResource) (*Dashboard, error) {
 
 	dashboard.setUrlPath()
 
-	chart, err := NewQueryDashboardChart(queryProvider)
+	chart, err := NewQueryDashboardTable(queryProvider)
 	if err != nil {
 		return nil, err
 	}

@@ -13,8 +13,11 @@ import (
 )
 
 func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
+	// HACK
+	snapshot.Action = "execution_complete"
 
 	cloudWorkspace := viper.GetString(constants.ArgWorkspace)
+	// TODO VALIDATE THIS IS SET AT ALL - BETTER MESSAGE
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
@@ -22,6 +25,7 @@ func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	user := parts[0]
 	worskpaceHandle := parts[1]
 
+	// TODO VALIDATE cloud host - remove trailing slash?
 	url := fmt.Sprintf("https://%s/api/v0/user/%s/workspace/%s/snapshot",
 		viper.GetString(constants.ArgCloudHost),
 		user,
