@@ -1,28 +1,24 @@
-package snapshot
+package dashboardexecute
 
 import (
 	"context"
+	"fmt"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/interactive"
+	"github.com/turbot/steampipe/pkg/snapshot"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/workspace"
 	"log"
 )
 
-func GenerateSnapshot(ctx context.Context, target string, inputs map[string]interface{}) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
+func GenerateSnapshot(ctx context.Context, target string, w *workspace.Workspace, inputs map[string]interface{}) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
 	// create context for the dashboard execution
 	snapshotCtx, cancel := createSnapshotContext(ctx, target)
 
 	contexthelpers.StartCancelHandler(cancel)
-
-	w, err := interactive.LoadWorkspacePromptingForVariables(snapshotCtx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// todo do we require a mod file?
 
@@ -36,7 +32,8 @@ func GenerateSnapshot(ctx context.Context, target string, inputs map[string]inte
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
-	sessionId := "generate snapshot"
+	// no session for manual execution
+	sessionId := ""
 
 	errorChannel := make(chan error)
 	resultChannel := make(chan *dashboardtypes.SteampipeSnapshot)
@@ -44,7 +41,7 @@ func GenerateSnapshot(ctx context.Context, target string, inputs map[string]inte
 		handleDashboardEvent(event, resultChannel, errorChannel)
 	}
 	w.RegisterDashboardEventHandler(dashboardEventHandler)
-	dashboardexecute.Executor.ExecuteDashboard(snapshotCtx, sessionId, target, inputs, w, initData.Client)
+	Executor.ExecuteDashboard(snapshotCtx, sessionId, target, inputs, w, initData.Client)
 
 	select {
 	case err = <-errorChannel:
@@ -61,7 +58,7 @@ func createSnapshotContext(ctx context.Context, target string) (context.Context,
 	snapshotCtx, cancel := context.WithCancel(ctx)
 	contexthelpers.StartCancelHandler(cancel)
 
-	snapshotProgressReporter := NewSnapshotProgressReporter(target)
+	snapshotProgressReporter := snapshot.NewSnapshotProgressReporter(target)
 	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
 
 	// create a context with a SnapshotControlHooks to report execution progress of any controls in this snapshot
@@ -77,8 +74,22 @@ func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel ch
 		errorChannel <- e.Error
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)
-		snapshot := dashboardserver.ExecutionCompleteToSnapshot(e)
+		snapshot := ExecutionCompleteToSnapshot(e)
 
 		resultChannel <- snapshot
+	}
+}
+
+// ExecutionCompleteToSnapshot transforms the ExecutionComplete event into a SteampipeSnapshot
+func ExecutionCompleteToSnapshot(event *dashboardevents.ExecutionComplete) *dashboardtypes.SteampipeSnapshot {
+	return &dashboardtypes.SteampipeSnapshot{
+		SchemaVersion: fmt.Sprintf("%d", dashboardtypes.SteampipeSnapshotSchemaVersion),
+		Panels:        event.Panels,
+		Layout:        event.Root.AsTreeNode(),
+		Inputs:        event.Inputs,
+		Variables:     event.Variables,
+		SearchPath:    event.SearchPath,
+		StartTime:     event.StartTime,
+		EndTime:       event.EndTime,
 	}
 }

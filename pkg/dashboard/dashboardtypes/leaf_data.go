@@ -7,14 +7,16 @@ import (
 )
 
 type ColumnSchema struct {
-	Name     string `json:"name"`
-	DataType string `json:"data_type"`
+	Name          string          `json:"name"`
+	DataType      string          `json:"data_type"`
+	SqlColumnType *sql.ColumnType `json:"-"`
 }
 
 func NewLeafDataColumnType(sqlType *sql.ColumnType) *ColumnSchema {
 	return &ColumnSchema{
-		Name:     sqlType.Name(),
-		DataType: sqlType.DatabaseTypeName(),
+		Name:          sqlType.Name(),
+		DataType:      sqlType.DatabaseTypeName(),
+		SqlColumnType: sqlType,
 	}
 }
 

@@ -204,8 +204,8 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 	// only 1 of 'share' and 'snapshot' may be set
-	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
-		utils.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'dashboard' may be set"))
+	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgSnapshot)) > 0 {
+		utils.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))
 		return false
 	}
 	return true

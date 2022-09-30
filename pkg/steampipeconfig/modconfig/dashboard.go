@@ -65,26 +65,54 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 	return c
 }
 
-func NewQueryDashboard(query *Query) *Dashboard {
-	dashboard := &Dashboard{
-		ResourceWithMetadataBase: query.ResourceWithMetadataBase,
-		ShortName:                query.ShortName,
-		FullName:                 fmt.Sprintf("%s.%s.%s", query.Mod.ShortName, "dashboard", query.ShortName),
-		UnqualifiedName:          fmt.Sprintf("%s.%s", "dashboard", query.ShortName),
-		Title:                    query.Title,
-		Description:              query.Description,
-		Documentation:            query.Documentation,
-		Tags:                     query.Tags,
-		References:               query.References,
-		Mod:                      query.Mod,
-		DeclRange:                query.DeclRange,
+// TODO simplify
+func NewQueryDashboard(queryProvider HclResource) (*Dashboard, error) {
+
+	var dashboard *Dashboard
+	switch q := queryProvider.(type) {
+	case *Control:
+		dashboard = &Dashboard{
+			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
+			ShortName:                q.ShortName,
+			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "dashboard", q.ShortName),
+			UnqualifiedName:          fmt.Sprintf("%s.%s", "dashboard", q.ShortName),
+			Title:                    q.Title,
+			Description:              q.Description,
+			Documentation:            q.Documentation,
+			Tags:                     q.Tags,
+			References:               q.References,
+			Mod:                      q.Mod,
+			DeclRange:                q.DeclRange,
+		}
+	case *Query:
+
+		dashboard = &Dashboard{
+			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
+			ShortName:                q.ShortName,
+			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "dashboard", q.ShortName),
+			UnqualifiedName:          fmt.Sprintf("%s.%s", "dashboard", q.ShortName),
+			Title:                    q.Title,
+			Description:              q.Description,
+			Documentation:            q.Documentation,
+			Tags:                     q.Tags,
+			References:               q.References,
+			Mod:                      q.Mod,
+			DeclRange:                q.DeclRange,
+		}
+	default:
+
+		return nil, fmt.Errorf("NewQueryDashboard expects either a Control or a Query")
 	}
+
 	dashboard.setUrlPath()
 
-	chart := NewQueryDashboardChart(query)
+	chart, err := NewQueryDashboardChart(queryProvider)
+	if err != nil {
+		return nil, err
+	}
 	dashboard.children = []ModTreeItem{chart}
 
-	return dashboard
+	return dashboard, nil
 }
 
 func (d *Dashboard) setUrlPath() {

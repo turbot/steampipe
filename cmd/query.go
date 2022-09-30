@@ -2,7 +2,18 @@ package cmd
 
 import (
 	"bufio"
+	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/pkg/cloud"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"os"
 	"strings"
 
@@ -124,15 +135,148 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	} else {
 		// NOTE: disable any status updates - we do not want 'loading' output from any queries
 		ctx = statushooks.DisableStatusHooks(ctx)
+
+		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
+		// as a dashboard
+		if snapshotRequired() {
+
+			exitCode = executeSnapshotQuery(initData, w, ctx)
+		}
 		// set global exit code
 		exitCode = queryexecute.RunBatchSession(ctx, initData)
 	}
 }
 
+func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx context.Context) int {
+	// ensure we close client
+	defer initData.Cleanup(ctx)
+
+	// start cancel handler to intercept interrupts and cancel the context
+	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
+	contexthelpers.StartCancelHandler(initData.Cancel)
+
+	// wait for init
+	<-initData.Loaded
+	if err := initData.Result.Error; err != nil {
+		utils.FailOnError(err)
+	}
+	//failures := 0
+	queryIdx := 0
+	if len(initData.Queries) > 0 {
+		for name, query := range initData.Queries {
+			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
+			// this is to allow us to use existing dashboard execution code
+			targetName := ensureQueryResource(name, query, queryIdx, w)
+			// so a dashboard name was specified - just call GenerateSnapshot
+			snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, w, nil)
+			utils.FailOnError(err)
+
+			// display the result
+			// if the format is snapshot, just dump it out
+			if viper.GetString(constants.ArgOutput) == constants.OutputFormatSnapshot {
+				jsonOutput, err := json.MarshalIndent(snap, "", "  ")
+				if err != nil {
+					utils.FailOnErrorWithMessage(err, "error displaying result as snapshot")
+				}
+				fmt.Print(jsonOutput)
+			} else {
+				// otherwise convert the snapshot into a query result
+				result, err := snapshotToQueryResult(snap, targetName)
+				utils.FailOnErrorWithMessage(err, "error displaying result as snapshot")
+				display.ShowOutput(ctx, result, nil)
+			}
+
+			// share the snapshot if necessary
+			//err = shareSnapshot(ctx, snap)
+			//utils.FailOnErrorWithMessage(err, "error sharing snapshot")
+		}
+	}
+	return 0
+}
+
+func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) (*queryresult.Result, error) {
+	// find chart  nde - we expect only 1
+	parsedName, err := modconfig.ParseResourceName(name)
+	if err != nil {
+		return nil, err
+	}
+	chartName := modconfig.BuildFullResourceName(parsedName.Mod, modconfig.BlockTypeChart, parsedName.Name)
+	chartPanel, ok := snap.Panels[chartName]
+	if !ok {
+		return nil, fmt.Errorf("dashboard does not contain chart result for query")
+	}
+	chartRun := chartPanel.(*dashboardexecute.LeafRun)
+	if !ok {
+		return nil, fmt.Errorf("failed to read query result from snapshot")
+	}
+
+	colTypes := make([]*sql.ColumnType, len(chartRun.Data.Columns))
+	for i, c := range chartRun.Data.Columns {
+		colTypes[i] = c.SqlColumnType
+	}
+	res := queryresult.NewQueryResult(colTypes)
+
+	// start a goroutine to stream the results as rows
+	go func() {
+		for _, d := range chartRun.Data.Rows {
+			res.StreamRow(utils.MapValues(d))
+		}
+		res.Close()
+	}()
+
+	return res, nil
+}
+
+func shareSnapshot(ctx context.Context, snap *dashboardtypes.SteampipeSnapshot) error {
+	shouldShare := viper.IsSet(constants.ArgShare)
+	shouldUpload := viper.IsSet(constants.ArgSnapshot)
+	if shouldShare || shouldUpload {
+
+		snapshotUrl, err := cloud.UploadSnapshot(snap, shouldShare)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
+
+	}
+	return nil
+}
+
+func ensureQueryResource(name string, query string, queryIdx int, w *workspace.Workspace) string {
+	var found bool
+	var resource modconfig.HclResource
+	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
+		resource, found = modconfig.GetResource(w, parsedName)
+	}
+	if found {
+		return resource.Name()
+	}
+	// so this must be an ad hoc query - create a query resource and add to mod
+	shortName := fmt.Sprintf("command_line_query_%d", queryIdx)
+	title := fmt.Sprintf("Command line query %d", queryIdx)
+	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName)
+	q.Title = utils.ToStringPointer(title)
+	q.SQL = utils.ToStringPointer(query)
+	// add empty metadata
+	q.SetMetadata(&modconfig.ResourceMetadata{})
+
+	// add this the the workspace mod so the dashboard execution code can find it
+	w.Mod.AddResource(q)
+	// return the new resource name
+	return q.Name()
+}
+
+func snapshotRequired() bool {
+	return viper.IsSet(constants.ArgShare) ||
+		viper.IsSet(constants.ArgSnapshot) ||
+		viper.GetString(constants.ArgOutput) == constants.OutputFormatSnapshot
+
+}
+
 func validateQueryArgs() error {
 	// only 1 of 'share' and 'snapshot' may be set
-	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
-		return fmt.Errorf("only 1 of 'share' and 'dashboard' may be set")
+	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgSnapshot)) > 0 {
+		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
 	}
 	return nil
 }

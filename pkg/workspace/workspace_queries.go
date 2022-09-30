@@ -29,7 +29,8 @@ func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]string, *modco
 			return nil, nil, err
 		}
 		if len(query) > 0 {
-			queryName := "user_query"
+			// default name to the query text
+			queryName := query
 			if queryProvider != nil {
 				queryName = queryProvider.Name()
 				queryProviders = append(queryProviders, queryProvider)

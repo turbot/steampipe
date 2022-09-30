@@ -34,7 +34,6 @@ type DashboardExecutionTree struct {
 	id                     string
 }
 
-// NewDashboardExecutionTree creates a result group from a ModTreeItem
 func NewDashboardExecutionTree(rootName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
 	// now populate the DashboardExecutionTree
 	executionTree := &DashboardExecutionTree{
@@ -89,7 +88,10 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
 		}
 		// wrap this in a chart and a dashboard
-		dashboard := modconfig.NewQueryDashboard(query)
+		dashboard, err := modconfig.NewQueryDashboard(query)
+		if err != nil {
+			return nil, err
+		}
 		return NewDashboardRun(dashboard, e, e)
 	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
@@ -111,7 +113,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
-	panels := e.buildSnapshotPanels()
+	panels := e.BuildSnapshotPanels()
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
@@ -242,7 +244,7 @@ func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
 	return e.inputValues[name]
 }
 
-func (e *DashboardExecutionTree) buildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
+func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
 	res := map[string]dashboardtypes.SnapshotPanel{}
 	// if this node is a snapshot node, add to map
 	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
