@@ -481,7 +481,7 @@ func init() {
 							FullName:        "simple_report.dashboard.simple_report",
 							UnqualifiedName: "dashboard.simple_report",
 							ChildNames:      []string{"simple_report.text.dashboard_simple_report_anonymous_text_0", "simple_report.chart.dashboard_simple_report_anonymous_chart_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardCharts: map[string]*modconfig.DashboardChart{
@@ -519,7 +519,7 @@ func init() {
 							FullName:        "simple_container_report.dashboard.simple_container_report",
 							UnqualifiedName: "dashboard.simple_container_report",
 							ChildNames:      []string{"simple_container_report.container.dashboard_simple_container_report_anonymous_container_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -565,7 +565,7 @@ func init() {
 							FullName:        "sibling_containers_report.dashboard.sibling_containers_report",
 							UnqualifiedName: "dashboard.sibling_containers_report",
 							ChildNames:      []string{"sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_0", "sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_1", "sibling_containers_report.container.dashboard_sibling_containers_report_anonymous_container_2"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -649,7 +649,7 @@ func init() {
 							FullName:        "nested_containers_report.dashboard.nested_containers_report",
 							UnqualifiedName: "dashboard.nested_containers_report",
 							ChildNames:      []string{"nested_containers_report.container.dashboard_nested_containers_report_anonymous_container_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -746,7 +746,7 @@ func init() {
 							UnqualifiedName: "dashboard.override_base_values",
 							Title:           toStringPointer("override_base_values"),
 							ChildNames:      []string{"report_axes.chart.dashboard_override_base_values_anonymous_chart_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardCharts: map[string]*modconfig.DashboardChart{
@@ -826,7 +826,7 @@ func init() {
 							UnqualifiedName: "dashboard.inheriting_from_base",
 							Title:           toStringPointer("inheriting_from_base"),
 							ChildNames:      []string{"report_base1.chart.dashboard_inheriting_from_base_anonymous_chart_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardCharts: map[string]*modconfig.DashboardChart{
@@ -901,7 +901,7 @@ func init() {
 							UnqualifiedName: "dashboard.container_with_child_res",
 							Title:           toStringPointer("container with child resources"),
 							ChildNames:      []string{"container_with_children.container.dashboard_container_with_child_res_anonymous_container_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -1023,7 +1023,7 @@ func init() {
 								"dashboard_with_children.input.i1",
 								"dashboard_with_children.table.dashboard_dashboard_with_child_res_anonymous_table_0",
 								"dashboard_with_children.text.dashboard_dashboard_with_child_res_anonymous_text_0"},
-							HclType: "dashboard",
+							//HclType: "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -1135,7 +1135,7 @@ func init() {
 							ShortName:       "anonymous_naming",
 							UnqualifiedName: "dashboard.anonymous_naming",
 							ChildNames:      []string{"dashboard_resource_naming.chart.dashboard_anonymous_naming_anonymous_chart_0", "dashboard_resource_naming.container.dashboard_anonymous_naming_anonymous_container_0", "dashboard_resource_naming.container.dashboard_anonymous_naming_anonymous_container_1"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
@@ -1308,7 +1308,7 @@ func init() {
 								"dashboard_with_children.input.ip1",
 								"dashboard_with_children.table.t1",
 								"dashboard_with_children.text.txt1"},
-							HclType: "dashboard",
+							//HclType: "dashboard",
 						},
 					},
 					DashboardContainers: map[string]*modconfig.DashboardContainer{
