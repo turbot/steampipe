@@ -529,19 +529,20 @@ function reducer(state, action) {
             : null,
       };
     case DashboardActions.EXECUTION_STARTED: {
-      const originalDashboard = action.dashboard_node;
+      const rootLayoutPanel = action.layout;
+      const rootPanel = action.panels[rootLayoutPanel.name];
       let dashboard;
       // For benchmarks and controls that are run directly from a mod,
       // we need to wrap these in an artificial dashboard, so we can treat
       // it just like any other dashboard
-      if (action.dashboard_node.panel_type !== "dashboard") {
+      if (rootPanel.panel_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(
-          originalDashboard,
+          rootPanel,
           action.layout
         );
       } else {
         dashboard = {
-          ...originalDashboard,
+          ...rootPanel,
           ...action.layout,
         };
       }
@@ -566,28 +567,28 @@ function reducer(state, action) {
         return state;
       }
 
-      const originalDashboard = action.dashboard_node;
+      const layout = action.snapshot.layout;
+      const panels = action.snapshot.panels;
+      const rootLayoutPanel = action.snapshot.layout;
+      const rootPanel = panels[rootLayoutPanel.name];
       let dashboard;
 
-      if (action.dashboard_node.panel_type !== "dashboard") {
-        dashboard = wrapDefinitionInArtificialDashboard(
-          originalDashboard,
-          action.layout
-        );
+      if (rootPanel.panel_type !== "dashboard") {
+        dashboard = wrapDefinitionInArtificialDashboard(rootPanel, layout);
       } else {
         dashboard = {
-          ...originalDashboard,
-          ...action.layout,
+          ...rootPanel,
+          ...layout,
         };
       }
 
       // Build map of SQL to data
-      const sqlDataMap = buildSqlDataMap(action.panels);
+      const sqlDataMap = buildSqlDataMap(panels);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
         error: null,
-        panelsMap: action.panels,
+        panelsMap: panels,
         dashboard,
         sqlDataMap,
         progress: 100,
