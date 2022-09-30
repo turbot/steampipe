@@ -70,11 +70,8 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	t := time.Now()
 	idx := 0
 	for name, q := range queries {
-		// try to resolve the source qwuery provider
-		var queryProvider modconfig.HclResource
-		if parsedName, err := modconfig.ParseResourceName(name); err == nil {
-			queryProvider, _ = modconfig.GetResource(initData.Workspace, parsedName)
-		}
+		// try to resolve the source query provider - this is used for snapshot creation
+		queryProvider := resolveQueryProvider(name, initData, q)
 
 		if err := executeQuery(ctx, q, queryProvider, initData.Client); err != nil {
 			failures++
@@ -92,6 +89,21 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	}
 
 	return failures
+}
+
+func resolveQueryProvider(name string, initData *query.InitData, q string) modconfig.HclResource {
+	var queryProvider modconfig.HclResource
+	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
+		queryProvider, _ = modconfig.GetResource(initData.Workspace, parsedName)
+	}
+	if queryProvider == nil {
+		queryProvider = &modconfig.Query{
+			ShortName: "local_query",
+			Title:     utils.ToStringPointer("Local Query"),
+			SQL:       utils.ToStringPointer(q),
+		}
+	}
+	return queryProvider
 }
 
 func executeQuery(ctx context.Context, queryString string, queryProvider modconfig.HclResource, client db_common.Client) error {

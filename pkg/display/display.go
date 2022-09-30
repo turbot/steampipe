@@ -6,11 +6,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"os"
 	"strings"
 	"time"
@@ -20,10 +15,16 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/snapshot"
+	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -34,6 +35,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, query modconfig
 
 	// buffer the results in case we need to export a snapshot
 	var rows [][]interface{}
+	var snap *dashboardtypes.SteampipeSnapshot
 
 	switch output {
 	case constants.OutputFormatJSON:
@@ -43,49 +45,30 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, query modconfig
 	case constants.OutputFormatLine:
 		rows = displayLine(ctx, result)
 	case constants.OutputFormatSnapshot:
-		rows = displaySnapshot(ctx, result)
+		// displaySnapshot returns the snapshot in case we need to share it
+		snap = displaySnapshot(ctx, result, query)
 	default:
 		// default
 		rows = displayTable(ctx, result)
 	}
 
-	shareSnapshot(ctx, rows, query)
+	shareSnapshot(ctx, rows, result, query, snap)
 }
 
-func shareSnapshot(ctx context.Context, rows [][]interface{}, query modconfig.HclResource) error {
+func shareSnapshot(ctx context.Context, rows [][]interface{}, result *queryresult.Result, query modconfig.HclResource, existingSnapshot *dashboardtypes.SteampipeSnapshot) error {
 	shouldShare := viper.IsSet(constants.ArgShare)
 	shouldUpload := viper.IsSet(constants.ArgSnapshot)
 	if shouldShare || shouldUpload {
-		if query == nil {
-			query = &modconfig.Query{
-				ResourceWithMetadataBase: modconfig.ResourceWithMetadataBase{},
-				QueryProviderBase:        modconfig.QueryProviderBase{},
-				Remain:                   nil,
-				ShortName:                "",
-				FullName:                 "",
-				Description:              nil,
-				Documentation:            nil,
-				SearchPath:               nil,
-				SearchPathPrefix:         nil,
-				Tags:                     nil,
-				Title:                    nil,
-				PreparedStatementName:    "",
-				SQL:                      nil,
-				Params:                   nil,
-				References:               nil,
-				Mod:                      nil,
-				DeclRange:                hcl.Range{},
-				UnqualifiedName:          "",
-				Paths:                    nil,
+		// if we were not passed a snapshot, use rows to generate snapshot
+		if existingSnapshot == nil {
+			var err error
+			existingSnapshot, err = snapshot.QueryResultToSnapshot(rows, result.ColTypes, query)
+			if err != nil {
+				return err
 			}
 		}
 
-		snapshot, err := ExecutionTreeToSnapshot(e)
-		if err != nil {
-			return err
-		}
-
-		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+		snapshotUrl, err := cloud.UploadSnapshot(existingSnapshot, shouldShare)
 		statushooks.Done(ctx)
 		if err != nil {
 			return err
@@ -365,7 +348,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) [][]interface
 	return rows
 }
 
-func displaySnapshot(ctx context.Context, result *queryresult.Result) [][]interface{} {
+func displaySnapshot(ctx context.Context, result *queryresult.Result, query modconfig.HclResource) *dashboardtypes.SteampipeSnapshot {
 	var rows [][]interface{}
 
 	// define function to add each row to the JSON output
@@ -381,20 +364,20 @@ func displaySnapshot(ctx context.Context, result *queryresult.Result) [][]interf
 		fmt.Println()
 	}
 
-	snapshot, err := dashboardtypes.QueryResultToSnapshot(rows, result.ColTypes)
+	snap, err := snapshot.QueryResultToSnapshot(rows, result.ColTypes, query)
 	if err != nil {
 		utils.ShowErrorWithMessage(ctx, err, "error displaying result as snapshot")
 		return nil
 	}
 
-	jsonOutput, err := json.MarshalIndent(snapshot, "", "  ")
+	jsonOutput, err := json.MarshalIndent(snap, "", "  ")
 	if err != nil {
 		utils.ShowErrorWithMessage(ctx, err, "error displaying result as snapshot")
 		return nil
 	}
 
 	fmt.Print(jsonOutput)
-	return rows
+	return snap
 }
 
 func buildTimingString(result *queryresult.Result) string {

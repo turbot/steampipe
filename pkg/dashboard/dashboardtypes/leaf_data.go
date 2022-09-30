@@ -4,6 +4,20 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
+type ColumnSchema struct {
+	Name          string          `json:"name"`
+	DataType      string          `json:"data_type"`
+	SqlColumnType *sql.ColumnType `json:"-"`
+}
+
+func NewLeafDataColumnType(sqlType *sql.ColumnType) *ColumnSchema {
+	return &ColumnSchema{
+		Name:          sqlType.Name(),
+		DataType:      sqlType.DatabaseTypeName(),
+		SqlColumnType: sqlType,
+	}
+}
+
 type LeafData struct {
 	Columns []*queryresult.ColumnDef `json:"columns"`
 	Rows    []map[string]interface{} `json:"rows"`

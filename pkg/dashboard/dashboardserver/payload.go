@@ -7,6 +7,7 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -198,7 +199,7 @@ func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, 
 }
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
-	snapshot := ExecutionCompleteToSnapshot(event)
+	snapshot := dashboardexecute.ExecutionCompleteToSnapshot(event)
 	payload := &ExecutionCompletePayload{
 		Action:        "execution_complete",
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),

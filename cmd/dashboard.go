@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"log"
 	"os"
 	"strings"
@@ -21,7 +22,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
-	"github.com/turbot/steampipe/pkg/snapshot"
+
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -165,8 +166,11 @@ func initDashboard(dashboardCtx context.Context, err error) *initialisation.Init
 }
 
 func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) error {
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
 	// so a dashboard name was specified - just call GenerateSnapshot
-	snapshot, err := snapshot.GenerateSnapshot(ctx, dashboardName, inputs)
+	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, w, inputs)
 	if err != nil {
 		return err
 	}
@@ -205,7 +209,7 @@ func validateDashboardArgs(args []string) (string, error) {
 	shareArg := viper.GetString(constants.ArgShare)
 	snapshotArg := viper.GetString(constants.ArgSnapshot)
 	if shareArg != "" && snapshotArg != "" {
-		return "", fmt.Errorf("only 1 of --share and --dashboard may be set")
+		return "", fmt.Errorf("only 1 of --share and --snapshot may be set")
 	}
 
 	// if either share' or 'snapshot' are set, a dashboard name an dcloud token must be provided
