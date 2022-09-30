@@ -39,8 +39,9 @@ func teardown() {
 
 func TestExportFormat(t *testing.T) {
 	setup()
+	resolver, _ := NewFormatResolver()
 	for name, test := range exportFormatTestCases {
-		fff, _, err := resolveOutputTemplate(test.input, true)
+		outputTemplate, err := resolver.resolveOutputTemplate(test.input)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, err)
@@ -52,8 +53,8 @@ func TestExportFormat(t *testing.T) {
 			continue
 		}
 		expectedFormat := test.expected.(OutputTemplate)
-		if !FormatEqual(fff, &expectedFormat) {
-			t.Errorf("Test: '%s'' FAILED : expected:\n%s\n\ngot:\n%s", name, expectedFormat, fff)
+		if !FormatEqual(outputTemplate, &expectedFormat) {
+			t.Errorf("Test: '%s'' FAILED : expected:\n%s\n\ngot:\n%s", name, expectedFormat.FormatName, outputTemplate)
 		}
 	}
 	teardown()
@@ -63,7 +64,7 @@ func FormatEqual(l, r *OutputTemplate) bool {
 	return (l.FormatFullName == r.FormatFullName)
 }
 
-var exportFormatTestCases map[string]Testcase = map[string]Testcase{
+var exportFormatTestCases = map[string]Testcase{
 	"html": {
 		input: "html",
 		expected: OutputTemplate{
