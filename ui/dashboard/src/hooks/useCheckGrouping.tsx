@@ -255,51 +255,51 @@ const getCheckGroupingNode = (
         checkResult.dimensions
       );
       return new KeyValuePairNode(
+        dimensionValue,
         "dimension",
         group.value || "Dimension key not set",
-        dimensionValue,
         dimensionValue,
         children
       );
     case "tag":
       const value = getCheckTagGroupingKey(group.value, checkResult.tags);
       return new KeyValuePairNode(
+        value,
         "tag",
         group.value || "Tag key not set",
-        value,
         value,
         children
       );
     case "reason":
       return new KeyValuePairNode(
+        checkResult.reason || "𤭢", // U+24B62 - very high in sort order - will almost guarantee to put this to the end,
         "reason",
         "reason",
         getCheckReasonGroupingKey(checkResult.reason),
-        checkResult.reason || "𤭢", // U+24B62 - very high in sort order - will almost guarantee to put this to the end,
         children
       );
     case "resource":
       return new KeyValuePairNode(
+        checkResult.resource || "𤭢", // U+24B62 - very high in sort order - will almost guarantee to put this to the end
         "resource",
         "resource",
         getCheckResourceGroupingKey(checkResult.resource),
-        checkResult.resource || "𤭢", // U+24B62 - very high in sort order - will almost guarantee to put this to the end
         children
       );
     case "severity":
       return new KeyValuePairNode(
+        getCheckSeveritySortKey(checkResult.control.severity),
         "severity",
         "severity",
         getCheckSeverityGroupingKey(checkResult.control.severity),
-        getCheckSeveritySortKey(checkResult.control.severity),
         children
       );
     case "status":
       return new KeyValuePairNode(
+        getCheckStatusSortKey(checkResult.status),
         "status",
         "status",
         getCheckStatusGroupingKey(checkResult.status),
-        getCheckStatusSortKey(checkResult.status),
         children
       );
     case "benchmark":
