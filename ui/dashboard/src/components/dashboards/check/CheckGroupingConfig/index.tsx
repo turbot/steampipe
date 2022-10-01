@@ -2,6 +2,7 @@ import Icon from "../../../Icon";
 import Modal from "../../../Modal";
 import NeutralButton from "../../../forms/NeutralButton";
 import React, { useCallback, useEffect, useState } from "react";
+import StartCase from "lodash/startCase";
 import useCheckGroupingConfig from "../../../../hooks/useCheckGroupingConfig";
 import { CheckDisplayGroup, CheckDisplayGroupType } from "../common";
 import { useSearchParams } from "react-router-dom";
@@ -67,8 +68,13 @@ const CheckGroupingTypeSelect = ({
     >
       <option value={""}>Select a grouping type...</option>
       {types.map((t) => (
-        <option key={t} className="capitalize" selected={currentType === t}>
-          {t}
+        <option
+          key={t}
+          className="capitalize"
+          selected={currentType === t}
+          value={t}
+        >
+          {StartCase(t)}
         </option>
       ))}
     </select>

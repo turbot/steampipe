@@ -12,7 +12,11 @@ import {
   CheckDisplayGroup,
   CheckNode,
   CheckResult,
+  CheckResultDimension,
+  CheckResultStatus,
+  CheckSeverity,
   CheckSummary,
+  CheckTags,
   findDimension,
 } from "../components/dashboards/check/common";
 import {
@@ -112,24 +116,119 @@ const addBenchmarkTrunkNode = (
   );
 };
 
+const getCheckStatusGroupingKey = (status: CheckResultStatus): string => {
+  switch (status) {
+    case "alarm":
+      return "Alarm";
+    case "error":
+      return "Error";
+    case "info":
+      return "Info";
+    case "ok":
+      return "OK";
+    case "skip":
+      return "Skip";
+    case "empty":
+      return "Unknown";
+  }
+};
+
+const getCheckStatusSortKey = (status: CheckResultStatus): string => {
+  switch (status) {
+    case "error":
+      return "0";
+    case "alarm":
+      return "1";
+    case "ok":
+      return "2";
+    case "info":
+      return "3";
+    case "skip":
+      return "4";
+    case "empty":
+      return "5";
+  }
+};
+
+const getCheckSeverityGroupingKey = (
+  severity: CheckSeverity | undefined
+): string => {
+  switch (severity) {
+    case "critical":
+      return "Critical";
+    case "high":
+      return "High";
+    case "low":
+      return "Low";
+    case "medium":
+      return "Medium";
+    default:
+      return "Unspecified";
+  }
+};
+
+const getCheckSeveritySortKey = (
+  severity: CheckSeverity | undefined
+): string => {
+  switch (severity) {
+    case "critical":
+      return "0";
+    case "high":
+      return "1";
+    case "medium":
+      return "2";
+    case "low":
+      return "3";
+    default:
+      return "4";
+  }
+};
+
+const getCheckDimensionGroupingKey = (
+  dimensionKey: string | undefined,
+  dimensions: CheckResultDimension[]
+): string => {
+  if (!dimensionKey) {
+    return "Dimension key not set";
+  }
+  const foundDimension = findDimension(dimensions, dimensionKey);
+  return foundDimension
+    ? foundDimension.value
+    : `Dimension ${dimensionKey} not set`;
+};
+
+function getCheckTagGroupingKey(tagKey: string | undefined, tags: CheckTags) {
+  if (!tagKey) {
+    return "Tag key not set";
+  }
+  return tags[tagKey] || `Tag ${tagKey} not set`;
+}
+
+const getCheckReasonGroupingKey = (reason: string | undefined): string => {
+  return reason || "No reason specified.";
+};
+
+const getCheckResourceGroupingKey = (resource: string | undefined): string => {
+  return resource || "No resource";
+};
+
 const getCheckGroupingKey = (
   checkResult: CheckResult,
   group: CheckDisplayGroup
 ) => {
   switch (group.type) {
     case "dimension":
-      const foundDimension = findDimension(checkResult.dimensions, group.value);
-      return foundDimension ? foundDimension.value : "Other";
+      return getCheckDimensionGroupingKey(group.value, checkResult.dimensions);
     case "tag":
-      return group.value ? checkResult.tags[group.value] || "Other" : "Other";
+      return getCheckTagGroupingKey(group.value, checkResult.tags);
     case "reason":
-      return checkResult.reason || "Other";
+      return getCheckReasonGroupingKey(checkResult.reason);
     case "resource":
-      return checkResult.resource || "Other";
+      return getCheckResourceGroupingKey(checkResult.resource);
     case "severity":
-      return checkResult.control.severity || "Other";
+      return getCheckSeverityGroupingKey(checkResult.control.severity);
     case "status":
-      return checkResult.status === "empty" ? "Other" : checkResult.status;
+      return getCheckStatusGroupingKey(checkResult.status);
     case "benchmark":
       if (checkResult.benchmark_trunk.length <= 1) {
         return null;
@@ -151,47 +250,56 @@ const getCheckGroupingNode = (
 ): CheckNode => {
   switch (group.type) {
     case "dimension":
-      const foundDimension = findDimension(checkResult.dimensions, group.value);
-      const dimensionValue = foundDimension ? foundDimension.value : "Other";
+      const dimensionValue = getCheckDimensionGroupingKey(
+        group.value,
+        checkResult.dimensions
+      );
       return new KeyValuePairNode(
         "dimension",
-        group.value || "Other",
+        group.value || "Dimension key not set",
+        dimensionValue,
         dimensionValue,
         children
       );
     case "tag":
+      const value = getCheckTagGroupingKey(group.value, checkResult.tags);
       return new KeyValuePairNode(
         "tag",
-        group.value || "Other",
-        group.value ? checkResult.tags[group.value] || "Other" : "Other",
+        group.value || "Tag key not set",
+        value,
+        value,
         children
       );
     case "reason":
       return new KeyValuePairNode(
         "reason",
         "reason",
-        checkResult.reason || "Other",
+        getCheckReasonGroupingKey(checkResult.reason),
+        checkResult.reason || "𤭢", // U+24B62 - very high in sort order - will almost guarantee to put this to the end,
         children
       );
     case "resource":
       return new KeyValuePairNode(
         "resource",
         "resource",
-        checkResult.resource || "Other",
+        getCheckResourceGroupingKey(checkResult.resource),
+        checkResult.resource || "𤭢", // U+24B62 - very high in sort order - will almost guarantee to put this to the end
         children
       );
     case "severity":
       return new KeyValuePairNode(
         "severity",
         "severity",
-        checkResult.control.severity || "Other",
+        getCheckSeverityGroupingKey(checkResult.control.severity),
+        getCheckSeveritySortKey(checkResult.control.severity),
         children
       );
     case "status":
       return new KeyValuePairNode(
         "status",
         "status",
-        checkResult.status === "empty" ? "Other" : checkResult.status,
+        getCheckStatusGroupingKey(checkResult.status),
+        getCheckStatusSortKey(checkResult.status),
         children
       );
     case "benchmark":
@@ -271,7 +379,7 @@ const groupCheckItems = (
 
         if (groupingNode) {
           if (currentGroupingConfig.type === "benchmark") {
-            // For benchmarks we need to get the benchmark nodes including the trunk
+            // For benchmarks, we need to get the benchmark nodes including the trunk
             addBenchmarkGroupingNode(cumulativeGrouping._, groupingNode);
           } else {
             cumulativeGrouping._.push(groupingNode);

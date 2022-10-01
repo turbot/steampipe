@@ -6,9 +6,10 @@ class KeyValuePairNode extends HierarchyNode {
     type: CheckNodeType,
     key: string,
     value: string,
+    sort: string,
     children?: CheckNode[]
   ) {
-    super(type, `${key}=${value}`, value, value, children || []);
+    super(type, `${key}=${value}`, value, sort, children || []);
   }
 }
 

@@ -67,7 +67,7 @@ export type CheckTags = {
   [key: string]: string;
 };
 
-type CheckResultDimension = {
+export type CheckResultDimension = {
   key: string;
   value: string;
 };
