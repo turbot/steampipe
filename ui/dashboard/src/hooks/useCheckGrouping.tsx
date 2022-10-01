@@ -127,7 +127,7 @@ const getCheckStatusGroupingKey = (status: CheckResultStatus): string => {
     case "ok":
       return "OK";
     case "skip":
-      return "Skip";
+      return "Skipped";
     case "empty":
       return "Unknown";
   }
@@ -135,11 +135,11 @@ const getCheckStatusGroupingKey = (status: CheckResultStatus): string => {
 
 const getCheckStatusSortKey = (status: CheckResultStatus): string => {
   switch (status) {
-    case "error":
+    case "ok":
       return "0";
     case "alarm":
       return "1";
-    case "ok":
+    case "error":
       return "2";
     case "info":
       return "3";
