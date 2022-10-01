@@ -119,7 +119,14 @@ const CheckGroupingEditorItem = ({
       <div className="grow">
         <CheckGroupingTypeSelect
           type={item.type}
-          update={(updated) => update(index, { ...item, type: updated })}
+          update={(updated) =>
+            update(index, {
+              ...item,
+              id: updated,
+              value: "",
+              type: updated,
+            })
+          }
         />
       </div>
       {item.type === "dimension" && (
@@ -129,10 +136,14 @@ const CheckGroupingEditorItem = ({
             <input
               className="flex w-full p-2 bg-dashboard border-black-scale-2 text-foreground border border-divide rounded-md"
               onChange={(e) =>
-                update(index, { ...item, value: e.target.value })
+                update(index, {
+                  ...item,
+                  id: `${item.type}-${e.target.value}`,
+                  value: e.target.value,
+                })
               }
-              value={item.value}
-            ></input>
+              value={item.value || ""}
+            />
           </div>
         </>
       )}
@@ -179,7 +190,7 @@ const CheckGroupingEditor = ({
     <div className="flex flex-col space-y-4">
       {config.map((c, idx) => (
         <CheckGroupingEditorItem
-          key={c.id}
+          key={idx}
           // canRemove={config.length > 1}
           item={c}
           index={idx}
