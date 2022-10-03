@@ -23,11 +23,10 @@ type DashboardGraph struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes        DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
-	Edges        DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
-	CategoryList DashboardCategoryList         `cty:"category_list" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
-	Direction    *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
+	Nodes      DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
+	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
+	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
+	Direction  *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -58,6 +57,7 @@ func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) HclResource
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
+		Categories:      make(map[string]*DashboardCategory),
 	}
 	h.SetAnonymous(block)
 	return h
@@ -82,13 +82,6 @@ func (g *DashboardGraph) Name() string {
 // OnDecoded implements HclResource
 func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	g.setBaseProperties(resourceMapProvider)
-	// populate categories map
-	if len(g.CategoryList) > 0 {
-		g.Categories = make(map[string]*DashboardCategory, len(g.CategoryList))
-		for _, c := range g.CategoryList {
-			g.Categories[c.Name()] = c
-		}
-	}
 
 	return initialiseEdgesAndNodes(g, resourceMapProvider)
 }
@@ -186,11 +179,11 @@ func (g *DashboardGraph) Diff(other *DashboardGraph) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Direction")
 	}
 
-	if len(g.CategoryList) != len(other.CategoryList) {
+	if len(g.Categories) != len(other.Categories) {
 		res.AddPropertyDiff("Categories")
 	} else {
-		for i, c := range g.Categories {
-			if !c.Equals(other.Categories[i]) {
+		for name, c := range g.Categories {
+			if !c.Equals(other.Categories[name]) {
 				res.AddPropertyDiff("Categories")
 			}
 		}
@@ -296,6 +289,11 @@ func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
 	g.Nodes = nodes
 }
 
+// AddCategory implements NodeAndNodeProvider
+func (g *DashboardGraph) AddCategory(category *DashboardCategory) {
+	g.Categories[category.Name()] = category
+}
+
 func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
@@ -338,10 +336,10 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvi
 		g.Params = g.Base.Params
 	}
 
-	if g.CategoryList == nil {
-		g.CategoryList = g.Base.CategoryList
+	if g.Categories == nil {
+		g.Categories = g.Base.Categories
 	} else {
-		g.CategoryList.Merge(g.Base.CategoryList)
+		g.Categories = utils.MergeMaps(g.Categories, g.Base.Categories)
 	}
 
 	if g.Direction == nil {

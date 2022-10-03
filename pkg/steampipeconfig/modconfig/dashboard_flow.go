@@ -173,11 +173,11 @@ func (f *DashboardFlow) Diff(other *DashboardFlow) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Type")
 	}
 
-	if len(f.CategoryList) != len(other.CategoryList) {
+	if len(f.Categories) != len(other.Categories) {
 		res.AddPropertyDiff("Categories")
 	} else {
-		for i, c := range f.Categories {
-			if !c.Equals(other.Categories[i]) {
+		for name, c := range f.Categories {
+			if !c.Equals(other.Categories[name]) {
 				res.AddPropertyDiff("Categories")
 			}
 		}
@@ -283,9 +283,9 @@ func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 	f.Nodes = nodes
 }
 
-// SetNodes implements NodeAndNodeProvider
+// AddCategory implements NodeAndNodeProvider
 func (f *DashboardFlow) AddCategory(category *DashboardCategory) {
-	f.Categories = append(f.Categories, category)
+	f.Categories[category.Name()] = category
 }
 
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvider) {
