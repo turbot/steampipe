@@ -4,27 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"log"
 	"os"
 	"strings"
-
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/initialisation"
-
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/workspace"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
+	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 func dashboardCmd() *cobra.Command {
@@ -109,6 +108,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		exitCode = constants.ExitCodeBindPortUnavailable
 		utils.FailOnError(err)
 	}
+
+	// create context for the dashboard execution
+	dashboardCtx, cancel := context.WithCancel(dashboardCtx)
+	contexthelpers.StartCancelHandler(cancel)
 
 	// ensure dashboard assets are present and extract if not
 	err = dashboardassets.Ensure(dashboardCtx)
