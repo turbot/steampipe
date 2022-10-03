@@ -63,6 +63,7 @@ The current mod is the working directory, or the directory specified by the --wo
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
+		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -172,8 +173,18 @@ func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[st
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
+	initData := initialisation.NewInitData(ctx, w)
+	// shutdown the service on exit
+	defer initData.Cleanup(ctx)
+	if err := initData.Result.Error; err != nil {
+		return initData.Result.Error
+	}
+
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
+
 	// so a dashboard name was specified - just call GenerateSnapshot
-	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, w, inputs)
+	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, initData, inputs)
 	if err != nil {
 		return err
 	}
@@ -200,6 +211,8 @@ func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[st
 }
 
 func validateDashboardArgs(args []string) (string, error) {
+	// TODO tags
+	// TODO cloud args
 	if len(args) > 1 {
 		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
 	}

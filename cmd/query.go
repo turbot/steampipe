@@ -88,6 +88,7 @@ Examples:
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
 		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
 		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
 
 	return cmd
@@ -162,7 +163,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 	if err := initData.Result.Error; err != nil {
 		utils.FailOnError(err)
 	}
-	//failures := 0
+
 	// build ordered list of queries
 	// (ordered for testing repeatability)
 	var queryNames []string = utils.SortedMapKeys(initData.Queries)
@@ -173,8 +174,12 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 			// this is to allow us to use existing dashboard execution code
 			targetName := ensureQueryResource(name, query, i, w)
+
+			// we need to pass the embedded initData to  GenerateSnapshot
+			baseInitData := &initData.InitData
+
 			// so a dashboard name was specified - just call GenerateSnapshot
-			snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, w, nil)
+			snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, baseInitData, nil)
 			utils.FailOnError(err)
 
 			// display the result

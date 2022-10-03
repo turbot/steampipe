@@ -12,27 +12,16 @@ import (
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/snapshot"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/workspace"
 	"log"
 )
 
-func GenerateSnapshot(ctx context.Context, target string, w *workspace.Workspace, inputs map[string]interface{}) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
+func GenerateSnapshot(ctx context.Context, target string, initData *initialisation.InitData, inputs map[string]interface{}) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
 	// create context for the dashboard execution
-	snapshotCtx, cancel := createSnapshotContext(ctx, target)
+	snapshotCtx := createSnapshotContext(ctx, target)
 
-	contexthelpers.StartCancelHandler(cancel)
+	w := initData.Workspace
 
 	// todo do we require a mod file?
-
-	initData := initialisation.NewInitData(snapshotCtx, w, constants.InvokerDashboard)
-	// shutdown the service on exit
-	defer initData.Cleanup(snapshotCtx)
-	if err := initData.Result.Error; err != nil {
-		return nil, initData.Result.Error
-	}
-
-	// if there is a usage warning we display it
-	initData.Result.DisplayMessages()
 
 	// no session for manual execution
 	sessionId := ""
@@ -55,7 +44,7 @@ func GenerateSnapshot(ctx context.Context, target string, w *workspace.Workspace
 }
 
 // create the context for the check run - add a control status renderer
-func createSnapshotContext(ctx context.Context, target string) (context.Context, context.CancelFunc) {
+func createSnapshotContext(ctx context.Context, target string) context.Context {
 	// create context for the dashboard execution
 	snapshotCtx, cancel := context.WithCancel(ctx)
 	contexthelpers.StartCancelHandler(cancel)
@@ -65,7 +54,7 @@ func createSnapshotContext(ctx context.Context, target string) (context.Context,
 
 	// create a context with a SnapshotControlHooks to report execution progress of any controls in this snapshot
 	snapshotCtx = controlstatus.AddControlHooksToContext(snapshotCtx, controlstatus.NewSnapshotControlHooks())
-	return snapshotCtx, cancel
+	return snapshotCtx
 }
 
 func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel chan *dashboardtypes.SteampipeSnapshot, errorChannel chan error) {
