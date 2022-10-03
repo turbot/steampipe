@@ -447,7 +447,7 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ModResourcesProvider) 
 
 	d.addBaseInputs(d.Base.Inputs)
 
-	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
+	d.Tags = utils.MergeMaps(d.Tags, d.Base.Tags)
 
 	if d.Description == nil {
 		d.Description = d.Base.Description

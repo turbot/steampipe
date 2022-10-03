@@ -3,6 +3,7 @@ package modconfig
 import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 // DashboardTreeItemDiffs is a struct representing the differences between 2 DashboardTreeItems (of same type)
@@ -137,7 +138,7 @@ func (d *DashboardTreeItemDiffs) dashboardLeafNodeDiff(l DashboardLeafNode, r Da
 	if l.GetType() != r.GetType() {
 		d.AddPropertyDiff("Type")
 	}
-	if !utils.StringMapsEqual(l.GetTags(), r.GetTags()) {
+	if !maps.Equal(l.GetTags(), r.GetTags()) {
 		d.AddPropertyDiff("Tags")
 	}
 }

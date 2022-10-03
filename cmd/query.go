@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"golang.org/x/exp/maps"
 	"os"
 	"strings"
 
@@ -227,7 +228,7 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	// start a goroutine to stream the results as rows
 	go func() {
 		for _, d := range chartRun.Data.Rows {
-			res.StreamRow(utils.MapValues(d))
+			res.StreamRow(maps.Values(d))
 		}
 		res.Close()
 	}()

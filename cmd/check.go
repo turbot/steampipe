@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/initialisation"
+	"golang.org/x/exp/maps"
 	"io"
 	"os"
 	"strings"
@@ -413,7 +415,7 @@ func getExportTargets(executionName string) ([]*controldisplay.CheckExportTarget
 
 
 	// convert target map into array
-	targetList := utils.MapValues(targets)
+	targetList := maps.Values(targets)
 	return targetList, error_helpers.CombineErrors(targetErrors...)
 }
 
