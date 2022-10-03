@@ -20,8 +20,6 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 
 	w := initData.Workspace
 
-	// todo do we require a mod file?
-
 	// no session for manual execution
 	sessionId := ""
 
@@ -58,9 +56,7 @@ func createSnapshotContext(ctx context.Context, target string) context.Context {
 }
 
 func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel chan *dashboardtypes.SteampipeSnapshot, errorChannel chan error) {
-
 	switch e := event.(type) {
-
 	case *dashboardevents.ExecutionError:
 		errorChannel <- e.Error
 	case *dashboardevents.ExecutionComplete:
