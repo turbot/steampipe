@@ -37,7 +37,7 @@ func SetViperDefaults(configMap map[string]interface{}) {
 
 func FlagSetByUser(cmd *cobra.Command, name string) bool {
 	f := cmd.Flags().Lookup(name)
-	return (f != nil && f.Changed)
+	return f != nil && f.Changed
 }
 
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism

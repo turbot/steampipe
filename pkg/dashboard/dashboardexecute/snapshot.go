@@ -14,6 +14,7 @@ import (
 )
 
 func GenerateSnapshot(ctx context.Context, target string, initData *initialisation.InitData, inputs map[string]interface{}) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
+	defer statushooks.Done(ctx)
 	// create context for the dashboard execution
 	snapshotCtx := createSnapshotContext(ctx, target)
 
@@ -36,9 +37,10 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 	case err = <-errorChannel:
 	case snapshot = <-resultChannel:
 	}
+	// clear event handlers again in case another snapshot will be generated in this run
+	w.UnregisterDashboardEventHandlers()
 
 	return snapshot, err
-
 }
 
 // create the context for the check run - add a control status renderer
@@ -63,9 +65,8 @@ func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel ch
 		errorChannel <- e.Error
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)
-		snapshot := ExecutionCompleteToSnapshot(e)
-
-		resultChannel <- snapshot
+		snap := ExecutionCompleteToSnapshot(e)
+		resultChannel <- snap
 	}
 }
 

@@ -3,6 +3,7 @@ package controldisplay
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
@@ -13,7 +14,7 @@ import (
 type SnapshotFormatter struct{}
 
 func (f *SnapshotFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
-	snapshot, err := ExecutionTreeToSnapshot(tree)
+	snapshot, err := executionTreeToSnapshot(tree)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +24,7 @@ func (f *SnapshotFormatter) Format(_ context.Context, tree *controlexecute.Execu
 		return nil, err
 	}
 
-	res := strings.NewReader(string(snapshotStr))
+	res := strings.NewReader(fmt.Sprintf("%s\n", string(snapshotStr)))
 
 	return res, nil
 }

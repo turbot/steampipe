@@ -138,6 +138,16 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exportWaitGroup := &sync.WaitGroup{}
 	var durations []time.Duration
 
+	shouldShare := viper.IsSet(constants.ArgShare)
+	shouldUpload := viper.IsSet(constants.ArgSnapshot)
+	generateSnapshot := shouldShare || shouldUpload
+	if generateSnapshot {
+		// if no output explicitly set, show nothing
+		if !cmdconfig.FlagSetByUser(cmd, constants.ArgOutput) {
+			viper.Set(constants.ArgOutput, constants.OutputFormatNone)
+		}
+	}
+
 	// treat each arg as a separate execution
 	for _, arg := range args {
 		if utils.IsContextCancelled(ctx) {
@@ -172,7 +182,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// if the share args are set, create a snapshot and share it
-		controldisplay.ShareSnapshot(ctx, executionTree)
+		if generateSnapshot {
+			controldisplay.ShareAsSnapshot(executionTree, shouldShare)
+		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
 	}
@@ -215,6 +227,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		utils.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))
 		return false
 	}
+
 	return true
 }
 
@@ -319,7 +332,7 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 		return err
 	}
 	// tactical solution to prettify the json output
-	if output == "json" {
+	if output == constants.OutputFormatJSON {
 		reader, err = prettifyJsonFromReader(reader)
 		if err != nil {
 			return err

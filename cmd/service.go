@@ -515,7 +515,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		var connectedClientCount int
 		// check if there are any connected clients to the service
 		connectedClientCount, err = db_local.GetCountOfThirdPartyClients(cmd.Context())
-		utils.FailOnErrorWithMessage(err, "error during service stop")
+		utils.FailOnErrorWithMessage(err, "service stop failed")
 
 		if connectedClientCount > 0 {
 			printClientsConnected()
@@ -523,7 +523,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 
 		status, err = db_local.StopServices(ctx, false, constants.InvokerService)
-		utils.FailOnErrorWithMessage(err, "error during service stop")
+		utils.FailOnErrorWithMessage(err, "service stop failed")
 	}
 
 	switch status {

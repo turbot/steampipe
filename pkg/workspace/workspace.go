@@ -164,7 +164,7 @@ func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, e
 	if w.fileWatcherErrorHandler == nil {
 		w.fileWatcherErrorHandler = func(ctx context.Context, err error) {
 			fmt.Println()
-			utils.ShowErrorWithMessage(ctx, err, "Failed to reload mod from file watcher")
+			utils.ShowErrorWithMessage(ctx, err, "failed to reload mod from file watcher")
 		}
 	}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"log"
 	"os"
 	"strings"
@@ -16,9 +15,11 @@ import (
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -92,8 +93,14 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		utils.FailOnError(err)
 
 		// run just this dashboard
-		err = runSingleDashboard(dashboardCtx, dashboardName, inputs)
+		snapshot, err := runSingleDashboard(dashboardCtx, dashboardName, inputs)
 		utils.FailOnError(err)
+		// display the snapshot result (if needed)
+		displaySnapshot(snapshot)
+		// upload the snapshot (if needed)
+		err = uploadSnapshot(snapshot)
+		utils.FailOnError(err)
+
 		// and we are done
 		return
 	}
@@ -148,6 +155,16 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	log.Println("[TRACE] runDashboardCmd exiting")
 }
 
+func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
+	switch viper.GetString(constants.ArgOutput) {
+	case constants.OutputFormatSnapshot:
+		// just display result
+		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
+		utils.FailOnError(err)
+		fmt.Println(string(snapshotText))
+	}
+}
+
 func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
 	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
 	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
@@ -163,7 +180,7 @@ func initDashboard(dashboardCtx context.Context, err error) *initialisation.Init
 	return initData
 }
 
-func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) error {
+func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) (*dashboardtypes.SteampipeSnapshot, error) {
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	utils.FailOnErrorWithMessage(err, "failed to load workspace")
 
@@ -171,7 +188,7 @@ func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[st
 	// shutdown the service on exit
 	defer initData.Cleanup(ctx)
 	if err := initData.Result.Error; err != nil {
-		return initData.Result.Error
+		return nil, initData.Result.Error
 	}
 
 	// if there is a usage warning we display it
@@ -180,28 +197,10 @@ func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[st
 	// so a dashboard name was specified - just call GenerateSnapshot
 	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, initData, inputs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	shouldShare := viper.IsSet(constants.ArgShare)
-	shouldUpload := viper.IsSet(constants.ArgSnapshot)
-	if shouldShare || shouldUpload {
-		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
-		statushooks.Done(ctx)
-		if err != nil {
-			return err
-		} else {
-			fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
-		}
-		return err
-	}
-
-	// just display result
-	snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
-	utils.FailOnError(err)
-	fmt.Println(string(snapshotText))
-	fmt.Println("")
-	return nil
+	return snapshot, nil
 }
 
 // validate the args and extract a dashboard name, if provided
@@ -255,7 +254,26 @@ func validateDashboardArgs(args []string) (string, error) {
 		}
 	}
 
+	validOutputFormats := []string{constants.OutputFormatSnapshot}
+	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
+		return "", fmt.Errorf("invalid output format, supported format: '%s'", constants.OutputFormatSnapshot)
+	}
+
 	return dashboardName, nil
+}
+
+func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
+	shouldShare := viper.IsSet(constants.ArgShare)
+	shouldUpload := viper.IsSet(constants.ArgSnapshot)
+	if shouldShare || shouldUpload {
+		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+		if err != nil {
+			return err
+		} else {
+			fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
+		}
+	}
+	return nil
 }
 
 func validateSnapshotArgs() error {
