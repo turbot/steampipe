@@ -412,11 +412,9 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, runCtx *RunContext) (modconfig.
 			continue
 		}
 
-		// we expect either inputs or child report nodes
 		for _, category := range categories {
-			edgeAndNodeProvider.AddCategory(category)
+			edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory))
 		}
-
 	}
 
 	// decode sql args and params
