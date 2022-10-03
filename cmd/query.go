@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 	"os"
@@ -26,7 +27,6 @@ import (
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -133,18 +133,23 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// start the initializer
 	initData := query.NewInitData(ctx, w, args)
 
-	if interactiveMode {
+	switch {
+	case interactiveMode:
 		queryexecute.RunInteractiveSession(ctx, initData)
-	} else {
-		// NOTE: disable any status updates - we do not want 'loading' output from any queries
-		ctx = statushooks.DisableStatusHooks(ctx)
-
+	case snapshotRequired():
 		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
 		// as a dashboard
-		if snapshotRequired() {
-			exitCode = executeSnapshotQuery(initData, w, ctx)
-			return
+
+		// if display is not explicitly set, set to none
+		if !cmdconfig.FlagSetByUser(cmd, constants.ArgOutput) {
+			viper.Set(constants.ArgOutput, constants.OutputFormatNone)
 		}
+
+		exitCode = executeSnapshotQuery(initData, w, ctx)
+
+	default:
+		// NOTE: disable any status updates - we do not want 'loading' output from any queries
+		ctx = statushooks.DisableStatusHooks(ctx)
 
 		// fall through to running a batch query
 		// set global exit code
