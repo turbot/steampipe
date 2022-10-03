@@ -22,10 +22,10 @@ import (
 )
 
 type InitData struct {
-	Workspace            *workspace.Workspace
-	Client               db_common.Client
-	Result               *db_common.InitResult
-	cancelInitialisation context.CancelFunc
+	Workspace *workspace.Workspace
+	Client    db_common.Client
+	Result    *db_common.InitResult
+
 	// used for query only
 	PreparedStatementSource *modconfig.ModResources
 
@@ -50,14 +50,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		if i.Result.Error == nil {
 			i.Result.Error = ctx.Err()
 		}
-		// clear the cancelInitialisation function
-		i.cancelInitialisation = nil
 	}()
-
-	// create a cancellable context so that we can cancel the initialisation
-	ctx, cancel := context.WithCancel(ctx)
-	// and store it
-	i.cancelInitialisation = cancel
 
 	// initialise telemetry
 	shutdownTelemetry, err := telemetry.Init(constants.AppName)
@@ -146,6 +139,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 	return
 }
+
+// TODO needed?
 func (i *InitData) Cancel() {
 	// cancel any ongoing operation
 	if i.cancelInitialisation != nil {
@@ -168,10 +163,7 @@ func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCal
 	return client, err
 }
 
-func (i InitData) Cleanup(ctx context.Context) {
-	// cancel any ongoing operation
-	i.Cancel()
-
+func (i *InitData) Cleanup(ctx context.Context) {
 	if i.Client != nil {
 		i.Client.Close(ctx)
 	}

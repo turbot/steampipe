@@ -15,6 +15,7 @@ import (
 
 // TODO KAI combine with initialisation.InitData
 type InitData struct {
+	cancelInitialisation context.CancelFunc
 	initialisation.InitData
 	Loaded chan struct{}
 	// map of query name to query (key is the query text for command line queries)
@@ -36,6 +37,14 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *In
 	go i.init(ctx, w, args)
 
 	return i
+}
+
+func (i *InitData) Cancel() {
+	// cancel any ongoing operation
+	if i.cancelInitialisation != nil {
+		i.cancelInitialisation()
+	}
+	i.cancelInitialisation = nil
 }
 
 // Cleanup overrides the initialisation.InitData.Cleanup to provide syncronisation with the loaded channel
@@ -60,6 +69,8 @@ func (i *InitData) Cleanup(ctx context.Context) {
 func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []string) {
 	defer func() {
 		close(i.Loaded)
+		// clear the cancelInitialisation function
+		i.cancelInitialisation = nil
 	}()
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
@@ -69,6 +80,10 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 		i.Result.Error = err
 		return
 	}
+	// create a cancellable context so that we can cancel the initialisation
+	ctx, cancel := context.WithCancel(ctx)
+	// and store it
+	i.cancelInitialisation = cancel
 	i.Queries = queries
 	i.PreparedStatementSource = preparedStatementSource
 	// now call base init
