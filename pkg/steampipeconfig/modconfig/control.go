@@ -414,7 +414,7 @@ func (c *Control) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	if c.SQL == nil {
 		c.SQL = c.Base.SQL
 	}
-	c.Tags = utils.MergeStringMaps(c.Tags, c.Base.Tags)
+	c.Tags = utils.MergeMaps(c.Tags, c.Base.Tags)
 	if c.Title == nil {
 		c.Title = c.Base.Title
 	}
