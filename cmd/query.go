@@ -164,12 +164,16 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 		utils.FailOnError(err)
 	}
 	//failures := 0
-	queryIdx := 0
-	if len(initData.Queries) > 0 {
-		for name, query := range initData.Queries {
+	// build ordered list of queries
+	// (ordered for testing repeatability)
+	var queryNames []string = utils.SortedMapKeys(initData.Queries)
+
+	if len(queryNames) > 0 {
+		for i, name := range queryNames {
+			query := initData.Queries[name]
 			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 			// this is to allow us to use existing dashboard execution code
-			targetName := ensureQueryResource(name, query, queryIdx, w)
+			targetName := ensureQueryResource(name, query, i, w)
 			// so a dashboard name was specified - just call GenerateSnapshot
 			snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, w, nil)
 			utils.FailOnError(err)

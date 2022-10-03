@@ -22,7 +22,8 @@ func MergeStringMaps(old, new map[string]string) map[string]string {
 	return old
 }
 
-func SortedStringKeys[V any](m map[string]V) []string {
+// TODO KAI uypdate to use maps package
+func SortedMapKeys[V any](m map[string]V) []string {
 	keys := []string{}
 	for k := range m {
 		keys = append(keys, k)
@@ -53,12 +54,24 @@ func StringMapsEqual(l, r map[string]string) bool {
 	return true
 }
 
+// MapValues returns an array containing the values of map v
 func MapValues[V any](m map[string]V) []V {
 	res := make([]V, len(m))
 	idx := 0
 	for _, v := range m {
 		res[idx] = v
 		idx++
+	}
+	return res
+}
+
+// SortedMapValues returns an array containing the values of map v
+// The values are returned in the order of the sorted keys
+func SortedMapValues[V any](m map[string]V) []V {
+	keys := SortedMapKeys(m)
+	res := make([]V, len(m))
+	for i, k := range keys {
+		res[i] = m[k]
 	}
 	return res
 }
