@@ -436,7 +436,7 @@ func initDatabase() error {
 
 	// initdb sometimes fail due to invalid locale settings, to avoid this we update
 	// the locale settings to use 'C' only for the initdb process to complete, and
-	// then return back to the existing locale settings of the user.
+	// then return to the existing locale settings of the user.
 	// set LC_ALL env variable to override current locale settings
 	err := os.Setenv("LC_ALL", "C")
 	if err != nil {
@@ -447,12 +447,18 @@ func initDatabase() error {
 	initDBExecutable := getInitDbBinaryExecutablePath()
 	initDbProcess := exec.Command(
 		initDBExecutable,
+		// Steampipe runs Postgres as a local, embedded database so trust local
+		// users to login without a password.
 		fmt.Sprintf("--auth=%s", "trust"),
+		// Ensure the name of the database superuser is consistent across installs.
+		// By default it would be based on the user running the install of this
+		// embedded database.
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
+		// Postgres data should placed under the Steampipe install directory.
 		fmt.Sprintf("--pgdata=%s", getDataLocation()),
+		// Ensure the encoding is consistent across installs. By default it would
+		// be based on the system locale.
 		fmt.Sprintf("--encoding=%s", "UTF-8"),
-		fmt.Sprintf("--wal-segsize=%d", 1),
-		"--debug",
 	)
 
 	log.Printf("[TRACE] initdb start: %s", initDbProcess.String())
@@ -463,7 +469,7 @@ func initDatabase() error {
 		return runError
 	}
 
-	// unset LC_ALL to return back to original locale settings
+	// unset LC_ALL to return to original locale settings
 	err = os.Unsetenv("LC_ALL")
 	if err != nil {
 		log.Printf("[TRACE] failed to return back to original locale settings:\n %s", err.Error())
