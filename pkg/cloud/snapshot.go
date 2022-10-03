@@ -13,9 +13,6 @@ import (
 )
 
 func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
-	// HACK
-	snapshot.Action = "execution_complete"
-
 	cloudWorkspace := viper.GetString(constants.ArgWorkspace)
 	// TODO VALIDATE THIS IS SET AT ALL - BETTER MESSAGE
 	parts := strings.Split(cloudWorkspace, "/")

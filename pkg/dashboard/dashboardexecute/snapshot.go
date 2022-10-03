@@ -93,7 +93,5 @@ func ExecutionCompleteToSnapshot(event *dashboardevents.ExecutionComplete) *dash
 		SearchPath:    event.SearchPath,
 		StartTime:     event.StartTime,
 		EndTime:       event.EndTime,
-		// TODO HACK
-		DashboardNode: event.Root,
 	}
 }
