@@ -116,6 +116,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// verify we have an argument
 	if !validateCheckArgs(ctx, cmd, args) {
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 
@@ -205,7 +206,10 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		return false
+	}
+	if err := validateSnapshotArgs(); err != nil {
+		utils.ShowError(ctx, err)
 		return false
 	}
 	// only 1 of 'share' and 'snapshot' may be set

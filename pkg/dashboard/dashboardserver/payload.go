@@ -182,7 +182,6 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 	payload := ExecutionStartedPayload{
 		SchemaVersion: fmt.Sprintf("%d", ExecutionStartedSchemaVersion),
 		Action:        "execution_started",
-		DashboardNode: event.Root,
 		ExecutionId:   event.ExecutionId,
 		Panels:        event.Panels,
 		Layout:        event.Root.AsTreeNode(),
