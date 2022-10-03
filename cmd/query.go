@@ -161,6 +161,10 @@ func validateQueryArgs() error {
 		return err
 	}
 
+	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot}
+	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
+		return fmt.Errorf("invalid output format, must be one of %s", strings.Join(validOutputFormats, ","))
+	}
 	return nil
 }
 

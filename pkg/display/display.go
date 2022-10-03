@@ -25,15 +25,14 @@ import (
 
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result) {
-	output := cmdconfig.Viper().GetString(constants.ArgOutput)
-	if output == constants.OutputFormatJSON {
+	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
+	case constants.OutputFormatJSON:
 		displayJSON(ctx, result)
-	} else if output == constants.OutputFormatCSV {
+	case constants.OutputFormatCSV:
 		displayCSV(ctx, result)
-	} else if output == constants.OutputFormatLine {
+	case constants.OutputFormatLine:
 		displayLine(ctx, result)
-	} else {
-		// default
+	case constants.OutputFormatTable:
 		displayTable(ctx, result)
 	}
 }
