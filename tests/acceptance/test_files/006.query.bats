@@ -110,17 +110,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_file.txt)"
 }
 
-@test "sql glob" {
-  cd tests/acceptance/test_files
-  run steampipe query *.sql
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_glob.txt)"
-}
+#@test "sql glob" {
+#  cd tests/acceptance/test_files
+#  run steampipe query *.sql
+#  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_glob.txt)"
+#}
 
-@test "sql glob csv no header" {
-  cd tests/acceptance/test_files
-  run steampipe query *.sql --header=false --output csv
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_glob_csv_no_header.txt)"
-}
+#@test "sql glob csv no header" {
+#  cd tests/acceptance/test_files
+#  run steampipe query *.sql --header=false --output csv
+#  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_glob_csv_no_header.txt)"
+#}
 
 
 @test "migrate legacy lock file" {
