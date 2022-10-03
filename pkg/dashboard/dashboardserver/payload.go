@@ -198,12 +198,12 @@ func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, 
 }
 
 func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]byte, error) {
-	snapshot := dashboardexecute.ExecutionCompleteToSnapshot(event)
+	snap := dashboardexecute.ExecutionCompleteToSnapshot(event)
 	payload := &ExecutionCompletePayload{
 		Action:        "execution_complete",
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		ExecutionId:   event.ExecutionId,
-		Snapshot:      snapshot,
+		Snapshot:      snap,
 	}
 	return json.Marshal(payload)
 }

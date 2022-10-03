@@ -1,19 +1,15 @@
 package controldisplay
 
 import (
-	"context"
 	"fmt"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func ExecutionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.SteampipeSnapshot, error) {
+func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.SteampipeSnapshot, error) {
 	var nodeType string
 	var sourceDefinition string
 	var dashboardNode modconfig.DashboardLeafNode
@@ -66,23 +62,16 @@ func ExecutionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 	return res, nil
 }
 
-func ShareSnapshot(ctx context.Context, e *controlexecute.ExecutionTree) error {
-	shouldShare := viper.IsSet(constants.ArgShare)
-	shouldUpload := viper.IsSet(constants.ArgSnapshot)
-	if shouldShare || shouldUpload {
-
-		snapshot, err := ExecutionTreeToSnapshot(e)
-		if err != nil {
-			return err
-		}
-
-		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
-		statushooks.Done(ctx)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
-
+func ShareAsSnapshot(e *controlexecute.ExecutionTree, shouldShare bool) error {
+	snapshot, err := executionTreeToSnapshot(e)
+	if err != nil {
+		return err
 	}
+
+	snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
 	return nil
 }

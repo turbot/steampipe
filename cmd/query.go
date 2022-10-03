@@ -6,28 +6,27 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/display"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 	"os"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
+	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -54,12 +53,12 @@ Examples:
   steampipe query "select * from cloud"`,
 
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			workspace, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspaceChDir))
+			w, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspaceChDir))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}
 			namedQueries := []string{}
-			for _, name := range workspace.GetSortedNamedQueryNames() {
+			for _, name := range w.GetSortedNamedQueryNames() {
 				if strings.HasPrefix(name, toComplete) {
 					namedQueries = append(namedQueries, name)
 				}
@@ -205,19 +204,19 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			if viper.GetString(constants.ArgOutput) == constants.OutputFormatSnapshot {
 				jsonOutput, err := json.MarshalIndent(snap, "", "  ")
 				if err != nil {
-					utils.FailOnErrorWithMessage(err, "error displaying result as snapshot")
+					utils.FailOnErrorWithMessage(err, "failed to display result as snapshot")
 				}
-				fmt.Print(jsonOutput)
+				fmt.Println(string(jsonOutput))
 			} else {
 				// otherwise convert the snapshot into a query result
 				result, err := snapshotToQueryResult(snap, targetName)
-				utils.FailOnErrorWithMessage(err, "error displaying result as snapshot")
+				utils.FailOnErrorWithMessage(err, "failed to display result as snapshot")
 				display.ShowOutput(ctx, result)
 			}
 
 			// share the snapshot if necessary
-			err = shareSnapshot(ctx, snap)
-			utils.FailOnErrorWithMessage(err, "error sharing snapshot")
+			err = uploadSnapshot(snap)
+			utils.FailOnErrorWithMessage(err, "failed to share snapshot")
 		}
 	}
 	return 0
@@ -259,21 +258,6 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	return res, nil
 }
 
-func shareSnapshot(ctx context.Context, snap *dashboardtypes.SteampipeSnapshot) error {
-	shouldShare := viper.IsSet(constants.ArgShare)
-	shouldUpload := viper.IsSet(constants.ArgSnapshot)
-	if shouldShare || shouldUpload {
-
-		snapshotUrl, err := cloud.UploadSnapshot(snap, shouldShare)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
-
-	}
-	return nil
-}
-
 func ensureQueryResource(name string, query string, queryIdx int, w *workspace.Workspace) string {
 	var found bool
 	var resource modconfig.HclResource
@@ -292,7 +276,7 @@ func ensureQueryResource(name string, query string, queryIdx int, w *workspace.W
 	// add empty metadata
 	q.SetMetadata(&modconfig.ResourceMetadata{})
 
-	// add this the the workspace mod so the dashboard execution code can find it
+	// add this to the workspace mod so the dashboard execution code can find it
 	w.Mod.AddResource(q)
 	// return the new resource name
 	return q.Name()

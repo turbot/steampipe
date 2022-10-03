@@ -32,6 +32,12 @@ func (w *Workspace) RegisterDashboardEventHandler(handler dashboardevents.Dashbo
 	w.dashboardEventHandlers = append(w.dashboardEventHandlers, handler)
 }
 
+// UnregisterDashboardEventHandlers clears all event handlers
+// used when generating multiple snapshots
+func (w *Workspace) UnregisterDashboardEventHandlers() {
+	w.dashboardEventHandlers = nil
+}
+
 // this function is run as a goroutine to call registered event handlers for all received events
 func (w *Workspace) handleDashboardEvent() {
 	for {
@@ -93,7 +99,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ModResou
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
-			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(err, "Failed to reload workspace"))
+			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(err, "failed to reload workspace"))
 		}
 		// now set watcher error to new error
 		w.watcherError = err
