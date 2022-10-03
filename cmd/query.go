@@ -102,14 +102,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	// TODO VALIDATE --OUTPUT ARG
-
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
 	}
 
 	// validate args
-	utils.FailOnError(validateQueryArgs())
+	utils.FailOnError(validateQueryArgs(cmd))
 
 	cloudMetadata, err := cmdconfig.GetCloudMetadata()
 	utils.FailOnError(err)
@@ -156,7 +154,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func validateQueryArgs() error {
+func validateQueryArgs(cmd *cobra.Command) error {
 	err := validateSnapshotArgs()
 	if err != nil {
 		return err
@@ -166,6 +164,15 @@ func validateQueryArgs() error {
 	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
 		return fmt.Errorf("invalid output format, must be one of %s", strings.Join(validOutputFormats, ","))
 	}
+
+	// if workspace-database has not been explicitly set, check whether workspace has been set
+	// and if so use that
+	if !cmdconfig.FlagSetByUser(cmd, constants.ArgWorkspaceDatabase) {
+		if w := viper.GetString(constants.ArgWorkspace); w != "" {
+			viper.Set(constants.ArgWorkspace, w)
+		}
+	}
+
 	return nil
 }
 

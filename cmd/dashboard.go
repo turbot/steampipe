@@ -86,7 +86,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// first check whether a dashboard name has been passed as an arg
-	dashboardName, err := validateDashboardArgs(args)
+	dashboardName, err := validateDashboardArgs(cmd, args)
 	utils.FailOnError(err)
 	if dashboardName != "" {
 		inputs, err := collectInputs()
@@ -155,56 +155,8 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	log.Println("[TRACE] runDashboardCmd exiting")
 }
 
-func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
-	switch viper.GetString(constants.ArgOutput) {
-	case constants.OutputFormatSnapshot:
-		// just display result
-		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
-		utils.FailOnError(err)
-		fmt.Println(string(snapshotText))
-	}
-}
-
-func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
-	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
-	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	// initialise
-	initData := initialisation.NewInitData(dashboardCtx, w)
-	// there must be a modfile
-	if !w.ModfileExists() {
-		initData.Result.Error = workspace.ErrorNoModDefinition
-	}
-
-	return initData
-}
-
-func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) (*dashboardtypes.SteampipeSnapshot, error) {
-	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	initData := initialisation.NewInitData(ctx, w)
-	// shutdown the service on exit
-	defer initData.Cleanup(ctx)
-	if err := initData.Result.Error; err != nil {
-		return nil, initData.Result.Error
-	}
-
-	// if there is a usage warning we display it
-	initData.Result.DisplayMessages()
-
-	// so a dashboard name was specified - just call GenerateSnapshot
-	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, initData, inputs)
-	if err != nil {
-		return nil, err
-	}
-
-	return snapshot, nil
-}
-
 // validate the args and extract a dashboard name, if provided
-func validateDashboardArgs(args []string) (string, error) {
+func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 	if len(args) > 1 {
 		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
 	}
@@ -259,7 +211,63 @@ func validateDashboardArgs(args []string) (string, error) {
 		return "", fmt.Errorf("invalid output format, supported format: '%s'", constants.OutputFormatSnapshot)
 	}
 
+	// if workspace-database has not been explicitly set, check whether workspace has been set
+	// and if so use that
+	if !cmdconfig.FlagSetByUser(cmd, constants.ArgWorkspaceDatabase) {
+		if w := viper.GetString(constants.ArgWorkspace); w != "" {
+			viper.Set(constants.ArgWorkspace, w)
+		}
+	}
+
 	return dashboardName, nil
+}
+
+func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
+	switch viper.GetString(constants.ArgOutput) {
+	case constants.OutputFormatSnapshot:
+		// just display result
+		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
+		utils.FailOnError(err)
+		fmt.Println(string(snapshotText))
+	}
+}
+
+func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
+	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
+	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	// initialise
+	initData := initialisation.NewInitData(dashboardCtx, w)
+	// there must be a modfile
+	if !w.ModfileExists() {
+		initData.Result.Error = workspace.ErrorNoModDefinition
+	}
+
+	return initData
+}
+
+func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) (*dashboardtypes.SteampipeSnapshot, error) {
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
+	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	initData := initialisation.NewInitData(ctx, w)
+	// shutdown the service on exit
+	defer initData.Cleanup(ctx)
+	if err := initData.Result.Error; err != nil {
+		return nil, initData.Result.Error
+	}
+
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
+
+	// so a dashboard name was specified - just call GenerateSnapshot
+	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, initData, inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshot, nil
 }
 
 func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {

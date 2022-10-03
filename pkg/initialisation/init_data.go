@@ -69,7 +69,7 @@ func (i *InitData) Init(ctx context.Context) {
 	}
 
 	// retrieve cloud metadata
-	cloudMetadata, err := cmdconfig.GetCloudMetadata()
+	cloudMetadata, err := cmdconfig.GetCloudMetadata(nil)
 	if err != nil {
 		i.Result.Error = err
 		return
