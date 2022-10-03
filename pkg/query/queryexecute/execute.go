@@ -60,19 +60,20 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 }
 
 func executeQueries(ctx context.Context, initData *query.InitData) int {
-	queries := initData.Queries
 	utils.LogTime("queryexecute.executeQueries start")
 	defer utils.LogTime("queryexecute.executeQueries end")
 
 	// run all queries
 	failures := 0
 	t := time.Now()
-	idx := 0
-	for _, q := range queries {
+	// build ordered list of queries
+	// (ordered for testing repeatability)
+	var queries []string = utils.SortedMapValues(initData.Queries)
 
+	for i, q := range queries {
 		if err := executeQuery(ctx, q, initData.Client); err != nil {
 			failures++
-			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", idx+1, len(queries), err))
+			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 				display.DisplayErrorTiming(t)
@@ -80,10 +81,9 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 		}
 		// TODO move into display layer
 		// Only show the blank line between queries, not after the last one
-		if (idx < len(queries)-1) && showBlankLineBetweenResults() {
+		if (i < len(queries)-1) && showBlankLineBetweenResults() {
 			fmt.Println()
 		}
-		idx++
 	}
 
 	return failures
