@@ -204,15 +204,19 @@ func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[st
 	return nil
 }
 
+// validate the args and extract a dashboard name, if provided
 func validateDashboardArgs(args []string) (string, error) {
-	// TODO tags
-	// TODO cloud args
 	if len(args) > 1 {
 		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
 	}
 	dashboardName := ""
 	if len(args) == 1 {
 		dashboardName = args[0]
+	}
+
+	err := validateSnapshotArgs()
+	if err != nil {
+		return "", err
 	}
 
 	// only 1 of 'share' and 'snapshot' may be set
@@ -252,6 +256,52 @@ func validateDashboardArgs(args []string) (string, error) {
 	}
 
 	return dashboardName, nil
+}
+
+func validateSnapshotArgs() error {
+	// only 1 of 'share' and 'snapshot' may be set
+	share := viper.IsSet(constants.ArgShare)
+	snapshot := viper.IsSet(constants.ArgSnapshot)
+	if share && snapshot {
+		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
+	}
+
+	// if share or snapshot are set, cloud token, workspace and cloud host must be set
+	if share || snapshot {
+		argName := "share"
+		if snapshot {
+			argName = "snapshot"
+		}
+		// verify cloud token and workspace have been set
+		if !viper.IsSet(constants.ArgCloudToken) {
+			return fmt.Errorf("if '--%s' is used, cloud token must be set, using either '--cloud-token' or env var STEAMPIPE_CLOUD_TOKEN", argName)
+		}
+		// is the snapshot workspace set?
+		if !viper.IsSet(constants.ArgWorkspace) {
+			// the share/snapshot command must have a value
+			workspace := viper.GetString(argName)
+			if workspace == constants.ArgShareNoOptDefault {
+				return fmt.Errorf("if '--%s' is used, workspace must be set, using '--workspace'", argName)
+			}
+			// set the workspace back on viper
+			viper.Set(constants.ArgWorkspace, workspace)
+		}
+		//
+		if !viper.IsSet(constants.ArgCloudHost) {
+			return fmt.Errorf("if '--%s' is used, cloud host must be set, using either '--cloud-host' or env var STEAMPIPE_CLOUD_HOST", argName)
+		}
+	}
+	return validateSnapshotTags()
+}
+
+func validateSnapshotTags() error {
+	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
+	for _, tagStr := range tags {
+		if len(strings.Split(tagStr, "=")) != 2 {
+			return fmt.Errorf("snapshot tags must be specified '--tag key=value'")
+		}
+	}
+	return nil
 }
 
 func setExitCodeForDashboardError(err error) {

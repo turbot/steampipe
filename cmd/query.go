@@ -152,6 +152,15 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
+func validateQueryArgs() error {
+	err := validateSnapshotArgs()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx context.Context) int {
 	// ensure we close client
 	defer initData.Cleanup(ctx)
@@ -287,14 +296,6 @@ func snapshotRequired() bool {
 		viper.IsSet(constants.ArgSnapshot) ||
 		viper.GetString(constants.ArgOutput) == constants.OutputFormatSnapshot
 
-}
-
-func validateQueryArgs() error {
-	// only 1 of 'share' and 'snapshot' may be set
-	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgSnapshot)) > 0 {
-		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
-	}
-	return nil
 }
 
 // getPipedStdinData reads the Standard Input and returns the available data as a string
