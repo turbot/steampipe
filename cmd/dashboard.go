@@ -21,7 +21,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/interactive"
@@ -110,10 +109,6 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		exitCode = constants.ExitCodeBindPortUnavailable
 		utils.FailOnError(err)
 	}
-
-	// create context for the dashboard execution
-	dashboardCtx, cancel := context.WithCancel(dashboardCtx)
-	contexthelpers.StartCancelHandler(cancel)
 
 	// ensure dashboard assets are present and extract if not
 	err = dashboardassets.Ensure(dashboardCtx)

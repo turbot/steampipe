@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/control"
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
@@ -95,11 +94,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
 	initData := &initialisation.InitData{}
 
-	// setup a cancel context and start cancel handler
-	ctx, cancel := context.WithCancel(cmd.Context())
-	contexthelpers.StartCancelHandler(cancel)
 	// create a context with check status hooks
-	ctx = createCheckContext(ctx)
+	ctx := createCheckContext(cmd.Context())
 
 	defer func() {
 		utils.LogTime("runCheckCmd end")
