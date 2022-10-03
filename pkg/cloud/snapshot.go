@@ -41,13 +41,16 @@ func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 		visibility = "anyone_with_link"
 	}
 
+	// populate map of tags tags been set?
+	tags := getTags()
+
 	body := struct {
 		Data       *dashboardtypes.SteampipeSnapshot `json:"data"`
 		Tags       map[string]interface{}            `json:"tags"`
 		Visibility string                            `json:"visibility"`
 	}{
 		Data:       snapshot,
-		Tags:       map[string]interface{}{"generated_by": "cli"},
+		Tags:       tags,
 		Visibility: visibility,
 	}
 
@@ -90,4 +93,23 @@ func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 		snapshotId)
 
 	return snapshotUrl, nil
+}
+
+func getTags() map[string]interface{} {
+	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
+	res := map[string]interface{}{}
+	if len(tags) == 0 {
+		// if no tags were specified, add the default
+		res["generated_by"] = "cli"
+		return res
+	}
+
+	for _, tagStr := range tags {
+		parts := strings.Split(tagStr, "=")
+		if len(parts) != 2 {
+			continue
+		}
+		res[parts[0]] = parts[1]
+	}
+	return res
 }

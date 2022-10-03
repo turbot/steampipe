@@ -52,6 +52,7 @@ const (
 	ArgIntrospection       = "introspection"
 	ArgShare               = "share"
 	ArgSnapshot            = "snapshot"
+	ArgSnapshotTag         = "snapshot-tag"
 )
 
 // the default value for ArgShare and ArgSnapshot if no value is provided
