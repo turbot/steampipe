@@ -8,7 +8,7 @@ This will allow you to develop the dashboards UI locally. To get started:
 
 ## Start Steampipe
 
-- Start your local Steampipe service with `steampipe service start` (ensure you have navigated to your mod folder with `cd <mod_folder>` first)
+- Start your local Steampipe service, and dashboard service, with `steampipe dashboard` (ensure you have navigated to your mod folder with `cd <mod_folder>` first)
 
 ## UI Setup
 
