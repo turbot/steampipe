@@ -110,9 +110,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// validate args
 	error_helpers.FailOnError(validateQueryArgs(cmd))
 
-	cloudMetadata, err := cmdconfig.GetCloudMetadata()
-	error_helpers.FailOnError(err)
-
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
 	// set config to indicate whether we are running an interactive query
@@ -121,9 +118,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// load the workspace
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	// set cloud metadata (may be nil)
-	w.CloudMetadata = cloudMetadata
 
 	// so we have loaded a workspace - be sure to close it
 	defer w.Close()

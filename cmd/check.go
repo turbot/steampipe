@@ -144,8 +144,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	shouldUpload := viper.IsSet(constants.ArgSnapshot)
 	generateSnapshot := shouldShare || shouldUpload
 	if generateSnapshot {
-		// if no output explicitly set, show nopthing
-		if !cmdconfig.FlagSetByUser(cmd, constants.ArgOutput) {
+		// if no output explicitly set, show nothing
+		if !viper.IsSet(constants.ArgOutput) {
 			viper.Set(constants.ArgOutput, constants.OutputFormatNone)
 		}
 	}
@@ -229,14 +229,6 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgSnapshot)) > 0 {
 		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))
 		return false
-	}
-
-	// if workspace-database has not been explicitly set, check whether workspace has been set
-	// and if so use that
-	if !cmdconfig.FlagSetByUser(cmd, constants.ArgWorkspaceDatabase) {
-		if w := viper.GetString(constants.ArgWorkspace); w != "" {
-			viper.Set(constants.ArgWorkspace, w)
-		}
 	}
 
 	return true

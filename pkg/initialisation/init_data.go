@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -71,7 +70,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	// retrieve cloud metadata
-	cloudMetadata, err := cmdconfig.GetCloudMetadata()
+	cloudMetadata, err := getCloudMetadata()
 	if err != nil {
 		i.Result.Error = err
 		return
