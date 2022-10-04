@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/turbot/steampipe/pkg/constants"
 
 	"github.com/hashicorp/hcl/v2"
@@ -23,10 +22,9 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes        DashboardNodeList             `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
-	Edges        DashboardEdgeList             `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
-	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
+	Nodes      DashboardNodeList             `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
+	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
+	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -57,6 +55,7 @@ func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource 
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
+		Categories:      make(map[string]*DashboardCategory),
 	}
 	h.SetAnonymous(block)
 	return h
@@ -81,13 +80,7 @@ func (f *DashboardFlow) Name() string {
 // OnDecoded implements HclResource
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	f.setBaseProperties(resourceMapProvider)
-	// populate categories map
-	if len(f.CategoryList) > 0 {
-		f.Categories = make(map[string]*DashboardCategory, len(f.CategoryList))
-		for _, c := range f.CategoryList {
-			f.Categories[c.Name()] = c
-		}
-	}
+
 	return nil
 }
 
@@ -290,6 +283,11 @@ func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 	f.Nodes = nodes
 }
 
+// SetNodes implements NodeAndNodeProvider
+func (f *DashboardFlow) AddCategory(category *DashboardCategory) {
+	f.Categories = append(f.Categories, category)
+}
+
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
@@ -332,10 +330,10 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvid
 		f.Params = f.Base.Params
 	}
 
-	if f.CategoryList == nil {
-		f.CategoryList = f.Base.CategoryList
+	if f.Categories == nil {
+		f.Categories = f.Base.Categories
 	} else {
-		f.CategoryList.Merge(f.Base.CategoryList)
+		f.Categories = utils.MergeMaps(f.Categories, f.Base.Categories)
 	}
 
 	if f.Edges == nil {

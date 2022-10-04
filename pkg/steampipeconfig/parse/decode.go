@@ -91,10 +91,14 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	}
 
 	// now do the actual decode
-	if helpers.StringSliceContains(modconfig.QueryProviderBlocks, block.Type) {
+	switch {
+	case helpers.StringSliceContains(modconfig.EdgeAndNodeProviderBlocks, block.Type):
+		resource, res = decodeEdgeAndNodeProvider(block, runCtx)
+		resources = append(resources, resource)
+	case helpers.StringSliceContains(modconfig.QueryProviderBlocks, block.Type):
 		resource, res = decodeQueryProvider(block, runCtx)
 		resources = append(resources, resource)
-	} else {
+	default:
 		switch block.Type {
 		case modconfig.BlockTypeMod:
 			var mod *modconfig.Mod
@@ -299,7 +303,15 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	// cast resource to a QueryProvider
+	// decode sql args and params
+	res.Merge(decodeQueryProviderParams(block, content, resource, runCtx))
+
+	return resource, res
+}
+
+func decodeQueryProviderParams(block *hcl.Block, content *hcl.BodyContent, resource modconfig.HclResource, runCtx *RunContext) *decodeResult {
+	var diags hcl.Diagnostics
+	res := newDecodeResult()
 	queryProvider, ok := resource.(modconfig.QueryProvider)
 	if !ok {
 		// coding error
@@ -334,9 +346,9 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	var params []*modconfig.ParamDef
 	for _, block := range content.Blocks {
-		// only paramdefs are defined in the schema
+		// we only care about param blocks here
 		if block.Type != modconfig.BlockTypeParam {
-			panic(fmt.Sprintf("invalid child block type %s", block.Type))
+			continue
 		}
 
 		// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
@@ -353,9 +365,62 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	}
 
 	queryProvider.SetParams(params)
+	res.handleDecodeDiags(diags)
+	return res
+}
 
+func decodeEdgeAndNodeProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+	res := newDecodeResult()
+
+	// get shell resource
+	resource, diags := resourceForBlock(block, runCtx)
+	res.handleDecodeDiags(diags)
+	if diags.HasErrors() {
+		return nil, res
+	}
+	edgeAndNodeProvider, ok := resource.(modconfig.EdgeAndNodeProvider)
+	if !ok {
+		// coding error
+		panic(fmt.Sprintf("block type %s not convertible to a EdgeAndNodeProvider", block.Type))
+	}
+
+	// do a partial decode using QueryProviderBlockSchema
+	// this will be used to pull out attributes which need manual decoding
+	content, remain, diags := block.Body.PartialContent(EdgeAndNodeProviderBlockSchema)
+	res.handleDecodeDiags(diags)
+	if !res.Success() {
+		return nil, res
+	}
+
+	// handle invalid block types
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), EdgeAndNodeProviderBlockSchema, resource))
+
+	// decode the body into 'resource' to populate all properties that can be automatically decoded
+	diags = gohcl.DecodeBody(remain, runCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
+
+	// decode categories
+	for _, block := range content.Blocks {
+		// we only care about param blocks here
+		if block.Type != modconfig.BlockTypeCategory {
+			continue
+		}
+		categories, blockRes := decodeBlock(block, runCtx)
+		res.Merge(blockRes)
+		if !blockRes.Success() {
+			continue
+		}
+
+		// we expect either inputs or child report nodes
+		for _, category := range categories {
+			edgeAndNodeProvider.AddCategory(category)
+		}
+
+	}
+
+	// decode sql args and params
+	res.Merge(decodeQueryProviderParams(block, content, resource, runCtx))
 
 	return resource, res
 }

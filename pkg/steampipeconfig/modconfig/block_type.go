@@ -41,6 +41,13 @@ var QueryProviderBlocks = []string{
 	BlockTypeEdge,
 }
 
+// EdgeAndNodeProvider is a list of block types which implement EdgeAndNodeProvider
+var EdgeAndNodeProviderBlocks = []string{
+	BlockTypeHierarchy,
+	BlockTypeFlow,
+	BlockTypeGraph,
+}
+
 // ReferenceBlocks is a list of block types we store references for
 var ReferenceBlocks = []string{
 	BlockTypeMod,
