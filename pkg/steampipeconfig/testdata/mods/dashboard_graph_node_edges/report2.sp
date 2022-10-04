@@ -29,6 +29,14 @@ dashboard "aws_ec2_instance_detail" {
           threshold = 3
         }
       }
+      category  {
+        href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
+        fold {
+          title     = "EC2 Classic Load Balancers"
+          threshold = 3
+        }
+      }
+
 
       param "instance_id" {}
       args = {
