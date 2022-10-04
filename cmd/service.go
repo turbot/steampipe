@@ -628,7 +628,7 @@ Managing the Steampipe service:
 
 	var connectionStr string
 	var password string
-	if viper.IsSet(constants.ArgServiceShowPassword) {
+	if viper.GetBool(constants.ArgServiceShowPassword) {
 		connectionStr = fmt.Sprintf(
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,

@@ -211,14 +211,6 @@ func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 		return "", fmt.Errorf("invalid output format, supported format: '%s'", constants.OutputFormatSnapshot)
 	}
 
-	// if workspace-database has not been explicitly set, check whether workspace has been set
-	// and if so use that
-	if !cmdconfig.FlagSetByUser(cmd, constants.ArgWorkspaceDatabase) {
-		if w := viper.GetString(constants.ArgWorkspace); w != "" {
-			viper.Set(constants.ArgWorkspace, w)
-		}
-	}
-
 	return dashboardName, nil
 }
 
@@ -285,6 +277,8 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
 }
 
 func validateSnapshotArgs() error {
+	// NOTE: viper.IsSet DOES NOT take into account flag default value - it should NOT be used for args with a default
+
 	// only 1 of 'share' and 'snapshot' may be set
 	share := viper.IsSet(constants.ArgShare)
 	snapshot := viper.IsSet(constants.ArgSnapshot)
@@ -292,31 +286,37 @@ func validateSnapshotArgs() error {
 		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
 	}
 
-	// if share or snapshot are set, cloud token, workspace and cloud host must be set
-	if share || snapshot {
-		argName := "share"
-		if snapshot {
-			argName = "snapshot"
-		}
-		// verify cloud token and workspace have been set
-		if !viper.IsSet(constants.ArgCloudToken) {
-			return fmt.Errorf("if '--%s' is used, cloud token must be set, using either '--cloud-token' or env var STEAMPIPE_CLOUD_TOKEN", argName)
-		}
-		// is the snapshot workspace set?
-		if !viper.IsSet(constants.ArgWorkspace) {
-			// the share/snapshot command must have a value
-			workspace := viper.GetString(argName)
-			if workspace == constants.ArgShareNoOptDefault {
-				return fmt.Errorf("if '--%s' is used, workspace must be set, using '--workspace'", argName)
-			}
-			// set the workspace back on viper
-			viper.Set(constants.ArgWorkspace, workspace)
-		}
-		//
-		if !viper.IsSet(constants.ArgCloudHost) {
-			return fmt.Errorf("if '--%s' is used, cloud host must be set, using either '--cloud-host' or env var STEAMPIPE_CLOUD_HOST", argName)
-		}
+	// if neither share or snapshot are set, nothing to do
+	if !(share || snapshot) {
+		return nil
 	}
+
+	// so either share or snapshot arg is set - which?
+	argName := "share"
+	if snapshot {
+		argName = "snapshot"
+	}
+
+	// verify cloud token and workspace have been set
+	if viper.GetString(constants.ArgCloudToken) == "" {
+		return fmt.Errorf("if '--%s' is used, cloud token must be set, using either '--cloud-token' or env var STEAMPIPE_CLOUD_TOKEN", argName)
+	}
+	// is the snapshot workspace set?
+	if !viper.IsSet(constants.ArgWorkspace) {
+		// the share/snapshot command must have a value
+		snapshotWorkspace := viper.GetString(argName)
+		if snapshotWorkspace == constants.ArgShareNoOptDefault {
+			return fmt.Errorf("if '--%s' is used, workspace must be set, using '--workspace'", argName)
+		}
+		// set the workspace back on viper
+		viper.Set(constants.ArgWorkspace, snapshotWorkspace)
+	}
+
+	// should never happen as there is a default set
+	if viper.GetString(constants.ArgCloudHost) == "" {
+		return fmt.Errorf("if '--%s' is used, cloud host must be set, using either '--cloud-host' or env var STEAMPIPE_CLOUD_HOST", argName)
+	}
+
 	return validateSnapshotTags()
 }
 

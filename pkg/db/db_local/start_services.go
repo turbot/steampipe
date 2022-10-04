@@ -275,7 +275,7 @@ func resolvePassword() (string, error) {
 	// if a password was set through the `STEAMPIPE_DATABASE_PASSWORD` environment variable
 	// or through the `--database-password` cmdline flag, then use that for this session
 	// instead of the default one
-	if viper.IsSet(constants.ArgServicePassword) {
+	if viper.GetBool(constants.ArgServicePassword) {
 		password = viper.GetString(constants.ArgServicePassword)
 	}
 	return password, nil
@@ -501,7 +501,8 @@ func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 }
 
 // ensures that the 'steampipe' foreign server exists
-//  (re)install FDW and creates server if it doesn't
+//
+//	(re)install FDW and creates server if it doesn't
 func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
 	res := rootClient.QueryRowContext(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 	if res.Err() != nil {
