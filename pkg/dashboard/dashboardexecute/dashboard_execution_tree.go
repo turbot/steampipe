@@ -81,7 +81,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
 		}
 		return NewCheckRun(benchmark, e, e)
-	case modconfig.BlockTypeQuery, modconfig.BlockTypeControl:
+	case modconfig.BlockTypeQuery:
 		// wrap in a table
 		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
 		if !ok {
@@ -89,6 +89,18 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		}
 		// wrap this in a chart and a dashboard
 		dashboard, err := modconfig.NewQueryDashboard(query)
+		if err != nil {
+			return nil, err
+		}
+		return NewDashboardRun(dashboard, e, e)
+	case modconfig.BlockTypeControl:
+		// wrap in a table
+		control, ok := e.workspace.GetResourceMaps().Controls[rootName]
+		if !ok {
+			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
+		}
+		// wrap this in a chart and a dashboard
+		dashboard, err := modconfig.NewQueryDashboard(control)
 		if err != nil {
 			return nil, err
 		}

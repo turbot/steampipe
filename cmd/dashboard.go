@@ -212,7 +212,7 @@ func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 		}
 	}
 
-	validOutputFormats := []string{constants.OutputFormatSnapshot}
+	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatNone}
 	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
 		return "", fmt.Errorf("invalid output format, supported format: '%s'", constants.OutputFormatSnapshot)
 	}

@@ -148,7 +148,7 @@ func validateQueryArgs(cmd *cobra.Command) error {
 		return err
 	}
 
-	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot}
+	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatNone}
 	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
 		return fmt.Errorf("invalid output format, must be one of %s", strings.Join(validOutputFormats, ","))
 	}
