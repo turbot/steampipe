@@ -35,7 +35,7 @@ func MergeMaps[M ~map[K]V, K comparable, V any](old, new M) M {
 	}
 	res := maps.Clone(old)
 	for k, v := range new {
-		if _, ok := old[k]; ok {
+		if _, ok := old[k]; !ok {
 			res[k] = v
 		}
 	}

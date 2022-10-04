@@ -414,6 +414,9 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, runCtx *RunContext) (modconfig.
 
 		for _, category := range categories {
 			edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory))
+			// call OnDecoded for category
+			moreDiags := category.OnDecoded(block, runCtx)
+			res.addDiags(moreDiags)
 		}
 	}
 
