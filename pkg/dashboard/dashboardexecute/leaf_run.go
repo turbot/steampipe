@@ -170,6 +170,10 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	if len(r.children) > 0 {
 		r.executeChildren(ctx)
 	} else {
+		if r.executeSQL == "" {
+			r.SetError(ctx, fmt.Errorf("%s does not define query, SQL or nodes/edges", r.DashboardNode.Name()))
+			return
+		}
 		r.executeQuery(ctx)
 	}
 }
