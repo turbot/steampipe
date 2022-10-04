@@ -130,14 +130,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	case snapshotRequired():
 		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
 		// as a dashboard
-
-		// if display is not explicitly set, set to none
-		if !cmdconfig.FlagSetByUser(cmd, constants.ArgOutput) {
-			viper.Set(constants.ArgOutput, constants.OutputFormatNone)
-		}
-
 		exitCode = executeSnapshotQuery(initData, w, ctx)
-
 	default:
 		// NOTE: disable any status updates - we do not want 'loading' output from any queries
 		ctx = statushooks.DisableStatusHooks(ctx)
@@ -149,7 +142,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 }
 
 func validateQueryArgs(cmd *cobra.Command) error {
-	err := validateSnapshotArgs()
+	err := validateCloudArgs()
 	if err != nil {
 		return err
 	}
@@ -157,14 +150,6 @@ func validateQueryArgs(cmd *cobra.Command) error {
 	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot}
 	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
 		return fmt.Errorf("invalid output format, must be one of %s", strings.Join(validOutputFormats, ","))
-	}
-
-	// if workspace-database has not been explicitly set, check whether workspace has been set
-	// and if so use that
-	if !cmdconfig.FlagSetByUser(cmd, constants.ArgWorkspaceDatabase) {
-		if w := viper.GetString(constants.ArgWorkspace); w != "" {
-			viper.Set(constants.ArgWorkspace, w)
-		}
 	}
 
 	return nil

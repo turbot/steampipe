@@ -219,7 +219,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 
-	if err := validateSnapshotArgs(); err != nil {
+	if err := validateCloudArgs(); err != nil {
 		utils.ShowError(ctx, err)
 		return false
 	}
