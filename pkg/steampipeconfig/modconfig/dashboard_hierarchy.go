@@ -23,9 +23,11 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes      DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
-	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
-	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
+	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
+	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
+	// categories may be specified as a set of category blocks and/or as a list of references
+	CategoryList []*DashboardCategory          `cty:"categories" hcl:"categories" json:"categories"`
+	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -82,6 +84,12 @@ func (h *DashboardHierarchy) Name() string {
 func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	h.setBaseProperties(resourceMapProvider)
 
+	// add categories from CategoryList into Categories (enriching from ModResourcesProvider)
+	if diags := addEnrichedCategories(h.CategoryList, h, resourceMapProvider); diags.HasErrors() {
+		return diags
+	}
+
+	// populate nodes and edges
 	return initialiseEdgesAndNodes(h, resourceMapProvider)
 }
 
@@ -269,7 +277,7 @@ func (h *DashboardHierarchy) GetEdges() DashboardEdgeList {
 	return h.Edges
 }
 
-// GetNodes implements NodeAndNodeProvider
+// GetNodes implements EdgeAndNodeProvider
 func (h *DashboardHierarchy) GetNodes() DashboardNodeList {
 	return h.Nodes
 }
@@ -279,12 +287,12 @@ func (h *DashboardHierarchy) SetEdges(edges DashboardEdgeList) {
 	h.Edges = edges
 }
 
-// SetNodes implements NodeAndNodeProvider
+// SetNodes implements EdgeAndNodeProvider
 func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
 	h.Nodes = nodes
 }
 
-// AddCategory implements NodeAndNodeProvider
+// AddCategory implements EdgeAndNodeProvider
 func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) {
 	h.Categories[category.Name()] = category
 }

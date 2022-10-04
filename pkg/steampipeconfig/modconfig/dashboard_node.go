@@ -21,7 +21,7 @@ type DashboardNode struct {
 	ShortName       string   `json:"-"`
 	UnqualifiedName string   `json:"-"`
 
-	Category *DashboardCategory `cty:"category" hcl:"category" column:"category,jsonb" json:"-"`
+	Category *DashboardCategory `cty:"category" column:"category,jsonb" json:"-"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -78,20 +78,10 @@ func (n *DashboardNode) OnDecoded(_ *hcl.Block, resourceMapProvider ModResources
 	// when we reference resources (i.e. category),
 	// not all properties are retrieved as they are no cty serialisable
 	// repopulate category from resourceMapProvider
-	return n.initialiseCategory(resourceMapProvider)
-}
-
-func (n *DashboardNode) initialiseCategory(resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	if n.Category != nil {
-		resourceMaps := resourceMapProvider.GetResourceMaps()
-		fullCategory, ok := resourceMaps.DashboardCategories[n.Category.Name()]
-		if !ok {
-			return hcl.Diagnostics{&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s contains edge %s but this has not been loaded", n.Name(), n.Category.Name()),
-				Subject:  n.GetDeclRange(),
-			},
-			}
+		fullCategory, diags := enrichCategory(n.Category, n, resourceMapProvider)
+		if diags.HasErrors() {
+			return diags
 		}
 		n.Category = fullCategory
 	}

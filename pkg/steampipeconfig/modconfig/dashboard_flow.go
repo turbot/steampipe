@@ -22,9 +22,11 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes      DashboardNodeList             `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
-	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
-	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
+	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
+	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
+	// categories may be specified as a set of category blocks and/or as a list of references
+	CategoryList []*DashboardCategory          `cty:"categories" hcl:"categories" json:"categories"`
+	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -81,7 +83,13 @@ func (f *DashboardFlow) Name() string {
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	f.setBaseProperties(resourceMapProvider)
 
-	return nil
+	// add categories from CategoryList into Categories (enriching from ModResourcesProvider)
+	if diags := addEnrichedCategories(f.CategoryList, f, resourceMapProvider); diags.HasErrors() {
+		return diags
+	}
+
+	// populate nodes and edges
+	return initialiseEdgesAndNodes(f, resourceMapProvider)
 }
 
 // AddReference implements HclResource
@@ -268,7 +276,7 @@ func (f *DashboardFlow) GetEdges() DashboardEdgeList {
 	return f.Edges
 }
 
-// GetNodes implements NodeAndNodeProvider
+// GetNodes implements EdgeAndNodeProvider
 func (f *DashboardFlow) GetNodes() DashboardNodeList {
 	return f.Nodes
 }
@@ -278,12 +286,12 @@ func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
 	f.Edges = edges
 }
 
-// SetNodes implements NodeAndNodeProvider
+// SetNodes implements EdgeAndNodeProvider
 func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 	f.Nodes = nodes
 }
 
-// AddCategory implements NodeAndNodeProvider
+// AddCategory implements EdgeAndNodeProvider
 func (f *DashboardFlow) AddCategory(category *DashboardCategory) {
 	f.Categories[category.Name()] = category
 }

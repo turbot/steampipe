@@ -283,7 +283,8 @@ var EdgeAndNodeProviderBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
-			Type: "category",
+			Type:       "category",
+			LabelNames: []string{"name"},
 		},
 	},
 }
