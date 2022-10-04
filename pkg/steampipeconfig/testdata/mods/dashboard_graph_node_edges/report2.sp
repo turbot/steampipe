@@ -21,15 +21,15 @@ dashboard "aws_ec2_instance_detail" {
       edges = [
         edge.aws_ec2_instance_to_ebs_volume_edge
       ]
-
-      category  {
+      categories = [category.aws_ebs_volume]
+      category "c1" {
         href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
         fold {
           title     = "EC2 Classic Load Balancers"
           threshold = 3
         }
       }
-      category  {
+      category "c1" {
         href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
         fold {
           title     = "EC2 Classic Load Balancers"
@@ -91,8 +91,6 @@ node "aws_ec2_instance_node" {
 
 
 node "aws_ec2_instance_ebs_volume_node" {
-  category = category.aws_ebs_volume
-
   sql = <<-EOQ
     select
       bd -> 'Ebs' ->> 'VolumeId' as id,
