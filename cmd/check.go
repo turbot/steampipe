@@ -120,11 +120,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// if progress is disabled, update context to contain a null status hooks object
-	if !viper.GetBool(constants.ArgProgress) {
-		statushooks.DisableStatusHooks(ctx)
-	}
-
 	// initialise
 	initData = initialiseCheck(ctx)
 	error_helpers.FailOnError(initData.Result.Error)
