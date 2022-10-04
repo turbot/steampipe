@@ -22,13 +22,6 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 			Subject:  p.GetDeclRange(),
 		}}
 	}
-	if !providerDefinesQuery && !providerContainsEdgesOrNodes {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s must define edges/nodes a a query/SQL", p.Name()),
-			Subject:  p.GetDeclRange(),
-		}}
-	}
 
 	// when we reference resources (i.e. nodes/edges),
 	// not all properties are retrieved as they are no cty serialisable
