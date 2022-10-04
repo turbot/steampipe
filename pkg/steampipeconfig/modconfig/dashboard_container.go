@@ -136,6 +136,11 @@ func (c *DashboardContainer) GetPaths() []NodePath {
 	return c.Paths
 }
 
+// GetDocumentation implement ModTreeItem
+func (*DashboardContainer) GetDocumentation() string {
+	return ""
+}
+
 // SetPaths implements ModTreeItem
 func (c *DashboardContainer) SetPaths() {
 	for _, parent := range c.parents {

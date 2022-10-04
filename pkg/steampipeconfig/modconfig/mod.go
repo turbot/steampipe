@@ -226,6 +226,11 @@ func (m *Mod) GetPaths() []NodePath {
 // SetPaths implements ModTreeItem
 func (m *Mod) SetPaths() {}
 
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
+func (m *Mod) GetDocumentation() string {
+	return typehelpers.SafeString(m.Documentation)
+}
+
 // CtyValue implements HclResource
 func (m *Mod) CtyValue() (cty.Value, error) {
 	return getCtyValue(m)

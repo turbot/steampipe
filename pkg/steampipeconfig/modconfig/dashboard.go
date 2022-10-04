@@ -67,47 +67,30 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 
 // NewQueryDashboard creates a dashboard to wrap a query/control
 // this is used for snapshot generation
-func NewQueryDashboard(queryProvider HclResource) (*Dashboard, error) {
-	// TODO simplify
-	var dashboard *Dashboard
-	switch q := queryProvider.(type) {
-	case *Control:
-		dashboard = &Dashboard{
-			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
-			ShortName:                q.ShortName,
-			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "dashboard", q.ShortName),
-			UnqualifiedName:          fmt.Sprintf("%s.%s", "dashboard", q.ShortName),
-			Title:                    q.Title,
-			Description:              q.Description,
-			Documentation:            q.Documentation,
-			Tags:                     q.Tags,
-			References:               q.References,
-			Mod:                      q.Mod,
-			DeclRange:                q.DeclRange,
-		}
-	case *Query:
+func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
+	parsedName, err := ParseResourceName(q.Name())
+	if err != nil {
+		return nil, err
+	}
+	dashboardName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeDashboard, parsedName.Name)
 
-		dashboard = &Dashboard{
-			ResourceWithMetadataBase: q.ResourceWithMetadataBase,
-			ShortName:                q.ShortName,
-			FullName:                 fmt.Sprintf("%s.%s.%s", q.Mod.ShortName, "dashboard", q.ShortName),
-			UnqualifiedName:          fmt.Sprintf("%s.%s", "dashboard", q.ShortName),
-			Title:                    q.Title,
-			Description:              q.Description,
-			Documentation:            q.Documentation,
-			Tags:                     q.Tags,
-			References:               q.References,
-			Mod:                      q.Mod,
-			DeclRange:                q.DeclRange,
-		}
-	default:
-
-		return nil, fmt.Errorf("NewQueryDashboard expects either a Control or a Query")
+	var dashboard = &Dashboard{
+		ResourceWithMetadataBase: ResourceWithMetadataBase{
+			metadata: &ResourceMetadata{},
+		},
+		ShortName:       parsedName.Name,
+		FullName:        dashboardName,
+		UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
+		Title:           utils.ToStringPointer(q.GetTitle()),
+		Description:     utils.ToStringPointer(q.GetDescription()),
+		Documentation:   utils.ToStringPointer(q.GetDocumentation()),
+		Tags:            q.GetTags(),
+		Mod:             q.GetMod(),
 	}
 
 	dashboard.setUrlPath()
 
-	chart, err := NewQueryDashboardTable(queryProvider)
+	chart, err := NewQueryDashboardTable(q)
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +197,11 @@ func (d *Dashboard) SetPaths() {
 			d.Paths = append(d.Paths, append(parentPath, d.Name()))
 		}
 	}
+}
+
+// GetDocumentation implement ModTreeItem
+func (d *Dashboard) GetDocumentation() string {
+	return typehelpers.SafeString(d.Documentation)
 }
 
 func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {

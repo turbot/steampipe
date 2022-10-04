@@ -178,6 +178,11 @@ func (v *Variable) SetPaths() {
 	}
 }
 
+// GetDocumentation implement ModTreeItem
+func (*Variable) GetDocumentation() string {
+	return ""
+}
+
 func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
 		Item: v,

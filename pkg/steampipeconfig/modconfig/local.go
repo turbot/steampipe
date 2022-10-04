@@ -123,6 +123,11 @@ func (l *Local) SetPaths() {
 	}
 }
 
+// GetDocumentation implement ModTreeItem
+func (*Local) GetDocumentation() string {
+	return ""
+}
+
 func (l *Local) Diff(other *Local) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
 		Item: l,

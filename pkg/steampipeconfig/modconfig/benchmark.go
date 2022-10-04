@@ -231,7 +231,7 @@ func (b *Benchmark) GetDisplay() string {
 	return typehelpers.SafeString(b.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (b *Benchmark) GetDocumentation() string {
 	return typehelpers.SafeString(b.Documentation)
 }

@@ -334,7 +334,7 @@ func (c *Control) GetDisplay() string {
 	return ""
 }
 
-// GetDocumentation implements DashboardLeafNode
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (c *Control) GetDocumentation() string {
 	return typehelpers.SafeString(c.Documentation)
 }
