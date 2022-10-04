@@ -65,9 +65,10 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 	return c
 }
 
-// TODO simplify
+// NewQueryDashboard creates a dashboard to wrap a query/control
+// this is used for snapshot generation
 func NewQueryDashboard(queryProvider HclResource) (*Dashboard, error) {
-
+	// TODO simplify
 	var dashboard *Dashboard
 	switch q := queryProvider.(type) {
 	case *Control:
