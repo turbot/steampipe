@@ -558,6 +558,14 @@ function reducer(state, action) {
         return state;
       }
 
+      // Migrate from old format
+      if (!action.snapshot) {
+        const { action: eventAction, dashboard_node, ...rest } = action;
+        action.snapshot = {
+          ...rest,
+        };
+      }
+
       const layout = action.snapshot.layout;
       const panels = action.snapshot.panels;
       const rootLayoutPanel = action.snapshot.layout;
