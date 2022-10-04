@@ -6,6 +6,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/initialisation"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -81,6 +82,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	i.cancelInitialisation = cancel
 	i.Queries = queries
 	i.PreparedStatementSource = preparedStatementSource
-	// now call base init
+	// now disable status hooks and call base init
+	ctx = statushooks.DisableStatusHooks(ctx)
 	i.InitData.Init(ctx)
 }
