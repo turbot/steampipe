@@ -1,9 +1,9 @@
 [<picture><source media="(prefers-color-scheme: dark)" srcset="https://cloud.steampipe.io/images/steampipe-logo-wordmark-white.svg"><source media="(prefers-color-scheme: light)" srcset="https://cloud.steampipe.io/images/steampipe-logo-wordmark-color.svg"><img width="67%" alt="Steampipe Logo" src="https://cloud.steampipe.io/images/steampipe-logo-wordmark-color.svg"></picture>](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-[![plugins](https://img.shields.io/badge/apis_supported-84-blue)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; 
-[![benchmarks](https://img.shields.io/badge/controls-3055-blue)](https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
-[![dashboards](https://img.shields.io/badge/dashboards-511-blue)](https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
-[![slack](https://img.shields.io/badge/slack-900-blue)](https://steampipe.io/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![plugins](https://img.shields.io/badge/apis_supported-86-blue)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; 
+[![benchmarks](https://img.shields.io/badge/controls-3124-blue)](https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![dashboards](https://img.shields.io/badge/dashboards-512-blue)](https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![slack](https://img.shields.io/badge/slack-1027-blue)](https://steampipe.io/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-blue)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
 Steampipe is the universal interface to APIs. Use SQL to query cloud infrastructure, SaaS, code, logs, and more. 
@@ -17,7 +17,7 @@ With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_med
 - **Visualize** → View [prebuilt dashboards](https://steampipe.io/docs/dashboard/overview?objectives=dashboard&utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or [build your own](https://steampipe.io/docs/mods/writing-dashboards?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
  
 
-## Steampipe CLI - The SQL console for API queries
+## Steampipe CLI: The SQL console for API queries
 
 The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. 
 
@@ -147,9 +147,10 @@ where
  
  </details>
   
-## Steampipe Mods - Benchmarks & dashboards
+## Steampipe Mods: Dashboards and benchmarks
 
-The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of **benchmarks** that check your cloud resources for compliance, and **dashboards** that visualize your resources.
+The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of **dashboards** that visualize your resources and **benchmarks** that check your cloud resources for compliance.
+
 <table>
   <tr>
    <td><b>Compliance</b></td>
@@ -206,20 +207,13 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
 -->
 
 
-### The CIS 1.4 benchmark in `AWS Compliance`
+### Running dashboards and benchmarks
 
-![gh-readme-cis-benchmark-in-dashboard](https://user-images.githubusercontent.com/46509/186024940-7ae9f42f-241b-44a7-84d6-244f5d488e1f.gif)
+![benchmarks-and-dashboards](https://user-images.githubusercontent.com/46509/193875366-7d10ca8b-601a-4d93-a333-5c62ea86374b.gif)
  
-### The AWS EC2 Instance dashboard in `AWS Insights`
- 
- ![aws-ec2-dashboard-in-cloud](https://user-images.githubusercontent.com/46509/186023273-d2be66c9-c050-4576-a46b-ed3f82f2e14a.jpg)
+Dashboards and benchmarks use SQL to gather data and HCL to flow the data into [dashboard widgets](https://steampipe.io/blog/dashboards-as-code?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [benchmark controls](https://steampipe.io/blog/release-0-11-0?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#composable-mods). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own. 
 
- 
- </details>
- 
-
-Benchmarks and dashboards use SQL to gather data and HCL to flow the data into [benchmark controls](https://steampipe.io/blog/release-0-11-0?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#composable-mods) and  [dashboard widgets](https://steampipe.io/blog/dashboards-as-code?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own. 
-### Get started with benchmarks and dashboards
+### Get started with dashboards and benchmarks
 
 <details>
 <summary>Install the Net Insights mod</summary>
@@ -269,7 +263,7 @@ Note that the default domains are `microsoft.com` and `github.com`. You can <a h
 </details>
 
 <details>
-<summary>Explore your resources</summary>
+<summary>Use dashboards to explore your resources</summary>
 <br/>
 Dashboards use charts, tables, and interactive <a href="https://steampipe.io/docs/reference/mod-resources/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#dashboards">widgets</a> to help you explore and visualize your resources. 
 
