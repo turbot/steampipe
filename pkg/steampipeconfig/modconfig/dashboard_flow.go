@@ -25,7 +25,7 @@ type DashboardFlow struct {
 	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
 	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
 	// categories may be specified as a set of category blocks and/or as a list of references
-	CategoryList []*DashboardCategory          `cty:"categories" hcl:"categories" json:"categories"`
+	CategoryList []*DashboardCategory          `cty:"categories" hcl:"categories,optional" json:"categories"`
 	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
