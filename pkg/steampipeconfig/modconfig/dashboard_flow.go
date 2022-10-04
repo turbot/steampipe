@@ -286,7 +286,7 @@ func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 
 // AddCategory implements EdgeAndNodeProvider
 func (f *DashboardFlow) AddCategory(category *DashboardCategory) {
-	f.Categories[category.Name()] = category
+	f.Categories[category.ShortName] = category
 }
 
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvider) {

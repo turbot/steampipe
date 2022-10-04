@@ -287,7 +287,7 @@ func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
 
 // AddCategory implements EdgeAndNodeProvider
 func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) {
-	h.Categories[category.Name()] = category
+	h.Categories[category.ShortName] = category
 }
 
 func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesProvider) {
