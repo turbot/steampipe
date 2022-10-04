@@ -23,11 +23,10 @@ type DashboardGraph struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes        DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
-	Edges        DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
-	CategoryList []*DashboardCategory          `cty:"categories" hcl:"categories,optional" json:"categories"`
-	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
-	Direction    *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
+	Nodes      DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
+	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
+	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
+	Direction  *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -83,11 +82,6 @@ func (g *DashboardGraph) Name() string {
 // OnDecoded implements HclResource
 func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	g.setBaseProperties(resourceMapProvider)
-
-	// add categories from CategoryList into Categories (enriching from ModResourcesProvider)
-	if diags := addEnrichedCategories(g.CategoryList, g, resourceMapProvider); diags.HasErrors() {
-		return diags
-	}
 
 	// populate nodes and edges
 	return initialiseEdgesAndNodes(g, resourceMapProvider)

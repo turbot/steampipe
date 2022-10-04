@@ -22,11 +22,9 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
-	// categories may be specified as a set of category blocks and/or as a list of references
-	CategoryList []*DashboardCategory          `cty:"categories" hcl:"categories,optional" json:"categories"`
-	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
+	Nodes      DashboardNodeList             `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
+	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
+	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -82,11 +80,6 @@ func (f *DashboardFlow) Name() string {
 // OnDecoded implements HclResource
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	f.setBaseProperties(resourceMapProvider)
-
-	// add categories from CategoryList into Categories (enriching from ModResourcesProvider)
-	if diags := addEnrichedCategories(f.CategoryList, f, resourceMapProvider); diags.HasErrors() {
-		return diags
-	}
 
 	// populate nodes and edges
 	return initialiseEdgesAndNodes(f, resourceMapProvider)
