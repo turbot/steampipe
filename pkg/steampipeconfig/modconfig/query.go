@@ -304,6 +304,11 @@ func (q *Query) SetPaths() {
 	}
 }
 
+// GetDocumentation implement ModTreeItem
+func (q *Query) GetDocumentation() string {
+	return typehelpers.SafeString(q.Documentation)
+}
+
 func (q *Query) Diff(other *Query) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
 		Item: q,

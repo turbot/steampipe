@@ -28,6 +28,7 @@ type (
 		GetUnqualifiedName() string
 		GetTitle() string
 		GetDescription() string
+		GetDocumentation() string
 		GetTags() map[string]string
 		// GetPaths returns an array resource paths
 		GetPaths() []NodePath
