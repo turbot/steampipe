@@ -292,7 +292,7 @@ func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
 
 // AddCategory implements EdgeAndNodeProvider
 func (g *DashboardGraph) AddCategory(category *DashboardCategory) {
-	g.Categories[category.Name()] = category
+	g.Categories[category.ShortName] = category
 }
 
 func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvider) {
