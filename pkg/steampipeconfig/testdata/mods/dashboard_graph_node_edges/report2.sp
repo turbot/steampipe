@@ -22,6 +22,14 @@ dashboard "aws_ec2_instance_detail" {
         edge.aws_ec2_instance_to_ebs_volume_edge
       ]
 
+      category  {
+        href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
+        fold {
+          title     = "EC2 Classic Load Balancers"
+          threshold = 3
+        }
+      }
+
       param "instance_id" {}
       args = {
         instance_id = self.input.instance_id.value

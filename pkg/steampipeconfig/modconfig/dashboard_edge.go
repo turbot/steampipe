@@ -76,6 +76,26 @@ func (e *DashboardEdge) Name() string {
 func (e *DashboardEdge) OnDecoded(_ *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	e.setBaseProperties(resourceMapProvider)
 
+	// when we reference resources (i.e. category),
+	// not all properties are retrieved as they are no cty serialisable
+	// repopulate category from resourceMapProvider
+	return e.initialiseCategory(resourceMapProvider)
+}
+
+func (e *DashboardEdge) initialiseCategory(resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+	if e.Category != nil {
+		resourceMaps := resourceMapProvider.GetResourceMaps()
+		fullCategory, ok := resourceMaps.DashboardCategories[e.Category.Name()]
+		if !ok {
+			return hcl.Diagnostics{&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("%s contains edge %s but this has not been loaded", e.Name(), e.Category.Name()),
+				Subject:  e.GetDeclRange(),
+			},
+			}
+		}
+		e.Category = fullCategory
+	}
 	return nil
 }
 

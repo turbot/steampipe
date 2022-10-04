@@ -25,7 +25,7 @@ type DashboardHierarchy struct {
 
 	Nodes        DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
 	Edges        DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
-	CategoryList DashboardCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
+	CategoryList DashboardCategoryList         `cty:"category_list"  column:"category,jsonb" json:"-"`
 	Categories   map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun

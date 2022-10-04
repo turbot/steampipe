@@ -273,6 +273,20 @@ var QueryProviderBlockSchema = &hcl.BodySchema{
 		},
 	},
 }
+var EdgeAndNodeProviderBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "args"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "param",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type: "category",
+		},
+	},
+}
 
 var ParamDefBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{

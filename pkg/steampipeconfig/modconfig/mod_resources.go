@@ -30,6 +30,7 @@ type ModResources struct {
 	DashboardTexts        map[string]*DashboardText
 	DashboardNodes        map[string]*DashboardNode
 	DashboardEdges        map[string]*DashboardEdge
+	DashboardCategories   map[string]*DashboardCategory
 	References            map[string]*ResourceReference
 
 	Locals          map[string]*Local
@@ -61,6 +62,7 @@ func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 		DashboardTexts:        make(map[string]*DashboardText),
 		DashboardNodes:        make(map[string]*DashboardNode),
 		DashboardEdges:        make(map[string]*DashboardEdge),
+		DashboardCategories:   make(map[string]*DashboardCategory),
 		References:            make(map[string]*ResourceReference),
 		LocalQueries:          make(map[string]*Query),
 		LocalControls:         make(map[string]*Control),
@@ -129,6 +131,7 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 		res[idx] = p
 		idx++
 	}
+
 	for _, p := range m.DashboardNodes {
 		res[idx] = p
 		idx++
@@ -304,6 +307,11 @@ func (m *ModResources) Equals(other *ModResources) bool {
 			return false
 		}
 	}
+	for name := range other.DashboardCategories {
+		if _, ok := m.DashboardCategories[name]; !ok {
+			return false
+		}
+	}
 
 	for name, images := range m.DashboardImages {
 		if otherImage, ok := other.DashboardImages[name]; !ok {
@@ -437,6 +445,7 @@ func (m *ModResources) Empty() bool {
 		len(m.DashboardHierarchies)+
 		len(m.DashboardNodes)+
 		len(m.DashboardEdges)+
+		len(m.DashboardCategories)+
 		len(m.DashboardImages)+
 		len(m.DashboardInputs)+
 		len(m.DashboardTables)+
@@ -517,6 +526,11 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 		}
 	}
 	for _, r := range m.DashboardEdges {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardCategories {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -666,6 +680,13 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.DashboardEdges[name] = r
+	case *DashboardCategory:
+		name := r.Name()
+		if existing, ok := m.DashboardCategories[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardCategories[name] = r
 
 	case *DashboardImage:
 		name := r.Name()
@@ -796,6 +817,9 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		}
 		for k, v := range source.DashboardEdges {
 			res.DashboardEdges[k] = v
+		}
+		for k, v := range source.DashboardCategories {
+			res.DashboardCategories[k] = v
 		}
 		for k, v := range source.DashboardImages {
 			res.DashboardImages[k] = v
