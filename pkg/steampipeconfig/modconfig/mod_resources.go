@@ -10,63 +10,65 @@ import (
 type ModResources struct {
 	// the parent mod
 	Mod *Mod
+
 	// all mods (including deps)
-	Mods                  map[string]*Mod
-	Queries               map[string]*Query
-	Controls              map[string]*Control
 	Benchmarks            map[string]*Benchmark
-	Variables             map[string]*Variable
+	Controls              map[string]*Control
 	Dashboards            map[string]*Dashboard
-	DashboardContainers   map[string]*DashboardContainer
+	DashboardCategories   map[string]*DashboardCategory
 	DashboardCards        map[string]*DashboardCard
 	DashboardCharts       map[string]*DashboardChart
+	DashboardContainers   map[string]*DashboardContainer
+	DashboardEdges        map[string]*DashboardEdge
 	DashboardFlows        map[string]*DashboardFlow
 	DashboardGraphs       map[string]*DashboardGraph
 	DashboardHierarchies  map[string]*DashboardHierarchy
 	DashboardImages       map[string]*DashboardImage
 	DashboardInputs       map[string]map[string]*DashboardInput
-	GlobalDashboardInputs map[string]*DashboardInput
 	DashboardTables       map[string]*DashboardTable
 	DashboardTexts        map[string]*DashboardText
 	DashboardNodes        map[string]*DashboardNode
-	DashboardEdges        map[string]*DashboardEdge
-	DashboardCategories   map[string]*DashboardCategory
-	References            map[string]*ResourceReference
-
+	GlobalDashboardInputs map[string]*DashboardInput
 	Locals          map[string]*Local
 	LocalQueries    map[string]*Query
 	LocalControls   map[string]*Control
 	LocalBenchmarks map[string]*Benchmark
+	Mods                  map[string]*Mod
+	Queries               map[string]*Query
+	Variables             map[string]*Variable
+	References            map[string]*ResourceReference
+
 }
 
 func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 	return &ModResources{
 		Mod:                   mod,
-		Mods:                  map[string]*Mod{mod.Name(): mod},
-		Queries:               make(map[string]*Query),
 		Controls:              make(map[string]*Control),
 		Benchmarks:            make(map[string]*Benchmark),
-		Locals:                make(map[string]*Local),
-		Variables:             make(map[string]*Variable),
 		Dashboards:            make(map[string]*Dashboard),
-		DashboardContainers:   make(map[string]*DashboardContainer),
 		DashboardCards:        make(map[string]*DashboardCard),
 		DashboardCharts:       make(map[string]*DashboardChart),
+		DashboardContainers:   make(map[string]*DashboardContainer),
+		DashboardEdges:        make(map[string]*DashboardEdge),
 		DashboardFlows:        make(map[string]*DashboardFlow),
 		DashboardGraphs:       make(map[string]*DashboardGraph),
 		DashboardHierarchies:  make(map[string]*DashboardHierarchy),
 		DashboardImages:       make(map[string]*DashboardImage),
 		DashboardInputs:       make(map[string]map[string]*DashboardInput),
-		GlobalDashboardInputs: make(map[string]*DashboardInput),
 		DashboardTables:       make(map[string]*DashboardTable),
 		DashboardTexts:        make(map[string]*DashboardText),
 		DashboardNodes:        make(map[string]*DashboardNode),
-		DashboardEdges:        make(map[string]*DashboardEdge),
 		DashboardCategories:   make(map[string]*DashboardCategory),
-		References:            make(map[string]*ResourceReference),
+		GlobalDashboardInputs: make(map[string]*DashboardInput),
+		Locals:                make(map[string]*Local),
 		LocalQueries:          make(map[string]*Query),
 		LocalControls:         make(map[string]*Control),
 		LocalBenchmarks:       make(map[string]*Benchmark),
+		Mods:                  map[string]*Mod{mod.Name(): mod},
+		Queries:               make(map[string]*Query),
+		References:            make(map[string]*ResourceReference),
+		Variables:             make(map[string]*Variable),
+
 	}
 }
 
@@ -154,6 +156,7 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 }
 
 func (m *ModResources) Equals(other *ModResources) bool {
+	//TODO use cmp.Equals or similar
 	if other == nil {
 		return false
 	}
