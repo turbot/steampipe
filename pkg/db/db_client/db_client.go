@@ -175,7 +175,6 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	// wait for any pending inits to finish
 	c.sessionInitWaitGroup.Wait()
 
-	// TODO kai think about this - will this solve all our file watching issues?
 	// close the connection pool and recreate
 	c.pool.Close()
 	if err := c.establishConnectionPool(ctx); err != nil {

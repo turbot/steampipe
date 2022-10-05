@@ -126,7 +126,9 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(initData.Result.Error)
 
 	// if there is a usage warning we display it
-	initData.Result.DisplayMessages(dashboardserver.OutputWait)
+	initData.Result.DisplayMessage = dashboardserver.OutputMessage
+	initData.Result.DisplayWarning = dashboardserver.OutputWarning
+	initData.Result.DisplayMessages()
 
 	// create the server
 	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)

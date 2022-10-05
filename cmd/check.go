@@ -124,7 +124,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	initData = initialiseCheck(ctx)
 	error_helpers.FailOnError(initData.Result.Error)
 	// if there is a usage warning we display it
-	initData.Result.DisplayMessages(nil)
+	initData.Result.DisplayMessages()
 
 	// pull out useful properties
 	workspace := initData.Workspace

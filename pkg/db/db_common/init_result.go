@@ -13,6 +13,10 @@ type InitResult struct {
 	Error    error
 	Warnings []string
 	Messages []string
+
+	// allow overriding of the display functions
+	DisplayMessage func(ctx context.Context, m string)
+	DisplayWarning func(ctx context.Context, w string)
 }
 
 func (r *InitResult) AddMessage(message string) {
@@ -27,19 +31,16 @@ func (r *InitResult) HasMessages() bool {
 	return len(r.Warnings)+len(r.Messages) > 0
 }
 
-func (r *InitResult) DisplayMessages(displayFuncs ...func(ctx context.Context, msg string)) {
-	displayMessage := func(ctx context.Context, m string) {
-		fmt.Println(m)
+func (r *InitResult) DisplayMessages() {
+	if r.DisplayWarning == nil {
+		r.DisplayMessage = func(ctx context.Context, m string) {
+			fmt.Println(m)
+		}
 	}
-	displayWarning := func(ctx context.Context, w string) {
-		error_helpers.ShowWarning(w)
-	}
-
-	if len(displayFuncs) >= 1 {
-		displayMessage = displayFuncs[0]
-	}
-	if len(displayFuncs) >= 2 {
-		displayWarning = displayFuncs[1]
+	if r.DisplayWarning == nil {
+		r.DisplayWarning = func(ctx context.Context, w string) {
+			error_helpers.ShowWarning(w)
+		}
 	}
 	// do not display message in json or csv output mode
 	output := viper.Get(constants.ArgOutput)
@@ -47,10 +48,10 @@ func (r *InitResult) DisplayMessages(displayFuncs ...func(ctx context.Context, m
 		return
 	}
 	for _, w := range r.Warnings {
-		displayWarning(context.Background(), w)
+		r.DisplayWarning(context.Background(), w)
 	}
 	for _, m := range r.Messages {
-		displayMessage(context.Background(), m)
+		r.DisplayMessage(context.Background(), m)
 	}
 }
 

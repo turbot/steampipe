@@ -119,8 +119,6 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
 
-	// TODO KAI is FDW message working in interactive - does it rerender prompt??
-
 	// add a message rendering function to the context - this is used for the fdw update message and
 	// allows us to render it as a standard initialisation message
 	getClientCtx := statushooks.AddMessageRendererToContext(ctx, func(format string, a ...any) {

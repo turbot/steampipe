@@ -217,7 +217,7 @@ func prepareDb(ctx context.Context) error {
 		// get the message renderer from the context
 		// this allows the interactive client init to inject a custom renderer
 		messageRenderer := statushooks.MessageRendererFromContext(ctx)
-		messageRenderer("%s was updated to %s.\n", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+		messageRenderer("%s was updated to %s.", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
 	}
 
 	if needsInit() {

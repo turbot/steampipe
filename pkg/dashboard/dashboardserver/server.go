@@ -101,7 +101,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			return
 		}
 		_ = s.webSocket.Broadcast(payload)
-		outputError(s.context, e.Error)
+		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
 		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
@@ -120,7 +120,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		}
 
 		s.writePayloadToSession(e.Session, payload)
-		outputError(s.context, e.Error)
+		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)

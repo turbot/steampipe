@@ -35,7 +35,7 @@ func GenerateSnapshot(ctx context.Context, target string, inputs map[string]inte
 	}
 
 	// if there is a usage warning we display it
-	initData.Result.DisplayMessages(nil)
+	initData.Result.DisplayMessages()
 
 	sessionId := "generateSnapshot"
 

@@ -50,7 +50,11 @@ func OutputMessage(ctx context.Context, msg string) {
 	output(ctx, applyColor(messagePrefix, color.HiGreenString), msg)
 }
 
-func outputError(ctx context.Context, err error) {
+func OutputWarning(ctx context.Context, msg string) {
+	output(ctx, applyColor(messagePrefix, color.RedString), msg)
+}
+
+func OutputError(ctx context.Context, err error) {
 	output(ctx, applyColor(errorPrefix, color.RedString), err)
 }
 

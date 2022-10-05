@@ -2,6 +2,7 @@ package initialisation
 
 import (
 	"context"
+	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
@@ -80,7 +81,13 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, invoker constants.
 
 	// get a client
 	statushooks.SetStatus(ctx, "Connecting to service...")
-	client, err := GetDbClient(ctx, invoker, ensureSessionData)
+	// add a message rendering function to the context - this is used for the fdw update message and
+	// allows us to render it as a standard initialisation message
+	getClientCtx := statushooks.AddMessageRendererToContext(ctx, func(format string, a ...any) {
+		initData.Result.AddMessage(fmt.Sprintf(format, a...))
+	})
+
+	client, err := GetDbClient(getClientCtx, invoker, ensureSessionData)
 	if err != nil {
 		initData.Result.Error = err
 		return initData
