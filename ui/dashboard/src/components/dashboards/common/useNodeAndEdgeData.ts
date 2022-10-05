@@ -20,7 +20,7 @@ const useNodeAndEdgeData = (
   status: DashboardRunState
 ) => {
   const { panelsMap } = useDashboard();
-  const res = useMemo(() => {
+  return useMemo(() => {
     if (dataFormat === "LEGACY") {
       if (status === "complete") {
         return data ? { data, properties } : null;
@@ -43,7 +43,7 @@ const useNodeAndEdgeData = (
         }
         columns.push(column);
       }
-      const artificialCategoryId = `node_category_${panel.name}`;
+      const artificialCategoryId = `node_category_${nodePanelName}`;
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
         // If a row defines a category, then it is assumed to be present in the categories map
@@ -56,7 +56,7 @@ const useNodeAndEdgeData = (
         if (nodeProperties.category) {
           newProperties = set(
             newProperties || {},
-            `categories.${artificialCategoryId}`,
+            `categories["${artificialCategoryId}"]`,
             nodeProperties.category
           );
         }
@@ -75,7 +75,7 @@ const useNodeAndEdgeData = (
         }
         columns.push(column);
       }
-      const artificialCategoryId = `node_category_${panel.name}`;
+      const artificialCategoryId = `node_category_${edgePanelName}`;
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
         // If a row defines a category, then it is assumed to be present in the categories map
@@ -88,7 +88,7 @@ const useNodeAndEdgeData = (
         if (edgeProperties.category) {
           newProperties = set(
             newProperties || {},
-            `categories.${artificialCategoryId}`,
+            `categories["${artificialCategoryId}"]`,
             edgeProperties.category
           );
         }
@@ -100,10 +100,6 @@ const useNodeAndEdgeData = (
       properties: newProperties,
     };
   }, [dataFormat, data, panelsMap, properties, status]);
-
-  console.log({ dataFormat, res, panelsMap, data, properties, status });
-
-  return res;
 };
 
 export default useNodeAndEdgeData;
