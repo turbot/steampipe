@@ -6,11 +6,11 @@ import {
   buildNodesAndEdges,
   buildTreeDataInputs,
   LeafNodeData,
-  NodesAndEdges,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { getHierarchyComponent } from "..";
 import { HierarchyProps, HierarchyProperties, HierarchyType } from "../types";
+import { NodesAndEdges } from "../../common/types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 

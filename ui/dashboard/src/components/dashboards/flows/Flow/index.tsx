@@ -6,12 +6,12 @@ import {
   buildNodesAndEdges,
   buildSankeyDataInputs,
   LeafNodeData,
-  NodesAndEdges,
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { FlowProperties, FlowProps, FlowType } from "../types";
 import { getFlowComponent } from "..";
+import { NodesAndEdges } from "../../common/types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
@@ -113,7 +113,6 @@ const FlowWrapper = (props: FlowProps) => {
   const {
     themeContext: { wrapperRef },
   } = useDashboard();
-
   const data = useNodeAndEdgeData(props.data, props.properties, props.status);
 
   if (!wrapperRef) {

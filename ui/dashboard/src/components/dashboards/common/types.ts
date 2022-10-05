@@ -1,8 +1,6 @@
 import { TableColumnDisplay, TableColumnWrap } from "../Table";
-
-export interface ChartTooltipFormatter {
-  format(params: Object | any[]): string;
-}
+import { ColorOverride, LeafNodeDataRow } from "./index";
+import { Graph } from "graphlib";
 
 export interface CategoryFields {
   [name: string]: CategoryField;
@@ -23,16 +21,6 @@ export interface KeyValueStringPairs {
   [key: string]: string;
 }
 
-export interface CategoryFoldOptions {
-  threshold: number;
-  title?: string;
-  icon?: string;
-}
-
-export interface BaseCategoryOptions {
-  fold?: CategoryFoldOptions;
-}
-
 interface NodeAndEdgeIdentifier {
   name: string;
 }
@@ -40,4 +28,80 @@ interface NodeAndEdgeIdentifier {
 export interface NodeAndEdgeProperties {
   nodes?: NodeAndEdgeIdentifier[];
   edges?: NodeAndEdgeIdentifier[];
+}
+
+export interface CategoryFold {
+  threshold: number;
+  title?: string;
+  icon?: string;
+}
+
+export interface Category {
+  color?: ColorOverride;
+  fields?: CategoryFields;
+  fold?: CategoryFold;
+  depth?: number;
+  href?: string;
+  icon?: string;
+  title?: string;
+}
+
+export interface CategoryMap {
+  [category: string]: Category;
+}
+
+export interface FoldedNode {
+  id: string;
+  title?: string;
+}
+
+export interface Node {
+  id: string;
+  title: string | null;
+  category: string | null;
+  depth: number | null;
+  row_data: LeafNodeDataRow | null;
+  symbol: string | null;
+  href: string | null;
+  isFolded: boolean;
+  foldedNodes?: FoldedNode[];
+}
+
+export interface Edge {
+  id: string;
+  from_id: string;
+  to_id: string;
+  title: string | null;
+  category: string | null;
+  row_data: LeafNodeDataRow | null;
+}
+
+export interface NodeMap {
+  [id: string]: Node;
+}
+
+export interface EdgeMap {
+  [edge_id: string]: boolean;
+}
+
+export interface NodeCategoryMap {
+  [category: string]: NodeMap;
+}
+
+interface NodesAndEdgesMetadata {
+  has_multiple_roots: boolean;
+  contains_duplicate_edges: boolean;
+}
+
+export interface NodesAndEdges {
+  graph: Graph;
+  nodes: Node[];
+  edges: Edge[];
+  nodeCategoryMap: NodeCategoryMap;
+  nodeMap: KeyValuePairs;
+  edgeMap: KeyValuePairs;
+  root_nodes: NodeMap;
+  categories: CategoryMap;
+  metadata?: NodesAndEdgesMetadata;
+  next_color_index?: number;
 }
