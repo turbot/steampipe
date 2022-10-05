@@ -29,15 +29,14 @@ type ModResources struct {
 	DashboardTexts        map[string]*DashboardText
 	DashboardNodes        map[string]*DashboardNode
 	GlobalDashboardInputs map[string]*DashboardInput
-	Locals          map[string]*Local
-	LocalQueries    map[string]*Query
-	LocalControls   map[string]*Control
-	LocalBenchmarks map[string]*Benchmark
+	Locals                map[string]*Local
+	LocalQueries          map[string]*Query
+	LocalControls         map[string]*Control
+	LocalBenchmarks       map[string]*Benchmark
 	Mods                  map[string]*Mod
 	Queries               map[string]*Query
 	Variables             map[string]*Variable
 	References            map[string]*ResourceReference
-
 }
 
 func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
@@ -68,7 +67,6 @@ func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 		Queries:               make(map[string]*Query),
 		References:            make(map[string]*ResourceReference),
 		Variables:             make(map[string]*Variable),
-
 	}
 }
 
@@ -81,77 +79,18 @@ func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *M
 }
 
 func (m *ModResources) QueryProviders() []QueryProvider {
-	numDashboardInputs := 0
-	for _, inputs := range m.DashboardInputs {
-		numDashboardInputs += len(inputs)
-	}
-	// TODO KAI WRITE GENERIC MAPVALUES FUNCTION
-	res := make([]QueryProvider,
-		len(m.Queries)+
-			len(m.Controls)+
-			len(m.DashboardCards)+
-			len(m.DashboardCharts)+
-			len(m.DashboardFlows)+
-			len(m.DashboardGraphs)+
-			len(m.DashboardHierarchies)+
-			len(m.DashboardNodes)+
-			len(m.DashboardEdges)+
-			numDashboardInputs+
-			len(m.GlobalDashboardInputs)+
-			len(m.DashboardTables))
-
+	res := make([]QueryProvider, m.queryProviderCount())
 	idx := 0
-	for _, p := range m.Queries {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.Controls {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardCards {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardCharts {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardFlows {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardGraphs {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardHierarchies {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardEdges {
-		res[idx] = p
-		idx++
-	}
-
-	for _, p := range m.DashboardNodes {
-		res[idx] = p
-		idx++
-	}
-	for _, inputsForDashboard := range m.DashboardInputs {
-		for _, p := range inputsForDashboard {
-			res[idx] = p
+	f := func(item HclResource) (bool, error) {
+		if queryProvider, ok := item.(QueryProvider); ok {
+			res[idx] = queryProvider
 			idx++
 		}
+		return true, nil
 	}
-	for _, p := range m.GlobalDashboardInputs {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardTables {
-		res[idx] = p
-		idx++
-	}
+
+	m.WalkResources(f)
+
 	return res
 }
 
@@ -473,11 +412,6 @@ func (m *ModResources) addControlOrQuery(provider QueryProvider) {
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false or an error, return immediately
 func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
-	for _, r := range m.Queries {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
 	for _, r := range m.Controls {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
@@ -493,17 +427,27 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.DashboardContainers {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
 	for _, r := range m.DashboardCards {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
 	}
+	for _, r := range m.DashboardCategories {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardContainers {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
 	for _, r := range m.DashboardCharts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardEdges {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -523,27 +467,7 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.DashboardNodes {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
-	for _, r := range m.DashboardEdges {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
-	for _, r := range m.DashboardCategories {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
 	for _, r := range m.DashboardImages {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
-	for _, r := range m.GlobalDashboardInputs {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -553,6 +477,11 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 				return err
 			}
+		}
+	}
+	for _, r := range m.DashboardNodes {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
 		}
 	}
 	for _, r := range m.DashboardTables {
@@ -565,7 +494,7 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.Variables {
+	for _, r := range m.GlobalDashboardInputs {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -575,6 +504,17 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
+	for _, r := range m.Queries {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.Variables {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -842,4 +782,27 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 	}
 
 	return res
+}
+
+func (m *ModResources) queryProviderCount() int {
+	numDashboardInputs := 0
+	for _, inputs := range m.DashboardInputs {
+		numDashboardInputs += len(inputs)
+	}
+
+	numItems :=
+		len(m.Controls) +
+			len(m.DashboardCards) +
+			len(m.DashboardCharts) +
+			len(m.DashboardEdges) +
+			len(m.DashboardFlows) +
+			len(m.DashboardGraphs) +
+			len(m.DashboardHierarchies) +
+			len(m.DashboardImages) +
+			numDashboardInputs +
+			len(m.DashboardNodes) +
+			len(m.DashboardTables) +
+			len(m.GlobalDashboardInputs) +
+			len(m.Queries)
+	return numItems
 }
