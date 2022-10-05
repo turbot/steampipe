@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func ShowVarsListJson(vars []*modconfig.Variable) {
 	jsonOutput, err := json.MarshalIndent(vars, "", "  ")
-	utils.FailOnErrorWithMessage(err, "failed to marshal variables to JSON")
+	error_helpers.FailOnErrorWithMessage(err, "failed to marshal variables to JSON")
 
 	fmt.Println(string(jsonOutput))
 }

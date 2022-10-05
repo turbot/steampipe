@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/initialisation"
 	"io"
 	"os"
 	"strings"
@@ -23,6 +22,8 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -102,7 +103,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 
@@ -121,7 +122,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	initData = initialiseCheck(ctx)
-	utils.FailOnError(initData.Result.Error)
+	error_helpers.FailOnError(initData.Result.Error)
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
@@ -145,16 +146,16 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// get the export formats for this argument
 		exportTargets, err := getExportTargets(arg)
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 
 		// create the execution tree
 		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of failures)
 		failures += executionTree.Execute(ctx)
 		err = displayControlResults(ctx, executionTree)
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 
 		if len(exportTargets) > 0 {
 			d := control.ExportData{
@@ -174,7 +175,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exportWaitGroup.Wait()
 
 	if len(exportErrors) > 0 {
-		utils.ShowError(ctx, utils.CombineErrors(exportErrors...))
+		error_helpers.ShowError(ctx, error_helpers.CombineErrors(exportErrors...))
 	}
 
 	if shouldPrintTiming() {
@@ -193,7 +194,7 @@ func createCheckContext(ctx context.Context) context.Context {
 func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
-		utils.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
+		error_helpers.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -202,7 +203,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 	}
 	// only 1 of 'share' and 'snapshot' may be set
 	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
-		utils.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'dashboard' may be set"))
+		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'dashboard' may be set"))
 		return false
 	}
 	return true
@@ -214,9 +215,9 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 
 	// load the workspace
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := initialisation.NewInitData(ctx, w)
+	initData := initialisation.NewInitData(ctx, w, constants.InvokerCheck)
 	if initData.Result.Error != nil {
 		return initData
 	}
@@ -423,7 +424,7 @@ func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, err
 		}
 	}
 
-	return targets, utils.CombineErrors(targetErrors...)
+	return targets, error_helpers.CombineErrors(targetErrors...)
 }
 
 // parseExportArg parses the flag value and returns a Formatter based on the value

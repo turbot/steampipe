@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -25,7 +26,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
-		utils.ShowError(ctx, initResult.Error)
+		error_helpers.ShowError(ctx, initResult.Error)
 		return
 	}
 
@@ -33,7 +34,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
-		utils.ShowError(ctx, initResult.Error)
+		error_helpers.ShowError(ctx, initResult.Error)
 		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
 		return
 	}
@@ -57,7 +58,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			c.interactivePrompt.ClearScreen()
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
 
@@ -89,7 +90,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
 	fmt.Println()
-	utils.ShowError(ctx, err)
+	error_helpers.ShowError(ctx, err)
 	c.interactivePrompt.Render()
 }
 

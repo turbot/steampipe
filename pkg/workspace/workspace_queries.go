@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -88,7 +89,7 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 			return "", nil, fmt.Errorf("ResolveQueryAndArgsFromSQLString failed: error opening file '%s': %v", sqlString, err)
 		}
 		if len(fileQuery) == 0 {
-			utils.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
+			error_helpers.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
 			// (just return the empty string - it will be filtered above)
 		}
 		return fileQuery, nil, nil

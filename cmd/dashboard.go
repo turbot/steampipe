@@ -8,24 +8,23 @@ import (
 	"os"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/initialisation"
-
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/workspace"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
+	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/snapshot"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 func dashboardCmd() *cobra.Command {
@@ -75,7 +74,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		logging.LogTime("runDashboardCmd end")
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
-			utils.ShowError(dashboardCtx, err)
+			error_helpers.ShowError(dashboardCtx, err)
 			if isRunningAsService() {
 				saveErrorToDashboardState(err)
 			}
@@ -86,28 +85,28 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	// first check whether a dashboard name has been passed as an arg
 	dashboardName, err := validateDashboardArgs(args)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	if dashboardName != "" {
 		inputs, err := collectInputs()
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 
 		// run just this dashboard
 		err = runSingleDashboard(dashboardCtx, dashboardName, inputs)
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 		// and we are done
 		return
 	}
 
 	// retrieve server params
 	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
-	utils.FailOnError(serverPort.IsValid())
+	error_helpers.FailOnError(serverPort.IsValid())
 
 	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
-	utils.FailOnError(serverListen.IsValid())
+	error_helpers.FailOnError(serverListen.IsValid())
 
 	if err := utils.IsPortBindable(int(serverPort)); err != nil {
 		exitCode = constants.ExitCodeBindPortUnavailable
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 	}
 
 	// create context for the dashboard execution
@@ -116,7 +115,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	// ensure dashboard assets are present and extract if not
 	err = dashboardassets.Ensure(dashboardCtx)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	// disable all status messages
 	dashboardCtx = statushooks.DisableStatusHooks(dashboardCtx)
@@ -124,14 +123,16 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	// load the workspace
 	initData := initDashboard(dashboardCtx, err)
 	defer initData.Cleanup(dashboardCtx)
-	utils.FailOnError(initData.Result.Error)
+	error_helpers.FailOnError(initData.Result.Error)
 
 	// if there is a usage warning we display it
+	initData.Result.DisplayMessage = dashboardserver.OutputMessage
+	initData.Result.DisplayWarning = dashboardserver.OutputWarning
 	initData.Result.DisplayMessages()
 
 	// create the server
 	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	// start the server asynchronously - this returns a chan which is signalled when the internal API server terminates
 	doneChan := server.Start()
@@ -151,10 +152,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
 	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
 	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// initialise
-	initData := initialisation.NewInitData(dashboardCtx, w)
+	initData := initialisation.NewInitData(dashboardCtx, w, constants.InvokerDashboard)
 	// there must be a modfile
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition
@@ -185,7 +186,7 @@ func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[st
 
 	// just display result
 	snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	fmt.Println(string(snapshotText))
 	fmt.Println("")
 	return nil
@@ -301,7 +302,7 @@ func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dash
 		addrs, _ := utils.LocalAddresses()
 		state.Listen = append(state.Listen, addrs...)
 	}
-	utils.FailOnError(dashboardserver.WriteServiceStateFile(state))
+	error_helpers.FailOnError(dashboardserver.WriteServiceStateFile(state))
 }
 
 func collectInputs() (map[string]interface{}, error) {

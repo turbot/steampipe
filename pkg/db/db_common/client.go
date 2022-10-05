@@ -9,8 +9,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
-type EnsureSessionStateCallback = func(context.Context, *DatabaseSession) (err error, warnings []string)
-
 type Client interface {
 	Close(ctx context.Context) error
 
@@ -36,7 +34,6 @@ type Client interface {
 	CacheOff(context.Context) error
 	CacheClear(context.Context) error
 
-	SetEnsureSessionDataFunc(EnsureSessionStateCallback)
 	RefreshSessions(ctx context.Context) *AcquireSessionResult
 	GetSchemaFromDB(context.Context) (*schema.Metadata, error)
 	// remote client will have empty implementation

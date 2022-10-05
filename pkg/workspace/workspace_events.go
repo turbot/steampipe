@@ -9,8 +9,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (w *Workspace) PublishDashboardEvent(e dashboardevents.DashboardEvent) {
@@ -66,8 +66,8 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 		res := client.RefreshSessions(context.Background())
 		if res.Error != nil || len(res.Warnings) > 0 {
 			fmt.Println()
-			utils.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
-			utils.ShowWarning(strings.Join(res.Warnings, "\n"))
+			error_helpers.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
+			error_helpers.ShowWarning(strings.Join(res.Warnings, "\n"))
 			if w.onFileWatcherEventMessages != nil {
 				w.onFileWatcherEventMessages()
 			}
@@ -93,7 +93,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ModResou
 	if err != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
-			w.fileWatcherErrorHandler(ctx, utils.PrefixError(err, "Failed to reload workspace"))
+			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(err, "Failed to reload workspace"))
 		}
 		// now set watcher error to new error
 		w.watcherError = err

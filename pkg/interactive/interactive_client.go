@@ -21,6 +21,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/metaquery"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
@@ -104,7 +105,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		quitChannel <- true
@@ -329,11 +330,11 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	// we successfully retrieved a query
 
 	// create a  context for the execution of the query
-	queryContext := c.createQueryContext(ctx)
+	queryCtx := c.createQueryContext(ctx)
 
 	if metaquery.IsMetaQuery(query) {
-		if err := c.executeMetaquery(queryContext, query); err != nil {
-			utils.ShowError(ctx, err)
+		if err := c.executeMetaquery(queryCtx, query); err != nil {
+			error_helpers.ShowError(ctx, err)
 		}
 		// cancel the context
 		c.cancelActiveQueryIfAny()
@@ -341,9 +342,9 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		// otherwise execute query
 		t := time.Now()
-		result, err := c.client().Execute(queryContext, query)
+		result, err := c.client().Execute(queryCtx, query)
 		if err != nil {
-			utils.ShowError(ctx, utils.HandleCancelError(err))
+			error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 				display.DisplayErrorTiming(t)
@@ -377,7 +378,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 	if !c.isInitialised() {
 		// create a context used purely to detect cancellation during initialisation
 		// this will also set c.cancelActiveQuery
-		queryContext := c.createQueryContext(ctx)
+		queryCtx := c.createQueryContext(ctx)
 		defer func() {
 			// cancel this context
 			c.cancelActiveQueryIfAny()
@@ -385,7 +386,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 
 		statushooks.SetStatus(ctx, "Initializing...")
 		// wait for client initialisation to complete
-		err := c.waitForInitData(queryContext)
+		err := c.waitForInitData(queryCtx)
 		statushooks.Done(ctx)
 		if err != nil {
 			// clear history entry
@@ -411,7 +412,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 		// - do not clear history item - we want to store bad entry in history
 		// - clear interactive buffer
 		c.interactiveBuffer = nil
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return ""
 	}
 	isNamedQuery := queryProvider != nil

@@ -45,6 +45,7 @@ type Query struct {
 	UnqualifiedName string        `json:"-"`
 	Paths           []NodePath    `column:"path,jsonb" json:"-"`
 	parents         []ModTreeItem `json:"-"`
+
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) *Query {

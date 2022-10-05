@@ -133,7 +133,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.requiredSessionSearchPath, ","))
 
 	q := fmt.Sprintf("set search_path to %s", strings.Join(c.requiredSessionSearchPath, ","))
-	_, err := session.Connection.ExecContext(ctx, q)
+	_, err := session.Connection.Exec(ctx, q)
 	if err == nil {
 		// update the session search path property
 		session.SearchPath = c.requiredSessionSearchPath

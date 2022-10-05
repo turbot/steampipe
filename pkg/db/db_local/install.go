@@ -2,16 +2,11 @@ package db_local
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-	"net"
-	"os"
-	"os/exec"
-	"sync"
-
 	"github.com/fatih/color"
+	"github.com/jackc/pgx/v4"
+	"github.com/sethvargo/go-retry"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -21,6 +16,12 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"sync"
+	"time"
 )
 
 var ensureMux sync.Mutex
@@ -216,7 +217,7 @@ func prepareDb(ctx context.Context) error {
 		// get the message renderer from the context
 		// this allows the interactive client init to inject a custom renderer
 		messageRenderer := statushooks.MessageRendererFromContext(ctx)
-		messageRenderer("%s was updated to %s.\n", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+		messageRenderer("%s was updated to %s.", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
 	}
 
 	if needsInit() {
@@ -306,7 +307,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 	defer func() {
 		statushooks.SetStatus(ctx, "Completing configuration")
-		client.Close()
+		client.Close(ctx)
 		doThreeStepPostgresExit(ctx, process)
 	}()
 
@@ -366,25 +367,32 @@ func resolveDatabaseName(oldDbName *string) string {
 
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database and superuser
-func createMaintenanceClient(ctx context.Context, port int) (*sql.DB, error) {
-	psqlInfo := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
-
-	log.Println("[TRACE] Connection string: ", psqlInfo)
-
-	// connect to the database using the postgres driver
-	utils.LogTime("db_local.createClient connection open start")
-	db, err := sql.Open("pgx", psqlInfo)
-	db.SetMaxOpenConns(1)
-	utils.LogTime("db_local.createClient connection open end")
-
+func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
+	backoff, err := retry.NewConstant(200 * time.Millisecond)
 	if err != nil {
 		return nil, err
 	}
+	var conn *pgx.Conn
 
-	if err := db_common.WaitForConnection(ctx, db); err != nil {
+	err = retry.Do(ctx, retry.WithMaxRetries(5, backoff), func(ctx context.Context) error {
+		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+		log.Println("[TRACE] Connection string: ", connStr)
+		utils.LogTime("db_local.createClient connection open start")
+		conn, err = pgx.Connect(context.Background(), connStr)
+		utils.LogTime("db_local.createClient connection open end")
+		if err != nil {
+			return retry.RetryableError(err)
+		}
+		if err := db_common.WaitForConnection(ctx, conn); err != nil {
+			return retry.RetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
-	return db, nil
+	return conn, nil
+
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
@@ -481,7 +489,7 @@ func initDatabase() error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
-func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *sql.DB) error {
+func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {
 	utils.LogTime("db_local.install.installDatabaseWithPermissions start")
 	defer utils.LogTime("db_local.install.installDatabaseWithPermissions end")
 
@@ -542,7 +550,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 	for _, statement := range statements {
 		// not logging here, since the password may get logged
 		// we don't want that
-		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
+		if _, err := rawClient.Exec(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -554,7 +562,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(ctx context.Context, rawClient *sql.DB) error {
+func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 
@@ -570,7 +578,7 @@ func installForeignServer(ctx context.Context, rawClient *sql.DB) error {
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
-		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
+		if _, err := rawClient.Exec(ctx, statement); err != nil {
 			return err
 		}
 	}

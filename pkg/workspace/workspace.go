@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -51,7 +52,8 @@ type Workspace struct {
 	// channel used to send dashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
 	// count of workspace changed events - used to ignore first event
-	changeEventCount int
+	changeEventCount          int
+	preparedStatementFailures map[string]*steampipeconfig.PreparedStatementFailure
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -164,7 +166,7 @@ func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, e
 	if w.fileWatcherErrorHandler == nil {
 		w.fileWatcherErrorHandler = func(ctx context.Context, err error) {
 			fmt.Println()
-			utils.ShowErrorWithMessage(ctx, err, "Failed to reload mod from file watcher")
+			error_helpers.ShowErrorWithMessage(ctx, err, "Failed to reload mod from file watcher")
 		}
 	}
 
@@ -403,4 +405,27 @@ func (w *Workspace) verifyResourceRuntimeDependencies() error {
 		}
 	}
 	return nil
+}
+
+func (w *Workspace) HandlePreparedStatementFailures(failures map[string]error) {
+	// replace the map of failures with the current map
+	w.preparedStatementFailures = make(map[string]*steampipeconfig.PreparedStatementFailure)
+	for queryName, err := range failures {
+		if query, ok := w.GetQuery(queryName); ok {
+			w.preparedStatementFailures[queryName] = &steampipeconfig.PreparedStatementFailure{
+				Query: query,
+				Error: err,
+			}
+		}
+	}
+}
+
+// GetPreparedStatementCreationFailure looks for a prepared statement error for the given query and if found,
+// returns the query and the prepared statement creation error (if any)
+func (w *Workspace) GetPreparedStatementCreationFailure(queryName string) *steampipeconfig.PreparedStatementFailure {
+	return w.preparedStatementFailures[queryName]
+}
+
+func (w *Workspace) GetPreparedStatementFailures() map[string]*steampipeconfig.PreparedStatementFailure {
+	return w.preparedStatementFailures
 }

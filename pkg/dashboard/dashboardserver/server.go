@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"os"
 	"reflect"
@@ -16,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 	"gopkg.in/olahol/melody.v1"
@@ -71,7 +71,7 @@ func (s *Server) Shutdown() {
 	if s.webSocket != nil {
 		log.Println("[TRACE] closing websocket")
 		if err := s.webSocket.Close(); err != nil {
-			utils.ShowErrorWithMessage(s.context, err, "Websocket shutdown failed")
+			error_helpers.ShowErrorWithMessage(s.context, err, "Websocket shutdown failed")
 		}
 		log.Println("[TRACE] closed websocket")
 	}
@@ -101,7 +101,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			return
 		}
 		_ = s.webSocket.Broadcast(payload)
-		outputError(s.context, e.Error)
+		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
 		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
@@ -120,7 +120,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		}
 
 		s.writePayloadToSession(e.Session, payload)
-		outputError(s.context, e.Error)
+		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event", *e)

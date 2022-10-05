@@ -2,7 +2,8 @@ package initialisation
 
 import (
 	"context"
-
+	"fmt"
+	"github.com/jackc/pgx/v4"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -22,7 +23,7 @@ type InitData struct {
 	ShutdownTelemetry func()
 }
 
-func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
+func NewInitData(ctx context.Context, w *workspace.Workspace, invoker constants.Invoker) *InitData {
 	initData := &InitData{
 		Workspace: w,
 		Result:    &db_common.InitResult{},
@@ -69,15 +70,24 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		return initData
 	}
 
+	// setup the session data - prepared statements and introspection tables
+	sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
+	// define db connection callback function
+	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
+		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+		w.HandlePreparedStatementFailures(preparedStatementFailures)
+		return err
+	}
+
 	// get a client
 	statushooks.SetStatus(ctx, "Connecting to service...")
-	var client db_common.Client
-	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		client, err = db_client.NewDbClient(ctx, connectionString)
-	} else {
-		// when starting the database, installers may trigger their own spinners
-		client, err = db_local.GetLocalClient(ctx, constants.InvokerDashboard)
-	}
+	// add a message rendering function to the context - this is used for the fdw update message and
+	// allows us to render it as a standard initialisation message
+	getClientCtx := statushooks.AddMessageRendererToContext(ctx, func(format string, a ...any) {
+		initData.Result.AddMessage(fmt.Sprintf(format, a...))
+	})
+
+	client, err := GetDbClient(getClientCtx, invoker, ensureSessionData)
 	if err != nil {
 		initData.Result.Error = err
 		return initData
@@ -91,19 +101,21 @@ func NewInitData(ctx context.Context, w *workspace.Workspace) *InitData {
 		initData.Result.Error = refreshResult.Error
 		return initData
 	}
+	// add refresh connection warnings
 	initData.Result.AddWarnings(refreshResult.Warnings...)
-
-	// setup the session data - prepared statements and introspection tables
-	sessionDataSource := workspace.NewSessionDataSource(initData.Workspace, nil)
-
-	// register EnsureSessionData as a callback on the client.
-	// if the underlying SQL client has certain errors (for example context expiry) it will reset the session
-	// so our client object calls this callback to restore the session data
-	initData.Client.SetEnsureSessionDataFunc(func(localCtx context.Context, conn *db_common.DatabaseSession) (error, []string) {
-		return workspace.EnsureSessionData(localCtx, sessionDataSource, conn)
-	})
-
+	// add warnings from prepared statement creation
+	initData.Result.AddPreparedStatementFailures(w.GetPreparedStatementFailures())
 	return initData
+}
+
+// GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
+func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
+	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
+	} else {
+		client, err = db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
+	}
+	return client, err
 }
 
 func (i InitData) Cleanup(ctx context.Context) {

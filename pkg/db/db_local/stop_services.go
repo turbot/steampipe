@@ -12,6 +12,7 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -55,7 +56,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// we can shut down the database
 	stopStatus, err := StopServices(ctx, false, invoker)
 	if err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 	}
 	if stopStatus == ServiceStopped {
 		return
@@ -64,12 +65,24 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// shutdown failed - try to force stop
 	_, err = StopServices(ctx, true, invoker)
 	if err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 	}
 
 }
 
-// GetCountOfThirdPartyClients returns the number of connections to the service from other thrid party applications
+// GetCountOfThirdPartyClients returns the number of connections to the service from anyone other than
+// _this_execution_ of steampipe
+//
+// We assume that any connections from this execution will eventually be closed
+// - if there are any other external connections, we cannot shust down the database
+//
+// this is to handle cases where either a third party tool is connected to the database,
+// or other Steampipe sessions are attached to an already running Steampipe service
+// - we do not want the db service being closed underneath them
+//
+// note: we need the PgClientAppName chack to handle the case where there may be one or more open DB connections
+// from this instance at the time of shutdown - for example when a control run is cancelled
+// If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
 func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
@@ -78,19 +91,18 @@ func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
 	if err != nil {
 		return -1, err
 	}
-	defer rootClient.Close()
+	defer rootClient.Close(ctx)
 
 	clientCount := 0
-	// get the total number of connected clients
-	// which are not us - determined by the unique application_name client parameter
-	row := rootClient.QueryRow("select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
+	// get the total number of connected clients which have not been created by this execution of steampipe
+	// - determined by the unique application_name client parameter
+	row := rootClient.QueryRow(ctx, "select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
 	err = row.Scan(&clientCount)
 	if err != nil {
 		return -1, err
 	}
-	// clientCount can never be zero, since the client we are using to run the query counts as a client
-	// deduct the open connections in the pool of this client
-	return clientCount - rootClient.Stats().OpenConnections, nil
+
+	return clientCount, nil
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
@@ -113,7 +125,7 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 	// stop the DB Service
 	stopResult, dbStopError := stopDBService(ctx, force)
 
-	return stopResult, utils.CombineErrors(dbStopError, pluginManagerStopError)
+	return stopResult, error_helpers.CombineErrors(dbStopError, pluginManagerStopError)
 }
 
 func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
@@ -156,7 +168,9 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	return ServiceStopped, nil
 }
 
-/**
+/*
+*
+
 	Postgres has three levels of shutdown:
 
 	* SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
@@ -180,7 +194,9 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	By the time we actually try to run this sequence, we will have
 	checked that the service can indeed shutdown gracefully,
 	the sequence is there only as a backup.
-**/
+
+*
+*/
 func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
 	utils.LogTime("db_local.doThreeStepPostgresExit start")
 	defer utils.LogTime("db_local.doThreeStepPostgresExit end")

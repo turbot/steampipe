@@ -26,7 +26,7 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.Client, error) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (db_common.Client, error) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -40,23 +40,23 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker) (db_common.C
 		return nil, startResult.Error
 	}
 
-	client, err := NewLocalClient(ctx, invoker)
+	client, err := NewLocalClient(ctx, invoker, onConnectionCallback)
 	if err != nil {
 		ShutdownService(ctx, invoker)
 	}
 	return client, err
 }
 
-// NewLocalClient verifies that the local database instance is running and returns a Client to interact with it
-func NewLocalClient(ctx context.Context, invoker constants.Invoker) (*LocalDbClient, error) {
+// NewLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
+func NewLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
 
-	connString, err := getLocalSteampipeConnectionString()
+	connString, err := getLocalSteampipeConnectionString(nil)
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(ctx, connString)
+	dbClient, err := db_client.NewDbClient(ctx, connString, onConnectionCallback)
 	if err != nil {
 		log.Printf("[TRACE] error getting local client %s", err.Error())
 		return nil, err
@@ -81,11 +81,6 @@ func (c *LocalDbClient) Close(ctx context.Context) error {
 	log.Printf("[TRACE] shutdown local service %v", c.invoker)
 	ShutdownService(ctx, c.invoker)
 	return nil
-}
-
-// SetEnsureSessionDataFunc implements Client
-func (c *LocalDbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
-	c.client.SetEnsureSessionDataFunc(f)
 }
 
 // ForeignSchemaNames implements Client
@@ -187,7 +182,7 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, 
 		return nil, err
 	}
 
-	tablesResult, err := acquireSessionResult.Session.Connection.QueryContext(ctx, query)
+	tablesResult, err := acquireSessionResult.Session.Connection.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}

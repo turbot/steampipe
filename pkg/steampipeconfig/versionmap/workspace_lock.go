@@ -10,9 +10,9 @@ import (
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/versionhelpers"
 )
 
@@ -102,7 +102,7 @@ func (l *WorkspaceLock) getInstalledMods() error {
 	}
 
 	if len(errors) > 0 {
-		return utils.CombineErrors(errors...)
+		return error_helpers.CombineErrors(errors...)
 	}
 	l.installedMods = installedMods
 	return nil

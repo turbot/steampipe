@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"reflect"
 	"strings"
 
@@ -19,30 +20,30 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn) error {
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
 	switch viper.GetString(constants.ArgIntrospection) {
 	case constants.IntrospectionInfo:
-		return populateAllIntrospectionTables(ctx, workspaceResources, session, commonColumnSql)
+		return populateAllIntrospectionTables(ctx, workspaceResources, conn, commonColumnSql)
 	case constants.IntrospectionControl:
-		return populateControlIntrospectionTables(ctx, workspaceResources, session, commonColumnSql)
+		return populateControlIntrospectionTables(ctx, workspaceResources, conn, commonColumnSql)
 	default:
 		// just create (but do not populate) the create mod introspection table
 		// - this is used to check if the session is initialised
-		return createModIntrospectionTable(ctx, workspaceResources, session, commonColumnSql)
+		return createModIntrospectionTable(ctx, workspaceResources, conn, commonColumnSql)
 	}
 }
 
-func createModIntrospectionTable(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession, commonColumnSql []string) error {
+func createModIntrospectionTable(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
 	// get the create sql for each table type
 	modTableSql := getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql)
 
-	_, err := session.Connection.ExecContext(ctx, modTableSql)
+	_, err := conn.Exec(ctx, modTableSql)
 	if err != nil {
 		return fmt.Errorf("failed to create mod introspection table: %v", err)
 	}
@@ -51,7 +52,7 @@ func createModIntrospectionTable(ctx context.Context, workspaceResources *modcon
 	return ctx.Err()
 }
 
-func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession, commonColumnSql []string) error {
+func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -62,7 +63,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	insertSql := getTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
+	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
@@ -166,7 +167,7 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 	return tableSql
 }
 
-func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, session *DatabaseSession, commonColumnSql []string) error {
+func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -176,7 +177,7 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 	insertSql := getControlTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := session.Connection.ExecContext(ctx, strings.Join(sql, "\n"))
+	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}

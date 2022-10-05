@@ -1,17 +1,22 @@
 package db_common
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 type InitResult struct {
 	Error    error
 	Warnings []string
 	Messages []string
+
+	// allow overriding of the display functions
+	DisplayMessage func(ctx context.Context, m string)
+	DisplayWarning func(ctx context.Context, w string)
 }
 
 func (r *InitResult) AddMessage(message string) {
@@ -27,15 +32,31 @@ func (r *InitResult) HasMessages() bool {
 }
 
 func (r *InitResult) DisplayMessages() {
+	if r.DisplayWarning == nil {
+		r.DisplayMessage = func(ctx context.Context, m string) {
+			fmt.Println(m)
+		}
+	}
+	if r.DisplayWarning == nil {
+		r.DisplayWarning = func(ctx context.Context, w string) {
+			error_helpers.ShowWarning(w)
+		}
+	}
 	// do not display message in json or csv output mode
 	output := viper.Get(constants.ArgOutput)
 	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}
 	for _, w := range r.Warnings {
-		utils.ShowWarning(w)
+		r.DisplayWarning(context.Background(), w)
 	}
-	for _, w := range r.Messages {
-		fmt.Println(w)
+	for _, m := range r.Messages {
+		r.DisplayMessage(context.Background(), m)
+	}
+}
+
+func (r *InitResult) AddPreparedStatementFailures(preparedStatementFailures map[string]*steampipeconfig.PreparedStatementFailure) {
+	for _, failure := range preparedStatementFailures {
+		r.AddWarnings(failure.String())
 	}
 }

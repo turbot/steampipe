@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -80,7 +81,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
@@ -88,7 +89,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
 	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildInstallSummary(installData))
 }
@@ -116,14 +117,14 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	opts := newInstallOpts(cmd, args...)
 	installData, err := modinstaller.UninstallWorkspaceDependencies(ctx, opts)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildUninstallSummary(installData))
 }
@@ -151,7 +152,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("cmd.runModUpdateCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
@@ -159,7 +160,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 	opts := newInstallOpts(cmd, args...)
 
 	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildInstallSummary(installData))
 }
@@ -183,13 +184,13 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 	defer func() {
 		utils.LogTime("cmd.runModListCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 	opts := newInstallOpts(cmd)
 	installer, err := modinstaller.NewModInstaller(opts)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	treeString := installer.GetModList()
 	if len(strings.Split(treeString, "\n")) > 1 {
@@ -217,7 +218,7 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("cmd.runModInitCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
@@ -228,7 +229,7 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 	}
 	mod := modconfig.CreateDefaultMod(workspacePath)
 	err := mod.Save()
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 }
 

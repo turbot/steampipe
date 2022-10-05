@@ -2,20 +2,20 @@ package db_local
 
 import (
 	"context"
-	"database/sql"
+	"github.com/jackc/pgconn"
 
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-func executeSqlAsRoot(ctx context.Context, statements ...string) ([]sql.Result, error) {
-	var results []sql.Result
+func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.CommandTag, error) {
+	var results []pgconn.CommandTag
 	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
-	defer rootClient.Close()
+	defer rootClient.Close(ctx)
 	for _, statement := range statements {
-		result, err := rootClient.Exec(statement)
+		result, err := rootClient.Exec(ctx, statement)
 		if err != nil {
 			return nil, err
 		}

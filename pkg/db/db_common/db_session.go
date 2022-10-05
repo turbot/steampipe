@@ -1,25 +1,21 @@
 package db_common
 
 import (
-	"context"
-	"database/sql"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
 	"time"
-
-	"github.com/jackc/pgx/v4/stdlib"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // DatabaseSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
 type DatabaseSession struct {
-	BackendPid  uint32                `json:"backend_pid"`
-	LifeCycle   *utils.LifecycleTimer `json:"lifecycle"`
-	UsedCount   int                   `json:"used"`
-	LastUsed    time.Time             `json:"last_used"`
-	SearchPath  []string              `json:"-"`
-	Initialized bool                  `json:"-"`
+	BackendPid  uint32    `json:"backend_pid"`
+	UsedCount   int       `json:"used"`
+	LastUsed    time.Time `json:"last_used"`
+	SearchPath  []string  `json:"-"`
+	Initialized bool      `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
-	Connection *sql.Conn `json:"-"`
+	Connection *pgxpool.Conn `json:"-"`
 
 	// the id of the last scan metadata retrieved
 	ScanMetadataMaxId int64 `json:"-"`
@@ -27,7 +23,6 @@ type DatabaseSession struct {
 
 func NewDBSession(backendPid uint32) *DatabaseSession {
 	return &DatabaseSession{
-		LifeCycle:  utils.NewLifecycleTimer(),
 		BackendPid: backendPid,
 	}
 }
@@ -38,26 +33,19 @@ func (s *DatabaseSession) UpdateUsage() {
 	s.LastUsed = time.Now()
 }
 
-func (s *DatabaseSession) Close(waitForCleanup bool) error {
-	var err error
+func (s *DatabaseSession) Close(waitForCleanup bool) {
 	if s.Connection != nil {
 		if waitForCleanup {
-			s.Connection.Raw(func(driverConn interface{}) error {
-				conn := driverConn.(*stdlib.Conn)
-				select {
-				case <-time.After(5 * time.Second):
-					return context.DeadlineExceeded
-				case <-conn.Conn().PgConn().CleanupDone():
-					return nil
-				}
-			})
+			log.Printf("[WARN] DatabaseSession.Close wait for connection cleanup")
+			select {
+			case <-time.After(5 * time.Second):
+				log.Printf("[WARN] DatabaseSession.Close timed out waiting for connection cleanup")
+			case <-s.Connection.Conn().PgConn().CleanupDone():
+				log.Printf("[WARN] DatabaseSession.Close connection cleanup complete")
+			}
 		}
-
-		err = s.Connection.Close()
-		s.Connection = nil
-		return err
+		s.Connection.Release()
 	}
-	c := s.Connection
 	s.Connection = nil
-	return c.Close()
+
 }

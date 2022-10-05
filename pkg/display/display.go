@@ -17,8 +17,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -107,10 +107,10 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 }
 
 func displayLine(ctx context.Context, result *queryresult.Result) {
-	colNames := ColumnNames(result.ColTypes)
+
 	maxColNameLength := 0
-	for _, colName := range colNames {
-		thisLength := utf8.RuneCountInString(colName)
+	for _, col := range result.Cols {
+		thisLength := utf8.RuneCountInString(col.Name)
 		if thisLength > maxColNameLength {
 			maxColNameLength = thisLength
 		}
@@ -119,7 +119,7 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 
 	// define a function to display each row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		recordAsString, _ := ColumnValuesAsString(row, result.ColTypes)
+		recordAsString, _ := ColumnValuesAsString(row, result.Cols)
 		requiredTerminalColumnsForValuesOfRecord := 0
 		for _, colValue := range recordAsString {
 			colRequired := getTerminalColumnsRequiredForString(colValue)
@@ -135,12 +135,12 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 		for idx, column := range recordAsString {
 			lines := strings.Split(column, "\n")
 			if len(lines) == 1 {
-				fmt.Printf(lineFormat, colNames[idx], lines[0])
+				fmt.Printf(lineFormat, result.Cols[idx].Name, lines[0])
 			} else {
 				for lineIdx, line := range lines {
 					if lineIdx == 0 {
 						// the first line
-						fmt.Printf(multiLineFormat, colNames[idx], line)
+						fmt.Printf(multiLineFormat, result.Cols[idx].Name, line)
 					} else {
 						// next lines
 						fmt.Printf(multiLineFormat, "", line)
@@ -162,7 +162,7 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return
 	}
 }
@@ -183,16 +183,16 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 	// define function to add each row to the JSON output
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		record := map[string]interface{}{}
-		for idx, colType := range result.ColTypes {
-			value, _ := ParseJSONOutputColumnValue(row[idx], colType)
-			record[colType.Name()] = value
+		for idx, col := range result.Cols {
+			value, _ := ParseJSONOutputColumnValue(row[idx], col)
+			record[col.Name] = value
 		}
 		jsonOutput = append(jsonOutput, record)
 	}
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return
 	}
 	// display the JSON
@@ -210,25 +210,25 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
 	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
-		_ = csvWriter.Write(ColumnNames(result.ColTypes))
+		_ = csvWriter.Write(ColumnNames(result.Cols))
 	}
 
 	// print the data as it comes
 	// define function display each csv row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
+		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
 		_ = csvWriter.Write(rowAsString)
 	}
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return
 	}
 
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
-		utils.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
+		error_helpers.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
 	}
 }
 
@@ -243,12 +243,12 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 	t.Style().Format.Header = text.FormatDefault
 
 	colConfigs := []table.ColumnConfig{}
-	headers := make(table.Row, len(result.ColTypes))
+	headers := make(table.Row, len(result.Cols))
 
-	for idx, column := range result.ColTypes {
-		headers[idx] = column.Name()
+	for idx, column := range result.Cols {
+		headers[idx] = column.Name
 		colConfigs = append(colConfigs, table.ColumnConfig{
-			Name:     column.Name(),
+			Name:     column.Name,
 			Number:   idx + 1,
 			WidthMax: constants.MaxColumnWidth,
 		})
@@ -261,7 +261,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// define a function to execute for each row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rowAsString, _ := ColumnValuesAsString(row, result.ColTypes)
+		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
 			rowObj = append(rowObj, col)
@@ -274,7 +274,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 	if err != nil {
 		// display the error
 		fmt.Println()
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		fmt.Println()
 	}
 	// write out the table to the buffer
@@ -285,11 +285,11 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// if timer is turned on
 	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
-		displayTiming(result)
+		fmt.Println(buildTimingString(result))
 	}
 }
 
-func displayTiming(result *queryresult.Result) {
+func buildTimingString(result *queryresult.Result) string {
 	timingResult := <-result.TimingResult
 	var sb strings.Builder
 	// large numbers should be formatted with commas
@@ -323,7 +323,7 @@ func displayTiming(result *queryresult.Result) {
 		sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
 	}
 
-	fmt.Println(sb.String())
+	return sb.String()
 }
 
 type displayResultsFunc func(row []interface{}, result *queryresult.Result)

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 type Migrateable interface {
@@ -33,5 +33,5 @@ func Migrate(migrateable Migrateable, oldPath string) error {
 	}
 
 	x := migrateable.MigrateFrom()
-	return utils.CombineErrors(os.Remove(oldPath), x.Save())
+	return error_helpers.CombineErrors(os.Remove(oldPath), x.Save())
 }

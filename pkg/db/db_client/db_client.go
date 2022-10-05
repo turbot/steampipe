@@ -2,30 +2,26 @@ package db_client
 
 import (
 	"context"
-	"database/sql"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/spf13/viper"
+	"golang.org/x/sync/semaphore"
 	"log"
 	"sort"
 	"sync"
-	"time"
-
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/stdlib"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/schema"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"golang.org/x/sync/semaphore"
 
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/schema"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
 	connectionString          string
-	ensureSessionFunc         db_common.EnsureSessionStateCallback
-	dbClient                  *sql.DB
+	pool                      *pgxpool.Pool
 	requiredSessionSearchPath []string
 
 	// concurrency management for db session access
@@ -35,7 +31,7 @@ type DbClient struct {
 	sessionInitWaitGroup *sync.WaitGroup
 
 	// map of database sessions, keyed to the backend_pid in postgres
-	// used to track database sessions that were created
+	// used to update session search path where necessary
 	sessions map[uint32]*db_common.DatabaseSession
 	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
@@ -49,31 +45,42 @@ type DbClient struct {
 	// (cached to avoid concurrent access error on viper)
 	showTimingFlag bool
 	// disable timing - set whilst in process of querying the timing
-	disableTiming bool
+	disableTiming        bool
+	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string) (*DbClient, error) {
+func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (*DbClient, error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
-	db, err := establishConnection(ctx, connectionString)
-
-	if err != nil {
-		return nil, err
+	wg := &sync.WaitGroup{}
+	// wrap onConnectionCallback to use wait group
+	var wrappedOnConnectionCallback DbConnectionCallback
+	if onConnectionCallback != nil {
+		wrappedOnConnectionCallback = func(ctx context.Context, conn *pgx.Conn) error {
+			wg.Add(1)
+			defer wg.Done()
+			return onConnectionCallback(ctx, conn)
+		}
 	}
+
 	client := &DbClient{
-		dbClient: db,
 		// a waitgroup to keep track of active session initializations
 		// so that we don't try to shutdown while an init is underway
-		sessionInitWaitGroup: &sync.WaitGroup{},
+		sessionInitWaitGroup: wg,
 		// a weighted semaphore to control the maximum number parallel
 		// initializations under way
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
+		// store the callback
+		onConnectionCallback: wrappedOnConnectionCallback,
+		connectionString:     connectionString,
 	}
 
-	client.connectionString = connectionString
+	if err := client.establishConnectionPool(ctx); err != nil {
+		return nil, err
+	}
 
 	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
 	if err := client.LoadForeignSchemaNames(ctx); err != nil {
@@ -95,59 +102,20 @@ func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.D
 
 	c.showTimingFlag = currentShowTimingFlag
 }
+
 func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
-}
-
-func establishConnection(ctx context.Context, connStr string) (*sql.DB, error) {
-	utils.LogTime("db_client.establishConnection start")
-	defer utils.LogTime("db_client.establishConnection end")
-
-	connConfig, _ := pgx.ParseConfig(connStr)
-	connConfig.RuntimeParams = map[string]string{
-		// set an app name so that we can track connections from this execution
-		"application_name": runtime.PgClientAppName,
-	}
-	connStr = stdlib.RegisterConnConfig(connConfig)
-
-	db, err := sql.Open("pgx", connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	maxParallel := constants.DefaultMaxConnections
-	if viper.IsSet(constants.ArgMaxParallel) {
-		maxParallel = viper.GetInt(constants.ArgMaxParallel)
-	}
-
-	// set max open connections to the max connections argument
-	db.SetMaxOpenConns(maxParallel)
-	// NOTE: leave max idle connections at default of 2
-	// close idle connections after 1 minute
-	db.SetConnMaxIdleTime(1 * time.Minute)
-	// do not re-use a connection more than 10 minutes old - force a refresh
-	db.SetConnMaxLifetime(10 * time.Minute)
-
-	if err := db_common.WaitForConnection(ctx, db); err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
-func (c *DbClient) SetEnsureSessionDataFunc(f db_common.EnsureSessionStateCallback) {
-	c.ensureSessionFunc = f
 }
 
 // Close implements Client
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close(context.Context) error {
-	log.Printf("[TRACE] DbClient.Close %v", c.dbClient)
-	if c.dbClient != nil {
+	log.Printf("[TRACE] DbClient.Close %v", c.pool)
+	if c.pool != nil {
 		c.sessionInitWaitGroup.Wait()
-
-		// clear the map - so that we can't reuse it
+		// clear the sessions map - so that we can't reuse it
 		c.sessions = nil
-		return c.dbClient.Close()
+		c.pool.Close()
 	}
 
 	return nil
@@ -164,7 +132,7 @@ func (c *DbClient) ForeignSchemaNames() []string {
 
 // LoadForeignSchemaNames implements Client
 func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
-	res, err := c.dbClient.QueryContext(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	res, err := c.pool.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
 	if err != nil {
 		return err
 	}
@@ -207,16 +175,11 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	// wait for any pending inits to finish
 	c.sessionInitWaitGroup.Wait()
 
-	// close the connection
-	err := c.dbClient.Close()
-	if err != nil {
+	// close the connection pool and recreate
+	c.pool.Close()
+	if err := c.establishConnectionPool(ctx); err != nil {
 		return err
 	}
-	db, err := establishConnection(ctx, c.connectionString)
-	if err != nil {
-		return err
-	}
-	c.dbClient = db
 
 	return nil
 }
@@ -237,12 +200,12 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampi
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
-	connection, err := c.dbClient.Conn(ctx)
-	utils.FailOnError(err)
+	connection, err := c.pool.Acquire(ctx)
+	error_helpers.FailOnError(err)
 
 	query := c.buildSchemasQuery()
 
-	tablesResult, err := connection.QueryContext(ctx, query)
+	tablesResult, err := connection.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +214,7 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error
 	if err != nil {
 		return nil, err
 	}
-	connection.Close()
+	connection.Release()
 
 	searchPath, err := c.GetCurrentSearchPath(ctx)
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -22,7 +23,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := interactive.RunInteractivePrompt(ctx, initData)
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
@@ -43,7 +44,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 	}
 
 	// display any initialisation messages/warnings
@@ -68,7 +69,7 @@ func executeQueries(ctx context.Context, queries []string, client db_common.Clie
 	for i, q := range queries {
 		if err := executeQuery(ctx, q, client); err != nil {
 			failures++
-			utils.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
+			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queries), err))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 				display.DisplayErrorTiming(t)

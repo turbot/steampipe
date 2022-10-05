@@ -3,43 +3,41 @@ package workspace
 import (
 	"context"
 	"errors"
+	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, source *SessionDataSource, session *db_common.DatabaseSession) (err error, warnings []string) {
+func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx.Conn) (error, map[string]error) {
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
-	if session == nil {
-		return errors.New("nil session passed to EnsureSessionData"), nil
+	if conn == nil {
+		return errors.New("nil conn passed to EnsureSessionData"), nil
 	}
 
 	// check for introspection tables
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
-	row := session.Connection.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
+	row := conn.QueryRow(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
 
 	var count int
-	err = row.Scan(&count)
+	err := row.Scan(&count)
 	if err != nil {
-		return err, warnings
+		return err, nil
 	}
+	var preparedStatementFailures map[string]error
 	if count == 0 {
-		session.LifeCycle.Add("prepared_statement_start")
-		err, warnings = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), session)
+		err, preparedStatementFailures = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), conn)
 		if err != nil {
-			return err, warnings
+			return err, preparedStatementFailures
 		}
-		session.LifeCycle.Add("prepared_statement_finish")
 
-		session.LifeCycle.Add("introspection_table_start")
-		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource(), session)
+		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource(), conn)
 		if err != nil {
-			return err, warnings
+			return err, preparedStatementFailures
 		}
-		session.LifeCycle.Add("introspection_table_finish")
 	}
-	return nil, warnings
+	return nil, preparedStatementFailures
 }

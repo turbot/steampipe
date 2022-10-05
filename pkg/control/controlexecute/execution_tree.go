@@ -105,7 +105,9 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 	// just execute the root - it will traverse the tree
 	e.Root.execute(ctx, e.client, parallelismLock)
 
-	e.waitForActiveRunsToComplete(ctx, parallelismLock, maxParallelGoRoutines)
+	if err := e.waitForActiveRunsToComplete(ctx, parallelismLock, maxParallelGoRoutines); err != nil {
+		log.Printf("[WARN] timed out waiting for active runs to complete")
+	}
 
 	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
 
@@ -116,7 +118,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 	return failures
 }
 
-func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) {
+func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) error {
 	waitCtx := ctx
 	// if the context was already cancelled, we must creat ea new one to use  when waiting to acquire the lock
 	if ctx.Err() != nil {
@@ -127,7 +129,7 @@ func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, paralle
 		defer cancel()
 	}
 	// wait till we can acquire all semaphores - meaning that all active runs have finished
-	parallelismLock.Acquire(waitCtx, maxParallelGoRoutines)
+	return parallelismLock.Acquire(waitCtx, maxParallelGoRoutines)
 }
 
 func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
@@ -266,8 +268,8 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 	// find the "resource_name" column index
 	resourceNameColumnIndex := -1
 
-	for i, c := range res.ColTypes {
-		if c.Name() == "resource_name" {
+	for i, c := range res.Cols {
+		if c.Name == "resource_name" {
 			resourceNameColumnIndex = i
 		}
 	}

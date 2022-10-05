@@ -7,14 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/utils"
-
 	"github.com/Masterminds/semver"
-
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 )
@@ -112,7 +110,7 @@ func loadModDependencies(mod *modconfig.Mod, runCtx *parse.RunContext) error {
 		}
 	}
 
-	return utils.CombineErrors(errors...)
+	return error_helpers.CombineErrors(errors...)
 }
 
 func loadModDependency(modDependency *modconfig.ModVersionConstraint, runCtx *parse.RunContext) error {

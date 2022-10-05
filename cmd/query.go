@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
@@ -85,19 +86,18 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("cmd.runQueryCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 		}
 	}()
-
 	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
 		args = append(args, stdinData)
 	}
 
 	// validate args
-	utils.FailOnError(validateQueryArgs())
+	error_helpers.FailOnError(validateQueryArgs())
 
 	cloudMetadata, err := cmdconfig.GetCloudMetadata()
-	utils.FailOnError(err)
+	error_helpers.FailOnError(err)
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
@@ -106,7 +106,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// load the workspace
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// set cloud metadata (may be nil)
 	w.CloudMetadata = cloudMetadata
@@ -140,7 +140,7 @@ func validateQueryArgs() error {
 func getPipedStdinData() string {
 	fi, err := os.Stdin.Stat()
 	if err != nil {
-		utils.ShowWarning("could not fetch information about STDIN")
+		error_helpers.ShowWarning("could not fetch information about STDIN")
 		return ""
 	}
 	stdinData := ""

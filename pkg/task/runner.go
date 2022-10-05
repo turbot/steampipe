@@ -1,15 +1,15 @@
 package task
 
 import (
+	"fmt"
 	"sync"
 	"time"
-	"fmt"
-
-	"github.com/turbot/steampipe/pkg/db/db_local"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -72,7 +72,7 @@ func (r *Runner) Run() {
 
 		// save the state - this updates the last checked time
 		if err := r.currentState.Save(); err != nil {
-			utils.ShowWarning(fmt.Sprintf("Regular task runner failed to save state file: %s", err))
+			error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save state file: %s", err))
 		}
 	}
 }

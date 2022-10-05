@@ -3,7 +3,6 @@ package db_local
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -12,15 +11,16 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pluginmanager"
-
+	"github.com/jackc/pgx/v4"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -84,7 +84,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			res.Error = err
 			res.Status = ServiceFailedToStart
 		}
-		defer rootClient.Close()
+		defer rootClient.Close(ctx)
 		// so db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
@@ -159,7 +159,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 
 	// Generate the certificate if it fails then set the ssl to off
 	if err := ensureSelfSignedCertificate(); err != nil {
-		utils.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
+		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
 	if err := utils.IsPortBindable(port); err != nil {
@@ -188,6 +188,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
+	// sometimes connecting to the db immediately after startup results in a dial error - so retry
 	databaseName, err := getDatabaseName(ctx, port)
 	if err != nil {
 		return res.SetError(err)
@@ -224,7 +225,7 @@ func ensureService(ctx context.Context, databaseName string) error {
 	if err != nil {
 		return err
 	}
-	defer rootClient.Close()
+	defer rootClient.Close(ctx)
 
 	// ensure the foreign server exists in the database
 	err = ensureSteampipeServer(ctx, rootClient)
@@ -312,9 +313,9 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 	if err != nil {
 		return "", err
 	}
-	defer connection.Close()
+	defer connection.Close(ctx)
 
-	out := connection.QueryRow("select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
+	out := connection.QueryRow(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
 
 	var databaseName string
 	err = out.Scan(&databaseName)
@@ -429,8 +430,8 @@ func setServicePassword(ctx context.Context, password string) error {
 	if err != nil {
 		return err
 	}
-	defer connection.Close()
-	_, err = connection.Exec(fmt.Sprintf(`alter user steampipe with password '%s'`, password))
+	defer connection.Close(ctx)
+	_, err = connection.Exec(ctx, fmt.Sprintf(`alter user steampipe with password '%s'`, password))
 	return err
 }
 
@@ -484,7 +485,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 }
 
 // ensures that the necessary extensions are installed on the database
-func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
+func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 	extensions := []string{
 		"tablefunc",
 		"ltree",
@@ -492,21 +493,20 @@ func ensurePgExtensions(ctx context.Context, rootClient *sql.DB) error {
 
 	errors := []error{}
 	for _, extn := range extensions {
-		_, err := rootClient.Exec(fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
+		_, err := rootClient.Exec(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
 			errors = append(errors, err)
 		}
 	}
-	return utils.CombineErrors(errors...)
+	return error_helpers.CombineErrors(errors...)
 }
 
 // ensures that the 'steampipe' foreign server exists
-//  (re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
-	res := rootClient.QueryRowContext(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
-	if res.Err() != nil {
-		return res.Err()
-	}
+//
+//	(re)install FDW and creates server if it doesn't
+func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
+	res := rootClient.QueryRow(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+
 	var serverName string
 	err := res.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
@@ -517,7 +517,7 @@ func ensureSteampipeServer(ctx context.Context, rootClient *sql.DB) error {
 }
 
 // create the command schema and grant insert permission
-func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
+func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 	commandSchemaStatements := []string{
 		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableCache),
@@ -525,7 +525,7 @@ func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 	}
 
 	for _, statement := range commandSchemaStatements {
-		if _, err := rootClient.ExecContext(ctx, statement); err != nil {
+		if _, err := rootClient.Exec(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -534,8 +534,8 @@ func ensureCommandSchema(ctx context.Context, rootClient *sql.DB) error {
 
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *sql.DB) error {
-	_, err := rootClient.ExecContext(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
+func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgx.Conn) error {
+	_, err := rootClient.Exec(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
 	if err != nil {
 		return err
 	}

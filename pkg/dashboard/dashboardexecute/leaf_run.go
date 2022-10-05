@@ -8,6 +8,7 @@ import (
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -134,6 +135,15 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
 	if err != nil {
+		queryName := r.DashboardNode.(modconfig.QueryProvider).GetQuery().Name()
+		// get the query and any prepared statement error from the workspace
+		preparedStatementFailure := r.executionTree.workspace.GetPreparedStatementCreationFailure(queryName)
+		if preparedStatementFailure != nil {
+			declRange := preparedStatementFailure.Query.DeclRange
+			preparedStatementError := preparedStatementFailure.Error
+			err = error_helpers.EnrichPreparedStatementError(err, queryName, preparedStatementError, declRange)
+		}
+
 		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(ctx, err)

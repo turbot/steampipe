@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -59,8 +60,6 @@ type ControlRun struct {
 	Group *ResultGroup `json:"-"`
 	// execution tree
 	Tree *ExecutionTree `json:"-"`
-	// used to trace the events within the duration of a control execution
-	Lifecycle *utils.LifecycleTimer `json:"-"`
 	// save run error as string for JSON export
 	RunErrorString string `json:"error,omitempty"`
 	runError       error
@@ -92,8 +91,6 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		Title:     typehelpers.SafeString(control.Title),
 		rowMap:    make(map[string]ResultRows),
 		Summary:   &controlstatus.StatusSummary{},
-		Lifecycle: utils.NewLifecycleTimer(),
-
 		Tree:      executionTree,
 		RunStatus: controlstatus.ControlRunReady,
 
@@ -101,7 +98,6 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		NodeType: modconfig.BlockTypeControl,
 		doneChan: make(chan bool, 1),
 	}
-	res.Lifecycle.Add("constructed")
 	return res
 }
 
@@ -169,7 +165,7 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 	if r.runError == context.DeadlineExceeded {
 		r.runError = fmt.Errorf("control execution timed out")
 	} else {
-		r.runError = utils.TransformErrorToSteampipe(err)
+		r.runError = error_helpers.TransformErrorToSteampipe(err)
 	}
 	r.RunErrorString = r.runError.Error()
 	// update error count
@@ -206,7 +202,7 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 
 	// no execute the SQL to actuall set the search path
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
-	_, err = session.Connection.ExecContext(ctx, q)
+	_, err = session.Connection.Exec(ctx, q)
 	return err
 }
 
@@ -216,8 +212,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 
 	log.Printf("[TRACE] begin ControlRun.Start: %s\n", r.Control.Name())
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
-
-	r.Lifecycle.Add("execute_start")
 
 	control := r.Control
 	log.Printf("[TRACE] control start, %s\n", control.Name())
@@ -231,7 +225,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		if len(r.Severity) != 0 {
 			r.Group.updateSeverityCounts(r.Severity, r.Summary)
 		}
-		r.Lifecycle.Add("execute_end")
 		r.Duration = time.Since(startTime)
 		if r.Group != nil {
 			r.Group.addDuration(r.Duration)
@@ -240,10 +233,9 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	// get a db connection
-	r.Lifecycle.Add("queued_for_session")
 	sessionResult := r.acquireSession(ctx, client)
 	if sessionResult.Error != nil {
-		if !utils.IsCancelledError(sessionResult.Error) {
+		if !error_helpers.IsCancelledError(sessionResult.Error) {
 			log.Printf("[TRACE] controlRun %s execute failed to acquire session: %s", r.ControlId, sessionResult.Error)
 			sessionResult.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 			r.setError(ctx, sessionResult.Error)
@@ -251,7 +243,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		return
 	}
 
-	r.Lifecycle.Add("got_session")
 	dbSession := sessionResult.Session
 	defer func() {
 		// do this in a closure, otherwise the argument will not get evaluated during calltime
@@ -273,21 +264,17 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	// resolve the control query
-	r.Lifecycle.Add("query_resolution_start")
 	query, err := r.resolveControlQuery(control)
 	if err != nil {
 		r.setError(ctx, err)
 		return
 	}
-	r.Lifecycle.Add("query_resolution_finish")
 
 	log.Printf("[TRACE] setting search path %s\n", control.Name())
-	r.Lifecycle.Add("set_search_path_start")
 	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
 		r.setError(ctx, err)
 		return
 	}
-	r.Lifecycle.Add("set_search_path_finish")
 
 	// get a context with a timeout for the control to execute within
 	// we don't use the cancelFn from this timeout context, since usage will lead to 'pgx'
@@ -297,9 +284,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
 	log.Printf("[TRACE] execute start for, %s\n", control.Name())
-	r.Lifecycle.Add("query_start")
 	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, query, nil)
-	r.Lifecycle.Add("query_finish")
 	log.Printf("[TRACE] execute finish for, %s\n", control.Name())
 
 	if err != nil {
@@ -333,7 +318,7 @@ func (r *ControlRun) acquireSession(ctx context.Context, client db_common.Client
 	var sessionResult *db_common.AcquireSessionResult
 	for attempt := 0; attempt < 4; attempt++ {
 		sessionResult = client.AcquireSession(ctx)
-		if sessionResult.Error == nil || utils.IsCancelledError(sessionResult.Error) {
+		if sessionResult.Error == nil || error_helpers.IsCancelledError(sessionResult.Error) {
 			break
 		}
 
@@ -368,26 +353,6 @@ func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, er
 }
 
 func (r *ControlRun) waitForResults(ctx context.Context) {
-	// create a channel to which will be closed when gathering has been done
-	gatherDoneChan := make(chan string)
-	go func() {
-		r.gatherResults(ctx)
-		close(gatherDoneChan)
-	}()
-
-	select {
-	// check for cancellation
-	case <-ctx.Done():
-		r.setError(ctx, ctx.Err())
-	case <-gatherDoneChan:
-		// do nothing
-	}
-}
-
-func (r *ControlRun) gatherResults(ctx context.Context) {
-	r.Lifecycle.Add("gather_start")
-	defer func() { r.Lifecycle.Add("gather_finish") }()
-
 	defer func() {
 		dimensionsSchema := r.getDimensionSchema()
 		// convert the data to snapshot format
@@ -396,6 +361,9 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 
 	for {
 		select {
+		case <-ctx.Done():
+			r.setError(ctx, ctx.Err())
+			return
 		case row := <-*r.queryResult.RowChan:
 			// nil row means control run is complete
 			if row == nil {
@@ -414,7 +382,7 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 			}
 
 			// so all is ok - create another result row
-			result, err := NewResultRow(r, row, r.queryResult.ColTypes)
+			result, err := NewResultRow(r, row, r.queryResult.Cols)
 			if err != nil {
 				r.setError(ctx, err)
 				return
@@ -426,14 +394,14 @@ func (r *ControlRun) gatherResults(ctx context.Context) {
 	}
 }
 
-func (r *ControlRun) getDimensionSchema() map[string]*dashboardtypes.ColumnSchema {
-	var dimensionsSchema = make(map[string]*dashboardtypes.ColumnSchema)
+func (r *ControlRun) getDimensionSchema() map[string]*queryresult.ColumnDef {
+	var dimensionsSchema = make(map[string]*queryresult.ColumnDef)
 
 	for _, row := range r.Rows {
 		for _, dim := range row.Dimensions {
 			if _, ok := dimensionsSchema[dim.Key]; !ok {
 				// add to map
-				dimensionsSchema[dim.Key] = &dashboardtypes.ColumnSchema{
+				dimensionsSchema[dim.Key] = &queryresult.ColumnDef{
 					Name:     dim.Key,
 					DataType: dim.SqlType,
 				}

@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/plugin"
@@ -190,7 +191,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runPluginInstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
@@ -203,7 +204,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(plugins) == 0 {
 		fmt.Println()
-		utils.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
+		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -286,7 +287,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
@@ -297,7 +298,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	plugins, err := resolveUpdatePluginsFromArgs(args)
 	if err != nil {
 		fmt.Println()
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -308,14 +309,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool("all")) && plugins[0] == "all" {
 		// improve the response to wrong argument "steampipe plugin update all"
 		fmt.Println()
-		utils.ShowError(ctx, fmt.Errorf("Did you mean %s?", constants.Bold("--all")))
+		error_helpers.ShowError(ctx, fmt.Errorf("Did you mean %s?", constants.Bold("--all")))
 		fmt.Println()
 		return
 	}
 
 	state, err := statefile.LoadState()
 	if err != nil {
-		utils.ShowError(ctx, fmt.Errorf("could not load state"))
+		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
 		exitCode = constants.ExitCodeLoadingError
 		return
 	}
@@ -323,7 +324,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// load up the version file data
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
-		utils.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
+		error_helpers.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
 		exitCode = constants.ExitCodeLoadingError
 		return
 	}
@@ -378,7 +379,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
-		utils.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later."))
+		error_helpers.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later."))
 		exitCode = constants.ExitCodeLoadingError
 		return
 	}
@@ -545,7 +546,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports display.PluginIn
 		steampipeconfig.GlobalConfig = config
 	}
 
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
 		return err
 	}
@@ -565,21 +566,21 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	pluginConnectionMap, err := getPluginConnectionMap(cmd.Context())
 	if err != nil {
-		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
+		error_helpers.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		utils.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
+		error_helpers.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
 		exitCode = constants.ExitCodePluginListFailure
 	}
 	headers := []string{"Name", "Version", "Connections"}
@@ -597,14 +598,14 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runPluginUninstallCmd end")
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	if len(args) == 0 {
 		fmt.Println()
-		utils.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
+		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -614,7 +615,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 	connectionMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -624,7 +625,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	for _, p := range args {
 		spinner.SetStatus(fmt.Sprintf("Uninstalling %s", p))
 		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
-			utils.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
+			error_helpers.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		} else {
 			report.ShortName = p
 			reports = append(reports, *report)
@@ -636,7 +637,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 // returns a map of pluginFullName -> []{connections using pluginFullName}
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, error) {
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 // Constants for Config
@@ -27,7 +27,7 @@ func ensureSteampipeSubDir(dirName string) string {
 
 	if _, err := os.Stat(subDir); os.IsNotExist(err) {
 		err = os.MkdirAll(subDir, 0755)
-		utils.FailOnErrorWithMessage(err, fmt.Sprintf("could not create %s directory", dirName))
+		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create %s directory", dirName))
 	}
 
 	return subDir
