@@ -213,8 +213,6 @@ func (r *LeafRun) GetError() error {
 
 // SetComplete implements DashboardNodeRun
 func (r *LeafRun) SetComplete(ctx context.Context) {
-	log.Printf("[WARN] SetComplete run %s", r.Name)
-
 	r.Status = dashboardtypes.DashboardRunComplete
 	// raise counter complete event
 	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
@@ -226,10 +224,8 @@ func (r *LeafRun) SetComplete(ctx context.Context) {
 	// call snapshot hooks with progress
 	statushooks.UpdateSnapshotProgress(ctx, 1)
 
-	log.Printf("[WARN] SetComplete run %s tell parent we are done", r.Name)
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
-	log.Printf("[WARN] SetComplete run %s told parent", r.Name)
 }
 
 // RunComplete implements DashboardNodeRun
@@ -397,9 +393,9 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 	var errors []error
 
 	for !r.ChildrenComplete() {
-		log.Printf("[WARN] run %s waiting for children", r.Name)
+		log.Printf("[TRACE] run %s waiting for children", r.Name)
 		completeChild := <-r.childComplete
-		log.Printf("[WARN] run %s got child complete", r.Name)
+		log.Printf("[TRACE] run %s got child complete", r.Name)
 		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
 			errors = append(errors, completeChild.GetError())
 		}
