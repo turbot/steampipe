@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
 	"strings"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -106,7 +106,7 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 }
 
 func displayLine(ctx context.Context, result *queryresult.Result) {
-	colNames := ColumnNames(result.ColTypes)
+
 	maxColNameLength := 0
 	for _, col := range result.Cols {
 		thisLength := utf8.RuneCountInString(col.Name)
@@ -291,7 +291,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 func buildTimingString(result *queryresult.Result) string {
 	timingResult := <-result.TimingResult
 	if timingResult == nil {
-		return
+		return ""
 	}
 	var sb strings.Builder
 	// large numbers should be formatted with commas

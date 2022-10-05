@@ -20,13 +20,11 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
 
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -225,7 +223,7 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	case constants.OutputFormatSnapshot:
 		// just display result
 		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 		fmt.Println(string(snapshotText))
 	}
 }
@@ -233,11 +231,11 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
 	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
 	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// initialise
-	initData := initialisation.NewInitData(dashboardCtx, w)
-	// there must be a modfile
+	initData := initialisation.NewInitData(dashboardCtx, w, constants.InvokerDashboard)
+	// there must be a mod-file
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition
 	}
@@ -247,9 +245,9 @@ func initDashboard(dashboardCtx context.Context, err error) *initialisation.Init
 
 func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) (*dashboardtypes.SteampipeSnapshot, error) {
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := initialisation.NewInitData(ctx, w)
+	initData := initialisation.NewInitData(ctx, w, constants.InvokerDashboard)
 	// shutdown the service on exit
 	defer initData.Cleanup(ctx)
 	if err := initData.Result.Error; err != nil {
@@ -283,6 +281,8 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
 }
 
 func validateCloudArgs() error {
+	// TODO VALIDATE cloud host - remove trailing slash?
+
 	// NOTE: viper.IsSet DOES NOT take into account flag default value - it should NOT be used for args with a default
 
 	// if workspace-database has not been set, check whether workspace has been set and if so use that

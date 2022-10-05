@@ -25,7 +25,6 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -217,7 +216,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 	}
 
 	if err := validateCloudArgs(); err != nil {
-		utils.ShowError(ctx, err)
+		error_helpers.ShowError(ctx, err)
 		return false
 	}
 	// only 1 of 'share' and 'snapshot' may be set
@@ -426,7 +425,6 @@ func getExportTargets(executionName string) ([]*controldisplay.CheckExportTarget
 			targets[newTarget.File] = newTarget
 		}
 	}
-
 
 	// convert target map into array
 	targetList := maps.Values(targets)

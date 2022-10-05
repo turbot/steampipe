@@ -125,7 +125,7 @@ func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.Co
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
-	names := utils.SortedStringKeys(configMap)
+	names := utils.SortedMapKeys(configMap)
 	log.Printf("[TRACE] SetConnectionConfigMap: %s", strings.Join(names, ","))
 
 	err := m.handleConnectionConfigChanges(configMap)

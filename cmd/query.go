@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/exp/maps"
@@ -167,7 +166,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
-		utils.FailOnError(err)
+		error_helpers.FailOnError(err)
 	}
 
 	// build ordered list of queries
@@ -186,7 +185,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 
 			// so a dashboard name was specified - just call GenerateSnapshot
 			snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, baseInitData, nil)
-			utils.FailOnError(err)
+			error_helpers.FailOnError(err)
 
 			// display the result
 			switch viper.GetString(constants.ArgOutput) {
@@ -196,19 +195,19 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 				// if the format is snapshot, just dump it out
 				jsonOutput, err := json.MarshalIndent(snap, "", "  ")
 				if err != nil {
-					utils.FailOnErrorWithMessage(err, "failed to display result as snapshot")
+					error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
 				}
 				fmt.Println(string(jsonOutput))
 			default:
 				// otherwise convert the snapshot into a query result
 				result, err := snapshotToQueryResult(snap, targetName)
-				utils.FailOnErrorWithMessage(err, "failed to display result as snapshot")
+				error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
 				display.ShowOutput(ctx, result)
 			}
 
 			// share the snapshot if necessary
 			err = uploadSnapshot(snap)
-			utils.FailOnErrorWithMessage(err, "failed to share snapshot")
+			error_helpers.FailOnErrorWithMessage(err, "failed to share snapshot")
 		}
 	}
 	return 0
@@ -230,11 +229,7 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 		return nil, fmt.Errorf("failed to read query result from snapshot")
 	}
 
-	colTypes := make([]*sql.ColumnType, len(chartRun.Data.Columns))
-	for i, c := range chartRun.Data.Columns {
-		colTypes[i] = c.SqlColumnType
-	}
-	res := queryresult.NewQueryResult(colTypes)
+	res := queryresult.NewQueryResult(chartRun.Data.Columns)
 
 	// TODO for now we do not support timing for snapshot query output - this need implementation
 	// close timing channel to avoid lockup

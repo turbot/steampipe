@@ -3,13 +3,10 @@ package initialisation
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 
-	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
@@ -17,6 +14,8 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -97,7 +96,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
 		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
-		w.HandlePreparedStatementFailures(preparedStatementFailures)
+		i.Workspace.HandlePreparedStatementFailures(preparedStatementFailures)
 		return err
 	}
 
@@ -125,7 +124,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	// add refresh connection warnings
 	i.Result.AddWarnings(refreshResult.Warnings...)
 	// add warnings from prepared statement creation
-	i.Result.AddPreparedStatementFailures(w.GetPreparedStatementFailures())
+	i.Result.AddPreparedStatementFailures(i.Workspace.GetPreparedStatementFailures())
 
 	// force creation of session data - se we see any prepared statement errors at once
 	sessionResult := i.Client.AcquireSession(ctx)
@@ -138,16 +137,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 	return
 }
-
-// TODO needed?
-func (i *InitData) Cancel() {
-	// cancel any ongoing operation
-	if i.cancelInitialisation != nil {
-		i.cancelInitialisation()
-	}
-	i.cancelInitialisation = nil
-}
-
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
 func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {

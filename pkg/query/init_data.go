@@ -2,13 +2,10 @@ package query
 
 import (
 	"context"
-	"fmt"
-	"github.com/jackc/pgx/v4"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -89,5 +86,5 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	i.PreparedStatementSource = preparedStatementSource
 	// now disable status hooks and call base init
 	ctx = statushooks.DisableStatusHooks(ctx)
-	i.InitData.Init(ctx)
+	i.InitData.Init(ctx, constants.InvokerQuery)
 }
