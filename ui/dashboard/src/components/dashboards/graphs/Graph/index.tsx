@@ -326,20 +326,31 @@ const Graph = ({ props }) => {
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  const data = useNodeAndEdgeData(
+  const nodeAndEdgeData = useNodeAndEdgeData(
     !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
     props.data,
     props.properties,
     props.status
   );
 
-  if (!data || data.rows.length === 0) {
+  if (
+    !nodeAndEdgeData ||
+    !nodeAndEdgeData.data ||
+    !nodeAndEdgeData.data.rows ||
+    nodeAndEdgeData.data.rows.length === 0
+  ) {
     return null;
   }
 
   return (
     <GraphProvider>
-      <Graph props={{ ...props, data }} />
+      <Graph
+        props={{
+          ...props,
+          data: nodeAndEdgeData.data,
+          properties: nodeAndEdgeData.properties,
+        }}
+      />
     </GraphProvider>
   );
 };

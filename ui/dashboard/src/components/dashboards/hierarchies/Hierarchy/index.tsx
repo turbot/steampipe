@@ -118,7 +118,7 @@ const HierarchyWrapper = (props: HierarchyProps) => {
     themeContext: { wrapperRef },
   } = useDashboard();
 
-  const data = useNodeAndEdgeData(
+  const nodeAndEdgeData = useNodeAndEdgeData(
     !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
     props.data,
     props.properties,
@@ -129,13 +129,25 @@ const HierarchyWrapper = (props: HierarchyProps) => {
     return null;
   }
 
-  if (!data || data.rows.length === 0) {
+  if (
+    !nodeAndEdgeData ||
+    !nodeAndEdgeData.data ||
+    !nodeAndEdgeData.data.rows ||
+    nodeAndEdgeData.data.rows.length === 0
+  ) {
     return null;
   }
 
   return (
     <Chart
-      options={buildHierarchyOptions({ ...props, data }, themeColors)}
+      options={buildHierarchyOptions(
+        {
+          ...props,
+          data: nodeAndEdgeData.data,
+          properties: nodeAndEdgeData.properties,
+        },
+        themeColors
+      )}
       type={props.display_type || "tree"}
     />
   );
