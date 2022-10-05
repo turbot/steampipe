@@ -8,9 +8,10 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
@@ -124,7 +125,7 @@ func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTre
 		}
 		r.children[i] = childRun
 	}
-	return r, utils.CombineErrors(errors...)
+	return r, error_helpers.CombineErrors(errors...)
 }
 
 // if we have a query provider which requires execution OR we have children, set status to ready
@@ -359,11 +360,13 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 
 // if this leaf run has a query or sql, execute it now
 func (r *LeafRun) executeQuery(ctx context.Context) {
+	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
 
-	ERROR HANDLING CODE
-
-		if err != nil {
-			queryName := r.DashboardNode.(modconfig.QueryProvider).GetQuery().Name()
+	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
+	if err != nil {
+		query := r.DashboardNode.(modconfig.QueryProvider).GetQuery()
+		if query != nil {
+			queryName := query.Name()
 			// get the query and any prepared statement error from the workspace
 			preparedStatementFailure := r.executionTree.workspace.GetPreparedStatementCreationFailure(queryName)
 			if preparedStatementFailure != nil {
@@ -371,18 +374,7 @@ func (r *LeafRun) executeQuery(ctx context.Context) {
 				preparedStatementError := preparedStatementFailure.Error
 				err = error_helpers.EnrichPreparedStatementError(err, queryName, preparedStatementError, declRange)
 			}
-
-			log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
-			// set the error status on the counter - this will raise counter error event
-			r.SetError(ctx, err)
-			return
-
 		}
-
-	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
-
-	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
-	if err != nil {
 		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(ctx, err)
@@ -416,7 +408,7 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 
 	log.Printf("[WARN] run %s ALL children complete", r.Name)
 	// so all children have completed - check for errors
-	err := utils.CombineErrors(errors...)
+	err := error_helpers.CombineErrors(errors...)
 	if err == nil {
 		r.combineChildData()
 		// set complete status on dashboard
@@ -429,7 +421,7 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 func (r *LeafRun) combineChildData() {
 	r.Data = &dashboardtypes.LeafData{}
 	// build map of columns for the schema
-	schemaMap := make(map[string]*dashboardtypes.ColumnSchema)
+	schemaMap := make(map[string]*queryresult.ColumnDef)
 	for _, c := range r.children {
 		childLeafRun := c.(*LeafRun)
 		data := childLeafRun.Data
@@ -439,12 +431,8 @@ func (r *LeafRun) combineChildData() {
 			}
 		}
 		r.Data.Rows = append(r.Data.Rows, data.Rows...)
-
-		// TODO CHECK
-		// remove data from the child
-		//childLeafRun.Data = nil
 	}
-	r.Data.Columns = utils.MapValues(schemaMap)
+	r.Data.Columns = maps.Values(schemaMap)
 }
 
 // format a string for use as a postgres string param

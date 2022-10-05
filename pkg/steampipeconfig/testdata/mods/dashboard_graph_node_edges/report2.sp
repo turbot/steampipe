@@ -21,7 +21,7 @@ dashboard "aws_ec2_instance_detail" {
       edges = [
         edge.aws_ec2_instance_to_ebs_volume_edge
       ]
-      categories = [category.aws_ebs_volume]
+
       category "c1" {
         href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
         fold {
@@ -91,6 +91,7 @@ node "aws_ec2_instance_node" {
 
 
 node "aws_ec2_instance_ebs_volume_node" {
+  category = category.aws_ec2_instance
   sql = <<-EOQ
     select
       bd -> 'Ebs' ->> 'VolumeId' as id,
@@ -115,6 +116,7 @@ node "aws_ec2_instance_ebs_volume_node" {
 
 
 edge "aws_ec2_instance_to_ebs_volume_edge" {
+  category = category.aws_ec2_instance
   title = "mounts"
 
   sql = <<-EOQ
