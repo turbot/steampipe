@@ -113,7 +113,12 @@ const FlowWrapper = (props: FlowProps) => {
   const {
     themeContext: { wrapperRef },
   } = useDashboard();
-  const data = useNodeAndEdgeData(props.data, props.properties, props.status);
+  const data = useNodeAndEdgeData(
+    !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
+    props.data,
+    props.properties,
+    props.status
+  );
 
   if (!wrapperRef) {
     return null;

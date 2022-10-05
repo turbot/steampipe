@@ -1,18 +1,16 @@
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
-import { CategoryMap, NodeAndEdgeProperties } from "../common/types";
 import { ComponentType } from "react";
 import { NodeAndEdgeData } from "../graphs/types";
+import { NodeAndEdgeProperties } from "../common/types";
 
 export type BaseFlowProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
-export type FlowProperties = NodeAndEdgeProperties & {
-  categories?: CategoryMap;
-};
+export type FlowProperties = NodeAndEdgeProperties;
 
 export interface FlowProps extends BaseFlowProps {
   data?: NodeAndEdgeData;
   display_type?: FlowType;
-  properties?: FlowProperties;
+  properties?: NodeAndEdgeProperties;
 }
 
 export type FlowType = "sankey" | "table";

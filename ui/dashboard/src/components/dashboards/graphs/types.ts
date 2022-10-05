@@ -10,6 +10,8 @@ import {
 } from "../common/types";
 import { ComponentType } from "react";
 
+export type NodeAndEdgeDataFormat = "LEGACY" | "NODE_AND_EDGE";
+
 export type BaseGraphProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
 export interface NodeAndEdgeDataRow {
@@ -29,7 +31,6 @@ export interface NodeAndEdgeData {
 }
 
 export type GraphProperties = NodeAndEdgeProperties & {
-  categories?: CategoryMap;
   direction: "LR" | "RL" | "TB" | "BT";
 };
 

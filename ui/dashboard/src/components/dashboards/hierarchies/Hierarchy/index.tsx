@@ -9,7 +9,7 @@ import {
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { getHierarchyComponent } from "..";
-import { HierarchyProps, HierarchyProperties, HierarchyType } from "../types";
+import { HierarchyProperties, HierarchyProps, HierarchyType } from "../types";
 import { NodesAndEdges } from "../../common/types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
@@ -118,7 +118,12 @@ const HierarchyWrapper = (props: HierarchyProps) => {
     themeContext: { wrapperRef },
   } = useDashboard();
 
-  const data = useNodeAndEdgeData(props.data, props.properties, props.status);
+  const data = useNodeAndEdgeData(
+    !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
+    props.data,
+    props.properties,
+    props.status
+  );
 
   if (!wrapperRef) {
     return null;
