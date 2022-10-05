@@ -1,4 +1,4 @@
-package cmdconfig
+package initialisation
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
-func GetCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
+func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 	workspaceDatabase := viper.GetString(constants.ArgWorkspaceDatabase)
 	if workspaceDatabase == "local" {
 		// local database - nothing to do here

@@ -55,7 +55,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 							UnqualifiedName: "dashboard.dashboard_named_args",
 							Title:           toStringPointer("dashboard with named arguments"),
 							ChildNames:      []string{"dashboard_runtime_deps_named_arg.input.user", "dashboard_runtime_deps_named_arg.table.dashboard_dashboard_named_args_anonymous_table_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
@@ -164,7 +164,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 							UnqualifiedName: "dashboard.dashboard_pos_args",
 							Title:           toStringPointer("dashboard with positional arguments"),
 							ChildNames:      []string{"dashboard_runtime_deps_pos_arg.input.user", "dashboard_runtime_deps_pos_arg.table.dashboard_dashboard_pos_args_anonymous_table_0"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 					},
 					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
@@ -270,7 +270,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 							UnqualifiedName: "dashboard.m1_d1",
 							Title:           toStringPointer("dashboard d1"),
 							ChildNames:      []string{"m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 						"local.dashboard.local_d1": {
 							ShortName:       "local_d1",
@@ -395,7 +395,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 							UnqualifiedName: "dashboard.m1_d1",
 							Title:           toStringPointer("dashboard d1"),
 							ChildNames:      []string{"m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
-							HclType:         "dashboard",
+							//HclType:         "dashboard",
 						},
 						"local.dashboard.local_d1": {
 							ShortName:       "local_d1",

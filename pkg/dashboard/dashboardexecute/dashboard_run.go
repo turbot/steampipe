@@ -3,7 +3,6 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
@@ -60,6 +59,8 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		Name:             name,
 		NodeType:         modconfig.BlockTypeDashboard,
 		DashboardName:    executionTree.dashboardName,
+		Title:            typehelpers.SafeString(dashboard.Title),
+		Description:      typehelpers.SafeString(dashboard.Description),
 		Display:          typehelpers.SafeString(dashboard.Display),
 		Documentation:    typehelpers.SafeString(dashboard.Documentation),
 		Tags:             dashboard.Tags,
@@ -72,19 +73,9 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		dashboardNode: dashboard,
 		childComplete: make(chan dashboardtypes.DashboardNodeRun, len(children)),
 	}
-	if dashboard.Title != nil {
-		r.Title = *dashboard.Title
-	}
 	if dashboard.Width != nil {
 		r.Width = *dashboard.Width
 	}
-	if dashboard.Description != nil {
-		r.Description = *dashboard.Description
-	}
-	if dashboard.Documentation != nil {
-		r.Documentation = *dashboard.Documentation
-	}
-
 	for _, child := range children {
 		var childRun dashboardtypes.DashboardNodeRun
 		var err error

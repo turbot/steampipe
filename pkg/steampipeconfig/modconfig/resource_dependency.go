@@ -36,45 +36,6 @@ func (d *ResourceDependency) IsRuntimeDependency() bool {
 
 }
 
-//// ToRuntimeDependency determines whether this is a runtime dependency
-//// and if so, create a RuntimeDependency and return it
-//// a dependency is run time if:
-//// - there is a single traversal
-//// - the property referenced is one of the defined runtime dependency properties
-//func (d *ResourceDependency) ToRuntimeDependency(bodyContent *hcl.BodyContent) *RuntimeDependency {
-//	// runtime dependency wil only have a single traversal
-//	if len(d.Traversals) > 1 {
-//		return nil
-//	}
-//
-//	if bodyContent == nil {
-//		return nil
-//	}
-//	// parse the traversal as a property path
-//	propertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
-//	if err != nil {
-//		return nil
-//	}
-//
-//	if !isRunTimeDependencyProperty(propertyPath) {
-//		return nil
-//	}
-//
-//	// TACTICAL: because the hcl decoding library does not give easy acces to the property which is being populated with this
-//	// dependency, we examine the body content and extract all properties which have the same dependency
-//	// (this is not ideal)
-//	targetProperties := d.getPropertiesFromContent(bodyContent)
-//
-//	res := &RuntimeDependency{
-//		TargetProperties: targetProperties,
-//		PropertyPath:     propertyPath,
-//	}
-//	if len(res.TargetProperties) == 0 {
-//		return nil
-//	}
-//	return res
-//}
-
 func isRunTimeDependencyProperty(propertyPath *ParsedPropertyPath) bool {
 	// supported runtime dependencies
 	// map is keyed by resource type and contains a list of properties

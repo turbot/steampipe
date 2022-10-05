@@ -200,7 +200,7 @@ func (c *DashboardCard) GetDisplay() string {
 	return typehelpers.SafeString(c.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (c *DashboardCard) GetDocumentation() string {
 	return ""
 }

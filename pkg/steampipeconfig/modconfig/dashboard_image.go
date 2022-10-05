@@ -181,7 +181,7 @@ func (i *DashboardImage) GetDisplay() string {
 	return typehelpers.SafeString(i.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (*DashboardImage) GetDocumentation() string {
 	return ""
 }

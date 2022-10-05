@@ -44,7 +44,6 @@ var ExecutionStartedSchemaVersion int64 = 20220614
 type ExecutionStartedPayload struct {
 	SchemaVersion string                                  `json:"schema_version"`
 	Action        string                                  `json:"action"`
-	DashboardNode dashboardtypes.DashboardNodeRun         `json:"dashboard_node"`
 	ExecutionId   string                                  `json:"execution_id"`
 	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`
 	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout"`
@@ -67,6 +66,15 @@ type ControlEventPayload struct {
 type ExecutionErrorPayload struct {
 	Action string `json:"action"`
 	Error  string `json:"error"`
+}
+
+var ExecutionCompletePayloadSchemaVersion int64 = 20220929
+
+type ExecutionCompletePayload struct {
+	Action        string                            `json:"action"`
+	SchemaVersion string                            `json:"schema_version"`
+	Snapshot      *dashboardtypes.SteampipeSnapshot `json:"snapshot"`
+	ExecutionId   string                            `json:"execution_id"`
 }
 
 type InputValuesClearedPayload struct {

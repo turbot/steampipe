@@ -4,7 +4,8 @@
       "name": "github.com/pskrbasu/steampipe-mod-m1",
       "alias": "m1",
       "version": "4.0.0",
-      "constraint": "4.0"
+      "constraint": "4.0",
+      "struct_version": 20220411
     }
   }
 }

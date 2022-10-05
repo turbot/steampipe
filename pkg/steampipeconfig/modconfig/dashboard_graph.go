@@ -205,7 +205,7 @@ func (g *DashboardGraph) GetDisplay() string {
 	return typehelpers.SafeString(g.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (g *DashboardGraph) GetDocumentation() string {
 	return ""
 }

@@ -231,7 +231,7 @@ func (b *Benchmark) GetDisplay() string {
 	return typehelpers.SafeString(b.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (b *Benchmark) GetDocumentation() string {
 	return typehelpers.SafeString(b.Documentation)
 }
@@ -333,7 +333,7 @@ func (b *Benchmark) setBaseProperties(resourceMapProvider ModResourcesProvider) 
 		b.Display = b.Base.Display
 	}
 
-	b.Tags = utils.MergeStringMaps(b.Tags, b.Base.Tags)
+	b.Tags = utils.MergeMaps(b.Tags, b.Base.Tags)
 	if b.Title == nil {
 		b.Title = b.Base.Title
 	}

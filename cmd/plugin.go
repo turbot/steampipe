@@ -389,7 +389,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	progressBars := uiprogress.New()
 	progressBars.Start()
 
-	sorted := utils.SortedStringKeys(reports)
+	sorted := utils.SortedMapKeys(reports)
 	for _, key := range sorted {
 		report := reports[key]
 		updateWaitGroup.Add(1)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -34,7 +34,6 @@ type DashboardExecutionTree struct {
 	id                     string
 }
 
-// NewDashboardExecutionTree creates a result group from a ModTreeItem
 func NewDashboardExecutionTree(rootName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
 	// now populate the DashboardExecutionTree
 	executionTree := &DashboardExecutionTree{
@@ -82,9 +81,32 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
 		}
 		return NewCheckRun(benchmark, e, e)
+	case modconfig.BlockTypeQuery:
+		// wrap in a table
+		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
+		if !ok {
+			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
+		}
+		// wrap this in a chart and a dashboard
+		dashboard, err := modconfig.NewQueryDashboard(query)
+		if err != nil {
+			return nil, err
+		}
+		return NewDashboardRun(dashboard, e, e)
+	case modconfig.BlockTypeControl:
+		// wrap in a table
+		control, ok := e.workspace.GetResourceMaps().Controls[rootName]
+		if !ok {
+			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
+		}
+		// wrap this in a chart and a dashboard
+		dashboard, err := modconfig.NewQueryDashboard(control)
+		if err != nil {
+			return nil, err
+		}
+		return NewDashboardRun(dashboard, e, e)
 	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
-
 	}
 }
 
@@ -103,7 +125,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		return
 	}
 
-	panels := e.buildSnapshotPanels()
+	panels := e.BuildSnapshotPanels()
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
@@ -112,7 +134,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	})
 	defer func() {
 		// build map of those variables referenced by the dashboard run
-		referencedVariables := e.getReferencedVariables()
+		referencedVariables := GetReferencedVariables(e.Root, e.workspace)
 		e := &dashboardevents.ExecutionComplete{
 			Root:        e.Root,
 			Session:     e.sessionId,
@@ -122,7 +144,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 			Variables:   referencedVariables,
 			// search path elements are quoted (for consumption by postgres)
 			// unquote them
-			SearchPath: unquoteStringArray(e.client.GetRequiredSessionSearchPath()),
+			SearchPath: utils.UnquoteStringArray(e.client.GetRequiredSessionSearchPath()),
 			StartTime:  startTime,
 			EndTime:    time.Now(),
 		}
@@ -234,46 +256,7 @@ func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
 	return e.inputValues[name]
 }
 
-// build map of variables values containing only those mod variables which are referenced
-func (e *DashboardExecutionTree) getReferencedVariables() map[string]string {
-	var referencedVariables = make(map[string]string)
-
-	addReferencedVars := func(refs []*modconfig.ResourceReference) {
-		for _, ref := range refs {
-			parts := strings.Split(ref.To, ".")
-			if len(parts) == 2 && parts[0] == "var" {
-				varName := parts[1]
-				referencedVariables[varName] = e.workspace.VariableValues[varName]
-			}
-		}
-	}
-
-	switch r := e.Root.(type) {
-	case *DashboardRun:
-		r.dashboardNode.WalkResources(
-			func(resource modconfig.HclResource) (bool, error) {
-				addReferencedVars(resource.GetReferences())
-				return true, nil
-			},
-		)
-	case *CheckRun:
-		benchmark, ok := r.DashboardNode.(*modconfig.Benchmark)
-		if !ok {
-			// not expected
-			break
-		}
-		benchmark.WalkResources(
-			func(resource modconfig.ModTreeItem) (bool, error) {
-				addReferencedVars(resource.(modconfig.HclResource).GetReferences())
-				return true, nil
-			},
-		)
-	}
-
-	return referencedVariables
-}
-
-func (e *DashboardExecutionTree) buildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
+func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
 	res := map[string]dashboardtypes.SnapshotPanel{}
 	// if this node is a snapshot node, add to map
 	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
@@ -284,7 +267,7 @@ func (e *DashboardExecutionTree) buildSnapshotPanels() map[string]dashboardtypes
 
 func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardNodeRun, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
 	if checkRun, ok := parent.(*CheckRun); ok {
-		return checkRun.buildSnapshotPanels(res)
+		return checkRun.BuildSnapshotPanels(res)
 	}
 	for _, c := range parent.GetChildren() {
 		// if this node is a snapshot node, add to map
@@ -294,14 +277,5 @@ func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.
 		res = e.buildSnapshotPanelsUnder(c, res)
 	}
 
-	return res
-}
-
-// remove quote marks from elements of string array
-func unquoteStringArray(stringArray []string) []string {
-	res := make([]string, len(stringArray))
-	for i, s := range stringArray {
-		res[i] = strings.Replace(s, `"`, ``, -1)
-	}
 	return res
 }

@@ -17,6 +17,31 @@ const actorAPI = "/api/v1/actor"
 const actorWorkspacesAPI = "/api/v1/actor/workspace"
 const passwordAPIFormat = "/api/v1/user/%s/password"
 
+func GetUserWorkspace(token string) (string, error) {
+	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
+	// create a 'bearer' string by appending the access token
+	var bearer = "Bearer " + token
+	client := &http.Client{}
+
+	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI+"?limit=2", bearer, client)
+	if err != nil {
+		return "", fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
+	}
+	items := resp["items"].([]any)
+	if len(items) == 0 {
+		return "", fmt.Errorf("no workspace found for user")
+	}
+	if len(items) > 1 {
+		return "", fmt.Errorf("more than one workspace found for user - specify which one to use with '--workspace'")
+	}
+	ws := items[0].(map[string]any)
+	identity := ws["identity"].(map[string]any)
+	handle := ws["handle"].(string)
+	identityHandle := identity["handle"].(string)
+
+	return fmt.Sprintf("%s/%s", identityHandle, handle), nil
+}
+
 func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {
 	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
 	parts := strings.Split(workspaceDatabaseString, "/")
@@ -40,7 +65,7 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 		return nil, fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
 	}
 
-	workspace := workspaceData["workspace"].(map[string]interface{})
+	workspace := workspaceData["workspace"].(map[string]any)
 	workspaceHost := workspace["host"].(string)
 	databaseName := workspace["database_name"].(string)
 
@@ -55,7 +80,7 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
-	identity := workspaceData["identity"].(map[string]interface{})
+	identity := workspaceData["identity"].(map[string]any)
 
 	cloudMetadata := steampipeconfig.NewCloudMetadata()
 	cloudMetadata.Actor.Id = userId
@@ -70,7 +95,7 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	return cloudMetadata, nil
 }
 
-func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]interface{}, error) {
+func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]any, error) {
 	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
@@ -79,11 +104,11 @@ func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, c
 	// TODO HANDLE PAGING
 	items := resp["items"]
 	if items != nil {
-		itemsArray := items.([]interface{})
+		itemsArray := items.([]any)
 		for _, i := range itemsArray {
-			item := i.(map[string]interface{})
-			workspace := item["workspace"].(map[string]interface{})
-			identity := item["identity"].(map[string]interface{})
+			item := i.(map[string]any)
+			workspace := item["workspace"].(map[string]any)
+			identity := item["identity"].(map[string]any)
 			if identity["handle"] == identityHandle && workspace["handle"] == workspaceHandle {
 				return item, nil
 			}
@@ -125,7 +150,7 @@ func getPassword(baseURL, userHandle, bearer string, client *http.Client) (strin
 	return password, nil
 }
 
-func fetchAPIData(url, bearer string, client *http.Client) (map[string]interface{}, error) {
+func fetchAPIData(url, bearer string, client *http.Client) (map[string]any, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -145,7 +170,7 @@ func fetchAPIData(url, bearer string, client *http.Client) (map[string]interface
 	if err != nil {
 		return nil, err
 	}
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal(bodyBytes, &result)
 	if err != nil {
 		return nil, err

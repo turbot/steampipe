@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"io"
 	"os"
 	"strings"
@@ -82,7 +83,9 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
-		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault))
+		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
+		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
 
 	return cmd
 }
@@ -112,12 +115,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// verify we have an argument
 	if !validateCheckArgs(ctx, cmd, args) {
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
-	}
-
-	// if progress is disabled, update context to contain a null status hooks object
-	if !viper.GetBool(constants.ArgProgress) {
-		statushooks.DisableStatusHooks(ctx)
 	}
 
 	// initialise
@@ -131,9 +130,19 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	client := initData.Client
 	failures := 0
 	var exportErrors []error
-	exportErrorsLock := sync.Mutex{}
-	exportWaitGroup := sync.WaitGroup{}
+	exportErrorsLock := &sync.Mutex{}
+	exportWaitGroup := &sync.WaitGroup{}
 	var durations []time.Duration
+
+	shouldShare := viper.IsSet(constants.ArgShare)
+	shouldUpload := viper.IsSet(constants.ArgSnapshot)
+	generateSnapshot := shouldShare || shouldUpload
+	if generateSnapshot {
+		// if no output explicitly set, show nothing
+		if !viper.IsSet(constants.ArgOutput) {
+			viper.Set(constants.ArgOutput, constants.OutputFormatNone)
+		}
+	}
 
 	// treat each arg as a separate execution
 	for _, arg := range args {
@@ -158,14 +167,19 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(err)
 
 		if len(exportTargets) > 0 {
-			d := control.ExportData{
+			d := &control.ExportData{
 				ExecutionTree: executionTree,
 				Targets:       exportTargets,
-				ErrorsLock:    &exportErrorsLock,
+				ErrorsLock:    exportErrorsLock,
 				Errors:        exportErrors,
-				WaitGroup:     &exportWaitGroup,
+				WaitGroup:     exportWaitGroup,
 			}
-			exportCheckResult(ctx, &d)
+			exportCheckResult(ctx, d)
+		}
+
+		// if the share args are set, create a snapshot and share it
+		if generateSnapshot {
+			controldisplay.ShareAsSnapshot(executionTree, shouldShare)
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
@@ -198,14 +212,19 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		return false
+	}
+
+	if err := validateCloudArgs(); err != nil {
+		error_helpers.ShowError(ctx, err)
 		return false
 	}
 	// only 1 of 'share' and 'snapshot' may be set
-	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgShare)) > 0 {
-		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'dashboard' may be set"))
+	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgSnapshot)) > 0 {
+		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))
 		return false
 	}
+
 	return true
 }
 
@@ -300,7 +319,7 @@ func exportCheckResult(ctx context.Context, d *control.ExportData) {
 
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
 	output := viper.GetString(constants.ArgOutput)
-	formatter, _, err := parseOutputArg(output)
+	formatter, err := parseOutputArg(output)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -310,7 +329,7 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 		return err
 	}
 	// tactical solution to prettify the json output
-	if output == "json" {
+	if output == constants.OutputFormatJSON {
 		reader, err = prettifyJsonFromReader(reader)
 		if err != nil {
 			return err
@@ -320,7 +339,7 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	return err
 }
 
-func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []controldisplay.CheckExportTarget) []error {
+func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []*controldisplay.CheckExportTarget) []error {
 	errors := []error{}
 	for _, target := range targets {
 		if utils.IsContextCancelled(ctx) {
@@ -346,7 +365,7 @@ func exportControlResults(ctx context.Context, executionTree *controlexecute.Exe
 			continue
 		}
 		// tactical solution to prettify the json output
-		if target.Formatter.GetFormatName() == constants.OutputFormatJSON {
+		if target.Formatter.Name() == constants.OutputFormatJSON {
 			dataToExport, err = prettifyJsonFromReader(dataToExport)
 			if err != nil {
 				errors = append(errors, err)
@@ -380,69 +399,82 @@ func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
 	return dataToExport, nil
 }
 
-func getExportTargets(executing string) ([]controldisplay.CheckExportTarget, error) {
-	targets := []controldisplay.CheckExportTarget{}
-	targetErrors := []error{}
+func getExportTargets(executionName string) ([]*controldisplay.CheckExportTarget, error) {
+	var targets = make(map[string]*controldisplay.CheckExportTarget)
+	var targetErrors []error
 
 	exports := viper.GetStringSlice(constants.ArgExport)
 	for _, export := range exports {
 		export = strings.TrimSpace(export)
-
 		if len(export) == 0 {
 			// if this is an empty string, ignore
 			continue
 		}
 
-		var fileName string
-		var formatter controldisplay.Formatter
-
-		formatter, fileName, err := parseExportArg(export)
+		newTarget, err := getExportTarget(executionName, export)
 		if err != nil {
 			targetErrors = append(targetErrors, err)
 			continue
 		}
-		if formatter == nil {
-			targetErrors = append(targetErrors, controldisplay.ErrFormatterNotFound)
+		if newTarget == nil {
+			targetErrors = append(targetErrors, fmt.Errorf("formatter satisfying '%s' not found", export))
 			continue
 		}
-
-		if len(fileName) == 0 {
-			fileName = generateDefaultExportFileName(formatter, executing)
-		}
-
-		newTarget := controldisplay.NewCheckExportTarget(formatter, fileName)
-		isAlreadyAdded := false
-		for _, t := range targets {
-			if t.File == newTarget.File {
-				isAlreadyAdded = true
-				break
-			}
-		}
-
-		if !isAlreadyAdded {
-			targets = append(targets, newTarget)
+		// add to map if not already there
+		if _, ok := targets[newTarget.File]; !ok {
+			targets[newTarget.File] = newTarget
 		}
 	}
 
-	return targets, error_helpers.CombineErrors(targetErrors...)
+	// convert target map into array
+	targetList := maps.Values(targets)
+	return targetList, error_helpers.CombineErrors(targetErrors...)
 }
 
-// parseExportArg parses the flag value and returns a Formatter based on the value
-func parseExportArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
-	return controldisplay.GetTemplateExportFormatter(arg, true)
+// getExportTarget parses the flag value, finds a matching formatter and returns an export target
+func getExportTarget(executionName string, export string) (*controldisplay.CheckExportTarget, error) {
+	formatResolver, err := controldisplay.NewFormatResolver()
+	if err != nil {
+		return nil, err
+	}
+
+	var fileName string
+	formatter, err := formatResolver.GetFormatter(export)
+	if err != nil {
+		// as we are resolving the format by extension, the arg will be the filename so return it
+		formatter, err = formatResolver.GetFormatterByExtension(export)
+		if err != nil {
+			return nil, err
+		}
+		if formatter == nil {
+			return nil, nil
+		}
+		// use the export arg as the filename
+		fileName = export
+	}
+
+	if fileName == "" {
+		//  we need to generate a filename
+		fileName = generateDefaultExportFileName(formatter, executionName)
+	}
+
+	target := controldisplay.NewCheckExportTarget(formatter, fileName)
+
+	return target, nil
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
-func parseOutputArg(arg string) (formatter controldisplay.Formatter, targetFileName string, err error) {
-	var found bool
-	if formatter, found = controldisplay.GetDefinedOutputFormatter(arg); found {
-		return
+func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) {
+	formatResolver, err := controldisplay.NewFormatResolver()
+	if err != nil {
+		return nil, err
 	}
-	return controldisplay.GetTemplateExportFormatter(arg, false)
+
+	return formatResolver.GetFormatter(arg)
 }
 
-func generateDefaultExportFileName(formatter controldisplay.Formatter, executing string) string {
+func generateDefaultExportFileName(formatter controldisplay.Formatter, executionName string) string {
 	now := time.Now()
 	timeFormatted := fmt.Sprintf("%d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	return fmt.Sprintf("%s-%s%s", executing, timeFormatted, formatter.FileExtension())
+	return fmt.Sprintf("%s-%s%s", executionName, timeFormatted, formatter.FileExtension())
 }

@@ -17,12 +17,14 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
-	"github.com/turbot/steampipe/pkg/snapshot"
 	"github.com/turbot/steampipe/pkg/statushooks"
+
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -56,9 +58,11 @@ The current mod is the working directory, or the directory specified by the --wo
 		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatSnapshot, "Select a console output format: snapshot").
 		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
 		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ").
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
+		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -84,15 +88,21 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// first check whether a dashboard name has been passed as an arg
-	dashboardName, err := validateDashboardArgs(args)
+	dashboardName, err := validateDashboardArgs(cmd, args)
 	error_helpers.FailOnError(err)
 	if dashboardName != "" {
 		inputs, err := collectInputs()
 		error_helpers.FailOnError(err)
 
 		// run just this dashboard
-		err = runSingleDashboard(dashboardCtx, dashboardName, inputs)
+		snapshot, err := runSingleDashboard(dashboardCtx, dashboardName, inputs)
 		error_helpers.FailOnError(err)
+		// display the snapshot result (if needed)
+		displaySnapshot(snapshot)
+		// upload the snapshot (if needed)
+		err = uploadSnapshot(snapshot)
+		error_helpers.FailOnError(err)
+
 		// and we are done
 		return
 	}
@@ -149,50 +159,8 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	log.Println("[TRACE] runDashboardCmd exiting")
 }
 
-func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
-	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
-	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
-	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	// initialise
-	initData := initialisation.NewInitData(dashboardCtx, w, constants.InvokerDashboard)
-	// there must be a modfile
-	if !w.ModfileExists() {
-		initData.Result.Error = workspace.ErrorNoModDefinition
-	}
-
-	return initData
-}
-
-func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) error {
-	// so a dashboard name was specified - just call GenerateSnapshot
-	snapshot, err := snapshot.GenerateSnapshot(ctx, dashboardName, inputs)
-	if err != nil {
-		return err
-	}
-
-	shouldShare := viper.IsSet(constants.ArgShare)
-	shouldUpload := viper.IsSet(constants.ArgSnapshot)
-	if shouldShare || shouldUpload {
-		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
-		statushooks.Done(ctx)
-		if err != nil {
-			return err
-		} else {
-			fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
-		}
-		return err
-	}
-
-	// just display result
-	snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
-	error_helpers.FailOnError(err)
-	fmt.Println(string(snapshotText))
-	fmt.Println("")
-	return nil
-}
-
-func validateDashboardArgs(args []string) (string, error) {
+// validate the args and extract a dashboard name, if provided
+func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 	if len(args) > 1 {
 		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
 	}
@@ -201,11 +169,16 @@ func validateDashboardArgs(args []string) (string, error) {
 		dashboardName = args[0]
 	}
 
+	err := validateCloudArgs()
+	if err != nil {
+		return "", err
+	}
+
 	// only 1 of 'share' and 'snapshot' may be set
 	shareArg := viper.GetString(constants.ArgShare)
 	snapshotArg := viper.GetString(constants.ArgSnapshot)
 	if shareArg != "" && snapshotArg != "" {
-		return "", fmt.Errorf("only 1 of --share and --dashboard may be set")
+		return "", fmt.Errorf("only 1 of --share and --snapshot may be set")
 	}
 
 	// if either share' or 'snapshot' are set, a dashboard name an dcloud token must be provided
@@ -237,7 +210,155 @@ func validateDashboardArgs(args []string) (string, error) {
 		}
 	}
 
+	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatNone}
+	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
+		return "", fmt.Errorf("invalid output format, supported format: '%s'", constants.OutputFormatSnapshot)
+	}
+
 	return dashboardName, nil
+}
+
+func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
+	switch viper.GetString(constants.ArgOutput) {
+	case constants.OutputFormatSnapshot:
+		// just display result
+		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
+		error_helpers.FailOnError(err)
+		fmt.Println(string(snapshotText))
+	}
+}
+
+func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
+	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
+	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	// initialise
+	initData := initialisation.NewInitData(dashboardCtx, w, constants.InvokerDashboard)
+	// there must be a mod-file
+	if !w.ModfileExists() {
+		initData.Result.Error = workspace.ErrorNoModDefinition
+	}
+
+	return initData
+}
+
+func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) (*dashboardtypes.SteampipeSnapshot, error) {
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
+
+	initData := initialisation.NewInitData(ctx, w, constants.InvokerDashboard)
+	// shutdown the service on exit
+	defer initData.Cleanup(ctx)
+	if err := initData.Result.Error; err != nil {
+		return nil, initData.Result.Error
+	}
+
+	// if there is a usage warning we display it
+	initData.Result.DisplayMessages()
+
+	// so a dashboard name was specified - just call GenerateSnapshot
+	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, initData, inputs)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshot, nil
+}
+
+func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
+	shouldShare := viper.IsSet(constants.ArgShare)
+	shouldUpload := viper.IsSet(constants.ArgSnapshot)
+	if shouldShare || shouldUpload {
+		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+		if err != nil {
+			return err
+		} else {
+			fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
+		}
+	}
+	return nil
+}
+
+func validateCloudArgs() error {
+	// TODO VALIDATE cloud host - remove trailing slash?
+
+	// NOTE: viper.IsSet DOES NOT take into account flag default value - it should NOT be used for args with a default
+
+	// if workspace-database has not been set, check whether workspace has been set and if so use that
+	// NOTE: do this BEFORE populating workspace from share/snapshot args, if set
+	if !viper.IsSet(constants.ArgWorkspaceDatabase) && viper.IsSet(constants.ArgWorkspace) {
+		viper.Set(constants.ArgWorkspaceDatabase, viper.GetString(constants.ArgWorkspace))
+	}
+
+	return validateSnapshotArgs()
+}
+
+func validateSnapshotArgs() error {
+	// only 1 of 'share' and 'snapshot' may be set
+	share := viper.IsSet(constants.ArgShare)
+	snapshot := viper.IsSet(constants.ArgSnapshot)
+	if share && snapshot {
+		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
+	}
+
+	// if neither share or snapshot are set, nothing more to do
+	if !share && !snapshot {
+		return nil
+	}
+
+	// so either share or snapshot arg is set - which?
+	argName := "share"
+	if snapshot {
+		argName = "snapshot"
+	}
+
+	// verify cloud token and workspace has been set
+	token := viper.GetString(constants.ArgCloudToken)
+	if token == "" {
+		return fmt.Errorf("if '--%s' is used, cloud token must be set, using either '--cloud-token' or env var STEAMPIPE_CLOUD_TOKEN", argName)
+	}
+	// if a value has been passed in for share/snapshot, overwrite workspace
+	// the share/snapshot command must have a value
+	snapshotWorkspace := viper.GetString(argName)
+	if snapshotWorkspace != constants.ArgShareNoOptDefault {
+		// set the workspace back on viper
+		viper.Set(constants.ArgWorkspace, snapshotWorkspace)
+	}
+
+	// we should now have a value for workspace
+	if !viper.IsSet(constants.ArgWorkspace) {
+		workspace, err := cloud.GetUserWorkspace(token)
+		if err != nil {
+			return err
+		}
+		viper.Set(constants.ArgWorkspace, workspace)
+	}
+
+	// should never happen as there is a default set
+	if viper.GetString(constants.ArgCloudHost) == "" {
+		return fmt.Errorf("if '--%s' is used, cloud host must be set, using either '--cloud-host' or env var STEAMPIPE_CLOUD_HOST", argName)
+	}
+
+	log.Printf("[WARN] workspace database = %s", viper.GetString(constants.ArgWorkspaceDatabase))
+	log.Printf("[WARN] snapshot destination = %s", viper.GetString(constants.ArgWorkspace))
+
+	// if output format is not explicitly set, set to none
+	if !viper.IsSet(constants.ArgOutput) {
+		viper.Set(constants.ArgOutput, constants.OutputFormatNone)
+	}
+
+	return validateSnapshotTags()
+}
+
+func validateSnapshotTags() error {
+	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
+	for _, tagStr := range tags {
+		if len(strings.Split(tagStr, "=")) != 2 {
+			return fmt.Errorf("snapshot tags must be specified '--tag key=value'")
+		}
+	}
+	return nil
 }
 
 func setExitCodeForDashboardError(err error) {

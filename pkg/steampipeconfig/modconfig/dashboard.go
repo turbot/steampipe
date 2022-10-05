@@ -49,13 +49,10 @@ type Dashboard struct {
 	// TODO [reports] can a dashboard ever have multiple parents??
 	parents                []ModTreeItem
 	runtimeDependencyGraph *topsort.Graph
-
-	HclType string
 }
 
 func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 	c := &Dashboard{
-		HclType:         block.Type,
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -66,6 +63,40 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
 	c.setUrlPath()
 
 	return c
+}
+
+// NewQueryDashboard creates a dashboard to wrap a query/control
+// this is used for snapshot generation
+func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
+	parsedName, err := ParseResourceName(q.Name())
+	if err != nil {
+		return nil, err
+	}
+	dashboardName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeDashboard, parsedName.Name)
+
+	var dashboard = &Dashboard{
+		ResourceWithMetadataBase: ResourceWithMetadataBase{
+			metadata: &ResourceMetadata{},
+		},
+		ShortName:       parsedName.Name,
+		FullName:        dashboardName,
+		UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
+		Title:           utils.ToStringPointer(q.GetTitle()),
+		Description:     utils.ToStringPointer(q.GetDescription()),
+		Documentation:   utils.ToStringPointer(q.GetDocumentation()),
+		Tags:            q.GetTags(),
+		Mod:             q.GetMod(),
+	}
+
+	dashboard.setUrlPath()
+
+	chart, err := NewQueryDashboardTable(q)
+	if err != nil {
+		return nil, err
+	}
+	dashboard.children = []ModTreeItem{chart}
+
+	return dashboard, nil
 }
 
 func (d *Dashboard) setUrlPath() {
@@ -166,6 +197,11 @@ func (d *Dashboard) SetPaths() {
 			d.Paths = append(d.Paths, append(parentPath, d.Name()))
 		}
 	}
+}
+
+// GetDocumentation implement ModTreeItem
+func (d *Dashboard) GetDocumentation() string {
+	return typehelpers.SafeString(d.Documentation)
 }
 
 func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {
@@ -400,7 +436,7 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ModResourcesProvider) 
 
 	d.addBaseInputs(d.Base.Inputs)
 
-	d.Tags = utils.MergeStringMaps(d.Tags, d.Base.Tags)
+	d.Tags = utils.MergeMaps(d.Tags, d.Base.Tags)
 
 	if d.Description == nil {
 		d.Description = d.Base.Description

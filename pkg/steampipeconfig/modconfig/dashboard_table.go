@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/turbot/steampipe/pkg/constants"
 
 	"github.com/turbot/steampipe/pkg/utils"
@@ -57,6 +56,35 @@ func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) *DashboardT
 	}
 	t.SetAnonymous(block)
 	return t
+}
+
+// NewQueryDashboardTable creates a Table to wrap a query.
+// This is used in order to execute queries as dashboards
+func NewQueryDashboardTable(q ModTreeItem) (*DashboardTable, error) {
+	parsedName, err := ParseResourceName(q.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	queryProvider, ok := q.(QueryProvider)
+	if !ok {
+		return nil, fmt.Errorf("rersource passed to NewQueryDashboardTable must implement QueryProvider")
+	}
+
+	tableName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeTable, parsedName.Name)
+	c := &DashboardTable{
+		ResourceWithMetadataBase: ResourceWithMetadataBase{
+			metadata: &ResourceMetadata{},
+		},
+		ShortName:       parsedName.Name,
+		FullName:        tableName,
+		UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeTable, parsedName),
+		Title:           utils.ToStringPointer(q.GetTitle()),
+		Mod:             q.GetMod(),
+		Query:           queryProvider.GetQuery(),
+		SQL:             queryProvider.GetSQL(),
+	}
+	return c, nil
 }
 
 func (t *DashboardTable) Equals(other *DashboardTable) bool {
@@ -198,7 +226,7 @@ func (t *DashboardTable) GetDisplay() string {
 	return typehelpers.SafeString(t.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (*DashboardTable) GetDocumentation() string {
 	return ""
 }

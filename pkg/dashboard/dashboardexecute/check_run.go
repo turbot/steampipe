@@ -15,26 +15,26 @@ import (
 
 // CheckRun is a struct representing the execution of a control or benchmark
 type CheckRun struct {
-	Name             string            `json:"name"`
-	Title            string            `json:"title,omitempty"`
-	Width            int               `json:"width,omitempty"`
-	Description      string            `json:"description,omitempty"`
-	Documentation    string            `json:"documentation,omitempty"`
-	Display          string            `json:"display,omitempty"`
-	Type             string            `json:"display_type,omitempty"`
-	Tags             map[string]string `json:"tags,omitempty"`
-	ErrorString      string            `json:"error,omitempty"`
-	NodeType         string            `json:"panel_type"`
-	DashboardName    string            `json:"dashboard"`
-	SourceDefinition string            `json:"source_definition"`
-	SessionId        string            `json:"session_id"`
-
-	Summary *controlexecute.GroupSummary `json:"summary"`
+	Name             string                       `json:"name"`
+	Title            string                       `json:"title,omitempty"`
+	Width            int                          `json:"width,omitempty"`
+	Description      string                       `json:"description,omitempty"`
+	Documentation    string                       `json:"documentation,omitempty"`
+	Display          string                       `json:"display,omitempty"`
+	Type             string                       `json:"display_type,omitempty"`
+	Tags             map[string]string            `json:"tags,omitempty"`
+	ErrorString      string                       `json:"error,omitempty"`
+	NodeType         string                       `json:"panel_type"`
+	DashboardName    string                       `json:"dashboard"`
+	SourceDefinition string                       `json:"source_definition"`
+	Summary          *controlexecute.GroupSummary `json:"summary"`
+	SessionId        string                       `json:"-"`
 	// if the dashboard node is a control, serialise to json as 'properties'
-	Control       *modconfig.Control          `json:"properties,omitempty"`
-	DashboardNode modconfig.DashboardLeafNode `json:"-"`
+	Control *modconfig.Control `json:"properties,omitempty"`
 
-	root                 controlexecute.ExecutionTreeNode
+	DashboardNode modconfig.DashboardLeafNode      `json:"-"`
+	Root          controlexecute.ExecutionTreeNode `json:"-"`
+
 	controlExecutionTree *controlexecute.ExecutionTree
 	error                error
 	parent               dashboardtypes.DashboardNodeParent
@@ -43,7 +43,7 @@ type CheckRun struct {
 }
 
 func (r *CheckRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
-	return r.root.AsTreeNode()
+	return r.Root.AsTreeNode()
 }
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
@@ -102,7 +102,7 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 		return
 	}
 	r.controlExecutionTree = executionTree
-	r.root = executionTree.Root.Children[0]
+	r.Root = executionTree.Root.Children[0]
 }
 
 // Execute implements DashboardRunNode
@@ -190,9 +190,11 @@ func (*CheckRun) IsSnapshotPanel() {}
 // return nothing for CheckRun
 func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { return nil }
 
-// custom implementation of buildSnapshotPanels - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
-func (r *CheckRun) buildSnapshotPanels(leafNodeMap map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
-	return r.buildSnapshotPanelsUnder(r.root, leafNodeMap)
+// BuildSnapshotPanels is a custom implementation of BuildSnapshotPanels - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
+func (r *CheckRun) BuildSnapshotPanels(leafNodeMap map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
+	leafNodeMap[r.GetName()] = r
+
+	return r.buildSnapshotPanelsUnder(r.Root, leafNodeMap)
 }
 
 func (r *CheckRun) buildSnapshotPanelsUnder(parent controlexecute.ExecutionTreeNode, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {

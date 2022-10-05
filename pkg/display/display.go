@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -25,15 +25,14 @@ import (
 
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result) {
-	output := cmdconfig.Viper().GetString(constants.ArgOutput)
-	if output == constants.OutputFormatJSON {
+	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
+	case constants.OutputFormatJSON:
 		displayJSON(ctx, result)
-	} else if output == constants.OutputFormatCSV {
+	case constants.OutputFormatCSV:
 		displayCSV(ctx, result)
-	} else if output == constants.OutputFormatLine {
+	case constants.OutputFormatLine:
 		displayLine(ctx, result)
-	} else {
-		// default
+	case constants.OutputFormatTable:
 		displayTable(ctx, result)
 	}
 }
@@ -291,6 +290,9 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 func buildTimingString(result *queryresult.Result) string {
 	timingResult := <-result.TimingResult
+	if timingResult == nil {
+		return ""
+	}
 	var sb strings.Builder
 	// large numbers should be formatted with commas
 	p := message.NewPrinter(language.English)

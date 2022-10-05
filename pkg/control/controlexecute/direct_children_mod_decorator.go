@@ -1,6 +1,8 @@
 package controlexecute
 
-import "github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+import (
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+)
 
 // DirectChildrenModDecorator is a struct used to wrap a Mod but modify the results of GetChildren to only return
 // immediate mod children (as opposed to all resources in dependency mods as well)
@@ -52,6 +54,11 @@ func (r DirectChildrenModDecorator) GetPaths() []modconfig.NodePath {
 
 func (r DirectChildrenModDecorator) SetPaths() {
 	r.Mod.SetPaths()
+}
+
+// GetDocumentation implements DashboardLeafNode, ModTreeItem
+func (r DirectChildrenModDecorator) GetDocumentation() string {
+	return r.Mod.GetDocumentation()
 }
 
 func (r DirectChildrenModDecorator) GetMod() *modconfig.Mod {
