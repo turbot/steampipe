@@ -9,6 +9,6 @@ import (
 )
 
 var (
-	ExecutionID     = utils.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))
+	ExecutionID     = utils.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))[:4]
 	PgClientAppName = fmt.Sprintf("%s_%s", constants.AppName, ExecutionID)
 )
