@@ -3,12 +3,8 @@ import {
   ExecutablePrimitiveProps,
   LeafNodeDataColumn,
 } from "../common";
-import {
-  CategoryMap,
-  KeyValuePairs,
-  NodeAndEdgeProperties,
-} from "../common/types";
 import { ComponentType } from "react";
+import { KeyValuePairs, NodeAndEdgeProperties } from "../common/types";
 
 export type NodeAndEdgeDataFormat = "LEGACY" | "NODE_AND_EDGE";
 
@@ -21,6 +17,7 @@ export interface NodeAndEdgeDataRow {
   title?: string;
   category?: string;
   properties?: KeyValuePairs;
+  depth?: number;
 }
 
 export type NodeAndEdgeDataColumn = LeafNodeDataColumn;

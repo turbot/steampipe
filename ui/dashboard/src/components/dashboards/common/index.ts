@@ -5,7 +5,7 @@ import { DashboardRunState, PanelsMap } from "../../../hooks/useDashboard";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
 import { Graph, json } from "graphlib";
-import { GraphProperties, GraphType } from "../graphs/types";
+import { GraphProperties, GraphType, NodeAndEdgeData } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 import {
   Category,
@@ -582,7 +582,7 @@ const foldNodesAndEdges = (
 };
 
 const buildNodesAndEdges = (
-  rawData: LeafNodeData | undefined,
+  rawData: NodeAndEdgeData | undefined,
   properties: FlowProperties | GraphProperties | HierarchyProperties = {},
   namedThemeColors = {},
   defaultCategoryColor = true
@@ -611,9 +611,6 @@ const buildNodesAndEdges = (
   const id_col = getColumn(rawData.columns, "id");
   const from_col = getColumn(rawData.columns, "from_id");
   const to_col = getColumn(rawData.columns, "to_id");
-  const title_col = getColumn(rawData.columns, "title");
-  const category_col = getColumn(rawData.columns, "category");
-  const depth_col = getColumn(rawData.columns, "depth");
 
   if (!id_col && !from_col && !to_col) {
     throw new Error("No node or edge rows defined in the dataset");
@@ -631,14 +628,12 @@ const buildNodesAndEdges = (
   let colorIndex = 0;
 
   rawData.rows.forEach((row) => {
-    const node_id: string | null = id_col ? row[id_col.name] : null;
-    const from_id: string | null = from_col ? row[from_col.name] : null;
-    const to_id: string | null = to_col ? row[to_col?.name] : null;
-    const title: string | null = title_col ? row[title_col.name] : null;
-    const category: string | null = category_col
-      ? row[category_col.name]
-      : null;
-    const depth: number | null = depth_col ? row[depth_col.name] : null;
+    const node_id: string | null = row.id || null;
+    const from_id: string | null = row.from_id || null;
+    const to_id: string | null = row.to_id || null;
+    const title: string | null = row.title || null;
+    const category: string | null = row.category || null;
+    const depth: number | null = row.depth || null;
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];

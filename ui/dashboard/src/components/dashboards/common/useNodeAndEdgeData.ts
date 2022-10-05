@@ -46,21 +46,24 @@ const useNodeAndEdgeData = (
       const artificialCategoryId = `node_category_${nodePanelName}`;
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
+        const updatedRow = row;
+        if (!updatedRow.title && panel.title) {
+          updatedRow.title = panel.title;
+        }
         // If a row defines a category, then it is assumed to be present in the categories map
-        if (row.category) {
-          rows.push(row);
-          continue;
-        }
         // If there's a category defined on the node, we need to capture it
-        const nodeProperties = panel.properties as NodeProperties;
-        if (nodeProperties.category) {
-          newProperties = set(
-            newProperties || {},
-            `categories["${artificialCategoryId}"]`,
-            nodeProperties.category
-          );
+        if (!updatedRow.category) {
+          const nodeProperties = panel.properties as NodeProperties;
+          if (nodeProperties.category) {
+            newProperties = set(
+              newProperties || {},
+              `categories["${artificialCategoryId}"]`,
+              nodeProperties.category
+            );
+          }
+          updatedRow.category = artificialCategoryId;
         }
-        rows.push({ ...row, category: artificialCategoryId });
+        rows.push(updatedRow);
       }
     }
     for (const edgePanelName of properties?.edges || []) {
@@ -78,21 +81,24 @@ const useNodeAndEdgeData = (
       const artificialCategoryId = `node_category_${edgePanelName}`;
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
+        const updatedRow = row;
+        if (!updatedRow.title && panel.title) {
+          updatedRow.title = panel.title;
+        }
         // If a row defines a category, then it is assumed to be present in the categories map
-        if (row.category) {
-          rows.push(row);
-          continue;
-        }
         // If there's a category defined on the node, we need to capture it
-        const edgeProperties = panel.properties as EdgeProperties;
-        if (edgeProperties.category) {
-          newProperties = set(
-            newProperties || {},
-            `categories["${artificialCategoryId}"]`,
-            edgeProperties.category
-          );
+        if (!updatedRow.category) {
+          const edgeProperties = panel.properties as EdgeProperties;
+          if (edgeProperties.category) {
+            newProperties = set(
+              newProperties || {},
+              `categories["${artificialCategoryId}"]`,
+              edgeProperties.category
+            );
+          }
+          updatedRow.category = artificialCategoryId;
         }
-        rows.push({ ...row, category: artificialCategoryId });
+        rows.push(updatedRow);
       }
     }
     return {
