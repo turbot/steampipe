@@ -10,57 +10,63 @@ import (
 type ModResources struct {
 	// the parent mod
 	Mod *Mod
+
 	// all mods (including deps)
-	Mods                  map[string]*Mod
-	Queries               map[string]*Query
-	Controls              map[string]*Control
 	Benchmarks            map[string]*Benchmark
-	Variables             map[string]*Variable
+	Controls              map[string]*Control
 	Dashboards            map[string]*Dashboard
-	DashboardContainers   map[string]*DashboardContainer
+	DashboardCategories   map[string]*DashboardCategory
 	DashboardCards        map[string]*DashboardCard
 	DashboardCharts       map[string]*DashboardChart
+	DashboardContainers   map[string]*DashboardContainer
+	DashboardEdges        map[string]*DashboardEdge
 	DashboardFlows        map[string]*DashboardFlow
 	DashboardGraphs       map[string]*DashboardGraph
 	DashboardHierarchies  map[string]*DashboardHierarchy
 	DashboardImages       map[string]*DashboardImage
 	DashboardInputs       map[string]map[string]*DashboardInput
-	GlobalDashboardInputs map[string]*DashboardInput
 	DashboardTables       map[string]*DashboardTable
 	DashboardTexts        map[string]*DashboardText
+	DashboardNodes        map[string]*DashboardNode
+	GlobalDashboardInputs map[string]*DashboardInput
+	Locals                map[string]*Local
+	LocalQueries          map[string]*Query
+	LocalControls         map[string]*Control
+	LocalBenchmarks       map[string]*Benchmark
+	Mods                  map[string]*Mod
+	Queries               map[string]*Query
+	Variables             map[string]*Variable
 	References            map[string]*ResourceReference
-
-	Locals          map[string]*Local
-	LocalQueries    map[string]*Query
-	LocalControls   map[string]*Control
-	LocalBenchmarks map[string]*Benchmark
 }
 
 func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 	return &ModResources{
 		Mod:                   mod,
-		Mods:                  map[string]*Mod{mod.Name(): mod},
-		Queries:               make(map[string]*Query),
 		Controls:              make(map[string]*Control),
 		Benchmarks:            make(map[string]*Benchmark),
-		Locals:                make(map[string]*Local),
-		Variables:             make(map[string]*Variable),
 		Dashboards:            make(map[string]*Dashboard),
-		DashboardContainers:   make(map[string]*DashboardContainer),
 		DashboardCards:        make(map[string]*DashboardCard),
 		DashboardCharts:       make(map[string]*DashboardChart),
+		DashboardContainers:   make(map[string]*DashboardContainer),
+		DashboardEdges:        make(map[string]*DashboardEdge),
 		DashboardFlows:        make(map[string]*DashboardFlow),
 		DashboardGraphs:       make(map[string]*DashboardGraph),
 		DashboardHierarchies:  make(map[string]*DashboardHierarchy),
 		DashboardImages:       make(map[string]*DashboardImage),
 		DashboardInputs:       make(map[string]map[string]*DashboardInput),
-		GlobalDashboardInputs: make(map[string]*DashboardInput),
 		DashboardTables:       make(map[string]*DashboardTable),
 		DashboardTexts:        make(map[string]*DashboardText),
-		References:            make(map[string]*ResourceReference),
+		DashboardNodes:        make(map[string]*DashboardNode),
+		DashboardCategories:   make(map[string]*DashboardCategory),
+		GlobalDashboardInputs: make(map[string]*DashboardInput),
+		Locals:                make(map[string]*Local),
 		LocalQueries:          make(map[string]*Query),
 		LocalControls:         make(map[string]*Control),
 		LocalBenchmarks:       make(map[string]*Benchmark),
+		Mods:                  map[string]*Mod{mod.Name(): mod},
+		Queries:               make(map[string]*Query),
+		References:            make(map[string]*ResourceReference),
+		Variables:             make(map[string]*Variable),
 	}
 }
 
@@ -73,69 +79,23 @@ func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *M
 }
 
 func (m *ModResources) QueryProviders() []QueryProvider {
-	numDashboardInputs := 0
-	for _, inputs := range m.DashboardInputs {
-		numDashboardInputs += len(inputs)
-	}
-	res := make([]QueryProvider,
-		len(m.Queries)+
-			len(m.Controls)+
-			len(m.DashboardCards)+
-			len(m.DashboardCharts)+
-			len(m.DashboardFlows)+
-			len(m.DashboardGraphs)+
-			len(m.DashboardHierarchies)+
-			numDashboardInputs+
-			len(m.GlobalDashboardInputs)+
-			len(m.DashboardTables))
-
+	res := make([]QueryProvider, m.queryProviderCount())
 	idx := 0
-	for _, p := range m.Queries {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.Controls {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardCards {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardCharts {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardFlows {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardGraphs {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardHierarchies {
-		res[idx] = p
-		idx++
-	}
-	for _, inputsForDashboard := range m.DashboardInputs {
-		for _, p := range inputsForDashboard {
-			res[idx] = p
+	f := func(item HclResource) (bool, error) {
+		if queryProvider, ok := item.(QueryProvider); ok {
+			res[idx] = queryProvider
 			idx++
 		}
+		return true, nil
 	}
-	for _, p := range m.GlobalDashboardInputs {
-		res[idx] = p
-		idx++
-	}
-	for _, p := range m.DashboardTables {
-		res[idx] = p
-		idx++
-	}
+
+	m.WalkResources(f)
+
 	return res
 }
 
 func (m *ModResources) Equals(other *ModResources) bool {
+	//TODO use cmp.Equals or similar
 	if other == nil {
 		return false
 	}
@@ -277,8 +237,20 @@ func (m *ModResources) Equals(other *ModResources) bool {
 			return false
 		}
 	}
-	for name := range other.DashboardHierarchies {
-		if _, ok := m.DashboardHierarchies[name]; !ok {
+
+	for name := range other.DashboardNodes {
+		if _, ok := m.DashboardNodes[name]; !ok {
+			return false
+		}
+	}
+
+	for name := range other.DashboardEdges {
+		if _, ok := m.DashboardEdges[name]; !ok {
+			return false
+		}
+	}
+	for name := range other.DashboardCategories {
+		if _, ok := m.DashboardCategories[name]; !ok {
 			return false
 		}
 	}
@@ -413,6 +385,9 @@ func (m *ModResources) Empty() bool {
 		len(m.DashboardFlows)+
 		len(m.DashboardGraphs)+
 		len(m.DashboardHierarchies)+
+		len(m.DashboardNodes)+
+		len(m.DashboardEdges)+
+		len(m.DashboardCategories)+
 		len(m.DashboardImages)+
 		len(m.DashboardInputs)+
 		len(m.DashboardTables)+
@@ -437,11 +412,6 @@ func (m *ModResources) addControlOrQuery(provider QueryProvider) {
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false or an error, return immediately
 func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
-	for _, r := range m.Queries {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
 	for _, r := range m.Controls {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
@@ -457,17 +427,27 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.DashboardContainers {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
 	for _, r := range m.DashboardCards {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
 	}
+	for _, r := range m.DashboardCategories {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardContainers {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
 	for _, r := range m.DashboardCharts {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.DashboardEdges {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -492,16 +472,16 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.GlobalDashboardInputs {
-		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
-			return err
-		}
-	}
 	for _, inputsForDashboard := range m.DashboardInputs {
 		for _, r := range inputsForDashboard {
 			if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 				return err
 			}
+		}
+	}
+	for _, r := range m.DashboardNodes {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
 		}
 	}
 	for _, r := range m.DashboardTables {
@@ -514,7 +494,7 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.Variables {
+	for _, r := range m.GlobalDashboardInputs {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -524,6 +504,17 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
+	for _, r := range m.Queries {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range m.Variables {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -616,6 +607,29 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.DashboardHierarchies[name] = r
+
+	case *DashboardNode:
+		name := r.Name()
+		if existing, ok := m.DashboardNodes[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardNodes[name] = r
+
+	case *DashboardEdge:
+		name := r.Name()
+		if existing, ok := m.DashboardEdges[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardEdges[name] = r
+	case *DashboardCategory:
+		name := r.Name()
+		if existing, ok := m.DashboardCategories[name]; ok {
+			diags = append(diags, checkForDuplicate(existing, item)...)
+			break
+		}
+		m.DashboardCategories[name] = r
 
 	case *DashboardImage:
 		name := r.Name()
@@ -741,6 +755,15 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		for k, v := range source.DashboardHierarchies {
 			res.DashboardHierarchies[k] = v
 		}
+		for k, v := range source.DashboardNodes {
+			res.DashboardNodes[k] = v
+		}
+		for k, v := range source.DashboardEdges {
+			res.DashboardEdges[k] = v
+		}
+		for k, v := range source.DashboardCategories {
+			res.DashboardCategories[k] = v
+		}
 		for k, v := range source.DashboardImages {
 			res.DashboardImages[k] = v
 		}
@@ -759,4 +782,27 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 	}
 
 	return res
+}
+
+func (m *ModResources) queryProviderCount() int {
+	numDashboardInputs := 0
+	for _, inputs := range m.DashboardInputs {
+		numDashboardInputs += len(inputs)
+	}
+
+	numItems :=
+		len(m.Controls) +
+			len(m.DashboardCards) +
+			len(m.DashboardCharts) +
+			len(m.DashboardEdges) +
+			len(m.DashboardFlows) +
+			len(m.DashboardGraphs) +
+			len(m.DashboardHierarchies) +
+			len(m.DashboardImages) +
+			numDashboardInputs +
+			len(m.DashboardNodes) +
+			len(m.DashboardTables) +
+			len(m.GlobalDashboardInputs) +
+			len(m.Queries)
+	return numItems
 }

@@ -1,32 +1,17 @@
-import { BaseCategoryOptions } from "../common/types";
-import {
-  BasePrimitiveProps,
-  ColorOverride,
-  ExecutablePrimitiveProps,
-} from "../common";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import { ComponentType } from "react";
+import { NodeAndEdgeData } from "../graphs/types";
+import { NodeAndEdgeProperties } from "../common/types";
 
-export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+export type BaseFlowProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
-interface FlowCategoryOptions extends BaseCategoryOptions {
-  title?: string;
-  color?: ColorOverride;
-  depth?: number;
-  icon?: string;
-}
+export type FlowProperties = NodeAndEdgeProperties;
 
-export type FlowCategories = {
-  [category: string]: FlowCategoryOptions;
-};
-
-export type FlowProperties = {
-  categories?: FlowCategories;
-};
-
-export type FlowProps = BaseChartProps & {
+export interface FlowProps extends BaseFlowProps {
+  data?: NodeAndEdgeData;
   display_type?: FlowType;
-  properties?: FlowProperties;
-};
+  properties?: NodeAndEdgeProperties;
+}
 
 export type FlowType = "sankey" | "table";
 

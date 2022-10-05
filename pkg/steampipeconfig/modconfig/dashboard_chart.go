@@ -52,7 +52,7 @@ type DashboardChart struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) *DashboardChart {
+func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &DashboardChart{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
@@ -105,7 +105,7 @@ func (c *DashboardChart) GetReferences() []*ResourceReference {
 	return c.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (c *DashboardChart) GetMod() *Mod {
 	return c.Mod
 }

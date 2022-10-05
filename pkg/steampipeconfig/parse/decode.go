@@ -72,7 +72,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	var resources []modconfig.HclResource
 	var res = newDecodeResult()
 
-	// if opts specifies block types, check whether this type is included
+	// if opts specifies block types, then check whether this type is included
 	if !runCtx.ShouldIncludeBlock(block) {
 		return nil, res
 	}
@@ -91,10 +91,14 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	}
 
 	// now do the actual decode
-	if helpers.StringSliceContains(modconfig.QueryProviderBlocks, block.Type) {
+	switch {
+	case helpers.StringSliceContains(modconfig.EdgeAndNodeProviderBlocks, block.Type):
+		resource, res = decodeEdgeAndNodeProvider(block, runCtx)
+		resources = append(resources, resource)
+	case helpers.StringSliceContains(modconfig.QueryProviderBlocks, block.Type):
 		resource, res = decodeQueryProvider(block, runCtx)
 		resources = append(resources, resource)
-	} else {
+	default:
 		switch block.Type {
 		case modconfig.BlockTypeMod:
 			var mod *modconfig.Mod
@@ -159,38 +163,30 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 	// runCtx already contains the current mod
 	mod := runCtx.CurrentMod
 	blockName := runCtx.DetermineBlockName(block)
-	switch block.Type {
-	case modconfig.BlockTypeMod:
-		resource = mod
-	case modconfig.BlockTypeQuery:
-		resource = modconfig.NewQuery(block, mod, blockName)
-	case modconfig.BlockTypeControl:
-		resource = modconfig.NewControl(block, mod, blockName)
-	case modconfig.BlockTypeBenchmark:
-		resource = modconfig.NewBenchmark(block, mod, blockName)
-	case modconfig.BlockTypeDashboard:
-		resource = modconfig.NewDashboard(block, mod, blockName)
-	case modconfig.BlockTypeContainer:
-		resource = modconfig.NewDashboardContainer(block, mod, blockName)
-	case modconfig.BlockTypeChart:
-		resource = modconfig.NewDashboardChart(block, mod, blockName)
-	case modconfig.BlockTypeCard:
-		resource = modconfig.NewDashboardCard(block, mod, blockName)
-	case modconfig.BlockTypeFlow:
-		resource = modconfig.NewDashboardFlow(block, mod, blockName)
-	case modconfig.BlockTypeGraph:
-		resource = modconfig.NewDashboardGraph(block, mod, blockName)
-	case modconfig.BlockTypeHierarchy:
-		resource = modconfig.NewDashboardHierarchy(block, mod, blockName)
-	case modconfig.BlockTypeImage:
-		resource = modconfig.NewDashboardImage(block, mod, blockName)
-	case modconfig.BlockTypeInput:
-		resource = modconfig.NewDashboardInput(block, mod, blockName)
-	case modconfig.BlockTypeTable:
-		resource = modconfig.NewDashboardTable(block, mod, blockName)
-	case modconfig.BlockTypeText:
-		resource = modconfig.NewDashboardText(block, mod, blockName)
-	default:
+
+	factoryFuncs := map[string]func(*hcl.Block, *modconfig.Mod, string) modconfig.HclResource{
+		// for block type mod, just use the current mod
+		modconfig.BlockTypeMod:       func(*hcl.Block, *modconfig.Mod, string) modconfig.HclResource { return mod },
+		modconfig.BlockTypeQuery:     modconfig.NewQuery,
+		modconfig.BlockTypeControl:   modconfig.NewControl,
+		modconfig.BlockTypeBenchmark: modconfig.NewBenchmark,
+		modconfig.BlockTypeDashboard: modconfig.NewDashboard,
+		modconfig.BlockTypeContainer: modconfig.NewDashboardContainer,
+		modconfig.BlockTypeChart:     modconfig.NewDashboardChart,
+		modconfig.BlockTypeCard:      modconfig.NewDashboardCard,
+		modconfig.BlockTypeFlow:      modconfig.NewDashboardFlow,
+		modconfig.BlockTypeGraph:     modconfig.NewDashboardGraph,
+		modconfig.BlockTypeHierarchy: modconfig.NewDashboardHierarchy,
+		modconfig.BlockTypeImage:     modconfig.NewDashboardImage,
+		modconfig.BlockTypeInput:     modconfig.NewDashboardInput,
+		modconfig.BlockTypeTable:     modconfig.NewDashboardTable,
+		modconfig.BlockTypeText:      modconfig.NewDashboardText,
+		modconfig.BlockTypeNode:      modconfig.NewDashboardNode,
+		modconfig.BlockTypeEdge:      modconfig.NewDashboardEdge,
+		modconfig.BlockTypeCategory:  modconfig.NewDashboardCategory}
+
+	factoryFunc, ok := factoryFuncs[block.Type]
+	if !ok {
 		return nil, hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("resourceForBlock called for unsupported block type %s", block.Type),
@@ -198,6 +194,7 @@ func resourceForBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResour
 		},
 		}
 	}
+	resource = factoryFunc(block, mod, blockName)
 	return resource, nil
 }
 
@@ -306,7 +303,15 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	// cast resource to a QueryProvider
+	// decode sql args and params
+	res.Merge(decodeQueryProviderParams(block, content, resource, runCtx))
+
+	return resource, res
+}
+
+func decodeQueryProviderParams(block *hcl.Block, content *hcl.BodyContent, resource modconfig.HclResource, runCtx *RunContext) *decodeResult {
+	var diags hcl.Diagnostics
+	res := newDecodeResult()
 	queryProvider, ok := resource.(modconfig.QueryProvider)
 	if !ok {
 		// coding error
@@ -341,9 +346,9 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 
 	var params []*modconfig.ParamDef
 	for _, block := range content.Blocks {
-		// only paramdefs are defined in the schema
+		// we only care about param blocks here
 		if block.Type != modconfig.BlockTypeParam {
-			panic(fmt.Sprintf("invalid child block type %s", block.Type))
+			continue
 		}
 
 		// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
@@ -360,9 +365,63 @@ func decodeQueryProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclRes
 	}
 
 	queryProvider.SetParams(params)
+	res.handleDecodeDiags(diags)
+	return res
+}
 
+func decodeEdgeAndNodeProvider(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+	res := newDecodeResult()
+
+	// get shell resource
+	resource, diags := resourceForBlock(block, runCtx)
+	res.handleDecodeDiags(diags)
+	if diags.HasErrors() {
+		return nil, res
+	}
+	edgeAndNodeProvider, ok := resource.(modconfig.EdgeAndNodeProvider)
+	if !ok {
+		// coding error
+		panic(fmt.Sprintf("block type %s not convertible to a EdgeAndNodeProvider", block.Type))
+	}
+
+	// do a partial decode using QueryProviderBlockSchema
+	// this will be used to pull out attributes which need manual decoding
+	content, remain, diags := block.Body.PartialContent(EdgeAndNodeProviderBlockSchema)
+	res.handleDecodeDiags(diags)
+	if !res.Success() {
+		return nil, res
+	}
+
+	// handle invalid block types
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), EdgeAndNodeProviderBlockSchema, resource))
+
+	// decode the body into 'resource' to populate all properties that can be automatically decoded
+	diags = gohcl.DecodeBody(remain, runCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
+
+	// decode categories
+	for _, block := range content.Blocks {
+		// we only care about param blocks here
+		if block.Type != modconfig.BlockTypeCategory {
+			continue
+		}
+		categories, blockRes := decodeBlock(block, runCtx)
+		res.Merge(blockRes)
+		if !blockRes.Success() {
+			continue
+		}
+
+		for _, category := range categories {
+			edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory))
+			// call OnDecoded for category
+			moreDiags := category.OnDecoded(block, runCtx)
+			res.addDiags(moreDiags)
+		}
+	}
+
+	// decode sql args and params
+	res.Merge(decodeQueryProviderParams(block, content, resource, runCtx))
 
 	return resource, res
 }
@@ -377,7 +436,7 @@ func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Di
 
 func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard, *decodeResult) {
 	res := newDecodeResult()
-	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
+	dashboard := modconfig.NewDashboard(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block)).(*modconfig.Dashboard)
 
 	// do a partial decode using an empty schema - use to pull out all body content in the remain block
 	_, remain, diags := block.Body.PartialContent(&hcl.BodySchema{})
@@ -460,7 +519,7 @@ func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboa
 
 func decodeDashboardContainer(block *hcl.Block, runCtx *RunContext) (*modconfig.DashboardContainer, *decodeResult) {
 	res := newDecodeResult()
-	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
+	container := modconfig.NewDashboardContainer(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block)).(*modconfig.DashboardContainer)
 
 	// do a partial decode using an empty schema - use to pull out all body content in the remain block
 	_, remain, diags := block.Body.PartialContent(&hcl.BodySchema{})
@@ -527,8 +586,7 @@ func decodeDashboardContainerBlocks(content *hclsyntax.Body, dashboardContainer 
 
 func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark, *decodeResult) {
 	res := newDecodeResult()
-
-	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block))
+	benchmark := modconfig.NewBenchmark(block, runCtx.CurrentMod, runCtx.DetermineBlockName(block)).(*modconfig.Benchmark)
 	content, diags := block.Body.Content(BenchmarkBlockSchema)
 	res.handleDecodeDiags(diags)
 
@@ -581,8 +639,8 @@ func decodeBenchmark(block *hcl.Block, runCtx *RunContext) (*modconfig.Benchmark
 
 func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, runCtx *RunContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if title, ok := content.Attributes[property]; ok {
-		diags = gohcl.DecodeExpression(title.Expr, runCtx.EvalCtx, dest)
+	if attr, ok := content.Attributes[property]; ok {
+		diags = gohcl.DecodeExpression(attr.Expr, runCtx.EvalCtx, dest)
 	}
 	return diags
 }

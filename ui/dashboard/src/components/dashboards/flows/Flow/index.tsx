@@ -1,16 +1,17 @@
 import ErrorPanel from "../../Error";
 import merge from "lodash/merge";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   buildSankeyDataInputs,
   LeafNodeData,
-  NodesAndEdges,
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
 import { FlowProperties, FlowProps, FlowType } from "../types";
 import { getFlowComponent } from "..";
+import { NodesAndEdges } from "../../common/types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
@@ -112,18 +113,36 @@ const FlowWrapper = (props: FlowProps) => {
   const {
     themeContext: { wrapperRef },
   } = useDashboard();
+  const nodeAndEdgeData = useNodeAndEdgeData(
+    !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
+    props.data,
+    props.properties,
+    props.status
+  );
 
   if (!wrapperRef) {
     return null;
   }
 
-  if (!props.data) {
+  if (
+    !nodeAndEdgeData ||
+    !nodeAndEdgeData.data ||
+    !nodeAndEdgeData.data.rows ||
+    nodeAndEdgeData.data.rows.length === 0
+  ) {
     return null;
   }
 
   return (
     <Chart
-      options={buildFlowOptions(props, themeColors)}
+      options={buildFlowOptions(
+        {
+          ...props,
+          data: nodeAndEdgeData.data,
+          properties: nodeAndEdgeData.properties,
+        },
+        themeColors
+      )}
       type={props.display_type || "sankey"}
     />
   );

@@ -51,7 +51,7 @@ type Dashboard struct {
 	runtimeDependencyGraph *topsort.Graph
 }
 
-func NewDashboard(block *hcl.Block, mod *Mod, shortName string) *Dashboard {
+func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &Dashboard{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
@@ -140,7 +140,7 @@ func (d *Dashboard) GetReferences() []*ResourceReference {
 	return d.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (d *Dashboard) GetMod() *Mod {
 	return d.Mod
 }

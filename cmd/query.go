@@ -257,7 +257,7 @@ func ensureQueryResource(name string, query string, queryIdx int, w *workspace.W
 	// so this must be an ad hoc query - create a query resource and add to mod
 	shortName := fmt.Sprintf("command_line_query_%d", queryIdx)
 	title := fmt.Sprintf("Command line query %d", queryIdx)
-	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName)
+	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName).(*modconfig.Query)
 	q.Title = utils.ToStringPointer(title)
 	q.SQL = utils.ToStringPointer(query)
 	// add empty metadata

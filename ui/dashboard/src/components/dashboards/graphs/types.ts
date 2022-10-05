@@ -1,33 +1,44 @@
-import { BaseCategoryOptions } from "../common/types";
 import {
   BasePrimitiveProps,
-  ColorOverride,
   ExecutablePrimitiveProps,
+  LeafNodeDataColumn,
 } from "../common";
+import {
+  CategoryMap,
+  KeyValuePairs,
+  NodeAndEdgeProperties,
+} from "../common/types";
 import { ComponentType } from "react";
 
-export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+export type NodeAndEdgeDataFormat = "LEGACY" | "NODE_AND_EDGE";
 
-interface GraphCategoryOptions extends BaseCategoryOptions {
+export type BaseGraphProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+
+export interface NodeAndEdgeDataRow {
+  from_id?: string;
+  to_id?: string;
+  id?: string;
   title?: string;
-  color?: ColorOverride;
-  depth?: number;
-  icon?: string;
+  category?: string;
+  properties?: KeyValuePairs;
 }
 
-export type GraphCategories = {
-  [category: string]: GraphCategoryOptions;
-};
+export type NodeAndEdgeDataColumn = LeafNodeDataColumn;
 
-export type GraphProperties = {
-  categories?: GraphCategories;
+export interface NodeAndEdgeData {
+  columns: NodeAndEdgeDataColumn[];
+  rows: NodeAndEdgeDataRow[];
+}
+
+export type GraphProperties = NodeAndEdgeProperties & {
   direction: "LR" | "RL" | "TB" | "BT";
 };
 
-export type GraphProps = BaseChartProps & {
+export interface GraphProps extends BaseGraphProps {
+  data?: NodeAndEdgeData;
   display_type?: GraphType;
   properties?: GraphProperties;
-};
+}
 
 export type GraphType = "graph" | "table";
 

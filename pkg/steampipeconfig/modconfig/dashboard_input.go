@@ -74,7 +74,7 @@ func (i *DashboardInput) Clone() *DashboardInput {
 	}
 }
 
-func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) *DashboardInput {
+func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	// input cannot be anonymous
 	i := &DashboardInput{
 		ShortName:       shortName,
@@ -121,7 +121,7 @@ func (i *DashboardInput) GetReferences() []*ResourceReference {
 	return i.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (i *DashboardInput) GetMod() *Mod {
 	return i.Mod
 }

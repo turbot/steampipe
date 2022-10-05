@@ -1,13 +1,25 @@
 import has from "lodash/has";
 import isEmpty from "lodash/isEmpty";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
-import { DashboardRunState } from "../../../hooks/useDashboard";
+import { DashboardRunState, PanelsMap } from "../../../hooks/useDashboard";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
 import { Graph, json } from "graphlib";
 import { GraphProperties, GraphType } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
-import { KeyValuePairs, KeyValueStringPairs } from "./types";
+import {
+  Category,
+  CategoryMap,
+  Edge,
+  EdgeMap,
+  KeyValuePairs,
+  KeyValueStringPairs,
+  Node,
+  NodeAndEdgeProperties,
+  NodeCategoryMap,
+  NodeMap,
+  NodesAndEdges,
+} from "./types";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -237,80 +249,6 @@ const adjustMaxValue = (initial) => {
   }
   return max;
 };
-
-export interface FoldedNode {
-  id: string;
-  title?: string;
-}
-
-interface Node {
-  id: string;
-  title: string | null;
-  category: string | null;
-  depth: number | null;
-  row_data: LeafNodeDataRow | null;
-  symbol: string | null;
-  href: string | null;
-  isFolded: boolean;
-  foldedNodes?: FoldedNode[];
-}
-
-interface Edge {
-  id: string;
-  from_id: string;
-  to_id: string;
-  title: string | null;
-  category: string | null;
-  row_data: LeafNodeDataRow | null;
-}
-
-interface NodeMap {
-  [id: string]: Node;
-}
-
-interface EdgeMap {
-  [edge_id: string]: boolean;
-}
-
-export interface CategoryFold {
-  threshold: number;
-  title?: string | null;
-  icon?: string | null;
-}
-
-interface Category {
-  color: string | null;
-  fields: string | null;
-  icon: string | null;
-  href: string | null;
-  fold: CategoryFold | null;
-}
-
-interface NodeCategoryMap {
-  [category: string]: NodeMap;
-}
-
-interface CategoryMap {
-  [category: string]: Category;
-}
-
-interface NodesAndEdgesMetadata {
-  has_multiple_roots: boolean;
-  contains_duplicate_edges: boolean;
-}
-
-export interface NodesAndEdges {
-  graph: Graph;
-  nodes: Node[];
-  edges: Edge[];
-  nodeCategoryMap: NodeCategoryMap;
-  nodeMap: KeyValuePairs;
-  edgeMap: KeyValuePairs;
-  root_nodes: NodeMap;
-  categories: CategoryMap;
-  metadata?: NodesAndEdgesMetadata;
-  next_color_index?: number;
-}
 
 const recordEdge = (
   edge_lookup,
@@ -704,14 +642,7 @@ const buildNodesAndEdges = (
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
-      const categorySettings = {
-        color: null,
-        fields: null,
-        depth: null,
-        icon: null,
-        href: null,
-        fold: null,
-      };
+      const categorySettings: Category = {};
       if (overrides) {
         const overrideColor = getColorOverride(
           overrides.color,
@@ -723,16 +654,21 @@ const buildNodesAndEdges = (
           : defaultCategoryColor
           ? themeColors[colorIndex++]
           : null;
-        // @ts-ignore
-        categorySettings.depth = has(overrides, "depth")
-          ? overrides.depth
-          : null;
-        categorySettings.fields = has(overrides, "fields")
-          ? JSON.parse(overrides.fields)
-          : null;
-        categorySettings.icon = has(overrides, "icon") ? overrides.icon : null;
-        categorySettings.href = has(overrides, "href") ? overrides.href : null;
-        categorySettings.fold = has(overrides, "fold") ? overrides.fold : null;
+        if (has(overrides, "depth")) {
+          categorySettings.depth = overrides.depth;
+        }
+        if (has(overrides, "fields")) {
+          categorySettings.fields = JSON.parse(overrides.fields);
+        }
+        if (has(overrides, "icon")) {
+          categorySettings.icon = overrides.icon;
+        }
+        if (has(overrides, "href")) {
+          categorySettings.href = overrides.href;
+        }
+        if (has(overrides, "fold")) {
+          categorySettings.fold = overrides.fold;
+        }
       } else {
         // @ts-ignore
         categorySettings.color = defaultCategoryColor
@@ -935,13 +871,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides: Category = {
-      color: null,
-      fields: null,
-      icon: null,
-      href: null,
-      fold: null,
-    };
+    let categoryOverrides: Category = {};
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
@@ -1137,6 +1067,24 @@ const getColorOverride = (colorOverride, namedThemeColors) => {
   return colorOverride;
 };
 
+const nodeAndEdgeResourceHasData = (
+  data: LeafNodeData,
+  properties: NodeAndEdgeProperties,
+  panelsMap: PanelsMap
+): boolean => {
+  if (!!data) {
+    return true;
+  }
+  if (
+    (properties?.nodes || []).some((p) => panelsMap[p] && !!panelsMap[p].data)
+  ) {
+    return true;
+  }
+  return (properties?.edges || []).some(
+    (p) => panelsMap[p] && !!panelsMap[p].data
+  );
+};
+
 export {
   adjustMinValue,
   adjustMaxValue,
@@ -1147,6 +1095,7 @@ export {
   foldNodesAndEdges,
   getColorOverride,
   isNumericCol,
+  nodeAndEdgeResourceHasData,
   themeColors,
   toEChartsType,
 };

@@ -20,7 +20,10 @@ const (
 	BlockTypeVariable       = "variable"
 	BlockTypeParam          = "param"
 	BlockTypeRequire        = "require"
+	BlockTypeNode           = "node"
+	BlockTypeEdge           = "edge"
 	BlockTypeLegacyRequires = "requires"
+	BlockTypeCategory       = "category"
 )
 
 // QueryProviderBlocks is a list of block types which implement QueryProvider
@@ -34,9 +37,18 @@ var QueryProviderBlocks = []string{
 	BlockTypeFlow,
 	BlockTypeGraph,
 	BlockTypeHierarchy,
+	BlockTypeNode,
+	BlockTypeEdge,
 }
 
-// ReferenceBlockTypes is a list of block types we store references for
+// EdgeAndNodeProvider is a list of block types which implement EdgeAndNodeProvider
+var EdgeAndNodeProviderBlocks = []string{
+	BlockTypeHierarchy,
+	BlockTypeFlow,
+	BlockTypeGraph,
+}
+
+// ReferenceBlocks is a list of block types we store references for
 var ReferenceBlocks = []string{
 	BlockTypeMod,
 	BlockTypeQuery,
@@ -53,4 +65,6 @@ var ReferenceBlocks = []string{
 	BlockTypeInput,
 	BlockTypeTable,
 	BlockTypeText,
-	BlockTypeParam}
+	BlockTypeParam,
+	BlockTypeCategory,
+}

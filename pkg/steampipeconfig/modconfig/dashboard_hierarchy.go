@@ -23,8 +23,12 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	CategoryList DashboardHierarchyCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardHierarchyCategory `cty:"categories" json:"categories"`
+	Nodes     DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
+	Edges     DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
+	NodeNames []string          `json:"nodes"`
+	EdgeNames []string          ` json:"edges"`
+
+	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -48,13 +52,14 @@ type DashboardHierarchy struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) *DashboardHierarchy {
+func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	h := &DashboardHierarchy{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
+		Categories:      make(map[string]*DashboardCategory),
 	}
 	h.SetAnonymous(block)
 	return h
@@ -79,14 +84,9 @@ func (h *DashboardHierarchy) Name() string {
 // OnDecoded implements HclResource
 func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	h.setBaseProperties(resourceMapProvider)
-	// populate categories map
-	if len(h.CategoryList) > 0 {
-		h.Categories = make(map[string]*DashboardHierarchyCategory, len(h.CategoryList))
-		for _, c := range h.CategoryList {
-			h.Categories[c.Name] = c
-		}
-	}
-	return nil
+
+	// populate nodes and edges
+	return initialiseEdgesAndNodes(h, resourceMapProvider)
 }
 
 // AddReference implements HclResource
@@ -99,7 +99,7 @@ func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
 	return h.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (h *DashboardHierarchy) GetMod() *Mod {
 	return h.Mod
 }
@@ -122,7 +122,16 @@ func (h *DashboardHierarchy) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
-	return nil
+	// return nodes and edges (if any)
+	children := make([]ModTreeItem, len(h.Nodes)+len(h.Edges))
+	for i, n := range h.Nodes {
+		children[i] = n
+	}
+	offset := len(h.Nodes)
+	for i, e := range h.Edges {
+		children[i+offset] = e
+	}
+	return children
 }
 
 // GetTitle implements ModTreeItem
@@ -169,11 +178,11 @@ func (h *DashboardHierarchy) Diff(other *DashboardHierarchy) *DashboardTreeItemD
 		res.AddPropertyDiff("Type")
 	}
 
-	if len(h.CategoryList) != len(other.CategoryList) {
+	if len(h.Categories) != len(other.Categories) {
 		res.AddPropertyDiff("Categories")
 	} else {
-		for i, c := range h.Categories {
-			if !c.Equals(other.Categories[i]) {
+		for name, c := range h.Categories {
+			if !c.Equals(other.Categories[name]) {
 				res.AddPropertyDiff("Categories")
 			}
 		}
@@ -259,6 +268,33 @@ func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(runtimeArgs *QueryAr
 	return h.getPreparedStatementExecuteSQL(h, runtimeArgs)
 }
 
+// GetEdges implements EdgeAndNodeProvider
+func (h *DashboardHierarchy) GetEdges() DashboardEdgeList {
+	return h.Edges
+}
+
+// GetNodes implements EdgeAndNodeProvider
+func (h *DashboardHierarchy) GetNodes() DashboardNodeList {
+	return h.Nodes
+}
+
+// SetEdges implements EdgeAndNodeProvider
+func (h *DashboardHierarchy) SetEdges(edges DashboardEdgeList) {
+	h.Edges = edges
+	h.EdgeNames = edges.Names()
+}
+
+// SetNodes implements EdgeAndNodeProvider
+func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
+	h.Nodes = nodes
+	h.NodeNames = nodes.Names()
+}
+
+// AddCategory implements EdgeAndNodeProvider
+func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) {
+	h.Categories[category.ShortName] = category
+}
+
 func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
@@ -301,10 +337,21 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesP
 		h.Params = h.Base.Params
 	}
 
-	if h.CategoryList == nil {
-		h.CategoryList = h.Base.CategoryList
+	if h.Categories == nil {
+		h.Categories = h.Base.Categories
 	} else {
-		h.CategoryList.Merge(h.Base.CategoryList)
+		h.Categories = utils.MergeMaps(h.Categories, h.Base.Categories)
+	}
+
+	if h.Edges == nil {
+		h.Edges = h.Base.Edges
+	} else {
+		h.Edges.Merge(h.Base.Edges)
+	}
+	if h.Nodes == nil {
+		h.Nodes = h.Base.Nodes
+	} else {
+		h.Nodes.Merge(h.Base.Nodes)
 	}
 
 	h.MergeRuntimeDependencies(h.Base)

@@ -45,7 +45,7 @@ type Benchmark struct {
 	Parents []ModTreeItem `json:"-"`
 }
 
-func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) *Benchmark {
+func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	benchmark := &Benchmark{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
@@ -113,7 +113,7 @@ func (b *Benchmark) GetReferences() []*ResourceReference {
 	return b.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (b *Benchmark) GetMod() *Mod {
 	return b.Mod
 }

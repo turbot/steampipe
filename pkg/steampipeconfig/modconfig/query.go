@@ -48,7 +48,7 @@ type Query struct {
 
 }
 
-func NewQuery(block *hcl.Block, mod *Mod, shortName string) *Query {
+func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	// queries cannot be anonymous
 	q := &Query{
 		ShortName:       shortName,
@@ -200,7 +200,7 @@ func (q *Query) GetReferences() []*ResourceReference {
 	return q.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (q *Query) GetMod() *Mod {
 	return q.Mod
 }

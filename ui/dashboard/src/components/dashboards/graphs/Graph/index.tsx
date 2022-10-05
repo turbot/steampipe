@@ -14,6 +14,7 @@ import ReactFlow, {
   useReactFlow,
 } from "react-flow-renderer";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   foldNodesAndEdges,
@@ -127,7 +128,8 @@ const buildGraphNodesAndEdges = (
         color: matchingCategory ? matchingCategory.color : null,
         fields:
           matchingCategory && matchingCategory.fields
-            ? JSON.parse(matchingCategory.fields)
+            ? // @ts-ignore
+              JSON.parse(matchingCategory.fields)
             : null,
         row_data: edge.row_data,
         label: edge.title,
@@ -324,13 +326,31 @@ const Graph = ({ props }) => {
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  if (!props.data) {
+  const nodeAndEdgeData = useNodeAndEdgeData(
+    !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
+    props.data,
+    props.properties,
+    props.status
+  );
+
+  if (
+    !nodeAndEdgeData ||
+    !nodeAndEdgeData.data ||
+    !nodeAndEdgeData.data.rows ||
+    nodeAndEdgeData.data.rows.length === 0
+  ) {
     return null;
   }
 
   return (
     <GraphProvider>
-      <Graph props={props} />
+      <Graph
+        props={{
+          ...props,
+          data: nodeAndEdgeData.data,
+          properties: nodeAndEdgeData.properties,
+        }}
+      />
     </GraphProvider>
   );
 };

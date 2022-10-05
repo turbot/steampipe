@@ -58,7 +58,7 @@ func (l *Local) GetUnqualifiedName() string {
 	return l.UnqualifiedName
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (l *Local) GetMod() *Mod {
 	return l.Mod
 }

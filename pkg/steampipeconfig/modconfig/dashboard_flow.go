@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/turbot/steampipe/pkg/constants"
 
 	"github.com/hashicorp/hcl/v2"
@@ -23,8 +22,13 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	CategoryList DashboardFlowCategoryList         `cty:"category_list" hcl:"category,block" column:"category,jsonb" json:"-"`
-	Categories   map[string]*DashboardFlowCategory `cty:"categories" json:"categories"`
+	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"-"`
+	// for the snapshot we just serialise the names of nodes and edges
+	NodeNames []string `json:"nodes"`
+	EdgeNames []string ` json:"edges"`
+
+	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -48,13 +52,14 @@ type DashboardFlow struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) *DashboardFlow {
+func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	h := &DashboardFlow{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 		Mod:             mod,
 		DeclRange:       block.DefRange,
+		Categories:      make(map[string]*DashboardCategory),
 	}
 	h.SetAnonymous(block)
 	return h
@@ -79,14 +84,9 @@ func (f *DashboardFlow) Name() string {
 // OnDecoded implements HclResource
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
 	f.setBaseProperties(resourceMapProvider)
-	// populate categories map
-	if len(f.CategoryList) > 0 {
-		f.Categories = make(map[string]*DashboardFlowCategory, len(f.CategoryList))
-		for _, c := range f.CategoryList {
-			f.Categories[c.Name] = c
-		}
-	}
-	return nil
+
+	// populate nodes and edges
+	return initialiseEdgesAndNodes(f, resourceMapProvider)
 }
 
 // AddReference implements HclResource
@@ -99,7 +99,7 @@ func (f *DashboardFlow) GetReferences() []*ResourceReference {
 	return f.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (f *DashboardFlow) GetMod() *Mod {
 	return f.Mod
 }
@@ -122,7 +122,16 @@ func (f *DashboardFlow) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (f *DashboardFlow) GetChildren() []ModTreeItem {
-	return nil
+	// return nodes and edges (if any)
+	children := make([]ModTreeItem, len(f.Nodes)+len(f.Edges))
+	for i, n := range f.Nodes {
+		children[i] = n
+	}
+	offset := len(f.Nodes)
+	for i, e := range f.Edges {
+		children[i+offset] = e
+	}
+	return children
 }
 
 // GetTitle implements ModTreeItem
@@ -169,11 +178,11 @@ func (f *DashboardFlow) Diff(other *DashboardFlow) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Type")
 	}
 
-	if len(f.CategoryList) != len(other.CategoryList) {
+	if len(f.Categories) != len(other.Categories) {
 		res.AddPropertyDiff("Categories")
 	} else {
-		for i, c := range f.Categories {
-			if !c.Equals(other.Categories[i]) {
+		for name, c := range f.Categories {
+			if !c.Equals(other.Categories[name]) {
 				res.AddPropertyDiff("Categories")
 			}
 		}
@@ -259,6 +268,33 @@ func (f *DashboardFlow) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (
 	return f.getPreparedStatementExecuteSQL(f, runtimeArgs)
 }
 
+// GetEdges implements EdgeAndNodeProvider
+func (f *DashboardFlow) GetEdges() DashboardEdgeList {
+	return f.Edges
+}
+
+// GetNodes implements EdgeAndNodeProvider
+func (f *DashboardFlow) GetNodes() DashboardNodeList {
+	return f.Nodes
+}
+
+// SetEdges implements EdgeAndNodeProvider
+func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
+	f.Edges = edges
+	f.EdgeNames = edges.Names()
+}
+
+// SetNodes implements EdgeAndNodeProvider
+func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
+	f.Nodes = nodes
+	f.NodeNames = nodes.Names()
+}
+
+// AddCategory implements EdgeAndNodeProvider
+func (f *DashboardFlow) AddCategory(category *DashboardCategory) {
+	f.Categories[category.ShortName] = category
+}
+
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
@@ -301,10 +337,21 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ModResourcesProvid
 		f.Params = f.Base.Params
 	}
 
-	if f.CategoryList == nil {
-		f.CategoryList = f.Base.CategoryList
+	if f.Categories == nil {
+		f.Categories = f.Base.Categories
 	} else {
-		f.CategoryList.Merge(f.Base.CategoryList)
+		f.Categories = utils.MergeMaps(f.Categories, f.Base.Categories)
+	}
+
+	if f.Edges == nil {
+		f.Edges = f.Base.Edges
+	} else {
+		f.Edges.Merge(f.Base.Edges)
+	}
+	if f.Nodes == nil {
+		f.Nodes = f.Base.Nodes
+	} else {
+		f.Nodes.Merge(f.Base.Nodes)
 	}
 
 	f.MergeRuntimeDependencies(f.Base)

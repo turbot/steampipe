@@ -1,30 +1,17 @@
-import { BaseCategoryOptions } from "../common/types";
-import {
-  BasePrimitiveProps,
-  ColorOverride,
-  ExecutablePrimitiveProps,
-} from "../common";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import { ComponentType } from "react";
+import { NodeAndEdgeProperties } from "../common/types";
+import { NodeAndEdgeData } from "../graphs/types";
 
-export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+export type BaseHierarchyProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 
-interface HierarchyCategoryOptions extends BaseCategoryOptions {
-  title?: string;
-  color?: ColorOverride;
-}
+export type HierarchyProperties = NodeAndEdgeProperties;
 
-export type HierarchyCategories = {
-  [category: string]: HierarchyCategoryOptions;
-};
-
-export type HierarchyProperties = {
-  categories?: HierarchyCategories;
-};
-
-export type HierarchyProps = BaseChartProps & {
+export interface HierarchyProps extends BaseHierarchyProps {
+  data?: NodeAndEdgeData;
   display_type?: HierarchyType;
-  properties?: HierarchyProperties;
-};
+  properties?: NodeAndEdgeProperties;
+}
 
 export type HierarchyType = "table" | "tree";
 

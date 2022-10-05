@@ -105,12 +105,24 @@ var WorkspaceBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
+			Type:       modconfig.BlockTypeNode,
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       modconfig.BlockTypeEdge,
+			LabelNames: []string{"name"},
+		},
+		{
 			Type: modconfig.BlockTypeLocals,
+		},
+		{
+			Type:       modconfig.BlockTypeCategory,
+			LabelNames: []string{"name"},
 		},
 	},
 }
 
-// schema for the mod blocks which must be manually decoded
+// ModBlockSchema contains schema for the mod blocks which must be manually decoded
 var ModBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -127,6 +139,7 @@ var RequireBlockSchema = &hcl.BodySchema{
 		},
 	},
 }
+
 var RequireModBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
@@ -256,6 +269,21 @@ var QueryProviderBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       "param",
+			LabelNames: []string{"name"},
+		},
+	},
+}
+var EdgeAndNodeProviderBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{
+		{Name: "args"},
+	},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       "param",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "category",
 			LabelNames: []string{"name"},
 		},
 	},

@@ -52,7 +52,7 @@ type Control struct {
 	parents []ModTreeItem
 }
 
-func NewControl(block *hcl.Block, mod *Mod, shortName string) *Control {
+func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	control := &Control{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
@@ -266,7 +266,7 @@ func (c *Control) GetReferences() []*ResourceReference {
 	return c.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (c *Control) GetMod() *Mod {
 	return c.Mod
 }

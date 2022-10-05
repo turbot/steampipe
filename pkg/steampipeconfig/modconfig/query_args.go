@@ -88,9 +88,13 @@ func (q *QueryArgs) Validate() error {
 	return nil
 }
 
-// Merge merges the other args with ourselves
+// Merge merges the other args with ourselves, creating and returning a new QueryArgs with the result
 // NOTE: other has precedence
 func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, error) {
+	if other == nil {
+		return q, nil
+	}
+
 	// ensure valid (i.e. cannot define both arg list and arg map)
 	if err := q.Validate(); err != nil {
 		return nil, fmt.Errorf("argument validation failed for '%s': %s", source.Name(), err.Error())

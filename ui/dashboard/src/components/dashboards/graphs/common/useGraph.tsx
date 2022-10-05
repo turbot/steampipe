@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Edge, Node } from "react-flow-renderer";
-import { FoldedNode } from "../../common";
-import { KeyValueStringPairs } from "../../common/types";
+import { FoldedNode, KeyValueStringPairs } from "../../common/types";
 import { noop } from "../../../../utils/func";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { v4 as uuid } from "uuid";

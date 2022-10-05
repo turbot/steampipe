@@ -44,7 +44,7 @@ type DashboardImage struct {
 	parents []ModTreeItem
 }
 
-func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) *DashboardImage {
+func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	i := &DashboardImage{
 		ShortName:       shortName,
 		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
@@ -88,7 +88,7 @@ func (i *DashboardImage) GetReferences() []*ResourceReference {
 	return i.References
 }
 
-// GetMod implements HclResource
+// GetMod implements ModTreeItem
 func (i *DashboardImage) GetMod() *Mod {
 	return i.Mod
 }
