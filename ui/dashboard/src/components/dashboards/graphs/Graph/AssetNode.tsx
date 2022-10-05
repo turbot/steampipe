@@ -3,8 +3,12 @@ import DashboardIcon, {
 } from "../../common/DashboardIcon";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
-import { CategoryFields, KeyValuePairs } from "../../common/types";
-import { CategoryFold, FoldedNode } from "../../common";
+import {
+  CategoryFields,
+  CategoryFold,
+  FoldedNode,
+  KeyValuePairs,
+} from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { Handle } from "react-flow-renderer";
 import { memo, useEffect, useState } from "react";

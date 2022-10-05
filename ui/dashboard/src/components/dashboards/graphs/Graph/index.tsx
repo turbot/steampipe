@@ -128,7 +128,8 @@ const buildGraphNodesAndEdges = (
         color: matchingCategory ? matchingCategory.color : null,
         fields:
           matchingCategory && matchingCategory.fields
-            ? JSON.parse(matchingCategory.fields)
+            ? // @ts-ignore
+              JSON.parse(matchingCategory.fields)
             : null,
         row_data: edge.row_data,
         label: edge.title,
