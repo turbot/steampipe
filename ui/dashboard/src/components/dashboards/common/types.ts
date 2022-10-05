@@ -26,8 +26,9 @@ interface NodeAndEdgeIdentifier {
 }
 
 export interface NodeAndEdgeProperties {
-  nodes?: NodeAndEdgeIdentifier[];
+  categories?: CategoryMap;
   edges?: NodeAndEdgeIdentifier[];
+  nodes?: NodeAndEdgeIdentifier[];
 }
 
 export interface CategoryFold {

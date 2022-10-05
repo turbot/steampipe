@@ -326,7 +326,12 @@ const Graph = ({ props }) => {
 };
 
 const GraphWrapper = (props: GraphProps) => {
-  const data = useNodeAndEdgeData(props.data, props.properties, props.status);
+  const data = useNodeAndEdgeData(
+    !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
+    props.data,
+    props.properties,
+    props.status
+  );
 
   if (!data || data.rows.length === 0) {
     return null;
