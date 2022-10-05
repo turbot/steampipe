@@ -276,7 +276,7 @@ func resolvePassword() (string, error) {
 	// if a password was set through the `STEAMPIPE_DATABASE_PASSWORD` environment variable
 	// or through the `--database-password` cmdline flag, then use that for this session
 	// instead of the default one
-	if viper.GetBool(constants.ArgServicePassword) {
+	if viper.IsSet(constants.ArgServicePassword) {
 		password = viper.GetString(constants.ArgServicePassword)
 	}
 	return password, nil
