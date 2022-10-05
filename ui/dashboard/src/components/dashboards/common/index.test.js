@@ -205,11 +205,6 @@ describe("common.buildNodesAndEdges", () => {
       categories: {
         c1: {
           color: themeColors[0],
-          depth: null,
-          fields: null,
-          fold: null,
-          href: null,
-          icon: null,
         },
       },
       edgeMap: {},
