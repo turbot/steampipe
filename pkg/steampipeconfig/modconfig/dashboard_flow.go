@@ -22,8 +22,12 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes      DashboardNodeList             `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"nodes"`
-	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"edge"`
+	Nodes DashboardNodeList `cty:"node_list" hcl:"node,block" column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" hcl:"edge,block" column:"edges,jsonb" json:"-"`
+	// for the snapshot we just serialise the names of nodes and edges
+	NodeNames []string `json:"nodes"`
+	EdgeNames []string ` json:"edges"`
+
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
@@ -277,11 +281,13 @@ func (f *DashboardFlow) GetNodes() DashboardNodeList {
 // SetEdges implements EdgeAndNodeProvider
 func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
 	f.Edges = edges
+	f.EdgeNames = edges.Names()
 }
 
 // SetNodes implements EdgeAndNodeProvider
 func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 	f.Nodes = nodes
+	f.NodeNames = nodes.Names()
 }
 
 // AddCategory implements EdgeAndNodeProvider

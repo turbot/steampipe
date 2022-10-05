@@ -23,8 +23,11 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes      DashboardNodeList             `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"nodes"`
-	Edges      DashboardEdgeList             `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"edges"`
+	Nodes     DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
+	Edges     DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
+	NodeNames []string          `json:"nodes"`
+	EdgeNames []string          ` json:"edges"`
+
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
 	// these properties are JSON serialised by the parent LeafRun
@@ -278,11 +281,13 @@ func (h *DashboardHierarchy) GetNodes() DashboardNodeList {
 // SetEdges implements EdgeAndNodeProvider
 func (h *DashboardHierarchy) SetEdges(edges DashboardEdgeList) {
 	h.Edges = edges
+	h.EdgeNames = edges.Names()
 }
 
 // SetNodes implements EdgeAndNodeProvider
 func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
 	h.Nodes = nodes
+	h.NodeNames = nodes.Names()
 }
 
 // AddCategory implements EdgeAndNodeProvider
