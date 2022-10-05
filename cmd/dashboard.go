@@ -308,7 +308,8 @@ func validateSnapshotArgs() error {
 	}
 
 	// verify cloud token and workspace has been set
-	if viper.GetString(constants.ArgCloudToken) == "" {
+	token := viper.GetString(constants.ArgCloudToken)
+	if token == "" {
 		return fmt.Errorf("if '--%s' is used, cloud token must be set, using either '--cloud-token' or env var STEAMPIPE_CLOUD_TOKEN", argName)
 	}
 	// if a value has been passed in for share/snapshot, overwrite workspace
@@ -321,7 +322,11 @@ func validateSnapshotArgs() error {
 
 	// we should now have a value for workspace
 	if !viper.IsSet(constants.ArgWorkspace) {
-		return fmt.Errorf("if '--%s' is used, workspace must be set, using '--workspace'", argName)
+		workspace, err := cloud.GetUserWorkspace(token)
+		if err != nil {
+			return err
+		}
+		viper.Set(constants.ArgWorkspace, workspace)
 	}
 
 	// should never happen as there is a default set

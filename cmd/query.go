@@ -188,14 +188,17 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			utils.FailOnError(err)
 
 			// display the result
-			// if the format is snapshot, just dump it out
-			if viper.GetString(constants.ArgOutput) == constants.OutputFormatSnapshot {
+			switch viper.GetString(constants.ArgOutput) {
+			case constants.OutputFormatNone:
+				// do nothing
+			case constants.OutputFormatSnapshot:
+				// if the format is snapshot, just dump it out
 				jsonOutput, err := json.MarshalIndent(snap, "", "  ")
 				if err != nil {
 					utils.FailOnErrorWithMessage(err, "failed to display result as snapshot")
 				}
 				fmt.Println(string(jsonOutput))
-			} else {
+			default:
 				// otherwise convert the snapshot into a query result
 				result, err := snapshotToQueryResult(snap, targetName)
 				utils.FailOnErrorWithMessage(err, "failed to display result as snapshot")

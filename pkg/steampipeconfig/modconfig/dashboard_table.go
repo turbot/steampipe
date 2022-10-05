@@ -71,14 +71,14 @@ func NewQueryDashboardTable(q ModTreeItem) (*DashboardTable, error) {
 		return nil, fmt.Errorf("rersource passed to NewQueryDashboardTable must implement QueryProvider")
 	}
 
-	chartName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeChart, parsedName.Name)
+	tableName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeTable, parsedName.Name)
 	c := &DashboardTable{
 		ResourceWithMetadataBase: ResourceWithMetadataBase{
 			metadata: &ResourceMetadata{},
 		},
 		ShortName:       parsedName.Name,
-		FullName:        chartName,
-		UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeChart, parsedName),
+		FullName:        tableName,
+		UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeTable, parsedName),
 		Title:           utils.ToStringPointer(q.GetTitle()),
 		Mod:             q.GetMod(),
 		Query:           queryProvider.GetQuery(),
