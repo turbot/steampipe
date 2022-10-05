@@ -25,6 +25,14 @@ interface NodeAndEdgeIdentifier {
   name: string;
 }
 
+export interface NodeProperties {
+  category?: Category;
+}
+
+export interface EdgeProperties {
+  category?: Category;
+}
+
 export interface NodeAndEdgeProperties {
   categories?: CategoryMap;
   edges?: NodeAndEdgeIdentifier[];

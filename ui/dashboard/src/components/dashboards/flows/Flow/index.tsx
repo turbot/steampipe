@@ -113,7 +113,7 @@ const FlowWrapper = (props: FlowProps) => {
   const {
     themeContext: { wrapperRef },
   } = useDashboard();
-  const data = useNodeAndEdgeData(
+  const nodeAndEdgeData = useNodeAndEdgeData(
     !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
     props.data,
     props.properties,
@@ -124,13 +124,25 @@ const FlowWrapper = (props: FlowProps) => {
     return null;
   }
 
-  if (!data || data.rows.length === 0) {
+  if (
+    !nodeAndEdgeData ||
+    !nodeAndEdgeData.data ||
+    !nodeAndEdgeData.data.rows ||
+    nodeAndEdgeData.data.rows.length === 0
+  ) {
     return null;
   }
 
   return (
     <Chart
-      options={buildFlowOptions({ ...props, data }, themeColors)}
+      options={buildFlowOptions(
+        {
+          ...props,
+          data: nodeAndEdgeData.data,
+          properties: nodeAndEdgeData.properties,
+        },
+        themeColors
+      )}
       type={props.display_type || "sankey"}
     />
   );

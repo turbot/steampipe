@@ -5,8 +5,9 @@ import {
   NodeAndEdgeDataFormat,
   NodeAndEdgeDataRow,
 } from "../graphs/types";
-import { NodeAndEdgeProperties } from "./types";
+import { NodeAndEdgeProperties, NodeProperties } from "./types";
 import { useMemo } from "react";
+import set from "lodash/set";
 
 // Categories may be sourced from a node, an edge, a flow, a graph or a hierarchy
 // A node or edge can define exactly 1 category, which covers all rows of data that don't define a category
@@ -17,16 +18,17 @@ const useNodeAndEdgeData = (
   data: NodeAndEdgeData | undefined,
   properties: NodeAndEdgeProperties | undefined,
   status: DashboardRunState
-): NodeAndEdgeData | null => {
+) => {
   const { panelsMap } = useDashboard();
   const res = useMemo(() => {
     if (dataFormat === "LEGACY") {
       if (status === "complete") {
-        return data ? data : null;
+        return data ? { data, properties } : null;
       }
       return null;
     }
 
+    let newProperties = properties;
     const columns: NodeAndEdgeDataColumn[] = [];
     const rows: NodeAndEdgeDataRow[] = [];
     const nodePanelNames = (properties?.nodes || []).map((n) => n.name);
@@ -43,7 +45,25 @@ const useNodeAndEdgeData = (
         }
         columns.push(column);
       }
-      rows.push(...(typedPanelData.rows || []));
+      const artificialCategoryId = `node_category_${panel.name}`;
+      // Ensure we have category info set for each row
+      for (const row of typedPanelData.rows || []) {
+        // If a row defines a category, then it is assumed to be present in the categories map
+        if (row.category) {
+          rows.push(row);
+          continue;
+        }
+        // If there's a category defined on the node, we need to capture it
+        const nodeProperties = panel.properties as NodeProperties;
+        if (nodeProperties.category) {
+          newProperties = set(
+            newProperties || {},
+            `categories.${artificialCategoryId}`,
+            nodeProperties.category
+          );
+        }
+        rows.push({ ...row, category: artificialCategoryId });
+      }
     }
     for (const edgePanelName of edgePanelNames) {
       const panel = panelsMap[edgePanelName];
@@ -60,8 +80,8 @@ const useNodeAndEdgeData = (
       rows.push(...(typedPanelData.rows || []));
     }
     return {
-      columns,
-      rows,
+      data: { columns, rows },
+      properties: newProperties,
     };
   }, [dataFormat, data, panelsMap, properties, status]);
 
