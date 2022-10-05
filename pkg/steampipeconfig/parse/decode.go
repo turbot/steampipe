@@ -72,7 +72,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	var resources []modconfig.HclResource
 	var res = newDecodeResult()
 
-	// if opts specifies block types, check whether this type is included
+	// if opts specifies block types, then check whether this type is included
 	if !runCtx.ShouldIncludeBlock(block) {
 		return nil, res
 	}
