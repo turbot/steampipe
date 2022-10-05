@@ -16,11 +16,12 @@ type DashboardNode struct {
 	QueryProviderBase
 
 	// required to allow partial decoding
-	Remain          hcl.Body           `hcl:",remain" json:"-"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	FullName        string             `cty:"name" json:"name"`
 	ShortName       string             `json:"-"`
 	UnqualifiedName string             `json:"-"`
-	Category        *DashboardCategory `cty:"category" column:"category,jsonb" json:"category"`
+	Category        *DashboardCategory `cty:"category" hcl:"category" column:"category,jsonb" json:"category,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Title *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
