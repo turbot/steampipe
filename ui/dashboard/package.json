@@ -14,7 +14,7 @@
     "build-storybook": "build-storybook -s public"
   },
   "dependencies": {
-    "@headlessui/react": "1.7.2",
+    "@headlessui/react": "1.7.3",
     "@heroicons/react": "2.0.11",
     "@popperjs/core": "2.11.6",
     "@supabase/sql-formatter": "4.0.3",
@@ -47,7 +47,7 @@
     "remark-gfm": "3.0.1",
     "use-deep-compare-effect": "1.8.1",
     "uuid": "9.0.0",
-    "web-vitals": "3.0.2"
+    "web-vitals": "3.0.3"
   },
   "devDependencies": {
     "@craco/craco": "6.4.5",
@@ -68,9 +68,9 @@
     "@testing-library/react": "13.4.0",
     "@tsconfig/create-react-app": "1.0.2",
     "@types/echarts": "4.9.16",
-    "@types/jest": "29.0.3",
-    "@types/lodash": "4.14.185",
-    "@types/node": "18.7.23",
+    "@types/jest": "29.1.1",
+    "@types/lodash": "4.14.186",
+    "@types/node": "18.8.2",
     "@types/react": "18.0.21",
     "@types/react-dom": "18.0.6",
     "autoprefixer": "10.4.12",

@@ -21,10 +21,6 @@ export interface KeyValueStringPairs {
   [key: string]: string;
 }
 
-interface NodeAndEdgeIdentifier {
-  name: string;
-}
-
 export interface NodeProperties {
   category?: Category;
 }
@@ -35,8 +31,8 @@ export interface EdgeProperties {
 
 export interface NodeAndEdgeProperties {
   categories?: CategoryMap;
-  edges?: NodeAndEdgeIdentifier[];
-  nodes?: NodeAndEdgeIdentifier[];
+  edges?: string[];
+  nodes?: string[];
 }
 
 export interface CategoryFold {

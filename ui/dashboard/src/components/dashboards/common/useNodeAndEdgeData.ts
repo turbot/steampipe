@@ -5,7 +5,7 @@ import {
   NodeAndEdgeDataFormat,
   NodeAndEdgeDataRow,
 } from "../graphs/types";
-import { NodeAndEdgeProperties, NodeProperties } from "./types";
+import { EdgeProperties, NodeAndEdgeProperties, NodeProperties } from "./types";
 import { useMemo } from "react";
 import set from "lodash/set";
 
@@ -31,9 +31,7 @@ const useNodeAndEdgeData = (
     let newProperties = properties;
     const columns: NodeAndEdgeDataColumn[] = [];
     const rows: NodeAndEdgeDataRow[] = [];
-    const nodePanelNames = (properties?.nodes || []).map((n) => n.name);
-    const edgePanelNames = (properties?.edges || []).map((n) => n.name);
-    for (const nodePanelName of nodePanelNames) {
+    for (const nodePanelName of properties?.nodes || []) {
       const panel = panelsMap[nodePanelName];
       if (!panel || !panel.data) {
         continue;
@@ -65,7 +63,7 @@ const useNodeAndEdgeData = (
         rows.push({ ...row, category: artificialCategoryId });
       }
     }
-    for (const edgePanelName of edgePanelNames) {
+    for (const edgePanelName of properties?.edges || []) {
       const panel = panelsMap[edgePanelName];
       if (!panel || !panel.data) {
         continue;
@@ -77,7 +75,25 @@ const useNodeAndEdgeData = (
         }
         columns.push(column);
       }
-      rows.push(...(typedPanelData.rows || []));
+      const artificialCategoryId = `node_category_${panel.name}`;
+      // Ensure we have category info set for each row
+      for (const row of typedPanelData.rows || []) {
+        // If a row defines a category, then it is assumed to be present in the categories map
+        if (row.category) {
+          rows.push(row);
+          continue;
+        }
+        // If there's a category defined on the node, we need to capture it
+        const edgeProperties = panel.properties as EdgeProperties;
+        if (edgeProperties.category) {
+          newProperties = set(
+            newProperties || {},
+            `categories.${artificialCategoryId}`,
+            edgeProperties.category
+          );
+        }
+        rows.push({ ...row, category: artificialCategoryId });
+      }
     }
     return {
       data: { columns, rows },

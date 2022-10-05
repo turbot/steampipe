@@ -1075,12 +1075,14 @@ const nodeAndEdgeResourceHasData = (
   if (!!data) {
     return true;
   }
-  const nodePanelNames = (properties?.nodes || []).map((n) => n.name);
-  const edgePanelNames = (properties?.edges || []).map((n) => n.name);
-  if (nodePanelNames.some((p) => panelsMap[p] && !!panelsMap[p].data)) {
+  if (
+    (properties?.nodes || []).some((p) => panelsMap[p] && !!panelsMap[p].data)
+  ) {
     return true;
   }
-  return edgePanelNames.some((p) => panelsMap[p] && !!panelsMap[p].data);
+  return (properties?.edges || []).some(
+    (p) => panelsMap[p] && !!panelsMap[p].data
+  );
 };
 
 export {
