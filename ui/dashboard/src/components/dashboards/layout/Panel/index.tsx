@@ -1,14 +1,10 @@
 import Error from "../../Error";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts/types";
-import {
-  BenchmarkDefinition,
-  DashboardActions,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
+import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";

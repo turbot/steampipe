@@ -1,16 +1,15 @@
 import get from "lodash/get";
 import sortBy from "lodash/sortBy";
+import CallToActions from "../CallToActions";
+import LoadingIndicator from "../dashboards/LoadingIndicator";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
   DashboardAction,
-  DashboardActions,
   ModDashboardMetadata,
-  useDashboard,
-} from "../../hooks/useDashboard";
-import CallToActions from "../CallToActions";
-import LoadingIndicator from "../dashboards/LoadingIndicator";
+} from "../../types";
 import { classNames } from "../../utils/styles";
+import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
 import { stringToColour } from "../../utils/color";

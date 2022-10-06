@@ -1,11 +1,7 @@
 import Container from "../../layout/Container";
 import Error from "../../Error";
 import Panel from "../../layout/Panel";
-import {
-  BenchmarkDefinition,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
 import {
   BenchmarkTreeProps,
   CheckDisplayGroup,
@@ -18,6 +14,7 @@ import {
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo } from "react";
 const CheckGrouping = getComponent("check_grouping");
 const Table = getComponent("table");

@@ -1,6 +1,7 @@
 import CreatableSelect from "react-select/creatable";
 import useSelectInputStyles from "../common/useSelectInputStyles";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
+import { DashboardDataModeLive } from "../../../../types";
 import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../types";
 import {
@@ -239,7 +240,9 @@ const ComboInput = ({
         formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
         menuPortalTarget={document.body}
         inputId={`${name}.input`}
-        isDisabled={(!properties.options && !data) || dataMode === "snapshot"}
+        isDisabled={
+          (!properties.options && !data) || dataMode !== DashboardDataModeLive
+        }
         isLoading={!properties.options && !data}
         isClearable={!!properties.placeholder}
         isRtl={false}

@@ -1,5 +1,6 @@
 import { ClearIcon, SubmitIcon } from "../../../../constants/icons";
 import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
+import { DashboardDataModeLive } from "../../../../types";
 import { registerInputComponent } from "../index";
 import { IInput, InputProps } from "../types";
 import { useEffect, useState } from "react";
@@ -71,7 +72,7 @@ const TextInput = (props: InputProps) => {
             submit();
           }}
           placeholder={props.properties.placeholder}
-          readOnly={dataMode === "snapshot"}
+          readOnly={dataMode !== DashboardDataModeLive}
           value={value}
         />
         {value && isDirty && (

@@ -1,7 +1,7 @@
 import has from "lodash/has";
 import isEmpty from "lodash/isEmpty";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
-import { DashboardRunState, PanelsMap } from "../../../hooks/useDashboard";
+import { DashboardRunState, PanelsMap } from "../../../types";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
 import { Graph, json } from "graphlib";
