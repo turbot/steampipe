@@ -139,7 +139,8 @@ const Section = ({
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            {dashboard.type === "dashboard" && <TitlePart part={dashboard} />}
+            {(dashboard.type === "dashboard" ||
+              dashboard.type === "snapshot") && <TitlePart part={dashboard} />}
             {dashboard.type === "benchmark" && (
               <BenchmarkTitle benchmark={dashboard} searchValue={searchValue} />
             )}

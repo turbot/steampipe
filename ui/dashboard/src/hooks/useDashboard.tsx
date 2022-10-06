@@ -82,6 +82,19 @@ const buildDashboards = (
     builtDashboards.push(builtBenchmark);
   }
 
+  for (const snapshot of Object.keys(snapshots)) {
+    const builtSnapshot: AvailableDashboard = {
+      title: snapshot,
+      full_name: snapshot,
+      short_name: snapshot,
+      type: "snapshot",
+      tags: {},
+      is_top_level: true,
+    };
+    dashboardsMap[builtSnapshot.full_name] = builtSnapshot;
+    builtDashboards.push(builtSnapshot);
+  }
+
   return {
     dashboards: sortBy(builtDashboards, [
       (dashboard) =>
@@ -368,13 +381,6 @@ function reducer(state, action) {
         selectedSnapshot: null,
         snapshotId: null,
         dataMode: DashboardDataModeLive,
-      };
-    case DashboardActions.SELECT_SNAPSHOT:
-      return {
-        ...state,
-        selectedSnapshot: action.snapshot,
-        snapshotId: action.snapshot.id,
-        dataMode: DashboardDataModeCloudSnapshot,
       };
     case DashboardActions.SET_DATA_MODE:
       return {
@@ -869,7 +875,10 @@ const DashboardProvider = ({
         action: SocketActions.CLEAR_DASHBOARD,
       });
       sendSocketMessage({
-        action: SocketActions.SELECT_DASHBOARD,
+        action:
+          state.selectedDashboard.type === "snapshot"
+            ? SocketActions.SELECT_SNAPSHOT
+            : SocketActions.SELECT_DASHBOARD,
         payload: {
           dashboard: {
             full_name: state.selectedDashboard.full_name,
