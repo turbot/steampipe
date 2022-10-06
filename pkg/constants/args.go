@@ -53,6 +53,7 @@ const (
 	ArgShare               = "share"
 	ArgSnapshot            = "snapshot"
 	ArgSnapshotTag         = "snapshot-tag"
+	ArgSourceSnapshot      = "source-snapshot"
 )
 
 // the default value for ArgShare and ArgSnapshot if no value is provided

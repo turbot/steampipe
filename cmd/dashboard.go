@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
 	"os"
 	"strings"
@@ -63,6 +64,7 @@ The current mod is the working directory, or the directory specified by the --wo
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
+		AddStringArrayFlag(constants.ArgSourceSnapshot, "", nil, "Specify one or more snapshots to display").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -131,7 +133,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	dashboardCtx = statushooks.DisableStatusHooks(dashboardCtx)
 
 	// load the workspace
-	initData := initDashboard(dashboardCtx, err)
+	initData := initDashboard(dashboardCtx)
 	defer initData.Cleanup(dashboardCtx)
 	error_helpers.FailOnError(initData.Result.Error)
 
@@ -228,13 +230,23 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	}
 }
 
-func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
-	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
-	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
+func initDashboard(ctx context.Context) *initialisation.InitData {
+	sourceSnapshots := viper.GetStringSlice(constants.ArgSourceSnapshot)
+	if len(sourceSnapshots) > 0 {
+		dashboardserver.OutputWait(ctx, "Loading Source Snapshots")
+		w := workspace.NewSourceSnapshotWorkspace(sourceSnapshots)
+		return &initialisation.InitData{
+			Workspace: w,
+			Result:    &db_common.InitResult{},
+		}
+	}
+
+	dashboardserver.OutputWait(ctx, "Loading Workspace")
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	// initialise
-	initData := initialisation.NewInitData(dashboardCtx, w, constants.InvokerDashboard)
+	initData := initialisation.NewInitData(ctx, w, constants.InvokerDashboard)
 	// there must be a mod-file
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition

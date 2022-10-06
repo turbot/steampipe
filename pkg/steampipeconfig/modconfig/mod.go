@@ -73,7 +73,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 		DeclRange: defRange,
 		Require:   require,
 	}
-	mod.ResourceMaps = NewWorkspaceResourceMaps(mod)
+	mod.ResourceMaps = NewModResources(mod)
 
 	// try to derive mod version from the path
 	mod.setVersion()
