@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
-	"path"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // ResourceMaps is a struct containing maps of all mod resource types
@@ -720,7 +720,7 @@ func (m *ResourceMaps) AddResource(item HclResource) hcl.Diagnostics {
 
 func (m *ResourceMaps) AddSnapshots(snapshotPaths []string) {
 	for _, snapshotPath := range snapshotPaths {
-		snapshotName := fmt.Sprintf("snapshot.%s", path.Base(snapshotPath))
+		snapshotName := fmt.Sprintf("snapshot.%s", utils.FilenameNoExtension(snapshotPath))
 		m.Snapshots[snapshotName] = snapshotPath
 	}
 }
