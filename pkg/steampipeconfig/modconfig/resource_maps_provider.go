@@ -2,9 +2,9 @@ package modconfig
 
 import "fmt"
 
-// GetResource tries to find a resource with the given name in the ModResourcesProvider
+// GetResource tries to find a resource with the given name in the ResourceMapsProvider
 // NOTE: this does NOT support inputs, which are NOT uniquely named in a mod
-func GetResource(provider ModResourcesProvider, parsedName *ParsedResourceName) (resource HclResource, found bool) {
+func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) (resource HclResource, found bool) {
 	resourceMaps := provider.GetResourceMaps()
 	modName := parsedName.Mod
 	if modName == "" {
@@ -47,7 +47,7 @@ func GetResource(provider ModResourcesProvider, parsedName *ParsedResourceName) 
 
 // GetDashboardInput looks for an input with a given parent dashboard
 // this is required as GetResource does not support Inputs
-func GetDashboardInput(provider ModResourcesProvider, inputName, dashboardName string) (*DashboardInput, bool) {
+func GetDashboardInput(provider ResourceMapsProvider, inputName, dashboardName string) (*DashboardInput, bool) {
 	resourceMaps := provider.GetResourceMaps()
 
 	dasboardInputs, ok := resourceMaps.DashboardInputs[dashboardName]

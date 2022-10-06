@@ -19,7 +19,7 @@ func (d *RuntimeDependency) String() string {
 	return fmt.Sprintf("arg.%s->%s", *d.ArgName, d.PropertyPath.String())
 }
 
-func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace ModResourcesProvider) error {
+func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
 	resourceName := d.PropertyPath.ToResourceName()
 	var found bool
 	var sourceResource HclResource

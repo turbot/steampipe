@@ -25,7 +25,7 @@ type InitData struct {
 	Result    *db_common.InitResult
 
 	// used for query only
-	PreparedStatementSource *modconfig.ModResources
+	PreparedStatementSource *modconfig.ResourceMaps
 
 	ShutdownTelemetry func()
 }

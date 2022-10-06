@@ -60,7 +60,7 @@ type Mod struct {
 	children []ModTreeItem
 	// convenient aggregation of all resources
 	// NOTE: this resource map object references the same set of resources
-	ResourceMaps *ModResources
+	ResourceMaps *ResourceMaps
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
@@ -237,7 +237,7 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	// if VersionString is set, set Version
 	if m.VersionString != "" && m.Version == nil {
 		m.Version, _ = semver.NewVersion(m.VersionString)
@@ -301,8 +301,8 @@ func (m *Mod) GetDeclRange() *hcl.Range {
 	return &m.DeclRange
 }
 
-// GetResourceMaps implements ModResourcesProvider
-func (m *Mod) GetResourceMaps() *ModResources {
+// GetResourceMaps implements ResourceMapsProvider
+func (m *Mod) GetResourceMaps() *ResourceMaps {
 	return m.ResourceMaps
 }
 

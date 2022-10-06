@@ -33,7 +33,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				Require:     &modconfig.Require{},
 				Description: toStringPointer("this mod is to test runtime dependencies for named arguments"),
 				Title:       toStringPointer("dashboard runtime dependencies named arguments"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"dashboard_runtime_deps_named_arg.query.query1": {
 							FullName:        "dashboard_runtime_deps_named_arg.query.query1",
@@ -144,7 +144,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				Require:     &modconfig.Require{},
 				Description: toStringPointer("this mod is to test runtime dependencies for positional arguments"),
 				Title:       toStringPointer("dashboard runtime dependencies positional arguments"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"dashboard_runtime_deps_pos_arg.query.query1": {
 							FullName:  "dashboard_runtime_deps_pos_arg.query.query1",
@@ -254,7 +254,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				FullName:  "mod.local",
 				Title:     toStringPointer("dependent_mod"),
 				Require:   &modconfig.Require{},
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.m1_q1": {
 							ShortName:       "m1_q1",
@@ -379,7 +379,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 				FullName:  "mod.local",
 				Title:     toStringPointer("dependent_mod"),
 				Require:   &modconfig.Require{},
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.m1_q1": {
 							ShortName:       "m1_q1",
