@@ -98,7 +98,7 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 }
 
 // OnDecoded implements HclResource
-func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	b.setBaseProperties(resourceMapProvider)
 	return nil
 }
@@ -307,7 +307,7 @@ func (b *Benchmark) WalkResources(resourceFunc func(resource ModTreeItem) (bool,
 	return nil
 }
 
-func (b *Benchmark) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

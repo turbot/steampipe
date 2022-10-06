@@ -38,7 +38,7 @@ func init() {
 				FullName:  "mod.local",
 				Require:   require,
 				Title:     toStringPointer("no_mod_sql_files"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"local.query.q1": {
 							ShortName: "q1",
@@ -61,7 +61,7 @@ func init() {
 				Title:     toStringPointer("no_mod_hcl_queries"),
 				FullName:  "mod.local",
 				Require:   require,
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"local.query.q1": {
 							ShortName:   "q1",
@@ -93,7 +93,7 @@ func init() {
 				Require:      require,
 				Title:        toStringPointer("M1"),
 				Description:  toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{},
+				ResourceMaps: &modconfig.ResourceMaps{},
 			},
 		},
 		"single_mod_one_query": {
@@ -104,7 +104,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName:   "q1",
@@ -125,7 +125,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName:   "q1",
@@ -156,7 +156,7 @@ func init() {
 		// 		Require:     require,
 		// 		Title:       toStringPointer("M1"),
 		// 		Description: toStringPointer("THIS IS M1"),
-		// 		ResourceMaps: &modconfig.ModResources{
+		// 		ResourceMaps: &modconfig.ResourceMaps{
 		// 			Queries: map[string]*modconfig.Query{
 		// 				"m1.query.q1": {
 		// 					ShortName:   "q1",
@@ -215,7 +215,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName:   "q1",
@@ -246,7 +246,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName:       "q1",
@@ -350,7 +350,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{"m1.query.q1": {ShortName: "q1", FullName: "m1.query.q1",
 						SQL: toStringPointer("select 1")}},
 				},
@@ -364,7 +364,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName:   "q1",
@@ -394,7 +394,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName:   "q1",
@@ -422,7 +422,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName:   "q1",
@@ -450,7 +450,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("M1"),
 				Description: toStringPointer("THIS IS M1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"m1.query.q1": {
 							ShortName: "q1",
@@ -474,7 +474,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("simple report"),
 				Description: toStringPointer("this mod contains a simple report"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"simple_report.dashboard.simple_report": {
 							ShortName:       "simple_report",
@@ -512,7 +512,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("simple report with container"),
 				Description: toStringPointer("this mod contains a simple report with containers"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"simple_container_report.dashboard.simple_container_report": {
 							ShortName:       "simple_container_report",
@@ -558,7 +558,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with multiple sibling containers"),
 				Description: toStringPointer("this mod contains a report with multiple sibling containers"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"sibling_containers_report.dashboard.sibling_containers_report": {
 							ShortName:       "sibling_containers_report",
@@ -642,7 +642,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with nested containers"),
 				Description: toStringPointer("this mod contains a report with nested containers"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"nested_containers_report.dashboard.nested_containers_report": {
 							ShortName:       "nested_containers_report",
@@ -738,7 +738,7 @@ func init() {
 				Require:     require,
 				Title:       toStringPointer("report with axes"),
 				Description: toStringPointer("This mod tests base values overriding functionality"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"report_axes.dashboard.override_base_values": {
 							ShortName:       "override_base_values",
@@ -810,7 +810,7 @@ func init() {
 				Require:     require,
 				Description: toStringPointer("This mod tests inheriting from base functionality"),
 				Title:       toStringPointer("report base 1"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Queries: map[string]*modconfig.Query{
 						"report_base1.query.basic_query": {
 							ShortName:       "basic_query",
@@ -893,7 +893,7 @@ func init() {
 				Require:     require,
 				Description: toStringPointer("This mod contains a dashboard with a container with all possible child resources"),
 				Title:       toStringPointer("container with all possible child resources"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"container_with_children.dashboard.container_with_child_res": {
 							ShortName:       "container_with_child_res",
@@ -1005,7 +1005,7 @@ func init() {
 				Require:     require,
 				Description: toStringPointer("This mod contains a dashboard with all possible child resources"),
 				Title:       toStringPointer("dashboard with all possible child resources"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"dashboard_with_children.dashboard.dashboard_with_child_res": {
 							ShortName:       "dashboard_with_child_res",
@@ -1128,7 +1128,7 @@ func init() {
 				Require:     require,
 				Description: toStringPointer("this mod is to test the resource naming"),
 				Title:       toStringPointer("dashboard resource naming"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"dashboard_resource_naming.dashboard.anonymous_naming": {
 							FullName:        "dashboard_resource_naming.dashboard.anonymous_naming",
@@ -1241,7 +1241,7 @@ func init() {
 				Require:     require,
 				Description: toStringPointer("This mod contains global inputs"),
 				Title:       toStringPointer("global dashboard inputs"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"global_dashboard_inputs.dashboard.global_dashboard_inputs": {
 							FullName:        "global_dashboard_inputs.dashboard.global_dashboard_inputs",
@@ -1290,7 +1290,7 @@ func init() {
 				Require:     require,
 				Description: toStringPointer("This mod contains a dashboard with all possible child resources"),
 				Title:       toStringPointer("dashboard with all possible child resources"),
-				ResourceMaps: &modconfig.ModResources{
+				ResourceMaps: &modconfig.ResourceMaps{
 					Dashboards: map[string]*modconfig.Dashboard{
 						"dashboard_with_children.dashboard.dashboard_with_child_res": {
 							ShortName:       "dashboard_with_child_res",

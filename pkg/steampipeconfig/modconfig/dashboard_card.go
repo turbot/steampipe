@@ -79,7 +79,7 @@ func (c *DashboardCard) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
 	return nil
 }
@@ -266,7 +266,7 @@ func (c *DashboardCard) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (
 	return c.getPreparedStatementExecuteSQL(c, runtimeArgs)
 }
 
-func (c *DashboardCard) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

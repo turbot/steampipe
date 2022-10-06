@@ -84,7 +84,7 @@ func (g *DashboardGraph) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	g.setBaseProperties(resourceMapProvider)
 
 	// populate nodes and edges
@@ -301,7 +301,7 @@ func (g *DashboardGraph) AddCategory(category *DashboardCategory) {
 	g.Categories[category.ShortName] = category
 }
 
-func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

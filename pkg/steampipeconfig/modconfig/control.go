@@ -242,7 +242,7 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 // OnDecoded implements HclResource
-func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
 	// verify the control has either a query or a sql attribute
 	if c.Query == nil && c.SQL == nil {
@@ -386,7 +386,7 @@ func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
 	return res
 }
 
-func (c *Control) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

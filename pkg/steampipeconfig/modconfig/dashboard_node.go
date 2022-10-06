@@ -71,7 +71,7 @@ func (n *DashboardNode) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (n *DashboardNode) OnDecoded(_ *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (n *DashboardNode) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	n.setBaseProperties(resourceMapProvider)
 
 	// when we reference resources (i.e. category),
@@ -247,7 +247,7 @@ func (n *DashboardNode) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardNode) IsSnapshotPanel() {}
 
-func (n *DashboardNode) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

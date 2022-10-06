@@ -61,7 +61,7 @@ func (c *DashboardCategory) GetDeclRange() *hcl.Range {
 }
 
 // OnDecoded implements HclResource
-func (c *DashboardCategory) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (c *DashboardCategory) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
 	return nil
 }
@@ -100,7 +100,7 @@ func (c DashboardCategory) Equals(other *DashboardCategory) bool {
 		foldEqual
 }
 
-func (c *DashboardCategory) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

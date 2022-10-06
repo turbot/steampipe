@@ -8,11 +8,12 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, cloudMetadata *steampipeconfig.CloudMetadata) ([]byte, error) {
+func buildDashboardMetadataPayload(workspaceResources *modconfig.ResourceMaps, cloudMetadata *steampipeconfig.CloudMetadata) ([]byte, error) {
 	installedMods := make(map[string]ModDashboardMetadata)
 	for _, mod := range workspaceResources.Mods {
 		// Ignore current mod
@@ -73,7 +74,7 @@ func addBenchmarkChildren(benchmark *modconfig.Benchmark, recordTrunk bool, trun
 	return children
 }
 
-func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
+func buildAvailableDashboardsPayload(workspaceResources *modconfig.ResourceMaps) ([]byte, error) {
 
 	payload := AvailableDashboardsPayload{
 		Action:     "available_dashboards",
@@ -208,6 +209,16 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		Action:        "execution_complete",
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		ExecutionId:   event.ExecutionId,
+		Snapshot:      snap,
+	}
+	return json.Marshal(payload)
+}
+
+func buildExecutionCompletePayloadFromSnapshot(snap *dashboardtypes.SteampipeSnapshot) ([]byte, error) {
+
+	payload := &ExecutionCompletePayload{
+		Action:        "execution_complete",
+		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		Snapshot:      snap,
 	}
 	return json.Marshal(payload)

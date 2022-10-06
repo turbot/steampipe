@@ -38,7 +38,7 @@ type Workspace struct {
 
 	// source snapshot paths
 	// if this is set, no other mod resources are loaded and
-	// the ModResources returned by GetModResources will contain only the snapshots
+	// the ResourceMaps returned by GetModResources will contain only the snapshots
 	sourceSnapshots []string
 
 	watcher     *utils.FileWatcher

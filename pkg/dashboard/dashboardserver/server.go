@@ -355,6 +355,16 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 		case "select_dashboard":
 			s.setDashboardForSession(sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues)
 			_ = dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, request.Payload.Dashboard.FullName, request.Payload.InputValues, s.workspace, s.dbClient)
+		case "select_snapshot":
+			snapshotName := request.Payload.Dashboard.FullName
+			s.setDashboardForSession(sessionId, snapshotName, request.Payload.InputValues)
+			snap, _ := dashboardexecute.Executor.LoadSnapshot(ctx, sessionId, snapshotName, s.workspace)
+			// error handling???
+			payload, _ := buildExecutionCompletePayloadFromSnapshot(snap)
+			// error handling???
+			s.writePayloadToSession(sessionId, payload)
+			outputReady(s.context, fmt.Sprintf("Show snapshot complete: %s", snapshotName))
+
 		case "input_changed":
 			s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
 			_ = dashboardexecute.Executor.OnInputChanged(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)

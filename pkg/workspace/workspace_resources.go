@@ -28,12 +28,12 @@ func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
 	return nil, false
 }
 
-// GetResourceMaps implements ModResourcesProvider
-func (w *Workspace) GetResourceMaps() *modconfig.ModResources {
+// GetResourceMaps implements ResourceMapsProvider
+func (w *Workspace) GetResourceMaps() *modconfig.ResourceMaps {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
-	// if this a source snapshot workspace, create a ModResources containing ONLY source snapshot paths
+	// if this a source snapshot workspace, create a ResourceMaps containing ONLY source snapshot paths
 	if len(w.sourceSnapshots) != 0 {
 		return modconfig.NewSourceSnapshotModResources(w.sourceSnapshots)
 	}

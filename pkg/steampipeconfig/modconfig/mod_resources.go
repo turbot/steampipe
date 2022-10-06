@@ -7,9 +7,9 @@ import (
 	"path"
 )
 
-// ModResources is a struct containing maps of all mod resource types
+// ResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
-type ModResources struct {
+type ResourceMaps struct {
 	// the parent mod
 	Mod *Mod
 
@@ -43,21 +43,21 @@ type ModResources struct {
 	Variables map[string]*Variable
 }
 
-func NewModResources(mod *Mod) *ModResources {
+func NewModResources(mod *Mod) *ResourceMaps {
 	res := emptyModResources()
 	res.Mod = mod
 	res.Mods[mod.Name()] = mod
 	return res
 }
 
-func NewSourceSnapshotModResources(snapshotPaths []string) *ModResources {
+func NewSourceSnapshotModResources(snapshotPaths []string) *ResourceMaps {
 	res := emptyModResources()
 	res.AddSnapshots(snapshotPaths)
 	return res
 }
 
-func emptyModResources() *ModResources {
-	return &ModResources{
+func emptyModResources() *ResourceMaps {
+	return &ResourceMaps{
 		Controls:              make(map[string]*Control),
 		Benchmarks:            make(map[string]*Benchmark),
 		Dashboards:            make(map[string]*Dashboard),
@@ -87,9 +87,9 @@ func emptyModResources() *ModResources {
 	}
 }
 
-// ModResourcesForQueries creates a ModResources object containing just the specified queries
+// ModResourcesForQueries creates a ResourceMaps object containing just the specified queries
 // This is used to just create necessary prepared statements when executing batch queries
-func ModResourcesForQueries(queryProviders []QueryProvider, mod *Mod) *ModResources {
+func ModResourcesForQueries(queryProviders []QueryProvider, mod *Mod) *ResourceMaps {
 	res := NewModResources(mod)
 	for _, p := range queryProviders {
 		res.addControlOrQuery(p)
@@ -98,7 +98,7 @@ func ModResourcesForQueries(queryProviders []QueryProvider, mod *Mod) *ModResour
 }
 
 // QueryProviders returns a slice of all QueryProviders
-func (m *ModResources) QueryProviders() []QueryProvider {
+func (m *ResourceMaps) QueryProviders() []QueryProvider {
 	res := make([]QueryProvider, m.queryProviderCount())
 	idx := 0
 	f := func(item HclResource) (bool, error) {
@@ -114,7 +114,7 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 	return res
 }
 
-func (m *ModResources) Equals(other *ModResources) bool {
+func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 	//TODO use cmp.Equals or similar
 	if other == nil {
 		return false
@@ -375,7 +375,7 @@ func (m *ModResources) Equals(other *ModResources) bool {
 	return true
 }
 
-func (m *ModResources) PopulateReferences() {
+func (m *ResourceMaps) PopulateReferences() {
 	m.References = make(map[string]*ResourceReference)
 
 	resourceFunc := func(resource HclResource) (bool, error) {
@@ -392,7 +392,7 @@ func (m *ModResources) PopulateReferences() {
 	m.WalkResources(resourceFunc)
 }
 
-func (m *ModResources) Empty() bool {
+func (m *ResourceMaps) Empty() bool {
 	return len(m.Mods)+
 		len(m.Queries)+
 		len(m.Controls)+
@@ -415,8 +415,8 @@ func (m *ModResources) Empty() bool {
 		len(m.References) == 0
 }
 
-// this is used to create an optimized ModResources containing only the queries which will be run
-func (m *ModResources) addControlOrQuery(provider QueryProvider) {
+// this is used to create an optimized ResourceMaps containing only the queries which will be run
+func (m *ResourceMaps) addControlOrQuery(provider QueryProvider) {
 	switch p := provider.(type) {
 	case *Query:
 		if p != nil {
@@ -431,7 +431,7 @@ func (m *ModResources) addControlOrQuery(provider QueryProvider) {
 
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false or an error, return immediately
-func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
+func (m *ResourceMaps) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
 	for _, r := range m.Controls {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
@@ -539,7 +539,7 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 	return nil
 }
 
-func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
+func (m *ResourceMaps) AddResource(item HclResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	switch r := item.(type) {
 	case *Query:
@@ -718,16 +718,16 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 	return diags
 }
 
-func (m *ModResources) AddSnapshots(snapshotPaths []string) {
+func (m *ResourceMaps) AddSnapshots(snapshotPaths []string) {
 	for _, snapshotPath := range snapshotPaths {
 		snapshotName := fmt.Sprintf("snapshot.%s", path.Base(snapshotPath))
 		m.Snapshots[snapshotName] = snapshotPath
 	}
 }
 
-func (m *ModResources) Merge(others []*ModResources) *ModResources {
+func (m *ResourceMaps) Merge(others []*ResourceMaps) *ResourceMaps {
 	res := NewModResources(m.Mod)
-	sourceMaps := append([]*ModResources{m}, others...)
+	sourceMaps := append([]*ResourceMaps{m}, others...)
 
 	// take local resources from ourselves
 	for k, v := range m.LocalQueries {
@@ -815,7 +815,7 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 	return res
 }
 
-func (m *ModResources) queryProviderCount() int {
+func (m *ResourceMaps) queryProviderCount() int {
 	numDashboardInputs := 0
 	for _, inputs := range m.DashboardInputs {
 		numDashboardInputs += len(inputs)

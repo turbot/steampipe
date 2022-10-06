@@ -23,7 +23,9 @@ const (
 	CreatePseudoResources
 )
 
-/* ReferenceTypeValueMap is the raw data used to build the evaluation context
+/*
+	ReferenceTypeValueMap is the raw data used to build the evaluation context
+
 When resolving hcl references like :
 - query.q1
 - var.v1
@@ -372,8 +374,8 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 	return nil
 }
 
-func (r *RunContext) GetResourceMaps() *modconfig.ModResources {
-	dependencyResourceMaps := make([]*modconfig.ModResources, len(r.LoadedDependencyMods))
+func (r *RunContext) GetResourceMaps() *modconfig.ResourceMaps {
+	dependencyResourceMaps := make([]*modconfig.ResourceMaps, len(r.LoadedDependencyMods))
 	idx := 0
 	// use the current mod as the base resource map
 	resourceMap := r.CurrentMod.GetResourceMaps()
