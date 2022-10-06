@@ -3,6 +3,8 @@ package utils
 import (
 	"io"
 	"os"
+	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -16,12 +18,10 @@ func FileModTime(filePath string) (time.Time, error) {
 	return file.ModTime(), nil
 }
 
-//
 // MoveFile moves a file from source to destiantion.
 //
-// 	It first attempts the movement using OS primitives (os.Rename)
-// 	If os.Rename fails, it copies the file byte-by-byte to the destination and then removes the source
-//
+//	It first attempts the movement using OS primitives (os.Rename)
+//	If os.Rename fails, it copies the file byte-by-byte to the destination and then removes the source
 func MoveFile(source string, destination string) error {
 	// try an os.Rename - it is always faster than copy
 	err := os.Rename(source, destination)
@@ -51,4 +51,9 @@ func MoveFile(source string, destination string) error {
 		return err
 	}
 	return os.Remove(source)
+}
+
+func FilenameNoExtension(fileName string) string {
+	fileName = path.Base(fileName)
+	return fileName[:len(fileName)-len(filepath.Ext(fileName))]
 }

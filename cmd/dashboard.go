@@ -153,7 +153,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	defer server.Shutdown()
 
 	// server has started - update state file/start browser, as required
-	onServerStarted(serverPort, serverListen)
+	onServerStarted(serverPort, serverListen, initData.Workspace)
 
 	// wait for API server to terminate
 	<-doneChan
@@ -388,18 +388,31 @@ func setExitCodeForDashboardError(err error) {
 }
 
 // execute any required actions after successful server startup
-func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType) {
+func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType, w *workspace.Workspace) {
 	if isRunningAsService() {
 		// for service mode only, save the state
 		saveDashboardState(serverPort, serverListen)
 	} else {
 		// start browser if required
 		if viper.GetBool(constants.ArgBrowser) {
-			if err := dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort)); err != nil {
+			url := buildDashboardURL(serverPort, w)
+
+			if err := dashboardserver.OpenBrowser(url); err != nil {
 				log.Println("[TRACE] dashboard server started but failed to start client", err)
 			}
 		}
 	}
+}
+
+func buildDashboardURL(serverPort dashboardserver.ListenPort, w *workspace.Workspace) string {
+	url := fmt.Sprintf("http://localhost:%d", serverPort)
+	if len(w.SourceSnapshots) == 1 {
+		for snapshotName := range w.GetResourceMaps().Snapshots {
+			url += fmt.Sprintf("/%s", snapshotName)
+			break
+		}
+	}
+	return url
 }
 
 // is this dashboard server running as a service?
