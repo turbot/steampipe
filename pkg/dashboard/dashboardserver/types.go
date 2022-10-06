@@ -73,8 +73,16 @@ var ExecutionCompletePayloadSchemaVersion int64 = 20220929
 type ExecutionCompletePayload struct {
 	Action        string                            `json:"action"`
 	SchemaVersion string                            `json:"schema_version"`
-	Snapshot      *dashboardtypes.SteampipeSnapshot `json:"snapshot"`
+	Snapshot      *dashboardtypes.SteampipeSnapshot `json:"snapshot,omitempty"`
+	SnapshotMap   map[string]any                    `json:"snapshot,omitempty"`
 	ExecutionId   string                            `json:"execution_id"`
+}
+
+type ExecutionCompletePayloadWithSnapshotMap struct {
+	Action        string         `json:"action"`
+	SchemaVersion string         `json:"schema_version"`
+	Snapshot      map[string]any `json:"snapshot"`
+	ExecutionId   string         `json:"execution_id"`
 }
 
 type InputValuesClearedPayload struct {
