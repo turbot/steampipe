@@ -4,7 +4,6 @@ import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
 import React, {
   createContext,
-  Ref,
   useCallback,
   useContext,
   useEffect,
@@ -13,16 +12,30 @@ import React, {
 } from "react";
 import set from "lodash/set";
 import sortBy from "lodash/sortBy";
-import useDashboardWebSocket, {
-  SocketActions,
-  SocketURLFactory,
-} from "./useDashboardWebSocket";
+import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import usePrevious from "./usePrevious";
+import {
+  AvailableDashboard,
+  AvailableDashboardsDictionary,
+  DashboardActions,
+  DashboardDataModeCLISnapshot,
+  DashboardDataModeCloudSnapshot,
+  DashboardDataModeLive,
+  DashboardDataOptions,
+  DashboardDefinition,
+  DashboardRenderOptions,
+  DashboardsCollection,
+  IDashboardContext,
+  PanelDefinition,
+  PanelsMap,
+  SelectedDashboardStates,
+  SocketURLFactory,
+  SQLDataMap,
+} from "../types";
 import { buildComponentsMap } from "../components";
 import { GlobalHotKeys } from "react-hotkeys";
-import { LeafNodeData, Width } from "../components/dashboards/common";
+import { KeyValueStringPairs } from "../components/dashboards/common/types";
 import { noop } from "../utils/func";
-import { Theme } from "./useTheme";
 import {
   useLocation,
   useNavigate,
@@ -31,314 +44,10 @@ import {
   useSearchParams,
 } from "react-router-dom";
 
-interface IBreakpointContext {
-  currentBreakpoint: string | null;
-  maxBreakpoint(breakpointAndDown: string): boolean;
-  minBreakpoint(breakpointAndUp: string): boolean;
-  width: number;
-}
-
-interface IThemeContext {
-  theme: Theme;
-  setTheme(theme: string): void;
-  wrapperRef: Ref<null>;
-}
-
-export interface ComponentsMap {
-  [name: string]: any;
-}
-
-export interface PanelsMap {
-  [name: string]: PanelDefinition;
-}
-
-export type DashboardDataMode = "live" | "snapshot";
-
-export type DashboardRunState = "ready" | "error" | "complete";
-
-interface IDashboardContext {
-  metadata: DashboardMetadata | null;
-  availableDashboardsLoaded: boolean;
-
-  closePanelDetail(): void;
-  dispatch(action: DashboardAction): void;
-
-  dataMode: DashboardDataMode;
-  snapshotId: string | null;
-
-  refetchDashboard: boolean;
-
-  error: any;
-
-  panelsMap: PanelsMap;
-
-  dashboards: AvailableDashboard[];
-  dashboardsMap: AvailableDashboardsDictionary;
-  dashboard: DashboardDefinition | null;
-
-  selectedPanel: PanelDefinition | null;
-  selectedDashboard: AvailableDashboard | null;
-  selectedDashboardInputs: DashboardInputs;
-  selectedSnapshot: DashboardSnapshot | null;
-  lastChangedInput: string | null;
-
-  sqlDataMap: SQLDataMap;
-
-  dashboardTags: DashboardTags;
-
-  search: DashboardSearch;
-
-  breakpointContext: IBreakpointContext;
-  themeContext: IThemeContext;
-
-  components: ComponentsMap;
-
-  progress: number;
-  state: DashboardRunState;
-  render: {
-    headless: boolean;
-    snapshotCompleteDiv: boolean;
-  };
-}
-
-export interface IActions {
-  [type: string]: string;
-}
-
-const DashboardActions: IActions = {
-  AVAILABLE_DASHBOARDS: "available_dashboards",
-  CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
-  CLEAR_SNAPSHOT: "clear_snapshot",
-  CONTROL_COMPLETE: "control_complete",
-  CONTROL_ERROR: "control_error",
-  DASHBOARD_METADATA: "dashboard_metadata",
-  DELETE_DASHBOARD_INPUT: "delete_dashboard_input",
-  EXECUTION_COMPLETE: "execution_complete",
-  EXECUTION_ERROR: "execution_error",
-  EXECUTION_STARTED: "execution_started",
-  INPUT_VALUES_CLEARED: "input_values_cleared",
-  LEAF_NODE_COMPLETE: "leaf_node_complete",
-  LEAF_NODE_PROGRESS: "leaf_node_progress",
-  SELECT_DASHBOARD: "select_dashboard",
-  SELECT_PANEL: "select_panel",
-  SELECT_SNAPSHOT: "select_snapshot",
-  SET_DASHBOARD: "set_dashboard",
-  SET_DASHBOARD_INPUT: "set_dashboard_input",
-  SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
-  SET_DASHBOARD_SEARCH_VALUE: "set_dashboard_search_value",
-  SET_DASHBOARD_SEARCH_GROUP_BY: "set_dashboard_search_group_by",
-  SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
-  SET_DATA_MODE: "set_data_mode",
-  SET_REFETCH_DASHBOARD: "set_refetch_dashboard",
-  SET_SNAPSHOT: "set_snapshot",
-  WORKSPACE_ERROR: "workspace_error",
-};
-
-const dashboardActions = Object.values(DashboardActions);
-
-// https://github.com/microsoft/TypeScript/issues/28046
-export type ElementType<T extends ReadonlyArray<unknown>> =
-  T extends ReadonlyArray<infer ElementType> ? ElementType : never;
-
-export type DashboardActionType = ElementType<typeof dashboardActions>;
-
-export interface DashboardAction {
-  type: DashboardActionType;
-  [key: string]: any;
-}
-
-type DashboardSearchGroupByMode = "mod" | "tag";
-
-interface DashboardSearchGroupBy {
-  value: DashboardSearchGroupByMode;
-  tag: string | null;
-}
-
-export interface DashboardSearch {
-  value: string;
-  groupBy: DashboardSearchGroupBy;
-}
-
-export interface DashboardTags {
-  keys: string[];
-}
-
-interface SelectedDashboardStates {
-  dashboard_name: string | null;
-  dataMode: DashboardDataMode;
-  refetchDashboard: boolean;
-  search: DashboardSearch;
-  selectedDashboard: AvailableDashboard | null;
-  selectedDashboardInputs: DashboardInputs;
-  selectedSnapshot: DashboardSnapshot;
-}
-
-interface DashboardInputs {
-  [name: string]: string;
-}
-
-interface DashboardVariables {
-  [name: string]: any;
-}
-
-interface DashboardSnapshotTags {
-  [name: string]: string;
-}
-
-export interface ModDashboardMetadata {
-  title: string;
-  full_name: string;
-  short_name: string;
-}
-
-interface InstalledModsDashboardMetadata {
-  [key: string]: ModDashboardMetadata;
-}
-
-export interface CloudDashboardActorMetadata {
-  id: string;
-  handle: string;
-}
-
-export interface CloudDashboardIdentityMetadata {
-  id: string;
-  handle: string;
-  type: "org" | "user";
-}
-
-export interface CloudDashboardWorkspaceMetadata {
-  id: string;
-  handle: string;
-}
-
-interface CloudDashboardMetadata {
-  actor: CloudDashboardActorMetadata;
-  identity: CloudDashboardIdentityMetadata;
-  workspace: CloudDashboardWorkspaceMetadata;
-}
-
-export interface DashboardMetadata {
-  mod: ModDashboardMetadata;
-  installed_mods?: InstalledModsDashboardMetadata;
-  cloud?: CloudDashboardMetadata;
-  telemetry: "info" | "none";
-}
-
-export interface DashboardSnapshot {
-  id: string;
-  dashboard_name: string;
-  start_time: string;
-  end_time: string;
-  schema_version: string;
-  search_path: string;
-  variables: DashboardVariables;
-  inputs: DashboardInputs;
-  tags: DashboardSnapshotTags;
-}
-
-interface AvailableDashboardTags {
-  [key: string]: string;
-}
-
-type AvailableDashboardType = "benchmark" | "dashboard";
-
-export interface AvailableDashboard {
-  full_name: string;
-  short_name: string;
-  mod_full_name: string;
-  tags: AvailableDashboardTags;
-  title: string;
-  is_top_level: boolean;
-  type: AvailableDashboardType;
-  children?: AvailableDashboard[];
-  trunks?: string[][];
-}
-
-export interface AvailableDashboardsDictionary {
-  [key: string]: AvailableDashboard;
-}
-
-export interface ContainerDefinition {
-  name: string;
-  panel_type?: string;
-  allow_child_panel_expand?: boolean;
-  data?: LeafNodeData;
-  title?: string;
-  width?: number;
-  children?: (ContainerDefinition | PanelDefinition)[];
-}
-
-export interface PanelProperties {
-  [key: string]: any;
-}
-
-export interface SQLDataMap {
-  [sql: string]: LeafNodeData;
-}
-
-export interface PanelDefinition {
-  name: string;
-  display_type?: string;
-  panel_type?: string;
-  title?: string;
-  description?: string;
-  width?: Width;
-  sql?: string;
-  data?: LeafNodeData;
-  source_definition?: string;
-  status?: DashboardRunState;
-  error?: Error;
-  properties?: PanelProperties;
-  dashboard: string;
-}
-
-export interface BenchmarkDefinition extends PanelDefinition {
-  children?: BenchmarkDefinition | ControlDefinition[];
-}
-
-export interface ControlDefinition extends PanelDefinition {}
-
-export interface DashboardDefinition {
-  artificial: boolean;
-  name: string;
-  panel_type: string;
-  title?: string;
-  width?: number;
-  children?: (ContainerDefinition | PanelDefinition)[];
-  dashboard: string;
-}
-
-interface DashboardsCollection {
-  dashboards: AvailableDashboard[];
-  dashboardsMap: AvailableDashboardsDictionary;
-}
-
-export interface DashboardDataOptions {
-  dataMode: DashboardDataMode;
-  snapshotId?: string;
-}
-
-export interface DashboardRenderOptions {
-  headless?: boolean;
-}
-
-interface DashboardProviderProps {
-  analyticsContext: any;
-  breakpointContext: any;
-  children: null | JSX.Element | JSX.Element[];
-  componentOverrides?: {};
-  dataOptions?: DashboardDataOptions;
-  eventHooks?: {};
-  featureFlags?: string[];
-  renderOptions?: DashboardRenderOptions;
-  socketUrlFactory?: SocketURLFactory;
-  stateDefaults?: {};
-  themeContext: any;
-}
-
 const buildDashboards = (
   dashboards: AvailableDashboardsDictionary,
-  benchmarks: AvailableDashboardsDictionary
+  benchmarks: AvailableDashboardsDictionary,
+  snapshots: KeyValueStringPairs
 ): DashboardsCollection => {
   const dashboardsMap = {};
   const builtDashboards: AvailableDashboard[] = [];
@@ -498,12 +207,16 @@ function reducer(state, action) {
     case DashboardActions.DASHBOARD_METADATA:
       return {
         ...state,
-        metadata: action.metadata,
+        metadata: {
+          mod: {},
+          ...action.metadata,
+        },
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
       const { dashboards, dashboardsMap } = buildDashboards(
         action.dashboards,
-        action.benchmarks
+        action.benchmarks,
+        action.snapshots
       );
       const selectedDashboard = updateSelectedDashboard(
         state.selectedDashboard,
@@ -516,11 +229,13 @@ function reducer(state, action) {
         dashboards,
         dashboardsMap,
         selectedDashboard:
-          state.dataMode === "snapshot"
+          state.dataMode === DashboardDataModeCLISnapshot ||
+          state.dataMode === DashboardDataModeCloudSnapshot
             ? state.selectedDashboard
             : selectedDashboard,
         dashboard:
-          state.dataMode === "snapshot"
+          state.dataMode === DashboardDataModeCLISnapshot ||
+          state.dataMode === DashboardDataModeCloudSnapshot
             ? state.dashboard
             : selectedDashboard &&
               state.dashboard &&
@@ -561,7 +276,7 @@ function reducer(state, action) {
     case DashboardActions.EXECUTION_COMPLETE: {
       // If we're in live mode and not expecting execution events for this ID
       if (
-        state.dataMode === "live" &&
+        state.dataMode === DashboardDataModeLive &&
         action.execution_id !== state.execution_id
       ) {
         return state;
@@ -652,14 +367,14 @@ function reducer(state, action) {
         ...state,
         selectedSnapshot: null,
         snapshotId: null,
-        dataMode: "live",
+        dataMode: DashboardDataModeLive,
       };
     case DashboardActions.SELECT_SNAPSHOT:
       return {
         ...state,
         selectedSnapshot: action.snapshot,
         snapshotId: action.snapshot.id,
-        dataMode: "snapshot",
+        dataMode: DashboardDataModeCloudSnapshot,
       };
     case DashboardActions.SET_DATA_MODE:
       return {
@@ -677,16 +392,16 @@ function reducer(state, action) {
         dashboard: action.dashboard,
       };
     case DashboardActions.SELECT_DASHBOARD:
-      if (action.dataMode === "snapshot") {
+      if (action.dataMode !== DashboardDataModeLive) {
         return {
           ...state,
-          dataMode: "snapshot",
+          dataMode: action.dataMode,
           selectedDashboard: action.dashboard,
         };
       }
       return {
         ...state,
-        dataMode: "live",
+        dataMode: DashboardDataModeLive,
         dashboard: null,
         execution_id: null,
         snapshotId: null,
@@ -815,7 +530,7 @@ const getInitialState = (searchParams, defaults: any = {}) => {
     dashboardTags: {
       keys: [],
     },
-    dataMode: defaults.dataMode || "live",
+    dataMode: defaults.dataMode || DashboardDataModeLive,
     snapshotId: defaults.snapshotId ? defaults.snapshotId : null,
     refetchDashboard: false,
     error: null,
@@ -850,13 +565,27 @@ const getInitialState = (searchParams, defaults: any = {}) => {
 
 const DashboardContext = createContext<IDashboardContext | null>(null);
 
+interface DashboardProviderProps {
+  analyticsContext: any;
+  breakpointContext: any;
+  children: null | JSX.Element | JSX.Element[];
+  componentOverrides?: {};
+  dataOptions?: DashboardDataOptions;
+  eventHooks?: {};
+  featureFlags?: string[];
+  renderOptions?: DashboardRenderOptions;
+  socketUrlFactory?: SocketURLFactory;
+  stateDefaults?: {};
+  themeContext: any;
+}
+
 const DashboardProvider = ({
   analyticsContext,
   breakpointContext,
   children,
   componentOverrides = {},
   dataOptions = {
-    dataMode: "live",
+    dataMode: DashboardDataModeLive,
   },
   eventHooks,
   featureFlags = [],
@@ -927,7 +656,7 @@ const DashboardProvider = ({
     if (location.key === "default") {
       return;
     }
-    if (state.dataMode === "snapshot") {
+    if (state.dataMode !== DashboardDataModeLive) {
       return;
     }
 
@@ -984,7 +713,8 @@ const DashboardProvider = ({
   useEffect(() => {
     // If no search params have changed
     if (
-      state.dataMode === "snapshot" ||
+      state.dataMode === DashboardDataModeCLISnapshot ||
+      state.dataMode === DashboardDataModeCLISnapshot ||
       (previousSelectedDashboardStates &&
         // @ts-ignore
         previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
@@ -1124,7 +854,7 @@ const DashboardProvider = ({
     // to a report, or it's first load), or the selected dashboard has been changed, select that
     // report over the socket
     if (
-      state.dataMode === "live" &&
+      state.dataMode === DashboardDataModeLive &&
       (!previousSelectedDashboardStates ||
         // @ts-ignore
         !previousSelectedDashboardStates.selectedDashboard ||
@@ -1152,7 +882,7 @@ const DashboardProvider = ({
     // Else if we did previously have a dashboard selected in state and the
     // inputs have changed, then update the inputs over the socket
     if (
-      state.dataMode === "live" &&
+      state.dataMode === DashboardDataModeLive &&
       previousSelectedDashboardStates &&
       // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard &&
@@ -1305,7 +1035,11 @@ const DashboardProvider = ({
     useState(false);
 
   useEffect(() => {
-    if (dataOptions?.dataMode !== "snapshot" || state.state !== "complete") {
+    if (
+      (dataOptions?.dataMode !== DashboardDataModeCLISnapshot &&
+        dataOptions?.dataMode !== DashboardDataModeCloudSnapshot) ||
+      state.state !== "complete"
+    ) {
       return;
     }
     setRenderSnapshotCompleteDiv(true);

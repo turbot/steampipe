@@ -1,13 +1,14 @@
-import { DashboardRunState, useDashboard } from "../../../hooks/useDashboard";
+import set from "lodash/set";
+import { DashboardRunState } from "../../../types";
+import { EdgeProperties, NodeAndEdgeProperties, NodeProperties } from "./types";
 import {
   NodeAndEdgeData,
   NodeAndEdgeDataColumn,
   NodeAndEdgeDataFormat,
   NodeAndEdgeDataRow,
 } from "../graphs/types";
-import { EdgeProperties, NodeAndEdgeProperties, NodeProperties } from "./types";
+import { useDashboard } from "../../../hooks/useDashboard";
 import { useMemo } from "react";
-import set from "lodash/set";
 
 // Categories may be sourced from a node, an edge, a flow, a graph or a hierarchy
 // A node or edge can define exactly 1 category, which covers all rows of data that don't define a category

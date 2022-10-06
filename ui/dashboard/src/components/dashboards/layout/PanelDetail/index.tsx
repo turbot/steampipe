@@ -7,9 +7,10 @@ import PanelDetailDefinition from "./PanelDetailDefinition";
 import PanelDetailPreview from "./PanelDetailPreview";
 import PanelDetailQuery from "./PanelDetailQuery";
 import { classNames } from "../../../../utils/styles";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
+import { PanelDefinition } from "../../../../types";
 import { saveAs } from "file-saver";
 import { useCallback, useMemo, useState } from "react";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { usePapaParse } from "react-papaparse";
 
 export type PanelDetailProps = {

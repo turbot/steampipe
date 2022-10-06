@@ -17,7 +17,7 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { DashboardDataMode, useDashboard } from "../../../hooks/useDashboard";
+import { DashboardDataMode, DashboardDataModeLive } from "../../../types";
 import {
   ErrorIcon,
   SortAscendingIcon,
@@ -25,13 +25,14 @@ import {
 } from "../../../constants/icons";
 import { isRelativeUrl } from "../../../utils/url";
 import { memo, useEffect, useMemo, useState } from "react";
+import { registerComponent } from "../index";
 import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
+import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
-import { registerComponent } from "../index";
 
 export type TableColumnDisplay = "all" | "none";
 export type TableColumnWrap = "all" | "none";
@@ -138,7 +139,7 @@ const CellValue = ({
       // We only want to render the HREF if it's live, or it's snapshot and absolute
       const isRelative = isRelativeUrl(renderedTemplateForColumn.result);
       setHref(
-        dataMode === "snapshot" && isRelative
+        dataMode !== DashboardDataModeLive && isRelative
           ? null
           : renderedTemplateForColumn.result
       );

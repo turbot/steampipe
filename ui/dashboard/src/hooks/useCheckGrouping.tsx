@@ -8,6 +8,12 @@ import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValu
 import RootNode from "../components/dashboards/check/common/node/RootNode";
 import usePrevious from "./usePrevious";
 import {
+  BenchmarkDefinition,
+  ElementType,
+  IActions,
+  PanelDefinition,
+} from "../types";
+import {
   CheckDisplayGroup,
   CheckDisplayGroupType,
   CheckNode,
@@ -23,13 +29,7 @@ import {
   useReducer,
 } from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
-import {
-  BenchmarkDefinition,
-  ElementType,
-  IActions,
-  PanelDefinition,
-  useDashboard,
-} from "./useDashboard";
+import { useDashboard } from "./useDashboard";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;

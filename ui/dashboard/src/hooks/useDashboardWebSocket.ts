@@ -1,15 +1,13 @@
 import isEmpty from "lodash/isEmpty";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import {
-  DashboardActionType,
   DashboardDataMode,
+  DashboardDataModeCLISnapshot,
+  DashboardDataModeLive,
   IActions,
-} from "./useDashboard";
+  ReceivedSocketMessagePayload,
+} from "../types";
 import { useCallback, useEffect, useRef } from "react";
-
-export interface EventHooks {
-  [type: DashboardActionType]: (event: any) => Promise<void>;
-}
 
 export const SocketActions: IActions = {
   CLEAR_DASHBOARD: "clear_dashboard",
@@ -18,13 +16,6 @@ export const SocketActions: IActions = {
   SELECT_DASHBOARD: "select_dashboard",
   INPUT_CHANGED: "input_changed",
 };
-
-export type SocketURLFactory = () => Promise<string>;
-
-export interface ReceivedSocketMessagePayload {
-  action: string;
-  [key: string]: any;
-}
 
 const useDashboardWebSocket = (
   dataMode: DashboardDataMode,
@@ -66,7 +57,8 @@ const useDashboardWebSocket = (
       reconnectAttempts: 10,
       reconnectInterval: 3000,
     },
-    dataMode === "live"
+    dataMode === DashboardDataModeLive ||
+      dataMode === DashboardDataModeCLISnapshot
   );
 
   useEffect(() => {

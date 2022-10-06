@@ -1,10 +1,7 @@
-import {
-  ContainerDefinition,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import { ContainerDefinition, PanelDefinition } from "../../../../types";
 import { getComponent } from "../../index";
 import { nodeAndEdgeResourceHasData } from "../../common";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;

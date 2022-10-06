@@ -1,10 +1,11 @@
+import { DashboardDataModeLive } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 const DashboardProgress = () => {
   const { dataMode, progress, state } = useDashboard();
 
   // We only show a progress indicator in live mode
-  if (dataMode === "snapshot") {
+  if (dataMode !== DashboardDataModeLive) {
     return null;
   }
 
