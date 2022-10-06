@@ -590,14 +590,17 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	// along with installed plugins
 	if len(missingPluginMap) != 0 {
 		// List installed plugins with the connections
-		headers := []string{"Name", "Version", "Connections"}
-		rows := [][]string{}
-		for _, item := range list {
-			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
+		if len(list) != 0 {
+			headers := []string{"Name", "Version", "Connections"}
+			rows := [][]string{}
+			for _, item := range list {
+				rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
+			}
+			display.ShowInstalledPluginTable(headers, rows, false)
 		}
-		display.ShowInstalledPluginTable(headers, rows, false)
 
 		// List missing plugins
+		headers := []string{"Name", "Version", "Connections"}
 		conns := []string{}
 		missingRows := [][]string{}
 		for p, item := range missingPluginMap {
@@ -677,7 +680,6 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 	res.ShowWarnings()
 
 	missingPlugins := res.Updates.MissingPlugins
-	log.Printf("[INFO] >>>> %v", missingPlugins)
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
 	// missingPluginConnectionMap := make(map[string][]modconfig.Connection)
@@ -690,11 +692,6 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], *v.Connection)
 	}
 
-	// for p, w := range updates {
-	// 	for _, i := range w {
-
-	// 	}
-	// }
 	if missingPlugins != nil {
 		return pluginConnectionMap, missingPlugins, nil
 	}
