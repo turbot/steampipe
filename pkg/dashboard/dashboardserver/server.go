@@ -362,7 +362,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 			// TACTICAL- handle with error message
 			error_helpers.FailOnError(err)
 			// error handling???
-			payload, err := buildExecutionCompletePayloadFromSnapshotMap(snap)
+			payload, err := buildDisplaySnapshotPayload(snap)
 			// TACTICAL- handle with error message
 			error_helpers.FailOnError(err)
 

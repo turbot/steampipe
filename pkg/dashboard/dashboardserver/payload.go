@@ -213,8 +213,8 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 	return json.Marshal(payload)
 }
 
-func buildExecutionCompletePayloadFromSnapshotMap(snap map[string]any) ([]byte, error) {
-	payload := &ExecutionCompletePayloadWithSnapshotMap{
+func buildDisplaySnapshotPayload(snap map[string]any) ([]byte, error) {
+	payload := &DisplaySnapshotPayload{
 		Action:        "execution_complete",
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		Snapshot:      snap,
