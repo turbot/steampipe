@@ -398,13 +398,25 @@ function reducer(state, action) {
         dashboard: action.dashboard,
       };
     case DashboardActions.SELECT_DASHBOARD:
-      if (action.dataMode !== DashboardDataModeLive) {
+      if (action.dashboard && action.dashboard.type === "snapshot") {
+        return {
+          ...state,
+          dataMode: DashboardDataModeCLISnapshot,
+          selectedDashboard: action.dashboard,
+        };
+      }
+
+      if (
+        action.dataMode === DashboardDataModeCLISnapshot ||
+        action.dataMode === DashboardDataModeCloudSnapshot
+      ) {
         return {
           ...state,
           dataMode: action.dataMode,
           selectedDashboard: action.dashboard,
         };
       }
+
       return {
         ...state,
         dataMode: DashboardDataModeLive,
@@ -860,7 +872,8 @@ const DashboardProvider = ({
     // to a report, or it's first load), or the selected dashboard has been changed, select that
     // report over the socket
     if (
-      state.dataMode === DashboardDataModeLive &&
+      (state.dataMode === DashboardDataModeLive ||
+        state.dataMode === DashboardDataModeCLISnapshot) &&
       (!previousSelectedDashboardStates ||
         // @ts-ignore
         !previousSelectedDashboardStates.selectedDashboard ||
