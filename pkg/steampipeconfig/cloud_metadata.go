@@ -5,16 +5,6 @@ type CloudMetadata struct {
 	Identity          *IdentityMetadata  `json:"identity,omitempty"`
 	WorkspaceDatabase *WorkspaceMetadata `json:"workspace,omitempty"`
 	ConnectionString  string             `json:"-"`
-	WorkspaceSnapshot *WorkspaceMetadata `json:"-"`
-}
-
-func NewCloudMetadata() *CloudMetadata {
-	return &CloudMetadata{
-		Actor:             &ActorMetadata{},
-		Identity:          &IdentityMetadata{},
-		WorkspaceDatabase: &WorkspaceMetadata{},
-		WorkspaceSnapshot: &WorkspaceMetadata{},
-	}
 }
 
 type ActorMetadata struct {

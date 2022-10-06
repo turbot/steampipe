@@ -80,28 +80,28 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	if err != nil {
 		return nil, err
 	}
-	userWorkspace, err := getUserWorkspaceHandle(baseURL, bearer, userHandle, client)
-	if err != nil {
-		return nil, err
-	}
 
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
 	identity := workspaceData["identity"].(map[string]any)
 
-	cloudMetadata := steampipeconfig.NewCloudMetadata()
-	cloudMetadata.Actor.Id = userId
-	cloudMetadata.Actor.Handle = userHandle
-	cloudMetadata.Identity = &steampipeconfig.IdentityMetadata{
-		Id:     identity["id"].(string),
-		Type:   identity["type"].(string),
-		Handle: identityHandle,
+	cloudMetadata := &steampipeconfig.CloudMetadata{
+		Actor: &steampipeconfig.ActorMetadata{
+			Id:     userId,
+			Handle: userHandle,
+		},
+		Identity: &steampipeconfig.IdentityMetadata{
+			Id:     identity["id"].(string),
+			Type:   identity["type"].(string),
+			Handle: identityHandle,
+		},
+		WorkspaceDatabase: &steampipeconfig.WorkspaceMetadata{
+			Id:     workspace["id"].(string),
+			Handle: workspace["handle"].(string),
+		},
+
+		ConnectionString: connectionString,
 	}
-	cloudMetadata.WorkspaceDatabase = &steampipeconfig.WorkspaceMetadata{
-		Id:     workspace["id"].(string),
-		Handle: workspace["handle"].(string),
-	}
-	cloudMetadata.ConnectionString = connectionString
 
 	return cloudMetadata, nil
 }
