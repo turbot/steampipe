@@ -586,17 +586,18 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		exitCode = constants.ExitCodePluginListFailure
 	}
 
-	// List installed plugins with the connections
-	headers := []string{"Name", "Version", "Connections"}
-	rows := [][]string{}
-	for _, item := range list {
-		rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
-	}
-	display.ShowInstalledPluginTable(headers, rows, false)
-
-	// List missing plugins which have connections
+	// If there are missing plugins which have connections left over, list them
+	// along with installed plugins
 	if len(missingPluginMap) != 0 {
+		// List installed plugins with the connections
 		headers := []string{"Name", "Version", "Connections"}
+		rows := [][]string{}
+		for _, item := range list {
+			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
+		}
+		display.ShowInstalledPluginTable(headers, rows, false)
+
+		// List missing plugins
 		conns := []string{}
 		missingRows := [][]string{}
 		for p, item := range missingPluginMap {
@@ -607,6 +608,13 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			conns = []string{}
 		}
 		display.ShowMissingPluginTable(headers, missingRows, false)
+	} else {
+		headers := []string{"Name", "Version", "Connections"}
+		rows := [][]string{}
+		for _, item := range list {
+			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
+		}
+		display.ShowWrappedTable(headers, rows, false)
 	}
 }
 
