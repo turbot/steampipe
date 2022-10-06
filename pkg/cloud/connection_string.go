@@ -16,34 +16,41 @@ import (
 const actorAPI = "/api/v1/actor"
 const actorWorkspacesAPI = "/api/v1/actor/workspace"
 const passwordAPIFormat = "/api/v1/user/%s/password"
+const userWorkspaceFormat = "/api/v1/user/%s/workspace"
 
 func GetUserWorkspace(token string) (string, error) {
-	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
+	baseURL := getBaseApiUrl()
+	bearer := getBearerToken(token)
+	client := &http.Client{}
+	// get actor
+	userHandle, _, err := getActor(baseURL, bearer, client)
+	if err != nil {
+		return "", err
+	}
+	userWorkspace, err := getUserWorkspaceHandle(baseURL, bearer, userHandle, client)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s/%s", userHandle, userWorkspace), nil
+}
+
+func getBearerToken(token string) string {
 	// create a 'bearer' string by appending the access token
 	var bearer = "Bearer " + token
-	client := &http.Client{}
+	return bearer
+}
 
-	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI+"?limit=2", bearer, client)
-	if err != nil {
-		return "", fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
-	}
-	items := resp["items"].([]any)
-	if len(items) == 0 {
-		return "", fmt.Errorf("no workspace found for user")
-	}
-	if len(items) > 1 {
-		return "", fmt.Errorf("more than one workspace found for user - specify which one to use with '--workspace'")
-	}
-	ws := items[0].(map[string]any)
-	identity := ws["identity"].(map[string]any)
-	handle := ws["handle"].(string)
-	identityHandle := identity["handle"].(string)
-
-	return fmt.Sprintf("%s/%s", identityHandle, handle), nil
+func getBaseApiUrl() string {
+	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
+	return baseURL
 }
 
 func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {
-	baseURL := fmt.Sprintf("https://%s", viper.GetString(constants.ArgCloudHost))
+	bearer := getBearerToken(token)
+	client := &http.Client{}
+	baseURL := getBaseApiUrl()
+
 	parts := strings.Split(workspaceDatabaseString, "/")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid 'workspace-database' argument '%s' - must be either a connection string or in format <identity>/<workspace>", workspaceDatabaseString)
@@ -51,16 +58,12 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	identityHandle := parts[0]
 	workspaceHandle := parts[1]
 
-	// create a 'bearer' string by appending the access token
-	var bearer = "Bearer " + token
-
-	client := &http.Client{}
-
 	// org or user?
-	workspaceData, err := getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer, client)
+	workspaces, err := getWorkspaces(baseURL, bearer, client)
 	if err != nil {
 		return nil, err
 	}
+	workspaceData := getWorkspaceData(workspaces, identityHandle, workspaceHandle)
 	if workspaceData == nil {
 		return nil, fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
 	}
@@ -77,6 +80,10 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	if err != nil {
 		return nil, err
 	}
+	userWorkspace, err := getUserWorkspaceHandle(baseURL, bearer, userHandle, client)
+	if err != nil {
+		return nil, err
+	}
 
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
@@ -85,17 +92,21 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	cloudMetadata := steampipeconfig.NewCloudMetadata()
 	cloudMetadata.Actor.Id = userId
 	cloudMetadata.Actor.Handle = userHandle
-	cloudMetadata.Identity.Id = identity["id"].(string)
-	cloudMetadata.Identity.Type = identity["type"].(string)
-	cloudMetadata.Identity.Handle = identityHandle
-	cloudMetadata.Workspace.Id = workspace["id"].(string)
-	cloudMetadata.Workspace.Handle = workspace["handle"].(string)
+	cloudMetadata.Identity = &steampipeconfig.IdentityMetadata{
+		Id:     identity["id"].(string),
+		Type:   identity["type"].(string),
+		Handle: identityHandle,
+	}
+	cloudMetadata.WorkspaceDatabase = &steampipeconfig.WorkspaceMetadata{
+		Id:     workspace["id"].(string),
+		Handle: workspace["handle"].(string),
+	}
 	cloudMetadata.ConnectionString = connectionString
 
 	return cloudMetadata, nil
 }
 
-func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, client *http.Client) (map[string]any, error) {
+func getWorkspaces(baseURL, bearer string, client *http.Client) ([]any, error) {
 	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
@@ -104,17 +115,23 @@ func getWorkspaceData(baseURL, identityHandle, workspaceHandle, bearer string, c
 	// TODO HANDLE PAGING
 	items := resp["items"]
 	if items != nil {
-		itemsArray := items.([]any)
-		for _, i := range itemsArray {
-			item := i.(map[string]any)
-			workspace := item["workspace"].(map[string]any)
-			identity := item["identity"].(map[string]any)
-			if identity["handle"] == identityHandle && workspace["handle"] == workspaceHandle {
-				return item, nil
-			}
-		}
+		return items.([]any), nil
 	}
 	return nil, nil
+
+}
+
+func getWorkspaceData(itemsArray []any, identityHandle, workspaceHandle string) map[string]any {
+	for _, i := range itemsArray {
+		item := i.(map[string]any)
+		workspace := item["workspace"].(map[string]any)
+		identity := item["identity"].(map[string]any)
+		if identity["handle"] == identityHandle && workspace["handle"] == workspaceHandle {
+			return item
+		}
+	}
+
+	return nil
 }
 
 func getActor(baseURL, bearer string, client *http.Client) (string, string, error) {
@@ -134,6 +151,26 @@ func getActor(baseURL, bearer string, client *http.Client) (string, string, erro
 	}
 
 	return handle, id, nil
+}
+
+func getUserWorkspaceHandle(baseURL, bearer, userHandle string, client *http.Client) (string, error) {
+	url := baseURL + fmt.Sprintf(userWorkspaceFormat, userHandle) + "?limit=2"
+	resp, err := fetchAPIData(url, bearer, client)
+	if err != nil {
+		return "", fmt.Errorf("failed to get user workspace from Steampipe Cloud API: %s ", err.Error())
+	}
+	items := resp["items"].([]any)
+
+	if len(items) == 0 {
+		// CREATE??
+		return "", fmt.Errorf("no workspace found for user %s", userHandle)
+	}
+	if len(items) > 1 {
+		return "", fmt.Errorf("more than one workspace found for user - specify which one to use with '--workspace'")
+	}
+	workspace := items[0].(map[string]any)
+
+	return workspace["handle"].(string), nil
 }
 
 func getPassword(baseURL, userHandle, bearer string, client *http.Client) (string, error) {

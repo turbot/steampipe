@@ -1,17 +1,19 @@
 package steampipeconfig
 
 type CloudMetadata struct {
-	Actor            *ActorMetadata     `json:"actor,omitempty"`
-	Identity         *IdentityMetadata  `json:"identity,omitempty"`
-	Workspace        *WorkspaceMetadata `json:"workspace,omitempty"`
-	ConnectionString string             `json:"-"`
+	Actor             *ActorMetadata     `json:"actor,omitempty"`
+	Identity          *IdentityMetadata  `json:"identity,omitempty"`
+	WorkspaceDatabase *WorkspaceMetadata `json:"workspace,omitempty"`
+	ConnectionString  string             `json:"-"`
+	WorkspaceSnapshot *WorkspaceMetadata `json:"-"`
 }
 
 func NewCloudMetadata() *CloudMetadata {
 	return &CloudMetadata{
-		Actor:     &ActorMetadata{},
-		Identity:  &IdentityMetadata{},
-		Workspace: &WorkspaceMetadata{},
+		Actor:             &ActorMetadata{},
+		Identity:          &IdentityMetadata{},
+		WorkspaceDatabase: &WorkspaceMetadata{},
+		WorkspaceSnapshot: &WorkspaceMetadata{},
 	}
 }
 

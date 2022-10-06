@@ -20,8 +20,11 @@ func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 
 	var cloudMetadata *steampipeconfig.CloudMetadata
 
+	workspaceDatabaseIsConnectionString := strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")
+	fetchSnapshotWorkspace := (viper.IsSet(constants.ArgShare) || viper.IsSet(constants.ArgSnapshot)) && !viper.IsSet(constants.ArgWorkspace)
+
 	// so a backend was set - is it a connection string or a database name
-	if !(strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")) {
+	if fetchSnapshotWorkspace || !workspaceDatabaseIsConnectionString {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
@@ -33,8 +36,13 @@ func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 		if cloudMetadata, err = cloud.GetCloudMetadata(workspaceDatabase, cloudToken); err != nil {
 			return nil, err
 		}
-		// read connection string out of cloudMetadata
-		connectionString = cloudMetadata.ConnectionString
+		if !workspaceDatabaseIsConnectionString {
+			// read connection string out of cloudMetadata
+			connectionString = cloudMetadata.ConnectionString
+		}
+		if fetchSnapshotWorkspace {
+			viper.Set(constants.ArgWorkspace, cloudMetadata.WorkspaceSnapshot)
+		}
 	}
 
 	// now set the connection string in viper
