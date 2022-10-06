@@ -127,6 +127,7 @@ type AvailableDashboardsPayload struct {
 	Action     string                           `json:"action"`
 	Dashboards map[string]ModAvailableDashboard `json:"dashboards"`
 	Benchmarks map[string]ModAvailableBenchmark `json:"benchmarks"`
+	Snapshots  map[string]string                `json:"snapshots"`
 }
 
 type ModDashboardMetadata struct {
@@ -136,7 +137,7 @@ type ModDashboardMetadata struct {
 }
 
 type DashboardMetadata struct {
-	Mod           ModDashboardMetadata            `json:"mod"`
+	Mod           *ModDashboardMetadata           `json:"mod,omitempty"`
 	InstalledMods map[string]ModDashboardMetadata `json:"installed_mods,omitempty"`
 	Cloud         *steampipeconfig.CloudMetadata  `json:"cloud,omitempty"`
 	Telemetry     string                          `json:"telemetry"`

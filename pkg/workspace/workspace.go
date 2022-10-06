@@ -34,12 +34,17 @@ type Workspace struct {
 	Mods map[string]*modconfig.Mod
 	// the input variables used in the parse
 	VariableValues map[string]string
+	CloudMetadata  *steampipeconfig.CloudMetadata
 
-	CloudMetadata *steampipeconfig.CloudMetadata
-	watcher       *utils.FileWatcher
-	loadLock      sync.Mutex
-	exclusions    []string
-	modFilePath   string
+	// source snapshot paths
+	// if this is set, no other mod resources are loaded and
+	// the ModResources returned by GetModResources will contain only the snapshots
+	sourceSnapshots []string
+
+	watcher     *utils.FileWatcher
+	loadLock    sync.Mutex
+	exclusions  []string
+	modFilePath string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)
@@ -73,6 +78,15 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 
 	// return context error so calling code can handle cancellations
 	return workspace, nil
+}
+
+// NewSourceSnapshotWorkspace creates a Workspace which contains ONLY source snapshoyt paths
+func NewSourceSnapshotWorkspace(sourceSnapshots []string) *Workspace {
+	return &Workspace{
+		sourceSnapshots: sourceSnapshots,
+		// empty mod to avoid referencing crashes
+		Mod: &modconfig.Mod{},
+	}
 }
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors

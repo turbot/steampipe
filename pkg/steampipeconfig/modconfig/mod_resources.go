@@ -1,8 +1,10 @@
 package modconfig
 
 import (
+	"fmt"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
+	"path"
 )
 
 // ModResources is a struct containing maps of all mod resource types
@@ -35,13 +37,27 @@ type ModResources struct {
 	LocalBenchmarks       map[string]*Benchmark
 	Mods                  map[string]*Mod
 	Queries               map[string]*Query
-	Variables             map[string]*Variable
 	References            map[string]*ResourceReference
+	// map of snapshot paths, keyed by snapshot name
+	Snapshots map[string]string
+	Variables map[string]*Variable
 }
 
-func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
+func NewModResources(mod *Mod) *ModResources {
+	res := emptyModResources()
+	res.Mod = mod
+	res.Mods[mod.Name()] = mod
+	return res
+}
+
+func NewSourceSnapshotModResources(snapshotPaths []string) *ModResources {
+	res := emptyModResources()
+	res.AddSnapshots(snapshotPaths)
+	return res
+}
+
+func emptyModResources() *ModResources {
 	return &ModResources{
-		Mod:                   mod,
 		Controls:              make(map[string]*Control),
 		Benchmarks:            make(map[string]*Benchmark),
 		Dashboards:            make(map[string]*Dashboard),
@@ -63,21 +79,25 @@ func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 		LocalQueries:          make(map[string]*Query),
 		LocalControls:         make(map[string]*Control),
 		LocalBenchmarks:       make(map[string]*Benchmark),
-		Mods:                  map[string]*Mod{mod.Name(): mod},
+		Mods:                  make(map[string]*Mod),
 		Queries:               make(map[string]*Query),
 		References:            make(map[string]*ResourceReference),
+		Snapshots:             make(map[string]string),
 		Variables:             make(map[string]*Variable),
 	}
 }
 
-func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *Mod) *ModResources {
-	res := NewWorkspaceResourceMaps(mod)
+// ModResourcesForQueries creates a ModResources object containing just the specified queries
+// This is used to just create necessary prepared statements when executing batch queries
+func ModResourcesForQueries(queryProviders []QueryProvider, mod *Mod) *ModResources {
+	res := NewModResources(mod)
 	for _, p := range queryProviders {
 		res.addControlOrQuery(p)
 	}
 	return res
 }
 
+// QueryProviders returns a slice of all QueryProviders
 func (m *ModResources) QueryProviders() []QueryProvider {
 	res := make([]QueryProvider, m.queryProviderCount())
 	idx := 0
@@ -509,6 +529,7 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
+	// we cannot walk source snapshots as they are not a HclResource
 	for _, r := range m.Variables {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
@@ -697,8 +718,15 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 	return diags
 }
 
+func (m *ModResources) AddSnapshots(snapshotPaths []string) {
+	for _, snapshotPath := range snapshotPaths {
+		snapshotName := fmt.Sprintf("snapshot.%s", path.Base(snapshotPath))
+		m.Snapshots[snapshotName] = snapshotPath
+	}
+}
+
 func (m *ModResources) Merge(others []*ModResources) *ModResources {
-	res := NewWorkspaceResourceMaps(m.Mod)
+	res := NewModResources(m.Mod)
 	sourceMaps := append([]*ModResources{m}, others...)
 
 	// take local resources from ourselves
@@ -713,26 +741,11 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 	}
 
 	for _, source := range sourceMaps {
-		for k, v := range source.Mods {
-			res.Mods[k] = v
-		}
-		for k, v := range source.Queries {
-			res.Queries[k] = v
-		}
-		for k, v := range source.Controls {
-			res.Controls[k] = v
-		}
 		for k, v := range source.Benchmarks {
 			res.Benchmarks[k] = v
 		}
-		for k, v := range source.Locals {
-			res.Locals[k] = v
-		}
-		for k, v := range source.Variables {
-			// NOTE: only include variables from root mod  - we add in the others separately
-			if v.Mod.FullName == m.Mod.FullName {
-				res.Variables[k] = v
-			}
+		for k, v := range source.Controls {
+			res.Controls[k] = v
 		}
 		for k, v := range source.Dashboards {
 			res.Dashboards[k] = v
@@ -743,8 +756,14 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		for k, v := range source.DashboardCards {
 			res.DashboardCards[k] = v
 		}
+		for k, v := range source.DashboardCategories {
+			res.DashboardCategories[k] = v
+		}
 		for k, v := range source.DashboardCharts {
 			res.DashboardCharts[k] = v
+		}
+		for k, v := range source.DashboardEdges {
+			res.DashboardEdges[k] = v
 		}
 		for k, v := range source.DashboardFlows {
 			res.DashboardFlows[k] = v
@@ -758,26 +777,38 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		for k, v := range source.DashboardNodes {
 			res.DashboardNodes[k] = v
 		}
-		for k, v := range source.DashboardEdges {
-			res.DashboardEdges[k] = v
-		}
-		for k, v := range source.DashboardCategories {
-			res.DashboardCategories[k] = v
-		}
 		for k, v := range source.DashboardImages {
 			res.DashboardImages[k] = v
 		}
 		for k, v := range source.DashboardInputs {
 			res.DashboardInputs[k] = v
 		}
-		for k, v := range source.GlobalDashboardInputs {
-			res.GlobalDashboardInputs[k] = v
-		}
 		for k, v := range source.DashboardTables {
 			res.DashboardTables[k] = v
 		}
 		for k, v := range source.DashboardTexts {
 			res.DashboardTexts[k] = v
+		}
+		for k, v := range source.GlobalDashboardInputs {
+			res.GlobalDashboardInputs[k] = v
+		}
+		for k, v := range source.Locals {
+			res.Locals[k] = v
+		}
+		for k, v := range source.Mods {
+			res.Mods[k] = v
+		}
+		for k, v := range source.Queries {
+			res.Queries[k] = v
+		}
+		for k, v := range source.Snapshots {
+			res.Snapshots[k] = v
+		}
+		for k, v := range source.Variables {
+			// NOTE: only include variables from root mod  - we add in the others separately
+			if v.Mod.FullName == m.Mod.FullName {
+				res.Variables[k] = v
+			}
 		}
 	}
 
