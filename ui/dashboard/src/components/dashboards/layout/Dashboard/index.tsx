@@ -3,7 +3,11 @@ import DashboardProgress from "./DashboardProgress";
 import LayoutPanel from "../common/LayoutPanel";
 import PanelDetail from "../PanelDetail";
 import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
-import { DashboardDataModeLive, DashboardDefinition } from "../../../../types";
+import {
+  DashboardDataModeCLISnapshot,
+  DashboardDataModeLive,
+  DashboardDefinition,
+} from "../../../../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
@@ -50,7 +54,9 @@ const DashboardWrapper = ({
   if (
     search.value ||
     !dashboard ||
-    (!selectedDashboard && dataMode === DashboardDataModeLive)
+    (!selectedDashboard &&
+      (dataMode === DashboardDataModeLive ||
+        dataMode === DashboardDataModeCLISnapshot))
   ) {
     return null;
   }
