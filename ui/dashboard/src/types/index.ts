@@ -103,7 +103,6 @@ export const DashboardActions: IActions = {
   LEAF_NODE_PROGRESS: "leaf_node_progress",
   SELECT_DASHBOARD: "select_dashboard",
   SELECT_PANEL: "select_panel",
-  SELECT_SNAPSHOT: "select_snapshot",
   SET_DASHBOARD: "set_dashboard",
   SET_DASHBOARD_INPUT: "set_dashboard_input",
   SET_DASHBOARD_INPUTS: "set_dashboard_inputs",
@@ -112,7 +111,6 @@ export const DashboardActions: IActions = {
   SET_DASHBOARD_TAG_KEYS: "set_dashboard_tag_keys",
   SET_DATA_MODE: "set_data_mode",
   SET_REFETCH_DASHBOARD: "set_refetch_dashboard",
-  SET_SNAPSHOT: "set_snapshot",
   WORKSPACE_ERROR: "workspace_error",
 };
 
@@ -222,12 +220,12 @@ interface AvailableDashboardTags {
   [key: string]: string;
 }
 
-type AvailableDashboardType = "benchmark" | "dashboard";
+type AvailableDashboardType = "benchmark" | "dashboard" | "snapshot";
 
 export interface AvailableDashboard {
   full_name: string;
   short_name: string;
-  mod_full_name: string;
+  mod_full_name?: string;
   tags: AvailableDashboardTags;
   title: string;
   is_top_level: boolean;
