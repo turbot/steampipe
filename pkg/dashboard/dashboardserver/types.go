@@ -78,11 +78,13 @@ type ExecutionCompletePayload struct {
 	ExecutionId   string                            `json:"execution_id"`
 }
 
-type ExecutionCompletePayloadWithSnapshotMap struct {
-	Action        string         `json:"action"`
-	SchemaVersion string         `json:"schema_version"`
-	Snapshot      map[string]any `json:"snapshot"`
-	ExecutionId   string         `json:"execution_id"`
+type DisplaySnapshotPayload struct {
+	Action        string `json:"action"`
+	SchemaVersion string `json:"schema_version"`
+	// snapshot is a map here as we cannot deserialise SteampipeSnapshot into a struct
+	// (without custom derserialisation code) as the Panels property is an interface
+	Snapshot    map[string]any `json:"snapshot"`
+	ExecutionId string         `json:"execution_id"`
 }
 
 type InputValuesClearedPayload struct {

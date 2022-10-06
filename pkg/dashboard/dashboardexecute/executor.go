@@ -74,14 +74,15 @@ func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapsho
 		return nil, fmt.Errorf("snapshot %s not does not exist", snapshotPath)
 	}
 
-	snap := map[string]any{}
-
-	// get the state file
-
 	snapshotContent, err := os.ReadFile(snapshotPath)
 	if err != nil {
 		return nil, err
 	}
+
+	// deserialize the snapshot as an interface map
+	// we cannot deserialize into a SteampipeSnapshot struct
+	// (without custom derserialisation code) as the Panels property is an interface
+	snap := map[string]any{}
 
 	err = json.Unmarshal(snapshotContent, &snap)
 	if err != nil {
