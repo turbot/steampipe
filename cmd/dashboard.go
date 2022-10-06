@@ -233,6 +233,7 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 func initDashboard(ctx context.Context) *initialisation.InitData {
 	sourceSnapshots := viper.GetStringSlice(constants.ArgSourceSnapshot)
 	if len(sourceSnapshots) > 0 {
+		// TODO validate exist
 		dashboardserver.OutputWait(ctx, "Loading Source Snapshots")
 		w := workspace.NewSourceSnapshotWorkspace(sourceSnapshots)
 		return &initialisation.InitData{

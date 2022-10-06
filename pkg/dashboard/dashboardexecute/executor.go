@@ -63,7 +63,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	return nil
 }
 
-func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapshotName string, w *workspace.Workspace) (*dashboardtypes.SteampipeSnapshot, error) {
+func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapshotName string, w *workspace.Workspace) (map[string]any, error) {
 	// find snapshot path in workspace
 	snapshotPath, ok := w.GetResourceMaps().Snapshots[snapshotName]
 	if !ok {
@@ -71,10 +71,10 @@ func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapsho
 	}
 
 	if !helpers.FileExists(snapshotPath) {
-		return nil, fmt.Errorf("snapshot %s not does nto exist", snapshotPath)
+		return nil, fmt.Errorf("snapshot %s not does not exist", snapshotPath)
 	}
 
-	snap := &dashboardtypes.SteampipeSnapshot{}
+	snap := map[string]any{}
 
 	// get the state file
 

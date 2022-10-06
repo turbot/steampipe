@@ -8,7 +8,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -214,9 +213,8 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 	return json.Marshal(payload)
 }
 
-func buildExecutionCompletePayloadFromSnapshot(snap *dashboardtypes.SteampipeSnapshot) ([]byte, error) {
-
-	payload := &ExecutionCompletePayload{
+func buildExecutionCompletePayloadFromSnapshotMap(snap map[string]any) ([]byte, error) {
+	payload := &ExecutionCompletePayloadWithSnapshotMap{
 		Action:        "execution_complete",
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		Snapshot:      snap,
