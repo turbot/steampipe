@@ -14,15 +14,35 @@ import { useMemo } from "react";
 // A node or edge can define exactly 1 category, which covers all rows of data that don't define a category
 // Any node/edge/flow/graph/hierarchy data row can define a category - in that event, the category must come from the category map for the composing resource
 
+const getDataFormat = (
+  properties: NodeAndEdgeProperties | undefined
+): NodeAndEdgeDataFormat => {
+  if (!properties) {
+    return "LEGACY";
+  }
+
+  if (!properties.nodes && !properties.edges) {
+    return "LEGACY";
+  }
+
+  if (
+    (properties.nodes && properties.nodes.length > 0) ||
+    (properties.edges && properties.edges.length > 0)
+  ) {
+    return "NODE_AND_EDGE";
+  }
+
+  return "LEGACY";
+};
+
 const useNodeAndEdgeData = (
-  dataFormat: NodeAndEdgeDataFormat,
   data: NodeAndEdgeData | undefined,
   properties: NodeAndEdgeProperties | undefined,
   status: DashboardRunState
 ) => {
-  const { panelsMap } = useDashboard();
+  const { dataMode, panelsMap } = useDashboard();
   return useMemo(() => {
-    if (dataFormat === "LEGACY") {
+    if (getDataFormat(properties) === "LEGACY") {
       if (status === "complete") {
         return data ? { data, properties } : null;
       }
@@ -106,7 +126,7 @@ const useNodeAndEdgeData = (
       data: { columns, rows },
       properties: newProperties,
     };
-  }, [dataFormat, data, panelsMap, properties, status]);
+  }, [data, panelsMap, properties, status]);
 };
 
 export default useNodeAndEdgeData;
