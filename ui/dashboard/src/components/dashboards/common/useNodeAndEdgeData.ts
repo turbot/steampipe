@@ -40,7 +40,7 @@ const useNodeAndEdgeData = (
   properties: NodeAndEdgeProperties | undefined,
   status: DashboardRunState
 ) => {
-  const { dataMode, panelsMap } = useDashboard();
+  const { panelsMap } = useDashboard();
   return useMemo(() => {
     if (getDataFormat(properties) === "LEGACY") {
       if (status === "complete") {
@@ -54,17 +54,46 @@ const useNodeAndEdgeData = (
     const rows: NodeAndEdgeDataRow[] = [];
     for (const nodePanelName of properties?.nodes || []) {
       const panel = panelsMap[nodePanelName];
-      if (!panel || !panel.data) {
+      // If we can't find the panel, just continue? Not ideal...
+      if (!panel) {
         continue;
       }
-      const typedPanelData = panel.data as NodeAndEdgeData;
-      for (const column of typedPanelData.columns) {
+
+      const artificialCategoryId = `node_category_${nodePanelName}`;
+      const artificialPlaceholderCategoryId = `node_category_placeholder_${nodePanelName}`;
+
+      const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
+
+      // Get a union of all the columns across all nodes
+      for (const column of typedPanelData.columns || []) {
         if (columns.some((c) => c.name === column.name)) {
           continue;
         }
         columns.push(column);
       }
-      const artificialCategoryId = `node_category_${nodePanelName}`;
+
+      // If we don't have any rows for this node type, add a placeholder
+      const nodeProperties = (panel.properties || {}) as NodeProperties;
+      if (!typedPanelData.rows && nodeProperties.category) {
+        newProperties = set(
+          newProperties || {},
+          `categories["${artificialPlaceholderCategoryId}"]`,
+          {
+            ...nodeProperties.category,
+            fold: {
+              ...(nodeProperties.category.fold || {}),
+              threshold: 1,
+            },
+          }
+        );
+        rows.push({
+          id: nodePanelName,
+          title: nodeProperties.category.title || nodeProperties.category.name,
+          category: artificialPlaceholderCategoryId,
+        });
+        continue;
+      }
+
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
         const updatedRow = row;
@@ -74,7 +103,6 @@ const useNodeAndEdgeData = (
         // If a row defines a category, then it is assumed to be present in the categories map
         // If there's a category defined on the node, we need to capture it
         if (!updatedRow.category) {
-          const nodeProperties = panel.properties as NodeProperties;
           if (nodeProperties.category) {
             newProperties = set(
               newProperties || {},
