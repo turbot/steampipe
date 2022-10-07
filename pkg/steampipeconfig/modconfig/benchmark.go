@@ -41,8 +41,7 @@ type Benchmark struct {
 	Mod        *Mod                 `cty:"mod" json:"-"`
 	DeclRange  hcl.Range            `json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-
-	Parents []ModTreeItem `json:"-"`
+	Parents    []ModTreeItem        `json:"-"`
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -58,33 +57,11 @@ func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
 }
 
 func (b *Benchmark) Equals(other *Benchmark) bool {
-	res := b.ShortName == other.ShortName &&
-		b.FullName == other.FullName &&
-		typehelpers.SafeString(b.Description) == typehelpers.SafeString(other.Description) &&
-		typehelpers.SafeString(b.Documentation) == typehelpers.SafeString(other.Documentation) &&
-		typehelpers.SafeString(b.Title) == typehelpers.SafeString(other.Title)
-	if !res {
-		return res
-	}
-	// tags
-	if len(b.Tags) != len(other.Tags) {
-		return false
-	}
-	for k, v := range b.Tags {
-		if otherVal := other.Tags[k]; v != otherVal {
-			return false
-		}
-	}
-
-	if len(b.ChildNameStrings) != len(other.ChildNameStrings) {
+	if other == nil {
 		return false
 	}
 
-	myChildNames := b.ChildNameStrings
-	sort.Strings(myChildNames)
-	otherChildNames := other.ChildNameStrings
-	sort.Strings(otherChildNames)
-	return strings.Join(myChildNames, ",") == strings.Join(otherChildNames, ",")
+	return b.Diff(other).HasChanges()
 }
 
 // CtyValue implements HclResource
@@ -257,6 +234,9 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 	}
 	if !utils.SafeStringsEqual(b.Documentation, other.Documentation) {
 		res.AddPropertyDiff("Documentation")
+	}
+	if !utils.SafeStringsEqual(b.Title, other.Title) {
+		res.AddPropertyDiff("Title")
 	}
 	if len(b.Tags) != len(other.Tags) {
 		res.AddPropertyDiff("Tags")

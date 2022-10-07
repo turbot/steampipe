@@ -334,6 +334,13 @@ func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 			return false
 		}
 	}
+	for name, Categorys := range m.DashboardCategories {
+		if otherCategory, ok := other.DashboardCategories[name]; !ok {
+			return false
+		} else if !Categorys.Equals(otherCategory) {
+			return false
+		}
+	}
 	for name := range other.DashboardTables {
 		if _, ok := m.DashboardTables[name]; !ok {
 			return false

@@ -9,6 +9,16 @@ dashboard "aws_ec2_instance_detail" {
       category "c1" {
         href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
       }
+
+    }
+    graph {
+      type      = "graph"
+      direction = "LR"
+
+      # no base, resource named
+      category "c1" {
+        href = "/aws_insights.dashboard.aws_ec2_classic_load_balancer_detail?input.clb={{.properties.'ARN' | @uri}}"
+      }
       # no base, named
       category {
         name = "aws_ebs_volume2"

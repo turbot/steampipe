@@ -261,6 +261,16 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 			event.DeletedTables = append(event.DeletedTables, prev)
 		}
 	}
+	for name, prev := range prevResourceMaps.DashboardCategories {
+		if current, ok := resourceMaps.DashboardCategories[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedCategories = append(event.ChangedCategories, diff)
+			}
+		} else {
+			event.DeletedCategories = append(event.DeletedCategories, prev)
+		}
+	}
 	for name, prev := range prevResourceMaps.DashboardTexts {
 		if current, ok := resourceMaps.DashboardTexts[name]; ok {
 			diff := prev.Diff(current)
@@ -286,6 +296,11 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 	for name, p := range resourceMaps.DashboardCards {
 		if _, ok := prevResourceMaps.DashboardCards[name]; !ok {
 			event.NewCards = append(event.NewCards, p)
+		}
+	}
+	for name, p := range resourceMaps.DashboardCategories {
+		if _, ok := prevResourceMaps.DashboardCategories[name]; !ok {
+			event.NewCategories = append(event.NewCategories, p)
 		}
 	}
 	for name, p := range resourceMaps.DashboardCharts {
@@ -356,7 +371,7 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 	}
 
 	if event.HasChanges() {
-		// for every changed resopurce, set parents as changed, up the tree
+		// for every changed resource, set parents as changed, up the tree
 		f := func(item modconfig.ModTreeItem) (bool, error) {
 			event.SetParentsChanged(item)
 			return true, nil
