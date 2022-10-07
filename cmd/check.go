@@ -196,10 +196,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	if shouldPrintTiming() {
 		printTiming(args, durations)
 	}
-
-	// set global exit code
-	// TODO needs discussion: not setting the exitCode to failures for now
-	// exitCode = failures
 }
 
 // create the context for the check run - add a control status renderer
