@@ -378,19 +378,22 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, runCtx *RunContext) (modconfig.
 	if diags.HasErrors() {
 		return nil, res
 	}
+
 	edgeAndNodeProvider, ok := resource.(modconfig.EdgeAndNodeProvider)
 	if !ok {
 		// coding error
 		panic(fmt.Sprintf("block type %s not convertible to a EdgeAndNodeProvider", block.Type))
 	}
 
-	// do a partial decode using QueryProviderBlockSchema
-	// this will be used to pull out attributes which need manual decoding
-	content, remain, diags := block.Body.PartialContent(EdgeAndNodeProviderBlockSchema)
+	// do a partial decode using an EdgeAndNodeProviderSchema - we use this to extract content to
+	// decode using decodeQueryProviderParams
+	content, remain, diags := block.Body.PartialContent(EdgeAndNodeProviderSchema)
 	res.handleDecodeDiags(diags)
 	if !res.Success() {
 		return nil, res
 	}
+	// decode sql args and params
+	res.Merge(decodeQueryProviderParams(block, content, resource, runCtx))
 
 	// handle invalid block types
 	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), EdgeAndNodeProviderBlockSchema, resource))
@@ -400,32 +403,47 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, runCtx *RunContext) (modconfig.
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	// decode categories
-	for _, block := range content.Blocks {
-		// we only care about param blocks here
-		if block.Type != modconfig.BlockTypeCategory {
+	// now decode child category blocks
+	body := remain.(*hclsyntax.Body)
+	if len(body.Blocks) > 0 {
+		blocksRes := decodeEdgeAndNodeProviderCategoryBlocks(body, edgeAndNodeProvider, runCtx)
+		res.Merge(blocksRes)
+	}
+
+	return resource, res
+}
+
+func decodeEdgeAndNodeProviderCategoryBlocks(content *hclsyntax.Body, edgeAndNodeProvider modconfig.EdgeAndNodeProvider, runCtx *RunContext) *decodeResult {
+	var res = newDecodeResult()
+
+	// set dashboard as parent on the run context - this is used when generating names for anonymous blocks
+	runCtx.PushParent(edgeAndNodeProvider.(modconfig.ModTreeItem))
+	defer func() {
+		runCtx.PopParent()
+	}()
+
+	for _, b := range content.Blocks {
+		block := b.AsHCLBlock()
+		// we only care about category blocks here
+		if b.Type != modconfig.BlockTypeCategory {
 			continue
 		}
+
+		// decode block
 		categories, blockRes := decodeBlock(block, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
 		}
 
+		// we expect either inputs or child report nodes
 		for _, category := range categories {
-			edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory))
-			// call OnDecoded for category
-			moreDiags := category.OnDecoded(block, runCtx)
-			res.addDiags(moreDiags)
+			res.addDiags(edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory)))
 		}
 	}
 
-	// decode sql args and params
-	res.Merge(decodeQueryProviderParams(block, content, resource, runCtx))
-
-	return resource, res
+	return res
 }
-
 func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Diagnostic {
 	return &hcl.Diagnostic{
 		Severity: hcl.DiagError,
@@ -443,6 +461,7 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 	res.handleDecodeDiags(diags)
 
 	// handle invalid block types
+	// (DashboardBlockSchema ius used purely to validate block types)
 	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), DashboardBlockSchema, dashboard))
 	if !res.Success() {
 		return nil, res
@@ -455,7 +474,7 @@ func decodeDashboard(block *hcl.Block, runCtx *RunContext) (*modconfig.Dashboard
 
 	if dashboard.Base != nil && len(dashboard.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeContainer, modconfig.BlockTypeChart, modconfig.BlockTypeControl, modconfig.BlockTypeCard, modconfig.BlockTypeFlow, modconfig.BlockTypeGraph, modconfig.BlockTypeHierarchy, modconfig.BlockTypeImage, modconfig.BlockTypeInput, modconfig.BlockTypeTable, modconfig.BlockTypeText}
-		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
+		// TACTICAL: we should be passing in the block for the Base resource - but this is only used for diags
 		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
 		children, _ := resolveChildrenFromNames(dashboard.Base.ChildNames, block, supportedChildren, runCtx)
 		dashboard.Base.SetChildren(children)

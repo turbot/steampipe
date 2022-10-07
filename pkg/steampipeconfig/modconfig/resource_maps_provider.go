@@ -19,6 +19,8 @@ func GetResource(provider ResourceMapsProvider, parsedName *ParsedResourceName) 
 		resource, found = resourceMaps.Controls[longName]
 	case BlockTypeDashboard:
 		resource, found = resourceMaps.Dashboards[longName]
+	case BlockTypeCategory:
+		resource, found = resourceMaps.DashboardCategories[longName]
 	case BlockTypeContainer:
 		resource, found = resourceMaps.DashboardContainers[longName]
 	case BlockTypeCard:

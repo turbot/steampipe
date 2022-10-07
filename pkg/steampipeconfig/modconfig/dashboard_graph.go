@@ -2,11 +2,9 @@ package modconfig
 
 import (
 	"fmt"
-
-	"github.com/turbot/steampipe/pkg/constants"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -297,8 +295,17 @@ func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
 }
 
 // AddCategory implements EdgeAndNodeProvider
-func (g *DashboardGraph) AddCategory(category *DashboardCategory) {
-	g.Categories[category.ShortName] = category
+func (g *DashboardGraph) AddCategory(category *DashboardCategory) hcl.Diagnostics {
+	categoryName := typehelpers.SafeString(category.CategoryName)
+	if _, ok := g.Categories[categoryName]; ok {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has duplicate category %s", g.Name(), categoryName),
+			Subject:  category.GetDeclRange(),
+		}}
+	}
+	g.Categories[categoryName] = category
+	return nil
 }
 
 func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

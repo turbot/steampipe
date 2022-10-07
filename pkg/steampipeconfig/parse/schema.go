@@ -146,7 +146,7 @@ var RequireModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// DashboardBlockSchema contains the Dashboard attributes which cannot be automatically decoded
+// DashboardBlockSchema is used purely to validate dashboard child blocks
 var DashboardBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
@@ -273,7 +273,10 @@ var QueryProviderBlockSchema = &hcl.BodySchema{
 		},
 	},
 }
-var EdgeAndNodeProviderBlockSchema = &hcl.BodySchema{
+
+// EdgeAndNodeProviderSchema is used to decode graph/hierarchy/flow
+// (EXCEPT categories)
+var EdgeAndNodeProviderSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
 	},
@@ -282,9 +285,17 @@ var EdgeAndNodeProviderBlockSchema = &hcl.BodySchema{
 			Type:       "param",
 			LabelNames: []string{"name"},
 		},
+	},
+}
+
+// EdgeAndNodeProviderBlockSchema is used to validate child blocks
+var EdgeAndNodeProviderBlockSchema = &hcl.BodySchema{
+	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "category",
-			LabelNames: []string{"name"},
+			Type: "param",
+		},
+		{
+			Type: "category",
 		},
 	},
 }

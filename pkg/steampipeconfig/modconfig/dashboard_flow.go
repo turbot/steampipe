@@ -291,8 +291,17 @@ func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 }
 
 // AddCategory implements EdgeAndNodeProvider
-func (f *DashboardFlow) AddCategory(category *DashboardCategory) {
-	f.Categories[category.ShortName] = category
+func (f *DashboardFlow) AddCategory(category *DashboardCategory) hcl.Diagnostics {
+	categoryName := typehelpers.SafeString(category.CategoryName)
+	if _, ok := f.Categories[categoryName]; ok {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has duplicate category %s", f.Name(), categoryName),
+			Subject:  category.GetDeclRange(),
+		}}
+	}
+	f.Categories[categoryName] = category
+	return nil
 }
 
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
