@@ -613,7 +613,17 @@ const buildNodesAndEdges = (
   const to_col = getColumn(rawData.columns, "to_id");
 
   if (!id_col && !from_col && !to_col) {
-    throw new Error("No node or edge rows defined in the dataset");
+    return {
+      graph: new Graph(),
+      nodes: [],
+      edges: [],
+      nodeCategoryMap: {},
+      nodeMap: {},
+      edgeMap: {},
+      root_nodes: {},
+      categories: {},
+      next_color_index: 0,
+    };
   }
 
   const node_lookup: NodeMap = {};
@@ -653,7 +663,7 @@ const buildNodesAndEdges = (
           categorySettings.depth = overrides.depth;
         }
         if (has(overrides, "fields")) {
-          categorySettings.fields = JSON.parse(overrides.fields);
+          categorySettings.fields = overrides.fields;
         }
         if (has(overrides, "icon")) {
           categorySettings.icon = overrides.icon;

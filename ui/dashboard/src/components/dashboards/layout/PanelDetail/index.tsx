@@ -93,7 +93,6 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     for (const row of data.rows) {
       // Deep copy the row or else it will update
       // the values in query output
-      // const temp = JSON.parse(JSON.stringify(row));
       const csvRow: any[] = [];
       colNames.forEach((col, index) => {
         csvRow[index] = jsonbColIndices.includes(index)
