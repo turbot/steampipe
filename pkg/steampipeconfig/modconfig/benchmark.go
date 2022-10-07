@@ -61,7 +61,7 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 		return false
 	}
 
-	return b.Diff(other).HasChanges()
+	return !b.Diff(other).HasChanges()
 }
 
 // CtyValue implements HclResource

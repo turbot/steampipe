@@ -98,7 +98,7 @@ func (c *DashboardCategory) Equals(other *DashboardCategory) bool {
 	if other == nil {
 		return false
 	}
-	return c.Diff(other).HasChanges()
+	return !c.Diff(other).HasChanges()
 }
 
 func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
