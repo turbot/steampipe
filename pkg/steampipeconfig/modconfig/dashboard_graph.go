@@ -296,7 +296,7 @@ func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
 
 // AddCategory implements EdgeAndNodeProvider
 func (g *DashboardGraph) AddCategory(category *DashboardCategory) hcl.Diagnostics {
-	categoryName := typehelpers.SafeString(category.CategoryName)
+	categoryName := category.UnqualifiedName
 	if _, ok := g.Categories[categoryName]; ok {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,

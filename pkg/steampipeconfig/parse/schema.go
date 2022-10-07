@@ -285,6 +285,10 @@ var EdgeAndNodeProviderSchema = &hcl.BodySchema{
 			Type:       "param",
 			LabelNames: []string{"name"},
 		},
+		{
+			Type:       "category",
+			LabelNames: []string{"name"},
+		},
 	},
 }
 

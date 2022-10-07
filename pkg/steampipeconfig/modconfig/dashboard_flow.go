@@ -292,7 +292,7 @@ func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 
 // AddCategory implements EdgeAndNodeProvider
 func (f *DashboardFlow) AddCategory(category *DashboardCategory) hcl.Diagnostics {
-	categoryName := typehelpers.SafeString(category.CategoryName)
+	categoryName := category.UnqualifiedName
 	if _, ok := f.Categories[categoryName]; ok {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,

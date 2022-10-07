@@ -436,32 +436,26 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, runCtx *RunContext) (modconfig.
 	res.handleDecodeDiags(diags)
 
 	// now decode child category blocks
-	body := remain.(*hclsyntax.Body)
-	if len(body.Blocks) > 0 {
-		blocksRes := decodeEdgeAndNodeProviderCategoryBlocks(body, edgeAndNodeProvider, runCtx)
+
+	if len(content.Blocks) > 0 {
+		blocksRes := decodeEdgeAndNodeProviderCategoryBlocks(content, edgeAndNodeProvider, runCtx)
 		res.Merge(blocksRes)
 	}
 
 	return resource, res
 }
 
-func decodeEdgeAndNodeProviderCategoryBlocks(content *hclsyntax.Body, edgeAndNodeProvider modconfig.EdgeAndNodeProvider, runCtx *RunContext) *decodeResult {
+func decodeEdgeAndNodeProviderCategoryBlocks(content *hcl.BodyContent, edgeAndNodeProvider modconfig.EdgeAndNodeProvider, runCtx *RunContext) *decodeResult {
 	var res = newDecodeResult()
 
-	// set dashboard as parent on the run context - this is used when generating names for anonymous blocks
-	runCtx.PushParent(edgeAndNodeProvider.(modconfig.ModTreeItem))
-	defer func() {
-		runCtx.PopParent()
-	}()
-
-	for _, b := range content.Blocks {
-		block := b.AsHCLBlock()
+	for _, block := range content.Blocks {
 		// we only care about category blocks here
-		if b.Type != modconfig.BlockTypeCategory {
+		if block.Type != modconfig.BlockTypeCategory {
 			continue
 		}
 
 		// decode block
+
 		// TACTICAL add a suffix to the block name
 		// this is needed to avoid circular dependency errors in the depdendency resolution,
 		// if this category depends on a top level category of the same name

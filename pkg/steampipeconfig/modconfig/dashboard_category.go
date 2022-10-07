@@ -11,24 +11,23 @@ import (
 type DashboardCategory struct {
 	ResourceWithMetadataBase
 
-	ShortName       string `hcl:"name,label" json:"-"`
+	ShortName       string `hcl:"name,label" json:"name"`
 	FullName        string `cty:"name" json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	CategoryName *string                    `cty:"category_name" hcl:"name" json:"name,omitempty"`
-	Title        *string                    `cty:"title" hcl:"title" json:"title,omitempty"`
-	Color        *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
-	Depth        *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
-	Icon         *string                    `cty:"icon" hcl:"icon" json:"icon,omitempty"`
-	HREF         *string                    `cty:"href" hcl:"href" json:"href,omitempty"`
-	Fold         *DashboardCategoryFold     `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
-	Fields       DashboardCategoryFieldList `cty:"fields" hcl:"field,block" json:"fields,omitempty"`
-	Base         *DashboardCategory         `hcl:"base" json:"-"`
-	References   []*ResourceReference       `json:"-"`
-	Mod          *Mod                       `cty:"mod" json:"-"`
-	DeclRange    hcl.Range                  `json:"-"`
-	Paths        []NodePath                 `column:"path,jsonb" json:"-"`
-	Parents      []ModTreeItem              `json:"-"`
+	Title      *string                    `cty:"title" hcl:"title" json:"title,omitempty"`
+	Color      *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
+	Depth      *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
+	Icon       *string                    `cty:"icon" hcl:"icon" json:"icon,omitempty"`
+	HREF       *string                    `cty:"href" hcl:"href" json:"href,omitempty"`
+	Fold       *DashboardCategoryFold     `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
+	Fields     DashboardCategoryFieldList `cty:"fields" hcl:"field,block" json:"fields,omitempty"`
+	Base       *DashboardCategory         `hcl:"base" json:"-"`
+	References []*ResourceReference       `json:"-"`
+	Mod        *Mod                       `cty:"mod" json:"-"`
+	DeclRange  hcl.Range                  `json:"-"`
+	Paths      []NodePath                 `column:"path,jsonb" json:"-"`
+	Parents    []ModTreeItem              `json:"-"`
 }
 
 func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -68,19 +67,6 @@ func (c *DashboardCategory) GetDeclRange() *hcl.Range {
 func (c *DashboardCategory) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
 
-	// if this is an anonymous resource, the CategoryName must be set
-	if c.CategoryName == nil {
-		if c.IsAnonymous() {
-			return hcl.Diagnostics{&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("Category %s has no category name", c.Name()),
-				Subject:  c.GetDeclRange(),
-			}}
-		}
-		// so this is NOT an anonymous resource - copy short name to category name
-		c.CategoryName = utils.ToStringPointer(c.ShortName)
-	}
-
 	return nil
 }
 
@@ -113,9 +99,6 @@ func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsPr
 
 	if c.Title == nil {
 		c.Title = c.Base.Title
-	}
-	if c.CategoryName == nil {
-		c.CategoryName = c.Base.CategoryName
 	}
 	if c.Color == nil {
 		c.Color = c.Base.Color
