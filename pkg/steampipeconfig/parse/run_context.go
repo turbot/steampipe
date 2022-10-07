@@ -77,6 +77,8 @@ type RunContext struct {
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
+	// map of top  level blocks, for easy checking
+	topLevelBlocks map[*hcl.Block]struct{}
 	// map of block names, keyed by a hash of the blopck
 	blockNameMap map[string]string
 }
@@ -210,6 +212,11 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 
 func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
 	r.blocks = content.Blocks
+	// put blocks into map as well
+	r.topLevelBlocks = make(map[*hcl.Block]struct{}, len(r.blocks))
+	for _, b := range content.Blocks {
+		r.topLevelBlocks[b] = struct{}{}
+	}
 	r.FileData = fileData
 }
 
@@ -535,4 +542,9 @@ func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
 			r.LoadedDependencyMods[k] = v
 		}
 	}
+}
+
+func (r *RunContext) IsTopLevelBlock(block *hcl.Block) bool {
+	_, isTopLevel := r.topLevelBlocks[block]
+	return isTopLevel
 }

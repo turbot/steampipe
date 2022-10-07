@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -49,8 +48,10 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 				diags = append(diags, res.Diags...)
 				continue
 			}
-			resourceDiags := addResourcesToMod(runCtx, resources...)
-			diags = append(diags, resourceDiags...)
+			for _, resource := range resources {
+				resourceDiags := addResourceToMod(resource, block, runCtx)
+				diags = append(diags, resourceDiags...)
+			}
 		} else {
 			resource, res := decodeBlock(block, runCtx)
 			if !res.Success() {
@@ -60,10 +61,8 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 			if resource == nil {
 				continue
 			}
-			if resource.Name() == "aws_insights.category.aws_lambda_function" {
-				log.Println(resource)
-			}
-			resourceDiags := addResourcesToMod(runCtx, resource)
+
+			resourceDiags := addResourceToMod(resource, block, runCtx)
 			diags = append(diags, resourceDiags...)
 		}
 	}
@@ -71,15 +70,26 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	return diags
 }
 
-func addResourcesToMod(runCtx *RunContext, resources ...modconfig.HclResource) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	for _, resource := range resources {
-		if _, ok := resource.(*modconfig.Mod); !ok {
-			moreDiags := runCtx.CurrentMod.AddResource(resource)
-			diags = append(diags, moreDiags...)
-		}
+func addResourceToMod(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
+	if !shouldAddToMod(resource, block, runCtx) {
+		return nil
 	}
-	return diags
+	return runCtx.CurrentMod.AddResource(resource)
+
+}
+
+func shouldAddToMod(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) bool {
+	// do not add mods
+	if _, ok := resource.(*modconfig.Mod); ok {
+		return false
+	}
+
+	// if this is a dashboard category, only add top level blocks
+	// this is to allow nested categories to have the same name as top level categories
+	if _, ok := resource.(*modconfig.DashboardCategory); ok {
+		return runCtx.IsTopLevelBlock(block)
+	}
+	return true
 }
 
 // special case decode logic for locals
@@ -452,6 +462,12 @@ func decodeEdgeAndNodeProviderCategoryBlocks(content *hclsyntax.Body, edgeAndNod
 		}
 
 		// decode block
+		// TACTICAL add a suffix to the block name
+		// this is needed to avoid circular dependency errors in the depdendency resolution,
+		// if this category depends on a top level category of the same name
+		if len(block.Labels) == 1 {
+			block.Labels[0] = block.Labels[0] + "_nested"
+		}
 		category, blockRes := decodeBlock(block, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
@@ -461,13 +477,12 @@ func decodeEdgeAndNodeProviderCategoryBlocks(content *hclsyntax.Body, edgeAndNod
 		// add the category to the edgeAndNodeProvider
 		res.addDiags(edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory)))
 
-		// add the category to the mod
-		res.addDiags(addResourcesToMod(runCtx, category))
-
+		// DO NOT add the category to the mod
 	}
 
 	return res
 }
+
 func invalidParamDiags(resource modconfig.HclResource, block *hcl.Block) *hcl.Diagnostic {
 	return &hcl.Diagnostic{
 		Severity: hcl.DiagError,
@@ -529,7 +544,8 @@ func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboa
 
 	for _, b := range content.Blocks {
 		// decode block
-		resource, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
+		block := b.AsHCLBlock()
+		resource, blockRes := decodeBlock(block, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
@@ -543,7 +559,7 @@ func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboa
 			// inputs get added to the mod in SetInputs
 		} else {
 			// add the resource to the mod
-			res.addDiags(addResourcesToMod(runCtx, resource))
+			res.addDiags(addResourceToMod(resource, block, runCtx))
 			// add to the dashboard children
 			// (we expect this cast to always succeed)
 			if child, ok := resource.(modconfig.ModTreeItem); ok {
@@ -598,7 +614,8 @@ func decodeDashboardContainerBlocks(content *hclsyntax.Body, dashboardContainer 
 	}()
 
 	for _, b := range content.Blocks {
-		resource, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
+		block := b.AsHCLBlock()
+		resource, blockRes := decodeBlock(block, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
@@ -613,7 +630,7 @@ func decodeDashboardContainerBlocks(content *hclsyntax.Body, dashboardContainer 
 
 		} else {
 			// for all other children, add to mod and children
-			res.addDiags(addResourcesToMod(runCtx, resource))
+			res.addDiags(addResourceToMod(resource, block, runCtx))
 			if child, ok := resource.(modconfig.ModTreeItem); ok {
 				dashboardContainer.AddChild(child)
 			}
@@ -701,8 +718,9 @@ func handleDecodeResult(resource modconfig.HclResource, res *decodeResult, block
 		moreDiags = AddReferences(resource, block, runCtx)
 		res.addDiags(moreDiags)
 
-		// if resource is NOT anonymous, add into the run context
-		if !anonymousResource {
+		// if resource is NOT anonymous, and this is a TOP LEVEL BLOCK, add into the run context
+		// NOTE: we can only reference resources defined in a top level block
+		if !anonymousResource && runCtx.IsTopLevelBlock(block) {
 			moreDiags = runCtx.AddResource(resource)
 			res.addDiags(moreDiags)
 		}
