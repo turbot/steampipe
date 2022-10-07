@@ -82,7 +82,7 @@ const buildDashboards = (
     builtDashboards.push(builtBenchmark);
   }
 
-  for (const snapshot of Object.keys(snapshots)) {
+  for (const snapshot of Object.keys(snapshots || {})) {
     const builtSnapshot: AvailableDashboard = {
       title: snapshot,
       full_name: snapshot,
