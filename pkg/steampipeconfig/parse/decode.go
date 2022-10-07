@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -42,15 +43,29 @@ func decode(runCtx *RunContext) hcl.Diagnostics {
 	}
 
 	for _, block := range blocks {
-		resources, res := decodeBlock(block, runCtx)
-
-		if !res.Success() {
-			diags = append(diags, res.Diags...)
-			continue
+		if block.Type == modconfig.BlockTypeLocals {
+			resources, res := decodeLocalsBlock(block, runCtx)
+			if !res.Success() {
+				diags = append(diags, res.Diags...)
+				continue
+			}
+			resourceDiags := addResourcesToMod(runCtx, resources...)
+			diags = append(diags, resourceDiags...)
+		} else {
+			resource, res := decodeBlock(block, runCtx)
+			if !res.Success() {
+				diags = append(diags, res.Diags...)
+				continue
+			}
+			if resource == nil {
+				continue
+			}
+			if resource.Name() == "aws_insights.category.aws_lambda_function" {
+				log.Println(resource)
+			}
+			resourceDiags := addResourcesToMod(runCtx, resource)
+			diags = append(diags, resourceDiags...)
 		}
-		resourceDiags := addResourcesToMod(runCtx, resources...)
-		diags = append(diags, resourceDiags...)
-
 	}
 
 	return diags
@@ -67,9 +82,34 @@ func addResourcesToMod(runCtx *RunContext, resources ...modconfig.HclResource) h
 	return diags
 }
 
-func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
-	var resource modconfig.HclResource
+// special case decode logic for locals
+func decodeLocalsBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource, *decodeResult) {
 	var resources []modconfig.HclResource
+	var res = newDecodeResult()
+
+	// if opts specifies block types, then check whether this type is included
+	if !runCtx.ShouldIncludeBlock(block) {
+		return nil, res
+	}
+
+	// check name is valid
+	diags := validateName(block)
+	if diags.HasErrors() {
+		res.addDiags(diags)
+		return nil, res
+	}
+
+	var locals []*modconfig.Local
+	locals, res = decodeLocals(block, runCtx)
+	for _, local := range locals {
+		resources = append(resources, local)
+		handleDecodeResult(local, res, block, runCtx)
+	}
+
+	return resources, res
+}
+func decodeBlock(block *hcl.Block, runCtx *RunContext) (modconfig.HclResource, *decodeResult) {
+	var resource modconfig.HclResource
 	var res = newDecodeResult()
 
 	// if opts specifies block types, then check whether this type is included
@@ -80,7 +120,7 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	// has this block already been decoded?
 	// (this could happen if it is a child block and has been decoded before its parent as part of second decode phase)
 	if resource, ok := runCtx.GetDecodedResourceForBlock(block); ok {
-		return []modconfig.HclResource{resource}, res
+		return resource, res
 	}
 
 	// check name is valid
@@ -94,50 +134,32 @@ func decodeBlock(block *hcl.Block, runCtx *RunContext) ([]modconfig.HclResource,
 	switch {
 	case helpers.StringSliceContains(modconfig.EdgeAndNodeProviderBlocks, block.Type):
 		resource, res = decodeEdgeAndNodeProvider(block, runCtx)
-		resources = append(resources, resource)
 	case helpers.StringSliceContains(modconfig.QueryProviderBlocks, block.Type):
 		resource, res = decodeQueryProvider(block, runCtx)
-		resources = append(resources, resource)
 	default:
 		switch block.Type {
 		case modconfig.BlockTypeMod:
-			var mod *modconfig.Mod
 			// decodeMode has slightly different args as this code is shared with ParseModDefinition
-			mod, res = decodeMod(block, runCtx.EvalCtx, runCtx.CurrentMod)
-			resources = append(resources, mod)
-		case modconfig.BlockTypeLocals:
-			// special case decode logic for locals
-			var locals []*modconfig.Local
-			locals, res = decodeLocals(block, runCtx)
-			for _, local := range locals {
-				resources = append(resources, local)
-			}
+			resource, res = decodeMod(block, runCtx.EvalCtx, runCtx.CurrentMod)
 		case modconfig.BlockTypeDashboard:
 			resource, res = decodeDashboard(block, runCtx)
-			resources = append(resources, resource)
 		case modconfig.BlockTypeContainer:
 			resource, res = decodeDashboardContainer(block, runCtx)
-			resources = append(resources, resource)
 		case modconfig.BlockTypeVariable:
 			resource, res = decodeVariable(block, runCtx)
-			resources = append(resources, resource)
 		case modconfig.BlockTypeBenchmark:
 			resource, res = decodeBenchmark(block, runCtx)
-			resources = append(resources, resource)
 		default:
 			// all other blocks are treated the same:
 			resource, res = decodeResource(block, runCtx)
-			resources = append(resources, resource)
 		}
 	}
 
-	for _, resource := range resources {
-		// handle the result
-		// - if there are dependencies, add to run context
-		handleDecodeResult(resource, res, block, runCtx)
-	}
+	// handle the result
+	// - if there are dependencies, add to run context
+	handleDecodeResult(resource, res, block, runCtx)
 
-	return resources, res
+	return resource, res
 }
 
 // generic decode function for any resource we do not have custom decode logic for
@@ -430,16 +452,18 @@ func decodeEdgeAndNodeProviderCategoryBlocks(content *hclsyntax.Body, edgeAndNod
 		}
 
 		// decode block
-		categories, blockRes := decodeBlock(block, runCtx)
+		category, blockRes := decodeBlock(block, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
 		}
 
-		// we expect either inputs or child report nodes
-		for _, category := range categories {
-			res.addDiags(edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory)))
-		}
+		// add the category to the edgeAndNodeProvider
+		res.addDiags(edgeAndNodeProvider.AddCategory(category.(*modconfig.DashboardCategory)))
+
+		// add the category to the mod
+		res.addDiags(addResourcesToMod(runCtx, category))
+
 	}
 
 	return res
@@ -505,27 +529,25 @@ func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboa
 
 	for _, b := range content.Blocks {
 		// decode block
-		resources, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
+		resource, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
 		}
 
 		// we expect either inputs or child report nodes
-		for _, resource := range resources {
-			if b.Type == modconfig.BlockTypeInput {
-				input := resource.(*modconfig.DashboardInput)
-				inputs = append(inputs, input)
-				dashboard.AddChild(input)
-				// inputs get added to the mod in SetInputs
-			} else {
-				// add the resource to the mod
-				res.addDiags(addResourcesToMod(runCtx, resource))
-				// add to the dashboard children
-				// (we expect this cast to always succeed)
-				if child, ok := resource.(modconfig.ModTreeItem); ok {
-					dashboard.AddChild(child)
-				}
+		if b.Type == modconfig.BlockTypeInput {
+			input := resource.(*modconfig.DashboardInput)
+			inputs = append(inputs, input)
+			dashboard.AddChild(input)
+			// inputs get added to the mod in SetInputs
+		} else {
+			// add the resource to the mod
+			res.addDiags(addResourcesToMod(runCtx, resource))
+			// add to the dashboard children
+			// (we expect this cast to always succeed)
+			if child, ok := resource.(modconfig.ModTreeItem); ok {
+				dashboard.AddChild(child)
 			}
 		}
 	}
@@ -576,26 +598,24 @@ func decodeDashboardContainerBlocks(content *hclsyntax.Body, dashboardContainer 
 	}()
 
 	for _, b := range content.Blocks {
-		resources, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
+		resource, blockRes := decodeBlock(b.AsHCLBlock(), runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
 			continue
 		}
 
-		for _, resource := range resources {
-			// special handling for inputs
-			if b.Type == modconfig.BlockTypeInput {
-				input := resource.(*modconfig.DashboardInput)
-				dashboardContainer.Inputs = append(dashboardContainer.Inputs, input)
-				dashboardContainer.AddChild(input)
-				// the input will be added to the mod by the parent dashboard
+		// special handling for inputs
+		if b.Type == modconfig.BlockTypeInput {
+			input := resource.(*modconfig.DashboardInput)
+			dashboardContainer.Inputs = append(dashboardContainer.Inputs, input)
+			dashboardContainer.AddChild(input)
+			// the input will be added to the mod by the parent dashboard
 
-			} else {
-				// for all other children, add to mod and children
-				res.addDiags(addResourcesToMod(runCtx, resource))
-				if child, ok := resource.(modconfig.ModTreeItem); ok {
-					dashboardContainer.AddChild(child)
-				}
+		} else {
+			// for all other children, add to mod and children
+			res.addDiags(addResourcesToMod(runCtx, resource))
+			if child, ok := resource.(modconfig.ModTreeItem); ok {
+				dashboardContainer.AddChild(child)
 			}
 		}
 	}
