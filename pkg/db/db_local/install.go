@@ -4,6 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"sync"
+	"time"
+
 	"github.com/fatih/color"
 	"github.com/jackc/pgx/v4"
 	"github.com/sethvargo/go-retry"
@@ -16,12 +23,6 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
-	"net"
-	"os"
-	"os/exec"
-	"sync"
-	"time"
 )
 
 var ensureMux sync.Mutex
@@ -426,7 +427,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 func getNextFreePort() (int, error) {
 	utils.LogTime("db_local.install.getNextFreePort start")
 	defer utils.LogTime("db_local.install.getNextFreePort end")
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return -1, err
 	}
