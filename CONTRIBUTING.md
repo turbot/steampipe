@@ -1,6 +1,6 @@
 # Contributing to Steampipe
 
-Because Open Source plays a major part in how we build our products,
+Open Source plays a major part in how we build our products,
 we see it as a matter of course to give the same effort back to our
 community by creating extensible and easy-to-use software.
 
@@ -22,3 +22,5 @@ https://steampipe.io/docs/develop/standards
 ## Coding Standards
 
 https://steampipe.io/docs/develop/coding-standards
+
+Explore around and get familiar with this open source repository 
