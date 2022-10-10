@@ -239,6 +239,13 @@ func (r *RunContext) ClearDependencies() {
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
 func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
+	// TACTICAL if this is NOT a top level block, add a suffix to the block name
+	// this is needed to avoid circular dependency errors if a nested block references
+	// a top level block with the same name
+	if !r.IsTopLevelBlock(block) {
+		name = "nested." + name
+	}
+
 	var diags hcl.Diagnostics
 	// store unresolved block
 	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}

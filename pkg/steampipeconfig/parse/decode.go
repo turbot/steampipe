@@ -455,13 +455,6 @@ func decodeEdgeAndNodeProviderCategoryBlocks(content *hcl.BodyContent, edgeAndNo
 		}
 
 		// decode block
-
-		// TACTICAL add a suffix to the block name
-		// this is needed to avoid circular dependency errors in the depdendency resolution,
-		// if this category depends on a top level category of the same name
-		if len(block.Labels) == 1 {
-			block.Labels[0] = block.Labels[0] + "_nested"
-		}
 		category, blockRes := decodeBlock(block, runCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
