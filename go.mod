@@ -2,8 +2,6 @@ module github.com/turbot/steampipe
 
 go 1.19
 
-replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20221007141918-735654b7b12c
-
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver v1.5.0
@@ -219,8 +217,9 @@ require (
 	github.com/gosuri/uiprogress v0.0.1
 )
 
-replace github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
-
-replace github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
-
-replace github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
+replace (
+	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.1
+	github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
+	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
+	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
+)
