@@ -88,6 +88,7 @@ jobs:
     strategy:
       matrix:
         platform: [macos-latest, ubuntu-latest]
+        test_block: ["001", "002"]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
@@ -142,7 +143,7 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}*.bats
           steampipe service stop --force
       
       - name: Save Test Suite Logs
@@ -153,7 +154,8 @@ jobs:
           if-no-files-found: error
       
       # This job checks whether the test suite has passed or not.
-      # Since the exit_code is set only when the bats test suite pass, so we have added the if-conditional block 
+      # Since the exit_code is set only when the bats test suite pass, 
+      # we have added the if-conditional block 
       - name: Check Test Passed/Failed
         continue-on-error: false
         run: |
