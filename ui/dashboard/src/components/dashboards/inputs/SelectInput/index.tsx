@@ -1,7 +1,6 @@
 import Select from "react-select";
 import useSelectInputStyles from "../common/useSelectInputStyles";
-import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
-import { DashboardDataModeLive } from "../../../../types";
+import { DashboardActions, DashboardDataModeLive } from "../../../../types";
 import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../types";
 import {
@@ -9,6 +8,7 @@ import {
   OptionWithTags,
   SingleValueWithTags,
 } from "../common/Common";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface SelectOption {

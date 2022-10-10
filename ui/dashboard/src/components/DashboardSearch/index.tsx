@@ -1,6 +1,7 @@
 import SearchInput from "../SearchInput";
-import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
+import { DashboardActions } from "../../types";
 import { useCallback } from "react";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const DashboardSearch = () => {
   const {

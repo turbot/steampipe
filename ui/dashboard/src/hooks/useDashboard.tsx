@@ -1,5 +1,4 @@
 import get from "lodash/get";
-import has from "lodash/has";
 import isEqual from "lodash/isEqual";
 import paths from "deepdash/paths";
 import React, {
@@ -13,6 +12,7 @@ import React, {
 import set from "lodash/set";
 import sortBy from "lodash/sortBy";
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
+import useDashboardWebSocketEventHandler from "./useDashboardWebSocketEventHandler";
 import usePrevious from "./usePrevious";
 import {
   AvailableDashboard,
@@ -26,13 +26,16 @@ import {
   DashboardRenderOptions,
   DashboardsCollection,
   IDashboardContext,
-  PanelDefinition,
   PanelsMap,
   SelectedDashboardStates,
   SocketURLFactory,
   SQLDataMap,
 } from "../types";
 import { buildComponentsMap } from "../components";
+import {
+  controlsUpdatedEventHandler,
+  leafNodesCompleteEventHandler,
+} from "../utils/dashboardEventHandlers";
 import { GlobalHotKeys } from "react-hotkeys";
 import { KeyValueStringPairs } from "../components/dashboards/common/types";
 import { noop } from "../utils/func";
@@ -184,37 +187,6 @@ const wrapDefinitionInArtificialDashboard = (
   };
 };
 
-const updatePanelsMapWithControlEvent = (panelsMap, action) => {
-  return {
-    ...panelsMap,
-    [action.control.name]: action.control,
-  };
-};
-
-const calculateProgress = (panelsMap) => {
-  const panels: PanelDefinition[] = Object.values(panelsMap || {});
-  let dataPanels = 0;
-  let completeDataPanels = 0;
-  for (const panel of panels) {
-    const isControl = panel.panel_type === "control";
-    const isDataPanel = has(panel, "sql");
-    if (isControl || isDataPanel) {
-      dataPanels += 1;
-    }
-    if (
-      (isControl &&
-        (panel.status === "complete" || panel.status === "error")) ||
-      (isDataPanel && has(panel, "data"))
-    ) {
-      completeDataPanels += 1;
-    }
-  }
-  if (dataPanels === 0) {
-    return 100;
-  }
-  return Math.min(Math.ceil((completeDataPanels / dataPanels) * 100), 100);
-};
-
 function reducer(state, action) {
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
@@ -333,46 +305,10 @@ function reducer(state, action) {
     }
     case DashboardActions.EXECUTION_ERROR:
       return { ...state, error: action.error, progress: 100, state: "error" };
-    case DashboardActions.CONTROL_COMPLETE:
-    case DashboardActions.CONTROL_ERROR:
-      // We're not expecting execution events for this ID
-      if (action.execution_id !== state.execution_id) {
-        return state;
-      }
-
-      const updatedPanelsMap = updatePanelsMapWithControlEvent(
-        state.panelsMap,
-        action
-      );
-
-      if (!updatedPanelsMap) {
-        return state;
-      }
-
-      return {
-        ...state,
-        panelsMap: updatedPanelsMap,
-        progress: calculateProgress(updatedPanelsMap),
-      };
-    case DashboardActions.LEAF_NODE_COMPLETE: {
-      // We're not expecting execution events for this ID
-      if (action.execution_id !== state.execution_id) {
-        return state;
-      }
-
-      const { dashboard_node } = action;
-
-      const panelsMap = {
-        ...state.panelsMap,
-        [dashboard_node.name]: dashboard_node,
-      };
-
-      return {
-        ...state,
-        panelsMap,
-        progress: calculateProgress(panelsMap),
-      };
-    }
+    case DashboardActions.CONTROLS_UPDATED:
+      return controlsUpdatedEventHandler(action, state);
+    case DashboardActions.LEAF_NODES_COMPLETE:
+      return leafNodesCompleteEventHandler(action, state);
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
     case DashboardActions.CLEAR_SNAPSHOT:
@@ -630,10 +566,14 @@ const DashboardProvider = ({
     dispatchInner(action);
   }, []);
   const { dashboard_name } = useParams();
+  const { eventHandler } = useDashboardWebSocketEventHandler(
+    dispatch,
+    eventHooks
+  );
   const { ready: socketReady, send: sendSocketMessage } = useDashboardWebSocket(
     state.dataMode,
     dispatch,
-    eventHooks,
+    eventHandler,
     socketUrlFactory
   );
   const {
@@ -1101,4 +1041,4 @@ const useDashboard = () => {
   return context as IDashboardContext;
 };
 
-export { DashboardActions, DashboardContext, DashboardProvider, useDashboard };
+export { DashboardContext, DashboardProvider, useDashboard };

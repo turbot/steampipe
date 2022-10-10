@@ -6,13 +6,14 @@ import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
   DashboardAction,
+  DashboardActions,
   ModDashboardMetadata,
 } from "../../types";
 import { classNames } from "../../utils/styles";
-import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
 import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
 import { stringToColour } from "../../utils/color";
+import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
 interface DashboardListSection {

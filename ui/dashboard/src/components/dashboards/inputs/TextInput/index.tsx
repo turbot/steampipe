@@ -1,8 +1,8 @@
 import { ClearIcon, SubmitIcon } from "../../../../constants/icons";
-import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
-import { DashboardDataModeLive } from "../../../../types";
+import { DashboardActions, DashboardDataModeLive } from "../../../../types";
 import { registerInputComponent } from "../index";
 import { IInput, InputProps } from "../types";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
 const TextInput = (props: InputProps) => {

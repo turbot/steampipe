@@ -21,7 +21,7 @@ export const SocketActions: IActions = {
 const useDashboardWebSocket = (
   dataMode: DashboardDataMode,
   dispatch: (action: any) => void,
-  eventHooks: {} | undefined,
+  eventHandler: (event: ReceivedSocketMessagePayload) => void,
   socketUrlFactory?: () => Promise<string>
 ) => {
   const didUnmount = useRef(false);
@@ -66,17 +66,12 @@ const useDashboardWebSocket = (
     if (!lastJsonMessage || isEmpty(lastJsonMessage)) {
       return;
     }
-    dispatch({
-      type: (lastJsonMessage as ReceivedSocketMessagePayload).action,
-      ...lastJsonMessage,
-    });
-    const hookHandler =
-      eventHooks &&
-      eventHooks[(lastJsonMessage as ReceivedSocketMessagePayload).action];
-    if (hookHandler) {
-      hookHandler(lastJsonMessage);
+    const typedEvent = lastJsonMessage as ReceivedSocketMessagePayload;
+    if (!typedEvent.action) {
+      return;
     }
-  }, [dispatch, eventHooks, lastJsonMessage]);
+    eventHandler(typedEvent);
+  }, [eventHandler, lastJsonMessage]);
 
   useEffect(() => {
     if (readyState !== ReadyState.OPEN || !sendJsonMessage) {
@@ -94,7 +89,6 @@ const useDashboardWebSocket = (
 
   return {
     ready: readyState === ReadyState.OPEN,
-    lastMessage: lastJsonMessage,
     send: sendJsonMessage,
   };
 };
