@@ -29,7 +29,7 @@ type InitData struct {
 	PreparedStatementSource *modconfig.ResourceMaps
 
 	ShutdownTelemetry func()
-	ExportResolver    *export.Resolver
+	ExportManager     *export.Manager
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -40,17 +40,17 @@ func NewErrorInitData(err error) *InitData {
 
 func NewInitData(w *workspace.Workspace) *InitData {
 	i := &InitData{
-		Workspace:      w,
-		Result:         &db_common.InitResult{},
-		ExportResolver: export.NewResolver(),
+		Workspace:     w,
+		Result:        &db_common.InitResult{},
+		ExportManager: export.NewManager(),
 	}
 
 	return i
 }
 
-func (i *InitData) RegisterExporters(exporters ...*export.SnapshotExporter) *InitData {
+func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	for _, e := range exporters {
-		i.ExportResolver.Register(e)
+		i.ExportManager.Register(e)
 	}
 
 	return i

@@ -1,31 +1,33 @@
 package export
 
 import (
+	"context"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 	"path"
 	"strings"
 )
 
-type Resolver struct {
+type Manager struct {
 	registeredExporters  map[string]Exporter
 	registeredExtensions map[string]Exporter
 }
 
-func NewResolver() *Resolver {
-	return &Resolver{
+func NewManager() *Manager {
+	return &Manager{
 		registeredExporters:  make(map[string]Exporter),
 		registeredExtensions: make(map[string]Exporter),
 	}
 }
 
-func (r *Resolver) Register(exporter Exporter) {
+func (r *Manager) Register(exporter Exporter) {
 	r.registeredExporters[exporter.Name()] = exporter
 	r.registeredExporters[exporter.FileExtension()] = exporter
 }
 
-func (r *Resolver) ResolveTargetsFromArgs(exportArgs []string, executionName string) ([]*Target, error) {
+func (r *Manager) resolveTargetsFromArgs(exportArgs []string, executionName string) ([]*Target, error) {
 
 	var targets = make(map[string]*Target)
 	var targetErrors []error
@@ -54,11 +56,11 @@ func (r *Resolver) ResolveTargetsFromArgs(exportArgs []string, executionName str
 	return targetList, error_helpers.CombineErrors(targetErrors...)
 }
 
-func (r *Resolver) getExportTarget(export, executionName string) (*Target, error) {
+func (r *Manager) getExportTarget(export, executionName string) (*Target, error) {
 	if e, ok := r.registeredExporters[export]; ok {
 		t := &Target{
 			exporter: e,
-			filePath: generateDefaultExportFileName(e, executionName),
+			filePath: GenerateDefaultExportFileName(e, executionName),
 		}
 		return t, nil
 	}
@@ -71,4 +73,31 @@ func (r *Resolver) getExportTarget(export, executionName string) (*Target, error
 		return t, nil
 	}
 	return nil, fmt.Errorf("formatter satisfying '%s' not found", export)
+}
+
+func (r *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) error {
+
+	if len(exports) == 0 {
+		return nil
+	}
+
+	// get the short name for the target
+	parsedResource, err := modconfig.ParseResourceName(targetName)
+	if err != nil {
+		return err
+	}
+	shortName := parsedResource.Name
+
+	targets, err := r.resolveTargetsFromArgs(exports, shortName)
+	if err != nil {
+		return err
+	}
+
+	var errors []error
+	for _, target := range targets {
+		if err := target.Export(ctx, source); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	return error_helpers.CombineErrors(errors...)
 }

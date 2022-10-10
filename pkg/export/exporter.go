@@ -1,12 +1,14 @@
 package export
 
+import "context"
+
 // ExportSourceData is an interface implemented by all types which can be used as an input to an exporter
 type ExportSourceData interface {
 	IsExportSourceData()
 }
 
 type Exporter interface {
-	Export(input ExportSourceData, destPath string) error
+	Export(ctx context.Context, input ExportSourceData, destPath string) error
 	FileExtension() string
 	Name() string
 }

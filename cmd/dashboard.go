@@ -265,8 +265,8 @@ func getInitData(ctx context.Context, w *workspace.Workspace) *initialisation.In
 	return initData
 }
 
-func dashboardExporters() []*export.SnapshotExporter {
-	return []*export.SnapshotExporter{&export.SnapshotExporter{}}
+func dashboardExporters() []export.Exporter {
+	return []export.Exporter{&export.SnapshotExporter{}}
 }
 
 func runSingleDashboard(ctx context.Context, targetName string, inputs map[string]interface{}) error {
@@ -303,7 +303,8 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	error_helpers.FailOnErrorWithMessage(err, "failed to upload snapshot")
 
 	// export the result (if needed)
-	err = exportSnapshot(initData.ExportResolver, targetName, snap)
+	exportArgs := viper.GetStringSlice(constants.ArgExport)
+	err = initData.ExportManager.DoExport(ctx, targetName, snap, exportArgs)
 	error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
 
 	return nil
