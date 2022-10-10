@@ -21,7 +21,8 @@ func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 	var cloudMetadata *steampipeconfig.CloudMetadata
 
 	// so a backend was set - is it a connection string or a database name
-	if !(strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")) {
+	workspaceDatabaseIsConnectionString := strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")
+	if !workspaceDatabaseIsConnectionString {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {

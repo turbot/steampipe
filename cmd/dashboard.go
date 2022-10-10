@@ -283,8 +283,6 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
 func validateCloudArgs() error {
 	// TODO VALIDATE cloud host - remove trailing slash?
 
-	// NOTE: viper.IsSet DOES NOT take into account flag default value - it should NOT be used for args with a default
-
 	// if workspace-database has not been set, check whether workspace has been set and if so use that
 	// NOTE: do this BEFORE populating workspace from share/snapshot args, if set
 	if !viper.IsSet(constants.ArgWorkspaceDatabase) && viper.IsSet(constants.ArgWorkspace) {
