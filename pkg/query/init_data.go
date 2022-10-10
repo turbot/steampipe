@@ -2,39 +2,41 @@ package query
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/export"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
-// TODO KAI combine with initialisation.InitData
 type InitData struct {
-	cancelInitialisation context.CancelFunc
 	initialisation.InitData
-	Loaded chan struct{}
+	cancelInitialisation context.CancelFunc
+	Loaded               chan struct{}
 	// map of query name to query (key is the query text for command line queries)
 	Queries map[string]string
 }
 
-// NewInitData creates a new InitData object and returns it
-// it also starts an asynchronous population of the object
+// NewInitData returns a new InitData object
+// It also starts an asynchronous population of the object
 // InitData.Done closes after asynchronous initialization completes
 func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *InitData {
 	i := &InitData{
-		InitData: initialisation.InitData{
-			Workspace: w,
-			Result:    &db_common.InitResult{},
-		},
-		Loaded: make(chan struct{}),
+		InitData: *initialisation.NewInitData(w),
+		Loaded:   make(chan struct{}),
 	}
+
+	i.RegisterExporters(queryExporters()...)
 
 	go i.init(ctx, w, args)
 
 	return i
+}
+
+func queryExporters() []*export.SnapshotExporter {
+	return []*export.SnapshotExporter {&export.SnapshotExporter{}}
 }
 
 func (i *InitData) Cancel() {

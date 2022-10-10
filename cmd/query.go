@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"golang.org/x/exp/maps"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -20,6 +21,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
@@ -87,6 +89,7 @@ Examples:
 		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
 		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
 
 	return cmd
@@ -207,10 +210,40 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 
 			// share the snapshot if necessary
 			err = uploadSnapshot(snap)
-			error_helpers.FailOnErrorWithMessage(err, "failed to share snapshot")
+
+			// export the result if necessary
+			err = exportSnapshot(initData.ExportResolver, targetName, snap)
+			error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
 		}
 	}
 	return 0
+}
+
+func exportSnapshot(exportResolver *export.Resolver, targetName string, snap *dashboardtypes.SteampipeSnapshot) error {
+	exports := viper.GetStringSlice(constants.ArgExport)
+	if len(exports) == 0 {
+		return nil
+	}
+
+	// get the short name for the target
+	parsedResource, err := modconfig.ParseResourceName(targetName)
+	if err != nil {
+		return err
+	}
+	shortName := parsedResource.Name
+
+	targets, err := exportResolver.ResolveTargetsFromArgs(exports, shortName)
+	if err != nil {
+		return err
+	}
+
+	var errors []error
+	for _, target := range targets {
+		if err := target.Export(snap); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	return error_helpers.CombineErrors(errors...)
 }
 
 func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) (*queryresult.Result, error) {
@@ -229,7 +262,7 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 		return nil, fmt.Errorf("failed to read query result from snapshot")
 	}
 
-	res := queryresult.NewQueryResult(chartRun.Data.Columns)
+	res := queryresult.NewResult(chartRun.Data.Columns)
 
 	// TODO for now we do not support timing for snapshot query output - this need implementation
 	// close timing channel to avoid lockup
@@ -270,6 +303,13 @@ func ensureQueryResource(name string, query string, queryIdx int, w *workspace.W
 }
 
 func snapshotRequired() bool {
+	// if a snapshot exporter is specified return true
+	for _, e := range viper.GetStringSlice(constants.ArgExport) {
+		if e == constants.OutputFormatSnapshot || path.Ext(e) == constants.SnapshotExtension {
+			return true
+		}
+	}
+	// if share/snapshot args are set or output is snapshot, return true
 	return viper.IsSet(constants.ArgShare) ||
 		viper.IsSet(constants.ArgSnapshot) ||
 		viper.GetString(constants.ArgOutput) == constants.OutputFormatSnapshot

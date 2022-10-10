@@ -70,6 +70,9 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	return executionTree, nil
 }
 
+// IsExportSourceData implements ExportSourceData
+func (*ExecutionTree) IsExportSourceData() {}
+
 // AddControl checks whether control should be included in the tree
 // if so, creates a ControlRun, which is added to the parent group
 func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Control, group *ResultGroup) {

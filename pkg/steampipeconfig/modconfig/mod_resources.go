@@ -439,12 +439,12 @@ func (m *ResourceMaps) addControlOrQuery(provider QueryProvider) {
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false or an error, return immediately
 func (m *ResourceMaps) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
-	for _, r := range m.Controls {
+	for _, r := range m.Benchmarks {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
 	}
-	for _, r := range m.Benchmarks {
+	for _, r := range m.Controls {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -464,12 +464,12 @@ func (m *ResourceMaps) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.DashboardContainers {
+	for _, r := range m.DashboardCharts {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
 	}
-	for _, r := range m.DashboardCharts {
+	for _, r := range m.DashboardContainers {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
