@@ -2,12 +2,9 @@ module github.com/turbot/steampipe
 
 go 1.19
 
-replace github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20220512154952-8a65716d8171
-
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver v1.5.0
-	github.com/ahmetb/go-linq v3.0.0+incompatible
 	github.com/alecthomas/chroma v0.10.0
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/briandowns/spinner v1.19.0
@@ -27,6 +24,9 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hcl/v2 v2.14.0
 	github.com/hashicorp/terraform v0.15.1
+	github.com/jackc/pgconn v1.13.0
+	github.com/jackc/pgproto3/v2 v2.3.1
+	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jedib0t/go-pretty/v6 v6.4.0
 	github.com/karrick/gows v0.3.0
@@ -49,6 +49,7 @@ require (
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.11.0
 	github.com/zclconf/go-cty-yaml v1.0.2
+	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
 	google.golang.org/grpc v1.49.0
@@ -120,12 +121,9 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -181,7 +179,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.16.0 // indirect
-	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -220,10 +217,13 @@ require (
 	github.com/gosuri/uiprogress v0.0.1
 )
 
-replace github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
+replace (
+	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.20220512154952-8a65716d8171
 
-replace github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
+	github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
+	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 
-replace github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
+	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
 
-replace github.com/jedib0t/go-pretty/v6 => /Users/pskrbasu/turbot-delivery/Steampipe/go-pretty
+	github.com/jedib0t/go-pretty/v6 => github.com/kaidaguerre/go-pretty/v6 v6.0.0-20220929103607-331765088e53
+)
