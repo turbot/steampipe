@@ -86,6 +86,7 @@ jobs:
     name: Acceptance tests
     needs: goreleaser
     strategy:
+      fail-fast: false
       matrix:
         platform: [macos-latest, ubuntu-latest]
         test_block:
