@@ -5,11 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"io"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/control"
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
@@ -129,9 +126,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	workspace := initData.Workspace
 	client := initData.Client
 	failures := 0
-	var exportErrors []error
-	exportErrorsLock := &sync.Mutex{}
-	exportWaitGroup := &sync.WaitGroup{}
 	var durations []time.Duration
 
 	shouldShare := viper.IsSet(constants.ArgShare)
@@ -145,7 +139,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// treat each arg as a separate execution
-	for _, arg := range args {
+	for _, targetName := range args {
 		if utils.IsContextCancelled(ctx) {
 			durations = append(durations, 0)
 			// skip over this arg, since the execution was cancelled
@@ -153,12 +147,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		// get the export formats for this argument
-		exportTargets, err := getExportTargets(arg)
-		error_helpers.FailOnError(err)
-
 		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, arg)
+		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, targetName)
 		error_helpers.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of failures)
@@ -166,16 +156,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree)
 		error_helpers.FailOnError(err)
 
-		if len(exportTargets) > 0 {
-			d := &control.ExportData{
-				ExecutionTree: executionTree,
-				Targets:       exportTargets,
-				ErrorsLock:    exportErrorsLock,
-				Errors:        exportErrors,
-				WaitGroup:     exportWaitGroup,
-			}
-			exportCheckResult(ctx, d)
-		}
+		exportArgs := viper.GetStringSlice(constants.ArgExport)
+		err = initData.ExportManager.DoExport(ctx, targetName, executionTree, exportArgs)
+		error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
 
 		// if the share args are set, create a snapshot and share it
 		if generateSnapshot {
@@ -183,13 +166,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
-	}
-
-	// wait for exports to complete
-	exportWaitGroup.Wait()
-
-	if len(exportErrors) > 0 {
-		error_helpers.ShowError(ctx, error_helpers.CombineErrors(exportErrors...))
 	}
 
 	if shouldPrintTiming() {
@@ -239,6 +215,12 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 	initData := initialisation.NewInitData(w).Init(ctx, constants.InvokerCheck)
 	if initData.Result.Error != nil {
 		return initData
+	}
+
+	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+		exporters, err := controldisplay.GetExporters()
+		error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
+		initData.RegisterExporters(exporters...)
 	}
 
 	// control specific init
@@ -306,17 +288,6 @@ func shouldPrintTiming() bool {
 		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
-func exportCheckResult(ctx context.Context, d *control.ExportData) {
-	d.WaitGroup.Add(1)
-	go func() {
-		err := exportControlResults(ctx, d.ExecutionTree, d.Targets)
-		if len(err) > 0 {
-			d.AddErrors(err)
-		}
-		d.WaitGroup.Done()
-	}()
-}
-
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
 	output := viper.GetString(constants.ArgOutput)
 	formatter, err := parseOutputArg(output)
@@ -339,51 +310,6 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	return err
 }
 
-func exportControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, targets []*controldisplay.CheckExportTarget) []error {
-	errors := []error{}
-	for _, target := range targets {
-		if utils.IsContextCancelled(ctx) {
-			// set the error
-			errors = append(errors, ctx.Err())
-			// and skip forward
-			continue
-		}
-
-		dataToExport, err := target.Formatter.Format(ctx, executionTree)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		if utils.IsContextCancelled(ctx) {
-			errors = append(errors, ctx.Err())
-			continue
-		}
-		// create the output file
-		destination, err := os.Create(target.File)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		// tactical solution to prettify the json output
-		if target.Formatter.Name() == constants.OutputFormatJSON {
-			dataToExport, err = prettifyJsonFromReader(dataToExport)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-		}
-
-		_, err = io.Copy(destination, dataToExport)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		destination.Close()
-	}
-
-	return errors
-}
-
 func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
 	b, err := io.ReadAll(dataToExport)
 	if err != nil {
@@ -399,70 +325,6 @@ func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
 	return dataToExport, nil
 }
 
-func getExportTargets(executionName string) ([]*controldisplay.CheckExportTarget, error) {
-	var targets = make(map[string]*controldisplay.CheckExportTarget)
-	var targetErrors []error
-
-	exports := viper.GetStringSlice(constants.ArgExport)
-	for _, export := range exports {
-		export = strings.TrimSpace(export)
-		if len(export) == 0 {
-			// if this is an empty string, ignore
-			continue
-		}
-
-		newTarget, err := getExportTarget(executionName, export)
-		if err != nil {
-			targetErrors = append(targetErrors, err)
-			continue
-		}
-		if newTarget == nil {
-			targetErrors = append(targetErrors, fmt.Errorf("formatter satisfying '%s' not found", export))
-			continue
-		}
-		// add to map if not already there
-		if _, ok := targets[newTarget.File]; !ok {
-			targets[newTarget.File] = newTarget
-		}
-	}
-
-	// convert target map into array
-	targetList := maps.Values(targets)
-	return targetList, error_helpers.CombineErrors(targetErrors...)
-}
-
-// getExportTarget parses the flag value, finds a matching formatter and returns an export target
-func getExportTarget(executionName string, export string) (*controldisplay.CheckExportTarget, error) {
-	formatResolver, err := controldisplay.NewFormatResolver()
-	if err != nil {
-		return nil, err
-	}
-
-	var fileName string
-	formatter, err := formatResolver.GetFormatter(export)
-	if err != nil {
-		// as we are resolving the format by extension, the arg will be the filename so return it
-		formatter, err = formatResolver.GetFormatterByExtension(export)
-		if err != nil {
-			return nil, err
-		}
-		if formatter == nil {
-			return nil, nil
-		}
-		// use the export arg as the filename
-		fileName = export
-	}
-
-	if fileName == "" {
-		//  we need to generate a filename
-		fileName = generateDefaultExportFileName(formatter, executionName)
-	}
-
-	target := controldisplay.NewCheckExportTarget(formatter, fileName)
-
-	return target, nil
-}
-
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
 func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) {
 	formatResolver, err := controldisplay.NewFormatResolver()
@@ -471,10 +333,4 @@ func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) 
 	}
 
 	return formatResolver.GetFormatter(arg)
-}
-
-func generateDefaultExportFileName(formatter controldisplay.Formatter, executionName string) string {
-	now := time.Now()
-	timeFormatted := fmt.Sprintf("%d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	return fmt.Sprintf("%s-%s%s", executionName, timeFormatted, formatter.FileExtension())
 }

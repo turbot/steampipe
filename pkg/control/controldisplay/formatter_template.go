@@ -76,7 +76,7 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 func (tf TemplateFormatter) FileExtension() string {
 	// if the extension is the same as the format name, return just the extension
 	if tf.exportFormat.DefaultTemplateForExtension {
-		return tf.exportFormat.OutputExtension
+		return tf.exportFormat.FileExtension
 	} else {
 		// otherwise return the fullname
 		return fmt.Sprintf(".%s", tf.exportFormat.FormatFullName)

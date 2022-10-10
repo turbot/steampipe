@@ -35,8 +35,8 @@ func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *In
 	return i
 }
 
-func queryExporters() []*export.SnapshotExporter {
-	return []*export.SnapshotExporter {&export.SnapshotExporter{}}
+func queryExporters() []export.Exporter {
+	return []export.Exporter{&export.SnapshotExporter{}}
 }
 
 func (i *InitData) Cancel() {

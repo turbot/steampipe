@@ -21,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
@@ -212,38 +211,12 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			err = uploadSnapshot(snap)
 
 			// export the result if necessary
-			err = exportSnapshot(initData.ExportResolver, targetName, snap)
+			exportArgs := viper.GetStringSlice(constants.ArgExport)
+			err = initData.ExportManager.DoExport(ctx, targetName, snap, exportArgs)
 			error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
 		}
 	}
 	return 0
-}
-
-func exportSnapshot(exportResolver *export.Resolver, targetName string, snap *dashboardtypes.SteampipeSnapshot) error {
-	exports := viper.GetStringSlice(constants.ArgExport)
-	if len(exports) == 0 {
-		return nil
-	}
-
-	// get the short name for the target
-	parsedResource, err := modconfig.ParseResourceName(targetName)
-	if err != nil {
-		return err
-	}
-	shortName := parsedResource.Name
-
-	targets, err := exportResolver.ResolveTargetsFromArgs(exports, shortName)
-	if err != nil {
-		return err
-	}
-
-	var errors []error
-	for _, target := range targets {
-		if err := target.Export(snap); err != nil {
-			errors = append(errors, err)
-		}
-	}
-	return error_helpers.CombineErrors(errors...)
 }
 
 func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) (*queryresult.Result, error) {
