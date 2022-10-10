@@ -37,11 +37,6 @@ func (r *FormatResolver) registerTemplate(t *OutputTemplate) error {
 		return err
 	}
 
-	if _, ok := r.formatterByExtension[t.FileExtension]; ok {
-		return fmt.Errorf("failed to register output template - duplicate extension %s", t.FileExtension)
-	}
-	r.formatterByExtension[t.FileExtension] = f
-
 	if _, ok := r.formatterByName[t.FormatName]; ok {
 		return fmt.Errorf("failed to register output template - duplicate format name %s", t.FormatName)
 	}
@@ -51,6 +46,26 @@ func (r *FormatResolver) registerTemplate(t *OutputTemplate) error {
 		return fmt.Errorf("failed to register output template - duplicate format name %s", t.FormatFullName)
 	}
 	r.formatterByName[t.FormatFullName] = f
+
+	// now register extension
+	if existing, ok := r.formatterByExtension[t.FileExtension]; ok {
+		existingIsDefaultForExt := existing.(*TemplateFormatter).exportFormat.DefaultTemplateForExtension
+		newIsDefaultForExt := t.DefaultTemplateForExtension
+
+		// check if either the existing or new template is the default for extension
+		if newIsDefaultForExt && existingIsDefaultForExt ||
+			!newIsDefaultForExt && !existingIsDefaultForExt {
+			// both or neither are default for the extension - this is an error
+			return fmt.Errorf("failed to register output template - duplicate extension %s", t.FileExtension)
+		}
+
+		if existingIsDefaultForExt {
+			// if existing is default and new isn't, nothing to do
+			return nil
+		}
+	}
+	r.formatterByExtension[t.FileExtension] = f
+
 	return nil
 }
 

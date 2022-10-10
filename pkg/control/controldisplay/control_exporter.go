@@ -16,7 +16,7 @@ func NewControlExporter(formatter Formatter) *ControlExporter {
 	return &ControlExporter{formatter}
 }
 
-func (e *ControlExporter) Export(ctx context.Context, input export.ExportSourceData, filePath string) error {
+func (e *ControlExporter) Export(ctx context.Context, input export.ExportSourceData, destPath string) error {
 	// input must be control execution tree
 	tree, ok := input.(*controlexecute.ExecutionTree)
 	if !ok {
@@ -27,7 +27,7 @@ func (e *ControlExporter) Export(ctx context.Context, input export.ExportSourceD
 		return err
 	}
 
-	return export.Write(filePath, res)
+	return export.Write(destPath, res)
 }
 
 func (e *ControlExporter) FileExtension() string {
