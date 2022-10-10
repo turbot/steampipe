@@ -88,7 +88,15 @@ jobs:
     strategy:
       matrix:
         platform: [macos-latest, ubuntu-latest]
-        test_block: ["001", "002"]
+        test_block: 
+          - "001"
+          - "002"
+          - "003"
+          - "004"
+          - "005"
+          - "006"
+          - "007"
+          - "008"
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
