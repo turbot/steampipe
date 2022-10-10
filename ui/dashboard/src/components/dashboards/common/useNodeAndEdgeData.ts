@@ -50,6 +50,7 @@ const useNodeAndEdgeData = (
     }
 
     let newProperties = properties;
+    const nodeIdLookup = {};
     const columns: NodeAndEdgeDataColumn[] = [];
     const rows: NodeAndEdgeDataRow[] = [];
     for (const nodePanelName of properties?.nodes || []) {
@@ -96,6 +97,12 @@ const useNodeAndEdgeData = (
 
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
+        // Ensure each row has an id
+        if (!row.id) {
+          continue;
+        }
+        // Capture the ID of each row
+        nodeIdLookup[row.id] = row;
         const updatedRow = row;
         if (!updatedRow.title && panel.title) {
           updatedRow.title = panel.title;
@@ -130,6 +137,15 @@ const useNodeAndEdgeData = (
       const artificialCategoryId = `node_category_${edgePanelName}`;
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
+        // Ensure the node this edge points to exists in the data set
+        if (
+          !row.from_id ||
+          !row.to_id ||
+          !nodeIdLookup[row.from_id] ||
+          !nodeIdLookup[row.to_id]
+        ) {
+          continue;
+        }
         const updatedRow = row;
         if (!updatedRow.title && panel.title) {
           updatedRow.title = panel.title;
