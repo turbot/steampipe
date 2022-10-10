@@ -225,5 +225,5 @@ replace (
 
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
 
-	github.com/jedib0t/go-pretty/v6 => github.com/kaidaguerre/go-pretty/v6 v6.0.0-20220929103607-331765088e53
+	github.com/jedib0t/go-pretty/v6 => github.com/kaidaguerre/go-pretty/v6 v6.3.6-steampipe.0
 )
