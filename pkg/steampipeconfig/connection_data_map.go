@@ -96,10 +96,6 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {
 			missingPluginMap[connection.Plugin] = append(missingPluginMap[connection.Plugin], *connection)
-
-			// if !helpers.StringSliceContains(missingPlugins, connection.Plugin) {
-			// 	missingPlugins = append(missingPlugins, connection.Plugin)
-			// }
 			continue
 		}
 
