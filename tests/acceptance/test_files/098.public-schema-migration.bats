@@ -43,11 +43,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # stop the service
   $tmpdir/steampipe --install-dir $tmpdir service stop
   
-  # Now run this version(0.14.*) - which should migrate the data
+  # Now run this version - which should migrate the data
   steampipe --install-dir $tmpdir service start
   
   # store the result of the verification statements(0.14.*)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
+    echo "VerifySQL: ${verify_sql[$i]}"
     steampipe --install-dir $tmpdir query "${verify_sql[$i]}" --output json > verify$i$i.json
   done
 
