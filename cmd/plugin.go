@@ -589,30 +589,31 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	// If there are missing plugins which have connections left over, list them
 	// along with installed plugins
 	if len(missingPluginMap) != 0 {
-		// List installed plugins with the connections
+		// List installed plugins
 		if len(list) != 0 {
-			headers := []string{"Name", "Version", "Connections"}
+			headers := []string{"Installed Plugin", "Version", "Connections"}
 			rows := [][]string{}
 			for _, item := range list {
 				rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 			}
-			display.ShowInstalledPluginTable(headers, rows, false)
+			display.ShowWrappedTable(headers, rows, false)
+			fmt.Printf("\n")
 		}
 
 		// List missing plugins
-		headers := []string{"Name", "Version", "Connections"}
+		headers := []string{"Missing Plugin", "Connections"}
 		conns := []string{}
 		missingRows := [][]string{}
 		for p, item := range missingPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, "", strings.Join(conns, ",")})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ",")})
 			conns = []string{}
 		}
-		display.ShowMissingPluginTable(headers, missingRows, false)
+		display.ShowWrappedTable(headers, missingRows, false)
 	} else {
-		headers := []string{"Name", "Version", "Connections"}
+		headers := []string{"Installed Plugin", "Version", "Connections"}
 		rows := [][]string{}
 		for _, item := range list {
 			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})

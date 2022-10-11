@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/spf13/cobra"
-	"github.com/turbot/go-kit/helpers"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -34,16 +34,15 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 		return res
 	}
 
-	// connectionUpdates := res.Updates
-	// if any plugins are missing, error for now but we could prompt for an install
-	// missingCount := len(connectionUpdates.MissingPlugins)
-	// if missingCount > 0 {
-	// 	res.Error = fmt.Errorf("%d %s referenced in the connection config not installed: \n  %v",
-	// 		missingCount,
-	// 		utils.Pluralize("plugin", missingCount),
-	// 		strings.Join(connectionUpdates.MissingPlugins, "\n  "))
-	// 	return res
-	// }
+	// add warning if there are connections left over, from missing plugins
+	if len(connectionUpdates.MissingPlugins) > 0 {
+		// warning
+		for a, conns := range connectionUpdates.MissingPlugins {
+			for _, con := range conns {
+				res.AddWarning(fmt.Sprintf("%s referenced in the connection config but plugin %s not installed.", con.Name, strings.Split(a, "/")[3]))
+			}
+		}
+	}
 
 	if !connectionUpdates.HasUpdates() {
 		log.Println("[TRACE] RefreshConnections: no updates required")
