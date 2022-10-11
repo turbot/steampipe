@@ -1,4 +1,3 @@
-import has from "lodash/has";
 import { PanelDefinition } from "../types";
 
 const updatePanelsMapWithControlEvent = (panelsMap, action) => {
@@ -94,11 +93,7 @@ const calculateProgress = (panelsMap) => {
   if (dataPanels === 0) {
     return 100;
   }
-  const progress = Math.min(
-    Math.ceil((completeDataPanels / dataPanels) * 100),
-    100
-  );
-  return progress;
+  return Math.min(Math.ceil((completeDataPanels / dataPanels) * 100), 100);
 };
 
 export { controlsUpdatedEventHandler, leafNodesCompleteEventHandler };

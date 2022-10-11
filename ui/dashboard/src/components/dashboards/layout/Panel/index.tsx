@@ -1,4 +1,5 @@
 import Error from "../../Error";
+import PanelProgress from "./PanelProgress";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts/types";
 import {
@@ -199,6 +200,7 @@ const Panel = memo(
                   : "overflow-x-hidden"
               )}
             >
+              <PanelProgress />
               <PlaceholderComponent
                 animate={!!children}
                 ready={ready || !!definition.error}
