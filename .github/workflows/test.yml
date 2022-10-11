@@ -85,17 +85,17 @@ jobs:
       matrix:
         platform: [macos-latest, ubuntu-latest]
         test_block:
-          - "migration.bats"
-          - "service_and_plugin.bats"
-          - "search_path.bats"
-          - "chaos_and_query.bats"
-          - "dynamic_schema.bats"
-          - "cache.bats"
-          - "mod_install.bats"
-          - "mod.bats"
-          - "check.bats"
-          - "performance.bats"
-          - "exit_codes.bats"
+          - "migration"
+          - "service_and_plugin"
+          - "search_path"
+          - "chaos_and_query"
+          - "dynamic_schema"
+          - "cache"
+          - "mod_install"
+          - "mod"
+          - "check"
+          - "performance"
+          - "exit_codes"
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
@@ -151,7 +151,7 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}*.bats
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
           steampipe service stop --force
       
       - name: Save Test Suite Logs
