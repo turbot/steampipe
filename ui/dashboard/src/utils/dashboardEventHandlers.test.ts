@@ -246,6 +246,7 @@ describe("dashboard event handlers", () => {
       };
       const updatedDashboardNode = {
         name: "panel_a",
+        panel_type: "node",
         sql: "",
         status: "complete",
       };
@@ -285,11 +286,13 @@ describe("dashboard event handlers", () => {
       };
       const updatedDashboardNode1 = {
         name: "panel_a",
+        panel_type: "node",
         sql: "",
         status: "complete",
       };
       const updatedDashboardNode2 = {
         name: "panel_b",
+        panel_type: "edge",
         sql: "",
         status: "complete",
       };
