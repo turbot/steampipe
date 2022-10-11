@@ -55,7 +55,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
-          args: build --rm-dist --snapshot --config=.acceptance.goreleaser.yml
+          args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

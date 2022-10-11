@@ -13,6 +13,7 @@ builds:
 
     id: "steampipe"
     binary: "steampipe"
+
 archives:
   - files:
       - none*
@@ -22,8 +23,3 @@ archives:
     format_overrides:
       - goos: linux
         format: tar.gz
-
-# it is necessary to specify the name_template of the snapshot, or else the snapshot gets created with
-# two dash(-) which results in a 500 error while downloading
-snapshot:
-  name_template: "{{ .Version }}"
