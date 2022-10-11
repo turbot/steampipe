@@ -149,7 +149,7 @@ jobs:
       - name: Run Test Suite
         if: ${{ success() }}
         id: run-test-suite
-        timeout-minutes: 4
+        timeout-minutes: 15
         continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
