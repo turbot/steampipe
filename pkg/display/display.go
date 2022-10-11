@@ -61,61 +61,6 @@ func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
 	t.Render()
 }
 
-var maxLength []int
-
-func ShowInstalledPluginTable(headers []string, rows [][]string, autoMerge bool) {
-	t := table.NewWriter()
-
-	t.SetTitle("Installed Plugins")
-
-	t.SetStyle(table.StyleDefault)
-	t.Style().Format.Header = text.FormatDefault
-	t.SetOutputMirror(os.Stdout)
-	t.HideBottomBorder(true)
-
-	rowConfig := table.RowConfig{AutoMerge: autoMerge}
-	colConfigs, headerRow := getColumnSettings(headers, rows)
-
-	t.SetColumnConfigs(colConfigs)
-	t.AppendHeader(headerRow)
-
-	for _, row := range rows {
-		rowObj := table.Row{}
-		for _, col := range row {
-			rowObj = append(rowObj, col)
-		}
-		t.AppendRow(rowObj, rowConfig)
-	}
-	t.Render()
-	maxLength = t.MaxColumnLengths()
-}
-
-func ShowMissingPluginTable(headers []string, rows [][]string, autoMerge bool) {
-	t := table.NewWriter()
-
-	t.SetTitle("Missing Plugins")
-	t.SetMaxColumnLengths(maxLength)
-
-	t.SetStyle(table.StyleDefault)
-	t.Style().Format.Header = text.FormatDefault
-	t.SetOutputMirror(os.Stdout)
-
-	rowConfig := table.RowConfig{AutoMerge: autoMerge}
-	colConfigs, headerRow := getColumnSettings(headers, rows)
-
-	t.SetColumnConfigs(colConfigs)
-	t.AppendHeader(headerRow)
-
-	for _, row := range rows {
-		rowObj := table.Row{}
-		for _, col := range row {
-			rowObj = append(rowObj, col)
-		}
-		t.AppendRow(rowObj, rowConfig)
-	}
-	t.Render()
-}
-
 // calculate and returns column configuration based on header and row content
 func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig, table.Row) {
 	maxCols, _, _ := gows.GetWinSize()
@@ -133,16 +78,12 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 		// get the maximum len of strings in this column
 		maxLen := 0
 		for _, row := range rows {
-			if len(maxLength) != 0 {
-				maxLen = maxLength[idx]
-			} else {
-				colVal := row[idx]
-				if len(colVal) > maxLen {
-					maxLen = len(colVal)
-				}
-				if len(colName) > maxLen {
-					maxLen = len(colName)
-				}
+			colVal := row[idx]
+			if len(colVal) > maxLen {
+				maxLen = len(colVal)
+			}
+			if len(colName) > maxLen {
+				maxLen = len(colName)
 			}
 		}
 		colConfigs[idx] = table.ColumnConfig{

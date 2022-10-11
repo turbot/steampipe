@@ -3,9 +3,10 @@ package db_local
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"log"
 	"strings"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/spf13/viper"
 
@@ -30,6 +31,15 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	}
 
 	connectionUpdates := res.Updates
+	// add warning if there are connections left over, from missing plugins
+	if len(connectionUpdates.MissingPlugins) > 0 {
+		// warning
+		for a, conns := range connectionUpdates.MissingPlugins {
+			for _, con := range conns {
+				res.AddWarning(fmt.Sprintf("%s referenced in the connection config but plugin %s not installed.", con.Name, strings.Split(a, "/")[3]))
+			}
+		}
+	}
 
 	if !connectionUpdates.HasUpdates() {
 		log.Println("[TRACE] RefreshConnections: no updates required")
