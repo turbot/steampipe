@@ -147,7 +147,7 @@ jobs:
           steampipe service stop
 
       - name: Run Test Suite
-        if: steps.install-db.outcome == 'success'
+        if: ${{ success() }}
         id: run-test-suite
         timeout-minutes: 4
         continue-on-error: true
@@ -157,7 +157,7 @@ jobs:
           steampipe service stop --force
       
       - name: Save Test Suite Logs
-        if: steps.run-test-suite.outcome == 'success'
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: test-logs
@@ -168,7 +168,7 @@ jobs:
       # Since the exit_code is set only when the bats test suite pass, 
       # we have added the if-conditional block 
       - name: Check Test Passed/Failed
-        if: steps.run-test-suite.outcome != 'skipped'
+        if: ${{ success() }}
         continue-on-error: false
         run: |
           if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
