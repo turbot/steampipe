@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"io"
 	"os"
 	"strings"
@@ -218,9 +219,7 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 	}
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
-		exporters, err := controldisplay.GetExporters()
-		error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
-		initData.RegisterExporters(exporters...)
+		registerCheckExporters(initData)
 	}
 
 	// control specific init
@@ -249,6 +248,26 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 	}
 
 	return initData
+}
+
+// register exporters for each of the supported check formats
+// there is quite a bit of logic used to build the check formatter name and extension maps
+// (to cover the case of multiple templates with the same extension, long and short template formatter names etc.)
+// to avoid reproducing this logic, controldisplay.GetExporters() returns 2 exporter maps,
+// keyed by name and extension respectively, which correspond to the formatter maps
+//
+func registerCheckExporters(initData *initialisation.InitData) {
+	exportersByName, exportersByExtension, err := controldisplay.GetExporters()
+	error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
+
+	// register all exporters from exportersByExtension
+	initData.RegisterExporters(maps.Values(exportersByExtension)...)
+
+	// exportersByName contains aliases for the format names
+	// register these by name each exporter from exportersByName
+	for name, exporter := range exportersByName {
+		initData.ExportManager.RegisterByName(name, exporter)
+	}
 }
 
 func initialiseCheckColorScheme() error {

@@ -34,6 +34,22 @@ type TemplateFormatter struct {
 	exportFormat *OutputTemplate
 }
 
+func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
+	templateFuncs := templateFuncs()
+
+	// add a stub "render_context" function
+	// this will be overwritten before we execute the template
+	// if we don't put this here, then templates which use this
+	// won't parse and will throw Error: template: ****: function "render_context" not defined
+	templateFuncs["render_context"] = func() TemplateRenderContext { return TemplateRenderContext{} }
+
+	t := template.Must(template.New("outlet").
+		Funcs(templateFuncs).
+		ParseFS(os.DirFS(input.TemplatePath), "*"))
+
+	return &TemplateFormatter{exportFormat: input, template: t}, nil
+}
+
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	reader, writer := io.Pipe()
 	go func() {
@@ -85,20 +101,4 @@ func (tf TemplateFormatter) FileExtension() string {
 
 func (tf TemplateFormatter) Name() string {
 	return tf.exportFormat.FormatName
-}
-
-func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
-	templateFuncs := templateFuncs()
-
-	// add a stub "render_context" function
-	// this will be overwritten before we execute the template
-	// if we don't put this here, then templates which use this
-	// won't parse and will throw Error: template: ****: function "render_context" not defined
-	templateFuncs["render_context"] = func() TemplateRenderContext { return TemplateRenderContext{} }
-
-	t := template.Must(template.New("outlet").
-		Funcs(templateFuncs).
-		ParseFS(os.DirFS(input.TemplatePath), "*"))
-
-	return &TemplateFormatter{exportFormat: input, template: t}, nil
 }

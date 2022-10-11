@@ -36,3 +36,7 @@ func (f *SnapshotFormatter) FileExtension() string {
 func (f SnapshotFormatter) Name() string {
 	return constants.OutputFormatSnapshot
 }
+
+func (f *SnapshotFormatter) Alias() string {
+	return ""
+}

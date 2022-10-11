@@ -24,11 +24,15 @@ func NewManager() *Manager {
 
 func (r *Manager) Register(exporter Exporter) {
 	r.registeredExporters[exporter.Name()] = exporter
-	r.registeredExporters[exporter.FileExtension()] = exporter
+	r.registeredExtensions[exporter.FileExtension()] = exporter
+}
+
+// RegisterByName is used to register alias names
+func (r *Manager) RegisterByName(name string, exporter Exporter) {
+	r.registeredExporters[name] = exporter
 }
 
 func (r *Manager) resolveTargetsFromArgs(exportArgs []string, executionName string) ([]*Target, error) {
-
 	var targets = make(map[string]*Target)
 	var targetErrors []error
 
@@ -76,7 +80,6 @@ func (r *Manager) getExportTarget(export, executionName string) (*Target, error)
 }
 
 func (r *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) error {
-
 	if len(exports) == 0 {
 		return nil
 	}
