@@ -1080,10 +1080,10 @@ const nodeAndEdgeResourceHasData = (
 ): boolean => {
   const dataFormat = getNodeAndEdgeDataFormat(properties);
   if (dataFormat === "LEGACY" && !!data) {
-    return false;
-  }
-  if (dataFormat === "LEGACY" && data) {
     return true;
+  }
+  if (dataFormat === "LEGACY" && !data) {
+    return false;
   }
   if (
     (properties?.nodes || []).some((p) => panelsMap[p] && !!panelsMap[p].data)
