@@ -78,7 +78,7 @@ jobs:
           if-no-files-found: error
 
   acceptance_test:
-    name: Acceptance tests
+    name: Test
     needs: goreleaser
     strategy:
       fail-fast: false
