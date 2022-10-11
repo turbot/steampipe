@@ -678,7 +678,10 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		return nil, nil, res.Error
 	}
 	// display any initialisation warnings
-	res.ShowWarnings()
+	if len(res.Warnings) > 0 {
+		res.ShowWarnings()
+		fmt.Printf("\n")
+	}
 
 	missingPlugins := res.Updates.MissingPlugins
 

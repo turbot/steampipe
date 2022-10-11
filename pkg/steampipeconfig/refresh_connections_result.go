@@ -1,6 +1,8 @@
 package steampipeconfig
 
-import "fmt"
+import (
+	"github.com/turbot/steampipe/pkg/error_helpers"
+)
 
 // RefreshConnectionResult is a structure used to contain the result of either a RefreshConnections or a NewLocalClient operation
 type RefreshConnectionResult struct {
@@ -16,7 +18,7 @@ func (r *RefreshConnectionResult) AddWarning(warning string) {
 
 func (r *RefreshConnectionResult) ShowWarnings() {
 	for _, w := range r.Warnings {
-		fmt.Println(w)
+		error_helpers.ShowWarning(w)
 	}
 }
 
