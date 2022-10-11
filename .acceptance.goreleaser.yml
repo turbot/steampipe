@@ -1,0 +1,29 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+
+    id: "steampipe"
+    binary: "steampipe"
+archives:
+  - files:
+      - none*
+    format: zip
+    id: homebrew
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: linux
+        format: tar.gz
+
+# it is necessary to specify the name_template of the snapshot, or else the snapshot gets created with
+# two dash(-) which results in a 500 error while downloading
+snapshot:
+  name_template: "{{ .Version }}"
