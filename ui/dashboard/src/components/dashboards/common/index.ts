@@ -544,7 +544,7 @@ const foldNodesAndEdges = (
           deletedTargetEdges.categories
         );
         const deletedTargetEdgeTitleKeys = Object.keys(
-          deletedTargetEdges.categories
+          deletedTargetEdges.titles
         );
         const targetEdgeCategory =
           deletedTargetEdgeCategoryKeys.length === 1 &&
