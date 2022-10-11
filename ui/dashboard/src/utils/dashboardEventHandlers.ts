@@ -77,15 +77,15 @@ const calculateProgress = (panelsMap) => {
   const panels: PanelDefinition[] = Object.values(panelsMap || {});
   let dataPanels = 0;
   let completeDataPanels = 0;
-  // const completePanels;
   for (const panel of panels) {
     const isControl = panel.panel_type === "control";
-    const isDataPanel = has(panel, "sql");
-    if (isControl || isDataPanel) {
+    const isPendingDataPanel =
+      panel.panel_type !== "container" && panel.panel_type !== "dashboard";
+    if (isControl || isPendingDataPanel) {
       dataPanels += 1;
     }
     if (
-      (isControl || isDataPanel) &&
+      (isControl || isPendingDataPanel) &&
       (panel.status === "complete" || panel.status === "error")
     ) {
       completeDataPanels += 1;
@@ -94,7 +94,11 @@ const calculateProgress = (panelsMap) => {
   if (dataPanels === 0) {
     return 100;
   }
-  return Math.min(Math.ceil((completeDataPanels / dataPanels) * 100), 100);
+  const progress = Math.min(
+    Math.ceil((completeDataPanels / dataPanels) * 100),
+    100
+  );
+  return progress;
 };
 
 export { controlsUpdatedEventHandler, leafNodesCompleteEventHandler };
