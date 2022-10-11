@@ -373,7 +373,6 @@ func decodeQueryProviderParams(block *hcl.Block, content *hcl.BodyContent, resou
 			queryProvider.SetArgs(args)
 			queryProvider.AddRuntimeDependencies(runtimeDependencies)
 		}
-
 	}
 
 	var params []*modconfig.ParamDef

@@ -425,13 +425,6 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 		return nil, err
 	}
 
-	// TODO load resource names for dependency mods
-	//modsPath := file_paths.WorkspaceModPath(w.Path)
-	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	return workspaceResourceNames, nil
 }
 

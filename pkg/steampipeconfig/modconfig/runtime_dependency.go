@@ -39,7 +39,6 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 }
 
 func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
-
 	// TargetPropertyPath
 	if d.PropertyPath.PropertyPath == nil {
 		if other.PropertyPath.PropertyPath != nil {
