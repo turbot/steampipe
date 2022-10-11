@@ -20,6 +20,7 @@ import {
   NodeMap,
   NodesAndEdges,
 } from "./types";
+import { getNodeAndEdgeDataFormat } from "./useNodeAndEdgeData";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -1077,7 +1078,11 @@ const nodeAndEdgeResourceHasData = (
   properties: NodeAndEdgeProperties,
   panelsMap: PanelsMap
 ): boolean => {
-  if (!!data) {
+  const dataFormat = getNodeAndEdgeDataFormat(properties);
+  if (dataFormat === "LEGACY" && !!data) {
+    return false;
+  }
+  if (dataFormat === "LEGACY" && data) {
     return true;
   }
   if (
