@@ -41,6 +41,5 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # this test is added to make sure the above don't time-out
 @test "check status" {
-  run steampipe service status
-  assert_success
+  echo "Fin"
 }
