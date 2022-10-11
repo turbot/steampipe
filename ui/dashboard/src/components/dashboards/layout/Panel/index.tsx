@@ -200,7 +200,11 @@ const Panel = memo(
                   : "overflow-x-hidden"
               )}
             >
-              <PanelProgress />
+              <PanelProgress
+                className={
+                  withTitle && definition.title ? null : "rounded-t-md"
+                }
+              />
               <PlaceholderComponent
                 animate={!!children}
                 ready={ready || !!definition.error}

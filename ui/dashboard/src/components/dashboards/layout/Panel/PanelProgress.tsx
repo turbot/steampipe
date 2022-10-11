@@ -1,10 +1,11 @@
+import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive } from "../../../../types";
 import { getNodeAndEdgeDataFormat } from "../../common/useNodeAndEdgeData";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
 
-const PanelProgress = () => {
+const PanelProgress = ({ className }) => {
   const { definition } = usePanel();
   const { dataMode, panelsMap } = useDashboard();
 
@@ -53,7 +54,12 @@ const PanelProgress = () => {
   }
 
   return showProgress ? (
-    <div className="w-full h-[4px] bg-dashboard-panel print:hidden">
+    <div
+      className={classNames(
+        className,
+        "w-full h-[4px] bg-dashboard-panel print:hidden"
+      )}
+    >
       {progress < 100 && (
         <div
           className="h-full bg-dashboard"
