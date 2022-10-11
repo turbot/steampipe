@@ -139,6 +139,7 @@ jobs:
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
+        id: install-db
         continue-on-error: false
         run: |
           steampipe service start
@@ -146,6 +147,7 @@ jobs:
           steampipe service stop
 
       - name: Run Test Suite
+        if: steps.install-db.outcome == 'success'
         id: run-test-suite
         timeout-minutes: 4
         continue-on-error: true
@@ -155,6 +157,7 @@ jobs:
           steampipe service stop --force
       
       - name: Save Test Suite Logs
+        if: steps.run-test-suite.outcome == 'success'
         uses: actions/upload-artifact@v3
         with:
           name: test-logs
@@ -165,6 +168,7 @@ jobs:
       # Since the exit_code is set only when the bats test suite pass, 
       # we have added the if-conditional block 
       - name: Check Test Passed/Failed
+        if: steps.run-test-suite.outcome != 'skipped'
         continue-on-error: false
         run: |
           if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
