@@ -11,6 +11,7 @@ const PanelProgress = ({ className }) => {
 
   const showProgress = useMemo(
     () =>
+      !definition.error &&
       (definition.panel_type === "flow" ||
         definition.panel_type === "graph" ||
         definition.panel_type === "hierarchy") &&

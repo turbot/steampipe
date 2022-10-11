@@ -97,6 +97,14 @@ const Panel = memo(
     const ErrorComponent = Error;
     const PlaceholderComponent = Placeholder.component;
 
+    const hasTitlePanel =
+      withTitle &&
+      definition.title &&
+      ((definition.panel_type !== "input" &&
+        definition.panel_type !== "table") ||
+        (definition.panel_type === "table" &&
+          definition.display_type === "line"));
+
     return (
       <PanelProvider
         definition={definition}
@@ -179,12 +187,7 @@ const Panel = memo(
 
             <div
               className={classNames(
-                withTitle &&
-                  definition.title &&
-                  ((definition.panel_type !== "input" &&
-                    definition.panel_type !== "table") ||
-                    (definition.panel_type === "table" &&
-                      definition.display_type === "line"))
+                hasTitlePanel
                   ? classNames(
                       "border-t",
                       theme.name === ThemeNames.STEAMPIPE_DARK
@@ -201,15 +204,16 @@ const Panel = memo(
               )}
             >
               <PanelProgress
-                className={
-                  withTitle && definition.title ? null : "rounded-t-md"
-                }
+                className={hasTitlePanel ? null : "rounded-t-md"}
               />
               <PlaceholderComponent
                 animate={!!children}
                 ready={ready || !!definition.error}
               >
-                <ErrorComponent error={definition.error} />
+                <ErrorComponent
+                  className={hasTitlePanel ? "rounded-t-none" : null}
+                  error={definition.error}
+                />
                 <>{!definition.error ? children : null}</>
               </PlaceholderComponent>
             </div>
