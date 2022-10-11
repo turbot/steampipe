@@ -1,12 +1,5 @@
 import has from "lodash/has";
 import isEmpty from "lodash/isEmpty";
-import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
-import { DashboardRunState, PanelsMap } from "../../../types";
-import { FlowProperties, FlowType } from "../flows/types";
-import { getColumn } from "../../../utils/data";
-import { Graph, json } from "graphlib";
-import { GraphProperties, GraphType, NodeAndEdgeData } from "../graphs/types";
-import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 import {
   Category,
   CategoryMap,
@@ -20,7 +13,14 @@ import {
   NodeMap,
   NodesAndEdges,
 } from "./types";
+import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
+import { DashboardRunState, PanelsMap } from "../../../types";
+import { FlowProperties, FlowType } from "../flows/types";
+import { getColumn } from "../../../utils/data";
 import { getNodeAndEdgeDataFormat } from "./useNodeAndEdgeData";
+import { Graph, json } from "graphlib";
+import { GraphProperties, GraphType, NodeAndEdgeData } from "../graphs/types";
+import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
