@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ModResources, conn *pgx.Conn) (error, map[string]error) {
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ResourceMaps, conn *pgx.Conn) (error, map[string]error) {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -36,7 +36,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ModRe
 	return ctx.Err(), failureMap
 }
 
-func GetPreparedStatementsSQL(resourceMaps *modconfig.ModResources) map[string]string {
+func GetPreparedStatementsSQL(resourceMaps *modconfig.ResourceMaps) map[string]string {
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
 	for _, queryProvider := range resourceMaps.QueryProviders() {

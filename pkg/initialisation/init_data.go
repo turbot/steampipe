@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/export"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/viper"
@@ -25,21 +26,37 @@ type InitData struct {
 	Result    *db_common.InitResult
 
 	// used for query only
-	PreparedStatementSource *modconfig.ModResources
+	PreparedStatementSource *modconfig.ResourceMaps
 
 	ShutdownTelemetry func()
+	ExportResolver    *export.Resolver
 }
 
-func NewInitData(ctx context.Context, w *workspace.Workspace, invoker constants.Invoker) *InitData {
-	i := &InitData{
-		Workspace: w,
-		Result:    &db_common.InitResult{},
+func NewErrorInitData(err error) *InitData {
+	return &InitData{
+		Result: &db_common.InitResult{Error: err},
 	}
-	i.Init(ctx, invoker)
+}
+
+func NewInitData(w *workspace.Workspace) *InitData {
+	i := &InitData{
+		Workspace:      w,
+		Result:         &db_common.InitResult{},
+		ExportResolver: export.NewResolver(),
+	}
+
 	return i
 }
 
-func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
+func (i *InitData) RegisterExporters(exporters ...*export.SnapshotExporter) *InitData {
+	for _, e := range exporters {
+		i.ExportResolver.Register(e)
+	}
+
+	return i
+}
+
+func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *InitData) {
 	defer func() {
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
@@ -49,6 +66,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 			i.Result.Error = ctx.Err()
 		}
 	}()
+	// return ourselves
+	res = i
 
 	// initialise telemetry
 	shutdownTelemetry, err := telemetry.Init(constants.AppName)

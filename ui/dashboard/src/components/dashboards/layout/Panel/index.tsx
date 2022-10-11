@@ -1,12 +1,12 @@
 import Error from "../../Error";
+import PanelProgress from "./PanelProgress";
 import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts/types";
 import {
   BenchmarkDefinition,
   DashboardActions,
   PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+} from "../../../../types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
@@ -19,6 +19,7 @@ import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { ZoomIcon } from "../../../../constants/icons";
 
 interface PanelProps {
@@ -199,11 +200,21 @@ const Panel = memo(
                   : "overflow-x-hidden"
               )}
             >
+              <PanelProgress
+                className={
+                  withTitle && definition.title ? null : "rounded-t-md"
+                }
+              />
               <PlaceholderComponent
                 animate={!!children}
                 ready={ready || !!definition.error}
               >
-                <ErrorComponent error={definition.error} />
+                <ErrorComponent
+                  className={
+                    withTitle && definition.title ? "rounded-t-none" : null
+                  }
+                  error={definition.error}
+                />
                 <>{!definition.error ? children : null}</>
               </PlaceholderComponent>
             </div>

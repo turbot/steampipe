@@ -45,7 +45,6 @@ type Query struct {
 	UnqualifiedName string        `json:"-"`
 	Paths           []NodePath    `column:"path,jsonb" json:"-"`
 	parents         []ModTreeItem `json:"-"`
-
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -186,7 +185,7 @@ func (q *Query) GetUnqualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (q *Query) OnDecoded(*hcl.Block, ModResourcesProvider) hcl.Diagnostics {
+func (q *Query) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 

@@ -16,3 +16,6 @@ type SteampipeSnapshot struct {
 	EndTime       time.Time                `json:"end_time"`
 	Layout        *SnapshotTreeNode        `json:"layout"`
 }
+
+// IsExportSourceData implements ExportSourceData
+func (*SteampipeSnapshot) IsExportSourceData() {}

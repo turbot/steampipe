@@ -12,6 +12,7 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
+import { DashboardDataModeLive } from "../../../types";
 import {
   getIconClasses,
   getTextClasses,
@@ -225,7 +226,7 @@ const Card = (props: CardProps) => {
           renderedResults[0].card.result as string
         );
         setRenderedHref(
-          dataMode === "snapshot" && isRelative
+          dataMode !== DashboardDataModeLive && isRelative
             ? null
             : (renderedResults[0].card.result as string)
         );
@@ -316,7 +317,7 @@ const Card = (props: CardProps) => {
     </div>
   );
 
-  if (dataMode === "live" && renderedHref) {
+  if (dataMode === DashboardDataModeLive && renderedHref) {
     return (
       <ExternalLink className="" to={renderedHref}>
         {card}

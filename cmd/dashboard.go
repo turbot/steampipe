@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/export"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 	"os"
 	"strings"
@@ -63,6 +65,8 @@ The current mod is the working directory, or the directory specified by the --wo
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
+		AddStringArrayFlag(constants.ArgSourceSnapshot, "", nil, "Specify one or more snapshots to display").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -95,12 +99,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(err)
 
 		// run just this dashboard
-		snapshot, err := runSingleDashboard(dashboardCtx, dashboardName, inputs)
-		error_helpers.FailOnError(err)
-		// display the snapshot result (if needed)
-		displaySnapshot(snapshot)
-		// upload the snapshot (if needed)
-		err = uploadSnapshot(snapshot)
+		err = runSingleDashboard(dashboardCtx, dashboardName, inputs)
 		error_helpers.FailOnError(err)
 
 		// and we are done
@@ -131,7 +130,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	dashboardCtx = statushooks.DisableStatusHooks(dashboardCtx)
 
 	// load the workspace
-	initData := initDashboard(dashboardCtx, err)
+	initData := initDashboard(dashboardCtx)
 	defer initData.Cleanup(dashboardCtx)
 	error_helpers.FailOnError(initData.Result.Error)
 
@@ -151,7 +150,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	defer server.Shutdown()
 
 	// server has started - update state file/start browser, as required
-	onServerStarted(serverPort, serverListen)
+	onServerStarted(serverPort, serverListen, initData.Workspace)
 
 	// wait for API server to terminate
 	<-doneChan
@@ -228,13 +227,29 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	}
 }
 
-func initDashboard(dashboardCtx context.Context, err error) *initialisation.InitData {
-	dashboardserver.OutputWait(dashboardCtx, "Loading Workspace")
-	w, err := interactive.LoadWorkspacePromptingForVariables(dashboardCtx)
-	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
+func initDashboard(ctx context.Context) *initialisation.InitData {
+	sourceSnapshots := viper.GetStringSlice(constants.ArgSourceSnapshot)
+	if len(sourceSnapshots) > 0 {
+		for _, s := range sourceSnapshots {
+			if !helpers.FileExists(s) {
+				return initialisation.NewErrorInitData(fmt.Errorf("source snapshot' %s' does not exist", s))
+			}
+		}
+		dashboardserver.OutputWait(ctx, "Loading Source Snapshots")
+		w := workspace.NewSourceSnapshotWorkspace(sourceSnapshots)
+		// return init data containing only this workspace - do not initialise it
+		return initialisation.NewInitData(w)
+	}
+
+	dashboardserver.OutputWait(ctx, "Loading Workspace")
+	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
+	if err != nil {
+		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error()))
+	}
 
 	// initialise
-	initData := initialisation.NewInitData(dashboardCtx, w, constants.InvokerDashboard)
+	initData := getInitData(ctx, w)
+
 	// there must be a mod-file
 	if !w.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition
@@ -243,27 +258,69 @@ func initDashboard(dashboardCtx context.Context, err error) *initialisation.Init
 	return initData
 }
 
-func runSingleDashboard(ctx context.Context, dashboardName string, inputs map[string]interface{}) (*dashboardtypes.SteampipeSnapshot, error) {
+func getInitData(ctx context.Context, w *workspace.Workspace) *initialisation.InitData {
+	initData := initialisation.NewInitData(w).
+		RegisterExporters(dashboardExporters()...).
+		Init(ctx, constants.InvokerDashboard)
+	return initData
+}
+
+func dashboardExporters() []*export.SnapshotExporter {
+	return []*export.SnapshotExporter{&export.SnapshotExporter{}}
+}
+
+func runSingleDashboard(ctx context.Context, targetName string, inputs map[string]interface{}) error {
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
-	initData := initialisation.NewInitData(ctx, w, constants.InvokerDashboard)
+	// targetName must be a named resource
+	// parse the name to verify
+	if err := verifyNamedResource(targetName, w); err != nil {
+		return err
+	}
+
+	initData := getInitData(ctx, w)
+
 	// shutdown the service on exit
 	defer initData.Cleanup(ctx)
 	if err := initData.Result.Error; err != nil {
-		return nil, initData.Result.Error
+		return initData.Result.Error
 	}
 
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
 	// so a dashboard name was specified - just call GenerateSnapshot
-	snapshot, err := dashboardexecute.GenerateSnapshot(ctx, dashboardName, initData, inputs)
+	snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, initData, inputs)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	// display the snapshot result (if needed)
+	displaySnapshot(snap)
 
-	return snapshot, nil
+	// upload the snapshot (if needed)
+	err = uploadSnapshot(snap)
+	error_helpers.FailOnErrorWithMessage(err, "failed to upload snapshot")
+
+	// export the result (if needed)
+	err = exportSnapshot(initData.ExportResolver, targetName, snap)
+	error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
+
+	return nil
+}
+
+func verifyNamedResource(targetName string, w *workspace.Workspace) error {
+	parsedName, err := modconfig.ParseResourceName(targetName)
+	if err != nil {
+		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
+	}
+	if parsedName.ItemType == "" {
+		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
+	}
+	if _, found := modconfig.GetResource(w, parsedName); !found {
+		return fmt.Errorf("'%s' not found in workspace", targetName)
+	}
+	return nil
 }
 
 func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
@@ -373,18 +430,31 @@ func setExitCodeForDashboardError(err error) {
 }
 
 // execute any required actions after successful server startup
-func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType) {
+func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboardserver.ListenType, w *workspace.Workspace) {
 	if isRunningAsService() {
 		// for service mode only, save the state
 		saveDashboardState(serverPort, serverListen)
 	} else {
 		// start browser if required
 		if viper.GetBool(constants.ArgBrowser) {
-			if err := dashboardserver.OpenBrowser(fmt.Sprintf("http://localhost:%d", serverPort)); err != nil {
+			url := buildDashboardURL(serverPort, w)
+
+			if err := dashboardserver.OpenBrowser(url); err != nil {
 				log.Println("[TRACE] dashboard server started but failed to start client", err)
 			}
 		}
 	}
+}
+
+func buildDashboardURL(serverPort dashboardserver.ListenPort, w *workspace.Workspace) string {
+	url := fmt.Sprintf("http://localhost:%d", serverPort)
+	if len(w.SourceSnapshots) == 1 {
+		for snapshotName := range w.GetResourceMaps().Snapshots {
+			url += fmt.Sprintf("/%s", snapshotName)
+			break
+		}
+	}
+	return url
 }
 
 // is this dashboard server running as a service?

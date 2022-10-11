@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, cloudMetadata *steampipeconfig.CloudMetadata) ([]byte, error) {
+func buildDashboardMetadataPayload(workspaceResources *modconfig.ResourceMaps, cloudMetadata *steampipeconfig.CloudMetadata) ([]byte, error) {
 	installedMods := make(map[string]ModDashboardMetadata)
 	for _, mod := range workspaceResources.Mods {
 		// Ignore current mod
@@ -29,16 +29,18 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ModResources, c
 	payload := DashboardMetadataPayload{
 		Action: "dashboard_metadata",
 		Metadata: DashboardMetadata{
-			Mod: ModDashboardMetadata{
-				Title:     typeHelpers.SafeString(workspaceResources.Mod.Title),
-				FullName:  workspaceResources.Mod.FullName,
-				ShortName: workspaceResources.Mod.ShortName,
-			},
 			InstalledMods: installedMods,
 			Telemetry:     viper.GetString(constants.ArgTelemetry),
 		},
 	}
 
+	if mod := workspaceResources.Mod; mod != nil {
+		payload.Metadata.Mod = &ModDashboardMetadata{
+			Title:     typeHelpers.SafeString(mod.Title),
+			FullName:  mod.FullName,
+			ShortName: mod.ShortName,
+		}
+	}
 	// if telemetry is enabled, send cloud metadata
 	if payload.Metadata.Telemetry != constants.TelemetryNone {
 		payload.Metadata.Cloud = cloudMetadata
@@ -71,71 +73,74 @@ func addBenchmarkChildren(benchmark *modconfig.Benchmark, recordTrunk bool, trun
 	return children
 }
 
-func buildAvailableDashboardsPayload(workspaceResources *modconfig.ModResources) ([]byte, error) {
-	// build a map of the dashboards provided by each mod
-	dashboards := make(map[string]ModAvailableDashboard)
-
-	// iterate over the dashboards for the top level mod - this will include the dashboards from dependency mods
-	for _, dashboard := range workspaceResources.Mod.ResourceMaps.Dashboards {
-		mod := dashboard.Mod
-		// add this dashboard
-		dashboards[dashboard.FullName] = ModAvailableDashboard{
-			Title:       typeHelpers.SafeString(dashboard.Title),
-			FullName:    dashboard.FullName,
-			ShortName:   dashboard.ShortName,
-			Tags:        dashboard.Tags,
-			ModFullName: mod.FullName,
-		}
-	}
-
-	benchmarks := make(map[string]ModAvailableBenchmark)
-	benchmarkTrunks := make(map[string][][]string)
-
-	for _, benchmark := range workspaceResources.Mod.ResourceMaps.Benchmarks {
-		if benchmark.IsAnonymous() {
-			continue
-		}
-
-		// Find any benchmarks who have a parent that is a mod - we consider these top-level
-		isTopLevel := false
-		for _, parent := range benchmark.Parents {
-			switch parent.(type) {
-			case *modconfig.Mod:
-				isTopLevel = true
-			}
-		}
-
-		mod := benchmark.Mod
-		trunk := []string{benchmark.FullName}
-
-		if isTopLevel {
-			benchmarkTrunks[benchmark.FullName] = [][]string{trunk}
-		}
-
-		availableBenchmark := ModAvailableBenchmark{
-			Title:       benchmark.GetTitle(),
-			FullName:    benchmark.FullName,
-			ShortName:   benchmark.ShortName,
-			Tags:        benchmark.Tags,
-			IsTopLevel:  isTopLevel,
-			Children:    addBenchmarkChildren(benchmark, isTopLevel, trunk, benchmarkTrunks),
-			ModFullName: mod.FullName,
-		}
-
-		benchmarks[benchmark.FullName] = availableBenchmark
-	}
-	for benchmarkName, trunks := range benchmarkTrunks {
-		if foundBenchmark, ok := benchmarks[benchmarkName]; ok {
-			foundBenchmark.Trunks = trunks
-			benchmarks[benchmarkName] = foundBenchmark
-		}
-	}
+func buildAvailableDashboardsPayload(workspaceResources *modconfig.ResourceMaps) ([]byte, error) {
 
 	payload := AvailableDashboardsPayload{
 		Action:     "available_dashboards",
-		Dashboards: dashboards,
-		Benchmarks: benchmarks,
+		Dashboards: make(map[string]ModAvailableDashboard),
+		Benchmarks: make(map[string]ModAvailableBenchmark),
+		Snapshots:  workspaceResources.Snapshots,
 	}
+
+	// if workspace resources has a mod, populate dashboards and benchmarks
+	if workspaceResources.Mod != nil {
+		// build a map of the dashboards provided by each mod
+
+		// iterate over the dashboards for the top level mod - this will include the dashboards from dependency mods
+		for _, dashboard := range workspaceResources.Mod.ResourceMaps.Dashboards {
+			mod := dashboard.Mod
+			// add this dashboard
+			payload.Dashboards[dashboard.FullName] = ModAvailableDashboard{
+				Title:       typeHelpers.SafeString(dashboard.Title),
+				FullName:    dashboard.FullName,
+				ShortName:   dashboard.ShortName,
+				Tags:        dashboard.Tags,
+				ModFullName: mod.FullName,
+			}
+		}
+
+		benchmarkTrunks := make(map[string][][]string)
+		for _, benchmark := range workspaceResources.Mod.ResourceMaps.Benchmarks {
+			if benchmark.IsAnonymous() {
+				continue
+			}
+
+			// Find any benchmarks who have a parent that is a mod - we consider these top-level
+			isTopLevel := false
+			for _, parent := range benchmark.Parents {
+				switch parent.(type) {
+				case *modconfig.Mod:
+					isTopLevel = true
+				}
+			}
+
+			mod := benchmark.Mod
+			trunk := []string{benchmark.FullName}
+
+			if isTopLevel {
+				benchmarkTrunks[benchmark.FullName] = [][]string{trunk}
+			}
+
+			availableBenchmark := ModAvailableBenchmark{
+				Title:       benchmark.GetTitle(),
+				FullName:    benchmark.FullName,
+				ShortName:   benchmark.ShortName,
+				Tags:        benchmark.Tags,
+				IsTopLevel:  isTopLevel,
+				Children:    addBenchmarkChildren(benchmark, isTopLevel, trunk, benchmarkTrunks),
+				ModFullName: mod.FullName,
+			}
+
+			payload.Benchmarks[benchmark.FullName] = availableBenchmark
+		}
+		for benchmarkName, trunks := range benchmarkTrunks {
+			if foundBenchmark, ok := payload.Benchmarks[benchmarkName]; ok {
+				foundBenchmark.Trunks = trunks
+				payload.Benchmarks[benchmarkName] = foundBenchmark
+			}
+		}
+	}
+
 	return json.Marshal(payload)
 }
 
@@ -203,6 +208,15 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		Action:        "execution_complete",
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		ExecutionId:   event.ExecutionId,
+		Snapshot:      snap,
+	}
+	return json.Marshal(payload)
+}
+
+func buildDisplaySnapshotPayload(snap map[string]any) ([]byte, error) {
+	payload := &DisplaySnapshotPayload{
+		Action:        "execution_complete",
+		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		Snapshot:      snap,
 	}
 	return json.Marshal(payload)

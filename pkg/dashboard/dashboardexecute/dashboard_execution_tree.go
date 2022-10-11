@@ -63,6 +63,9 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 	if err != nil {
 		return nil, err
 	}
+	if parsedName.ItemType == "" {
+		return nil, fmt.Errorf("root item is not valid named resource")
+	}
 	// if no mod is specified, assume the workspace mod
 	if parsedName.Mod == "" {
 		parsedName.Mod = e.workspace.Mod.ShortName
@@ -106,7 +109,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		}
 		return NewDashboardRun(dashboard, e, e)
 	default:
-		return nil, fmt.Errorf("reporting type %s cannot be executed directly - only reports may be executed", parsedName.ItemType)
+		return nil, fmt.Errorf("reporting type %s cannot be executed as dashboard", parsedName.ItemType)
 	}
 }
 

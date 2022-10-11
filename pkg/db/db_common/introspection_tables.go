@@ -20,7 +20,7 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn) error {
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
@@ -36,7 +36,7 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	}
 }
 
-func createModIntrospectionTable(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn, commonColumnSql []string) error {
+func createModIntrospectionTable(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -52,7 +52,7 @@ func createModIntrospectionTable(ctx context.Context, workspaceResources *modcon
 	return ctx.Err()
 }
 
-func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn, commonColumnSql []string) error {
+func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -93,7 +93,7 @@ func getCreateTablesSql(commonColumnSql []string) string {
 	return strings.Join(createSql, "\n")
 }
 
-func getTableInsertSql(workspaceResources *modconfig.ModResources) string {
+func getTableInsertSql(workspaceResources *modconfig.ResourceMaps) string {
 	var insertSql []string
 
 	for _, control := range workspaceResources.Controls {
@@ -167,7 +167,7 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 	return tableSql
 }
 
-func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ModResources, conn *pgx.Conn, commonColumnSql []string) error {
+func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -193,7 +193,7 @@ func getCreateControlTablesSql(commonColumnSql []string) string {
 	return strings.Join(createSql, "\n")
 }
 
-func getControlTableInsertSql(workspaceResources *modconfig.ModResources) string {
+func getControlTableInsertSql(workspaceResources *modconfig.ResourceMaps) string {
 	var insertSql []string
 
 	for _, control := range workspaceResources.Controls {

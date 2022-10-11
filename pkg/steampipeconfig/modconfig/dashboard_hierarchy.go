@@ -82,7 +82,7 @@ func (h *DashboardHierarchy) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	h.setBaseProperties(resourceMapProvider)
 
 	// populate nodes and edges
@@ -291,11 +291,20 @@ func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
 }
 
 // AddCategory implements EdgeAndNodeProvider
-func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) {
-	h.Categories[category.ShortName] = category
+func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) hcl.Diagnostics {
+	categoryName := category.UnqualifiedName
+	if _, ok := h.Categories[categoryName]; ok {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has duplicate category %s", h.Name(), categoryName),
+			Subject:  category.GetDeclRange(),
+		}}
+	}
+	h.Categories[categoryName] = category
+	return nil
 }
 
-func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

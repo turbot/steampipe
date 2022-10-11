@@ -1,35 +1,27 @@
 import isEmpty from "lodash/isEmpty";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import {
-  DashboardActionType,
   DashboardDataMode,
+  DashboardDataModeCLISnapshot,
+  DashboardDataModeLive,
   IActions,
-} from "./useDashboard";
+  ReceivedSocketMessagePayload,
+} from "../types";
 import { useCallback, useEffect, useRef } from "react";
-
-export interface EventHooks {
-  [type: DashboardActionType]: (event: any) => Promise<void>;
-}
 
 export const SocketActions: IActions = {
   CLEAR_DASHBOARD: "clear_dashboard",
   GET_AVAILABLE_DASHBOARDS: "get_available_dashboards",
   GET_DASHBOARD_METADATA: "get_dashboard_metadata",
   SELECT_DASHBOARD: "select_dashboard",
+  SELECT_SNAPSHOT: "select_snapshot",
   INPUT_CHANGED: "input_changed",
 };
-
-export type SocketURLFactory = () => Promise<string>;
-
-export interface ReceivedSocketMessagePayload {
-  action: string;
-  [key: string]: any;
-}
 
 const useDashboardWebSocket = (
   dataMode: DashboardDataMode,
   dispatch: (action: any) => void,
-  eventHooks: {} | undefined,
+  eventHandler: (event: ReceivedSocketMessagePayload) => void,
   socketUrlFactory?: () => Promise<string>
 ) => {
   const didUnmount = useRef(false);
@@ -66,24 +58,20 @@ const useDashboardWebSocket = (
       reconnectAttempts: 10,
       reconnectInterval: 3000,
     },
-    dataMode === "live"
+    dataMode === DashboardDataModeLive ||
+      dataMode === DashboardDataModeCLISnapshot
   );
 
   useEffect(() => {
     if (!lastJsonMessage || isEmpty(lastJsonMessage)) {
       return;
     }
-    dispatch({
-      type: (lastJsonMessage as ReceivedSocketMessagePayload).action,
-      ...lastJsonMessage,
-    });
-    const hookHandler =
-      eventHooks &&
-      eventHooks[(lastJsonMessage as ReceivedSocketMessagePayload).action];
-    if (hookHandler) {
-      hookHandler(lastJsonMessage);
+    const typedEvent = lastJsonMessage as ReceivedSocketMessagePayload;
+    if (!typedEvent.action) {
+      return;
     }
-  }, [dispatch, eventHooks, lastJsonMessage]);
+    eventHandler(typedEvent);
+  }, [eventHandler, lastJsonMessage]);
 
   useEffect(() => {
     if (readyState !== ReadyState.OPEN || !sendJsonMessage) {
@@ -101,7 +89,6 @@ const useDashboardWebSocket = (
 
   return {
     ready: readyState === ReadyState.OPEN,
-    lastMessage: lastJsonMessage,
     send: sendJsonMessage,
   };
 };

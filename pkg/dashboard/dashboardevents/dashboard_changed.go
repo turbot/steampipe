@@ -9,6 +9,7 @@ type DashboardChanged struct {
 	ChangedContainers  []*modconfig.DashboardTreeItemDiffs
 	ChangedControls    []*modconfig.DashboardTreeItemDiffs
 	ChangedBenchmarks  []*modconfig.DashboardTreeItemDiffs
+	ChangedCategories  []*modconfig.DashboardTreeItemDiffs
 	ChangedCards       []*modconfig.DashboardTreeItemDiffs
 	ChangedCharts      []*modconfig.DashboardTreeItemDiffs
 	ChangedFlows       []*modconfig.DashboardTreeItemDiffs
@@ -24,6 +25,7 @@ type DashboardChanged struct {
 	NewControls    []*modconfig.Control
 	NewBenchmarks  []*modconfig.Benchmark
 	NewCards       []*modconfig.DashboardCard
+	NewCategories  []*modconfig.DashboardCategory
 	NewCharts      []*modconfig.DashboardChart
 	NewFlows       []*modconfig.DashboardFlow
 	NewGraphs      []*modconfig.DashboardGraph
@@ -38,6 +40,7 @@ type DashboardChanged struct {
 	DeletedControls    []*modconfig.Control
 	DeletedBenchmarks  []*modconfig.Benchmark
 	DeletedCards       []*modconfig.DashboardCard
+	DeletedCategories  []*modconfig.DashboardCategory
 	DeletedCharts      []*modconfig.DashboardChart
 	DeletedFlows       []*modconfig.DashboardFlow
 	DeletedGraphs      []*modconfig.DashboardGraph
@@ -57,6 +60,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.ChangedBenchmarks)+
 		len(c.ChangedControls)+
 		len(c.ChangedCards)+
+		len(c.ChangedCategories)+
 		len(c.ChangedCharts)+
 		len(c.ChangedFlows)+
 		len(c.ChangedGraphs)+
@@ -70,6 +74,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.NewBenchmarks)+
 		len(c.NewControls)+
 		len(c.NewCards)+
+		len(c.NewCategories)+
 		len(c.NewCharts)+
 		len(c.NewFlows)+
 		len(c.NewGraphs)+
@@ -83,6 +88,7 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.DeletedBenchmarks)+
 		len(c.DeletedControls)+
 		len(c.DeletedCards)+
+		len(c.DeletedCategories)+
 		len(c.DeletedCharts)+
 		len(c.DeletedFlows)+
 		len(c.DeletedGraphs)+
@@ -110,6 +116,11 @@ func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig
 		}
 	}
 	for _, r := range c.ChangedCards {
+		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.ChangedCategories {
 		if continueWalking, err := resourceFunc(r.Item); err != nil || !continueWalking {
 			return err
 		}
@@ -174,6 +185,11 @@ func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig
 			return err
 		}
 	}
+	for _, r := range c.NewCategories {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
 	for _, r := range c.NewCharts {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
@@ -225,6 +241,11 @@ func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig
 		}
 	}
 	for _, r := range c.DeletedCards {
+		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
+			return err
+		}
+	}
+	for _, r := range c.DeletedCategories {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -316,6 +337,10 @@ func (c *DashboardChanged) AddChanged(item modconfig.ModTreeItem) {
 	case *modconfig.DashboardCard:
 		if !c.diffsContain(c.ChangedCards, item) {
 			c.ChangedCards = append(c.ChangedCards, diff)
+		}
+	case *modconfig.DashboardCategory:
+		if !c.diffsContain(c.ChangedCategories, item) {
+			c.ChangedCategories = append(c.ChangedCategories, diff)
 		}
 	case *modconfig.DashboardChart:
 		if !c.diffsContain(c.ChangedCharts, item) {

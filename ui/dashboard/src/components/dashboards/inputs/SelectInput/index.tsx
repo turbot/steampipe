@@ -1,6 +1,6 @@
 import Select from "react-select";
 import useSelectInputStyles from "../common/useSelectInputStyles";
-import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
+import { DashboardActions, DashboardDataModeLive } from "../../../../types";
 import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../types";
 import {
@@ -8,6 +8,7 @@ import {
   OptionWithTags,
   SingleValueWithTags,
 } from "../common/Common";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
 export interface SelectOption {
@@ -203,7 +204,9 @@ const SelectInput = ({
         }}
         menuPortalTarget={document.body}
         inputId={`${name}.input`}
-        isDisabled={(!properties.options && !data) || dataMode === "snapshot"}
+        isDisabled={
+          (!properties.options && !data) || dataMode !== DashboardDataModeLive
+        }
         isLoading={!properties.options && !data}
         isClearable={!!properties.placeholder}
         isRtl={false}

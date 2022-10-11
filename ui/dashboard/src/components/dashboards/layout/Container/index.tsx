@@ -1,12 +1,9 @@
 import Children from "../common/Children";
 import LayoutPanel from "../common/LayoutPanel";
 import { classNames } from "../../../../utils/styles";
-import {
-  ContainerDefinition,
-  DashboardActions,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import { ContainerDefinition, DashboardActions } from "../../../../types";
 import { registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useState } from "react";
 import { ZoomIcon } from "../../../../constants/icons";
 

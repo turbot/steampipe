@@ -104,7 +104,7 @@ func (t *DashboardTable) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	t.setBaseProperties(resourceMapProvider)
 	// populate columns map
 	if len(t.ColumnList) > 0 {
@@ -286,7 +286,7 @@ func (t *DashboardTable) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) 
 	return t.getPreparedStatementExecuteSQL(t, runtimeArgs)
 }
 
-func (t *DashboardTable) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

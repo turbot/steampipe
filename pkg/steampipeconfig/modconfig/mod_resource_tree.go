@@ -96,7 +96,7 @@ func checkForDuplicate(existing, new HclResource) hcl.Diagnostics {
 	return hcl.Diagnostics{&hcl.Diagnostic{
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("Mod defines more than one resource named '%s'", new.Name()),
-		Subject:  new.GetDeclRange(),
+		Detail:   fmt.Sprintf("\n- %s\n- %s", existing.GetDeclRange(), new.GetDeclRange()),
 	}}
 }
 

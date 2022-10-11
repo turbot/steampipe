@@ -2,11 +2,9 @@ package modconfig
 
 import (
 	"fmt"
-
-	"github.com/turbot/steampipe/pkg/constants"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -84,7 +82,7 @@ func (g *DashboardGraph) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	g.setBaseProperties(resourceMapProvider)
 
 	// populate nodes and edges
@@ -297,11 +295,20 @@ func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
 }
 
 // AddCategory implements EdgeAndNodeProvider
-func (g *DashboardGraph) AddCategory(category *DashboardCategory) {
-	g.Categories[category.ShortName] = category
+func (g *DashboardGraph) AddCategory(category *DashboardCategory) hcl.Diagnostics {
+	categoryName := category.UnqualifiedName
+	if _, ok := g.Categories[categoryName]; ok {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has duplicate category %s", g.Name(), categoryName),
+			Subject:  category.GetDeclRange(),
+		}}
+	}
+	g.Categories[categoryName] = category
+	return nil
 }
 
-func (g *DashboardGraph) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

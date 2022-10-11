@@ -81,23 +81,13 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	// determine whether we need to execute this node or its children
 	r.setStatus()
 
-	// if this node has runtime dependencies, create runtime depdency instances which we use to resolve the values
-	// only QueryProvider resources support runtime dependencies
-	queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider)
-	if ok {
-		runtimeDependencies := queryProvider.GetRuntimeDependencies()
-		for name, dep := range runtimeDependencies {
-			r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, executionTree)
-		}
-
-		// if the node has no runtime dependencies, resolve the sql
-		if len(r.runtimeDependencies) == 0 {
-			if err := r.resolveSQL(); err != nil {
-				return nil, err
-			}
+	r.addRuntimeDependencies()
+	// if the node has no runtime dependencies, resolve the sql
+	if len(r.runtimeDependencies) == 0 {
+		if err := r.resolveSQL(); err != nil {
+			return nil, err
 		}
 	}
-
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 
@@ -107,6 +97,27 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		return r.createChildRuns(children, executionTree)
 	}
 	return r, nil
+}
+
+// if this node has runtime dependencies, create runtime dependency instances which we use to resolve the values
+func (r *LeafRun) addRuntimeDependencies() {
+	// only QueryProvider resources support runtime dependencies
+	queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider)
+	if !ok {
+		return
+	}
+	runtimeDependencies := queryProvider.GetRuntimeDependencies()
+	for name, dep := range runtimeDependencies {
+		r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, r.executionTree)
+	}
+	// if the parent is a leaf run, we must be a node or an edge, inherit our parent runtime dependencies
+	if parentLeafRun, ok := r.parent.(*LeafRun); ok {
+		for name, dep := range parentLeafRun.runtimeDependencies {
+			if _, ok := r.runtimeDependencies[name]; !ok {
+				r.runtimeDependencies[name] = dep
+			}
+		}
+	}
 }
 
 func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) (*LeafRun, error) {
@@ -402,7 +413,7 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 		// fall through to recheck ChildrenComplete
 	}
 
-	log.Printf("[WARN] run %s ALL children complete", r.Name)
+	log.Printf("[TRACE] run %s ALL children complete", r.Name)
 	// so all children have completed - check for errors
 	err := error_helpers.CombineErrors(errors...)
 	if err == nil {

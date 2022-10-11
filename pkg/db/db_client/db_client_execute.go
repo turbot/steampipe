@@ -96,7 +96,7 @@ func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Resu
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
 	if query == "" {
-		return queryresult.NewQueryResult(nil), nil
+		return queryresult.NewResult(nil), nil
 	}
 
 	// fail-safes
@@ -136,7 +136,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	colDefs := fieldDescriptionsToColumns(rows.FieldDescriptions(), session.Connection.Conn())
 
-	result := queryresult.NewQueryResult(colDefs)
+	result := queryresult.NewResult(colDefs)
 
 	// read the rows in a go routine
 	go func() {

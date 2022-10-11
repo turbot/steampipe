@@ -23,7 +23,7 @@ type HclResource interface {
 	Name() string
 	GetUnqualifiedName() string
 	CtyValue() (cty.Value, error)
-	OnDecoded(*hcl.Block, ModResourcesProvider) hcl.Diagnostics
+	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
 	AddReference(ref *ResourceReference)
 	GetReferences() []*ResourceReference
 	GetDeclRange() *hcl.Range
@@ -89,8 +89,8 @@ type DashboardLeafNode interface {
 	GetMetadata() *ResourceMetadata
 	GetChildren() []ModTreeItem
 }
-type ModResourcesProvider interface {
-	GetResourceMaps() *ModResources
+type ResourceMapsProvider interface {
+	GetResourceMaps() *ResourceMaps
 }
 
 // EdgeAndNodeProvider must be implemented by any dashboard leaf node which supports edges and nodes
@@ -101,5 +101,5 @@ type EdgeAndNodeProvider interface {
 	SetEdges(DashboardEdgeList)
 	GetNodes() DashboardNodeList
 	SetNodes(DashboardNodeList)
-	AddCategory(category *DashboardCategory)
+	AddCategory(category *DashboardCategory) hcl.Diagnostics
 }

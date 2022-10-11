@@ -1,19 +1,19 @@
 import get from "lodash/get";
 import sortBy from "lodash/sortBy";
+import CallToActions from "../CallToActions";
+import LoadingIndicator from "../dashboards/LoadingIndicator";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
   DashboardAction,
   DashboardActions,
   ModDashboardMetadata,
-  useDashboard,
-} from "../../hooks/useDashboard";
-import CallToActions from "../CallToActions";
-import LoadingIndicator from "../dashboards/LoadingIndicator";
+} from "../../types";
 import { classNames } from "../../utils/styles";
 import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
 import { stringToColour } from "../../utils/color";
+import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
 interface DashboardListSection {
@@ -140,7 +140,8 @@ const Section = ({
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            {dashboard.type === "dashboard" && <TitlePart part={dashboard} />}
+            {(dashboard.type === "dashboard" ||
+              dashboard.type === "snapshot") && <TitlePart part={dashboard} />}
             {dashboard.type === "benchmark" && (
               <BenchmarkTitle benchmark={dashboard} searchValue={searchValue} />
             )}

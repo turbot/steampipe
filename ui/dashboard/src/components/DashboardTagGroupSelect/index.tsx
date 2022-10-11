@@ -1,9 +1,10 @@
 import sortBy from "lodash/sortBy";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { classNames } from "../../utils/styles";
-import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
+import { DashboardActions } from "../../types";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
+import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
 const DashboardTagGroupSelect = () => {

@@ -106,7 +106,7 @@ func (i *DashboardInput) Name() string {
 }
 
 // OnDecoded implements HclResource
-func (i *DashboardInput) OnDecoded(block *hcl.Block, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func (i *DashboardInput) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	i.setBaseProperties(resourceMapProvider)
 	return nil
 }
@@ -311,7 +311,7 @@ func (i *DashboardInput) DependsOnInput(changedInputName string) bool {
 	return false
 }
 
-func (i *DashboardInput) setBaseProperties(resourceMapProvider ModResourcesProvider) {
+func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)

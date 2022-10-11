@@ -13,6 +13,7 @@ const (
 	JsonExtension          = ".json"
 	CsvExtension           = ".csv"
 	TextExtension          = ".txt"
+	SnapshotExtension      = ".sps"
 )
 
 var YamlExtensions = []string{".yml", ".yaml"}

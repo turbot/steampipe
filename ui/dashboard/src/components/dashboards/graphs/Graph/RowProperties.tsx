@@ -2,6 +2,8 @@ import isEmpty from "lodash/isEmpty";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import { CategoryFields, KeyValuePairs } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
+import { DashboardDataModeLive } from "../../../../types";
+import { ErrorIcon } from "../../../../constants/icons";
 import { isRelativeUrl } from "../../../../utils/url";
 import {
   renderInterpolatedTemplates,
@@ -9,7 +11,6 @@ import {
 } from "../../../../utils/template";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
-import { ErrorIcon } from "../../../../constants/icons";
 
 interface RowPropertiesProps {
   fields: CategoryFields | null;
@@ -30,7 +31,8 @@ const RowPropertyItemValue = ({
   wrap,
 }: RowPropertyItemProps) => {
   const {
-    components: { dataMode, ExternalLink },
+    components: { ExternalLink },
+    dataMode,
   } = useDashboard();
   const [href, setHref] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ const RowPropertyItemValue = ({
       // We only want to render the HREF if it's live, or it's snapshot and absolute
       const isRelative = isRelativeUrl(renderedTemplateForField.result);
       setHref(
-        dataMode === "snapshot" && isRelative
+        dataMode !== DashboardDataModeLive && isRelative
           ? null
           : renderedTemplateForField.result
       );

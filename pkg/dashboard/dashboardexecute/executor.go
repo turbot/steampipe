@@ -2,7 +2,10 @@ package dashboardexecute
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
+	"os"
 	"sync"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -58,6 +61,35 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	go executionTree.Execute(ctx)
 
 	return nil
+}
+
+func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapshotName string, w *workspace.Workspace) (map[string]any, error) {
+	// find snapshot path in workspace
+	snapshotPath, ok := w.GetResourceMaps().Snapshots[snapshotName]
+	if !ok {
+		return nil, fmt.Errorf("snapshot %s not found in workspace", snapshotName)
+	}
+
+	if !helpers.FileExists(snapshotPath) {
+		return nil, fmt.Errorf("snapshot %s not does not exist", snapshotPath)
+	}
+
+	snapshotContent, err := os.ReadFile(snapshotPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// deserialize the snapshot as an interface map
+	// we cannot deserialize into a SteampipeSnapshot struct
+	// (without custom derserialisation code) as the Panels property is an interface
+	snap := map[string]any{}
+
+	err = json.Unmarshal(snapshotContent, &snap)
+	if err != nil {
+		return nil, err
+	}
+
+	return snap, nil
 }
 
 func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string, inputs map[string]interface{}, changedInput string) error {

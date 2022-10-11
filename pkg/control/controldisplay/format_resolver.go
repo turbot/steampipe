@@ -44,7 +44,16 @@ func (r *FormatResolver) GetFormatter(arg string) (Formatter, error) {
 
 func (r *FormatResolver) GetFormatterByExtension(filename string) (Formatter, error) {
 	// so we failed to exactly match an existing format or template name
-	// instead, treat the arg as a filename and try to infer the template from the extension
+	// instead, treat the arg as a filename and try to infer the formatter from the extension
+
+	extension := filepath.Ext(filename)
+	// first try the defined formatters
+	for _, formatter := range r.outputFormatters {
+		if formatter.FileExtension() == extension {
+			return formatter, nil
+		}
+	}
+
 	// try to find the target template by the given filename
 	matchedTemplate, err := r.findTemplateByExtension(filename)
 	if err != nil {

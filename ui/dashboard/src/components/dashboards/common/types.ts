@@ -42,6 +42,7 @@ export interface CategoryFold {
 }
 
 export interface Category {
+  name?: string;
   color?: ColorOverride;
   fields?: CategoryFields;
   fold?: CategoryFold;

@@ -34,12 +34,17 @@ type Workspace struct {
 	Mods map[string]*modconfig.Mod
 	// the input variables used in the parse
 	VariableValues map[string]string
+	CloudMetadata  *steampipeconfig.CloudMetadata
 
-	CloudMetadata *steampipeconfig.CloudMetadata
-	watcher       *utils.FileWatcher
-	loadLock      sync.Mutex
-	exclusions    []string
-	modFilePath   string
+	// source snapshot paths
+	// if this is set, no other mod resources are loaded and
+	// the ResourceMaps returned by GetModResources will contain only the snapshots
+	SourceSnapshots []string
+
+	watcher     *utils.FileWatcher
+	loadLock    sync.Mutex
+	exclusions  []string
+	modFilePath string
 	// should we load/watch files recursively
 	listFlag                filehelpers.ListFlag
 	fileWatcherErrorHandler func(context.Context, error)
@@ -73,6 +78,15 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 
 	// return context error so calling code can handle cancellations
 	return workspace, nil
+}
+
+// NewSourceSnapshotWorkspace creates a Workspace which contains ONLY source snapshoyt paths
+func NewSourceSnapshotWorkspace(sourceSnapshots []string) *Workspace {
+	return &Workspace{
+		SourceSnapshots: sourceSnapshots,
+		// empty mod to avoid referencing crashes
+		Mod: &modconfig.Mod{},
+	}
 }
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
@@ -191,6 +205,29 @@ func (w *Workspace) Close() {
 
 func (w *Workspace) ModfileExists() bool {
 	return len(w.modFilePath) > 0
+}
+
+func (w *Workspace) HandlePreparedStatementFailures(failures map[string]error) {
+	// replace the map of failures with the current map
+	w.preparedStatementFailures = make(map[string]*steampipeconfig.PreparedStatementFailure)
+	for queryName, err := range failures {
+		if query, ok := w.GetQuery(queryName); ok {
+			w.preparedStatementFailures[queryName] = &steampipeconfig.PreparedStatementFailure{
+				Query: query,
+				Error: err,
+			}
+		}
+	}
+}
+
+// GetPreparedStatementCreationFailure looks for a prepared statement error for the given query and if found,
+// returns the query and the prepared statement creation error (if any)
+func (w *Workspace) GetPreparedStatementCreationFailure(queryName string) *steampipeconfig.PreparedStatementFailure {
+	return w.preparedStatementFailures[queryName]
+}
+
+func (w *Workspace) GetPreparedStatementFailures() map[string]*steampipeconfig.PreparedStatementFailure {
+	return w.preparedStatementFailures
 }
 
 // check  whether the workspace contains a modfile
@@ -388,13 +425,6 @@ func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, 
 		return nil, err
 	}
 
-	// TODO load resource names for dependency mods
-	//modsPath := file_paths.WorkspaceModPath(w.Path)
-	//dependencyResourceNames, err := w.loadModDependencyResourceNames(modsPath)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	return workspaceResourceNames, nil
 }
 
@@ -405,27 +435,4 @@ func (w *Workspace) verifyResourceRuntimeDependencies() error {
 		}
 	}
 	return nil
-}
-
-func (w *Workspace) HandlePreparedStatementFailures(failures map[string]error) {
-	// replace the map of failures with the current map
-	w.preparedStatementFailures = make(map[string]*steampipeconfig.PreparedStatementFailure)
-	for queryName, err := range failures {
-		if query, ok := w.GetQuery(queryName); ok {
-			w.preparedStatementFailures[queryName] = &steampipeconfig.PreparedStatementFailure{
-				Query: query,
-				Error: err,
-			}
-		}
-	}
-}
-
-// GetPreparedStatementCreationFailure looks for a prepared statement error for the given query and if found,
-// returns the query and the prepared statement creation error (if any)
-func (w *Workspace) GetPreparedStatementCreationFailure(queryName string) *steampipeconfig.PreparedStatementFailure {
-	return w.preparedStatementFailures[queryName]
-}
-
-func (w *Workspace) GetPreparedStatementFailures() map[string]*steampipeconfig.PreparedStatementFailure {
-	return w.preparedStatementFailures
 }

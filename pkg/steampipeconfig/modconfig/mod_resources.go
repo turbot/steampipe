@@ -1,13 +1,15 @@
 package modconfig
 
 import (
+	"fmt"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
-// ModResources is a struct containing maps of all mod resource types
+// ResourceMaps is a struct containing maps of all mod resource types
 // This is provided to avoid db needing to reference workspace package
-type ModResources struct {
+type ResourceMaps struct {
 	// the parent mod
 	Mod *Mod
 
@@ -35,13 +37,27 @@ type ModResources struct {
 	LocalBenchmarks       map[string]*Benchmark
 	Mods                  map[string]*Mod
 	Queries               map[string]*Query
-	Variables             map[string]*Variable
 	References            map[string]*ResourceReference
+	// map of snapshot paths, keyed by snapshot name
+	Snapshots map[string]string
+	Variables map[string]*Variable
 }
 
-func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
-	return &ModResources{
-		Mod:                   mod,
+func NewModResources(mod *Mod) *ResourceMaps {
+	res := emptyModResources()
+	res.Mod = mod
+	res.Mods[mod.Name()] = mod
+	return res
+}
+
+func NewSourceSnapshotModResources(snapshotPaths []string) *ResourceMaps {
+	res := emptyModResources()
+	res.AddSnapshots(snapshotPaths)
+	return res
+}
+
+func emptyModResources() *ResourceMaps {
+	return &ResourceMaps{
 		Controls:              make(map[string]*Control),
 		Benchmarks:            make(map[string]*Benchmark),
 		Dashboards:            make(map[string]*Dashboard),
@@ -63,22 +79,26 @@ func NewWorkspaceResourceMaps(mod *Mod) *ModResources {
 		LocalQueries:          make(map[string]*Query),
 		LocalControls:         make(map[string]*Control),
 		LocalBenchmarks:       make(map[string]*Benchmark),
-		Mods:                  map[string]*Mod{mod.Name(): mod},
+		Mods:                  make(map[string]*Mod),
 		Queries:               make(map[string]*Query),
 		References:            make(map[string]*ResourceReference),
+		Snapshots:             make(map[string]string),
 		Variables:             make(map[string]*Variable),
 	}
 }
 
-func CreateWorkspaceResourceMapForQueries(queryProviders []QueryProvider, mod *Mod) *ModResources {
-	res := NewWorkspaceResourceMaps(mod)
+// ModResourcesForQueries creates a ResourceMaps object containing just the specified queries
+// This is used to just create necessary prepared statements when executing batch queries
+func ModResourcesForQueries(queryProviders []QueryProvider, mod *Mod) *ResourceMaps {
+	res := NewModResources(mod)
 	for _, p := range queryProviders {
 		res.addControlOrQuery(p)
 	}
 	return res
 }
 
-func (m *ModResources) QueryProviders() []QueryProvider {
+// QueryProviders returns a slice of all QueryProviders
+func (m *ResourceMaps) QueryProviders() []QueryProvider {
 	res := make([]QueryProvider, m.queryProviderCount())
 	idx := 0
 	f := func(item HclResource) (bool, error) {
@@ -94,7 +114,7 @@ func (m *ModResources) QueryProviders() []QueryProvider {
 	return res
 }
 
-func (m *ModResources) Equals(other *ModResources) bool {
+func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 	//TODO use cmp.Equals or similar
 	if other == nil {
 		return false
@@ -314,6 +334,13 @@ func (m *ModResources) Equals(other *ModResources) bool {
 			return false
 		}
 	}
+	for name, Categorys := range m.DashboardCategories {
+		if otherCategory, ok := other.DashboardCategories[name]; !ok {
+			return false
+		} else if !Categorys.Equals(otherCategory) {
+			return false
+		}
+	}
 	for name := range other.DashboardTables {
 		if _, ok := m.DashboardTables[name]; !ok {
 			return false
@@ -355,7 +382,7 @@ func (m *ModResources) Equals(other *ModResources) bool {
 	return true
 }
 
-func (m *ModResources) PopulateReferences() {
+func (m *ResourceMaps) PopulateReferences() {
 	m.References = make(map[string]*ResourceReference)
 
 	resourceFunc := func(resource HclResource) (bool, error) {
@@ -372,7 +399,7 @@ func (m *ModResources) PopulateReferences() {
 	m.WalkResources(resourceFunc)
 }
 
-func (m *ModResources) Empty() bool {
+func (m *ResourceMaps) Empty() bool {
 	return len(m.Mods)+
 		len(m.Queries)+
 		len(m.Controls)+
@@ -395,8 +422,8 @@ func (m *ModResources) Empty() bool {
 		len(m.References) == 0
 }
 
-// this is used to create an optimized ModResources containing only the queries which will be run
-func (m *ModResources) addControlOrQuery(provider QueryProvider) {
+// this is used to create an optimized ResourceMaps containing only the queries which will be run
+func (m *ResourceMaps) addControlOrQuery(provider QueryProvider) {
 	switch p := provider.(type) {
 	case *Query:
 		if p != nil {
@@ -411,13 +438,13 @@ func (m *ModResources) addControlOrQuery(provider QueryProvider) {
 
 // WalkResources calls resourceFunc for every resource in the mod
 // if any resourceFunc returns false or an error, return immediately
-func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
-	for _, r := range m.Controls {
+func (m *ResourceMaps) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
+	for _, r := range m.Benchmarks {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
 	}
-	for _, r := range m.Benchmarks {
+	for _, r := range m.Controls {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -437,12 +464,12 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
-	for _, r := range m.DashboardContainers {
+	for _, r := range m.DashboardCharts {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
 	}
-	for _, r := range m.DashboardCharts {
+	for _, r := range m.DashboardContainers {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
 		}
@@ -509,6 +536,7 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 			return err
 		}
 	}
+	// we cannot walk source snapshots as they are not a HclResource
 	for _, r := range m.Variables {
 		if continueWalking, err := resourceFunc(r); err != nil || !continueWalking {
 			return err
@@ -518,7 +546,7 @@ func (m *ModResources) WalkResources(resourceFunc func(item HclResource) (bool, 
 	return nil
 }
 
-func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
+func (m *ResourceMaps) AddResource(item HclResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	switch r := item.(type) {
 	case *Query:
@@ -697,9 +725,16 @@ func (m *ModResources) AddResource(item HclResource) hcl.Diagnostics {
 	return diags
 }
 
-func (m *ModResources) Merge(others []*ModResources) *ModResources {
-	res := NewWorkspaceResourceMaps(m.Mod)
-	sourceMaps := append([]*ModResources{m}, others...)
+func (m *ResourceMaps) AddSnapshots(snapshotPaths []string) {
+	for _, snapshotPath := range snapshotPaths {
+		snapshotName := fmt.Sprintf("snapshot.%s", utils.FilenameNoExtension(snapshotPath))
+		m.Snapshots[snapshotName] = snapshotPath
+	}
+}
+
+func (m *ResourceMaps) Merge(others []*ResourceMaps) *ResourceMaps {
+	res := NewModResources(m.Mod)
+	sourceMaps := append([]*ResourceMaps{m}, others...)
 
 	// take local resources from ourselves
 	for k, v := range m.LocalQueries {
@@ -713,26 +748,11 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 	}
 
 	for _, source := range sourceMaps {
-		for k, v := range source.Mods {
-			res.Mods[k] = v
-		}
-		for k, v := range source.Queries {
-			res.Queries[k] = v
-		}
-		for k, v := range source.Controls {
-			res.Controls[k] = v
-		}
 		for k, v := range source.Benchmarks {
 			res.Benchmarks[k] = v
 		}
-		for k, v := range source.Locals {
-			res.Locals[k] = v
-		}
-		for k, v := range source.Variables {
-			// NOTE: only include variables from root mod  - we add in the others separately
-			if v.Mod.FullName == m.Mod.FullName {
-				res.Variables[k] = v
-			}
+		for k, v := range source.Controls {
+			res.Controls[k] = v
 		}
 		for k, v := range source.Dashboards {
 			res.Dashboards[k] = v
@@ -743,8 +763,14 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		for k, v := range source.DashboardCards {
 			res.DashboardCards[k] = v
 		}
+		for k, v := range source.DashboardCategories {
+			res.DashboardCategories[k] = v
+		}
 		for k, v := range source.DashboardCharts {
 			res.DashboardCharts[k] = v
+		}
+		for k, v := range source.DashboardEdges {
+			res.DashboardEdges[k] = v
 		}
 		for k, v := range source.DashboardFlows {
 			res.DashboardFlows[k] = v
@@ -758,20 +784,11 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		for k, v := range source.DashboardNodes {
 			res.DashboardNodes[k] = v
 		}
-		for k, v := range source.DashboardEdges {
-			res.DashboardEdges[k] = v
-		}
-		for k, v := range source.DashboardCategories {
-			res.DashboardCategories[k] = v
-		}
 		for k, v := range source.DashboardImages {
 			res.DashboardImages[k] = v
 		}
 		for k, v := range source.DashboardInputs {
 			res.DashboardInputs[k] = v
-		}
-		for k, v := range source.GlobalDashboardInputs {
-			res.GlobalDashboardInputs[k] = v
 		}
 		for k, v := range source.DashboardTables {
 			res.DashboardTables[k] = v
@@ -779,12 +796,33 @@ func (m *ModResources) Merge(others []*ModResources) *ModResources {
 		for k, v := range source.DashboardTexts {
 			res.DashboardTexts[k] = v
 		}
+		for k, v := range source.GlobalDashboardInputs {
+			res.GlobalDashboardInputs[k] = v
+		}
+		for k, v := range source.Locals {
+			res.Locals[k] = v
+		}
+		for k, v := range source.Mods {
+			res.Mods[k] = v
+		}
+		for k, v := range source.Queries {
+			res.Queries[k] = v
+		}
+		for k, v := range source.Snapshots {
+			res.Snapshots[k] = v
+		}
+		for k, v := range source.Variables {
+			// NOTE: only include variables from root mod  - we add in the others separately
+			if v.Mod.FullName == m.Mod.FullName {
+				res.Variables[k] = v
+			}
+		}
 	}
 
 	return res
 }
 
-func (m *ModResources) queryProviderCount() int {
+func (m *ResourceMaps) queryProviderCount() int {
 	numDashboardInputs := 0
 	for _, inputs := range m.DashboardInputs {
 		numDashboardInputs += len(inputs)

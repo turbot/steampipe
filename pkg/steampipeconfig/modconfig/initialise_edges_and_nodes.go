@@ -3,12 +3,11 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	"golang.org/x/exp/maps"
 )
 
 // validate that the provider does not contains both edges/nodes and a query/sql
 // enrich the loaded nodes and edges with the fully parsed resources from the resourceMapProvider
-func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResourcesProvider) hcl.Diagnostics {
+func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	existingEdges := p.GetEdges()
 	existingNodes := p.GetNodes()
 
@@ -28,7 +27,6 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 	// repopulate all nodes/edges from resourceMapProvider
 	resourceMaps := resourceMapProvider.GetResourceMaps()
 
-	parentRuntimeDependencies := maps.Values(p.GetRuntimeDependencies())
 	var diags hcl.Diagnostics
 	edges := make(DashboardEdgeList, len(existingEdges))
 	for i, e := range existingEdges {
@@ -48,9 +46,6 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 			diags = append(diags, moreDiags...)
 			continue
 		}
-
-		// copy runtime dependencies from parent to the edge
-		fullEdge.AddRuntimeDependencies(parentRuntimeDependencies)
 
 		edges[i] = fullEdge
 	}
@@ -72,9 +67,6 @@ func initialiseEdgesAndNodes(p EdgeAndNodeProvider, resourceMapProvider ModResou
 			diags = append(diags, moreDiags...)
 			continue
 		}
-
-		// copy runtime dependencies from parent to the NODE
-		fullNode.AddRuntimeDependencies(parentRuntimeDependencies)
 
 		nodes[i] = fullNode
 	}

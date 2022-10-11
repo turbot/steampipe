@@ -1,7 +1,8 @@
 import "../utils/registerComponents";
 import Dashboard from "../components/dashboards/layout/Dashboard";
 import { buildComponentsMap } from "../components";
-import { DashboardContext, DashboardSearch } from "../hooks/useDashboard";
+import { DashboardContext } from "../hooks/useDashboard";
+import { DashboardDataModeLive, DashboardSearch } from "../types";
 import { noop } from "./func";
 import { useStorybookTheme } from "../hooks/useStorybookTheme";
 
@@ -55,7 +56,7 @@ export const PanelStoryDecorator = ({
         },
         availableDashboardsLoaded: true,
         closePanelDetail: noop,
-        dataMode: "live",
+        dataMode: DashboardDataModeLive,
         snapshotId: null,
         dispatch: noop,
         error: null,

@@ -126,11 +126,7 @@ const buildGraphNodesAndEdges = (
       },
       data: {
         color: matchingCategory ? matchingCategory.color : null,
-        fields:
-          matchingCategory && matchingCategory.fields
-            ? // @ts-ignore
-              JSON.parse(matchingCategory.fields)
-            : null,
+        fields: matchingCategory ? matchingCategory.fields : null,
         row_data: edge.row_data,
         label: edge.title,
         themeColors,
@@ -327,7 +323,6 @@ const Graph = ({ props }) => {
 
 const GraphWrapper = (props: GraphProps) => {
   const nodeAndEdgeData = useNodeAndEdgeData(
-    !!props.sql ? "LEGACY" : "NODE_AND_EDGE",
     props.data,
     props.properties,
     props.status

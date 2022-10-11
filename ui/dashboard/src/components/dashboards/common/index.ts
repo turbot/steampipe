@@ -1,12 +1,5 @@
 import has from "lodash/has";
 import isEmpty from "lodash/isEmpty";
-import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
-import { DashboardRunState, PanelsMap } from "../../../hooks/useDashboard";
-import { FlowProperties, FlowType } from "../flows/types";
-import { getColumn } from "../../../utils/data";
-import { Graph, json } from "graphlib";
-import { GraphProperties, GraphType, NodeAndEdgeData } from "../graphs/types";
-import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 import {
   Category,
   CategoryMap,
@@ -20,6 +13,14 @@ import {
   NodeMap,
   NodesAndEdges,
 } from "./types";
+import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
+import { DashboardRunState, PanelsMap } from "../../../types";
+import { FlowProperties, FlowType } from "../flows/types";
+import { getColumn } from "../../../utils/data";
+import { getNodeAndEdgeDataFormat } from "./useNodeAndEdgeData";
+import { Graph, json } from "graphlib";
+import { GraphProperties, GraphType, NodeAndEdgeData } from "../graphs/types";
+import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -543,7 +544,7 @@ const foldNodesAndEdges = (
           deletedTargetEdges.categories
         );
         const deletedTargetEdgeTitleKeys = Object.keys(
-          deletedTargetEdges.categories
+          deletedTargetEdges.titles
         );
         const targetEdgeCategory =
           deletedTargetEdgeCategoryKeys.length === 1 &&
@@ -613,7 +614,17 @@ const buildNodesAndEdges = (
   const to_col = getColumn(rawData.columns, "to_id");
 
   if (!id_col && !from_col && !to_col) {
-    throw new Error("No node or edge rows defined in the dataset");
+    return {
+      graph: new Graph(),
+      nodes: [],
+      edges: [],
+      nodeCategoryMap: {},
+      nodeMap: {},
+      edgeMap: {},
+      root_nodes: {},
+      categories: {},
+      next_color_index: 0,
+    };
   }
 
   const node_lookup: NodeMap = {};
@@ -653,7 +664,7 @@ const buildNodesAndEdges = (
           categorySettings.depth = overrides.depth;
         }
         if (has(overrides, "fields")) {
-          categorySettings.fields = JSON.parse(overrides.fields);
+          categorySettings.fields = overrides.fields;
         }
         if (has(overrides, "icon")) {
           categorySettings.icon = overrides.icon;
@@ -1067,8 +1078,12 @@ const nodeAndEdgeResourceHasData = (
   properties: NodeAndEdgeProperties,
   panelsMap: PanelsMap
 ): boolean => {
-  if (!!data) {
+  const dataFormat = getNodeAndEdgeDataFormat(properties);
+  if (dataFormat === "LEGACY" && !!data) {
     return true;
+  }
+  if (dataFormat === "LEGACY" && !data) {
+    return false;
   }
   if (
     (properties?.nodes || []).some((p) => panelsMap[p] && !!panelsMap[p].data)

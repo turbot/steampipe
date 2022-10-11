@@ -4,10 +4,12 @@ import LayoutPanel from "../common/LayoutPanel";
 import PanelDetail from "../PanelDetail";
 import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
 import {
+  DashboardDataModeCLISnapshot,
+  DashboardDataModeLive,
   DashboardDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+} from "../../../../types";
 import { registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface DashboardProps {
   allowPanelExpand?: boolean;
@@ -52,7 +54,9 @@ const DashboardWrapper = ({
   if (
     search.value ||
     !dashboard ||
-    (!selectedDashboard && dataMode === "live")
+    (!selectedDashboard &&
+      (dataMode === DashboardDataModeLive ||
+        dataMode === DashboardDataModeCLISnapshot))
   ) {
     return null;
   }

@@ -23,7 +23,9 @@ const (
 	CreatePseudoResources
 )
 
-/* ReferenceTypeValueMap is the raw data used to build the evaluation context
+/*
+	ReferenceTypeValueMap is the raw data used to build the evaluation context
+
 When resolving hcl references like :
 - query.q1
 - var.v1
@@ -75,6 +77,8 @@ type RunContext struct {
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
+	// map of top  level blocks, for easy checking
+	topLevelBlocks map[*hcl.Block]struct{}
 	// map of block names, keyed by a hash of the blopck
 	blockNameMap map[string]string
 }
@@ -208,6 +212,11 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 
 func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
 	r.blocks = content.Blocks
+	// put blocks into map as well
+	r.topLevelBlocks = make(map[*hcl.Block]struct{}, len(r.blocks))
+	for _, b := range content.Blocks {
+		r.topLevelBlocks[b] = struct{}{}
+	}
 	r.FileData = fileData
 }
 
@@ -230,6 +239,13 @@ func (r *RunContext) ClearDependencies() {
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
 func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
+	// TACTICAL if this is NOT a top level block, add a suffix to the block name
+	// this is needed to avoid circular dependency errors if a nested block references
+	// a top level block with the same name
+	if !r.IsTopLevelBlock(block) {
+		name = "nested." + name
+	}
+
 	var diags hcl.Diagnostics
 	// store unresolved block
 	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
@@ -372,8 +388,8 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 	return nil
 }
 
-func (r *RunContext) GetResourceMaps() *modconfig.ModResources {
-	dependencyResourceMaps := make([]*modconfig.ModResources, len(r.LoadedDependencyMods))
+func (r *RunContext) GetResourceMaps() *modconfig.ResourceMaps {
+	dependencyResourceMaps := make([]*modconfig.ResourceMaps, len(r.LoadedDependencyMods))
 	idx := 0
 	// use the current mod as the base resource map
 	resourceMap := r.CurrentMod.GetResourceMaps()
@@ -533,4 +549,9 @@ func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
 			r.LoadedDependencyMods[k] = v
 		}
 	}
+}
+
+func (r *RunContext) IsTopLevelBlock(block *hcl.Block) bool {
+	_, isTopLevel := r.topLevelBlocks[block]
+	return isTopLevel
 }

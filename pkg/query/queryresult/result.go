@@ -24,19 +24,7 @@ type Result struct {
 	TimingResult chan *TimingResult
 }
 
-// Close closes the row channel
-func (r Result) Close() {
-	close(*r.RowChan)
-}
-
-func (r Result) StreamRow(rowResult []interface{}) {
-	*r.RowChan <- &RowResult{Data: rowResult}
-}
-
-func (r Result) StreamError(err error) {
-	*r.RowChan <- &RowResult{Error: err}
-}
-func NewQueryResult(cols []*ColumnDef) *Result {
+func NewResult(cols []*ColumnDef) *Result {
 
 	rowChan := make(chan *RowResult)
 	return &Result{
@@ -44,6 +32,21 @@ func NewQueryResult(cols []*ColumnDef) *Result {
 		Cols:         cols,
 		TimingResult: make(chan *TimingResult, 1),
 	}
+}
+
+// IsExportSourceData implements ExportSourceData
+func (*Result) IsExportSourceData() {}
+
+// Close closes the row channel
+func (r *Result) Close() {
+	close(*r.RowChan)
+}
+
+func (r *Result) StreamRow(rowResult []interface{}) {
+	*r.RowChan <- &RowResult{Data: rowResult}
+}
+func (r *Result) StreamError(err error) {
+	*r.RowChan <- &RowResult{Error: err}
 }
 
 type SyncQueryResult struct {

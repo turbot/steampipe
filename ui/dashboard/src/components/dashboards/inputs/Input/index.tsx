@@ -1,7 +1,7 @@
 import ErrorPanel from "../../Error";
 import { getInputComponent } from "../index";
 import { InputProperties } from "../types";
-import { PanelDefinition } from "../../../../hooks/useDashboard";
+import { PanelDefinition } from "../../../../types";
 import { registerComponent } from "../../index";
 
 export type InputDefinition = PanelDefinition & {
