@@ -413,7 +413,7 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 		// fall through to recheck ChildrenComplete
 	}
 
-	log.Printf("[WARN] run %s ALL children complete", r.Name)
+	log.Printf("[TRACE] run %s ALL children complete", r.Name)
 	// so all children have completed - check for errors
 	err := error_helpers.CombineErrors(errors...)
 	if err == nil {

@@ -36,12 +36,12 @@ func (s *DatabaseSession) UpdateUsage() {
 func (s *DatabaseSession) Close(waitForCleanup bool) {
 	if s.Connection != nil {
 		if waitForCleanup {
-			log.Printf("[WARN] DatabaseSession.Close wait for connection cleanup")
+			log.Printf("[TRACE] DatabaseSession.Close wait for connection cleanup")
 			select {
 			case <-time.After(5 * time.Second):
-				log.Printf("[WARN] DatabaseSession.Close timed out waiting for connection cleanup")
+				log.Printf("[TRACE] DatabaseSession.Close timed out waiting for connection cleanup")
 			case <-s.Connection.Conn().PgConn().CleanupDone():
-				log.Printf("[WARN] DatabaseSession.Close connection cleanup complete")
+				log.Printf("[TRACE] DatabaseSession.Close connection cleanup complete")
 			}
 		}
 		s.Connection.Release()
