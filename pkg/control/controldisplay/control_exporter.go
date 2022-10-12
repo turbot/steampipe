@@ -41,7 +41,3 @@ func (e *ControlExporter) Name() string {
 func (e *ControlExporter) Alias() string {
 	return e.formatter.Alias()
 }
-
-func (e *ControlExporter) IsDefaultExporterForExtension() bool {
-	return e.formatter.IsDefaultFormatterForExtension()
-}

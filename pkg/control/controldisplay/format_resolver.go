@@ -66,6 +66,7 @@ func (r *FormatResolver) registerFormatter(f Formatter) error {
 		return fmt.Errorf("failed to register output formatter - duplicate format name %s", name)
 	}
 	r.formatterByName[name] = f
+	// if the formatter has an alias, also register by alias
 	if alias := f.Alias(); alias != "" {
 		if _, ok := r.formatterByName[alias]; ok {
 			return fmt.Errorf("failed to register output formatter - duplicate format name %s", alias)

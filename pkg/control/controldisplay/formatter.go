@@ -11,14 +11,10 @@ type Formatter interface {
 	FileExtension() string
 	Name() string
 	Alias() string
-	IsDefaultFormatterForExtension() bool
 }
 
 type FormatterBase struct{}
 
 func (*FormatterBase) Alias() string {
 	return ""
-}
-func (*FormatterBase) IsDefaultFormatterForExtension() bool {
-	return false
 }

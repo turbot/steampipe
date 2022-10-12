@@ -7,30 +7,23 @@ import (
 )
 
 type OutputTemplate struct {
-	TemplatePath                string
-	FormatName                  string
-	FileExtension               string
-	FormatFullName              string
-	DefaultTemplateForExtension bool
+	TemplatePath   string
+	FormatName     string
+	FileExtension  string
+	FormatFullName string
 }
 
-func NewOutputTemplate(directory string) *OutputTemplate {
+func NewOutputTemplate(directoryPath string) *OutputTemplate {
 	format := new(OutputTemplate)
-	format.TemplatePath = directory
+	format.TemplatePath = directoryPath
 
-	directory = filepath.Base(directory)
+	directoryName := filepath.Base(directoryPath)
+	// does the directory name include an extension?
+	ext := filepath.Ext(directoryName)
+	format.FormatFullName = directoryName
+	format.FormatName = strings.TrimSuffix(directoryName, ext)
+	format.FileExtension = fmt.Sprintf(".%s", directoryName)
 
-	// try splitting by a .(dot)
-	lastDotIndex := strings.LastIndex(directory, ".")
-	if lastDotIndex == -1 {
-		format.FileExtension = fmt.Sprintf(".%s", directory)
-		format.FormatName = directory
-		format.DefaultTemplateForExtension = true
-	} else {
-		format.FileExtension = filepath.Ext(directory)
-		format.FormatName = strings.TrimSuffix(directory, filepath.Ext(directory))
-	}
-	format.FormatFullName = fmt.Sprintf("%s%s", format.FormatName, format.FileExtension)
 	return format
 }
 

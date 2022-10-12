@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"text/template"
@@ -76,13 +75,7 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 }
 
 func (tf TemplateFormatter) FileExtension() string {
-	// if the extension is the same as the format name, return just the extension
-	if tf.exportFormat.DefaultTemplateForExtension {
-		return tf.exportFormat.FileExtension
-	} else {
-		// otherwise return the fullname
-		return fmt.Sprintf(".%s", tf.exportFormat.FormatFullName)
-	}
+	return tf.exportFormat.FileExtension
 }
 
 func (tf TemplateFormatter) Name() string {
@@ -90,9 +83,8 @@ func (tf TemplateFormatter) Name() string {
 }
 
 func (tf TemplateFormatter) Alias() string {
-	return tf.exportFormat.FormatFullName
-}
-
-func (tf TemplateFormatter) IsDefaultFormatterForExtension() bool {
-	return tf.IsDefaultFormatterForExtension()
+	if tf.exportFormat.FormatFullName != tf.exportFormat.FormatName {
+		return tf.exportFormat.FormatFullName
+	}
+	return ""
 }

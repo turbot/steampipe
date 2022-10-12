@@ -29,6 +29,7 @@ func (m *Manager) Register(exporter Exporter) error {
 	}
 	m.registeredExporters[exporter.Name()] = exporter
 
+	// if the exporter has an alias, also register by alias
 	if alias := exporter.Alias(); alias != "" {
 		if _, ok := m.registeredExporters[alias]; ok {
 			return fmt.Errorf("failed to register exporter - duplicate name %s", name)
@@ -37,37 +38,47 @@ func (m *Manager) Register(exporter Exporter) error {
 	}
 
 	// now register extension
-	return m.registerExporterByExtension(exporter)
+	ext := exporter.FileExtension()
+	m.registerExporterByExtension(exporter, ext)
+	// if the extension has multiple segments, try to register for the short version as well
+	if shortExtension := path.Ext(ext); shortExtension != ext {
+		m.registerExporterByExtension(exporter, shortExtension)
+	}
+	return nil
 }
 
-func (m *Manager) registerExporterByExtension(exporter Exporter) error {
-	ext := exporter.FileExtension()
+func (m *Manager) registerExporterByExtension(exporter Exporter, ext string) {
 	// do we already have an exporter registered for this extension?
 	if existing, ok := m.registeredExtensions[ext]; ok {
-		// so this extension is already registered
 
 		// check if either the existing or new template is the default for extension
-		existingIsDefaultForExt := existing.IsDefaultExporterForExtension()
-		newIsDefaultForExt := exporter.IsDefaultExporterForExtension()
+		existingIsDefaultForExt := isDefaultExporterForExtension(existing)
+		newIsDefaultForExt := isDefaultExporterForExtension(exporter)
 
-		// if BOTH or NEITHER are default for the extension - this is an error
-		if newIsDefaultForExt && existingIsDefaultForExt ||
-			!newIsDefaultForExt && !existingIsDefaultForExt {
-			return fmt.Errorf("failed to register exporter - duplicate extension %s", ext)
+		// if  NEITHER are default for the extension, there is a clash which cannot be resolved -
+		// we must remove the existing key
+		if !newIsDefaultForExt && !existingIsDefaultForExt {
+			delete(m.registeredExtensions, ext)
 		}
 
 		// if existing is default and new isn't, nothing to do
 		if existingIsDefaultForExt {
-			return nil
+			return
 		}
 
 		// to get here, new must be default exporter for extension
+		// (it is impossible for both to be default as that implies duplicate exporter names)
 		// fall through to...
 	}
 
 	// register the extension
 	m.registeredExtensions[ext] = exporter
-	return nil
+}
+
+// an exporter is the 'default for extension' if the exporter name is the same as the extension name
+// i.e. json exporter would be the default for the `.json` extension
+func isDefaultExporterForExtension(existing Exporter) bool {
+	return strings.TrimPrefix(existing.FileExtension(), ".") == existing.Name()
 }
 
 func (m *Manager) resolveTargetsFromArgs(exportArgs []string, executionName string) ([]*Target, error) {
