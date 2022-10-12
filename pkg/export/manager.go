@@ -129,6 +129,7 @@ func (m *Manager) getExportTarget(export, executionName string) (*Target, error)
 	return nil, fmt.Errorf("formatter satisfying '%s' not found", export)
 }
 
+// for a filename such as foo.asff.json, treat ".asff,json" as the extension
 func getExtension(name string) string {
 	idx := strings.Index(name, ".")
 	if idx == -1 {

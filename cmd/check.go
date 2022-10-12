@@ -158,7 +158,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
 		err = initData.ExportManager.DoExport(ctx, targetName, executionTree, exportArgs)
-		error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
+		error_helpers.FailOnError(err)
 
 		// if the share args are set, create a snapshot and share it
 		if generateSnapshot {
@@ -250,10 +250,6 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 }
 
 // register exporters for each of the supported check formats
-// there is quite a bit of logic used to build the check formatter name and extension maps
-// (to cover the case of multiple templates with the same extension, long and short template formatter names etc.)
-// to avoid reproducing this logic, controldisplay.GetExporters() returns 2 exporter maps,
-// keyed by name and extension respectively, which correspond to the formatter maps
 func registerCheckExporters(initData *initialisation.InitData) {
 	exporters, err := controldisplay.GetExporters()
 	error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
