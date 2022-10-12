@@ -53,7 +53,7 @@ Examples:
   steampipe query "select * from cloud"`,
 
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			w, err := workspace.LoadResourceNames(viper.GetString(constants.ArgWorkspaceChDir))
+			w, err := workspace.LoadResourceNames(viper.GetString(constants.ArgModLocation))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}

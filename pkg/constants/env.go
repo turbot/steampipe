@@ -8,8 +8,9 @@ const (
 	EnvServicePassword = "STEAMPIPE_DATABASE_PASSWORD"
 	EnvMaxParallel     = "STEAMPIPE_MAX_PARALLEL"
 
-	EnvWorkspace         = "STEAMPIPE_WORKSPACE"
+	EnvSnapshotLocation  = "STEAMPIPE_SNAPSHOT_LOCATION"
 	EnvWorkspaceDatabase = "STEAMPIPE_WORKSPACE_DATABASE"
+	EnvWorkspaceProfile  = "STEAMPIPE_WORKSPACE"
 	EnvCloudHost         = "STEAMPIPE_CLOUD_HOST"
 	EnvCloudToken        = "STEAMPIPE_CLOUD_TOKEN"
 
@@ -20,6 +21,7 @@ const (
 
 	EnvConnectionWatcher = "STEAMPIPE_CONNECTION_WATCHER"
 	EnvWorkspaceChDir    = "STEAMPIPE_WORKSPACE_CHDIR"
+	EnvModLocation       = "STEAMPIPE_MOD_LOCATION"
 	EnvTelemetry         = "STEAMPIPE_TELEMETRY"
 	EnvIntrospection     = "STEAMPIPE_INTROSPECTION"
 
