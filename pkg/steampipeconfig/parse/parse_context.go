@@ -32,8 +32,8 @@ type ParseContext struct {
 	RootEvalPath    string
 }
 
-func NewParseContext(rootEvalPath string) *ParseContext {
-	c := &ParseContext{
+func NewParseContext(rootEvalPath string) ParseContext {
+	c := ParseContext{
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
 		RootEvalPath:     rootEvalPath,
 		referenceValues: map[string]ReferenceTypeValueMap{
