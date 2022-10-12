@@ -34,22 +34,26 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # execute the setup sql statements
   for ((i = 0; i < ${#setup_sql[@]}; i++)); do
+    echo "executing setup_sql$i on old DB"
     $tmpdir/steampipe --install-dir $tmpdir query "${setup_sql[$i]}"
   done
 
   # store the result of the verification statements(0.13.6)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
+    echo "extracting verify_sql$i on old DB"
     $tmpdir/steampipe --install-dir $tmpdir query "${verify_sql[$i]}" --output json > verify$i.json
   done
 
   # stop the service
   $tmpdir/steampipe --install-dir $tmpdir service stop
   
+  echo "installing new DB"
   # Now run this version(0.14.*) - which should migrate the data
   steampipe --install-dir $tmpdir service start
   
   # store the result of the verification statements(0.14.*)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
+    echo "extracting verify_sql$i on new DB"
     steampipe --install-dir $tmpdir query "${verify_sql[$i]}" --output json > verify$i$i.json
   done
 
