@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"os"
@@ -11,8 +12,8 @@ import (
 type FormatResolver struct {
 	templates       []*OutputTemplate
 	formatterByName map[string]Formatter
-	// array of unique formatters
-	formatters []Formatter
+	// array of unique formatters used for export
+	exportFormatters []Formatter
 }
 
 func NewFormatResolver() (*FormatResolver, error) {
@@ -22,7 +23,7 @@ func NewFormatResolver() (*FormatResolver, error) {
 	}
 
 	formatters := []Formatter{
-		//&NullFormatter{},
+		&NullFormatter{},
 		&TextFormatter{},
 		&SnapshotFormatter{},
 	}
@@ -34,7 +35,6 @@ func NewFormatResolver() (*FormatResolver, error) {
 	for _, f := range formatters {
 		if err := res.registerFormatter(f); err != nil {
 			return nil, err
-
 		}
 	}
 	for _, t := range templates {
@@ -72,15 +72,18 @@ func (r *FormatResolver) registerFormatter(f Formatter) error {
 		}
 		r.formatterByName[alias] = f
 	}
-	// add to unique formatter list
-	r.formatters = append(r.formatters, f)
+	// add to exportFormatters list (exclude 'None')
+	if f.Name() != constants.OutputFormatNone {
+		r.exportFormatters = append(r.exportFormatters, f)
+	}
 	return nil
 }
 
 func (r *FormatResolver) controlExporters() []export.Exporter {
-	res := make([]export.Exporter, len(r.formatters))
-	for i, formatter := range r.formatters {
+	res := make([]export.Exporter, len(r.exportFormatters))
+	for i, formatter := range r.exportFormatters {
 		res[i] = NewControlExporter(formatter)
+
 	}
 	return res
 }
