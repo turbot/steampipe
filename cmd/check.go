@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -169,9 +171,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	if shouldPrintTiming() {
 		printTiming(args, durations)
 	}
-
-	// set global exit code
-	exitCode = failures
 }
 
 // create the context for the check run - add a control status renderer
