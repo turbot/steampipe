@@ -89,7 +89,7 @@ Examples:
 		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
 		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
-		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ")
 
 	return cmd
 }
