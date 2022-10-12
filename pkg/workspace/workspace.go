@@ -245,7 +245,7 @@ func (w *Workspace) setModfileExists() {
 		w.modFilePath = modFile
 
 		// also set it in the viper config, so that it is available to whoever is using it
-		viper.Set(constants.ArgWorkspaceChDir, filepath.Dir(modFile))
+		viper.Set(constants.ArgModLocation, filepath.Dir(modFile))
 		w.Path = filepath.Dir(modFile)
 	} else {
 		log.Printf("[TRACE] no modfile exists in workspace folder - NOT creating pseudoresources and only loading resource files from top level folder")
@@ -369,7 +369,7 @@ func (w *Workspace) loadWorkspaceLock() (*versionmap.WorkspaceLock, error) {
 
 	// if this is the old format, migrate by reinstalling dependencies
 	if workspaceLock.StructVersion() != versionmap.WorkspaceLockStructVersion {
-		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir)}
+		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
 		installData, err := modinstaller.InstallWorkspaceDependencies(opts)
 		if err != nil {
 			return nil, err
