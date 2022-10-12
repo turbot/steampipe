@@ -73,6 +73,10 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 
 	// load workspace config
 	workspaceProfiles, err := loadWorkspaceProfiles(filepaths.WorkspaceProfileDir())
+	if err == nil {
+		return nil, err
+	}
+	steampipeConfig.WorkspaceProfiles = workspaceProfiles
 
 	// now load config from the workspace folder, if provided
 	// this has precedence and so will overwrite any config which has already been set
@@ -168,7 +172,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return err
 			}
-			options, moreDiags := parse.DecodeOptions(block)
+			opts, moreDiags := parse.DecodeOptions(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
@@ -176,7 +180,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			// set options on steampipe config
 			// if options are already set, this will merge the new options over the top of the existing options
 			// i.e. new options have precedence
-			steampipeConfig.SetOptions(options)
+			steampipeConfig.SetOptions(opts)
 		}
 	}
 
@@ -227,30 +231,29 @@ func loadWorkspaceProfiles(configFolder string) (map[string]*modconfig.Workspace
 	}
 
 	// do a partial decode
-	content, moreDiags := body.Content(parse.WorkspaceProfileBlockSchema)
+	content, moreDiags := body.Content(parse.WorkspaceProfileListBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
 	}
 
+	// build parse context
+	parseContext := parse.NewParseContext(configFolder)
 	for _, block := range content.Blocks {
-		switch block.Type {
 
-		case modconfig.BlockTypeWorkspaceProfile:
-			//connection, moreDiags := parse.DecodeWorkspaceProfile(block)
-			//if moreDiags.HasErrors() {
-			//	diags = append(diags, moreDiags...)
-			//	continue
-			//}
-			//_, alreadyThere := steampipeConfig.Connections[connection.Name]
-			//if alreadyThere {
-			//	return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
-			//}
-			//if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
-			//	return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
-			//}
-			//steampipeConfig.Connections[connection.Name] = connection
+		connection, moreDiags := parse.DecodeWorkspaceProfile(block, parseContext)
+		if moreDiags.HasErrors() {
+			diags = append(diags, moreDiags...)
+			continue
 		}
+		_, alreadyThere := steampipeConfig.Connections[connection.Name]
+		if alreadyThere {
+			return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
+		}
+		if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
+			return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
+		}
+		steampipeConfig.Connections[connection.Name] = connection
 	}
 
 	if diags.HasErrors() {
