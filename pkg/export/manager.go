@@ -22,17 +22,55 @@ func NewManager() *Manager {
 	}
 }
 
-func (r *Manager) Register(exporter Exporter) {
-	r.registeredExporters[exporter.Name()] = exporter
-	r.registeredExtensions[exporter.FileExtension()] = exporter
+func (m *Manager) Register(exporter Exporter) error {
+	name := exporter.Name()
+	if _, ok := m.registeredExporters[name]; ok {
+		return fmt.Errorf("failed to register exporter - duplicate name %s", name)
+	}
+	m.registeredExporters[exporter.Name()] = exporter
+
+	if alias := exporter.Alias(); alias != "" {
+		if _, ok := m.registeredExporters[alias]; ok {
+			return fmt.Errorf("failed to register exporter - duplicate name %s", name)
+		}
+		m.registeredExporters[alias] = exporter
+	}
+
+	// now register extension
+	return m.registerExporterByExtension(exporter)
 }
 
-// RegisterByName is used to register alias names
-func (r *Manager) RegisterByName(name string, exporter Exporter) {
-	r.registeredExporters[name] = exporter
+func (m *Manager) registerExporterByExtension(exporter Exporter) error {
+	ext := exporter.FileExtension()
+	// do we already have an exporter registered for this extension?
+	if existing, ok := m.registeredExtensions[ext]; ok {
+		// so this extension is already registered
+
+		// check if either the existing or new template is the default for extension
+		existingIsDefaultForExt := existing.IsDefaultExporterForExtension()
+		newIsDefaultForExt := exporter.IsDefaultExporterForExtension()
+
+		// if BOTH or NEITHER are default for the extension - this is an error
+		if newIsDefaultForExt && existingIsDefaultForExt ||
+			!newIsDefaultForExt && !existingIsDefaultForExt {
+			return fmt.Errorf("failed to register exporter - duplicate extension %s", ext)
+		}
+
+		// if existing is default and new isn't, nothing to do
+		if existingIsDefaultForExt {
+			return nil
+		}
+
+		// to get here, new must be default exporter for extension
+		// fall through to...
+	}
+
+	// register the extension
+	m.registeredExtensions[ext] = exporter
+	return nil
 }
 
-func (r *Manager) resolveTargetsFromArgs(exportArgs []string, executionName string) ([]*Target, error) {
+func (m *Manager) resolveTargetsFromArgs(exportArgs []string, executionName string) ([]*Target, error) {
 	var targets = make(map[string]*Target)
 	var targetErrors []error
 
@@ -43,7 +81,7 @@ func (r *Manager) resolveTargetsFromArgs(exportArgs []string, executionName stri
 			continue
 		}
 
-		t, err := r.getExportTarget(export, executionName)
+		t, err := m.getExportTarget(export, executionName)
 		if err != nil {
 			targetErrors = append(targetErrors, err)
 			continue
@@ -60,8 +98,8 @@ func (r *Manager) resolveTargetsFromArgs(exportArgs []string, executionName stri
 	return targetList, error_helpers.CombineErrors(targetErrors...)
 }
 
-func (r *Manager) getExportTarget(export, executionName string) (*Target, error) {
-	if e, ok := r.registeredExporters[export]; ok {
+func (m *Manager) getExportTarget(export, executionName string) (*Target, error) {
+	if e, ok := m.registeredExporters[export]; ok {
 		t := &Target{
 			exporter: e,
 			filePath: GenerateDefaultExportFileName(e, executionName),
@@ -69,17 +107,37 @@ func (r *Manager) getExportTarget(export, executionName string) (*Target, error)
 		return t, nil
 	}
 
-	if e, ok := r.registeredExtensions[path.Ext(export)]; ok {
+	// for a filename such as foo.asff.json, treat ".asff,json" as the extension
+	ext := getExtension(export)
+	if e, ok := m.registeredExtensions[ext]; ok {
 		t := &Target{
 			exporter: e,
 			filePath: export,
 		}
 		return t, nil
 	}
+	// if that did no work, try just the final segment of extension
+	ext = path.Ext(export)
+	if e, ok := m.registeredExtensions[ext]; ok {
+		t := &Target{
+			exporter: e,
+			filePath: export,
+		}
+		return t, nil
+	}
+
 	return nil, fmt.Errorf("formatter satisfying '%s' not found", export)
 }
 
-func (r *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) error {
+func getExtension(name string) string {
+	idx := strings.Index(name, ".")
+	if idx == -1 {
+		return ""
+	}
+	return name[idx:]
+}
+
+func (m *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) error {
 	if len(exports) == 0 {
 		return nil
 	}
@@ -91,7 +149,7 @@ func (r *Manager) DoExport(ctx context.Context, targetName string, source Export
 	}
 	shortName := parsedResource.Name
 
-	targets, err := r.resolveTargetsFromArgs(exports, shortName)
+	targets, err := m.resolveTargetsFromArgs(exports, shortName)
 	if err != nil {
 		return err
 	}
