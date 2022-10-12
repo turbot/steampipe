@@ -91,24 +91,15 @@ func InitCmd() {
 	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "local", "Steampipe Cloud workspace database")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspace, "default", "The workspace profile to use")
 
-	workspaceChDirFlag := rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceChDir)
-	workspaceChDirFlag.Deprecated = "please use --mod-location"
-	err := viper.BindPFlag(constants.ArgWorkspaceChDir, workspaceChDirFlag)
-	error_helpers.FailOnError(err)
-	
-	err = viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgModLocation, rootCmd.PersistentFlags().Lookup(constants.ArgModLocation))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgCloudHost, rootCmd.PersistentFlags().Lookup(constants.ArgCloudHost))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgCloudToken, rootCmd.PersistentFlags().Lookup(constants.ArgCloudToken))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgWorkspaceDatabase, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceDatabase))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgSchemaComments, rootCmd.PersistentFlags().Lookup(constants.ArgSchemaComments))
-	error_helpers.FailOnError(err)
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgWorkspaceChDir, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceChDir)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgCloudHost, rootCmd.PersistentFlags().Lookup(constants.ArgCloudHost)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgCloudToken, rootCmd.PersistentFlags().Lookup(constants.ArgCloudToken)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgWorkspaceDatabase, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceDatabase)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgSchemaComments, rootCmd.PersistentFlags().Lookup(constants.ArgSchemaComments)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgWorkspace, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspace)))
 
 	AddCommands()
 
@@ -139,16 +130,27 @@ func initGlobalConfig() {
 	// setup viper with the essential path config (mod-location and install-dir)
 	cmdconfig.BootstrapViper()
 
-	// set the working folder
-	modLocation := setModLocation()
-
 	// set global containing install dir
 	setInstallDir()
+
+	// load workspace config
+	workspaceProfiles, err := steampipeconfig.LoadWorkspaceProfiles(filepaths.WorkspaceProfileDir())
+	error_helpers.FailOnError(err)
+
+	workspaceArg := viper.GetString(constants.ArgWorkspace)
+	workspaceProfile, ok := workspaceProfiles[workspaceArg]
+	if !ok {
+		error_helpers.FailOnError(fmt.Errorf("workspace %s does not exist", workspaceArg))
+	}
+	log.Println(workspaceProfile)
+
+	// set the working folder
+	modLocation := setModLocation()
 
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 
 	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
-	err := migrateLegacyFiles()
+	err = migrateLegacyFiles()
 	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
 
 	// load config (this sets the global config steampipeconfig.Config)
@@ -197,8 +199,8 @@ func validateConfig() error {
 }
 
 func setModLocation() string {
-	modLocation := viper.GetString(constants.ArgModLocation)
-	if modLocation == "" {
+	workspaceChdir := viper.GetString(constants.ArgWorkspaceChDir)
+	if workspaceChdir == "" {
 		cwd, err := os.Getwd()
 		error_helpers.FailOnError(err)
 		modLocation = cwd

@@ -71,13 +71,6 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 		return nil, err
 	}
 
-	// load workspace config
-	workspaceProfiles, err := loadWorkspaceProfiles(filepaths.WorkspaceProfileDir())
-	if err == nil {
-		return nil, err
-	}
-	steampipeConfig.WorkspaceProfiles = workspaceProfiles
-
 	// now load config from the workspace folder, if provided
 	// this has precedence and so will overwrite any config which has already been set
 	// check workspace folder exists
@@ -206,7 +199,8 @@ func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loa
 	return nil
 }
 
-func loadWorkspaceProfiles(configFolder string) (map[string]*modconfig.WorkspaceProfile, error) {
+func LoadWorkspaceProfiles(configFolder string) (map[string]*modconfig.WorkspaceProfile, error) {
+
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesFlat,
@@ -263,5 +257,11 @@ func loadWorkspaceProfiles(configFolder string) (map[string]*modconfig.Workspace
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load config", diags)
 	}
-	return nil, nil
+
+	// add in default if needed
+	if _, ok := profileMap["default"]; !ok {
+		// todo populate default profile
+		profileMap["default"] = &modconfig.WorkspaceProfile{}
+	}
+	return profileMap, nil
 }

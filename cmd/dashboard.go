@@ -60,7 +60,7 @@ The current mod is the working directory, or the directory specified by the --mo
 		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatSnapshot, "Select a console output format: snapshot").
 		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
 		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
-		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ").
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
@@ -194,14 +194,14 @@ func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 
 		// is this is the no-option default, use the workspace arg
 		if snapshotWorkspace == constants.ArgShareNoOptDefault {
-			snapshotWorkspace = viper.GetString(constants.ArgWorkspace)
+			snapshotWorkspace = viper.GetString(constants.ArgSnapshotLocation)
 		}
 		if snapshotWorkspace == "" {
 			return "", fmt.Errorf("a Steampipe Cloud workspace name must be provided, either by setting %s=<workspace> or --workspace=<workspace>", argName)
 		}
 
 		// now write back the workspace to viper
-		viper.Set(constants.ArgWorkspace, snapshotWorkspace)
+		viper.Set(constants.ArgSnapshotLocation, snapshotWorkspace)
 
 		// verify cloud token
 		if !viper.IsSet(constants.ArgCloudToken) {
@@ -344,8 +344,8 @@ func validateCloudArgs() error {
 
 	// if workspace-database has not been set, check whether workspace has been set and if so use that
 	// NOTE: do this BEFORE populating workspace from share/snapshot args, if set
-	if !viper.IsSet(constants.ArgWorkspaceDatabase) && viper.IsSet(constants.ArgWorkspace) {
-		viper.Set(constants.ArgWorkspaceDatabase, viper.GetString(constants.ArgWorkspace))
+	if !viper.IsSet(constants.ArgWorkspaceDatabase) && viper.IsSet(constants.ArgSnapshotLocation) {
+		viper.Set(constants.ArgWorkspaceDatabase, viper.GetString(constants.ArgSnapshotLocation))
 	}
 
 	return validateSnapshotArgs()
@@ -380,16 +380,16 @@ func validateSnapshotArgs() error {
 	snapshotWorkspace := viper.GetString(argName)
 	if snapshotWorkspace != constants.ArgShareNoOptDefault {
 		// set the workspace back on viper
-		viper.Set(constants.ArgWorkspace, snapshotWorkspace)
+		viper.Set(constants.ArgSnapshotLocation, snapshotWorkspace)
 	}
 
 	// we should now have a value for workspace
-	if !viper.IsSet(constants.ArgWorkspace) {
+	if !viper.IsSet(constants.ArgSnapshotLocation) {
 		workspace, err := cloud.GetUserWorkspace(token)
 		if err != nil {
 			return err
 		}
-		viper.Set(constants.ArgWorkspace, workspace)
+		viper.Set(constants.ArgSnapshotLocation, workspace)
 	}
 
 	// should never happen as there is a default set
@@ -398,7 +398,7 @@ func validateSnapshotArgs() error {
 	}
 
 	log.Printf("[WARN] workspace database = %s", viper.GetString(constants.ArgWorkspaceDatabase))
-	log.Printf("[WARN] snapshot destination = %s", viper.GetString(constants.ArgWorkspace))
+	log.Printf("[WARN] snapshot destination = %s", viper.GetString(constants.ArgSnapshotLocation))
 
 	// if output format is not explicitly set, set to none
 	if !viper.IsSet(constants.ArgOutput) {
