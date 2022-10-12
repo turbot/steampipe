@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/utils"
 	"io"
 	"os"
 	"text/template"
@@ -71,6 +72,12 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 			writer.Close()
 		}
 	}()
+
+	// tactical - for json, prettify the output
+	if tf.shouldPrettify(){
+		return utils.PrettifyJsonFromReader(reader)
+	}
+
 	return reader, nil
 }
 
@@ -87,4 +94,8 @@ func (tf TemplateFormatter) Alias() string {
 		return tf.exportFormat.FormatFullName
 	}
 	return ""
+}
+
+func (tf TemplateFormatter) shouldPrettify() bool {
+	return tf.Name() == constants.OutputFormatJSON
 }

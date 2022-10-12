@@ -19,6 +19,3 @@ type ExporterBase struct{}
 func (*ExporterBase) Alias() string {
 	return ""
 }
-func IsDefaultExporterForExtension(exporter Exporter) bool {
-	return exporter.Name() == exporter.FileExtension()
-}

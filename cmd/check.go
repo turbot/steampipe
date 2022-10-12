@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -306,30 +304,8 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	if err != nil {
 		return err
 	}
-	// tactical solution to prettify the json output
-	if output == constants.OutputFormatJSON {
-		reader, err = prettifyJsonFromReader(reader)
-		if err != nil {
-			return err
-		}
-	}
 	_, err = io.Copy(os.Stdout, reader)
 	return err
-}
-
-func prettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
-	b, err := io.ReadAll(dataToExport)
-	if err != nil {
-		return nil, err
-	}
-	var prettyJSON bytes.Buffer
-
-	err = json.Indent(&prettyJSON, b, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	dataToExport = &prettyJSON
-	return dataToExport, nil
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
