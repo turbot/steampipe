@@ -9,11 +9,11 @@ import (
 
 type WorkspaceProfile struct {
 	Name              string `hcl:"name,label"`
-	CloudToken        string `hcl:"cloud_token"`
-	CloudHost         string `hcl:"cloud_host"`
-	WorkspaceDatabase string `hcl:"workspace_database"`
-	SnapshotLocation  string `hcl:"snapshot_location"`
-	ModLocation       string `hcl:"mod_location"`
+	CloudToken        string `hcl:"cloud_token,optional"`
+	CloudHost         string `hcl:"cloud_host,optional"`
+	WorkspaceDatabase string `hcl:"workspace_database,optional"`
+	SnapshotLocation  string `hcl:"snapshot_location,optional"`
+	ModLocation       string `hcl:"mod_location,optional"`
 	//Base      	 *WorkspaceProfile `hcl:"base"`
 
 	// options
