@@ -237,23 +237,27 @@ func loadWorkspaceProfiles(configFolder string) (map[string]*modconfig.Workspace
 		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
 	}
 
+	profileMap := map[string]*modconfig.WorkspaceProfile{}
 	// build parse context
 	parseContext := parse.NewParseContext(configFolder)
 	for _, block := range content.Blocks {
 
-		connection, moreDiags := parse.DecodeWorkspaceProfile(block, parseContext)
-		if moreDiags.HasErrors() {
-			diags = append(diags, moreDiags...)
-			continue
+		workspaceProfile, res := parse.DecodeWorkspaceProfile(block, parseContext)
+		if res.Success() {
+			profileMap[workspaceProfile.Name] = workspaceProfile
 		}
-		_, alreadyThere := steampipeConfig.Connections[connection.Name]
-		if alreadyThere {
-			return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
-		}
-		if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
-			return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
-		}
-		steampipeConfig.Connections[connection.Name] = connection
+		//if moreDiags.HasErrors() {
+		//	diags = append(diags, moreDiags...)
+		//	continue
+		//}
+		//_, alreadyThere := steampipeConfig.Connections[connection.Name]
+		//if alreadyThere {
+		//	return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
+		//}
+		//if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
+		//	return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
+		//}
+		//steampipeConfig.Connections[connection.Name] = connection
 	}
 
 	if diags.HasErrors() {
