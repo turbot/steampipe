@@ -22,6 +22,9 @@ type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
 
+	// map ok workspace profiles keyed by name
+	WorkspaceProfiles map[string]*modconfig.WorkspaceProfile
+
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
 	DatabaseOptions          *options.Database
@@ -32,8 +35,9 @@ type SteampipeConfig struct {
 
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
-		Connections: make(map[string]*modconfig.Connection),
-		commandName: commandName,
+		Connections:       make(map[string]*modconfig.Connection),
+		WorkspaceProfiles: make(map[string]*modconfig.WorkspaceProfile),
+		commandName:       commandName,
 	}
 }
 

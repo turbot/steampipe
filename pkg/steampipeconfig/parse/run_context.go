@@ -2,13 +2,10 @@ package parse
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
@@ -36,14 +33,11 @@ ReferenceTypeValueMap is keyed  by resource type, then by resource name
 type ReferenceTypeValueMap map[string]map[string]cty.Value
 
 type RunContext struct {
+	ParseContext
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
 	// the workspace lock data
-	WorkspaceLock    *versionmap.WorkspaceLock
-	UnresolvedBlocks map[string]*unresolvedBlock
-	FileData         map[string][]byte
-	// the eval context used to decode references in HCL
-	EvalCtx *hcl.EvalContext
+	WorkspaceLock *versionmap.WorkspaceLock
 
 	Flags                ParseModFlag
 	ListOptions          *filehelpers.ListOptions
@@ -86,11 +80,9 @@ type RunContext struct {
 func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
 	c := &RunContext{
 		Flags:                flags,
-		RootEvalPath:         rootEvalPath,
 		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
-		UnresolvedBlocks:     make(map[string]*unresolvedBlock),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
@@ -157,6 +149,20 @@ func (r *RunContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependency
 	r.setDependencyVariables(dependencyVariablesMap)
 }
 
+// AddDependencies :: the block could not be resolved as it has dependencies
+// 1) store block as unresolved
+// 2) add dependencies to our tree of dependencies
+func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
+	// TACTICAL if this is NOT a top level block, add a suffix to the block name
+	// this is needed to avoid circular dependency errors if a nested block references
+	// a top level block with the same name
+	if !r.IsTopLevelBlock(block) {
+		name = "nested." + name
+	}
+	// call base
+	return r.ParseContext.AddDependencies(block, name, dependencies)
+}
+
 // setRootVariables sets the Variables property
 // and adds the variables to the referenceValues map (used to build the eval context)
 func (r *RunContext) setRootVariables(variables map[string]*modconfig.Variable) {
@@ -210,16 +216,6 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	return diags
 }
 
-func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
-	r.blocks = content.Blocks
-	// put blocks into map as well
-	r.topLevelBlocks = make(map[*hcl.Block]struct{}, len(r.blocks))
-	for _, b := range content.Blocks {
-		r.topLevelBlocks[b] = struct{}{}
-	}
-	r.FileData = fileData
-}
-
 func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
 	if len(r.BlockTypes) > 0 && !helpers.StringSliceContains(r.BlockTypes, block.Type) {
 		return false
@@ -228,102 +224,6 @@ func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
 		return false
 	}
 	return true
-}
-
-func (r *RunContext) ClearDependencies() {
-	r.UnresolvedBlocks = make(map[string]*unresolvedBlock)
-	r.dependencyGraph = r.newDependencyGraph()
-}
-
-// AddDependencies :: the block could not be resolved as it has dependencies
-// 1) store block as unresolved
-// 2) add dependencies to our tree of dependencies
-func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
-	// TACTICAL if this is NOT a top level block, add a suffix to the block name
-	// this is needed to avoid circular dependency errors if a nested block references
-	// a top level block with the same name
-	if !r.IsTopLevelBlock(block) {
-		name = "nested." + name
-	}
-
-	var diags hcl.Diagnostics
-	// store unresolved block
-	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
-
-	// store dependency in tree - d
-	if !r.dependencyGraph.ContainsNode(name) {
-		r.dependencyGraph.AddNode(name)
-	}
-	// add root dependency
-	if err := r.dependencyGraph.AddEdge(rootDependencyNode, name); err != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "failed to add root dependency to graph",
-			Detail:   err.Error()})
-	}
-
-	for _, dep := range dependencies {
-		// each dependency object may have multiple traversals
-		for _, t := range dep.Traversals {
-			parsedPropertyPath, err := modconfig.ParseResourcePropertyPath(hclhelpers.TraversalAsString(t))
-
-			if err != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "failed to parse dependency",
-					Detail:   err.Error()})
-				continue
-
-			}
-
-			// 'd' may be a property path - when storing dependencies we only care about the resource names
-			dependencyResourceName := parsedPropertyPath.ToResourceName()
-			if !r.dependencyGraph.ContainsNode(dependencyResourceName) {
-				r.dependencyGraph.AddNode(dependencyResourceName)
-			}
-			if err := r.dependencyGraph.AddEdge(name, dependencyResourceName); err != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "failed to add dependency to graph",
-					Detail:   err.Error()})
-			}
-		}
-	}
-	return diags
-}
-
-// BlocksToDecode builds a list of blocks to decode, the order of which is determined by the depdnency order
-func (r *RunContext) BlocksToDecode() (hcl.Blocks, error) {
-	depOrder, err := r.getDependencyOrder()
-	if err != nil {
-		return nil, err
-	}
-	if len(depOrder) == 0 {
-		return r.blocks, nil
-	}
-
-	// NOTE: a block may appear more than once in unresolved blocks
-	// if it defines multiple unresolved resources, e.g a locals block
-
-	// make a map of blocks we have already included, keyed by the block def range
-	blocksMap := make(map[string]bool)
-	var blocksToDecode hcl.Blocks
-	for _, name := range depOrder {
-		// depOrder is all the blocks required to resolve dependencies.
-		// if this one is unparsed, added to list
-		block, ok := r.UnresolvedBlocks[name]
-		if ok && !blocksMap[block.Block.DefRange.String()] {
-			blocksToDecode = append(blocksToDecode, block.Block)
-			// add to map
-			blocksMap[block.Block.DefRange.String()] = true
-		}
-	}
-	return blocksToDecode, nil
-}
-
-// EvalComplete returns whether all elements in the dependency tree fully evaluated
-func (r *RunContext) EvalComplete() bool {
-	return len(r.UnresolvedBlocks) == 0
 }
 
 // ShouldCreateDefaultMod returns whether the flag is set to create a default mod if no mod definition exists
@@ -347,32 +247,6 @@ func (r *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics
 	r.buildEvalContext()
 
 	return nil
-}
-
-func (r *RunContext) FormatDependencies() string {
-	// first get the dependency order
-	dependencyOrder, err := r.getDependencyOrder()
-	if err != nil {
-		return err.Error()
-	}
-	// build array of dependency strings - processes dependencies in reverse order for presentation reasons
-	numDeps := len(dependencyOrder)
-	depStrings := make([]string, numDeps)
-	for i := 0; i < len(dependencyOrder); i++ {
-		srcIdx := len(dependencyOrder) - i - 1
-		resourceName := dependencyOrder[srcIdx]
-		// find dependency
-		dep, ok := r.UnresolvedBlocks[resourceName]
-
-		if ok {
-			depStrings[i] = dep.String()
-		} else {
-			// this could happen if there is a dependency on a missing item
-			depStrings[i] = fmt.Sprintf("  MISSING: %s", resourceName)
-		}
-	}
-
-	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }
 
 func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
@@ -402,71 +276,6 @@ func (r *RunContext) GetResourceMaps() *modconfig.ResourceMaps {
 
 	resourceMap = resourceMap.Merge(dependencyResourceMaps)
 	return resourceMap
-}
-
-func (r *RunContext) newDependencyGraph() *topsort.Graph {
-	dependencyGraph := topsort.NewGraph()
-	// add root node - this will depend on all other nodes
-	dependencyGraph.AddNode(rootDependencyNode)
-	return dependencyGraph
-}
-
-// return the optimal run order required to resolve dependencies
-func (r *RunContext) getDependencyOrder() ([]string, error) {
-	rawDeps, err := r.dependencyGraph.TopSort(rootDependencyNode)
-	if err != nil {
-		return nil, err
-	}
-
-	// now remove the variable names and dedupe
-	var deps []string
-	for _, d := range rawDeps {
-		if d == rootDependencyNode {
-			continue
-		}
-
-		propertyPath, err := modconfig.ParseResourcePropertyPath(d)
-		if err != nil {
-			return nil, err
-		}
-		dep := modconfig.BuildModResourceName(propertyPath.ItemType, propertyPath.Name)
-		if !helpers.StringSliceContains(deps, dep) {
-			deps = append(deps, dep)
-		}
-	}
-	return deps, nil
-}
-
-// eval functions
-func (r *RunContext) buildEvalContext() {
-	// convert variables to cty values
-	variables := make(map[string]cty.Value)
-
-	// now for each mod add all the values
-	for mod, modMap := range r.referenceValues {
-		if mod == "local" {
-			for k, v := range modMap {
-				variables[k] = cty.ObjectVal(v)
-			}
-			continue
-		}
-
-		// mod map is map[string]map[string]cty.Value
-		// for each element (i.e. map[string]cty.Value) convert to cty object
-		refTypeMap := make(map[string]cty.Value)
-		for refType, typeValueMap := range modMap {
-			refTypeMap[refType] = cty.ObjectVal(typeValueMap)
-		}
-		// now convert the cty map to a cty object
-		variables[mod] = cty.ObjectVal(refTypeMap)
-	}
-
-	// create evaluation context
-	r.EvalCtx = &hcl.EvalContext{
-		Variables: variables,
-		// use the mod path as the file root for functions
-		Functions: ContextFunctions(r.RootEvalPath),
-	}
 }
 
 // update the cached cty value for the given resource, as long as itr does not already exist
@@ -554,4 +363,31 @@ func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
 func (r *RunContext) IsTopLevelBlock(block *hcl.Block) bool {
 	_, isTopLevel := r.topLevelBlocks[block]
 	return isTopLevel
+}
+
+func (r *RunContext) buildEvalContext() {
+	// convert variables to cty values
+	variables := make(map[string]cty.Value)
+
+	// now for each mod add all the values
+	for mod, modMap := range r.referenceValues {
+		if mod == "local" {
+			for k, v := range modMap {
+				variables[k] = cty.ObjectVal(v)
+			}
+			continue
+		}
+
+		// mod map is map[string]map[string]cty.Value
+		// for each element (i.e. map[string]cty.Value) convert to cty object
+		refTypeMap := make(map[string]cty.Value)
+		for refType, typeValueMap := range modMap {
+			refTypeMap[refType] = cty.ObjectVal(typeValueMap)
+		}
+		// now convert the cty map to a cty object
+		variables[mod] = cty.ObjectVal(refTypeMap)
+	}
+
+	// call base
+	r.ParseContext.buildEvalContext(variables)
 }

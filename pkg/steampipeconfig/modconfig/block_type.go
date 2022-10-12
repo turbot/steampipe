@@ -24,7 +24,13 @@ const (
 	BlockTypeEdge           = "edge"
 	BlockTypeLegacyRequires = "requires"
 	BlockTypeCategory       = "category"
-	ResourceTypeSnapshot    = "snapshot"
+
+	// config blocks
+	BlockTypeConnection       = "connection"
+	BlockTypeOptions          = "options"
+	BlockTypeWorkspaceProfile = "workspace"
+
+	ResourceTypeSnapshot = "snapshot"
 )
 
 // QueryProviderBlocks is a list of block types which implement QueryProvider

@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 	"os"
 	"path/filepath"
@@ -69,6 +70,9 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 	if err := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); err != nil {
 		return nil, err
 	}
+
+	// load workspace config
+	workspaceProfiles, err := loadWorkspaceProfiles(filepaths.WorkspaceProfileDir())
 
 	// now load config from the workspace folder, if provided
 	// this has precedence and so will overwrite any config which has already been set
@@ -144,7 +148,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	for _, block := range content.Blocks {
 		switch block.Type {
-		case "connection":
+		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
@@ -159,7 +163,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
-		case "options":
+		case modconfig.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return err
@@ -196,4 +200,61 @@ func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loa
 		return fmt.Errorf("'%s' options block is not permitted", blockType)
 	}
 	return nil
+}
+
+func loadWorkspaceProfiles(configFolder string) (map[string]*modconfig.WorkspaceProfile, error) {
+	// get all the config files in the directory
+	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListOptions{
+		Flags:   filehelpers.FilesFlat,
+		Include: filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if len(configPaths) == 0 {
+		return nil, nil
+	}
+
+	fileData, diags := parse.LoadFileData(configPaths...)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
+	}
+
+	body, diags := parse.ParseHclFiles(fileData)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
+	}
+
+	// do a partial decode
+	content, moreDiags := body.Content(parse.WorkspaceProfileBlockSchema)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
+	}
+
+	for _, block := range content.Blocks {
+		switch block.Type {
+
+		case modconfig.BlockTypeWorkspaceProfile:
+			//connection, moreDiags := parse.DecodeWorkspaceProfile(block)
+			//if moreDiags.HasErrors() {
+			//	diags = append(diags, moreDiags...)
+			//	continue
+			//}
+			//_, alreadyThere := steampipeConfig.Connections[connection.Name]
+			//if alreadyThere {
+			//	return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
+			//}
+			//if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
+			//	return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
+			//}
+			//steampipeConfig.Connections[connection.Name] = connection
+		}
+	}
+
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load config", diags)
+	}
+	return nil, nil
 }
