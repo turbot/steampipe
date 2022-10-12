@@ -2,6 +2,8 @@ package cmdconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"os"
 
 	"github.com/spf13/viper"
@@ -20,18 +22,42 @@ func BootstrapViper() {
 	viper.SetDefault(constants.EnvInstallDir, filepaths.DefaultInstallDir)
 	bootstrapEnvMappings := map[string]envMapping{
 		constants.EnvInstallDir:     {constants.ArgInstallDir, "string"},
-		constants.EnvModLocation: 	 {constants.ArgModLocation, "string"},
+		constants.EnvWorkspaceChDir: {constants.ArgModLocation, "string"},
+		constants.EnvModLocation:    {constants.ArgModLocation, "string"},
 	}
 	setViperDefaultFromEnvMapping(bootstrapEnvMappings)
 }
 
 // SetViperDefaults sets up viper with default values for all config which is set via hcl config or env vars
-func SetViperDefaults(configMap map[string]interface{}) {
+func SetViperDefaults(configMap map[string]interface{}, workspaceProfileMap map[string]*modconfig.WorkspaceProfile) {
+	// least precedence is default workspace profile
+	overrideDefaultsFromWorkspaceProfile(workspaceProfileMap["default"])
 	setBaseDefaults()
 	if configMap != nil {
 		overrideDefaultsFromConfig(configMap)
 	}
 	overrideDefaultsFromEnv()
+
+	// if an explicit workspace profile was set, it has highest priority (apart from command line args)
+	if viper.IsSet(constants.ArgWorkspaceProfile) {
+		overrideDefaultsFromWorkspaceProfile(steampipeconfig.GlobalWorkspaceProfile)
+	}
+	// todo KAI override options defaults from workspace options
+}
+
+func overrideDefaultsFromWorkspaceProfile(profile *modconfig.WorkspaceProfile) {
+	if profile.CloudHost != "" {
+		viper.SetDefault(constants.ArgCloudHost, profile.CloudHost)
+	}
+	if profile.CloudToken != "" {
+		viper.SetDefault(constants.ArgCloudToken, profile.CloudToken)
+	}
+	if profile.ModLocation != "" {
+		viper.SetDefault(constants.ArgModLocation, profile.ModLocation)
+	}
+	if profile.CloudHost != "" {
+		viper.SetDefault(constants.ArgCloudHost, profile.CloudHost)
+	}
 }
 
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism
@@ -71,8 +97,9 @@ func overrideDefaultsFromEnv() {
 		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
 		constants.EnvCloudHost:         {constants.ArgCloudHost, "string"},
 		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
-		constants.EnvWorkspace:         {constants.ArgSnapshotLocation, "string"},
+		constants.EnvSnapshotLocation:  {constants.ArgSnapshotLocation, "string"},
 		constants.EnvWorkspaceDatabase: {constants.ArgWorkspaceDatabase, "string"},
+		constants.EnvWorkspaceProfile:  {constants.ArgWorkspaceProfile, "string"},
 		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
 		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},

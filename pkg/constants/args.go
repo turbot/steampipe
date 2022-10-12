@@ -22,7 +22,6 @@ const (
 	ArgUpdateCheck         = "update-check"
 	ArgTelemetry           = "telemetry"
 	ArgInstallDir          = "install-dir"
-	ArgSnapshotLocation    = "snapshot-location"
 	ArgWorkspaceChDir      = "workspace-chdir"
 	ArgWorkspaceDatabase   = "workspace-database"
 	ArgSchemaComments      = "schema-comments"
@@ -55,7 +54,9 @@ const (
 	ArgSnapshot            = "snapshot"
 	ArgSnapshotTag         = "snapshot-tag"
 	ArgSourceSnapshot      = "source-snapshot"
-	ArgWorkspace           = "workspace"
+	ArgWorkspaceProfile    = "workspace"
+	ArgModLocation         = "mod-location"
+	ArgSnapshotLocation    = "snapshot-location"
 )
 
 // the default value for ArgShare and ArgSnapshot if no value is provided
