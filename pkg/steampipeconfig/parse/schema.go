@@ -12,13 +12,21 @@ var ConfigBlockSchema = &hcl.BodySchema{
 			Type:       "connection",
 			LabelNames: []string{"name"},
 		},
-		{
-			Type:       "workspace",
-			LabelNames: []string{"name"},
-		},
+
 		{
 			Type:       "options",
 			LabelNames: []string{"type"},
+		},
+	},
+}
+
+var WorkspaceProfileListBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{},
+	Blocks: []hcl.BlockHeaderSchema{
+
+		{
+			Type:       "workspace",
+			LabelNames: []string{"name"},
 		},
 	},
 }

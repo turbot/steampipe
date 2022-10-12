@@ -78,7 +78,9 @@ type RunContext struct {
 }
 
 func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
+	parseContext := NewParseContext(rootEvalPath)
 	c := &RunContext{
+		ParseContext:         parseContext,
 		Flags:                flags,
 		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,

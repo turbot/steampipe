@@ -2,11 +2,21 @@ package parse
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func DecodeWorkspaceProfile(block *hcl.Block) (*modconfig.WorkspaceProfile, hcl.Diagnostics) {
-	return nil, nil
+func DecodeWorkspaceProfile(block *hcl.Block, parseContext ParseContext) (*modconfig.WorkspaceProfile, *decodeResult) {
+	res := newDecodeResult()
+	// get shell resource
+	resource := modconfig.NewWorkspaceProfile(block)
+
+	diags := gohcl.DecodeBody(block.Body, parseContext.EvalCtx, resource)
+	if len(diags) > 0 {
+		res.handleDecodeDiags(diags)
+	}
+	return resource, res
+
 	//WorkspaceProfileContent, rest, diags := block.Body.PartialContent(WorkspaceProfileBlockSchema)
 	//if diags.HasErrors() {
 	//	return nil, diags
