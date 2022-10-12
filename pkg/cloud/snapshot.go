@@ -13,7 +13,7 @@ import (
 )
 
 func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
-	cloudWorkspace := viper.GetString(constants.ArgWorkspace)
+	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {

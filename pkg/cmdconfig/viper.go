@@ -71,7 +71,7 @@ func overrideDefaultsFromEnv() {
 		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
 		constants.EnvCloudHost:         {constants.ArgCloudHost, "string"},
 		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
-		constants.EnvWorkspace:         {constants.ArgWorkspace, "string"},
+		constants.EnvWorkspace:         {constants.ArgSnapshotLocation, "string"},
 		constants.EnvWorkspaceDatabase: {constants.ArgWorkspaceDatabase, "string"},
 		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
