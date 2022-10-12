@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 	"path"
 	"strings"
@@ -136,14 +135,7 @@ func (m *Manager) DoExport(ctx context.Context, targetName string, source Export
 		return nil
 	}
 
-	// get the short name for the target
-	parsedResource, err := modconfig.ParseResourceName(targetName)
-	if err != nil {
-		return err
-	}
-	shortName := parsedResource.Name
-
-	targets, err := m.resolveTargetsFromArgs(exports, shortName)
+	targets, err := m.resolveTargetsFromArgs(exports, targetName)
 	if err != nil {
 		return err
 	}
