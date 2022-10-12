@@ -2,7 +2,7 @@ package controldisplay
 
 import (
 	"context"
-	"fmt"
+	"github.com/turbot/steampipe/pkg/utils"
 	"io"
 	"os"
 	"text/template"
@@ -13,25 +13,27 @@ import (
 	"github.com/turbot/steampipe/pkg/version"
 )
 
-type TemplateRenderConfig struct {
-	RenderHeader bool
-}
-type TemplateRenderConstants struct {
-	SteampipeVersion string
-	WorkingDir       string
-}
-
-type TemplateRenderContext struct {
-	Constants TemplateRenderConstants
-	Config    TemplateRenderConfig
-	Data      *controlexecute.ExecutionTree
-}
-
 // TemplateFormatter implements the 'Formatter' interface and exposes a generic template based output mechanism
 // for 'check' execution trees
 type TemplateFormatter struct {
 	template     *template.Template
 	exportFormat *OutputTemplate
+}
+
+func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
+	templateFuncs := templateFuncs()
+
+	// add a stub "render_context" function
+	// this will be overwritten before we execute the template
+	// if we don't put this here, then templates which use this
+	// won't parse and will throw Error: template: ****: function "render_context" not defined
+	templateFuncs["render_context"] = func() TemplateRenderContext { return TemplateRenderContext{} }
+
+	t := template.Must(template.New("outlet").
+		Funcs(templateFuncs).
+		ParseFS(os.DirFS(input.TemplatePath), "*"))
+
+	return &TemplateFormatter{exportFormat: input, template: t}, nil
 }
 
 func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
@@ -70,35 +72,30 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 			writer.Close()
 		}
 	}()
+
+	// tactical - for json, prettify the output
+	if tf.shouldPrettify(){
+		return utils.PrettifyJsonFromReader(reader)
+	}
+
 	return reader, nil
 }
 
 func (tf TemplateFormatter) FileExtension() string {
-	// if the extension is the same as the format name, return just the extension
-	if tf.exportFormat.DefaultTemplateForExtension {
-		return tf.exportFormat.OutputExtension
-	} else {
-		// otherwise return the fullname
-		return fmt.Sprintf(".%s", tf.exportFormat.FormatFullName)
-	}
+	return tf.exportFormat.FileExtension
 }
 
 func (tf TemplateFormatter) Name() string {
 	return tf.exportFormat.FormatName
 }
 
-func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
-	templateFuncs := templateFuncs()
+func (tf TemplateFormatter) Alias() string {
+	if tf.exportFormat.FormatFullName != tf.exportFormat.FormatName {
+		return tf.exportFormat.FormatFullName
+	}
+	return ""
+}
 
-	// add a stub "render_context" function
-	// this will be overwritten before we execute the template
-	// if we don't put this here, then templates which use this
-	// won't parse and will throw Error: template: ****: function "render_context" not defined
-	templateFuncs["render_context"] = func() TemplateRenderContext { return TemplateRenderContext{} }
-
-	t := template.Must(template.New("outlet").
-		Funcs(templateFuncs).
-		ParseFS(os.DirFS(input.TemplatePath), "*"))
-
-	return &TemplateFormatter{exportFormat: input, template: t}, nil
+func (tf TemplateFormatter) shouldPrettify() bool {
+	return tf.Name() == constants.OutputFormatJSON
 }

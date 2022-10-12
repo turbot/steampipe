@@ -14,7 +14,9 @@ import (
 
 const MaxColumns = 200
 
-type TextFormatter struct{}
+type TextFormatter struct {
+	FormatterBase
+}
 
 func (tf *TextFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	renderer := NewTableRenderer(tree)

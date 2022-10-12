@@ -11,7 +11,9 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 )
 
-type SnapshotFormatter struct{}
+type SnapshotFormatter struct {
+	FormatterBase
+}
 
 func (f *SnapshotFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	snapshot, err := executionTreeToSnapshot(tree)
@@ -35,4 +37,8 @@ func (f *SnapshotFormatter) FileExtension() string {
 
 func (f SnapshotFormatter) Name() string {
 	return constants.OutputFormatSnapshot
+}
+
+func (f *SnapshotFormatter) Alias() string {
+	return ""
 }

@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -9,9 +10,10 @@ import (
 )
 
 type SnapshotExporter struct {
+	ExporterBase
 }
 
-func (e *SnapshotExporter) Export(input ExportSourceData, filePath string) error {
+func (e *SnapshotExporter) Export(_ context.Context, input ExportSourceData, filePath string) error {
 	snapshot, ok := input.(*dashboardtypes.SteampipeSnapshot)
 
 	if !ok {
@@ -24,7 +26,7 @@ func (e *SnapshotExporter) Export(input ExportSourceData, filePath string) error
 
 	res := strings.NewReader(fmt.Sprintf("%s\n", string(snapshotStr)))
 
-	return writeExport(filePath, res)
+	return Write(filePath, res)
 }
 
 func (e *SnapshotExporter) FileExtension() string {

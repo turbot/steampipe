@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"io"
 	"strings"
@@ -9,7 +10,9 @@ import (
 
 // NullFormatter is to be used when no output is expected. It always returns a `io.Reader` which
 // reads an empty string
-type NullFormatter struct{}
+type NullFormatter struct {
+	FormatterBase
+}
 
 func (j *NullFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	return strings.NewReader(""), nil
@@ -21,6 +24,5 @@ func (j *NullFormatter) FileExtension() string {
 }
 
 func (j *NullFormatter) Name() string {
-	// will not be called
-	return ""
+	return constants.OutputFormatNone
 }
