@@ -60,7 +60,7 @@ const (
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
 func prepareBackup(ctx context.Context) (*string, error) {
-	log.Println("[TRACE] Looking for installed services other than this version")
+	log.Println("[TRACE] Looking for installed different PG Version")
 	found, location, err := findDifferentPgInstallation(ctx)
 	if err != nil {
 		log.Println("[TRACE] Error while finding different PG Version:", err)
@@ -68,24 +68,24 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	}
 	// nothing found - nothing to do
 	if !found {
-		log.Println("[TRACE] could not find installed services other than this version")
+		log.Println("[TRACE] could not find installed different PG Version")
 		return nil, nil
 	}
-	log.Println("[TRACE] found installed services other than this version", location)
+	log.Println("[TRACE] found installed different PG Version", location)
 
 	// ensure there is no orphaned instance of postgres running
 	// if the service state file was in-tact, we would already have found it and
 	// failed before now with a suitable message
 	// - to get here the state file must be missing/invalid, so just kill the postgres process)
-	// ignore error - just proceed with installation
-	log.Println("[TRACE] killing any running instances of other versions")
+	log.Println("[TRACE] killing any running instances of different PG version")
 	if err := killRunningDbInstance(ctx); err != nil {
+		log.Println("[TRACE] could not KILL different PG version")
 		return nil, err
 	}
 
-	log.Println("[TRACE] starting the other versions")
+	log.Println("[TRACE] starting the different PG version")
 	runConfig, err := startDatabaseInLocation(ctx, location)
-	log.Println("[TRACE] started the other versions")
+	log.Println("[TRACE] started the different PG version")
 	if err != nil {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
 		return nil, err

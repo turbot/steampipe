@@ -4,6 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"sync"
+	"time"
+
 	"github.com/fatih/color"
 	"github.com/jackc/pgx/v4"
 	"github.com/sethvargo/go-retry"
@@ -11,17 +18,12 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
-	"net"
-	"os"
-	"os/exec"
-	"sync"
-	"time"
 )
 
 var ensureMux sync.Mutex
@@ -96,7 +98,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 			return err
 		}
 		// ignore all other errors with the backup, displaying a warning instead
-		statushooks.Message(ctx, noBackupWarning())
+		error_helpers.ShowWarning(noBackupWarning())
 	}
 
 	// install the fdw
