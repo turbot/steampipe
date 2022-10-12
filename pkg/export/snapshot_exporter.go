@@ -10,6 +10,7 @@ import (
 )
 
 type SnapshotExporter struct {
+	ExporterBase
 }
 
 func (e *SnapshotExporter) Export(_ context.Context, input ExportSourceData, filePath string) error {

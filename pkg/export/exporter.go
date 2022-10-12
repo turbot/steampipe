@@ -11,4 +11,15 @@ type Exporter interface {
 	Export(ctx context.Context, input ExportSourceData, destPath string) error
 	FileExtension() string
 	Name() string
+	Alias() string
+	IsDefaultExporterForExtension() bool
+}
+
+type ExporterBase struct{}
+
+func (*ExporterBase) Alias() string {
+	return ""
+}
+func (*ExporterBase) IsDefaultExporterForExtension() bool {
+	return false
 }

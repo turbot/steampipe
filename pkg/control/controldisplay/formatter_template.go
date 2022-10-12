@@ -102,3 +102,11 @@ func (tf TemplateFormatter) FileExtension() string {
 func (tf TemplateFormatter) Name() string {
 	return tf.exportFormat.FormatName
 }
+
+func (tf TemplateFormatter) Alias() string {
+	return tf.exportFormat.FormatFullName
+}
+
+func (tf TemplateFormatter) IsDefaultFormatterForExtension() bool {
+	return tf.IsDefaultFormatterForExtension()
+}
