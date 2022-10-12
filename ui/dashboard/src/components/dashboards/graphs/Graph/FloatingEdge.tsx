@@ -1,5 +1,6 @@
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
+import { classNames } from "../../../../utils/styles";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
 import { useCallback } from "react";
 import { useStore } from "react-flow-renderer";
@@ -10,11 +11,6 @@ const FloatingEdge = ({
   target,
   markerEnd,
   style,
-  labelStyle,
-  labelBgStyle,
-  labelShowBg,
-  labelBgPadding,
-  labelBgBorderRadius,
   data: { color, fields, row_data, label, themeColors },
 }) => {
   // const edgeLabelRef = useRef(null);
@@ -66,7 +62,12 @@ const FloatingEdge = ({
         y={my - 16}
         requiredExtensions="http://www.w3.org/1999/xhtml"
       >
-        <div className="h-full flex items-center align-center cursor-context-menu">
+        <div
+          className={classNames(
+            "h-full flex items-center align-center",
+            row_data?.properties ? "cursor-context-menu" : null
+          )}
+        >
           <p
             className="mx-auto px-1 inline-block text-center bg-dashboard-panel text-black-scale-4 italic text-sm text-wrap leading-4 line-clamp-2"
             title={label}
