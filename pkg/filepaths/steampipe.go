@@ -70,6 +70,11 @@ func BackupsDir() string {
 	return steampipeSubDir("backups")
 }
 
+// WorkspaceProfileDir returns the path to the workspace profiles directory
+func WorkspaceProfileDir() string {
+	return steampipeSubDir("workspaces")
+}
+
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)
 func EnsureDatabaseDir() string {
 	return ensureSteampipeSubDir("db")
