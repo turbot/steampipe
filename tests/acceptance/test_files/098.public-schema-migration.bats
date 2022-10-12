@@ -2,7 +2,8 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "verify data is properly migrated when upgrading from v0.13.6" {
-  #change 
+  export STEAMPIPE_LOG_LEVEL=TRACE
+
   # create a temp directory to install steampipe(0.13.6)
   tmpdir="$(mktemp -d)"
   mkdir -p "${tmpdir}"
