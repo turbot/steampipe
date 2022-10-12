@@ -2,6 +2,7 @@ package controldisplay
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"io"
 	"strings"
@@ -23,6 +24,5 @@ func (j *NullFormatter) FileExtension() string {
 }
 
 func (j *NullFormatter) Name() string {
-	// will not be called
-	return ""
+	return constants.OutputFormatNone
 }
