@@ -13,20 +13,6 @@ import (
 	"github.com/turbot/steampipe/pkg/version"
 )
 
-type TemplateRenderConfig struct {
-	RenderHeader bool
-}
-type TemplateRenderConstants struct {
-	SteampipeVersion string
-	WorkingDir       string
-}
-
-type TemplateRenderContext struct {
-	Constants TemplateRenderConstants
-	Config    TemplateRenderConfig
-	Data      *controlexecute.ExecutionTree
-}
-
 // TemplateFormatter implements the 'Formatter' interface and exposes a generic template based output mechanism
 // for 'check' execution trees
 type TemplateFormatter struct {

@@ -107,17 +107,8 @@ func (m *Manager) getExportTarget(export, executionName string) (*Target, error)
 		return t, nil
 	}
 
-	// for a filename such as foo.asff.json, treat ".asff,json" as the extension
-	ext := getExtension(export)
-	if e, ok := m.registeredExtensions[ext]; ok {
-		t := &Target{
-			exporter: e,
-			filePath: export,
-		}
-		return t, nil
-	}
-	// if that did no work, try just the final segment of extension
-	ext = path.Ext(export)
+	// now try by extension
+	ext := path.Ext(export)
 	if e, ok := m.registeredExtensions[ext]; ok {
 		t := &Target{
 			exporter: e,
@@ -127,15 +118,6 @@ func (m *Manager) getExportTarget(export, executionName string) (*Target, error)
 	}
 
 	return nil, fmt.Errorf("formatter satisfying '%s' not found", export)
-}
-
-// for a filename such as foo.asff.json, treat ".asff,json" as the extension
-func getExtension(name string) string {
-	idx := strings.Index(name, ".")
-	if idx == -1 {
-		return ""
-	}
-	return name[idx:]
 }
 
 func (m *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) error {
