@@ -564,11 +564,13 @@ func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process,
 	var instances []*psutils.Process
 	allProcesses, err := psutils.ProcessesWithContext(ctx)
 	if err != nil {
+		log.Println("[TRACE] psutils.ProcessesWithContext failed with", err)
 		return nil, err
 	}
 	for _, p := range allProcesses {
 		cmdLine, err := p.CmdlineSliceWithContext(ctx)
 		if err != nil {
+			log.Println("[TRACE] p.CmdlineSliceWithContext failed with", err)
 			return nil, err
 		}
 		if isSteampipePostgresProcess(ctx, cmdLine) {
