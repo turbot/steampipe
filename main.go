@@ -98,7 +98,7 @@ func checkWsl1(ctx context.Context) {
 		error_helpers.ShowErrorWithMessage(ctx, err, "failed to check uname")
 		return
 	}
-	// convert the ouptut to a string of lowercase characters for ease of use
+	// convert the output to a string of lowercase characters for ease of use
 	op := strings.ToLower(string(output))
 
 	// if WSL2, return
