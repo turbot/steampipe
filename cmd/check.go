@@ -129,12 +129,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	shouldShare := viper.GetBool(constants.ArgShare)
 	shouldUpload := viper.GetBool(constants.ArgSnapshot)
 	generateSnapshot := shouldShare || shouldUpload
-	if generateSnapshot {
-		// if no output explicitly set, show nothing
-		if !viper.IsSet(constants.ArgOutput) {
-			viper.Set(constants.ArgOutput, constants.OutputFormatNone)
-		}
-	}
 
 	// treat each arg as a separate execution
 	for _, targetName := range args {
