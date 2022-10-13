@@ -96,8 +96,10 @@ jobs:
           - "check"
           - "performance"
           - "exit_codes"
+        exclude:
+          - platform: macos-latest
+            test_block: migration
     runs-on: ${{ matrix.platform }}
-    if: matrix.platform == "macos-latest" && !contains(fromJSON("[\"migration\"]"), matrix.test_block)
     steps:
       - name: Checkout
         uses: actions/checkout@v3
