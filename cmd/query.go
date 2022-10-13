@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/hcl/v2"
 	"golang.org/x/exp/maps"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -85,8 +85,8 @@ Examples:
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
-		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
-		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
+		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ")
@@ -109,7 +109,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// validate args
-	error_helpers.FailOnError(validateQueryArgs(cmd))
+	error_helpers.FailOnError(validateQueryArgs(cmd, args))
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
@@ -143,7 +143,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func validateQueryArgs(cmd *cobra.Command) error {
+func validateQueryArgs(cmd *cobra.Command, args []string) error {
+	interactiveMode := len(args) == 0
+	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
+		return fmt.Errorf("cannot share snapshots in interactive mode")
+	}
+	// if share or snapshot args are set, there must be a query specified
 	err := validateCloudArgs()
 	if err != nil {
 		return err

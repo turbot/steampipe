@@ -10,7 +10,8 @@ import (
 
 // Constants for Config
 const (
-	DefaultInstallDir            = "~/.steampipe"
+	DefaultInstallDir = "~/.steampipe"
+	
 	connectionsStateFileName     = "connection.json"
 	versionFileName              = "versions.json"
 	databaseRunningInfoFileName  = "steampipe.json"
