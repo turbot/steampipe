@@ -84,7 +84,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_defaults_and_no_args --export json 
 
-  # store the reason field in `content`
+  # store the reason field in `content` 
   content=$(cat control.*.json | jq '.controls[0].results[0].reason')
 
   assert_equal "$content" '"default_parameter_1 default_parameter_2 default_parameter_3"'
