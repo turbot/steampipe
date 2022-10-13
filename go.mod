@@ -223,5 +223,4 @@ replace (
 	github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
-	github.com/jedib0t/go-pretty/v6 => github.com/kaidaguerre/go-pretty/v6 v6.3.6-steampipe.0
 )
