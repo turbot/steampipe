@@ -424,7 +424,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "test normal_rand function" {
   # normal_rand function
-  steampipe query "SELECT * FROM normal_rand(10, 5, 3);"
+  run steampipe query "SELECT * FROM normal_rand(10, 5, 3);"
 
   # previous query should pass
   assert_success

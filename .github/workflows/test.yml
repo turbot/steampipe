@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
-          
+
       - name: Fetching Go Cache Paths
         id: go-cache-paths
         run: |
@@ -158,27 +158,14 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
           steampipe service stop --force
-      
+
       - name: Save Test Suite Logs
-        if: ${{ success() }}
         uses: actions/upload-artifact@v3
+        continue-on-error: true
         with:
           name: test-logs
           path: ~/.steampipe/logs
           if-no-files-found: error
-      
-      # This job checks whether the test suite has passed or not.
-      # Since the exit_code is set only when the bats test suite pass, 
-      # we have added the if-conditional block 
-      - name: Check Test Passed/Failed
-        if: ${{ success() }}
-        continue-on-error: false
-        run: |
-          if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
-            exit 0
-          else
-            exit 1
-          fi
 
   clean_up:
     # let's clean up the artifacts.
@@ -187,6 +174,7 @@ jobs:
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
+    if: jobs.acceptance_test.result == "success"
     needs: acceptance_test
     runs-on: ubuntu-latest
     steps:
@@ -200,12 +188,6 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: build-artifact-darwin
-          failOnError: true
-
-      - name: Clean up Test Suite
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: test-artifact
           failOnError: true
 
       - name: Clean up Test Suite Logs
