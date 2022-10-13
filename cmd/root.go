@@ -84,7 +84,7 @@ func InitCmd() {
 	defer utils.LogTime("cmd.root.InitCmd end")
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", filepaths.DefaultInstallDir))
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory")
+	rootCmd.PersistentFlags().String(constants.ArgModLocation, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
 	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "local", "Steampipe Cloud workspace database")
@@ -92,7 +92,7 @@ func InitCmd() {
 
 	err := viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgWorkspaceChDir, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceChDir))
+	err = viper.BindPFlag(constants.ArgModLocation, rootCmd.PersistentFlags().Lookup(constants.ArgModLocation))
 	error_helpers.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgCloudHost, rootCmd.PersistentFlags().Lookup(constants.ArgCloudHost))
 	error_helpers.FailOnError(err)
@@ -129,11 +129,11 @@ func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
-	// setup viper with the essential path config (workspace-chdir and install-dir)
+	// setup viper with the essential path config (mod-location and install-dir)
 	cmdconfig.BootstrapViper()
 
 	// set the working folder
-	workspaceChdir := setWorkspaceChDir()
+	modLocation := setModLocation()
 
 	// set global containing install dir
 	setInstallDir()
@@ -145,7 +145,7 @@ func initGlobalConfig() {
 	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
 
 	// load config (this sets the global config steampipeconfig.Config)
-	config, err := steampipeconfig.LoadSteampipeConfig(workspaceChdir, cmd.Name())
+	config, err := steampipeconfig.LoadSteampipeConfig(modLocation, cmd.Name())
 	error_helpers.FailOnError(err)
 
 	steampipeconfig.GlobalConfig = config
@@ -183,15 +183,15 @@ func validateConfig() error {
 	return nil
 }
 
-func setWorkspaceChDir() string {
-	workspaceChdir := viper.GetString(constants.ArgWorkspaceChDir)
-	if workspaceChdir == "" {
+func setModLocation() string {
+	modLocation := viper.GetString(constants.ArgModLocation)
+	if modLocation == "" {
 		cwd, err := os.Getwd()
 		error_helpers.FailOnError(err)
-		workspaceChdir = cwd
+		modLocation = cwd
 	}
-	viper.Set(constants.ArgWorkspaceChDir, workspaceChdir)
-	return workspaceChdir
+	viper.Set(constants.ArgModLocation, modLocation)
+	return modLocation
 }
 
 // create a hclog logger with the level specified by the SP_LOG env var

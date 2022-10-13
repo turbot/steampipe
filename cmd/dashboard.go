@@ -40,7 +40,7 @@ func dashboardCmd() *cobra.Command {
 		Short:            "Start the local dashboard UI or run a named dashboard",
 		Long: `Either runs the a named dashboard or benchmark, or starts a local web server that enables real-time development of dashboards within the current mod.
 
-The current mod is the working directory, or the directory specified by the --workspace-chdir flag.`,
+The current mod is the working directory, or the directory specified by the --mod-location flag.`,
 	}
 
 	cmdconfig.OnCmd(cmd).

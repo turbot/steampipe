@@ -15,12 +15,12 @@ func Viper() *viper.Viper {
 	return viper.GetViper()
 }
 
-// BootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
+// BootstrapViper sets up viper with the essential path config (mod-location and install-dir)
 func BootstrapViper() {
 	viper.SetDefault(constants.EnvInstallDir, filepaths.DefaultInstallDir)
 	bootstrapEnvMappings := map[string]envMapping{
 		constants.EnvInstallDir:     {constants.ArgInstallDir, "string"},
-		constants.EnvWorkspaceChDir: {constants.ArgWorkspaceChDir, "string"},
+		constants.EnvModLocation: 	 {constants.ArgModLocation, "string"},
 	}
 	setViperDefaultFromEnvMapping(bootstrapEnvMappings)
 }

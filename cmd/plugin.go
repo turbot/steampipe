@@ -539,7 +539,7 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports display.PluginIn
 	// reload the config, since an installation MUST have created a new config file
 	if shouldReload {
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgWorkspaceChDir), cmd.Name())
+		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 		if err != nil {
 			return err
 		}
