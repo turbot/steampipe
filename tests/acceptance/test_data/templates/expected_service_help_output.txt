@@ -16,11 +16,12 @@ Flags:
   -h, --help   Help for service
 
 Global Flags:
-      --cloud-host string           Steampipe Cloud host (default "cloud.steampipe.io")
+      --cloud-host string           Steampipe Cloud host
       --cloud-token string          Steampipe Cloud authentication token
-      --install-dir string          Path to the Config Directory (defaults to ~/.steampipe) (default "~/.steampipe")
-      --workspace-chdir string      Path to the workspace working directory (deprecated)
+      --install-dir string          Path to the Config Directory (defaults to ~/.steampipe)
       --mod-location string         Path to the workspace working directory
-      --workspace-database string   Steampipe Cloud workspace database (default "local")
+      --workspace string            The workspace profile to use (default "default")
+      --workspace-chdir string      Path to the workspace working directory (DEPRECATED: use --mod-location)
+      --workspace-database string   Steampipe Cloud workspace database
 
 Use "steampipe service [command] --help" for more information about a command.
