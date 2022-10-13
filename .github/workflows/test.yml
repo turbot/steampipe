@@ -150,7 +150,6 @@ jobs:
           steampipe service stop
 
       - name: Run Test Suite
-        if: ${{ success() }}
         id: run-test-suite
         timeout-minutes: 15
         continue-on-error: true
@@ -161,11 +160,23 @@ jobs:
 
       - name: Save Test Suite Logs
         uses: actions/upload-artifact@v3
-        continue-on-error: true
         with:
           name: test-logs
           path: ~/.steampipe/logs
           if-no-files-found: error
+
+      # This job checks whether the test suite has passed or not.
+      # Since the exit_code is set only when the bats test suite pass,
+      # we have added the if-conditional block
+      - name: Check Test Passed/Failed
+        if: ${{ success() }}
+        continue-on-error: false
+        run: |
+          if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
+            exit 0
+          else
+            exit 1
+          fi
 
   clean_up:
     # let's clean up the artifacts.
