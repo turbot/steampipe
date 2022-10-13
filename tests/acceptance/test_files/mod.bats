@@ -80,18 +80,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 ############### CONTROLS ###############
 
-@test "control with default params and no args passed in control" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe check control.query_params_with_defaults_and_no_args --export test.json
-  ls
-
-  # store the reason field in `content` 
-  content=$(cat test.json | jq '.controls[0].results[0].reason')
-
-  assert_equal "$content" '"default_parameter_1 default_parameter_2 default_parameter_3"'
-  rm -f test.json
-}
-
 @test "control with default params and partial named args passed in control" {
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check control.query_params_with_defaults_and_partial_named_args --export test.json
@@ -100,6 +88,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
   content=$(cat test.json | jq '.controls[0].results[0].reason')
 
   assert_equal "$content" '"default_parameter_1 command_parameter_2 default_parameter_3"'
+  rm -f test.json
+}
+
+@test "control with default params and no args passed in control" {
+  cd $FUNCTIONALITY_TEST_MOD
+  steampipe check control.query_params_with_defaults_and_no_args --export test.json
+  ls
+
+  # store the reason field in `content` 
+  content=$(cat test.json | jq '.controls[0].results[0].reason')
+
+  assert_equal "$content" '"default_parameter_1 default_parameter_2 default_parameter_3"'
   rm -f test.json
 }
 
