@@ -60,16 +60,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # assert_equal "$content" '"default_p1_element_02"'
 }
 
-@test "query specific property from map param" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe query query.query_map_params_with_default --output json
-
-  # store the reason field in `content`
-  content=$(echo $output | jq '.[].reason')
-
-  assert_equal "$content" '"default_property_value_01"'
-}
-
 @test "query with invalid param syntax" {
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe query "query.query_map_params_with_default(\"foo \")" --output json
@@ -79,7 +69,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-############### CONTROLS ###############
+@test "query specific property from map param" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe query query.query_map_params_with_default --output json
+
+  # store the reason field in `content`
+  content=$(echo $output | jq '.[].reason')
+
+  assert_equal "$content" '"default_property_value_01"'
+}
 
 @test "control with default params and no args passed in control" {
   cd $FUNCTIONALITY_TEST_MOD
