@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
