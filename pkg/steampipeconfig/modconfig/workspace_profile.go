@@ -9,11 +9,12 @@ import (
 
 type WorkspaceProfile struct {
 	Name              string `hcl:"name,label"`
-	CloudToken        string `hcl:"cloud_token,optional"`
 	CloudHost         string `hcl:"cloud_host,optional"`
-	WorkspaceDatabase string `hcl:"workspace_database,optional"`
-	SnapshotLocation  string `hcl:"snapshot_location,optional"`
+	CloudToken        string `hcl:"cloud_token,optional"`
+	InstallDir        string `hcl:"install_dir,optional"`
 	ModLocation       string `hcl:"mod_location,optional"`
+	SnapshotLocation  string `hcl:"snapshot_location,optional"`
+	WorkspaceDatabase string `hcl:"workspace_database,optional"`
 	//Base      	 *WorkspaceProfile `hcl:"base"`
 
 	// options
@@ -50,28 +51,3 @@ func (c *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 	}
 	return diags
 }
-
-//func (c *WorkspaceProfile) String() string {
-//	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.Plugin, c.Config, c.Options.String())
-//}
-
-//// Validate verifies the Type property is valid,
-//// if this is an aggregator connection, there must be at least one child, and no duplicates
-//// if this is NOT an aggregator, there must be no children
-//func (c *WorkspaceProfile) Validate(connectionMap map[string]*WorkspaceProfile) []string {
-//	validConnectionTypes := []string{"", ConnectionTypeAggregator}
-//	if !helpers.StringSliceContains(validConnectionTypes, c.Type) {
-//		return []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.Name, c.Type)}
-//	}
-//	if c.Type == ConnectionTypeAggregator {
-//		return c.ValidateAggregatorConnection(connectionMap)
-//	}
-//	// this is NOT an aggregator group - there should be no children
-//	var validationErrors []string
-//
-//	if len(c.ConnectionNames) != 0 {
-//		validationErrors = append(validationErrors, fmt.Sprintf("connection '%s' has %d children, but is not of type 'aggregator'", c.Name, len(c.ConnectionNames)))
-//	}
-//	return validationErrors
-//
-//}

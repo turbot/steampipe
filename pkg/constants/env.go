@@ -24,6 +24,7 @@ const (
 	EnvModLocation       = "STEAMPIPE_MOD_LOCATION"
 	EnvTelemetry         = "STEAMPIPE_TELEMETRY"
 	EnvIntrospection     = "STEAMPIPE_INTROSPECTION"
+	EnvDiagnostics       = "STEAMPIPE_DIAGNOSTICS"
 
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	EnvInputVarPrefix = "SP_VAR_"
