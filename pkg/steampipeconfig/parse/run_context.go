@@ -70,7 +70,6 @@ type RunContext struct {
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
-	blocks          hcl.Blocks
 	// map of top  level blocks, for easy checking
 	topLevelBlocks map[*hcl.Block]struct{}
 	// map of block names, keyed by a hash of the blopck
@@ -216,6 +215,15 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	// rebuild the eval context
 	r.buildEvalContext()
 	return diags
+}
+
+func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
+	// put blocks into map as well
+	r.topLevelBlocks = make(map[*hcl.Block]struct{}, len(r.blocks))
+	for _, b := range content.Blocks {
+		r.topLevelBlocks[b] = struct{}{}
+	}
+	r.ParseContext.SetDecodeContent(content, fileData)
 }
 
 func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {

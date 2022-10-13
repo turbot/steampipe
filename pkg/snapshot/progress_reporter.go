@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-// SnapshotProgressReporter is an empty implementation of SnapshotProgress
+// SnapshotProgressReporter is an implementation of SnapshotProgress
 type SnapshotProgressReporter struct {
 	rows     int
 	errors   int
