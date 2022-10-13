@@ -2,14 +2,13 @@ package parse
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
+	"strings"
 )
 
 type ParseContext struct {
@@ -18,18 +17,18 @@ type ParseContext struct {
 	// the eval context used to decode references in HCL
 	EvalCtx *hcl.EvalContext
 
-	//RootEvalPath         string
-	//// if set, only decode these blocks
-	//BlockTypes []string
-	//// if set, exclude these block types
-	//BlockTypeExclusions []string
-	//
+	RootEvalPath string
+
+	// if set, only decode these blocks
+	BlockTypes []string
+	// if set, exclude these block types
+	BlockTypeExclusions []string
+
 	dependencyGraph *topsort.Graph
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
-	RootEvalPath    string
 }
 
 func NewParseContext(rootEvalPath string) ParseContext {
@@ -57,11 +56,11 @@ func (r *ParseContext) ClearDependencies() {
 	r.dependencyGraph = r.newDependencyGraph()
 }
 
-// AddDependencies :: the block could not be resolved as it has dependencies
+// AddDependencies is called when a block could not be resolved as it has dependencies
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
-func (r *ParseContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
 
+func (r *ParseContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
 	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
@@ -109,6 +108,7 @@ func (r *ParseContext) AddDependencies(block *hcl.Block, name string, dependenci
 }
 
 // BlocksToDecode builds a list of blocks to decode, the order of which is determined by the depdnency order
+
 func (r *ParseContext) BlocksToDecode() (hcl.Blocks, error) {
 	depOrder, err := r.getDependencyOrder()
 	if err != nil {
@@ -168,6 +168,16 @@ func (r *ParseContext) FormatDependencies() string {
 	return helpers.Tabify(strings.Join(depStrings, "\n"), "   ")
 }
 
+func (r *ParseContext) ShouldIncludeBlock(block *hcl.Block) bool {
+	if len(r.BlockTypes) > 0 && !helpers.StringSliceContains(r.BlockTypes, block.Type) {
+		return false
+	}
+	if len(r.BlockTypeExclusions) > 0 && helpers.StringSliceContains(r.BlockTypeExclusions, block.Type) {
+		return false
+	}
+	return true
+}
+
 func (r *ParseContext) newDependencyGraph() *topsort.Graph {
 	dependencyGraph := topsort.NewGraph()
 	// add root node - this will depend on all other nodes
@@ -176,6 +186,7 @@ func (r *ParseContext) newDependencyGraph() *topsort.Graph {
 }
 
 // return the optimal run order required to resolve dependencies
+
 func (r *ParseContext) getDependencyOrder() ([]string, error) {
 	rawDeps, err := r.dependencyGraph.TopSort(rootDependencyNode)
 	if err != nil {
