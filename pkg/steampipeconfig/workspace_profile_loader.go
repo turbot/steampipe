@@ -35,17 +35,20 @@ func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLo
 }
 
 func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile, error) {
+	// default will be overwritten if one is defined
+	profileMap := map[string]*modconfig.WorkspaceProfile{"default": &modconfig.WorkspaceProfile{Name: "default"}}
+
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(l.workspaceProfilePath, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesFlat,
 		Include: filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 	})
-
 	if err != nil {
 		return nil, err
 	}
 	if len(configPaths) == 0 {
-		return nil, nil
+		// be sure to return the default
+		return profileMap, nil
 	}
 
 	fileData, diags := parse.LoadFileData(configPaths...)
@@ -65,7 +68,6 @@ func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile,
 		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
 	}
 
-	profileMap := map[string]*modconfig.WorkspaceProfile{}
 	// build parse context
 	parseContext := parse.NewParseContext(l.workspaceProfilePath)
 	for _, block := range content.Blocks {
