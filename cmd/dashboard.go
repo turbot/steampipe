@@ -316,7 +316,9 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
 		if err != nil {
 			return err
 		} else {
-			fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
+			if viper.GetBool(constants.ArgProgress) {
+				fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
+			}
 		}
 	}
 	return nil
