@@ -3,9 +3,7 @@ package parse
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/stevenle/topsort"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
@@ -42,11 +40,6 @@ type RunContext struct {
 	Flags                ParseModFlag
 	ListOptions          *filehelpers.ListOptions
 	LoadedDependencyMods modconfig.ModMap
-	RootEvalPath         string
-	// if set, only decode these blocks
-	BlockTypes []string
-	// if set, exclude these block types
-	BlockTypeExclusions []string
 
 	// Variables are populated in an initial parse pass top we store them on the run context
 	// so we can set them on the mod when we do the main parse
@@ -65,11 +58,8 @@ type RunContext struct {
 	parents []string
 
 	// map of resource children, keyed by parent unqualified name
-	blockChildMap   map[string][]string
-	dependencyGraph *topsort.Graph
-	// map of ReferenceTypeValueMaps keyed by mod
-	// NOTE: all values from root mod are keyed with "local"
-	referenceValues map[string]ReferenceTypeValueMap
+	blockChildMap map[string][]string
+
 	// map of top  level blocks, for easy checking
 	topLevelBlocks map[*hcl.Block]struct{}
 	// map of block names, keyed by a hash of the blopck
@@ -84,9 +74,7 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
 		LoadedDependencyMods: make(modconfig.ModMap),
-		referenceValues: map[string]ReferenceTypeValueMap{
-			"local": make(ReferenceTypeValueMap),
-		},
+
 		blockChildMap: make(map[string][]string),
 		blockNameMap:  make(map[string]string),
 		// initialise variable maps - even though we later overwrite them
@@ -148,20 +136,6 @@ func (r *RunContext) AddInputVariables(inputVariables *modconfig.ModVariableMap)
 func (r *RunContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
 	r.setRootVariables(dependencyVariablesMap[mod.ShortName])
 	r.setDependencyVariables(dependencyVariablesMap)
-}
-
-// AddDependencies :: the block could not be resolved as it has dependencies
-// 1) store block as unresolved
-// 2) add dependencies to our tree of dependencies
-func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
-	// TACTICAL if this is NOT a top level block, add a suffix to the block name
-	// this is needed to avoid circular dependency errors if a nested block references
-	// a top level block with the same name
-	if !r.IsTopLevelBlock(block) {
-		name = "nested." + name
-	}
-	// call base
-	return r.ParseContext.AddDependencies(block, name, dependencies)
 }
 
 // setRootVariables sets the Variables property
@@ -226,14 +200,17 @@ func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[str
 	r.ParseContext.SetDecodeContent(content, fileData)
 }
 
-func (r *RunContext) ShouldIncludeBlock(block *hcl.Block) bool {
-	if len(r.BlockTypes) > 0 && !helpers.StringSliceContains(r.BlockTypes, block.Type) {
-		return false
+// AddDependencies :: the block could not be resolved as it has dependencies
+// 1) store block as unresolved
+// 2) add dependencies to our tree of dependencies
+func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
+	// TACTICAL if this is NOT a top level block, add a suffix to the block name
+	// this is needed to avoid circular dependency errors if a nested block references
+	// a top level block with the same name
+	if !r.IsTopLevelBlock(block) {
+		name = "nested." + name
 	}
-	if len(r.BlockTypeExclusions) > 0 && helpers.StringSliceContains(r.BlockTypeExclusions, block.Type) {
-		return false
-	}
-	return true
+	return r.ParseContext.AddDependencies(block, name, dependencies)
 }
 
 // ShouldCreateDefaultMod returns whether the flag is set to create a default mod if no mod definition exists
@@ -286,6 +263,33 @@ func (r *RunContext) GetResourceMaps() *modconfig.ResourceMaps {
 
 	resourceMap = resourceMap.Merge(dependencyResourceMaps)
 	return resourceMap
+}
+
+// eval functions
+func (r *RunContext) buildEvalContext() {
+	// convert variables to cty values
+	variables := make(map[string]cty.Value)
+
+	// now for each mod add all the values
+	for mod, modMap := range r.referenceValues {
+		if mod == "local" {
+			for k, v := range modMap {
+				variables[k] = cty.ObjectVal(v)
+			}
+			continue
+		}
+
+		// mod map is map[string]map[string]cty.Value
+		// for each element (i.e. map[string]cty.Value) convert to cty object
+		refTypeMap := make(map[string]cty.Value)
+		for refType, typeValueMap := range modMap {
+			refTypeMap[refType] = cty.ObjectVal(typeValueMap)
+		}
+		// now convert the cty map to a cty object
+		variables[mod] = cty.ObjectVal(refTypeMap)
+	}
+
+	r.ParseContext.buildEvalContext(variables)
 }
 
 // update the cached cty value for the given resource, as long as itr does not already exist
@@ -373,31 +377,4 @@ func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
 func (r *RunContext) IsTopLevelBlock(block *hcl.Block) bool {
 	_, isTopLevel := r.topLevelBlocks[block]
 	return isTopLevel
-}
-
-func (r *RunContext) buildEvalContext() {
-	// convert variables to cty values
-	variables := make(map[string]cty.Value)
-
-	// now for each mod add all the values
-	for mod, modMap := range r.referenceValues {
-		if mod == "local" {
-			for k, v := range modMap {
-				variables[k] = cty.ObjectVal(v)
-			}
-			continue
-		}
-
-		// mod map is map[string]map[string]cty.Value
-		// for each element (i.e. map[string]cty.Value) convert to cty object
-		refTypeMap := make(map[string]cty.Value)
-		for refType, typeValueMap := range modMap {
-			refTypeMap[refType] = cty.ObjectVal(typeValueMap)
-		}
-		// now convert the cty map to a cty object
-		variables[mod] = cty.ObjectVal(refTypeMap)
-	}
-
-	// call base
-	r.ParseContext.buildEvalContext(variables)
 }
