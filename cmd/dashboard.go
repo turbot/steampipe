@@ -368,11 +368,6 @@ func validateSnapshotArgs() error {
 		return fmt.Errorf("to share snapshots, cloud host must be set")
 	}
 
-	// if output format is not explicitly set, set to none
-	if !viper.IsSet(constants.ArgOutput) {
-		viper.Set(constants.ArgOutput, constants.OutputFormatNone)
-	}
-
 	return validateSnapshotTags()
 }
 
