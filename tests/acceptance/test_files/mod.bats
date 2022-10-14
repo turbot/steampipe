@@ -83,9 +83,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "control with default params and no args passed in control" {
   cd $FUNCTIONALITY_TEST_MOD
-  ps -ef | grep steampipe
-  run steampipe -v
-  echo $output
   run steampipe check control.query_params_with_defaults_and_no_args --export test.json
   echo $output
   ls
