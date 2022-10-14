@@ -42,7 +42,7 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 			for _, con := range conns {
 				conn_names = append(conn_names, con.Name)
 			}
-			res.AddWarning(fmt.Sprintf("plugin %s required by %s %s, but is not installed",
+			res.AddWarning(fmt.Sprintf("plugin %s required by %s %s but is not installed",
 				strings.Split(a, "/")[3],
 				utils.Pluralize("connection", len(conn_names)),
 				strings.Join(conn_names, ",")))
