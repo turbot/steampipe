@@ -23,6 +23,7 @@ const (
 	ArgTelemetry           = "telemetry"
 	ArgInstallDir          = "install-dir"
 	ArgWorkspace           = "workspace"
+	ArgWorkspaceChDir      = "workspace-chdir"
 	ArgWorkspaceDatabase   = "workspace-database"
 	ArgSchemaComments      = "schema-comments"
 	ArgCloudHost           = "cloud-host"

@@ -46,6 +46,7 @@ var rootCmd = &cobra.Command{
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
 		createLogger()
+		handleArgDeprecations()
 		initGlobalConfig()
 		task.RunTasks()
 		// TODO enable this when we move to go 1.19
@@ -84,13 +85,19 @@ func InitCmd() {
 	defer utils.LogTime("cmd.root.InitCmd end")
 
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", filepaths.DefaultInstallDir))
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory (deprecated)")
 	rootCmd.PersistentFlags().String(constants.ArgModLocation, "", "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
 	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "local", "Steampipe Cloud workspace database")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 
-	err := viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
+	workspaceChDirFlag := rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceChDir)
+	workspaceChDirFlag.Deprecated = "please use --mod-location"
+	err := viper.BindPFlag(constants.ArgWorkspaceChDir, workspaceChDirFlag)
+	error_helpers.FailOnError(err)
+	
+	err = viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
 	error_helpers.FailOnError(err)
 	err = viper.BindPFlag(constants.ArgModLocation, rootCmd.PersistentFlags().Lookup(constants.ArgModLocation))
 	error_helpers.FailOnError(err)
@@ -172,6 +179,12 @@ func migrateLegacyFiles() error {
 		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
 		migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
 	)
+}
+
+func handleArgDeprecations() {
+	if viper.GetString(constants.ArgModLocation) == "" {
+		viper.Set(constants.ArgModLocation, viper.GetString(constants.ArgWorkspaceChDir))
+	}
 }
 
 // now validate  config values have appropriate values
