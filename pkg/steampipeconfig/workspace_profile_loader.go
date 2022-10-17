@@ -5,10 +5,10 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
-	"os"
+	"log"
+	"strings"
 )
 
 var GlobalWorkspaceProfile *modconfig.WorkspaceProfile
@@ -26,17 +26,14 @@ func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLo
 	}
 	res.workspaceProfiles = workspaceProfiles
 
-	// now apply default values to all profiles
-	if err := res.setDefaultValues(); err != nil {
-		return nil, err
-	}
-
 	return res, nil
 }
 
 func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile, error) {
-	// default will be overwritten if one is defined
-	profileMap := map[string]*modconfig.WorkspaceProfile{"default": &modconfig.WorkspaceProfile{Name: "default"}}
+
+	// create profile map to populate
+	// create a default profile, which will be overwritten if one is defined
+	profileMap := map[string]*modconfig.WorkspaceProfile{"default": {Name: "default"}}
 
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(l.workspaceProfilePath, &filehelpers.ListOptions{
@@ -62,9 +59,9 @@ func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile,
 	}
 
 	// do a partial decode
-	content, moreDiags := body.Content(parse.WorkspaceProfileListBlockSchema)
-	if moreDiags.HasErrors() {
-		diags = append(diags, moreDiags...)
+	content, diags := body.Content(parse.WorkspaceProfileListBlockSchema)
+	if diags.HasErrors() {
+
 		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
 	}
 
@@ -74,12 +71,16 @@ func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile,
 
 		workspaceProfile, res := parse.DecodeWorkspaceProfile(block, parseContext)
 		if res.Success() {
-			profileMap[workspaceProfile.Name] = workspaceProfile
+			// initialise the profile
+			diags := workspaceProfile.Initialise()
+			if diags.HasErrors() {
+				res.Diags = append(res.Diags, diags...)
+			} else {
+				// success - add to map
+				profileMap[workspaceProfile.Name] = workspaceProfile
+			}
 		}
-	}
-
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load config", diags)
+		// TODO handle failure and depdencies
 	}
 
 	// add in default if needed
@@ -87,37 +88,47 @@ func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile,
 		profileMap["default"] = &modconfig.WorkspaceProfile{Name: "default"}
 	}
 
+	//
 	return profileMap, nil
 }
 
 func (l *WorkspaceProfileLoader) Get(name string) (*modconfig.WorkspaceProfile, error) {
-	workspaceProfile, ok := l.workspaceProfiles[name]
-	if !ok {
-		return nil, fmt.Errorf("workspace profile %s does not exist", name)
+	if workspaceProfile, ok := l.workspaceProfiles[name]; ok {
+		return workspaceProfile, nil
 	}
 
-	return workspaceProfile, nil
+	if implicitWorkspace := l.getImplicitWorkspace(name); implicitWorkspace != nil {
+		return implicitWorkspace, nil
+	}
+
+	return nil, fmt.Errorf("workspace profile %s does not exist", name)
 }
 
-// set default values on all profiles as necessary
-func (l *WorkspaceProfileLoader) setDefaultValues() error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+/*
+Named workspaces follow normal standards for hcl identities, thus they cannot contain the slash (/) character.
 
-	for _, p := range l.workspaceProfiles {
-		if p.ModLocation == "" {
-			p.ModLocation = cwd
-		}
-		if p.CloudHost == "" {
-			p.CloudHost = constants.DefaultCloudHost
-		}
-		if p.InstallDir == "" {
-			p.InstallDir = filepaths.DefaultInstallDir
-		}
-		if p.WorkspaceDatabase == "" {
-			p.WorkspaceDatabase = constants.DefaultWorkspaceDatabase
+If you pass a value to --workspace or STEAMPIPE_WORKSPACE in the form of {identity_handle}/{workspace_handle},
+it will be interpreted as an implicit workspace.
+
+Implicit workspaces, as the name suggests, do not need to be specified in the workspaces.spc file.
+
+Instead they will be assumed to refer to a Steampipe Cloud workspace,
+which will be used as both the database and snapshot location.
+
+Essentially, --workspace acme/dev is equivalent to:
+
+	workspace "acme/dev" {
+	  workspace_database = "acme/dev"
+	  snapshot_location  = "acme/dev"
+	}
+*/
+func (l *WorkspaceProfileLoader) getImplicitWorkspace(name string) *modconfig.WorkspaceProfile {
+	parts := strings.Split(name, "/")
+	if len(parts) == 2 {
+		log.Printf("[TRACE] getImplicitWorkspace - %s is implicit workspace: SnapshotLocation=%s, WorkspaceDatabase=%s", name, name, name)
+		return &modconfig.WorkspaceProfile{
+			SnapshotLocation:  name,
+			WorkspaceDatabase: name,
 		}
 	}
 	return nil

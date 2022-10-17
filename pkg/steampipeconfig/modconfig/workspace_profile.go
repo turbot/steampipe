@@ -3,8 +3,11 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"reflect"
+	"strings"
 )
 
 type WorkspaceProfile struct {
@@ -50,4 +53,51 @@ func (c *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 		})
 	}
 	return diags
+}
+
+func (c *WorkspaceProfile) Initialise() hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	var err error
+	if c.InstallDir != "" {
+		c.InstallDir, err = helpers.Tildefy(c.InstallDir)
+		if err != nil {
+			diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+		}
+	}
+
+	if c.ModLocation != "" {
+		c.ModLocation, err = helpers.Tildefy(c.ModLocation)
+		if err != nil {
+			diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+		}
+	}
+
+	if c.snapshotLocationIsFilePath() {
+		// so snapshot location _is_ file path
+		// handle ~
+		c.SnapshotLocation, err = files.Tildefy(c.SnapshotLocation)
+		if err != nil {
+			diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+		}
+
+		// ensure location exists
+		if !files.DirectoryExists(c.SnapshotLocation) {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("SnapshotLocation %s does not exist in local file system", c.SnapshotLocation),
+			})
+		}
+	}
+	return diags
+}
+
+// determine whether SnapshotLocation is a local path or a cloud workspace
+// if it is a cloud workspace it will have the form {identity_handle}/{workspace_handle}
+// otherwise we assume it is a local path
+func (c *WorkspaceProfile) snapshotLocationIsFilePath() bool {
+	if len(c.SnapshotLocation) == 0 {
+		return false
+	}
+	parts := strings.Split(c.SnapshotLocation, "/")
+	return len(parts) != 2
 }
