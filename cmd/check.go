@@ -59,7 +59,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatText, "Select a console output format: brief, csv, html, json, md, text or none").
+		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatText, "Select a console output format: brief, csv, html, json, md, text, snapshot or none").
 		AddBoolFlag(constants.ArgTiming, "", false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").

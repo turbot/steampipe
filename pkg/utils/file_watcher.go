@@ -15,7 +15,7 @@ import (
 // allow a short delay before starting handler
 // - this allows multiple events to be gathered for editors (such as vim) which make multiple file
 // operations when saving a file
-const handlerDelay = 100 * time.Millisecond
+const defaultHandlerMinInterval = 100 * time.Millisecond
 
 type FileWatcher struct {
 	watch *fsnotify.Watcher
@@ -31,9 +31,10 @@ type FileWatcher struct {
 	onChange func([]fsnotify.Event)
 	onError  func(error)
 
-	closeChan    chan bool
-	pollInterval time.Duration
-	watches      map[string]bool
+	closeChan            chan bool
+	fileListPollInterval time.Duration
+	handlerMinInterval   time.Duration
+	watches              map[string]bool
 
 	dirLock     sync.Mutex
 	handlerLock sync.Mutex
@@ -44,12 +45,13 @@ type FileWatcher struct {
 }
 
 type WatcherOptions struct {
-	Directories []string
-	Include     []string
-	Exclude     []string
-	OnChange    func([]fsnotify.Event)
-	OnError     func(error)
-	ListFlag    filehelpers.ListFlag
+	Directories        []string
+	Include            []string
+	Exclude            []string
+	OnChange           func([]fsnotify.Event)
+	OnError            func(error)
+	ListFlag           filehelpers.ListFlag
+	HandlerMinInterval time.Duration
 }
 
 func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
@@ -66,19 +68,23 @@ func NewWatcher(opts *WatcherOptions) (*FileWatcher, error) {
 	var baseExclude []string
 	// create the watcher
 	watcher := &FileWatcher{
-		watch:           watch,
-		directories:     make(map[string]bool),
-		include:         opts.Include,
-		exclude:         append(baseExclude, opts.Exclude...),
-		listFlag:        opts.ListFlag,
-		onChange:        opts.OnChange,
-		onError:         opts.OnError,
-		closeChan:       make(chan bool),
-		pollInterval:    4 * time.Second,
-		watches:         make(map[string]bool),
-		lastHandlerTime: time.Now(),
+		watch:                watch,
+		directories:          make(map[string]bool),
+		include:              opts.Include,
+		exclude:              append(baseExclude, opts.Exclude...),
+		listFlag:             opts.ListFlag,
+		onChange:             opts.OnChange,
+		onError:              opts.OnError,
+		closeChan:            make(chan bool),
+		fileListPollInterval: 4 * time.Second,
+		handlerMinInterval:   opts.HandlerMinInterval,
+		watches:              make(map[string]bool),
+		lastHandlerTime:      time.Now(),
 	}
 
+	if watcher.handlerMinInterval == 0 {
+		watcher.handlerMinInterval = defaultHandlerMinInterval
+	}
 	// we store directories as a map to simplify removing and checking for dupes
 	for _, d := range opts.Directories {
 		watcher.addDirectory(d)
@@ -102,7 +108,7 @@ func (w *FileWatcher) Start() {
 	go func() {
 		for {
 			select {
-			case <-time.After(w.pollInterval):
+			case <-time.After(w.fileListPollInterval):
 				// every poll interval, enumerate files to watch in all watched folders and add watches for any new files
 				w.addWatches()
 
@@ -299,7 +305,7 @@ func (w *FileWatcher) scheduleHandler(ev fsnotify.Event) {
 
 	// so no handler is scheduled - schedule handler to run - with a short pause
 	go func() {
-		time.Sleep(handlerDelay)
+		time.Sleep(w.handlerMinInterval)
 		// lock the handlerLock AFTER the delay
 		w.handlerLock.Lock()
 		defer w.handlerLock.Unlock()

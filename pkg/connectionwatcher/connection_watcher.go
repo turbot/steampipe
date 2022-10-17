@@ -4,6 +4,7 @@ import (
 	"context"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"log"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -32,10 +33,11 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 		Directories: []string{filepaths.EnsureConfigDir()},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
-
 		OnChange: func(events []fsnotify.Event) {
 			w.handleFileWatcherEvent(events)
 		},
+		// only handle changes every 4 seconds to avoid multiple conflicting calls to refreshConnections
+		HandlerMinInterval: 4 * time.Second,
 	}
 	watcher, err := utils.NewWatcher(watcherOptions)
 	if err != nil {
