@@ -7,18 +7,19 @@ import (
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"os"
 	"strings"
 )
 
 func ValidateCloudArgs() error {
+	defer displayConfig()
 
 	// determine whether snapshot location is a cloud workspace or a file location
-	if snapshotLocation := viper.GetString(constants.ArgSnapshotLocation); snapshotLocation != "" {
-		err := validateSnapshotLocation(snapshotLocation)
-		if err != nil {
-			return err
-		}
+	// if a file location, check it exists
+	if err := validateSnapshotLocation(); err != nil {
+		return err
 	}
+
 	// only 1 of 'share' and 'snapshot' may be set
 	share := viper.GetBool(constants.ArgShare)
 	snapshot := viper.GetBool(constants.ArgSnapshot)
@@ -54,40 +55,56 @@ func ValidateCloudArgs() error {
 	return validateSnapshotTags()
 }
 
-func validateSnapshotLocation(snapshotLocation string) error {
-	if steampipeconfig.IsCloudWorkspaceIdentifier(snapshotLocation) {
-		// so snapshot location is a cloud workspace
+func displayConfig() {
+	diagnostics := os.Getenv(constants.EnvDiagnostics)
 
-		// if workspace-database has not been set, use snapshot location
-		// NOTE: do this BEFORE populating workspace from share/snapshot args, if set
-		if !viper.IsSet(constants.ArgWorkspaceDatabase) {
-			viper.Set(constants.ArgWorkspaceDatabase, viper.GetString(constants.ArgSnapshotLocation))
+	if strings.ToUpper(diagnostics) != "CONFIG" {
+		return
+	}
+
+	var argNames = []string{
+		constants.ArgInstallDir,
+		constants.ArgModLocation,
+		constants.ArgSnapshotLocation,
+		constants.ArgWorkspaceProfile,
+		constants.ArgWorkspaceDatabase,
+		constants.ArgCloudHost,
+		constants.ArgCloudToken,
+	}
+	maxLength := 0
+	for _, a := range argNames {
+		if l := len(a); l > maxLength {
+			maxLength = l
 		}
-	} else {
+	}
+	var b strings.Builder
+	b.WriteString("\n================\nSteampipe Config\n================\n\n")
+	fmtStr := `%-` + fmt.Sprintf("%d", maxLength) + `s: %v` + "\n"
+	for _, a := range argNames {
+		b.WriteString(fmt.Sprintf(fmtStr, a, viper.GetString(a)))
+	}
+
+	fmt.Println(b.String())
+}
+
+func validateSnapshotLocation() error {
+	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
+	if !steampipeconfig.IsCloudWorkspaceIdentifier(snapshotLocation) {
 		// if it is a file location tildefy it and ensure it exists
 		var err error
 		snapshotLocation, err = filehelpers.Tildefy(snapshotLocation)
 		if err != nil {
 			return err
 		}
-		if !filehelpers.DirectoryExists(snapshotLocation) {
-			return fmt.Errorf("snapshot location %s does not exist", snapshotLocation#)
-		}
+
 		// write back to viper
 		viper.Set(constants.ArgSnapshotLocation, snapshotLocation)
+
+		if !filehelpers.DirectoryExists(snapshotLocation) {
+			return fmt.Errorf("snapshot location %s does not exist", snapshotLocation)
+		}
 	}
 	return nil
-}
-
-// determine whether SnapshotLocation is a local path or a cloud workspace
-// if it is a cloud workspace it will have the form {identity_handle}/{workspace_handle}
-// otherwise we assume it is a local path
-func snapshotLocationIsFilePath() bool {
-	if len(c.SnapshotLocation) == 0 {
-		return false
-	}
-	parts := strings.Split(c.SnapshotLocation, "/")
-	return len(parts) != 2
 }
 
 func validateSnapshotTags() error {
