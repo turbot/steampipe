@@ -2,19 +2,18 @@ package connectionwatcher
 
 import (
 	"context"
-	"github.com/turbot/go-kit/filewatcher"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"log"
-	"time"
-
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/go-kit/helpers"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"log"
+	"sync"
 )
 
 type ConnectionWatcher struct {
@@ -22,6 +21,8 @@ type ConnectionWatcher struct {
 	watcher                   *filewatcher.FileWatcher
 	onConnectionConfigChanged func(configMap map[string]*sdkproto.ConnectionConfig)
 	count                     int
+	// ensure we only handle one event at a time
+	mutex sync.Mutex
 }
 
 func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkproto.ConnectionConfig)) (*ConnectionWatcher, error) {
@@ -36,8 +37,6 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 		OnChange: func(events []fsnotify.Event) {
 			w.handleFileWatcherEvent(events)
 		},
-		// only handle changes every 4 seconds to avoid multiple conflicting calls to refreshConnections
-		HandlerMinInterval: 4 * time.Second,
 	}
 	watcher, err := filewatcher.NewWatcher(watcherOptions)
 	if err != nil {
@@ -58,7 +57,10 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 }
 
 func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
+	w.mutex.Lock()
+
 	defer func() {
+		w.mutex.Unlock()
 		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())
 		}
