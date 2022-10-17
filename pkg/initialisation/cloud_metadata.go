@@ -26,7 +26,7 @@ func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
-			return nil, fmt.Errorf("cannot resolve workspace: required argument '--%s' missing", constants.ArgCloudToken)
+			return nil, fmt.Errorf("cloud token must be set to connect to workspace %s", workspaceDatabase)
 		}
 
 		// so we have a database and a token - build the connection string and set it in viper

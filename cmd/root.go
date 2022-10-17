@@ -164,9 +164,6 @@ func initGlobalConfig() {
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// 3) load the connection config and HCL options
-	// (this sets the global config steampipeconfig.Config)
-
-	// get command name
 	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
 	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmdName)
 	error_helpers.FailOnError(err)
@@ -179,7 +176,7 @@ func initGlobalConfig() {
 	if viper.IsSet(constants.ArgWorkspaceProfile) {
 		cmdconfig.SetDefaultsFromWorkspaceProfile(workspaceProfile)
 		// tildefy all paths in viper
-		// (this has already been done in BootstrapViper but we may have added a path from the profile)
+		// (this has already been done in BootstrapViper but we may have added a path from the workspace profile)
 		err = cmdconfig.TildefyPaths()
 	}
 
@@ -190,8 +187,6 @@ func initGlobalConfig() {
 	// now validate all config values have appropriate values
 	err = validateConfig()
 	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
-
-	displayConfig(cmdName)
 
 	/*
 		func (c *WorkspaceProfile) Initialise() hcl.Diagnostics {
@@ -230,37 +225,6 @@ func initGlobalConfig() {
 			return diags
 		}
 	*/
-}
-
-func displayConfig(cmdName string) {
-	diagnostics := os.Getenv(constants.EnvDiagnostics)
-	if strings.ToUpper(diagnostics) != "CONFIG" || cmdName == "plugin-manager" {
-		return
-	}
-
-	var argNames = []string{
-		constants.ArgInstallDir,
-		constants.ArgModLocation,
-		constants.ArgSnapshotLocation,
-		constants.ArgWorkspaceProfile,
-		constants.ArgWorkspaceDatabase,
-		constants.ArgCloudHost,
-		constants.ArgCloudToken,
-	}
-	maxLength := 0
-	for _, a := range argNames {
-		if l := len(a); l > maxLength {
-			maxLength = l
-		}
-	}
-	var b strings.Builder
-	b.WriteString("\n================\nSteampipe Config\n================\n\n")
-	fmtStr := `%-` + fmt.Sprintf("%d", maxLength) + `s: %v` + "\n"
-	for _, a := range argNames {
-		b.WriteString(fmt.Sprintf(fmtStr, a, viper.GetString(a)))
-	}
-
-	fmt.Println(b.String())
 }
 
 // migrate all data files to use snake casing for property names
