@@ -13,7 +13,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
-	"sync"
 )
 
 type ConnectionWatcher struct {
@@ -21,8 +20,6 @@ type ConnectionWatcher struct {
 	watcher                   *filewatcher.FileWatcher
 	onConnectionConfigChanged func(configMap map[string]*sdkproto.ConnectionConfig)
 	count                     int
-	// ensure we only handle one event at a time
-	mutex sync.Mutex
 }
 
 func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkproto.ConnectionConfig)) (*ConnectionWatcher, error) {
@@ -57,10 +54,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 }
 
 func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
-	w.mutex.Lock()
-
 	defer func() {
-		w.mutex.Unlock()
 		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())
 		}
