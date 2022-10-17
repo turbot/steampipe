@@ -25,6 +25,8 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 
 	// determine any necessary connection updates
 	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames())
+	defer logRefreshConnectionResults(connectionUpdates, res)
+
 	if res.Error != nil {
 		return res
 	}
@@ -60,7 +62,21 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	}
 
 	res.UpdatedConnections = true
+
 	return res
+}
+
+func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res *steampipeconfig.RefreshConnectionResult) {
+	var op strings.Builder
+	op.WriteString("refresh connections:\n")
+
+	if updates != nil {
+		op.WriteString(fmt.Sprintf("%s", updates.String()))
+	}
+	if res != nil {
+		op.WriteString(fmt.Sprintf("result: %s", res.String()))
+	}
+	log.Printf("[TRACE] %s", op.String())
 }
 
 func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {

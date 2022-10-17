@@ -27,7 +27,10 @@ type SteampipeConfig struct {
 	DatabaseOptions          *options.Database
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
-	commandName              string
+	// TODO remove this
+	// it is only needed due to conflicts with output nbame in terminal options
+	// https://github.com/turbot/steampipe/issues/2534
+	commandName string
 }
 
 func NewSteampipeConfig(commandName string) *SteampipeConfig {

@@ -187,6 +187,25 @@ func (u *ConnectionUpdates) HasUpdates() bool {
 	return len(u.Update)+len(u.Delete) > 0
 }
 
+func (u *ConnectionUpdates) String() string {
+	var op strings.Builder
+	update := utils.SortedMapKeys(u.Update)
+	delete := utils.SortedMapKeys(u.Delete)
+	stateConnections := utils.SortedMapKeys(u.RequiredConnectionState)
+	if len(update) > 0 {
+		op.WriteString(fmt.Sprintf("Update: %s\n", strings.Join(update, ",")))
+	}
+	if len(delete) > 0 {
+		op.WriteString(fmt.Sprintf("Delete: %s\n", strings.Join(delete, ",")))
+	}
+	if len(stateConnections) > 0 {
+		op.WriteString(fmt.Sprintf("Connection state: %s\n", strings.Join(stateConnections, ",")))
+	} else {
+		op.WriteString(fmt.Sprintf("Connection state EMPTY\n"))
+	}
+	return op.String()
+}
+
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {
 	log.Printf("[TRACE] getSchemaHashesForDynamicSchemas")
 	// for every required connection, check the connection state to determine whether the schema mode is 'dynamic'
