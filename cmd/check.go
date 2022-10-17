@@ -241,6 +241,10 @@ func initialiseCheck(ctx context.Context) *initialisation.InitData {
 		return initData
 	}
 
+	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+		registerCheckExporters(initData)
+	}
+
 	return initData
 }
 
