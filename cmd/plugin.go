@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -517,6 +518,8 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 		// we can't allow update and install at the same time
 		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
 	}
+	
+	sort.Strings(plugins)
 
 	return plugins, nil
 }
