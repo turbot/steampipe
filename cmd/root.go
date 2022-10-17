@@ -13,6 +13,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
@@ -217,7 +218,7 @@ func setInstallDir() {
 	utils.LogTime("cmd.root.setInstallDir start")
 	defer utils.LogTime("cmd.root.setInstallDir end")
 
-	installDir, err := helpers.Tildefy(viper.GetString(constants.ArgInstallDir))
+	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
 	error_helpers.FailOnErrorWithMessage(err, "failed to sanitize install directory")
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)

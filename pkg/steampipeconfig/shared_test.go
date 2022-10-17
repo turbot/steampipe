@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pluginmanager"
 )
@@ -37,7 +37,7 @@ func setupTestData() {
 
 func TestFindPluginFolderTest(t *testing.T) {
 
-	filepaths.SteampipeDir, _ = helpers.Tildefy("~/.steampipe")
+	filepaths.SteampipeDir, _ = filehelpers.Tildefy("~/.steampipe")
 	setupTestData()
 
 	directories := []string{

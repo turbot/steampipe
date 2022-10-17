@@ -7,10 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -51,10 +50,9 @@ func GetState() (*RunningDBInstanceInfo, error) {
 //
 // No steampipe state file indicates that the service is not running, so, if the service
 // is running without us knowing about it, then it's an irrecoverable state
-//
 func errorIfUnknownService() error {
 	// no postmaster.pid, we are good
-	if !helpers.FileExists(getPostmasterPidLocation()) {
+	if !filehelpers.FileExists(getPostmasterPidLocation()) {
 		return nil
 	}
 

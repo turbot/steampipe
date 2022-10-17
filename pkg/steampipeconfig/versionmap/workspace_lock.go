@@ -9,7 +9,6 @@ import (
 
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -43,7 +42,7 @@ func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 	var installCache = make(DependencyVersionMap)
 	lockPath := filepaths.WorkspaceLockPath(workspacePath)
-	if helpers.FileExists(lockPath) {
+	if filehelpers.FileExists(lockPath) {
 		fileContent, err := os.ReadFile(lockPath)
 		if err != nil {
 			log.Printf("[TRACE] error reading %s: %s\n", lockPath, err.Error())
@@ -169,7 +168,7 @@ func (l *WorkspaceLock) Save() error {
 
 // Delete deletes the lock file
 func (l *WorkspaceLock) Delete() error {
-	if helpers.FileExists(filepaths.WorkspaceLockPath(l.WorkspacePath)) {
+	if filehelpers.FileExists(filepaths.WorkspaceLockPath(l.WorkspacePath)) {
 		return os.Remove(filepaths.WorkspaceLockPath(l.WorkspacePath))
 	}
 	return nil

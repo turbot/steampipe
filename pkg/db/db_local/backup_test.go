@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
@@ -32,7 +31,7 @@ func TestTrimBackups(t *testing.T) {
 	trimBackups()
 
 	for _, f := range filesCreated {
-		if helpers.FileExists(f) {
+		if files.FileExists(f) {
 			t.Errorf("did not remove test backup file: %s", f)
 		}
 	}

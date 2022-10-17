@@ -44,7 +44,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.13.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
-	github.com/turbot/go-kit v0.4.0
+	github.com/turbot/go-kit v0.5.0-rc.1
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.7
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.11.0

@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/export"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe/pkg/cloud"
@@ -23,10 +22,11 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
-
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -231,7 +231,7 @@ func initDashboard(ctx context.Context) *initialisation.InitData {
 	sourceSnapshots := viper.GetStringSlice(constants.ArgSourceSnapshot)
 	if len(sourceSnapshots) > 0 {
 		for _, s := range sourceSnapshots {
-			if !helpers.FileExists(s) {
+			if !filehelpers.FileExists(s) {
 				return initialisation.NewErrorInitData(fmt.Errorf("source snapshot' %s' does not exist", s))
 			}
 		}

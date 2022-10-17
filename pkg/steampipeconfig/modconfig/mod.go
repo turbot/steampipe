@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/zclconf/go-cty/cty"
@@ -412,7 +412,7 @@ func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
 
 func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
 	modFilePath := filepaths.ModFilePath(m.ModPath)
-	if !helpers.FileExists(modFilePath) {
+	if !filehelpers.FileExists(modFilePath) {
 		return nil, nil
 	}
 

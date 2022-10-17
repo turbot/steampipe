@@ -2,6 +2,7 @@ package connectionwatcher
 
 import (
 	"context"
+	"github.com/turbot/go-kit/filewatcher"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"log"
 	"time"
@@ -14,12 +15,11 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
-	watcher                   *utils.FileWatcher
+	watcher                   *filewatcher.FileWatcher
 	onConnectionConfigChanged func(configMap map[string]*sdkproto.ConnectionConfig)
 	count                     int
 }
@@ -29,7 +29,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 		onConnectionConfigChanged: onConnectionChanged,
 	}
 
-	watcherOptions := &utils.WatcherOptions{
+	watcherOptions := &filewatcher.WatcherOptions{
 		Directories: []string{filepaths.EnsureConfigDir()},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
@@ -39,7 +39,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 		// only handle changes every 4 seconds to avoid multiple conflicting calls to refreshConnections
 		HandlerMinInterval: 4 * time.Second,
 	}
-	watcher, err := utils.NewWatcher(watcherOptions)
+	watcher, err := filewatcher.NewWatcher(watcherOptions)
 	if err != nil {
 		return nil, err
 	}

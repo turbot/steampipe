@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
@@ -46,7 +46,7 @@ type ReportAssetsVersionFile struct {
 
 func loadReportAssetVersionFile() (*ReportAssetsVersionFile, error) {
 	versionFilePath := filepaths.ReportAssetsVersionFilePath()
-	if !helpers.FileExists(versionFilePath) {
+	if !filehelpers.FileExists(versionFilePath) {
 		return &ReportAssetsVersionFile{}, nil
 	}
 
