@@ -8,7 +8,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"log"
-	"strings"
 )
 
 var GlobalWorkspaceProfile *modconfig.WorkspaceProfile
@@ -30,7 +29,6 @@ func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLo
 }
 
 func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile, error) {
-
 	// create profile map to populate
 	// create a default profile, which will be overwritten if one is defined
 	profileMap := map[string]*modconfig.WorkspaceProfile{"default": {Name: "default"}}
@@ -71,16 +69,10 @@ func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile,
 
 		workspaceProfile, res := parse.DecodeWorkspaceProfile(block, parseContext)
 		if res.Success() {
-			// initialise the profile
-			diags := workspaceProfile.Initialise()
-			if diags.HasErrors() {
-				res.Diags = append(res.Diags, diags...)
-			} else {
-				// success - add to map
-				profileMap[workspaceProfile.Name] = workspaceProfile
-			}
+			// success - add to map
+			profileMap[workspaceProfile.Name] = workspaceProfile
 		}
-		// TODO handle failure and depdencies
+		// TODO handle failure and dependencies
 	}
 
 	// add in default if needed
@@ -123,8 +115,7 @@ Essentially, --workspace acme/dev is equivalent to:
 	}
 */
 func (l *WorkspaceProfileLoader) getImplicitWorkspace(name string) *modconfig.WorkspaceProfile {
-	parts := strings.Split(name, "/")
-	if len(parts) == 2 {
+	if IsCloudWorkspaceIdentifier(name) {
 		log.Printf("[TRACE] getImplicitWorkspace - %s is implicit workspace: SnapshotLocation=%s, WorkspaceDatabase=%s", name, name, name)
 		return &modconfig.WorkspaceProfile{
 			SnapshotLocation:  name,

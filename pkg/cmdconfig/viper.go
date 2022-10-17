@@ -28,10 +28,11 @@ func BootstrapViper(defaultWorkspaceProfile *modconfig.WorkspaceProfile) error {
 	setDefaultsFromEnv()
 
 	// tildefy all paths in viper
-	return tildefyPaths()
+	return TildefyPaths()
 }
 
-func tildefyPaths() error {
+// TildefyPaths cleans all path config values and replaces '~' with the home directory
+func TildefyPaths() error {
 	pathArgs := []string{
 		constants.ArgModLocation,
 		constants.ArgInstallDir,

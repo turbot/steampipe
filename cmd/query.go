@@ -150,7 +150,7 @@ func validateQueryArgs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot share snapshots in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
-	err := validateCloudArgs()
+	err := cmdconfig.ValidateCloudArgs()
 	if err != nil {
 		return err
 	}

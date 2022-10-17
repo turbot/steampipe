@@ -180,7 +180,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 
-	if err := validateCloudArgs(); err != nil {
+	if err := cmdconfig.ValidateCloudArgs(); err != nil {
 		error_helpers.ShowError(ctx, err)
 		return false
 	}
