@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -27,7 +27,7 @@ var (
 
 // CertificatesExist checks if the root and server certificate and key files exist
 func CertificatesExist() bool {
-	return helpers.FileExists(getRootCertLocation()) && helpers.FileExists(getServerCertLocation())
+	return filehelpers.FileExists(getRootCertLocation()) && filehelpers.FileExists(getServerCertLocation())
 }
 
 // RemoveServerCertificate removes the server certificate certificates so it will be regenerated
@@ -111,12 +111,12 @@ func ensureSelfSignedCertificate() (err error) {
 
 // rootCertificateAndKeyExists checks if the root certificate ands private key files exist
 func rootCertificateAndKeyExists() bool {
-	return helpers.FileExists(getRootCertLocation()) && helpers.FileExists(getRootCertKeyLocation())
+	return filehelpers.FileExists(getRootCertLocation()) && filehelpers.FileExists(getRootCertKeyLocation())
 }
 
 // serverCertificateAndKeyExist checks if the server certificate ands private key files exist
 func serverCertificateAndKeyExist() bool {
-	return helpers.FileExists(getServerCertLocation()) && helpers.FileExists(getServerCertKeyLocation())
+	return filehelpers.FileExists(getServerCertLocation()) && filehelpers.FileExists(getServerCertKeyLocation())
 }
 
 // isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)

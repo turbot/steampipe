@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/migrate"
 )
@@ -57,7 +57,7 @@ func databaseVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *Data
 // LoadDatabaseVersionFile migrates from the old version file format if necessary and loads the database version data
 func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 	versionFilePath := filepaths.DatabaseVersionFilePath()
-	if helpers.FileExists(versionFilePath) {
+	if filehelpers.FileExists(versionFilePath) {
 		return readDatabaseVersionFile(versionFilePath)
 	}
 	return NewDBVersionFile(), nil

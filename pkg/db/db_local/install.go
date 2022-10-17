@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/sethvargo/go-retry"
 	psutils "github.com/shirou/gopsutil/process"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -265,7 +266,7 @@ func needsInit() bool {
 	defer utils.LogTime("db_local.needsInit end")
 
 	// test whether pg_hba.conf exists in our target directory
-	return !helpers.FileExists(getPgHbaConfLocation())
+	return !filehelpers.FileExists(getPgHbaConfLocation())
 }
 
 func runInstall(ctx context.Context, oldDbName *string) error {

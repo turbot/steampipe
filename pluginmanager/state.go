@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
 	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
@@ -41,7 +41,7 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 func LoadPluginManagerState() (*PluginManagerState, error) {
 	// always return empty state
 	s := new(PluginManagerState)
-	if !helpers.FileExists(filepaths.PluginManagerStateFilePath()) {
+	if !filehelpers.FileExists(filepaths.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
 		return s, nil
 	}

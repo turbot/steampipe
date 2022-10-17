@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/turbot/go-kit/files"
 	"io/fs"
 	"log"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/process"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -203,7 +203,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	for _, de := range entries {
 		if de.IsDir() {
 			// check if it contains a postgres binary - meaning this is a DB installation
-			isDBInstallationDirectory := helpers.FileExists(
+			isDBInstallationDirectory := files.FileExists(
 				filepath.Join(
 					dbBaseDirectory,
 					de.Name(),
@@ -228,7 +228,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 // restoreDBBackup loads the back up file into the database
 func restoreDBBackup(ctx context.Context) error {
 	backupFilePath := databaseBackupFilePath()
-	if !helpers.FileExists(backupFilePath) {
+	if !files.FileExists(backupFilePath) {
 		// nothing to do here
 		return nil
 	}

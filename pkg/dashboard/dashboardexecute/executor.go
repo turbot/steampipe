@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
 	"os"
 	"sync"
 
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -70,7 +70,7 @@ func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapsho
 		return nil, fmt.Errorf("snapshot %s not found in workspace", snapshotName)
 	}
 
-	if !helpers.FileExists(snapshotPath) {
+	if !filehelpers.FileExists(snapshotPath) {
 		return nil, fmt.Errorf("snapshot %s not does not exist", snapshotPath)
 	}
 

@@ -2,12 +2,12 @@ package db_local
 
 import (
 	"fmt"
+	filehelpers "github.com/turbot/go-kit/files"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
@@ -32,7 +32,7 @@ func TestTrimBackups(t *testing.T) {
 	trimBackups()
 
 	for _, f := range filesCreated {
-		if helpers.FileExists(f) {
+		if filehelpers.FileExists(f) {
 			t.Errorf("did not remove test backup file: %s", f)
 		}
 	}

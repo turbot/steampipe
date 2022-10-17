@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -82,7 +82,7 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 	utils.LogTime("db.loadRunningInstanceInfo start")
 	defer utils.LogTime("db.loadRunningInstanceInfo end")
 
-	if !helpers.FileExists(filepaths.RunningInfoFilePath()) {
+	if !filehelpers.FileExists(filepaths.RunningInfoFilePath()) {
 		return nil, nil
 	}
 

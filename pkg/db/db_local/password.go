@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -24,7 +24,7 @@ func writePasswordFile(password string) error {
 // the the password file could not be found, then it generates a new
 // password and writes it to the password file, before returning it
 func readPasswordFile() (string, error) {
-	if !helpers.FileExists(getPasswordFileLocation()) {
+	if !filehelpers.FileExists(getPasswordFileLocation()) {
 		p := generatePassword()
 		if err := writePasswordFile(p); err != nil {
 			return "", err
@@ -54,7 +54,7 @@ func generatePassword() string {
 func migrateLegacyPasswordFile() error {
 	utils.LogTime("db_local.migrateLegacyPasswordFile start")
 	defer utils.LogTime("db_local.migrateLegacyPasswordFile end")
-	if helpers.FileExists(getLegacyPasswordFileLocation()) {
+	if filehelpers.FileExists(getLegacyPasswordFileLocation()) {
 		p, err := getLegacyPasswords()
 		if err != nil {
 			return err

@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -29,7 +29,7 @@ func loadConnectionStateFile() (ConnectionDataMap, error) {
 	var connectionState ConnectionDataMap
 	connectionStatePath := filepaths.ConnectionStatePath()
 
-	if !helpers.FileExists(connectionStatePath) {
+	if !filehelpers.FileExists(connectionStatePath) {
 		return connectionState, nil
 	}
 	jsonFile, err := os.ReadFile(connectionStatePath)
