@@ -179,6 +179,9 @@ func initGlobalConfig() {
 	// 4) if an explicit workspace profile was set, add to viper as highest precedence default
 	if viper.IsSet(constants.ArgWorkspaceProfile) {
 		cmdconfig.SetDefaultsFromWorkspaceProfile(workspaceProfile)
+		// tildefy all paths in viper
+		// (this has already been done in BootstrapViper but we may have added a path from the profile)
+		err = cmdconfig.TildefyPaths()
 	}
 
 	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
@@ -190,6 +193,44 @@ func initGlobalConfig() {
 	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
 
 	displayConfig(cmdName)
+
+	/*
+		func (c *WorkspaceProfile) Initialise() hcl.Diagnostics {
+			var diags hcl.Diagnostics
+			var err error
+			if c.InstallDir != "" {
+				c.InstallDir, err = files.Tildefy(c.InstallDir)
+				if err != nil {
+					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+				}
+			}
+
+			if c.ModLocation != "" {
+				c.ModLocation, err = files.Tildefy(c.ModLocation)
+				if err != nil {
+					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+				}
+			}
+
+			if c.snapshotLocationIsFilePath() {
+				// so snapshot location _is_ file path
+				// handle ~
+				c.SnapshotLocation, err = files.Tildefy(c.SnapshotLocation)
+				if err != nil {
+					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+				}
+
+				// ensure location exists
+				if !files.DirectoryExists(c.SnapshotLocation) {
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary:  fmt.Sprintf("SnapshotLocation %s does not exist in local file system", c.SnapshotLocation),
+					})
+				}
+			}
+			return diags
+		}
+	*/
 }
 
 func displayConfig(cmdName string) {
@@ -245,23 +286,13 @@ func handleArgDeprecations() {
 }
 
 // now validate  config values have appropriate values
+// (currently validates telemetry)
 func validateConfig() error {
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 	}
 	return nil
-}
-
-func setModLocation() string {
-	modLocation := viper.GetString(constants.ArgModLocation)
-	if modLocation == "" {
-		cwd, err := os.Getwd()
-		error_helpers.FailOnError(err)
-		modLocation = cwd
-	}
-	viper.Set(constants.ArgModLocation, modLocation)
-	return modLocation
 }
 
 // create a hclog logger with the level specified by the SP_LOG env var

@@ -168,7 +168,7 @@ func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 		dashboardName = args[0]
 	}
 
-	err := validateCloudArgs()
+	err := cmdconfig.ValidateCloudArgs()
 	if err != nil {
 		return "", err
 	}
@@ -320,64 +320,6 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
 			if viper.GetBool(constants.ArgProgress) {
 				fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
 			}
-		}
-	}
-	return nil
-}
-
-func validateCloudArgs() error {
-	// TODO VALIDATE cloud host - remove trailing slash?
-
-	// if workspace-database has not been set, check whether workspace has been set and if so use that
-	// NOTE: do this BEFORE populating workspace from share/snapshot args, if set
-	if !viper.IsSet(constants.ArgWorkspaceDatabase) && viper.IsSet(constants.ArgSnapshotLocation) {
-		viper.Set(constants.ArgWorkspaceDatabase, viper.GetString(constants.ArgSnapshotLocation))
-	}
-
-	return validateSnapshotArgs()
-}
-
-func validateSnapshotArgs() error {
-	// only 1 of 'share' and 'snapshot' may be set
-	share := viper.GetBool(constants.ArgShare)
-	snapshot := viper.GetBool(constants.ArgSnapshot)
-	if share && snapshot {
-		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
-	}
-
-	// if neither share or snapshot are set, nothing more to do
-	if !share && !snapshot {
-		return nil
-	}
-
-	// verify cloud token and workspace has been set
-	token := viper.GetString(constants.ArgCloudToken)
-	if token == "" {
-		return fmt.Errorf("to share snapshots, cloud token must be set")
-	}
-
-	// we should now have a value for workspace
-	if !viper.IsSet(constants.ArgSnapshotLocation) {
-		workspace, err := cloud.GetUserWorkspace(token)
-		if err != nil {
-			return err
-		}
-		viper.Set(constants.ArgSnapshotLocation, workspace)
-	}
-
-	// should never happen as there is a default set
-	if viper.GetString(constants.ArgCloudHost) == "" {
-		return fmt.Errorf("to share snapshots, cloud host must be set")
-	}
-
-	return validateSnapshotTags()
-}
-
-func validateSnapshotTags() error {
-	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
-	for _, tagStr := range tags {
-		if len(strings.Split(tagStr, "=")) != 2 {
-			return fmt.Errorf("snapshot tags must be specified '--% key=value'", constants.ArgSnapshotTag)
 		}
 	}
 	return nil
