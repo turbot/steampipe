@@ -141,6 +141,7 @@ func initGlobalConfig() {
 
 	// 1) load workspace profile
 	// set install dir to the default to load the workspace profile ( we always load this out of default install dir)
+	// (NOTE: _do not_ call ensureInstallDir - we do not want to create the default if it is not there)
 	setInstallDir(filepaths.DefaultInstallDir)
 	workspaceProfileLoader, err := steampipeconfig.NewWorkspaceProfileLoader(filepaths.WorkspaceProfileDir())
 	error_helpers.FailOnError(err)
@@ -272,24 +273,27 @@ func createLogger() {
 
 // set the top level ~/.steampipe folder (creates if it doesnt exist)
 func setInstallDir(installDir string) {
-	utils.LogTime("cmd.root.setInstallDir start")
-	defer utils.LogTime("cmd.root.setInstallDir end")
-
 	installDir, err := filehelpers.Tildefy(installDir)
 	error_helpers.FailOnErrorWithMessage(err, "failed to sanitize install directory")
+
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
 	filepaths.SteampipeDir = installDir
 }
+
 func ensureInstallDir(installDir string) {
-	setInstallDir(installDir)
+	installDir, err := helpers.Tildefy(installDir)
+	error_helpers.FailOnErrorWithMessage(err, "failed to sanitize install directory")
 
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
+
+	// store as SteampipeDir
+	filepaths.SteampipeDir = installDir
 }
 
 func AddCommands() {
