@@ -2,6 +2,7 @@ package cmdconfig
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"os"
 
@@ -16,7 +17,7 @@ func Viper() *viper.Viper {
 }
 
 // BootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
-func BootstrapViper(defaultWorkspaceProfile *modconfig.WorkspaceProfile) {
+func BootstrapViper(defaultWorkspaceProfile *modconfig.WorkspaceProfile) error {
 	// set defaults  for keys which do not have a corresponding command flag
 	setBaseDefaults()
 
@@ -25,6 +26,26 @@ func BootstrapViper(defaultWorkspaceProfile *modconfig.WorkspaceProfile) {
 
 	// set defaults from env vars
 	setDefaultsFromEnv()
+
+	// tildefy all paths in viper
+	return tildefyPaths()
+}
+
+func tildefyPaths() error {
+	pathArgs := []string{
+		constants.ArgModLocation,
+		constants.ArgInstallDir,
+	}
+	var err error
+	for _, argName := range pathArgs {
+		if argVal := viper.GetString(argName); argVal != "" {
+			if argVal, err = helpers.Tildefy(argVal); err != nil {
+				return err
+			}
+			viper.Set(argName, argVal)
+		}
+	}
+	return nil
 }
 
 func SetDefaultsFromWorkspaceProfile(profile *modconfig.WorkspaceProfile) {
