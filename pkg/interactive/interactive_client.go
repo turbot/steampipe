@@ -296,12 +296,36 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
+		// ignore suppressed ASCII codes
+		prompt.OptionAddASCIICodeBind(c.suppressOnInput()...),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
 	c.interactivePrompt.RunCtx(ctx)
 
 	return
+}
+
+// suppressOnInput adds handlers which explicitly ignores certain ASCII codes from input
+func (c *InteractiveClient) suppressOnInput() []prompt.ASCIICodeBind {
+	mapped := utils.Map(constants.SuppressedASCIICodes, func(k []byte) prompt.ASCIICodeBind {
+		return prompt.ASCIICodeBind{
+			ASCIICode: k,
+			Fn:        func(b *prompt.Buffer) { /* ignore */ },
+		}
+	})
+
+	isWSL, _ := utils.IsWSL()
+	if isWSL {
+		mapped = append(mapped, utils.Map(constants.SuppressedASCIICodesForWSL, func(k []byte) prompt.ASCIICodeBind {
+			return prompt.ASCIICodeBind{
+				ASCIICode: k,
+				Fn:        func(b *prompt.Buffer) { /* ignore */ },
+			}
+		})...)
+	}
+
+	return mapped
 }
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
