@@ -64,7 +64,7 @@ The current mod is the working directory, or the directory specified by the --wo
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
-		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
+		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
 		AddStringArrayFlag(constants.ArgSourceSnapshot, "", nil, "Specify one or more snapshots to display").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		// hidden flags that are used internally
@@ -210,8 +210,9 @@ func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 	}
 
 	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatNone}
-	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
-		return "", fmt.Errorf("invalid output format, supported format: '%s'", constants.OutputFormatSnapshot)
+	output := viper.GetString(constants.ArgOutput)
+	if !helpers.StringSliceContains(validOutputFormats, output) {
+		return "", fmt.Errorf("invalid output format '%s', must be one of %s", output, strings.Join(validOutputFormats, ","))
 	}
 
 	return dashboardName, nil
@@ -411,7 +412,7 @@ func validateSnapshotTags() error {
 	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
 	for _, tagStr := range tags {
 		if len(strings.Split(tagStr, "=")) != 2 {
-			return fmt.Errorf("snapshot tags must be specified '--tag key=value'")
+			return fmt.Errorf("snapshot tags must be specified '--% key=value'", constants.ArgSnapshotTag)
 		}
 	}
 	return nil

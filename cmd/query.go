@@ -87,7 +87,7 @@ Examples:
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
 		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
-		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify the value of a tag to set on the snapshot").
+		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
 
@@ -150,8 +150,9 @@ func validateQueryArgs(cmd *cobra.Command) error {
 	}
 
 	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatNone}
-	if !helpers.StringSliceContains(validOutputFormats, viper.GetString(constants.ArgOutput)) {
-		return fmt.Errorf("invalid output format, must be one of %s", strings.Join(validOutputFormats, ","))
+	output := viper.GetString(constants.ArgOutput)
+	if !helpers.StringSliceContains(validOutputFormats, output) {
+		return fmt.Errorf("invalid output format '%s', must be one of %s", output, strings.Join(validOutputFormats, ","))
 	}
 
 	return nil
