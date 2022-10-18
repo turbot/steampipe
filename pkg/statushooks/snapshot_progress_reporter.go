@@ -1,9 +1,8 @@
-package snapshot
+package statushooks
 
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"strings"
 	"sync"
@@ -49,5 +48,5 @@ func (r *SnapshotProgressReporter) showProgress(ctx context.Context) {
 		msg.WriteString(fmt.Sprintf(", %d %s, ", r.errors, utils.Pluralize("error", r.errors)))
 	}
 
-	statushooks.SetStatus(ctx, msg.String())
+	SetStatus(ctx, msg.String())
 }
