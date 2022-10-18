@@ -276,7 +276,7 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 
 	// upload the snapshot (if needed)
 	err = publishSnapshotIfNeeded(snap)
-	error_helpers.FailOnErrorWithMessage(err, "failed to upload snapshot")
+	error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
 
 	// export the result (if needed)
 	exportArgs := viper.GetStringSlice(constants.ArgExport)
