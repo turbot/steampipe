@@ -2,7 +2,9 @@ package controldisplay
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
@@ -62,16 +64,18 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 	return res, nil
 }
 
-func ShareAsSnapshot(e *controlexecute.ExecutionTree, shouldShare bool) error {
+func PublishSnapshot(e *controlexecute.ExecutionTree, shouldShare bool) error {
 	snapshot, err := executionTreeToSnapshot(e)
 	if err != nil {
 		return err
 	}
 
-	snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
+	message, err := cloud.PublishSnapshot(snapshot, shouldShare)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
+	if viper.GetBool(constants.ArgProgress) {
+		fmt.Println(message)
+	}
 	return nil
 }

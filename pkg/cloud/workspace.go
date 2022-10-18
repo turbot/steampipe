@@ -31,11 +31,10 @@ func getUserWorkspaceHandle(baseURL, bearer, userHandle string, client *http.Cli
 	items := resp["items"].([]any)
 
 	if len(items) == 0 {
-		// CREATE??
-		return "", fmt.Errorf("no workspace found for user %s", userHandle)
+		return "", fmt.Errorf("snapshot-location is not specified and no workspaces exist for user %s", userHandle)
 	}
 	if len(items) > 1 {
-		return "", fmt.Errorf("more than one workspace found for user - specify which one to use with '--workspace'")
+		return "", fmt.Errorf("snapshot-location is not specified and more than one workspace found for user %s", userHandle)
 	}
 	workspace := items[0].(map[string]any)
 
