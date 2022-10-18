@@ -215,7 +215,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			}
 
 			// share the snapshot if necessary
-			err = uploadSnapshot(snap)
+			err = publishSnapshotIfNeeded(snap)
 
 			// export the result if necessary
 			exportArgs := viper.GetStringSlice(constants.ArgExport)

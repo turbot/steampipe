@@ -177,19 +177,10 @@ func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 	share := viper.GetBool(constants.ArgShare)
 	snapshot := viper.GetBool(constants.ArgSnapshot)
 
-	// if either share' or 'snapshot' are set, a dashboard name and cloud token must be provided
+	// if either share' or 'snapshot' are set, a dashboard name
 	if share || snapshot {
 		if dashboardName == "" {
 			return "", fmt.Errorf("dashboard name must be provided if --share or --snapshot arg is used")
-		}
-
-		if viper.GetString(constants.ArgSnapshotLocation) == "" {
-			return "", fmt.Errorf("a snapshot location must be set")
-		}
-
-		// verify cloud token
-		if !viper.IsSet(constants.ArgCloudToken) {
-			return "", fmt.Errorf("a Steampipe Cloud token must be provided")
 		}
 	}
 
@@ -284,7 +275,7 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	displaySnapshot(snap)
 
 	// upload the snapshot (if needed)
-	err = uploadSnapshot(snap)
+	err = publishSnapshotIfNeeded(snap)
 	error_helpers.FailOnErrorWithMessage(err, "failed to upload snapshot")
 
 	// export the result (if needed)
@@ -309,18 +300,20 @@ func verifyNamedResource(targetName string, w *workspace.Workspace) error {
 	return nil
 }
 
-func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) error {
-	shouldShare := viper.IsSet(constants.ArgShare)
-	shouldUpload := viper.IsSet(constants.ArgSnapshot)
-	if shouldShare || shouldUpload {
-		snapshotUrl, err := cloud.UploadSnapshot(snapshot, shouldShare)
-		if err != nil {
-			return err
-		} else {
-			if viper.GetBool(constants.ArgProgress) {
-				fmt.Printf("Snapshot uploaded to %s\n", snapshotUrl)
-			}
-		}
+func publishSnapshotIfNeeded(snapshot *dashboardtypes.SteampipeSnapshot) error {
+	shouldShare := viper.GetBool(constants.ArgShare)
+	shouldUpload := viper.GetBool(constants.ArgSnapshot)
+
+	if !(shouldShare || shouldUpload) {
+		return nil
+	}
+
+	message, err := cloud.PublishSnapshot(snapshot, shouldShare)
+	if err != nil {
+		return err
+	}
+	if viper.GetBool(constants.ArgProgress) {
+		fmt.Println(message)
 	}
 	return nil
 }

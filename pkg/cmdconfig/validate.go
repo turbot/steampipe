@@ -12,13 +12,8 @@ import (
 )
 
 func ValidateCloudArgs() error {
+	// if diagnostics mode is enabled, print out the cloud config vars
 	defer displayConfig()
-
-	// determine whether snapshot location is a cloud workspace or a file location
-	// if a file location, check it exists
-	if err := validateSnapshotLocation(); err != nil {
-		return err
-	}
 
 	// only 1 of 'share' and 'snapshot' may be set
 	share := viper.GetBool(constants.ArgShare)
@@ -32,19 +27,21 @@ func ValidateCloudArgs() error {
 		return nil
 	}
 
-	// verify cloud token and workspace has been set
 	token := viper.GetString(constants.ArgCloudToken)
-	if token == "" {
-		return fmt.Errorf("to share snapshots, cloud token must be set")
+
+	// determine whether snapshot location is a cloud workspace or a file location
+	// if a file location, check it exists
+	if err := validateSnapshotLocation(token); err != nil {
+		return err
 	}
 
-	// we should now have a value for workspace
-	if !viper.IsSet(constants.ArgSnapshotLocation) {
-		workspace, err := cloud.GetUserWorkspace(token)
-		if err != nil {
-			return err
-		}
-		viper.Set(constants.ArgSnapshotLocation, workspace)
+	// if workspace-database or snapshot-location are a cloud workspace handle, cloud token must be set
+	requireCloudToken := steampipeconfig.IsCloudWorkspaceIdentifier(viper.GetString(constants.ArgWorkspaceDatabase)) ||
+		steampipeconfig.IsCloudWorkspaceIdentifier(viper.GetString(constants.ArgSnapshotLocation))
+
+	// verify cloud token and workspace has been set
+	if requireCloudToken && token == "" {
+		return constants.MissingCloudTokenError
 	}
 
 	// should never happen as there is a default set
@@ -87,10 +84,20 @@ func displayConfig() {
 	fmt.Println(b.String())
 }
 
-func validateSnapshotLocation() error {
+func validateSnapshotLocation(cloudToken string) error {
 	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
+
+	// if snapshot location is not set, set to the users default
+	if snapshotLocation == "" {
+		if cloudToken == "" {
+			return constants.MissingCloudTokenError
+		}
+		return setSnapshotLocationFromDefaultWorkspace(cloudToken)
+	}
+
+	// if it is NOT a workspace handle, assume it is a local file location:
+	// tildefy it and ensure it exists
 	if !steampipeconfig.IsCloudWorkspaceIdentifier(snapshotLocation) {
-		// if it is a file location tildefy it and ensure it exists
 		var err error
 		snapshotLocation, err = filehelpers.Tildefy(snapshotLocation)
 		if err != nil {
@@ -104,6 +111,15 @@ func validateSnapshotLocation() error {
 			return fmt.Errorf("snapshot location %s does not exist", snapshotLocation)
 		}
 	}
+	return nil
+}
+
+func setSnapshotLocationFromDefaultWorkspace(cloudToken string) error {
+	workspace, err := cloud.GetUserWorkspace(cloudToken)
+	if err != nil {
+		return err
+	}
+	viper.Set(constants.ArgSnapshotLocation, workspace)
 	return nil
 }
 
