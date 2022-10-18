@@ -216,6 +216,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 
 			// share the snapshot if necessary
 			err = publishSnapshotIfNeeded(snap)
+			error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
 
 			// export the result if necessary
 			exportArgs := viper.GetStringSlice(constants.ArgExport)
