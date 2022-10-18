@@ -19,8 +19,8 @@ type ConnectionDataMap map[string]*ConnectionData
 
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the ConnectionData StructVersion is populated
-func (s *ConnectionDataMap) IsValid() bool {
-	for _, v := range *s {
+func (m ConnectionDataMap) IsValid() bool {
+	for _, v := range m {
 		if !v.IsValid() {
 			return false
 		}
@@ -28,19 +28,19 @@ func (s *ConnectionDataMap) IsValid() bool {
 	return true
 }
 
-func (s *ConnectionDataMap) MigrateFrom() migrate.Migrateable {
-	for _, v := range *s {
+func (m ConnectionDataMap) MigrateFrom() migrate.Migrateable {
+	for _, v := range m {
 		v.MigrateLegacy()
 	}
-	return s
+	return m
 }
 
-func (f *ConnectionDataMap) Save() error {
+func (m ConnectionDataMap) Save() error {
 	connFilePath := filepaths.ConnectionStatePath()
-	for _, v := range *f {
+	for _, v := range m {
 		v.MaintainLegacy()
 	}
-	connFileJSON, err := json.MarshalIndent(f, "", "  ")
+	connFileJSON, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing state file", err)
 		return err
@@ -71,6 +71,16 @@ func (m ConnectionDataMap) Connections() []*modconfig.Connection {
 	idx := 0
 	for _, d := range m {
 		res[idx] = d.Connection
+		idx++
+	}
+	return res
+}
+
+func (m ConnectionDataMap) ConnectionNames() []string {
+	var res = make([]string, len(m))
+	idx := 0
+	for _, d := range m {
+		res[idx] = d.Connection.Name
 		idx++
 	}
 	return res

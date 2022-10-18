@@ -141,7 +141,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// - for any aggregator connections, instantiate the first child connection instead
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
 	// now create them
-	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate)
+	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate...)
 	if res.Error != nil {
 		return res
 	}
@@ -154,7 +154,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	return res
 }
 
-func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []*modconfig.Connection {
+func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []string {
 	updateConnections := u.Update.Connections()
 	// put connections into a map to avoid dupes
 	var connectionMap = make(map[string]*modconfig.Connection, len(updateConnections))
@@ -173,10 +173,10 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 	}
 
 	// now copy result into array
-	res := make([]*modconfig.Connection, len(connectionMap))
+	res := make([]string, len(connectionMap))
 	idx := 0
 	for _, c := range connectionMap {
-		res[idx] = c
+		res[idx] = c.Name
 		idx++
 	}
 
@@ -224,7 +224,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, 
 			}
 		}
 	}
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.ConnectionNames()...)
 	if res.Error != nil {
 		return nil, nil, res.Error
 	}

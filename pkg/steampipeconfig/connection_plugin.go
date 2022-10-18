@@ -59,21 +59,17 @@ func NewConnectionPlugin(pluginName string, pluginClient *sdkgrpc.PluginClient, 
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
-func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+func CreateConnectionPlugins(connectionNames ...string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
 	res = &RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)
-	if len(connectionsToCreate) == 0 {
+	if len(connectionNames) == 0 {
 		return
 	}
-	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connectionsToCreate))
+	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connectionNames))
 
 	// build result map, keyed by connection name
-	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin, len(connectionsToCreate))
+	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin, len(connectionNames))
 	// build list of connection names to pass to plugin manager 'get'
-	connectionNames := make([]string, len(connectionsToCreate))
-	for i, connection := range connectionsToCreate {
-		connectionNames[i] = connection.Name
-	}
 
 	// get plugin manager
 	pluginManager, err := pluginmanager.GetPluginManager()
@@ -97,10 +93,17 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 	// now create or retrieve a connection plugin for each connection
 
 	// NOTE: multiple connections may use the same plugin
-	// store a map of multi connection plugins, keyed by connection name
+	// store a map of multi connection plugins, keyed by plugin name
 	multiConnectionPlugins := make(map[string]*ConnectionPlugin)
 
-	for _, connection := range connectionsToCreate {
+	for _, connectionName := range connectionNames {
+		// load config for this connection
+		connection, ok := GlobalConfig.Connections[connectionName]
+		if !ok {
+			res.Error = fmt.Errorf("no connection config found for connectrion '%s'", connectionName)
+			return nil, res
+		}
+
 		// is this connection provided by a plugin we have already instantiated?
 		if existingConnectionPlugin, ok := multiConnectionPlugins[connection.Plugin]; ok {
 			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.Plugin)
