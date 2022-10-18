@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"github.com/spf13/cobra"
+	"github.com/turbot/go-kit/helpers"
 	"log"
 	"strings"
 
@@ -67,16 +69,20 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 }
 
 func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res *steampipeconfig.RefreshConnectionResult) {
-	var op strings.Builder
-	op.WriteString("refresh connections:\n")
+	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
+	if cmdName != "plugin-manager" {
+		return
+	}
 
+	var op strings.Builder
 	if updates != nil {
 		op.WriteString(fmt.Sprintf("%s", updates.String()))
 	}
 	if res != nil {
-		op.WriteString(fmt.Sprintf("result: %s", res.String()))
+		op.WriteString(fmt.Sprintf("%s\n", res.String()))
 	}
-	log.Printf("[TRACE] %s", op.String())
+
+	log.Printf("[INFO] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
 }
 
 func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {
