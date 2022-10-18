@@ -193,19 +193,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Linux Build
-        uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v2
         with:
           name: build-artifact-linux
           failOnError: true
 
       - name: Clean up Darwin Build
-        uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v2
         with:
           name: build-artifact-darwin
           failOnError: true
 
       - name: Clean up Test Suite Logs
-        uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v2
         with:
           name: test-logs
           failOnError: true
