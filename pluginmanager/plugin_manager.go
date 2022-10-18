@@ -25,6 +25,7 @@ import (
 )
 
 type runningPlugin struct {
+	pluginName  string
 	client      *plugin.Client
 	reattach    *proto.ReattachConfig
 	initialized chan struct{}
@@ -445,6 +446,7 @@ func (m *PluginManager) addLoadingPlugin(connectionName string, p *runningPlugin
 	// add a new running plugin to both connectionPluginMap and pluginMap
 	// NOTE: m.mut must be locked before calling this
 	p = &runningPlugin{
+		pluginName:  pluginName,
 		initialized: make(chan struct{}, 1),
 	}
 	m.connectionPluginMap[connectionName] = p
@@ -605,7 +607,7 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
 		return nil
 
 	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
-		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", p.reattach.Plugin, pluginStartTimeoutSecs)
+		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", p.pluginName, pluginStartTimeoutSecs)
 	}
 }
 
