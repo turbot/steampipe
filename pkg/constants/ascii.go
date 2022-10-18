@@ -19,7 +19,7 @@ var (
 		{27, 27, 91, 66},
 	}
 
-	SuppressedASCIICodesForWSA = [][]byte{
+	SuppressedASCIICodesForWSL = [][]byte{
 		// Alt+D
 		{195, 176},
 	}
