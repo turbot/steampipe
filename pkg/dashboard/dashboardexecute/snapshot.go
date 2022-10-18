@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/snapshot"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
@@ -48,7 +47,7 @@ func createSnapshotContext(ctx context.Context, target string) context.Context {
 	snapshotCtx, cancel := context.WithCancel(ctx)
 	contexthelpers.StartCancelHandler(cancel)
 
-	snapshotProgressReporter := snapshot.NewSnapshotProgressReporter(target)
+	snapshotProgressReporter := statushooks.NewSnapshotProgressReporter(target)
 	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
 
 	// create a context with a SnapshotControlHooks to report execution progress of any controls in this snapshot
