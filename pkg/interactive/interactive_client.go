@@ -317,7 +317,7 @@ func (c *InteractiveClient) suppressOnInput() []prompt.ASCIICodeBind {
 
 	isWSL, _ := utils.IsWSL()
 	if isWSL {
-		mapped = append(mapped, utils.Map(constants.WSLAltCodes, func(k []byte) prompt.ASCIICodeBind {
+		mapped = append(mapped, utils.Map(constants.SuppressedASCIICodesForWSA, func(k []byte) prompt.ASCIICodeBind {
 			return prompt.ASCIICodeBind{
 				ASCIICode: k,
 				Fn:        func(b *prompt.Buffer) { /* ignore */ },
