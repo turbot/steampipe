@@ -111,7 +111,7 @@ func validateSnapshotTags() error {
 	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
 	for _, tagStr := range tags {
 		if len(strings.Split(tagStr, "=")) != 2 {
-			return fmt.Errorf("snapshot tags must be specified '--tag key=value'")
+			return fmt.Errorf("snapshot tags must be specified '--%s key=value'", constants.ArgSnapshotTag)
 		}
 	}
 	return nil
