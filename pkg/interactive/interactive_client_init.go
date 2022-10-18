@@ -39,6 +39,8 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 
+	initResult.AddWarnings("this is a hard coded watning")
+
 	if initResult.HasMessages() {
 		c.hidePrompt = true
 		c.interactivePrompt.ClearLine()
@@ -85,6 +87,10 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			c.initData.Result.Error = err
 		}
 	}
+
+	// Trigger a re-render of the prompt, so that the prompt actually shows up,
+	// since the prompt may have been removed by the installation spinner
+	c.interactivePrompt.Render()
 
 }
 
