@@ -1,0 +1,26 @@
+before:
+  hooks:
+    - go mod tidy
+    - go clean -testcache && go test -timeout 30s ./...
+builds:
+  - env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+
+    id: "steampipe"
+    binary: "steampipe"
+
+archives:
+  - files:
+      - none*
+    format: zip
+    id: homebrew
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: linux
+        format: tar.gz

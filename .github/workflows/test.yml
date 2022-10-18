@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
-          
+
       - name: Fetching Go Cache Paths
         id: go-cache-paths
         run: |
@@ -46,16 +46,11 @@ jobs:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
 
-      - name: Run CLI Unit Tests
-        run: |
-          go clean -testcache
-          go test -timeout 30s ./...
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
-          args: release --rm-dist --skip-publish
+          args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -83,11 +78,30 @@ jobs:
           if-no-files-found: error
 
   acceptance_test:
-    name: Acceptance tests
+    name: Test
     needs: goreleaser
     strategy:
+      fail-fast: false
       matrix:
         platform: [macos-latest, ubuntu-latest]
+        test_block:
+          - "migration"
+          - "service_and_plugin"
+          - "search_path"
+          - "chaos_and_query"
+          - "dynamic_schema"
+          - "cache"
+          - "mod_install"
+          - "mod"
+          - "check"
+          - "performance"
+          - "exit_codes"
+          - "force_stop"
+        exclude:
+          - platform: macos-latest
+            test_block: migration
+          - platform: macos-latest
+            test_block: force_stop
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
@@ -131,9 +145,11 @@ jobs:
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
       - name: Install DB
+        id: install-db
         continue-on-error: false
         run: |
           steampipe service start
+          steampipe plugin install chaos
           steampipe service stop
 
       - name: Run Test Suite
@@ -142,19 +158,21 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
           steampipe service stop --force
-      
+
       - name: Save Test Suite Logs
         uses: actions/upload-artifact@v3
         with:
           name: test-logs
           path: ~/.steampipe/logs
           if-no-files-found: error
-      
+
       # This job checks whether the test suite has passed or not.
-      # Since the exit_code is set only when the bats test suite pass, so we have added the if-conditional block 
+      # Since the exit_code is set only when the bats test suite pass,
+      # we have added the if-conditional block
       - name: Check Test Passed/Failed
+        if: ${{ success() }}
         continue-on-error: false
         run: |
           if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
@@ -171,6 +189,7 @@ jobs:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
     needs: acceptance_test
+    if: ${{ needs.acceptance_test.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Linux Build
@@ -183,12 +202,6 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: build-artifact-darwin
-          failOnError: true
-
-      - name: Clean up Test Suite
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: test-artifact
           failOnError: true
 
       - name: Clean up Test Suite Logs

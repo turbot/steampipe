@@ -1,8 +1,27 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
+@test "migrate legacy lock file" {
+  cd tests/acceptance/test_data/dependent_mod_with_legacy_lock
+  # run steampipe query twice - the bug we are testing for caused the workspace lock to be deleted after the first query
+  steampipe query "select 1 as a" --output json
+  run steampipe query "select 1 as a" --output json
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_15.json)"
+}
+
+## public schema migration
+
 @test "verify data is properly migrated when upgrading from v0.13.6" {
-  skip
+  # setup sql statements
+  setup_sql[0]="create table sample(sample_col_1 char(10), sample_col_2 char(10))"
+  setup_sql[1]="insert into sample(sample_col_1,sample_col_2) values ('foo','bar')"
+  setup_sql[2]="insert into sample(sample_col_1,sample_col_2) values ('foo1','bar1')"
+  setup_sql[3]="create function sample_func() returns integer as 'select 1 as result;' language sql;"
+
+  # verify sql statements
+  verify_sql[0]="select * from sample"
+  verify_sql[1]="select * from sample_func()"
+
   # create a temp directory to install steampipe(0.13.6)
   tmpdir="$(mktemp -d)"
   mkdir -p "${tmpdir}"
@@ -43,11 +62,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # stop the service
   $tmpdir/steampipe --install-dir $tmpdir service stop
   
-  # Now run this version(0.14.*) - which should migrate the data
+  # Now run this version - which should migrate the data
   steampipe --install-dir $tmpdir service start
   
   # store the result of the verification statements(0.14.*)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
+    echo "VerifySQL: ${verify_sql[$i]}"
     steampipe --install-dir $tmpdir query "${verify_sql[$i]}" --output json > verify$i$i.json
   done
 
@@ -59,22 +79,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_equal "$(cat verify$i.json)" "$(cat verify$i$i.json)"
   done
 
-}
-
-# add the setup and verify sql statements here
-function setup() {
-  # setup sql statements
-  setup_sql[0]="create table sample(sample_col_1 char(10), sample_col_2 char(10))"
-  setup_sql[1]="insert into sample(sample_col_1,sample_col_2) values ('foo','bar')"
-  setup_sql[2]="insert into sample(sample_col_1,sample_col_2) values ('foo1','bar1')"
-  setup_sql[3]="create function sample_func() returns integer as 'select 1 as result;' language sql;"
-
-  # verify sql statements
-  verify_sql[0]="select * from sample"
-  verify_sql[1]="select * from sample_func()"
-}
-
-function teardown() {
   rm -rf $tmpdir
   rm -f verify*
 }

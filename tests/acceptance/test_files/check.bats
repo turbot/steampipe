@@ -163,3 +163,69 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f test.json
   cd -
 }
+
+## check search_path tests
+
+@test "steampipe check search_path_prefix when passed through command line" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check control.search_path_test_1 --output json --search-path-prefix aws --export json
+  assert_equal "$(cat control.*.json | jq '.controls[0].results[0].status')" '"ok"'
+  rm -f control.*.json
+}
+
+@test "steampipe check search_path when passed through command line" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check control.search_path_test_2 --output json --search-path chaos,b,c --export json
+  assert_equal "$(cat control.*.json | jq '.controls[0].results[0].status')" '"ok"'
+  rm -f control.*.json
+}
+
+@test "steampipe check search_path and search_path_prefix when passed through command line" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check control.search_path_test_3 --output json --search-path chaos,b,c --search-path-prefix aws --export json
+  assert_equal "$(cat control.*.json | jq '.controls[0].results[0].status')" '"ok"'
+  rm -f control.*.json
+}
+
+@test "steampipe check search_path_prefix when passed in the control" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check control.search_path_test_4 --output json --export json
+  assert_equal "$(cat control.*.json | jq '.controls[0].results[0].status')" '"ok"'
+  rm -f control.*.json
+}
+
+@test "steampipe check search_path when passed in the control" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check control.search_path_test_5 --output json --export json
+  assert_equal "$(cat control.*.json | jq '.controls[0].results[0].status')" '"ok"'
+  rm -f control.*.json
+}
+
+@test "steampipe check search_path and search_path_prefix when passed in the control" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check control.search_path_test_6 --output json --export json
+  assert_equal "$(cat control.*.json | jq '.controls[0].results[0].status')" '"ok"'
+  rm -f control.*.json
+}
+
+## plugin crash
+
+@test "check whether the plugin is crashing or not" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check benchmark.check_plugin_crash_benchmark
+  echo $output
+  [ $(echo $output | grep "ERROR: context canceled" | wc -l | tr -d ' ') -eq 0 ]
+}
+
+# testing the check summary output feature in steampipe
+@test "check summary output" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check benchmark.control_summary_benchmark --theme plain
+
+  echo $output
+
+  # TODO: Find a way to store the output in a file and match it with the 
+  # expected file. For now the work-around is to check whether the output
+  # contains `summary`
+  assert_output --partial 'Summary'
+}
