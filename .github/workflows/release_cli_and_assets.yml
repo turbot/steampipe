@@ -293,11 +293,30 @@ jobs:
         if-no-files-found: error
 
   run_acceptance_tests:
-    name: Run CLI Acceptance tests
+    name: Acceptance tests
     needs: [create_test_build,build_and_release_assets]
     strategy:
+      fail-fast: false
       matrix:
         platform: [ macos-latest ]
+        test_block:
+          - "migration"
+          - "service_and_plugin"
+          - "search_path"
+          - "chaos_and_query"
+          - "dynamic_schema"
+          - "cache"
+          - "mod_install"
+          - "mod"
+          - "check"
+          - "performance"
+          - "exit_codes"
+          - "force_stop"
+        exclude:
+          - platform: macos-latest
+            test_block: migration
+          - platform: macos-latest
+            test_block: force_stop
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Trim asset version prefix and Validate
@@ -329,13 +348,6 @@ jobs:
       run: |
         mkdir ~/artifacts
 
-    - name: Download Linux Build Artifacts
-      uses: actions/download-artifact@v3
-      if: ${{ matrix.platform == 'ubuntu-latest' }}
-      with:
-        name: build-artifact-linux
-        path: ~/artifacts
-
     - name: Download Darwin Build Artifacts
       uses: actions/download-artifact@v3
       if: ${{ matrix.platform == 'macos-latest' }}
@@ -349,25 +361,25 @@ jobs:
         mkdir ~/build
         unzip ~/artifacts/darwin.zip -d ~/build
 
-    - name: Extract Ubuntu Artifacts and Install Binary
-      if: ${{ matrix.platform == 'ubuntu-latest' }}
-      run: |
-        mkdir ~/build
-        tar -xf ~/artifacts/linux.tar.gz -C ~/build
-
     - name: Set PATH
       run: |
         echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
 
     - name: Install DB
+      id: install-db
+      continue-on-error: false
       run: |
+        steampipe service start
         steampipe plugin install chaos
+        steampipe service stop
 
     - name: Run Test Suite
-      timeout-minutes: 30
+      id: run-test-suite
+      timeout-minutes: 15
       run: |
         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-        $GITHUB_WORKSPACE/tests/acceptance/run.sh
+        $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+        steampipe service stop --force
 
   docker_acceptance_test_debian:
     name: Acceptance tests(Docker - Debian)
