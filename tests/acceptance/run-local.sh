@@ -17,4 +17,9 @@ echo "Install directory: $STEAMPIPE_INSTALL_DIR"
 steampipe query "select 1 as setup_complete"
 echo "Installation complete at $STEAMPIPE_INSTALL_DIR"
 
-source $MY_PATH/run.sh
+if [ $# -eq 0 ]; then
+  # Run all test files
+  $MY_PATH/run.sh
+else
+  $MY_PATH/run.sh ${1}
+fi
