@@ -21,7 +21,7 @@ declare -a arr=("migration" "service_and_plugin" "search_path" "chaos_and_query"
 for i in "${arr[@]}"
 do
   echo ">>>>> running $i.bats"
-  ./tests/acceptance/run.sh $i
+  ./tests/acceptance/run.sh $i.bats
 done
 
 echo "test run complete"
