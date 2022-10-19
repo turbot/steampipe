@@ -463,7 +463,7 @@ jobs:
 
   create_release_tag:
     name: Tag Release
-    needs: [run_acceptance_tests, docker_acceptance_test_debian, docker_acceptance_test_oraclelinux]
+    needs: [run_acceptance_tests]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
