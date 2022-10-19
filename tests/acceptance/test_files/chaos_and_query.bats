@@ -160,36 +160,36 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "named query current folder" {
-  cd tests/acceptance/test_files
+  cd $FILE_PATH/test_files
   run steampipe query query.named_query_1
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_named_query_current_folder.txt)"
 }
 
 @test "named query workspace folder" {
-  run steampipe query query.named_query_4 --mod-location "tests/acceptance/test_files/workspace_folder/"
+  run steampipe query query.named_query_4 --mod-location "$FILE_PATH/test_files/workspace_folder/"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_workspace_folder.txt)"
 }
 
 @test "sql file" {
-  run steampipe query tests/acceptance/test_files/workspace_folder/query_folder/named_query_7.sql
+  run steampipe query $FILE_PATH/test_files/workspace_folder/query_folder/named_query_7.sql
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_file.txt)"
 }
 
 #@test "sql glob" {
-#  cd tests/acceptance/test_files
+#  cd $FILE_PATH/test_files
 #  run steampipe query *.sql
 #  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_glob.txt)"
 #}
 
 #@test "sql glob csv no header" {
-#  cd tests/acceptance/test_files
+#  cd $FILE_PATH/test_files
 #  run steampipe query *.sql --header=false --output csv
 #  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_glob_csv_no_header.txt)"
 #}
 
 
 @test "migrate legacy lock file" {
-  cd tests/acceptance/test_data/dependent_mod_with_legacy_lock
+  cd $FILE_PATH/test_data/dependent_mod_with_legacy_lock
   # run steampipe query twice - the bug we are testing for caused the workspace lock to be deleted after the first query
   steampipe query "select 1 as a" --output json
   run steampipe query "select 1 as a" --output json
