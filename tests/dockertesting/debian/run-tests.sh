@@ -14,6 +14,14 @@ git submodule update --recursive
 git checkout $1
 git branch
 
+# declare the test file names
+declare -a arr=("migration" "service_and_plugin" "search_path" "chaos_and_query" "dynamic_schema" "cache" "mod_install" "mod" "check" "performance" "exit_codes" "force_stop")
+
 # run test suite
-./tests/acceptance/run.sh
+for i in "${arr[@]}"
+do
+  echo ">>>>> running $i.bats"
+  ./tests/acceptance/run.sh $i
+done
+
 echo "test run complete"
