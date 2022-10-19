@@ -222,7 +222,7 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
-	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	workspacePath := viper.GetString(constants.ArgModLocation)
 	if parse.ModfileExists(workspacePath) {
 		fmt.Println("Working folder already contains a mod definition file")
 		return
@@ -237,7 +237,7 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 
 func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpts {
 	opts := &modinstaller.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgWorkspaceChDir),
+		WorkspacePath: viper.GetString(constants.ArgModLocation),
 		DryRun:        viper.GetBool(constants.ArgDryRun),
 		ModArgs:       args,
 		Command:       cmd.Name(),

@@ -12,7 +12,7 @@ import (
 )
 
 func LoadWorkspacePromptingForVariables(ctx context.Context) (*workspace.Workspace, error) {
-	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	workspacePath := viper.GetString(constants.ArgModLocation)
 
 	w, err := workspace.Load(ctx, workspacePath)
 	if err == nil {

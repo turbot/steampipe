@@ -44,6 +44,7 @@ const (
 	ArgCheckDisplayWidth   = "check-display-width"
 	ArgPrune               = "prune"
 	ArgModInstall          = "mod-install"
+	ArgModLocation         = "mod-location"
 	ArgServiceMode         = "service-mode"
 	ArgBrowser             = "browser"
 	ArgInput               = "input"

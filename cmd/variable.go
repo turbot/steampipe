@@ -72,7 +72,7 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	workspacePath := viper.GetString(constants.ArgModLocation)
 
 	vars, err := workspace.LoadVariables(ctx, workspacePath)
 	// load the workspace

@@ -19,7 +19,7 @@ const (
 	EnvCacheMaxSize      = "STEAMPIPE_CACHE_MAX_SIZE_MB"
 
 	EnvConnectionWatcher = "STEAMPIPE_CONNECTION_WATCHER"
-	EnvWorkspaceChDir    = "STEAMPIPE_WORKSPACE_CHDIR"
+	EnvModLocation  	   = "STEAMPIPE_MOD_LOCATION"
 	EnvTelemetry         = "STEAMPIPE_TELEMETRY"
 	EnvIntrospection     = "STEAMPIPE_INTROSPECTION"
 
