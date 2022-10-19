@@ -13,6 +13,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
@@ -25,6 +26,7 @@ import (
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -47,8 +49,9 @@ var rootCmd = &cobra.Command{
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
 		createLogger()
-		handleArgDeprecations()
+
 		initGlobalConfig()
+
 		task.RunTasks()
 
 		// set the max memory
@@ -79,12 +82,6 @@ Getting started:
 
   Documentation available at https://steampipe.io/docs
  `,
-}
-
-func handleArgDeprecations() {
-	if viper.GetString(constants.ArgModLocation) == "" && viper.IsSet(constants.ArgWorkspaceChDir) {
-		viper.Set(constants.ArgModLocation, viper.GetString(constants.ArgWorkspaceChDir))
-	}
 }
 
 func InitCmd() {
@@ -132,6 +129,12 @@ func InitCmd() {
 
 }
 
+func handleArgDeprecations() {
+	if viper.GetString(constants.ArgModLocation) == "" && viper.IsSet(constants.ArgWorkspaceChDir) {
+		viper.Set(constants.ArgModLocation, viper.GetString(constants.ArgWorkspaceChDir))
+	}
+}
+
 func hideRootFlags(flags ...string) {
 	for _, flag := range flags {
 		rootCmd.Flag(flag).Hidden = true
@@ -144,17 +147,8 @@ func initGlobalConfig() {
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
 	// 1) load workspace profile
-	// set install dir to the default to load the workspace profile ( we always load this out of default install dir)
-	// (NOTE: _do not_ call ensureInstallDir - we do not want to create the default if it is not there)
-	setInstallDir(filepaths.DefaultInstallDir)
-	workspaceProfileLoader, err := steampipeconfig.NewWorkspaceProfileLoader(filepaths.WorkspaceProfileDir())
+	workspaceProfile, defaultWorkspaceProfile, err := loadWorkspaceProfile()
 	error_helpers.FailOnError(err)
-	workspaceProfile, err := workspaceProfileLoader.Get(viper.GetString(constants.ArgWorkspaceProfile))
-	error_helpers.FailOnError(err)
-	// set global workspace profile
-	steampipeconfig.GlobalWorkspaceProfile = workspaceProfile
-	// get the default workspace profile (must be there)
-	defaultWorkspaceProfile, _ := workspaceProfileLoader.Get("default")
 
 	// 2) use workspace profile to set-up viper with defaults
 	err = cmdconfig.BootstrapViper(defaultWorkspaceProfile)
@@ -167,6 +161,7 @@ func initGlobalConfig() {
 	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
 	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmdName)
 	error_helpers.FailOnError(err)
+
 	// store global config
 	steampipeconfig.GlobalConfig = config
 	// set viper defaults from this config
@@ -227,6 +222,33 @@ func initGlobalConfig() {
 	*/
 }
 
+func loadWorkspaceProfile() (workspaceProfile, defaultWorkspaceProfile *modconfig.WorkspaceProfile, err error) {
+	// NOTE: always load workspace profiles  out of DEFAULT install dir
+
+	// set install dir to the default
+	// (NOTE: _do not_ call ensureInstallDir - we do not want to create the default if it is not there)
+	defaultInstallDir, err := filehelpers.Tildefy(filepaths.DefaultInstallDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	filepaths.SteampipeDir = defaultInstallDir
+	workspaceProfileDir := filepaths.WorkspaceProfileDir()
+
+	// create loader
+	workspaceProfileLoader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	workspaceProfile, err = workspaceProfileLoader.Get(viper.GetString(constants.ArgWorkspaceProfile))
+	error_helpers.FailOnError(err)
+
+	// set global workspace profile
+	steampipeconfig.GlobalWorkspaceProfile = workspaceProfile
+	// get the default workspace profile (must be there)
+	defaultWorkspaceProfile, _ = workspaceProfileLoader.Get("default")
+	return workspaceProfile, defaultWorkspaceProfile, nil
+}
+
 // migrate all data files to use snake casing for property names
 func migrateLegacyFiles() error {
 	// skip migration for plugin manager commands because the plugin-manager will have
@@ -240,12 +262,6 @@ func migrateLegacyFiles() error {
 		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
 		migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
 	)
-}
-
-func handleArgDeprecations() {
-	if viper.GetString(constants.ArgModLocation) == "" {
-		viper.Set(constants.ArgModLocation, viper.GetString(constants.ArgWorkspaceChDir))
-	}
 }
 
 // now validate  config values have appropriate values
@@ -275,15 +291,6 @@ func createLogger() {
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)
-}
-
-// set the top level ~/.steampipe folder (creates if it doesnt exist)
-func setInstallDir(installDir string) {
-	if _, err := os.Stat(installDir); os.IsNotExist(err) {
-		err = os.MkdirAll(installDir, 0755)
-		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
-	}
-	filepaths.SteampipeDir = installDir
 }
 
 func ensureInstallDir(installDir string) {
