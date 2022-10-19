@@ -19,9 +19,9 @@ Global Flags:
       --cloud-host string           Steampipe Cloud host (default "cloud.steampipe.io")
       --cloud-token string          Steampipe Cloud authentication token
       --install-dir string          Path to the Config Directory (default "~/.steampipe")
-      --mod-location string         Path to the workspace working directory (default "/Users/kai/Dev/github/turbot/steampipe")
+      --mod-location string         Path to the workspace working directory (default "/Users/runner/work/steampipe/steampipe")
       --workspace string            The workspace profile to use (default "default")
-      --workspace-chdir string      Path to the workspace working directory (default "/Users/kai/Dev/github/turbot/steampipe") (DEPRECATED: use --mod-location)
+      --workspace-chdir string      Path to the workspace working directory (default "/Users/runner/work/steampipe/steampipe") (DEPRECATED: use --mod-location)
       --workspace-database string   Steampipe Cloud workspace database (default "local")
 
 Use "steampipe service [command] --help" for more information about a command.
