@@ -2,13 +2,37 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe plugin help is displayed when no sub command given" {
-    run steampipe plugin
-    assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_help_output.txt)"
+  steampipe plugin > test.txt
+
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing lines, since they contain absolute file paths
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".txt" "36d" test.txt
+    run sed -i ".txt" "37d" test.txt
+  else
+    run sed -i "36d" test.txt
+    run sed -i "37d" test.txt
+  fi
+
+  assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_plugin_help_output.txt)"
+  rm -f test.txt*
 }
 
 @test "steampipe service help is displayed when no sub command given" {
-    run steampipe service
-    assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_service_help_output.txt)"
+  steampipe service > test.txt
+
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing lines, since they contain absolute file paths
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".txt" "22d" test.txt
+    run sed -i ".txt" "23d" test.txt
+  else
+    run sed -i "22d" test.txt
+    run sed -i "23d" test.txt
+  fi
+
+  assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_service_help_output.txt)"
+  rm -f test.txt*
 }
 
 @test "steampipe service start" {
