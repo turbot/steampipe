@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/schema"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -144,7 +145,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	for _, block := range content.Blocks {
 		switch block.Type {
-		case "connection":
+		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
@@ -159,12 +160,12 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
-		case "options":
+		case modconfig.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return err
 			}
-			options, moreDiags := parse.DecodeOptions(block)
+			opts, moreDiags := parse.DecodeOptions(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
@@ -172,7 +173,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			// set options on steampipe config
 			// if options are already set, this will merge the new options over the top of the existing options
 			// i.e. new options have precedence
-			steampipeConfig.SetOptions(options)
+			steampipeConfig.SetOptions(opts)
 		}
 	}
 

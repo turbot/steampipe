@@ -77,10 +77,10 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
-		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
-		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
+		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ")
 
 	return cmd
 }
@@ -126,15 +126,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	failures := 0
 	var durations []time.Duration
 
-	shouldShare := viper.IsSet(constants.ArgShare)
-	shouldUpload := viper.IsSet(constants.ArgSnapshot)
+	shouldShare := viper.GetBool(constants.ArgShare)
+	shouldUpload := viper.GetBool(constants.ArgSnapshot)
 	generateSnapshot := shouldShare || shouldUpload
-	if generateSnapshot {
-		// if no output explicitly set, show nothing
-		if !viper.IsSet(constants.ArgOutput) {
-			viper.Set(constants.ArgOutput, constants.OutputFormatNone)
-		}
-	}
 
 	// treat each arg as a separate execution
 	for _, targetName := range args {
@@ -160,7 +154,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// if the share args are set, create a snapshot and share it
 		if generateSnapshot {
-			controldisplay.ShareAsSnapshot(executionTree, shouldShare)
+			controldisplay.PublishSnapshot(executionTree, shouldShare)
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
@@ -186,12 +180,12 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 
-	if err := validateCloudArgs(); err != nil {
+	if err := cmdconfig.ValidateCloudArgs(); err != nil {
 		error_helpers.ShowError(ctx, err)
 		return false
 	}
 	// only 1 of 'share' and 'snapshot' may be set
-	if len(viper.GetString(constants.ArgShare)) > 0 && len(viper.GetString(constants.ArgSnapshot)) > 0 {
+	if viper.GetBool(constants.ArgShare) && viper.GetBool(constants.ArgSnapshot) {
 		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))
 		return false
 	}

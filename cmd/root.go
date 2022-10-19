@@ -26,6 +26,7 @@ import (
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -41,15 +42,18 @@ var rootCmd = &cobra.Command{
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")
 
+		handleArgDeprecations()
+
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
 		createLogger()
-		handleArgDeprecations()
+
 		initGlobalConfig()
+
 		task.RunTasks()
-		// TODO enable this when we move to go 1.19
+
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
 	},
@@ -83,32 +87,32 @@ Getting started:
 func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
+	cwd, err := os.Getwd()
+	error_helpers.FailOnError(err)
 
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, fmt.Sprintf("Path to the Config Directory (defaults to %s)", filepaths.DefaultInstallDir))
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, "", "Path to the workspace working directory (deprecated)")
-	rootCmd.PersistentFlags().String(constants.ArgModLocation, "", "Path to the workspace working directory")
-	rootCmd.PersistentFlags().String(constants.ArgCloudHost, "cloud.steampipe.io", "Steampipe Cloud host")
-	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, "local", "Steampipe Cloud workspace database")
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, "Path to the Config Directory")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, cwd, "Path to the workspace working directory")
+	rootCmd.PersistentFlags().String(constants.ArgModLocation, cwd, "Path to the workspace working directory")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
+	// TODO elevate these to specific command? they are not used for plugin or mod commands
+	// or else put validation for plugin commands or at least a warning
+	rootCmd.PersistentFlags().String(constants.ArgCloudHost, constants.DefaultCloudHost, "Steampipe Cloud host")
+	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Steampipe Cloud workspace database")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use")
 
+	// deprecate ArgWorkspaceChDir
 	workspaceChDirFlag := rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceChDir)
-	workspaceChDirFlag.Deprecated = "please use --mod-location"
-	err := viper.BindPFlag(constants.ArgWorkspaceChDir, workspaceChDirFlag)
-	error_helpers.FailOnError(err)
-	
-	err = viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgModLocation, rootCmd.PersistentFlags().Lookup(constants.ArgModLocation))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgCloudHost, rootCmd.PersistentFlags().Lookup(constants.ArgCloudHost))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgCloudToken, rootCmd.PersistentFlags().Lookup(constants.ArgCloudToken))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgWorkspaceDatabase, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceDatabase))
-	error_helpers.FailOnError(err)
-	err = viper.BindPFlag(constants.ArgSchemaComments, rootCmd.PersistentFlags().Lookup(constants.ArgSchemaComments))
-	error_helpers.FailOnError(err)
+	workspaceChDirFlag.Deprecated = "use --mod-location"
+
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgWorkspaceChDir, workspaceChDirFlag))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgModLocation, rootCmd.PersistentFlags().Lookup(constants.ArgModLocation)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgCloudHost, rootCmd.PersistentFlags().Lookup(constants.ArgCloudHost)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgCloudToken, rootCmd.PersistentFlags().Lookup(constants.ArgCloudToken)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgWorkspaceDatabase, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceDatabase)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgSchemaComments, rootCmd.PersistentFlags().Lookup(constants.ArgSchemaComments)))
+	error_helpers.FailOnError(viper.BindPFlag(constants.ArgWorkspaceProfile, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceProfile)))
 
 	AddCommands()
 
@@ -125,6 +129,12 @@ func InitCmd() {
 
 }
 
+func handleArgDeprecations() {
+	if viper.GetString(constants.ArgModLocation) == "" && viper.IsSet(constants.ArgWorkspaceChDir) {
+		viper.Set(constants.ArgModLocation, viper.GetString(constants.ArgWorkspaceChDir))
+	}
+}
+
 func hideRootFlags(flags ...string) {
 	for _, flag := range flags {
 		rootCmd.Flag(flag).Hidden = true
@@ -136,38 +146,111 @@ func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
-	// setup viper with the essential path config (mod-location and install-dir)
-	cmdconfig.BootstrapViper()
-
-	// set the working folder
-	modLocation := setModLocation()
-
-	// set global containing install dir
-	setInstallDir()
-
-	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-
-	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
-	err := migrateLegacyFiles()
-	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
-
-	// load config (this sets the global config steampipeconfig.Config)
-	config, err := steampipeconfig.LoadSteampipeConfig(modLocation, cmd.Name())
+	// 1) load workspace profile
+	workspaceProfile, defaultWorkspaceProfile, err := loadWorkspaceProfile()
 	error_helpers.FailOnError(err)
 
-	steampipeconfig.GlobalConfig = config
+	// 2) use workspace profile to set-up viper with defaults
+	err = cmdconfig.BootstrapViper(defaultWorkspaceProfile)
+	error_helpers.FailOnError(err)
 
-	// set viper config defaults from config and env vars
-	cmdconfig.SetViperDefaults(steampipeconfig.GlobalConfig.ConfigMap())
+	// set global containing the configured install dir (create directory if needed)
+	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
+
+	// 3) load the connection config and HCL options
+	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmdName)
+	error_helpers.FailOnError(err)
+
+	// store global config
+	steampipeconfig.GlobalConfig = config
+	// set viper defaults from this config
+	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+
+	// 4) if an explicit workspace profile was set, add to viper as highest precedence default
+	if viper.IsSet(constants.ArgWorkspaceProfile) {
+		cmdconfig.SetDefaultsFromWorkspaceProfile(workspaceProfile)
+		// tildefy all paths in viper
+		// (this has already been done in BootstrapViper but we may have added a path from the workspace profile)
+		err = cmdconfig.TildefyPaths()
+	}
+
+	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
+	err = migrateLegacyFiles()
+	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
 
 	// now validate all config values have appropriate values
 	err = validateConfig()
 	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
+
+	/*
+		func (c *WorkspaceProfile) Initialise() hcl.Diagnostics {
+			var diags hcl.Diagnostics
+			var err error
+			if c.InstallDir != "" {
+				c.InstallDir, err = files.Tildefy(c.InstallDir)
+				if err != nil {
+					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+				}
+			}
+
+			if c.ModLocation != "" {
+				c.ModLocation, err = files.Tildefy(c.ModLocation)
+				if err != nil {
+					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+				}
+			}
+
+			if c.snapshotLocationIsFilePath() {
+				// so snapshot location _is_ file path
+				// handle ~
+				c.SnapshotLocation, err = files.Tildefy(c.SnapshotLocation)
+				if err != nil {
+					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
+				}
+
+				// ensure location exists
+				if !files.DirectoryExists(c.SnapshotLocation) {
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary:  fmt.Sprintf("SnapshotLocation %s does not exist in local file system", c.SnapshotLocation),
+					})
+				}
+			}
+			return diags
+		}
+	*/
+}
+
+func loadWorkspaceProfile() (workspaceProfile, defaultWorkspaceProfile *modconfig.WorkspaceProfile, err error) {
+	// NOTE: always load workspace profiles  out of DEFAULT install dir
+
+	// set install dir to the default
+	// (NOTE: _do not_ call ensureInstallDir - we do not want to create the default if it is not there)
+	defaultInstallDir, err := filehelpers.Tildefy(filepaths.DefaultInstallDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	filepaths.SteampipeDir = defaultInstallDir
+	workspaceProfileDir := filepaths.WorkspaceProfileDir()
+
+	// create loader
+	workspaceProfileLoader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	workspaceProfile, err = workspaceProfileLoader.Get(viper.GetString(constants.ArgWorkspaceProfile))
+	error_helpers.FailOnError(err)
+
+	// set global workspace profile
+	steampipeconfig.GlobalWorkspaceProfile = workspaceProfile
+	// get the default workspace profile (must be there)
+	defaultWorkspaceProfile, _ = workspaceProfileLoader.Get("default")
+	return workspaceProfile, defaultWorkspaceProfile, nil
 }
 
 // migrate all data files to use snake casing for property names
 func migrateLegacyFiles() error {
-
 	// skip migration for plugin manager commands because the plugin-manager will have
 	// been started by some other steampipe command, which would have done the migration already
 	if viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name() == "plugin-manager" {
@@ -181,30 +264,14 @@ func migrateLegacyFiles() error {
 	)
 }
 
-func handleArgDeprecations() {
-	if viper.GetString(constants.ArgModLocation) == "" {
-		viper.Set(constants.ArgModLocation, viper.GetString(constants.ArgWorkspaceChDir))
-	}
-}
-
 // now validate  config values have appropriate values
+// (currently validates telemetry)
 func validateConfig() error {
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 	}
 	return nil
-}
-
-func setModLocation() string {
-	modLocation := viper.GetString(constants.ArgModLocation)
-	if modLocation == "" {
-		cwd, err := os.Getwd()
-		error_helpers.FailOnError(err)
-		modLocation = cwd
-	}
-	viper.Set(constants.ArgModLocation, modLocation)
-	return modLocation
 }
 
 // create a hclog logger with the level specified by the SP_LOG env var
@@ -226,17 +293,13 @@ func createLogger() {
 	log.SetFlags(0)
 }
 
-// set the top level ~/.steampipe folder (creates if it doesnt exist)
-func setInstallDir() {
-	utils.LogTime("cmd.root.setInstallDir start")
-	defer utils.LogTime("cmd.root.setInstallDir end")
-
-	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
-	error_helpers.FailOnErrorWithMessage(err, "failed to sanitize install directory")
+func ensureInstallDir(installDir string) {
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		err = os.MkdirAll(installDir, 0755)
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
+
+	// store as SteampipeDir
 	filepaths.SteampipeDir = installDir
 }
 

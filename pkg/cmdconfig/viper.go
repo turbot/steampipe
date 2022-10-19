@@ -2,12 +2,13 @@ package cmdconfig
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"os"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // Viper fetches the global viper instance
@@ -15,23 +16,65 @@ func Viper() *viper.Viper {
 	return viper.GetViper()
 }
 
-// BootstrapViper sets up viper with the essential path config (mod-location and install-dir)
-func BootstrapViper() {
-	viper.SetDefault(constants.EnvInstallDir, filepaths.DefaultInstallDir)
-	bootstrapEnvMappings := map[string]envMapping{
-		constants.EnvInstallDir:     {constants.ArgInstallDir, "string"},
-		constants.EnvModLocation: 	 {constants.ArgModLocation, "string"},
-	}
-	setViperDefaultFromEnvMapping(bootstrapEnvMappings)
+// BootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
+func BootstrapViper(defaultWorkspaceProfile *modconfig.WorkspaceProfile) error {
+	// set defaults  for keys which do not have a corresponding command flag
+	setBaseDefaults()
+
+	// set defaults from defaultWorkspaceProfile
+	SetDefaultsFromWorkspaceProfile(defaultWorkspaceProfile)
+
+	// set defaults from env vars
+	setDefaultsFromEnv()
+
+	// tildefy all paths in viper
+	return TildefyPaths()
 }
 
-// SetViperDefaults sets up viper with default values for all config which is set via hcl config or env vars
-func SetViperDefaults(configMap map[string]interface{}) {
-	setBaseDefaults()
-	if configMap != nil {
-		overrideDefaultsFromConfig(configMap)
+// TildefyPaths cleans all path config values and replaces '~' with the home directory
+func TildefyPaths() error {
+	pathArgs := []string{
+		constants.ArgModLocation,
+		constants.ArgInstallDir,
 	}
-	overrideDefaultsFromEnv()
+	var err error
+	for _, argName := range pathArgs {
+		if argVal := viper.GetString(argName); argVal != "" {
+			if argVal, err = helpers.Tildefy(argVal); err != nil {
+				return err
+			}
+			viper.Set(argName, argVal)
+		}
+	}
+	return nil
+}
+
+func SetDefaultsFromWorkspaceProfile(profile *modconfig.WorkspaceProfile) {
+	if profile.CloudHost != "" {
+		viper.SetDefault(constants.ArgCloudHost, profile.CloudHost)
+	}
+	if profile.CloudToken != "" {
+		viper.SetDefault(constants.ArgCloudToken, profile.CloudToken)
+	}
+	if profile.InstallDir != "" {
+		viper.SetDefault(constants.ArgInstallDir, profile.InstallDir)
+	}
+	if profile.ModLocation != "" {
+		viper.SetDefault(constants.ArgModLocation, profile.ModLocation)
+	}
+	if profile.SnapshotLocation != "" {
+		viper.SetDefault(constants.ArgSnapshotLocation, profile.SnapshotLocation)
+	}
+	if profile.WorkspaceDatabase != "" {
+		viper.SetDefault(constants.ArgWorkspaceDatabase, profile.WorkspaceDatabase)
+	}
+}
+
+// SetDefaultsFromConfig overrides viper default values from hcl config values
+func SetDefaultsFromConfig(configMap map[string]interface{}) {
+	for k, v := range configMap {
+		viper.SetDefault(k, v)
+	}
 }
 
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism
@@ -39,19 +82,11 @@ func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		constants.ArgUpdateCheck:    true,
 		constants.ArgTelemetry:      constants.TelemetryInfo,
-		constants.ArgInstallDir:     filepaths.DefaultInstallDir,
 		constants.ArgDatabasePort:   constants.DatabaseDefaultPort,
 		constants.ArgMaxCacheSizeMb: constants.DefaultMaxCacheSizeMb,
 	}
 
 	for k, v := range defaults {
-		viper.SetDefault(k, v)
-	}
-}
-
-// set default values from hcl config
-func overrideDefaultsFromConfig(configMap map[string]interface{}) {
-	for k, v := range configMap {
 		viper.SetDefault(k, v)
 	}
 }
@@ -63,24 +98,25 @@ type envMapping struct {
 }
 
 // set default values from env vars
-func overrideDefaultsFromEnv() {
+func setDefaultsFromEnv() {
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
+		constants.EnvInstallDir:        {constants.ArgInstallDir, "string"},
+		constants.EnvWorkspaceChDir:    {constants.ArgModLocation, "string"},
+		constants.EnvModLocation:       {constants.ArgModLocation, "string"},
 		constants.EnvIntrospection:     {constants.ArgIntrospection, "string"},
 		constants.EnvTelemetry:         {constants.ArgTelemetry, "string"},
 		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
 		constants.EnvCloudHost:         {constants.ArgCloudHost, "string"},
 		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
-		constants.EnvWorkspace:         {constants.ArgWorkspace, "string"},
+		constants.EnvSnapshotLocation:  {constants.ArgSnapshotLocation, "string"},
 		constants.EnvWorkspaceDatabase: {constants.ArgWorkspaceDatabase, "string"},
+		constants.EnvWorkspaceProfile:  {constants.ArgWorkspaceProfile, "string"},
 		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
 		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},
 	}
-	setViperDefaultFromEnvMapping(envMappings)
-}
 
-func setViperDefaultFromEnvMapping(envMappings map[string]envMapping) {
 	for k, v := range envMappings {
 		if val, ok := os.LookupEnv(k); ok {
 			switch v.varType {

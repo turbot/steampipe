@@ -7,7 +7,6 @@ import (
 	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/go-kit/helpers"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -102,8 +101,11 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
+
 	// update the viper default based on this loaded config
-	cmdconfig.SetViperDefaults(config.ConfigMap())
+	//cmdconfig.SetViperDefaults(config.ConfigMap(), nil)
+	// TODO KAI REIMPLEMENT
+
 	// now refresh connections and search paths
 	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {

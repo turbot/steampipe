@@ -8,8 +8,9 @@ const (
 	EnvServicePassword = "STEAMPIPE_DATABASE_PASSWORD"
 	EnvMaxParallel     = "STEAMPIPE_MAX_PARALLEL"
 
-	EnvWorkspace         = "STEAMPIPE_WORKSPACE"
+	EnvSnapshotLocation  = "STEAMPIPE_SNAPSHOT_LOCATION"
 	EnvWorkspaceDatabase = "STEAMPIPE_WORKSPACE_DATABASE"
+	EnvWorkspaceProfile  = "STEAMPIPE_WORKSPACE"
 	EnvCloudHost         = "STEAMPIPE_CLOUD_HOST"
 	EnvCloudToken        = "STEAMPIPE_CLOUD_TOKEN"
 
@@ -19,9 +20,11 @@ const (
 	EnvCacheMaxSize      = "STEAMPIPE_CACHE_MAX_SIZE_MB"
 
 	EnvConnectionWatcher = "STEAMPIPE_CONNECTION_WATCHER"
-	EnvModLocation  	   = "STEAMPIPE_MOD_LOCATION"
+	EnvWorkspaceChDir    = "STEAMPIPE_WORKSPACE_CHDIR"
+	EnvModLocation       = "STEAMPIPE_MOD_LOCATION"
 	EnvTelemetry         = "STEAMPIPE_TELEMETRY"
 	EnvIntrospection     = "STEAMPIPE_INTROSPECTION"
+	EnvDiagnostics       = "STEAMPIPE_DIAGNOSTICS"
 
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	EnvInputVarPrefix = "SP_VAR_"

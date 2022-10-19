@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/hcl/v2"
 	"golang.org/x/exp/maps"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -85,11 +85,12 @@ Examples:
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
-		AddStringFlag(constants.ArgSnapshot, "", "", "Create snapshot in Steampipe Cloud with the default (workspace) visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
-		AddStringFlag(constants.ArgShare, "", "", "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.", cmdconfig.FlagOptions.NoOptDefVal(constants.ArgShareNoOptDefault)).
+		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
+		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
-		AddStringFlag(constants.ArgWorkspace, "", "", "The cloud workspace... ")
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
+		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status")
 
 	return cmd
 }
@@ -109,7 +110,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// validate args
-	error_helpers.FailOnError(validateQueryArgs(cmd))
+	error_helpers.FailOnError(validateQueryArgs(cmd, args))
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
@@ -143,8 +144,13 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func validateQueryArgs(cmd *cobra.Command) error {
-	err := validateCloudArgs()
+func validateQueryArgs(cmd *cobra.Command, args []string) error {
+	interactiveMode := len(args) == 0
+	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
+		return fmt.Errorf("cannot share snapshots in interactive mode")
+	}
+	// if share or snapshot args are set, there must be a query specified
+	err := cmdconfig.ValidateCloudArgs()
 	if err != nil {
 		return err
 	}
@@ -209,7 +215,8 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			}
 
 			// share the snapshot if necessary
-			err = uploadSnapshot(snap)
+			err = publishSnapshotIfNeeded(snap)
+			error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
 
 			// export the result if necessary
 			exportArgs := viper.GetStringSlice(constants.ArgExport)

@@ -10,7 +10,8 @@ import (
 
 // Constants for Config
 const (
-	DefaultInstallDir            = "~/.steampipe"
+	DefaultInstallDir = "~/.steampipe"
+	
 	connectionsStateFileName     = "connection.json"
 	versionFileName              = "versions.json"
 	databaseRunningInfoFileName  = "steampipe.json"
@@ -68,6 +69,11 @@ func EnsureBackupsDir() string {
 // BackupsDir returns the path to the backups directory
 func BackupsDir() string {
 	return steampipeSubDir("backups")
+}
+
+// WorkspaceProfileDir returns the path to the workspace profiles directory
+func WorkspaceProfileDir() string {
+	return steampipeSubDir("workspaces")
 }
 
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)

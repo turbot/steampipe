@@ -2,18 +2,61 @@ package cloud
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/export"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 )
 
-func UploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
-	cloudWorkspace := viper.GetString(constants.ArgWorkspace)
+func PublishSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
+	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
+	// snapshotLocation must be set (validation should ensure this)
+	if snapshotLocation == "" {
+		return "", fmt.Errorf("to share a snapshot, snapshot-locationmust be set")
+	}
+
+	// if snapshot location is a workspace handle, upload it
+	if steampipeconfig.IsCloudWorkspaceIdentifier(snapshotLocation) {
+		url, err := uploadSnapshot(snapshot, share)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("\nSnapshot uploaded to %s\n", url), nil
+	}
+
+	// otherwise assume snapshot location is a file path
+	filePath, err := exportSnapshot(snapshot)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("\nSnapshot copied to %s\n", filePath), nil
+}
+
+func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) {
+	exporter := &export.SnapshotExporter{}
+
+	fileName := export.GenerateDefaultExportFileName(exporter, snapshot.Layout.Name)
+	dirName := viper.GetString(constants.ArgSnapshotLocation)
+	filePath := path.Join(dirName, fileName)
+
+	err := exporter.Export(context.Background(), snapshot, filePath)
+	if err != nil {
+		return "", err
+	}
+	return filePath, nil
+}
+
+func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
+
+	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {

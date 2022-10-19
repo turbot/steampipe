@@ -1,15 +1,14 @@
-package snapshot
+package statushooks
 
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"strings"
 	"sync"
 )
 
-// SnapshotProgressReporter is an empty implementation of SnapshotProgress
+// SnapshotProgressReporter is an implementation of SnapshotProgress
 type SnapshotProgressReporter struct {
 	rows     int
 	errors   int
@@ -49,5 +48,5 @@ func (r *SnapshotProgressReporter) showProgress(ctx context.Context) {
 		msg.WriteString(fmt.Sprintf(", %d %s, ", r.errors, utils.Pluralize("error", r.errors)))
 	}
 
-	statushooks.SetStatus(ctx, msg.String())
+	SetStatus(ctx, msg.String())
 }

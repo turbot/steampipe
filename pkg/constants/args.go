@@ -22,7 +22,6 @@ const (
 	ArgUpdateCheck         = "update-check"
 	ArgTelemetry           = "telemetry"
 	ArgInstallDir          = "install-dir"
-	ArgWorkspace           = "workspace"
 	ArgWorkspaceChDir      = "workspace-chdir"
 	ArgWorkspaceDatabase   = "workspace-database"
 	ArgSchemaComments      = "schema-comments"
@@ -44,7 +43,6 @@ const (
 	ArgCheckDisplayWidth   = "check-display-width"
 	ArgPrune               = "prune"
 	ArgModInstall          = "mod-install"
-	ArgModLocation         = "mod-location"
 	ArgServiceMode         = "service-mode"
 	ArgBrowser             = "browser"
 	ArgInput               = "input"
@@ -55,12 +53,12 @@ const (
 	ArgSnapshot            = "snapshot"
 	ArgSnapshotTag         = "snapshot-tag"
 	ArgSourceSnapshot      = "source-snapshot"
+	ArgWorkspaceProfile    = "workspace"
+	ArgModLocation         = "mod-location"
+	ArgSnapshotLocation    = "snapshot-location"
 )
 
-// the default value for ArgShare and ArgSnapshot if no value is provided
-const ArgShareNoOptDefault = "__workspace__"
-
-/// metaquery mode arguments
+// metaquery mode arguments
 
 var ArgOutput = ArgFromMetaquery(CmdOutput)
 var ArgSeparator = ArgFromMetaquery(CmdSeparator)
