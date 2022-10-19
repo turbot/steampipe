@@ -184,49 +184,49 @@ jobs:
           docker run --name steampipe-deb `docker images -q spdebian`
           echo "docker run complete"
 
-  # docker_acceptance_test_oraclelinux:
-  #   name: Acceptance tests(Docker - OracleLinux)
-  #   needs: goreleaser
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
-  #       with:
-  #         ref: ${{ github.event.inputs.branch }}
+  docker_acceptance_test_oraclelinux:
+    name: Acceptance tests(Docker - OracleLinux)
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
-  #     - name: Prepare for downloads
-  #       id: prepare-for-downloads
-  #       run: |
-  #         mkdir ~/artifacts
+      - name: Prepare for downloads
+        id: prepare-for-downloads
+        run: |
+          mkdir ~/artifacts
 
-  #     - name: Download Linux Build Artifacts
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: build-artifact-linux
-  #         path: ~/artifacts
+      - name: Download Linux Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifact-linux
+          path: ~/artifacts
 
-  #     - name: Extract Ubuntu Artifacts and Install Binary
-  #       run: |
-  #         mkdir ~/build
-  #         tar -xf ~/artifacts/linux.tar.gz -C ~/build
+      - name: Extract Ubuntu Artifacts and Install Binary
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-  #     - name: Copy binary
-  #       run: |
-  #         cp ~/build/steampipe tests/dockertesting/oraclelinux
+      - name: Copy binary
+        run: |
+          cp ~/build/steampipe tests/dockertesting/oraclelinux
       
-  #     - name: Build steampipe docker images
-  #       run: |
-  #         docker build -t sporacle tests/dockertesting/oraclelinux
-  #         docker images
+      - name: Build steampipe docker images
+        run: |
+          docker build -t sporacle tests/dockertesting/oraclelinux
+          docker images
 
-  #     - name: Create a container and run the test suite
-  #       run: |
-  #         docker run --name steampipe-oracle `docker images -q sporacle`
-  #         echo "docker run complete"
+      - name: Create a container and run the test suite
+        run: |
+          docker run --name steampipe-oracle `docker images -q sporacle`
+          echo "docker run complete"
 
   create_release_tag:
     name: Tag Release
-    needs: [goreleaser, acceptance_test, docker_acceptance_test_debian]
+    needs: [goreleaser, acceptance_test, docker_acceptance_test_debian, docker_acceptance_test_oraclelinux]
     runs-on: ubuntu-latest
     steps:
 
