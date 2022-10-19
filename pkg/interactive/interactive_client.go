@@ -28,7 +28,6 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
@@ -592,19 +591,27 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	}
 	resourceMaps := c.workspace().GetResourceMaps()
 	// add all the queries in the workspace
-	for queryName, q := range resourceMaps.LocalQueries {
-		res = append(res, c.addQuerySuggestion(q, queryName))
+	for name, q := range resourceMaps.LocalQueries {
+		res = append(res, c.addSuggestion("named query", q.Description, name))
 	}
-	for queryName, q := range resourceMaps.Queries {
-		res = append(res, c.addQuerySuggestion(q, queryName))
+	for name, q := range resourceMaps.Queries {
+		res = append(res, c.addSuggestion("named query", q.Description, name))
 	}
 
 	// add all the controls in the workspace
-	for controlName, control := range resourceMaps.LocalControls {
-		res = append(res, c.addControlSuggestion(control, controlName))
+	for name, control := range resourceMaps.LocalControls {
+		res = append(res, c.addSuggestion("control", control.Description, name))
 	}
-	for controlName, control := range resourceMaps.Controls {
-		res = append(res, c.addControlSuggestion(control, controlName))
+	for name, control := range resourceMaps.Controls {
+		res = append(res, c.addSuggestion("control", control.Description, name))
+	}
+
+	// add all the nodes in the workspace
+	for _, e := range resourceMaps.DashboardNodes {
+		res = append(res, c.addSuggestion("dashboard node", nil, e.UnqualifiedName))
+	}
+	for _, e := range resourceMaps.DashboardEdges {
+		res = append(res, c.addSuggestion("dashboard edge", nil, e.UnqualifiedName))
 	}
 
 	sort.Slice(res, func(i, j int) bool {
@@ -613,20 +620,11 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	return res
 }
 
-func (c *InteractiveClient) addQuerySuggestion(query *modconfig.Query, queryName string) prompt.Suggest {
-	description := "named query"
-	if query.Description != nil {
-		description += fmt.Sprintf(": %s", *query.Description)
+func (c *InteractiveClient) addSuggestion(description string, descriptionDetail *string, name string) prompt.Suggest {
+	if descriptionDetail != nil {
+		description += fmt.Sprintf(": %s", *descriptionDetail)
 	}
-	return prompt.Suggest{Text: queryName, Output: queryName, Description: description}
-}
-
-func (c *InteractiveClient) addControlSuggestion(control *modconfig.Control, controlName string) prompt.Suggest {
-	description := "control"
-	if control.Description != nil {
-		description += fmt.Sprintf(": %s", *control.Description)
-	}
-	return prompt.Suggest{Text: controlName, Output: controlName, Description: description}
+	return prompt.Suggest{Text: name, Output: name, Description: description}
 }
 
 func (c *InteractiveClient) startCancelHandler() chan bool {

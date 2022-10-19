@@ -243,6 +243,12 @@ func (h *DashboardHierarchy) GetQuery() *Query {
 	return h.Query
 }
 
+// VerifyQuery implements QueryProvider
+func (*DashboardHierarchy) VerifyQuery(QueryProvider) error {
+	// query is optional - nothing to do
+	return nil
+}
+
 // SetArgs implements QueryProvider
 func (h *DashboardHierarchy) SetArgs(args *QueryArgs) {
 	h.Args = args
