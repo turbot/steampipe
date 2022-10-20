@@ -579,5 +579,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # remove the directory
   cd ..
   rm -rf $target_directory
+  
+  
+  # remove the connection config files
+  rm -f $STEAMPIPE_INSTALL_DIR/config/aws.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/ibm.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/oci.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/azure.spc
+  
+  # uninstall the plugins
+  steampipe plugin uninstall aws
+  steampipe plugin uninstall ibm
+  steampipe plugin uninstall oci
+  steampipe plugin uninstall azure
+
+  # rerun steampipe to make sure they are removed from steampipe
+  steampipe query "select 1"
 }
 
