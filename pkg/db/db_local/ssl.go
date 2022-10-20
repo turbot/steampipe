@@ -201,19 +201,31 @@ func generateServerCertificates(caCertificateData *x509.Certificate, caPrivateKe
 
 // derive ssl status from out ssl mode
 func sslStatus() string {
-	status := sslMode()
-	if status == "require" {
+	if serverCertificateAndKeyExist() {
 		return "on"
 	}
 	return "off"
 }
 
 // derive ssl mode from the prsesnce of the server certificate and key file
-func sslMode() string {
+func dsnSSLParams(info *RunningDBInstanceInfo, opts *CreateDbOptions) string {
 	if serverCertificateAndKeyExist() {
-		return "require"
+		// as per https://www.postgresql.org/docs/current/libpq-ssl.html#LIBQ-SSL-CERTIFICATES:
+		//
+		// For backwards compatibility with earlier versions of PostgreSQL, if a root CA file exists, the
+		// behavior of sslmode=require will be the same as that of verify-ca, meaning the
+		// server certificate is validated against the CA. Relying on this behavior is discouraged, and
+		// applications that need certificate validation should always use verify-ca or verify-full.
+		//
+		// Since we are using the Root Certificate, 'require' is overridden with 'verify-ca' anyway
+		return fmt.Sprintf(
+			"sslmode=verify-ca sslrootcert=%s sslcert=%s sslkey=%s",
+			getRootCertLocation(),
+			getServerCertLocation(),
+			getServerCertKeyLocation(),
+		)
 	}
-	return "disable"
+	return "sslmode=disable"
 }
 
 func ensureRootPrivateKey() (*rsa.PrivateKey, error) {

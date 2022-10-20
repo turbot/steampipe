@@ -3,6 +3,8 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
@@ -40,12 +42,15 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	}
 
 	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s",
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s %s",
 		info.Listen[0],
 		info.Port,
 		opts.Username,
 		opts.DatabaseName,
-		sslMode())
+		dsnSSLParams(info, opts),
+	)
+
+	log.Println("[TRACE] PSQLInfo >>>", psqlInfo)
 
 	return psqlInfo, nil
 }
