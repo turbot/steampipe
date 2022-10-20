@@ -130,7 +130,7 @@ func InitCmd() {
 }
 
 func handleArgDeprecations() {
-	if viper.GetString(constants.ArgModLocation) == "" && viper.IsSet(constants.ArgWorkspaceChDir) {
+	if !viper.IsSet(constants.ArgModLocation) && viper.IsSet(constants.ArgWorkspaceChDir) {
 		viper.Set(constants.ArgModLocation, viper.GetString(constants.ArgWorkspaceChDir))
 	}
 }
