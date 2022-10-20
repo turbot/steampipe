@@ -94,8 +94,8 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	}
 
 	//  instantiate connection plugins for all updates
-	otherRes := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
-	res.Merge(otherRes)
+	pluginRes := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
+	res.Merge(pluginRes)
 	if res.Error != nil {
 		return nil, res
 	}

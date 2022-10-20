@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 
@@ -19,14 +21,14 @@ import (
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) refreshConnections(ctx context.Context) (*steampipeconfig.ConnectionUpdates, *steampipeconfig.RefreshConnectionResult) {
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
 	// determine any necessary connection updates
 	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames())
 	if res.Error != nil {
-		return res
+		return nil, res
 	}
 
 	// if any plugins are missing, error for now but we could prompt for an install
@@ -36,12 +38,23 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 			missingCount,
 			utils.Pluralize("plugin", missingCount),
 			strings.Join(connectionUpdates.MissingPlugins, "\n  "))
-		return res
+		return connectionUpdates, res
 	}
 
 	if !connectionUpdates.HasUpdates() {
 		log.Println("[TRACE] RefreshConnections: no updates required")
-		return res
+		return connectionUpdates, res
+	}
+
+	// TACTICAL: add warning logging if this was invoked by plugin manager
+	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	if cmd.Name() == "plugin-manager" {
+		if len(connectionUpdates.Update) > 0 {
+			log.Printf("[WARN] refreshConnections creating: %s", strings.Join(maps.Keys(connectionUpdates.Update), ","))
+		}
+		if len(connectionUpdates.Delete) > 0 {
+			log.Printf("[WARN] refreshConnections deleting: %s", strings.Join(maps.Keys(connectionUpdates.Delete), ","))
+		}
 	}
 
 	// now build list of necessary queries to perform the update
@@ -49,18 +62,19 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
-		return res
+		return connectionUpdates, res
 	}
 
 	// now serialise the connection state
 	// update required connections with the schema mode from the connection state and schema hash from the hash map
 	if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
 		res.Error = err
-		return res
+		return connectionUpdates, res
 	}
 
 	res.UpdatedConnections = true
-	return res
+
+	return connectionUpdates, res
 }
 
 func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {

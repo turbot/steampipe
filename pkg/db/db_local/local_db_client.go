@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
 	"log"
 	"strings"
 
@@ -269,7 +270,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 	// NOTE: disable any status updates - we do not want 'loading' output from any queries
 	ctx = statushooks.DisableStatusHooks(ctx)
 
-	res := c.refreshConnections(ctx)
+	updates, res := c.refreshConnections(ctx)
 	if res.Error != nil {
 		return res
 	}
@@ -283,9 +284,31 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 	if err := c.LoadForeignSchemaNames(ctx); err != nil {
 		return &steampipeconfig.RefreshConnectionResult{Error: err}
 	}
+	foreignSchemas := c.ForeignSchemaNames()
+
+	// TACTICAL: verify refresh connection successfully created all foreign schemas
+	// if not, call refreshConnections a second time
+	if missingConnections := verifyConnectionUpdates(updates.Update, foreignSchemas); len(missingConnections) > 0 {
+		log.Printf("[WARN] RefreshConnectionAndSearchPaths: refresh connections executed successfully but updates were still required retrying.")
+		log.Printf("[WARN] %d %s missing after refreshConnections: %s", len(missingConnections), utils.Pluralize("connection", len(missingConnections)), strings.Join(missingConnections, "\n"))
+
+		updates, retryRes := c.refreshConnections(ctx)
+		if retryRes.Error != nil {
+			return res
+		}
+		// reload the foreign schemas AGAIN
+		if err := c.LoadForeignSchemaNames(ctx); err != nil {
+			return &steampipeconfig.RefreshConnectionResult{Error: err}
+		}
+		foreignSchemas = c.ForeignSchemaNames()
+		// now check again - if still missing - just log it
+		if missingConnections := verifyConnectionUpdates(updates.Update, foreignSchemas); len(missingConnections) > 0 {
+			log.Printf("[ERROR] %d %s missing after retrying refrescConnections: %s", len(missingConnections), utils.Pluralize("connection", len(missingConnections)), strings.Join(missingConnections, "\n"))
+		}
+	}
 
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
+	connectionMap, err := steampipeconfig.GetConnectionState(foreignSchemas)
 	if err != nil {
 		res.Error = err
 		return res
@@ -310,6 +333,16 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 	}
 
 	return res
+}
+
+func verifyConnectionUpdates(updates steampipeconfig.ConnectionDataMap, foreignSchemas []string) []string {
+	var missingConnections []string
+	for requiredConnection := range updates {
+		if !helpers.StringSliceContains(foreignSchemas, requiredConnection) {
+			missingConnections = append(missingConnections, requiredConnection)
+		}
+	}
+	return missingConnections
 }
 
 // SetUserSearchPath sets the search path for the all steampipe users of the db service
