@@ -53,7 +53,7 @@ func (w *Workspace) handleDashboardEvent() {
 	}
 }
 
-func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, _ []fsnotify.Event) {
+func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, events []fsnotify.Event) {
 	// ignore the first event - this is raised as soon as we start the watcher
 	w.changeEventCount++
 	if w.changeEventCount == 1 {
@@ -74,9 +74,9 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 			fmt.Println()
 			error_helpers.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
 			error_helpers.ShowWarning(strings.Join(res.Warnings, "\n"))
-			if w.onFileWatcherEventMessages != nil {
-				w.onFileWatcherEventMessages()
-			}
+		}
+		if w.onFileWatcherEventMessages != nil {
+			w.onFileWatcherEventMessages()
 		}
 	}
 	w.raiseDashboardChangedEvents(resourceMaps, prevResourceMaps)
