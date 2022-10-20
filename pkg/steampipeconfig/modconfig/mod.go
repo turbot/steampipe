@@ -301,6 +301,11 @@ func (m *Mod) GetDeclRange() *hcl.Range {
 	return &m.DeclRange
 }
 
+// BlockType implements HclResource
+func (*Mod) BlockType() string {
+	return BlockTypeMod
+}
+
 // GetResourceMaps implements ResourceMapsProvider
 func (m *Mod) GetResourceMaps() *ResourceMaps {
 	return m.ResourceMaps

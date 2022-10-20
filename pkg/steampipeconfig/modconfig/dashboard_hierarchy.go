@@ -109,6 +109,11 @@ func (h *DashboardHierarchy) GetDeclRange() *hcl.Range {
 	return &h.DeclRange
 }
 
+// BlockType implements HclResource
+func (*DashboardHierarchy) BlockType() string {
+	return BlockTypeHierarchy
+}
+
 // AddParent implements ModTreeItem
 func (h *DashboardHierarchy) AddParent(parent ModTreeItem) error {
 	h.parents = append(h.parents, parent)

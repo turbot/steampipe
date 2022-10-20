@@ -25,18 +25,18 @@ type HclResource interface {
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
 	GetDeclRange() *hcl.Range
+	BlockType() string
+	GetDescription() string
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
 // i.e. Control, Benchmark, Dashboard
 type ModTreeItem interface {
-	Name() string
-	GetUnqualifiedName() string
+	HclResource
 	AddParent(ModTreeItem) error
 	GetParents() []ModTreeItem
 	GetChildren() []ModTreeItem
 	GetTitle() string
-	GetDescription() string
 	GetDocumentation() string
 	GetTags() map[string]string
 	// GetPaths returns an array resource paths
@@ -65,6 +65,8 @@ type QueryProvider interface {
 	GetQuery() *Query
 	SetArgs(*QueryArgs)
 	SetParams([]*ParamDef)
+	GetMod() *Mod
+	GetDescription() string
 	GetPreparedStatementName() string
 	GetPreparedStatementExecuteSQL(*QueryArgs) (*ResolvedQuery, error)
 	// implemented by QueryProviderBase

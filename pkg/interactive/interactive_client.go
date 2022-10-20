@@ -589,30 +589,52 @@ func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
 	if !c.isInitialised() {
 		return nil
 	}
-	resourceMaps := c.workspace().GetResourceMaps()
-	// add all the queries in the workspace
-	for name, q := range resourceMaps.LocalQueries {
-		res = append(res, c.addSuggestion("named query", q.Description, name))
-	}
-	for name, q := range resourceMaps.Queries {
-		res = append(res, c.addSuggestion("named query", q.Description, name))
-	}
 
-	// add all the controls in the workspace
-	for name, control := range resourceMaps.LocalControls {
-		res = append(res, c.addSuggestion("control", control.Description, name))
-	}
-	for name, control := range resourceMaps.Controls {
-		res = append(res, c.addSuggestion("control", control.Description, name))
-	}
-
-	// add all the nodes in the workspace
-	for _, e := range resourceMaps.DashboardNodes {
-		res = append(res, c.addSuggestion("dashboard node", nil, e.UnqualifiedName))
-	}
-	for _, e := range resourceMaps.DashboardEdges {
-		res = append(res, c.addSuggestion("dashboard edge", nil, e.UnqualifiedName))
-	}
+	//workspaceModName := c.initData.Workspace.Mod.Name()
+	//// TODO do this only once - then repsond to file watch events
+	//resourceFunc := func(item modconfig.HclResource) (continueWalking bool, err error) {
+	//	continueWalking := true
+	//	var err error
+	//	qp, ok := item.(modconfig.QueryProvider)
+	//	if !ok {
+	//		return
+	//	}
+	//	if qp.GetQuery() == nil && qp.GetSQL() == nil {
+	//		return
+	//	}
+	//	isLocal := qp.GetMod().Name() == workspaceModName
+	//	description := item.BlockType()
+	//	// special case for query
+	//	if description == modconfig.BlockTypeQuery{
+	//		description = "named query"
+	//	}
+	//	if item.Description
+	//}
+	//
+	//resourceMaps := c.workspace().GetResourceMaps().WalkResources()
+	//// add all the queries in the workspace
+	//for name, q := range resourceMaps.LocalQueries {
+	//	res = append(res, c.addSuggestion("named query", q.Description, name))
+	//}
+	//for name, q := range resourceMaps.Queries {
+	//	res = append(res, c.addSuggestion("named query", q.Description, name))
+	//}
+	//
+	//// add all the controls in the workspace
+	//for name, control := range resourceMaps.LocalControls {
+	//	res = append(res, c.addSuggestion("control", control.Description, name))
+	//}
+	//for name, control := range resourceMaps.Controls {
+	//	res = append(res, c.addSuggestion("control", control.Description, name))
+	//}
+	//
+	//// add all the nodes in the workspace
+	//for _, e := range resourceMaps.DashboardNodes {
+	//	res = append(res, c.addSuggestion("dashboard node", nil, e.UnqualifiedName))
+	//}
+	//for _, e := range resourceMaps.DashboardEdges {
+	//	res = append(res, c.addSuggestion("dashboard edge", nil, e.UnqualifiedName))
+	//}
 
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].Text < res[j].Text
