@@ -87,8 +87,8 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 	}
 
 	// 3) so we have not managed to resolve this - if it looks like a named query or control, return an error
-	if parsedResourceName := extractResourceNameFromQuery(sqlString); parsedResourceName != nil {
-		return "", nil, fmt.Errorf("'%s' not found in workspace", parsedResourceName.ToResourceName())
+	if name, isResource := queryLooksLikeExecutableResource(sqlString); isResource {
+		return "", nil, fmt.Errorf("'%s' not found in workspace", name)
 	}
 
 	// 4) just use the query string as is and assume it is valid SQL
@@ -222,7 +222,7 @@ func extractResourceNameFromQuery(input string) *modconfig.ParsedResourceName {
 	return parsedName
 }
 
-func queryLooksLikeExecutableResource(input string) bool {
+func queryLooksLikeExecutableResource(input string) (string, bool) {
 	// remove parameters from the input string before calling ParseResourceName
 	// as parameters may break parsing
 	openBracketIdx := strings.Index(input, "(")
@@ -230,11 +230,10 @@ func queryLooksLikeExecutableResource(input string) bool {
 		input = input[:openBracketIdx]
 	}
 	parsedName, err := modconfig.ParseResourceName(input)
-	// do not bubble error up, just return nil parsed name
-	// it is expected that this function may fail if a raw query is passed to it
-	if err != nil {
-		return false
+	if err == nil && helpers.StringSliceContains(modconfig.QueryProviderBlocks, parsedName.ItemType) {
+		return parsedName.ToResourceName(), true
 	}
+	// do not bubble error up, just return false
+	return "", false
 
-	return helpers.StringSliceContains(modconfig.QueryProviderBlocks, parsedName.ItemType)
 }
