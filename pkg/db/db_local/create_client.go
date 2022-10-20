@@ -78,6 +78,10 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 	connConfig.Config.RuntimeParams = map[string]string{
 		"application_name": runtime.PgClientAppName,
 	}
+	err = db_common.AddSelfRootCert(&connConfig.Config, getRootCertLocation())
+	if err != nil {
+		return nil, err
+	}
 
 	conn, err := pgx.ConnectConfig(ctx, connConfig)
 	if err != nil {

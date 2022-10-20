@@ -1,0 +1,15 @@
+package db_common
+
+import (
+	"github.com/jackc/pgconn"
+	"github.com/turbot/steampipe/pkg/utils"
+)
+
+func AddSelfRootCert(config *pgconn.Config, certLocation string) error {
+	rootCert, err := utils.ParseCertificateInLocation(certLocation)
+	if err != nil {
+		return err
+	}
+	config.TLSConfig.RootCAs.AddCert(rootCert)
+	return nil
+}
