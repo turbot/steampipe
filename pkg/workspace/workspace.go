@@ -52,7 +52,7 @@ type Workspace struct {
 	watcherError            error
 	// event handlers
 	dashboardEventHandlers []dashboardevents.DashboardEventHandler
-	// callback function to reset display after the file watche displays messages
+	// callback function called when there is a file watcher event
 	onFileWatcherEventMessages func()
 	loadPseudoResources        bool
 	// channel used to send dashboard events to the handleDashbooardEvent goroutine
