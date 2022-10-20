@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
 	"log"
 	"os"
 	"path/filepath"
@@ -219,4 +220,21 @@ func extractResourceNameFromQuery(input string) *modconfig.ParsedResourceName {
 		return nil
 	}
 	return parsedName
+}
+
+func queryLooksLikeExecutableResource(input string) bool {
+	// remove parameters from the input string before calling ParseResourceName
+	// as parameters may break parsing
+	openBracketIdx := strings.Index(input, "(")
+	if openBracketIdx != -1 {
+		input = input[:openBracketIdx]
+	}
+	parsedName, err := modconfig.ParseResourceName(input)
+	// do not bubble error up, just return nil parsed name
+	// it is expected that this function may fail if a raw query is passed to it
+	if err != nil {
+		return false
+	}
+
+	return helpers.StringSliceContains(modconfig.QueryProviderBlocks, parsedName.ItemType)
 }

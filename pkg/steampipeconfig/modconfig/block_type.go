@@ -35,17 +35,18 @@ const (
 
 // QueryProviderBlocks is a list of block types which implement QueryProvider
 var QueryProviderBlocks = []string{
-	BlockTypeControl,
-	BlockTypeInput,
-	BlockTypeQuery,
-	BlockTypeChart,
 	BlockTypeCard,
-	BlockTypeTable,
+	BlockTypeChart,
+	BlockTypeControl,
+	BlockTypeEdge,
 	BlockTypeFlow,
 	BlockTypeGraph,
 	BlockTypeHierarchy,
+	BlockTypeImage,
+	BlockTypeInput,
+	BlockTypeQuery,
 	BlockTypeNode,
-	BlockTypeEdge,
+	BlockTypeTable,
 }
 
 // EdgeAndNodeProvider is a list of block types which implement EdgeAndNodeProvider
