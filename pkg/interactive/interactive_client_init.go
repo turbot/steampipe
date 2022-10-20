@@ -39,8 +39,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		return
 	}
 
-	initResult.AddWarnings("this is a hard coded watning")
-
 	if initResult.HasMessages() {
 		c.hidePrompt = true
 		c.interactivePrompt.ClearLine()
