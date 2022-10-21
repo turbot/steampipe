@@ -7,14 +7,10 @@ import (
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"os"
 	"strings"
 )
 
 func ValidateCloudArgs() error {
-	// if diagnostics mode is enabled, print out the cloud config vars
-	defer displayConfig()
-
 	// only 1 of 'share' and 'snapshot' may be set
 	share := viper.GetBool(constants.ArgShare)
 	snapshot := viper.GetBool(constants.ArgSnapshot)
@@ -50,38 +46,6 @@ func ValidateCloudArgs() error {
 	}
 
 	return validateSnapshotTags()
-}
-
-func displayConfig() {
-	diagnostics := os.Getenv(constants.EnvDiagnostics)
-
-	if strings.ToUpper(diagnostics) != "CONFIG" {
-		return
-	}
-
-	var argNames = []string{
-		constants.ArgInstallDir,
-		constants.ArgModLocation,
-		constants.ArgSnapshotLocation,
-		constants.ArgWorkspaceProfile,
-		constants.ArgWorkspaceDatabase,
-		constants.ArgCloudHost,
-		constants.ArgCloudToken,
-	}
-	maxLength := 0
-	for _, a := range argNames {
-		if l := len(a); l > maxLength {
-			maxLength = l
-		}
-	}
-	var b strings.Builder
-	b.WriteString("\n================\nSteampipe Config\n================\n\n")
-	fmtStr := `%-` + fmt.Sprintf("%d", maxLength) + `s: %v` + "\n"
-	for _, a := range argNames {
-		b.WriteString(fmt.Sprintf(fmtStr, a, viper.GetString(a)))
-	}
-
-	fmt.Println(b.String())
 }
 
 func validateSnapshotLocation(cloudToken string) error {

@@ -114,6 +114,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
+	// if diagnostic mode is set, print out config and return
+	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+		cmdconfig.DisplayConfig()
+		return
+	}
 
 	// initialise
 	initData = initialiseCheck(ctx)
@@ -185,6 +190,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		error_helpers.ShowError(ctx, err)
 		return false
 	}
+
 	// only 1 of 'share' and 'snapshot' may be set
 	if viper.GetBool(constants.ArgShare) && viper.GetBool(constants.ArgSnapshot) {
 		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))

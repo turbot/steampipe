@@ -92,6 +92,13 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	// first check whether a dashboard name has been passed as an arg
 	dashboardName, err := validateDashboardArgs(cmd, args)
 	error_helpers.FailOnError(err)
+
+	// if diagnostic mode is set, print out config and return
+	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+		cmdconfig.DisplayConfig()
+		return
+	}
+
 	if dashboardName != "" {
 		inputs, err := collectInputs()
 		error_helpers.FailOnError(err)
