@@ -1,6 +1,5 @@
 package modconfig
 
-import "C"
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
