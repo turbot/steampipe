@@ -123,7 +123,6 @@ func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent 
 	return nil
 }
 
-// default implemen
 func (*QueryProviderBase) GetDescription() string {
 	return ""
 }
