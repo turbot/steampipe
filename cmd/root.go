@@ -14,7 +14,6 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
@@ -236,8 +235,6 @@ func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	if err != nil {
 		return nil, err
 	}
-	filepaths.SteampipeDir = defaultInstallDir
-	workspaceProfileDir := filepaths.WorkspaceProfileDir()
 
 	// create loader
 	loader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
