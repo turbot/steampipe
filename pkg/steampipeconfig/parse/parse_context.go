@@ -25,9 +25,6 @@ type ParseContext struct {
 	BlockTypeExclusions []string
 
 	dependencyGraph *topsort.Graph
-	// map of ReferenceTypeValueMaps keyed by mod
-	// NOTE: all values from root mod are keyed with "local"
-	referenceValues map[string]ReferenceTypeValueMap
 	blocks          hcl.Blocks
 }
 
@@ -35,13 +32,9 @@ func NewParseContext(rootEvalPath string) ParseContext {
 	c := ParseContext{
 		UnresolvedBlocks: make(map[string]*unresolvedBlock),
 		RootEvalPath:     rootEvalPath,
-		referenceValues: map[string]ReferenceTypeValueMap{
-			"local": make(ReferenceTypeValueMap),
-		},
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
-	c.buildEvalContext(map[string]cty.Value{})
 
 	return c
 }
@@ -107,8 +100,7 @@ func (r *ParseContext) AddDependencies(block *hcl.Block, name string, dependenci
 	return diags
 }
 
-// BlocksToDecode builds a list of blocks to decode, the order of which is determined by the depdnency order
-
+// BlocksToDecode builds a list of blocks to decode, the order of which is determined by the dependency order
 func (r *ParseContext) BlocksToDecode() (hcl.Blocks, error) {
 	depOrder, err := r.getDependencyOrder()
 	if err != nil {

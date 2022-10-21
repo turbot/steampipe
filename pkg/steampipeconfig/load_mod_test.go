@@ -1449,7 +1449,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 		t.Errorf("failed to build absolute config filepath from %s", test.source)
 	}
 
-	var runCtx = parse.NewRunContext(
+	var parseCtx = parse.NewModParseContext(
 		nil,
 		modPath,
 		parse.CreatePseudoResources|parse.CreateDefaultMod,
@@ -1471,7 +1471,7 @@ func executeLoadTest(t *testing.T, name string, test loadModTest, wd string) {
 		}
 	}()
 
-	actualMod, err := LoadMod(modPath, runCtx)
+	actualMod, err := LoadMod(modPath, parseCtx)
 	if err != nil {
 		if test.expected != "ERROR" {
 			t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)
@@ -1573,7 +1573,7 @@ func TestLoadModResourceNames(t *testing.T) {
 	for name, test := range testCasesLoadResourceNames {
 
 		modPath, _ := filepath.Abs(test.source)
-		var runCtx = parse.NewRunContext(
+		var parseCtx = parse.NewModParseContext(
 			nil,
 			modPath,
 			parse.CreatePseudoResources|parse.CreateDefaultMod,
@@ -1582,8 +1582,8 @@ func TestLoadModResourceNames(t *testing.T) {
 				Exclude: []string{fmt.Sprintf("**/%s*", filepaths.WorkspaceDataDir)},
 				Flags:   filehelpers.Files,
 			})
-		LoadMod(modPath, runCtx)
-		names, err := LoadModResourceNames(modPath, runCtx)
+		LoadMod(modPath, parseCtx)
+		names, err := LoadModResourceNames(modPath, parseCtx)
 
 		if err != nil {
 			if test.expected != "ERROR" {

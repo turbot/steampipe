@@ -30,7 +30,7 @@ ReferenceTypeValueMap is keyed  by resource type, then by resource name
 */
 type ReferenceTypeValueMap map[string]map[string]cty.Value
 
-type RunContext struct {
+type ModParseContext struct {
 	ParseContext
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
@@ -51,7 +51,7 @@ type RunContext struct {
 	// DependencyVariables is a map of the variables in the dependency mods of the current mod
 	// it is used to populate the variables property on the dependency
 	DependencyVariables map[string]map[string]*modconfig.Variable
-	ParentRunCtx        *RunContext
+	ParentParseCtx      *ModParseContext
 
 	// stack of parent resources for the currently parsed block
 	// (unqualified name)
@@ -64,11 +64,14 @@ type RunContext struct {
 	topLevelBlocks map[*hcl.Block]struct{}
 	// map of block names, keyed by a hash of the blopck
 	blockNameMap map[string]string
+	// map of ReferenceTypeValueMaps keyed by mod
+	// NOTE: all values from root mod are keyed with "local"
+	referenceValues map[string]ReferenceTypeValueMap
 }
 
-func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *RunContext {
+func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *ModParseContext {
 	parseContext := NewParseContext(rootEvalPath)
-	c := &RunContext{
+	c := &ModParseContext{
 		ParseContext:         parseContext,
 		Flags:                flags,
 		WorkspaceLock:        workspaceLock,
@@ -79,6 +82,9 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 		blockNameMap:  make(map[string]string),
 		// initialise variable maps - even though we later overwrite them
 		Variables: make(map[string]*modconfig.Variable),
+		referenceValues: map[string]ReferenceTypeValueMap{
+			"local": make(ReferenceTypeValueMap),
+		},
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
@@ -87,7 +93,7 @@ func NewRunContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string,
 	return c
 }
 
-func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
+func (r *ModParseContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 	// if the mod has dependencies, there must a workspace lock object in the run context
 	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
 	if mod.HasDependentMods() && (r.WorkspaceLock.Empty() || r.WorkspaceLock.Incomplete()) {
@@ -97,18 +103,18 @@ func (r *RunContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 	return nil
 }
 
-func (r *RunContext) PushParent(parent modconfig.ModTreeItem) {
+func (r *ModParseContext) PushParent(parent modconfig.ModTreeItem) {
 	r.parents = append(r.parents, parent.GetUnqualifiedName())
 }
 
-func (r *RunContext) PopParent() string {
+func (r *ModParseContext) PopParent() string {
 	n := len(r.parents) - 1
 	res := r.parents[n]
 	r.parents = r.parents[:n]
 	return res
 }
 
-func (r *RunContext) PeekParent() string {
+func (r *ModParseContext) PeekParent() string {
 	if len(r.parents) == 0 {
 		return r.CurrentMod.Name()
 	}
@@ -126,21 +132,21 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 
 // AddInputVariables adds variables to the run context.
 // This function is called for the root run context after loading all input variables
-func (r *RunContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
+func (r *ModParseContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
 	r.setRootVariables(inputVariables.RootVariables)
 	r.setDependencyVariables(inputVariables.DependencyVariables)
 }
 
 // SetVariablesForDependencyMod adds variables to the run context.
 // This function is called for dependent mod run context
-func (r *RunContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
+func (r *ModParseContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
 	r.setRootVariables(dependencyVariablesMap[mod.ShortName])
 	r.setDependencyVariables(dependencyVariablesMap)
 }
 
 // setRootVariables sets the Variables property
 // and adds the variables to the referenceValues map (used to build the eval context)
-func (r *RunContext) setRootVariables(variables map[string]*modconfig.Variable) {
+func (r *ModParseContext) setRootVariables(variables map[string]*modconfig.Variable) {
 	r.Variables = variables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	r.referenceValues["local"]["var"] = VariableValueMap(variables)
@@ -148,7 +154,7 @@ func (r *RunContext) setRootVariables(variables map[string]*modconfig.Variable) 
 
 // setDependencyVariables sets the DependencyVariables property
 // and adds the dependency variables to the referenceValues map (used to build the eval context
-func (r *RunContext) setDependencyVariables(dependencyVariables map[string]map[string]*modconfig.Variable) {
+func (r *ModParseContext) setDependencyVariables(dependencyVariables map[string]map[string]*modconfig.Variable) {
 	r.DependencyVariables = dependencyVariables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	// add top level variables
@@ -164,7 +170,7 @@ func (r *RunContext) setDependencyVariables(dependencyVariables map[string]map[s
 
 // AddMod is used to add a mod with any pseudo resources to the eval context
 // - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
-func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
+func (r *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(r.UnresolvedBlocks) > 0 {
 		// should never happen
 		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
@@ -191,7 +197,7 @@ func (r *RunContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	return diags
 }
 
-func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
+func (r *ModParseContext) SetDecodeContent(content *hcl.BodyContent, fileData map[string][]byte) {
 	// put blocks into map as well
 	r.topLevelBlocks = make(map[*hcl.Block]struct{}, len(r.blocks))
 	for _, b := range content.Blocks {
@@ -203,7 +209,7 @@ func (r *RunContext) SetDecodeContent(content *hcl.BodyContent, fileData map[str
 // AddDependencies :: the block could not be resolved as it has dependencies
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
-func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
+func (r *ModParseContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
 	// TACTICAL if this is NOT a top level block, add a suffix to the block name
 	// this is needed to avoid circular dependency errors if a nested block references
 	// a top level block with the same name
@@ -214,17 +220,17 @@ func (r *RunContext) AddDependencies(block *hcl.Block, name string, dependencies
 }
 
 // ShouldCreateDefaultMod returns whether the flag is set to create a default mod if no mod definition exists
-func (r *RunContext) ShouldCreateDefaultMod() bool {
+func (r *ModParseContext) ShouldCreateDefaultMod() bool {
 	return r.Flags&CreateDefaultMod == CreateDefaultMod
 }
 
 // CreatePseudoResources returns whether the flag is set to create pseudo resources
-func (r *RunContext) CreatePseudoResources() bool {
+func (r *ModParseContext) CreatePseudoResources() bool {
 	return r.Flags&CreatePseudoResources == CreatePseudoResources
 }
 
 // AddResource stores this resource as a variable to be added to the eval context. It alse
-func (r *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
+func (r *ModParseContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
 	diagnostics := r.storeResourceInCtyMap(resource)
 	if diagnostics.HasErrors() {
 		return diagnostics
@@ -236,7 +242,7 @@ func (r *RunContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics
 	return nil
 }
 
-func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
+func (r *ModParseContext) GetMod(modShortName string) *modconfig.Mod {
 	if modShortName == r.CurrentMod.ShortName {
 		return r.CurrentMod
 	}
@@ -249,7 +255,7 @@ func (r *RunContext) GetMod(modShortName string) *modconfig.Mod {
 	return nil
 }
 
-func (r *RunContext) GetResourceMaps() *modconfig.ResourceMaps {
+func (r *ModParseContext) GetResourceMaps() *modconfig.ResourceMaps {
 	dependencyResourceMaps := make([]*modconfig.ResourceMaps, len(r.LoadedDependencyMods))
 	idx := 0
 	// use the current mod as the base resource map
@@ -266,7 +272,7 @@ func (r *RunContext) GetResourceMaps() *modconfig.ResourceMaps {
 }
 
 // eval functions
-func (r *RunContext) buildEvalContext() {
+func (r *ModParseContext) buildEvalContext() {
 	// convert variables to cty values
 	variables := make(map[string]cty.Value)
 
@@ -293,13 +299,13 @@ func (r *RunContext) buildEvalContext() {
 }
 
 // update the cached cty value for the given resource, as long as itr does not already exist
-func (r *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.Diagnostics {
+func (r *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.Diagnostics {
 	// add resource to variable map
 	ctyValue, err := resource.CtyValue()
 	if err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("failed to convert resource '%s'to its cty value", resource.Name()),
+			Summary:  fmt.Sprintf("failed to convert resource '%s' to its cty value", resource.Name()),
 			Detail:   err.Error(),
 			Subject:  resource.GetDeclRange(),
 		}}
@@ -316,7 +322,7 @@ func (r *RunContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.D
 	return nil
 }
 
-func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty.Value) hcl.Diagnostics {
+func (r *ModParseContext) addReferenceValue(resource modconfig.HclResource, value cty.Value) hcl.Diagnostics {
 	parsedName, err := modconfig.ParseResourceName(resource.Name())
 	if err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
@@ -366,7 +372,7 @@ func (r *RunContext) addReferenceValue(resource modconfig.HclResource, value cty
 	return nil
 }
 
-func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
+func (r *ModParseContext) AddLoadedDependentMods(mods modconfig.ModMap) {
 	for k, v := range mods {
 		if _, alreadyLoaded := r.LoadedDependencyMods[k]; !alreadyLoaded {
 			r.LoadedDependencyMods[k] = v
@@ -374,7 +380,7 @@ func (r *RunContext) AddLoadedDependentMods(mods modconfig.ModMap) {
 	}
 }
 
-func (r *RunContext) IsTopLevelBlock(block *hcl.Block) bool {
+func (r *ModParseContext) IsTopLevelBlock(block *hcl.Block) bool {
 	_, isTopLevel := r.topLevelBlocks[block]
 	return isTopLevel
 }

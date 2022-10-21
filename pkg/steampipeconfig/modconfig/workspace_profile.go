@@ -35,15 +35,15 @@ func NewWorkspaceProfile(block *hcl.Block) *WorkspaceProfile {
 
 // SetOptions sets the options on the connection
 // verify the options object is a valid options type (only options.Connection currently supported)
-func (c *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
+func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	switch o := opts.(type) {
 	case *options.Connection:
-		c.ConnectionOptions = o
+		p.ConnectionOptions = o
 	case *options.Terminal:
-		c.TerminalOptions = o
+		p.TerminalOptions = o
 	case *options.General:
-		c.GeneralOptions = o
+		p.GeneralOptions = o
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -54,59 +54,46 @@ func (c *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 	return diags
 }
 
-func (c *WorkspaceProfile) Name() string {
-	return c.Name()
-}
-func (c *WorkspaceProfile) GetUnqualifiedName() string {
-	return c.Name()
-}
-func (c *WorkspaceProfile) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
+func (p *WorkspaceProfile) Name() string {
+	return fmt.Sprintf("workspace.%s", p.ProfileName)
 }
 
-func (c *WorkspaceProfile) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
+func (p *WorkspaceProfile) CtyValue() (cty.Value, error) {
+	return getCtyValue(p)
+}
+
+func (p *WorkspaceProfile) OnDecoded() hcl.Diagnostics {
+	p.setBaseProperties()
 	return nil
 }
 
-func (c *WorkspaceProfile) AddReference(*ResourceReference)     {}
-func (c *WorkspaceProfile) GetReferences() []*ResourceReference { return nil }
-func (c *WorkspaceProfile) GetDeclRange() *hcl.Range {
-	return &c.DeclRange
-}
+//func (c *WorkspaceProfile) AddReference(*ResourceReference)     {}
+//func (c *WorkspaceProfile) GetReferences() []*ResourceReference { return nil }
+//func (c *WorkspaceProfile) GetDeclRange() *hcl.Range {
+//	return &c.DeclRange
+//}
 
-func (d *WorkspaceProfile) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	//// not all base properties are stored in the evalContext
-	//// (e.g. resource metadata and runtime dependencies are not stores)
-	////  so resolve base from the resource map provider (which is the RunContext)
-	//if base, resolved := resolveBase(d.Base, resourceMapProvider); !resolved {
-	//	return
-	//} else {
-	//	d.Base = base.(*Dashboard)
-	//}
-	//
-	//if d.Title == nil {
-	//	d.Title = d.Base.Title
-	//}
-	//
-	//if d.Width == nil {
-	//	d.Width = d.Base.Width
-	//}
-	//
-	//if len(d.children) == 0 {
-	//	d.children = d.Base.children
-	//	d.ChildNames = d.Base.ChildNames
-	//}
-	//
-	//d.addBaseInputs(d.Base.Inputs)
-	//
-	//d.Tags = utils.MergeMaps(d.Tags, d.Base.Tags)
-	//
-	//if d.Description == nil {
-	//	d.Description = d.Base.Description
-	//}
-	//
-	//if d.Documentation == nil {
-	//	d.Documentation = d.Base.Documentation
-	//}
+func (p *WorkspaceProfile) setBaseProperties() {
+	if p.Base == nil {
+		return
+	}
+
+	if p.CloudHost == "" {
+		p.CloudHost = p.Base.CloudHost
+	}
+	if p.CloudToken == "" {
+		p.CloudToken = p.Base.CloudToken
+	}
+	if p.InstallDir == "" {
+		p.InstallDir = p.Base.InstallDir
+	}
+	if p.ModLocation == "" {
+		p.ModLocation = p.Base.ModLocation
+	}
+	if p.SnapshotLocation == "" {
+		p.SnapshotLocation = p.Base.SnapshotLocation
+	}
+	if p.WorkspaceDatabase == "" {
+		p.WorkspaceDatabase = p.Base.WorkspaceDatabase
+	}
 }

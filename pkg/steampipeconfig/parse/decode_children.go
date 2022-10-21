@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func resolveChildrenFromNames(childNames []string, block *hcl.Block, supportedChildren []string, runCtx *RunContext) ([]modconfig.ModTreeItem, hcl.Diagnostics) {
+func resolveChildrenFromNames(childNames []string, block *hcl.Block, supportedChildren []string, parseCtx *ModParseContext) ([]modconfig.ModTreeItem, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 	diags = checkForDuplicateChildren(childNames, block)
 	if diags.HasErrors() {
@@ -26,7 +26,7 @@ func resolveChildrenFromNames(childNames []string, block *hcl.Block, supportedCh
 		}
 
 		// now get the resource from the parent mod
-		var mod = runCtx.GetMod(parsedName.Mod)
+		var mod = parseCtx.GetMod(parsedName.Mod)
 		if mod == nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,

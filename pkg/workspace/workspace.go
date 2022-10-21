@@ -290,17 +290,17 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	w.VariableValues = inputVariables.VariableValues
 
 	// build run context which we use to load the workspace
-	runCtx, err := w.getRunContext()
+	parseCtx, err := w.getParseContext()
 	if err != nil {
 		return err
 	}
 	// add variables to runContext
-	runCtx.AddInputVariables(inputVariables)
+	parseCtx.AddInputVariables(inputVariables)
 	// do not reload variables as we already have them
-	runCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
+	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
 	// load the workspace mod
-	m, err := steampipeconfig.LoadMod(w.Path, runCtx)
+	m, err := steampipeconfig.LoadMod(w.Path, parseCtx)
 	if err != nil {
 		return err
 	}
@@ -310,7 +310,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	m.ResourceMaps.PopulateReferences()
 	// set the mod
 	w.Mod = m
-	w.Mods = runCtx.LoadedDependencyMods
+	w.Mods = parseCtx.LoadedDependencyMods
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod
 
@@ -320,7 +320,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// build a run context just to use to load variable definitions
-	variablesRunCtx, err := w.getRunContext()
+	variablesRunCtx, err := w.getParseContext()
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +336,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getRunContext() (*parse.RunContext, error) {
+func (w *Workspace) getParseContext() (*parse.ModParseContext, error) {
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
@@ -345,7 +345,7 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	runCtx := parse.NewRunContext(
+	parseCtx := parse.NewModParseContext(
 		workspaceLock,
 		w.Path,
 		parseFlag,
@@ -357,7 +357,7 @@ func (w *Workspace) getRunContext() (*parse.RunContext, error) {
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
 
-	return runCtx, nil
+	return parseCtx, nil
 }
 
 // load the workspace lock, migrating it if necessary
@@ -416,12 +416,12 @@ func (w *Workspace) loadExclusions() error {
 
 func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	runCtx, err := w.getRunContext()
+	parseCtx, err := w.getParseContext()
 	if err != nil {
 		return nil, err
 	}
 
-	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, runCtx)
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, parseCtx)
 	if err != nil {
 		return nil, err
 	}
