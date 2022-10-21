@@ -23,12 +23,12 @@ var GlobalConfig *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
-func LoadSteampipeConfig(workspacePath string, commandName string) (*SteampipeConfig, error) {
+func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConfig, error) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
 	_ = ensureDefaultConfigFile(filepaths.EnsureConfigDir())
-	config, err := loadSteampipeConfig(workspacePath, commandName)
+	config, err := loadSteampipeConfig(modLocation, commandName)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func loadSteampipeConfig(workspacePath string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
+func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
 	utils.LogTime("steampipeconfig.loadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.loadSteampipeConfig end")
 
@@ -74,16 +74,16 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 	// now load config from the workspace folder, if provided
 	// this has precedence and so will overwrite any config which has already been set
 	// check workspace folder exists
-	if workspacePath != "" {
-		if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
-			return nil, fmt.Errorf("workspace folder '%s' does not exist", workspacePath)
+	if modLocation != "" {
+		if _, err := os.Stat(modLocation); os.IsNotExist(err) {
+			return nil, fmt.Errorf("mod location '%s' does not exist", modLocation)
 		}
 
 		// only include workspace.spc from workspace directory
 		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
 		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
-		if err := loadConfig(workspacePath, steampipeConfig, loadOptions); err != nil {
+		if err := loadConfig(modLocation, steampipeConfig, loadOptions); err != nil {
 			return nil, fmt.Errorf("failed to load workspace config: %v", err)
 		}
 	}
