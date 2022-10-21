@@ -377,7 +377,7 @@ func (r *LeafRun) executeQuery(ctx context.Context) {
 			// get the query and any prepared statement error from the workspace
 			preparedStatementFailure := r.executionTree.workspace.GetPreparedStatementCreationFailure(queryName)
 			if preparedStatementFailure != nil {
-				declRange := preparedStatementFailure.Query.DeclRange
+				declRange := preparedStatementFailure.Query.GetDeclRange()
 				preparedStatementError := preparedStatementFailure.Error
 				err = error_helpers.EnrichPreparedStatementError(err, queryName, preparedStatementError, declRange)
 			}

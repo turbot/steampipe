@@ -25,7 +25,7 @@ type PreparedStatementError struct {
 
 	underlying    error
 	creationError error
-	declRange     hcl.Range
+	declRange     *hcl.Range
 }
 
 func NewPreparedStatementError(underlying error) *PreparedStatementError {
@@ -55,7 +55,7 @@ func (e *PreparedStatementError) Is(err error) bool {
 	return isPreparedStatementError
 }
 
-func (e *PreparedStatementError) Enrich(name string, err error, declRange hcl.Range) *PreparedStatementError {
+func (e *PreparedStatementError) Enrich(name string, err error, declRange *hcl.Range) *PreparedStatementError {
 	e.queryName = name
 	e.creationError = err
 	e.declRange = declRange
@@ -74,7 +74,7 @@ func WrapPreparedStatementError(err error) error {
 // EnrichPreparedStatementError checks if the given error is a prepared statement error and if so,
 // add in the given query name
 // be printed on the console
-func EnrichPreparedStatementError(err error, queryName string, creationError error, declRange hcl.Range) error {
+func EnrichPreparedStatementError(err error, queryName string, creationError error, declRange *hcl.Range) error {
 	var preparedStatementError *PreparedStatementError
 	if errors.As(err, &preparedStatementError) {
 		preparedStatementError.Enrich(queryName, creationError, declRange)

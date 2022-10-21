@@ -64,7 +64,7 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 	if resource != nil {
 		log.Printf("[TRACE] query string is a query provider resource: %s", resource.Name())
 
-		// mresolve the query for the query provid3er and return it
+		// resolve the query for the query provider and return it
 		resolvedQuery, err := w.ResolveQueryFromQueryProvider(resource, args)
 		if err != nil {
 			return "", nil, err
@@ -134,12 +134,12 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 		log.Printf("[TRACE] control defines inline SQL")
 
 		// if the SQL refers to a named query, this is the same as if the 'Query' property is set
-		if namedQuery, ok := w.GetQuery(queryProviderSQL); ok {
+		if namedQueryProvider, ok := w.GetQueryProvider(queryProviderSQL); ok {
 			// in this case, it is NOT valid for the query provider to define its own Param definitions
 			if params != nil {
-				return nil, fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQuery.FullName)
+				return nil, fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQueryProvider.Name())
 			}
-			return w.ResolveQueryFromQueryProvider(namedQuery, runtimeArgs)
+			return w.ResolveQueryFromQueryProvider(namedQueryProvider, runtimeArgs)
 		}
 
 		// so the  sql is NOT a named query

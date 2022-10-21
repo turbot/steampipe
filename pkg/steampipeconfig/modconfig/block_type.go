@@ -1,5 +1,8 @@
 package modconfig
 
+import "github.com/turbot/go-kit/helpers"
+
+// NOTE: when adding a block type, be sure to update  QueryProviderBlocks/ReferenceBlocks/AllBlockTypes as needed
 const (
 	BlockTypeMod            = "mod"
 	BlockTypeQuery          = "query"
@@ -75,4 +78,41 @@ var ReferenceBlocks = []string{
 	BlockTypeText,
 	BlockTypeParam,
 	BlockTypeCategory,
+}
+
+var ValidResourceItemTypes = []string{
+	BlockTypeMod,
+	BlockTypeQuery,
+	BlockTypeControl,
+	BlockTypeBenchmark,
+	BlockTypeDashboard,
+	BlockTypeContainer,
+	BlockTypeChart,
+	BlockTypeCard,
+	BlockTypeFlow,
+	BlockTypeGraph,
+	BlockTypeHierarchy,
+	BlockTypeImage,
+	BlockTypeInput,
+	BlockTypeTable,
+	BlockTypeText,
+	BlockTypeLocals,
+	BlockTypeVariable,
+	BlockTypeParam,
+	BlockTypeRequire,
+	BlockTypeNode,
+	BlockTypeEdge,
+	BlockTypeLegacyRequires,
+	BlockTypeCategory,
+	BlockTypeConnection,
+	BlockTypeOptions,
+	BlockTypeWorkspaceProfile,
+	// local is not an actual block name but is a resource type
+	"local",
+	// references have this item type
+	"ref",
+}
+
+func IsValidResourceItemType(blockType string) bool {
+	return helpers.StringSliceContains(ValidResourceItemTypes, blockType)
 }

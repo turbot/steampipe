@@ -212,7 +212,7 @@ func (w *Workspace) HandlePreparedStatementFailures(failures map[string]error) {
 	// replace the map of failures with the current map
 	w.preparedStatementFailures = make(map[string]*steampipeconfig.PreparedStatementFailure)
 	for queryName, err := range failures {
-		if query, ok := w.GetQuery(queryName); ok {
+		if query, ok := w.GetQueryProvider(queryName); ok {
 			w.preparedStatementFailures[queryName] = &steampipeconfig.PreparedStatementFailure{
 				Query: query,
 				Error: err,
