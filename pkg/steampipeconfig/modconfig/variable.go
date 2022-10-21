@@ -89,10 +89,10 @@ func (v *Variable) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsP
 	return nil
 }
 
-// AddReference implements HclResource
+// AddReference implements ResourceWithMetadata
 func (v *Variable) AddReference(*ResourceReference) {}
 
-// GetReferences implements HclResource
+// GetReferences implements ResourceWithMetadata
 func (v *Variable) GetReferences() []*ResourceReference {
 	return nil
 }

@@ -140,12 +140,12 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	return ret, nil
 }
 
-func CollectVariableValuesFromModRequire(mod *modconfig.Mod, runCtx *parse.RunContext) (InputValues, error) {
+func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (InputValues, error) {
 	res := make(InputValues)
 	if mod.Require != nil {
 		for _, depModConstraint := range mod.Require.Mods {
 			// find the short name for this mod
-			depMod, ok := runCtx.LoadedDependencyMods[depModConstraint.Name]
+			depMod, ok := parseCtx.LoadedDependencyMods[depModConstraint.Name]
 			if !ok {
 				return nil, fmt.Errorf("depency mod %s is not loaded", depMod.Name())
 			}

@@ -3,7 +3,6 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -386,9 +385,8 @@ func (m *ResourceMaps) PopulateReferences() {
 	m.References = make(map[string]*ResourceReference)
 
 	resourceFunc := func(resource HclResource) (bool, error) {
-		parsedName, _ := ParseResourceName(resource.Name())
-		if helpers.StringSliceContains(ReferenceBlocks, parsedName.ItemType) {
-			for _, ref := range resource.GetReferences() {
+		if resourceWithMetadata, ok := resource.(ResourceWithMetadata); ok {
+			for _, ref := range resourceWithMetadata.GetReferences() {
 				m.References[ref.String()] = ref
 			}
 		}

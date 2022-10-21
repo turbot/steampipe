@@ -9,7 +9,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func (r *RunContext) DetermineBlockName(block *hcl.Block) string {
+func (r *ModParseContext) DetermineBlockName(block *hcl.Block) string {
 	var shortName string
 
 	// have we cached a name for this block (i.e. is this the second decode pass)
@@ -34,12 +34,12 @@ func (r *RunContext) DetermineBlockName(block *hcl.Block) string {
 	return shortName
 }
 
-func (r *RunContext) GetCachedBlockName(block *hcl.Block) (string, bool) {
+func (r *ModParseContext) GetCachedBlockName(block *hcl.Block) (string, bool) {
 	name, ok := r.blockNameMap[r.blockHash(block)]
 	return name, ok
 }
 
-func (r *RunContext) GetCachedBlockShortName(block *hcl.Block) (string, bool) {
+func (r *ModParseContext) GetCachedBlockShortName(block *hcl.Block) (string, bool) {
 	unqualifiedName, ok := r.blockNameMap[r.blockHash(block)]
 	if ok {
 		parsedName, err := modconfig.ParseResourceName(unqualifiedName)
@@ -51,7 +51,7 @@ func (r *RunContext) GetCachedBlockShortName(block *hcl.Block) (string, bool) {
 	return "", false
 }
 
-func (r *RunContext) GetDecodedResourceForBlock(block *hcl.Block) (modconfig.HclResource, bool) {
+func (r *ModParseContext) GetDecodedResourceForBlock(block *hcl.Block) (modconfig.HclResource, bool) {
 	if name, ok := r.GetCachedBlockName(block); ok {
 		// see whether the mod contains this resource already
 		parsedName, err := modconfig.ParseResourceName(name)
@@ -62,16 +62,16 @@ func (r *RunContext) GetDecodedResourceForBlock(block *hcl.Block) (modconfig.Hcl
 	return nil, false
 }
 
-func (r *RunContext) cacheBlockName(block *hcl.Block, shortName string) {
+func (r *ModParseContext) cacheBlockName(block *hcl.Block, shortName string) {
 	r.blockNameMap[r.blockHash(block)] = shortName
 }
 
-func (r *RunContext) blockHash(block *hcl.Block) string {
+func (r *ModParseContext) blockHash(block *hcl.Block) string {
 	return utils.GetMD5Hash(block.DefRange.String())
 }
 
 // getUniqueName returns a name unique within the scope of this execution tree
-func (r *RunContext) getUniqueName(blockType string, parent string) string {
+func (r *ModParseContext) getUniqueName(blockType string, parent string) string {
 	// count how many children of this block type the parent has
 	childCount := 0
 
@@ -89,6 +89,6 @@ func (r *RunContext) getUniqueName(blockType string, parent string) string {
 	return fmt.Sprintf("%s_anonymous_%s_%d", sanitisedParentName, blockType, childCount)
 }
 
-func (r *RunContext) addChildBlockForParent(parent, child string) {
+func (r *ModParseContext) addChildBlockForParent(parent, child string) {
 	r.blockChildMap[parent] = append(r.blockChildMap[parent], child)
 }

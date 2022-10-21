@@ -189,12 +189,12 @@ func (q *Query) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 
-// AddReference implements HclResource
+// AddReference implements ResourceWithMetadata
 func (q *Query) AddReference(ref *ResourceReference) {
 	q.References = append(q.References, ref)
 }
 
-// GetReferences implements HclResource
+// GetReferences implements ResourceWithMetadata
 func (q *Query) GetReferences() []*ResourceReference {
 	return q.References
 }

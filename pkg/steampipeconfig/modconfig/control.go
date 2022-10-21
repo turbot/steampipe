@@ -256,12 +256,12 @@ func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsPr
 	return nil
 }
 
-// AddReference implements HclResource
+// AddReference implements ResourceWithMetadata
 func (c *Control) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)
 }
 
-// GetReferences implements HclResource
+// GetReferences implements ResourceWithMetadata
 func (c *Control) GetReferences() []*ResourceReference {
 	return c.References
 }

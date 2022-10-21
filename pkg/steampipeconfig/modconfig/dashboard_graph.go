@@ -89,12 +89,12 @@ func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider Resourc
 	return initialiseEdgesAndNodes(g, resourceMapProvider)
 }
 
-// AddReference implements HclResource
+// AddReference implements ResourceWithMetadata
 func (g *DashboardGraph) AddReference(ref *ResourceReference) {
 	g.References = append(g.References, ref)
 }
 
-// GetReferences implements HclResource
+// GetReferences implements ResourceWithMetadata
 func (g *DashboardGraph) GetReferences() []*ResourceReference {
 	return g.References
 }

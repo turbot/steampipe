@@ -80,12 +80,12 @@ func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMaps
 	return nil
 }
 
-// AddReference implements HclResource
+// AddReference implements ResourceWithMetadata
 func (b *Benchmark) AddReference(ref *ResourceReference) {
 	b.References = append(b.References, ref)
 }
 
-// GetReferences implements HclResource
+// GetReferences implements ResourceWithMetadata
 func (b *Benchmark) GetReferences() []*ResourceReference {
 	return b.References
 }

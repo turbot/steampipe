@@ -15,22 +15,22 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func LoadVariableDefinitions(variablePath string, runCtx *parse.RunContext) (*modconfig.ModVariableMap, error) {
+func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
 	// only load mod and variables blocks
-	runCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, err := LoadMod(variablePath, runCtx)
+	parseCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
+	mod, err := LoadMod(variablePath, parseCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	variableMap := modconfig.NewModVariableMap(mod, runCtx.LoadedDependencyMods)
+	variableMap := modconfig.NewModVariableMap(mod, parseCtx.LoadedDependencyMods)
 
 	return variableMap, nil
 }
 
-func GetVariableValues(ctx context.Context, runCtx *parse.RunContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
+func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
 	// now resolve all input variables
-	inputVariables, err := getInputVariables(variableMap.AllVariables, validate, runCtx)
+	inputVariables, err := getInputVariables(variableMap.AllVariables, validate, parseCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,17 +57,17 @@ func GetVariableValues(ctx context.Context, runCtx *parse.RunContext, variableMa
 	}
 
 	// add workspace mod variables to runContext
-	runCtx.AddInputVariables(variableMap)
+	parseCtx.AddInputVariables(variableMap)
 
 	return variableMap, nil
 }
 
-func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool, runCtx *parse.RunContext) (inputvars.InputValues, error) {
+func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool, parseCtx *parse.ModParseContext) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
 	// get mod and mod path from run context
-	mod := runCtx.CurrentMod
+	mod := parseCtx.CurrentMod
 	path := mod.ModPath
 
 	inputValuesUnparsed, err := inputvars.CollectVariableValues(path, variableFileArgs, variableArgs)
@@ -76,7 +76,7 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 	}
 
 	// build map of depedency mod variable values declared in the mod 'Require' section
-	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, runCtx)
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, parseCtx)
 	if err != nil {
 		return nil, err
 	}
