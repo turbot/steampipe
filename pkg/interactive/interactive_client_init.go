@@ -86,6 +86,10 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 		}
 	}
 
+	// Trigger a re-render of the prompt, so that the prompt actually shows up,
+	// since the prompt may have been removed by the installation spinner
+	c.interactivePrompt.Render()
+
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {

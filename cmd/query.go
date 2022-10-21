@@ -5,12 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/hcl/v2"
-	"golang.org/x/exp/maps"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -29,6 +28,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
+	"golang.org/x/exp/maps"
 )
 
 func queryCmd() *cobra.Command {
