@@ -6,9 +6,6 @@ import (
 )
 
 func (w *Workspace) GetQueryProvider(queryName string) (modconfig.QueryProvider, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
 	parsedName, err := modconfig.ParseResourceName(queryName)
 	if err != nil {
 		log.Printf("[TRACE] GetQueryProvider failed to parse query name '%s': %s", queryName, err.Error())
@@ -24,7 +21,6 @@ func (w *Workspace) GetQueryProvider(queryName string) (modconfig.QueryProvider,
 
 	}
 
-	// queryName may be unqiualified try adding the workspace mod name to the resource name and se eif that exists
 	return nil, false
 }
 
