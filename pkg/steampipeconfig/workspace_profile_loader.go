@@ -2,9 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"log"
@@ -18,70 +15,19 @@ type WorkspaceProfileLoader struct {
 }
 
 func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
-	res := &WorkspaceProfileLoader{workspaceProfilePath: workspaceProfilePath}
-	workspaceProfiles, err := res.load()
+	loader := &WorkspaceProfileLoader{workspaceProfilePath: workspaceProfilePath}
+	workspaceProfiles, err := loader.load()
 	if err != nil {
 		return nil, err
 	}
-	res.workspaceProfiles = workspaceProfiles
+	loader.workspaceProfiles = workspaceProfiles
 
-	return res, nil
+	return loader, nil
 }
 
 func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile, error) {
-	// create profile map to populate
-	// create a default profile, which will be overwritten if one is defined
-	profileMap := map[string]*modconfig.WorkspaceProfile{"default": {Name: "default"}}
-
 	// get all the config files in the directory
-	configPaths, err := filehelpers.ListFiles(l.workspaceProfilePath, &filehelpers.ListOptions{
-		Flags:   filehelpers.FilesFlat,
-		Include: filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(configPaths) == 0 {
-		// be sure to return the default
-		return profileMap, nil
-	}
-
-	fileData, diags := parse.LoadFileData(configPaths...)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
-	}
-
-	body, diags := parse.ParseHclFiles(fileData)
-	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
-	}
-
-	// do a partial decode
-	content, diags := body.Content(parse.WorkspaceProfileListBlockSchema)
-	if diags.HasErrors() {
-
-		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
-	}
-
-	// build parse context
-	parseContext := parse.NewParseContext(l.workspaceProfilePath)
-	for _, block := range content.Blocks {
-
-		workspaceProfile, res := parse.DecodeWorkspaceProfile(block, parseContext)
-		if res.Success() {
-			// success - add to map
-			profileMap[workspaceProfile.Name] = workspaceProfile
-		}
-		// TODO handle failure and dependencies
-	}
-
-	// add in default if needed
-	if _, ok := profileMap["default"]; !ok {
-		profileMap["default"] = &modconfig.WorkspaceProfile{Name: "default"}
-	}
-
-	//
-	return profileMap, nil
+	return parse.LoadWorkspaceProfiles(l.workspaceProfilePath)
 }
 
 func (l *WorkspaceProfileLoader) Get(name string) (*modconfig.WorkspaceProfile, error) {

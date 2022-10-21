@@ -45,14 +45,6 @@ func (l *Local) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProv
 	return nil
 }
 
-// AddReference implements HclResource
-func (l *Local) AddReference(*ResourceReference) {}
-
-// GetReferences implements HclResource
-func (l *Local) GetReferences() []*ResourceReference {
-	return nil
-}
-
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
 func (l *Local) GetUnqualifiedName() string {
 	return l.UnqualifiedName

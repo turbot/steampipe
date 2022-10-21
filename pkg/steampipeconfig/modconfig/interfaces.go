@@ -24,8 +24,6 @@ type HclResource interface {
 	GetUnqualifiedName() string
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
-	AddReference(ref *ResourceReference)
-	GetReferences() []*ResourceReference
 	GetDeclRange() *hcl.Range
 }
 
@@ -54,6 +52,8 @@ type ResourceWithMetadata interface {
 	SetMetadata(metadata *ResourceMetadata)
 	SetAnonymous(block *hcl.Block)
 	IsAnonymous() bool
+	AddReference(ref *ResourceReference)
+	GetReferences() []*ResourceReference
 }
 
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query

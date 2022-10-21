@@ -28,3 +28,10 @@ func (b *ResourceWithMetadataBase) SetAnonymous(block *hcl.Block) {
 func (b *ResourceWithMetadataBase) IsAnonymous() bool {
 	return b.anonymous
 }
+
+func (b *ResourceWithMetadataBase) AddReference(ref *ResourceReference) {
+}
+
+func (b *ResourceWithMetadataBase) GetReferences() []*ResourceReference {
+	return nil
+}

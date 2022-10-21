@@ -3,10 +3,81 @@ package parse
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func DecodeWorkspaceProfile(block *hcl.Block, parseContext ParseContext) (*modconfig.WorkspaceProfile, *decodeResult) {
+func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*modconfig.WorkspaceProfile, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
+		// be sure to return the default
+		if profileMap != nil && profileMap["default"] == nil {
+			profileMap["default"] = &modconfig.WorkspaceProfile{ProfileName: "default"}
+		}
+	}()
+
+	// create profile map to populate
+	profileMap = map[string]*modconfig.WorkspaceProfile{}
+
+	configPaths, err := filehelpers.ListFiles(workspaceProfilePath, &filehelpers.ListOptions{
+		Flags:   filehelpers.FilesFlat,
+		Include: filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(configPaths) == 0 {
+		return profileMap, nil
+	}
+
+	fileData, diags := LoadFileData(configPaths...)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
+	}
+
+	body, diags := ParseHclFiles(fileData)
+	if diags.HasErrors() {
+		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
+	}
+
+	// do a partial decode
+	content, diags := body.Content(WorkspaceProfileListBlockSchema)
+	if diags.HasErrors() {
+
+		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
+	}
+
+	// build parse context
+	return parseWorkspaceProfiles(content, workspaceProfilePath)
+
+}
+func parseWorkspaceProfiles(content *hcl.BodyContent, workspaceProfilePath string) (map[string]*modconfig.WorkspaceProfile, error) {
+	parseContext := NewParseContext(workspaceProfilePath)
+
+	profileMap := map[string]*modconfig.WorkspaceProfile{}
+	for _, block := range content.Blocks {
+
+		workspaceProfile, res := decodeWorkspaceProfile(block, parseContext)
+
+		if res.Success() {
+			// success - add to map
+			profileMap[workspaceProfile.ProfileName] = workspaceProfile
+		}
+		// TODO handle failure and dependencies
+	}
+	return profileMap, nil
+
+}
+
+// func DecodeWorkspaceProfiles(content *hcl.BodyContent, workspaceProfilePath string) map[string]*modconfig.WorkspaceProfile {
+// }
+func decodeWorkspaceProfile(block *hcl.Block, parseContext ParseContext) (*modconfig.WorkspaceProfile, *decodeResult) {
 	res := newDecodeResult()
 	// get shell resource
 	resource := modconfig.NewWorkspaceProfile(block)

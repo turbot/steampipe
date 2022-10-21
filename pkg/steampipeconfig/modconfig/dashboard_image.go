@@ -78,12 +78,12 @@ func (i *DashboardImage) OnDecoded(block *hcl.Block, resourceMapProvider Resourc
 	return nil
 }
 
-// AddReference implements HclResource
+// AddReference implements ResourceWithMetadata
 func (i *DashboardImage) AddReference(ref *ResourceReference) {
 	i.References = append(i.References, ref)
 }
 
-// GetReferences implements HclResource
+// GetReferences implements ResourceWithMetadata
 func (i *DashboardImage) GetReferences() []*ResourceReference {
 	return i.References
 }

@@ -25,7 +25,9 @@ func GetReferencedVariables(root dashboardtypes.DashboardNodeRun, w *workspace.W
 	case *DashboardRun:
 		r.dashboardNode.WalkResources(
 			func(resource modconfig.HclResource) (bool, error) {
-				addReferencedVars(resource.GetReferences())
+				if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
+					addReferencedVars(resourceWithMetadata.GetReferences())
+				}
 				return true, nil
 			},
 		)
@@ -37,7 +39,9 @@ func GetReferencedVariables(root dashboardtypes.DashboardNodeRun, w *workspace.W
 		}
 		benchmark.WalkResources(
 			func(resource modconfig.ModTreeItem) (bool, error) {
-				addReferencedVars(resource.(modconfig.HclResource).GetReferences())
+				if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
+					addReferencedVars(resourceWithMetadata.GetReferences())
+				}
 				return true, nil
 			},
 		)

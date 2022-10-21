@@ -9,8 +9,8 @@ import (
 
 // AddReferences populates the 'References' resource field, used for the introspection tables
 func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *RunContext) hcl.Diagnostics {
-	// NOTE: exclude locals
-	if block.Type == modconfig.BlockTypeLocals {
+	resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata)
+	if !ok {
 		return nil
 	}
 
@@ -32,7 +32,7 @@ func AddReferences(resource modconfig.HclResource, block *hcl.Block, runCtx *Run
 					}
 					moreDiags := addResourceMetadata(reference, attr.SrcRange, runCtx)
 					diags = append(diags, moreDiags...)
-					resource.AddReference(reference)
+					resourceWithMetadata.AddReference(reference)
 					break
 				}
 			}
