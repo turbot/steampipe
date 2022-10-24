@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -28,7 +29,6 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
@@ -63,6 +63,7 @@ type InteractiveClient struct {
 	schemaMetadata *schema.Metadata
 	highlighter    *Highlighter
 	hidePrompt     bool
+	suggestions    []prompt.Suggest
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -149,6 +150,54 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
 	}
+}
+
+func (c *InteractiveClient) initialiseSuggestions() {
+	var res []prompt.Suggest
+
+	workspaceModName := c.initData.Workspace.Mod.Name()
+	resourceFunc := func(item modconfig.HclResource) (continueWalking bool, err error) {
+		continueWalking = true
+
+		qp, ok := item.(modconfig.QueryProvider)
+		if !ok {
+			return
+		}
+		if qp.GetQuery() == nil && qp.GetSQL() == nil {
+			return
+		}
+		rm := item.(modconfig.ResourceWithMetadata)
+		if rm.IsAnonymous() {
+			return
+		}
+		isLocal := qp.GetMod().Name() == workspaceModName
+		itemType := item.BlockType()
+		// only include global inputs
+		if itemType == modconfig.BlockTypeInput {
+			if _, ok := c.initData.Workspace.Mod.ResourceMaps.GlobalDashboardInputs[item.Name()]; !ok {
+				return
+			}
+		}
+		// special case for query
+		if itemType == modconfig.BlockTypeQuery {
+			itemType = "named query"
+		}
+		name := qp.Name()
+		if isLocal {
+			name = qp.GetUnqualifiedName()
+		}
+
+		res = append(res, c.addSuggestion(itemType, qp.GetDescription(), name))
+		return
+	}
+
+	c.workspace().GetResourceMaps().WalkResources(resourceFunc)
+
+	// sort the suggestions
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Text < res[j].Text
+	})
+	c.suggestions = res
 }
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
@@ -549,7 +598,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		// add all we know that can be the first words
 
 		// named queries
-		s = append(s, c.namedQuerySuggestions()...)
+		s = append(s, c.suggestions...)
 		// "select"
 		s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
 
@@ -584,49 +633,11 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 
-func (c *InteractiveClient) namedQuerySuggestions() []prompt.Suggest {
-	var res []prompt.Suggest
-	// only add named query suggestions if the client is initialised
-	if !c.isInitialised() {
-		return nil
+func (c *InteractiveClient) addSuggestion(itemType string, description string, name string) prompt.Suggest {
+	if description != "" {
+		itemType += fmt.Sprintf(": %s", description)
 	}
-	resourceMaps := c.workspace().GetResourceMaps()
-	// add all the queries in the workspace
-	for queryName, q := range resourceMaps.LocalQueries {
-		res = append(res, c.addQuerySuggestion(q, queryName))
-	}
-	for queryName, q := range resourceMaps.Queries {
-		res = append(res, c.addQuerySuggestion(q, queryName))
-	}
-
-	// add all the controls in the workspace
-	for controlName, control := range resourceMaps.LocalControls {
-		res = append(res, c.addControlSuggestion(control, controlName))
-	}
-	for controlName, control := range resourceMaps.Controls {
-		res = append(res, c.addControlSuggestion(control, controlName))
-	}
-
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].Text < res[j].Text
-	})
-	return res
-}
-
-func (c *InteractiveClient) addQuerySuggestion(query *modconfig.Query, queryName string) prompt.Suggest {
-	description := "named query"
-	if query.Description != nil {
-		description += fmt.Sprintf(": %s", *query.Description)
-	}
-	return prompt.Suggest{Text: queryName, Output: queryName, Description: description}
-}
-
-func (c *InteractiveClient) addControlSuggestion(control *modconfig.Control, controlName string) prompt.Suggest {
-	description := "control"
-	if control.Description != nil {
-		description += fmt.Sprintf(": %s", *control.Description)
-	}
-	return prompt.Suggest{Text: controlName, Output: controlName, Description: description}
+	return prompt.Suggest{Text: name, Output: name, Description: itemType}
 }
 
 func (c *InteractiveClient) startCancelHandler() chan bool {

@@ -1,7 +1,9 @@
 package controlexecute
 
 import (
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // DirectChildrenModDecorator is a struct used to wrap a Mod but modify the results of GetChildren to only return
@@ -63,4 +65,25 @@ func (r DirectChildrenModDecorator) GetDocumentation() string {
 
 func (r DirectChildrenModDecorator) GetMod() *modconfig.Mod {
 	return r.Mod
+}
+
+// BlockType implements HclResource
+func (r DirectChildrenModDecorator) BlockType() string {
+	return r.Mod.BlockType()
+
+}
+
+// CtyValue implements HclResource
+func (r DirectChildrenModDecorator) CtyValue() (cty.Value, error) {
+	return r.Mod.CtyValue()
+}
+
+// GetDeclRange implements HclResource
+func (r DirectChildrenModDecorator) GetDeclRange() *hcl.Range {
+	return &r.Mod.DeclRange
+}
+
+// OnDecoded implements HclResource
+func (r DirectChildrenModDecorator) OnDecoded(block *hcl.Block, resourceMapProvider modconfig.ResourceMapsProvider) hcl.Diagnostics {
+	return nil
 }

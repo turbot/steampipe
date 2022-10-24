@@ -65,6 +65,11 @@ func (l *Local) GetDeclRange() *hcl.Range {
 	return &l.DeclRange
 }
 
+// BlockType implements HclResource
+func (*Local) BlockType() string {
+	return BlockTypeLocals
+}
+
 // AddParent implements ModTreeItem
 func (l *Local) AddParent(parent ModTreeItem) error {
 	l.parents = append(l.parents, parent)

@@ -109,6 +109,11 @@ func (h *DashboardHierarchy) GetDeclRange() *hcl.Range {
 	return &h.DeclRange
 }
 
+// BlockType implements HclResource
+func (*DashboardHierarchy) BlockType() string {
+	return BlockTypeHierarchy
+}
+
 // AddParent implements ModTreeItem
 func (h *DashboardHierarchy) AddParent(parent ModTreeItem) error {
 	h.parents = append(h.parents, parent)
@@ -241,6 +246,12 @@ func (h *DashboardHierarchy) GetSQL() *string {
 // GetQuery implements QueryProvider
 func (h *DashboardHierarchy) GetQuery() *Query {
 	return h.Query
+}
+
+// VerifyQuery implements QueryProvider
+func (*DashboardHierarchy) VerifyQuery(QueryProvider) error {
+	// query is optional - nothing to do
+	return nil
 }
 
 // SetArgs implements QueryProvider

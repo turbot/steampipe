@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -53,41 +54,26 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 
 	var err error
 
-	// if this looks like a named query or named control invocation, parse the sql string for arguments
-	if isNamedQueryOrControl(sqlString) {
-		sqlString, args, err = parse.ParsePreparedStatementInvocation(sqlString)
+	// 1) check if this is a resource
+	// if this looks like a named query provider invocation, parse the sql string for arguments
+	resource, args, err := w.extractQueryProviderFromQueryString(sqlString)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if resource != nil {
+		log.Printf("[TRACE] query string is a query provider resource: %s", resource.Name())
+
+		// resolve the query for the query provider and return it
+		resolvedQuery, err := w.ResolveQueryFromQueryProvider(resource, args)
 		if err != nil {
 			return "", nil, err
 		}
-	}
-	// query or control providing the named query
-
-	log.Printf("[TRACE] resolveQuery %s args %s", sqlString, args)
-	// 1) check if this is a control
-	if control, ok := w.GetControl(sqlString); ok {
-
-		log.Printf("[TRACE] query string is a control: %s", control.FullName)
-
-		// copy control SQL into query and continue resolution
-		var err error
-		resolvedQuery, err := w.ResolveQueryFromQueryProvider(control, args)
-		if err != nil {
-			return "", nil, err
-		}
-		log.Printf("[TRACE] resolved control query: %s", sqlString)
-		return resolvedQuery.ExecuteSQL, control, nil
+		log.Printf("[TRACE] resolved query: %s", sqlString)
+		return resolvedQuery.ExecuteSQL, resource, nil
 	}
 
-	// 2) is this a named query
-	if namedQuery, ok := w.GetQuery(sqlString); ok {
-		resolvedQuery, err := w.ResolveQueryFromQueryProvider(namedQuery, args)
-		if err != nil {
-			return "", nil, err
-		}
-		return resolvedQuery.ExecuteSQL, namedQuery, nil
-	}
-
-	// 	3) is this a file
+	// 2) is this a file
 	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
 	if fileExists {
 		if err != nil {
@@ -100,12 +86,12 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 		return fileQuery, nil, nil
 	}
 
-	// 4) so we have not managed to resolve this - if it looks like a named query or control, return an error
-	if isNamedQueryOrControl(sqlString) {
-		return "", nil, fmt.Errorf("'%s' not found in workspace", sqlString)
+	// 3) so we have not managed to resolve this - if it looks like a named query or control, return an error
+	if name, isResource := queryLooksLikeExecutableResource(sqlString); isResource {
+		return "", nil, fmt.Errorf("'%s' not found in workspace", name)
 	}
 
-	// 5) just use the query string as is and assume it is valid SQL
+	// 4) just use the query string as is and assume it is valid SQL
 	return sqlString, nil, nil
 }
 
@@ -121,6 +107,10 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 
 	query := queryProvider.GetQuery()
 	sql := queryProvider.GetSQL()
+
+	if query == nil && sql == nil {
+		return nil, fmt.Errorf("%s does not define  either a 'sql' property or a 'query' property\n", queryProvider.Name())
+	}
 	params := queryProvider.GetParams()
 
 	// merge the base args with the runtime args
@@ -144,12 +134,12 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 		log.Printf("[TRACE] control defines inline SQL")
 
 		// if the SQL refers to a named query, this is the same as if the 'Query' property is set
-		if namedQuery, ok := w.GetQuery(queryProviderSQL); ok {
+		if namedQueryProvider, ok := w.GetQueryProvider(queryProviderSQL); ok {
 			// in this case, it is NOT valid for the query provider to define its own Param definitions
 			if params != nil {
-				return nil, fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQuery.FullName)
+				return nil, fmt.Errorf("%s has an 'SQL' property which refers to %s, so it cannot define 'param' blocks", queryProvider.Name(), namedQueryProvider.Name())
 			}
-			return w.ResolveQueryFromQueryProvider(namedQuery, runtimeArgs)
+			return w.ResolveQueryFromQueryProvider(namedQueryProvider, runtimeArgs)
 		}
 
 		// so the  sql is NOT a named query
@@ -166,9 +156,10 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 
 }
 
-func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
+// try to treat the input string as a file name and if it exists, return its contents
+func (w *Workspace) getQueryFromFile(input string) (string, bool, error) {
 	// get absolute filename
-	path, err := filepath.Abs(filename)
+	path, err := filepath.Abs(input)
 	if err != nil {
 		return "", false, nil
 	}
@@ -187,14 +178,62 @@ func (w *Workspace) getQueryFromFile(filename string) (string, bool, error) {
 	return string(fileBytes), true, nil
 }
 
-// does the input look like a named control or query
-func isNamedQueryOrControl(input string) bool {
+// does the input look like a resource which can be executed as a query
+// Note: if anything fails just return nil values
+func (w *Workspace) extractQueryProviderFromQueryString(input string) (modconfig.QueryProvider, *modconfig.QueryArgs, error) {
+	// can we extract a resource name from the string
+	parsedResourceName := extractResourceNameFromQuery(input)
+	if parsedResourceName == nil {
+		return nil, nil, nil
+	}
+	// ok we managed to extract a resource name - does this resource exist?
+	resource, ok := modconfig.GetResource(w, parsedResourceName)
+	if !ok {
+		return nil, nil, nil
+	}
+
+	//- is the resource a query provider, and if so does it have a query?
+	queryProvider, ok := resource.(modconfig.QueryProvider)
+	if !ok {
+		return nil, nil, fmt.Errorf("%s cannot be executed as a query", queryProvider.Name())
+	}
+
+	_, args, err := parse.ParsePreparedStatementInvocation(input)
+	if err != nil {
+		return nil, nil, err
+	}
+	// success
+	return queryProvider, args, nil
+}
+
+func extractResourceNameFromQuery(input string) *modconfig.ParsedResourceName {
 	// remove parameters from the input string before calling ParseResourceName
 	// as parameters may break parsing
 	openBracketIdx := strings.Index(input, "(")
 	if openBracketIdx != -1 {
 		input = input[:openBracketIdx]
 	}
-	parsedResourceName, err := modconfig.ParseResourceName(input)
-	return err == nil && (parsedResourceName.ItemType == "query" || parsedResourceName.ItemType == "control")
+	parsedName, err := modconfig.ParseResourceName(input)
+	// do not bubble error up, just return nil parsed name
+	// it is expected that this function may fail if a raw query is passed to it
+	if err != nil {
+		return nil
+	}
+	return parsedName
+}
+
+func queryLooksLikeExecutableResource(input string) (string, bool) {
+	// remove parameters from the input string before calling ParseResourceName
+	// as parameters may break parsing
+	openBracketIdx := strings.Index(input, "(")
+	if openBracketIdx != -1 {
+		input = input[:openBracketIdx]
+	}
+	parsedName, err := modconfig.ParseResourceName(input)
+	if err == nil && helpers.StringSliceContains(modconfig.QueryProviderBlocks, parsedName.ItemType) {
+		return parsedName.ToResourceName(), true
+	}
+	// do not bubble error up, just return false
+	return "", false
+
 }

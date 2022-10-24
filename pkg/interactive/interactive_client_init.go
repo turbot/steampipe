@@ -50,8 +50,13 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.interactivePrompt.Render()
 	}
 
+	c.initialiseSuggestions()
 	// tell the workspace to reset the prompt after displaying async filewatcher messages
-	c.initData.Workspace.SetOnFileWatcherEventMessages(func() { c.interactivePrompt.Render() })
+	c.initData.Workspace.SetOnFileWatcherEventMessages(func() {
+		c.initialiseSuggestions()
+		c.interactivePrompt.Render()
+	})
+
 }
 
 func (c *InteractiveClient) readInitDataStream(ctx context.Context) {

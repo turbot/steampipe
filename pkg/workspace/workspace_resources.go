@@ -1,30 +1,26 @@
 package workspace
 
-import "github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+import (
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"log"
+)
 
-func (w *Workspace) GetQuery(queryName string) (*modconfig.Query, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
+func (w *Workspace) GetQueryProvider(queryName string) (modconfig.QueryProvider, bool) {
+	parsedName, err := modconfig.ParseResourceName(queryName)
+	if err != nil {
+		log.Printf("[TRACE] GetQueryProvider failed to parse query name '%s': %s", queryName, err.Error())
+		return nil, false
+	}
+	// try to find the resource
+	if resource, ok := modconfig.GetResource(w, parsedName); ok {
+		// found a resource - is itr a queyr provider
+		if qp := resource.(modconfig.QueryProvider); ok {
+			return qp, true
+		}
+		log.Printf("[TRACE] GetQueryProvider found a resource for '%s' but it is not a query provider", queryName)
 
-	if query, ok := w.Mod.ResourceMaps.LocalQueries[queryName]; ok {
-		return query, true
 	}
-	if query, ok := w.Mod.ResourceMaps.Queries[queryName]; ok {
-		return query, true
-	}
-	return nil, false
-}
 
-func (w *Workspace) GetControl(controlName string) (*modconfig.Control, bool) {
-	w.loadLock.Lock()
-	defer w.loadLock.Unlock()
-
-	if control, ok := w.Mod.ResourceMaps.LocalControls[controlName]; ok {
-		return control, true
-	}
-	if control, ok := w.Mod.ResourceMaps.Controls[controlName]; ok {
-		return control, true
-	}
 	return nil, false
 }
 

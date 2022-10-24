@@ -276,6 +276,11 @@ func (c *Control) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
+// BlockType implements HclResource
+func (*Control) BlockType() string {
+	return BlockTypeControl
+}
+
 // GetParams implements QueryProvider
 func (c *Control) GetParams() []*ParamDef {
 	return c.Params

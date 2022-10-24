@@ -109,6 +109,11 @@ func (f *DashboardFlow) GetDeclRange() *hcl.Range {
 	return &f.DeclRange
 }
 
+// BlockType implements HclResource
+func (*DashboardFlow) BlockType() string {
+	return BlockTypeFlow
+}
+
 // AddParent implements ModTreeItem
 func (f *DashboardFlow) AddParent(parent ModTreeItem) error {
 	f.parents = append(f.parents, parent)
@@ -241,6 +246,12 @@ func (f *DashboardFlow) GetSQL() *string {
 // GetQuery implements QueryProvider
 func (f *DashboardFlow) GetQuery() *Query {
 	return f.Query
+}
+
+// VerifyQuery implements QueryProvider
+func (*DashboardFlow) VerifyQuery(QueryProvider) error {
+	// query is optional - nothing to do
+	return nil
 }
 
 // SetArgs implements QueryProvider

@@ -136,6 +136,11 @@ func (t *DashboardTable) GetDeclRange() *hcl.Range {
 	return &t.DeclRange
 }
 
+// BlockType implements HclResource
+func (*DashboardTable) BlockType() string {
+	return BlockTypeTable
+}
+
 // AddParent implements ModTreeItem
 func (t *DashboardTable) AddParent(parent ModTreeItem) error {
 	t.parents = append(t.parents, parent)

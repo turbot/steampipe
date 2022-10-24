@@ -31,9 +31,6 @@ type ResourceMaps struct {
 	DashboardNodes        map[string]*DashboardNode
 	GlobalDashboardInputs map[string]*DashboardInput
 	Locals                map[string]*Local
-	LocalQueries          map[string]*Query
-	LocalControls         map[string]*Control
-	LocalBenchmarks       map[string]*Benchmark
 	Mods                  map[string]*Mod
 	Queries               map[string]*Query
 	References            map[string]*ResourceReference
@@ -75,9 +72,6 @@ func emptyModResources() *ResourceMaps {
 		DashboardCategories:   make(map[string]*DashboardCategory),
 		GlobalDashboardInputs: make(map[string]*DashboardInput),
 		Locals:                make(map[string]*Local),
-		LocalQueries:          make(map[string]*Query),
-		LocalControls:         make(map[string]*Control),
-		LocalBenchmarks:       make(map[string]*Benchmark),
 		Mods:                  make(map[string]*Mod),
 		Queries:               make(map[string]*Query),
 		References:            make(map[string]*ResourceReference),
@@ -554,8 +548,6 @@ func (m *ResourceMaps) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.Queries[name] = r
-		// also add to LocalQueries
-		m.LocalQueries[r.GetUnqualifiedName()] = r
 
 	case *Control:
 		name := r.Name()
@@ -564,8 +556,6 @@ func (m *ResourceMaps) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.Controls[name] = r
-		// also add to LocalControls
-		m.LocalControls[r.GetUnqualifiedName()] = r
 
 	case *Benchmark:
 		name := r.Name()
@@ -574,8 +564,6 @@ func (m *ResourceMaps) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.Benchmarks[name] = r
-		// also add to LocalBenchmarks
-		m.LocalBenchmarks[r.GetUnqualifiedName()] = r
 
 	case *Dashboard:
 		name := r.Name()
@@ -733,17 +721,6 @@ func (m *ResourceMaps) AddSnapshots(snapshotPaths []string) {
 func (m *ResourceMaps) Merge(others []*ResourceMaps) *ResourceMaps {
 	res := NewModResources(m.Mod)
 	sourceMaps := append([]*ResourceMaps{m}, others...)
-
-	// take local resources from ourselves
-	for k, v := range m.LocalQueries {
-		res.LocalQueries[k] = v
-	}
-	for k, v := range m.LocalControls {
-		res.LocalControls[k] = v
-	}
-	for k, v := range m.LocalBenchmarks {
-		res.LocalBenchmarks[k] = v
-	}
 
 	for _, source := range sourceMaps {
 		for k, v := range source.Benchmarks {

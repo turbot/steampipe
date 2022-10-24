@@ -63,6 +63,11 @@ func (c *DashboardCategory) GetDeclRange() *hcl.Range {
 	return &c.DeclRange
 }
 
+// BlockType implements HclResource
+func (*DashboardCategory) BlockType() string {
+	return BlockTypeCategory
+}
+
 // OnDecoded implements HclResource
 func (c *DashboardCategory) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)

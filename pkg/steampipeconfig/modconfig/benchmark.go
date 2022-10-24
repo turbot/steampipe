@@ -74,6 +74,11 @@ func (b *Benchmark) GetDeclRange() *hcl.Range {
 	return &b.DeclRange
 }
 
+// BlockType implements HclResource
+func (*Benchmark) BlockType() string {
+	return BlockTypeBenchmark
+}
+
 // OnDecoded implements HclResource
 func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	b.setBaseProperties(resourceMapProvider)

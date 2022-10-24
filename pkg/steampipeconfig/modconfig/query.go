@@ -209,6 +209,11 @@ func (q *Query) GetDeclRange() *hcl.Range {
 	return &q.DeclRange
 }
 
+// BlockType implements HclResource
+func (*Query) BlockType() string {
+	return BlockTypeQuery
+}
+
 // GetParams implements QueryProvider
 func (q *Query) GetParams() []*ParamDef {
 	return q.Params

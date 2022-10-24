@@ -34,7 +34,9 @@ func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	default:
 		err = fmt.Errorf("invalid name '%s' passed to ParseResourceName", fullName)
 	}
-
+	if !IsValidResourceItemType(res.ItemType) {
+		err = fmt.Errorf("invalid name '%s' passed to ParseResourceName", fullName)
+	}
 	return
 }
 

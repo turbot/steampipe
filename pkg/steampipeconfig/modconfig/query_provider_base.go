@@ -122,3 +122,7 @@ func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent 
 	queryProvider.SetArgs(args)
 	return nil
 }
+
+func (*QueryProviderBase) GetDescription() string {
+	return ""
+}

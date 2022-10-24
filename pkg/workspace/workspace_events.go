@@ -74,9 +74,9 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 			fmt.Println()
 			error_helpers.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
 			error_helpers.ShowWarning(strings.Join(res.Warnings, "\n"))
-			if w.onFileWatcherEventMessages != nil {
-				w.onFileWatcherEventMessages()
-			}
+		}
+		if w.onFileWatcherEventMessages != nil {
+			w.onFileWatcherEventMessages()
 		}
 	}
 	w.raiseDashboardChangedEvents(resourceMaps, prevResourceMaps)
