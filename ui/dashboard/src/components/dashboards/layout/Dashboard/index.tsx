@@ -54,9 +54,7 @@ const DashboardWrapper = ({
   if (
     search.value ||
     !dashboard ||
-    (!selectedDashboard &&
-      (dataMode === DashboardDataModeLive ||
-        dataMode === DashboardDataModeCLISnapshot))
+    (!selectedDashboard && dataMode === DashboardDataModeLive)
   ) {
     return null;
   }

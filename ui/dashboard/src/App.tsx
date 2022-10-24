@@ -38,6 +38,7 @@ const DashboardApp = ({
   return (
     <Routes>
       <Route path="/" element={dashboards} />
+      <Route path="/snapshot/:dashboard_name" element={dashboards} />
       <Route path="/:dashboard_name" element={dashboards} />
     </Routes>
   );
