@@ -58,8 +58,10 @@ type Workspace struct {
 	// channel used to send dashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
 	// count of workspace changed events - used to ignore first event
-	changeEventCount          int
-	preparedStatementFailures map[string]*steampipeconfig.PreparedStatementFailure
+	changeEventCount int
+	// avoid concurrent map access when multiple db connections may try to access preparedStatementFailures
+	preparedStatementFailureLock sync.Mutex
+	preparedStatementFailures    map[string]*steampipeconfig.PreparedStatementFailure
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -209,6 +211,10 @@ func (w *Workspace) ModfileExists() bool {
 }
 
 func (w *Workspace) HandlePreparedStatementFailures(failures map[string]error) {
+	// avoid concurrent map access when multiple db connections may try to access preparedStatementFailures
+	w.preparedStatementFailureLock.Lock()
+	defer w.preparedStatementFailureLock.Unlock()
+
 	// replace the map of failures with the current map
 	w.preparedStatementFailures = make(map[string]*steampipeconfig.PreparedStatementFailure)
 	for queryName, err := range failures {

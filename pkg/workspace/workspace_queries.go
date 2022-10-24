@@ -2,12 +2,12 @@ package workspace
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
