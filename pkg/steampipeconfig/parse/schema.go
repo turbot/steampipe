@@ -32,11 +32,7 @@ var WorkspaceProfileListBlockSchema = &hcl.BodySchema{
 }
 
 var WorkspaceProfileBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "base",
-		},
-	},
+
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       "options",

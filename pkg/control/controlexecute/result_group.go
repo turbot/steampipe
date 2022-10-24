@@ -154,7 +154,7 @@ func (r *ResultGroup) AllTagKeys() []string {
 			tags = append(tags, k)
 		}
 	}
-	tags = utils.StringSliceDistinct(tags)
+	tags = helpers.StringSliceDistinct(tags)
 	sort.Strings(tags)
 	return tags
 }
@@ -244,7 +244,7 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 	if r.Parent != nil {
 		r.Parent.addDimensionKeys(keys...)
 	}
-	r.DimensionKeys = utils.StringSliceDistinct(r.DimensionKeys)
+	r.DimensionKeys = helpers.StringSliceDistinct(r.DimensionKeys)
 	sort.Strings(r.DimensionKeys)
 }
 

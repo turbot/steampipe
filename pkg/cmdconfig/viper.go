@@ -22,7 +22,7 @@ func BootstrapViper(defaultWorkspaceProfile *modconfig.WorkspaceProfile) error {
 	setBaseDefaults()
 
 	// set defaults from defaultWorkspaceProfile
-	SetDefaultsFromWorkspaceProfile(defaultWorkspaceProfile)
+	SetDefaultsFromConfig(defaultWorkspaceProfile.ConfigMap())
 
 	// set defaults from env vars
 	setDefaultsFromEnv()
@@ -47,27 +47,6 @@ func TildefyPaths() error {
 		}
 	}
 	return nil
-}
-
-func SetDefaultsFromWorkspaceProfile(profile *modconfig.WorkspaceProfile) {
-	if profile.CloudHost != "" {
-		viper.SetDefault(constants.ArgCloudHost, profile.CloudHost)
-	}
-	if profile.CloudToken != "" {
-		viper.SetDefault(constants.ArgCloudToken, profile.CloudToken)
-	}
-	if profile.InstallDir != "" {
-		viper.SetDefault(constants.ArgInstallDir, profile.InstallDir)
-	}
-	if profile.ModLocation != "" {
-		viper.SetDefault(constants.ArgModLocation, profile.ModLocation)
-	}
-	if profile.SnapshotLocation != "" {
-		viper.SetDefault(constants.ArgSnapshotLocation, profile.SnapshotLocation)
-	}
-	if profile.WorkspaceDatabase != "" {
-		viper.SetDefault(constants.ArgWorkspaceDatabase, profile.WorkspaceDatabase)
-	}
 }
 
 // SetDefaultsFromConfig overrides viper default values from hcl config values

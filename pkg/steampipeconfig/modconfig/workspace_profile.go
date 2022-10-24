@@ -3,6 +3,7 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/zclconf/go-cty/cty"
 	"reflect"
@@ -19,9 +20,9 @@ type WorkspaceProfile struct {
 	Base              *WorkspaceProfile `hcl:"base"`
 
 	// options
-	ConnectionOptions *options.Connection
-	TerminalOptions   *options.Terminal
 	GeneralOptions    *options.General
+	TerminalOptions   *options.Terminal
+	ConnectionOptions *options.Connection
 	DeclRange         hcl.Range
 }
 
@@ -38,10 +39,19 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 	var diags hcl.Diagnostics
 	switch o := opts.(type) {
 	case *options.Connection:
+		if p.ConnectionOptions != nil {
+			diags = append(diags, duplicateOptionsBlockDiag(block))
+		}
 		p.ConnectionOptions = o
 	case *options.Terminal:
+		if p.TerminalOptions != nil {
+			diags = append(diags, duplicateOptionsBlockDiag(block))
+		}
 		p.TerminalOptions = o
 	case *options.General:
+		if p.GeneralOptions != nil {
+			diags = append(diags, duplicateOptionsBlockDiag(block))
+		}
 		p.GeneralOptions = o
 	default:
 		diags = append(diags, &hcl.Diagnostic{
@@ -51,6 +61,14 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 		})
 	}
 	return diags
+}
+
+func duplicateOptionsBlockDiag(block *hcl.Block) *hcl.Diagnostic {
+	return &hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("duplicate %s options block", block.Type),
+		Subject:  &block.DefRange,
+	}
 }
 
 func (p *WorkspaceProfile) Name() string {
@@ -95,4 +113,35 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	if p.WorkspaceDatabase == "" {
 		p.WorkspaceDatabase = p.Base.WorkspaceDatabase
 	}
+}
+
+// ConfigMap creates a config map containing all options to pass to viper
+func (p *WorkspaceProfile) ConfigMap() map[string]interface{} {
+	res := ConfigMap{}
+	// add non-empty properties to config map
+
+	res.SetStringItem(p.CloudHost, constants.ArgCloudHost)
+	res.SetStringItem(p.CloudToken, constants.ArgCloudToken)
+	res.SetStringItem(p.InstallDir, constants.ArgInstallDir)
+	res.SetStringItem(p.ModLocation, constants.ArgModLocation)
+	res.SetStringItem(p.SnapshotLocation, constants.ArgSnapshotLocation)
+	res.SetStringItem(p.WorkspaceDatabase, constants.ArgWorkspaceDatabase)
+
+	// now add options
+	// build flat config map with order or precedence (low to high): general, terminal, connection
+	// this means if (for example) 'search-path' is set in both terminal and connection options,
+	// the value from connection options will have precedence
+	// however, we also store all values scoped by their options type, so we will store:
+	// 'database.search-path', 'terminal.search-path' AND 'search-path' (which will be equal to 'terminal.search-path')
+	if p.GeneralOptions != nil {
+		res.PopulateConfigMapForOptions(p.GeneralOptions)
+	}
+	if p.TerminalOptions != nil {
+		res.PopulateConfigMapForOptions(p.TerminalOptions)
+	}
+	if p.ConnectionOptions != nil {
+		res.PopulateConfigMapForOptions(p.ConnectionOptions)
+	}
+
+	return res
 }

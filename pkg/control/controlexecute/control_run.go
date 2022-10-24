@@ -182,8 +182,8 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 	utils.LogTime("ControlRun.setSearchPath start")
 	defer utils.LogTime("ControlRun.setSearchPath end")
 
-	searchPath := []string{}
-	searchPathPrefix := []string{}
+	var searchPath []string
+	var searchPathPrefix []string
 
 	if r.Control.SearchPath == nil && r.Control.SearchPathPrefix == nil {
 		return nil
