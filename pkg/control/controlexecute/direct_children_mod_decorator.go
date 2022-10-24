@@ -67,16 +67,6 @@ func (r DirectChildrenModDecorator) GetMod() *modconfig.Mod {
 	return r.Mod
 }
 
-// AddReference implements HclResource
-func (r DirectChildrenModDecorator) AddReference(ref *modconfig.ResourceReference) {
-	r.Mod.AddReference(ref)
-}
-
-// GetReferences implements HclResource
-func (r DirectChildrenModDecorator) GetReferences() []*modconfig.ResourceReference {
-	return r.Mod.GetReferences()
-}
-
 // BlockType implements HclResource
 func (r DirectChildrenModDecorator) BlockType() string {
 	return r.Mod.BlockType()
@@ -93,6 +83,7 @@ func (r DirectChildrenModDecorator) GetDeclRange() *hcl.Range {
 	return &r.Mod.DeclRange
 }
 
+// OnDecoded implements HclResource
 func (r DirectChildrenModDecorator) OnDecoded(block *hcl.Block, resourceMapProvider modconfig.ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
