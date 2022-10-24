@@ -9,6 +9,7 @@ import (
 )
 
 const actorAPI = "/api/v1/actor"
+const loginTokenAPI = "/api/latest/login/token"
 const actorWorkspacesAPI = "/api/v1/actor/workspace"
 const passwordAPIFormat = "/api/v1/user/%s/password"
 const userWorkspaceFormat = "/api/v1/user/%s/workspace"

@@ -7,6 +7,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 func getBearerToken(token string) string {
@@ -21,7 +22,11 @@ func getBaseApiUrl() string {
 }
 
 func getWorkspaces(baseURL, bearer string, client *http.Client) ([]any, error) {
-	resp, err := fetchAPIData(baseURL+actorWorkspacesAPI, bearer, client)
+	urlPath, err := url.JoinPath(baseURL, actorWorkspacesAPI)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := fetchAPIData(urlPath, bearer, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -49,7 +54,11 @@ func getWorkspaceData(itemsArray []any, identityHandle, workspaceHandle string) 
 }
 
 func getActor(baseURL, bearer string, client *http.Client) (string, string, error) {
-	resp, err := fetchAPIData(baseURL+actorAPI, bearer, client)
+	urlPath, err := url.JoinPath(baseURL, actorAPI)
+	if err != nil {
+		return "", "", err
+	}
+	resp, err := fetchAPIData(urlPath, bearer, client)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get actor from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -68,8 +77,12 @@ func getActor(baseURL, bearer string, client *http.Client) (string, string, erro
 }
 
 func getPassword(baseURL, userHandle, bearer string, client *http.Client) (string, error) {
-	url := baseURL + fmt.Sprintf(passwordAPIFormat, userHandle)
-	resp, err := fetchAPIData(url, bearer, client)
+	urlPath, err := url.JoinPath(baseURL, fmt.Sprintf(passwordAPIFormat, userHandle))
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := fetchAPIData(urlPath, bearer, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get password from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -81,8 +94,8 @@ func getPassword(baseURL, userHandle, bearer string, client *http.Client) (strin
 	return password, nil
 }
 
-func fetchAPIData(url, bearer string, client *http.Client) (map[string]any, error) {
-	req, err := http.NewRequest("GET", url, nil)
+func fetchAPIData(urlPath, bearer string, client *http.Client) (map[string]any, error) {
+	req, err := http.NewRequest("GET", urlPath, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -325,8 +325,7 @@ func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboa
 		// start browser if required
 		if viper.GetBool(constants.ArgBrowser) {
 			url := buildDashboardURL(serverPort, w)
-
-			if err := dashboardserver.OpenBrowser(url); err != nil {
+			if err := utils.OpenBrowser(url); err != nil {
 				log.Println("[TRACE] dashboard server started but failed to start client", err)
 			}
 		}

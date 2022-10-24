@@ -3,6 +3,7 @@ package cloud
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 func GetUserWorkspace(token string) (string, error) {
@@ -23,8 +24,12 @@ func GetUserWorkspace(token string) (string, error) {
 }
 
 func getUserWorkspaceHandle(baseURL, bearer, userHandle string, client *http.Client) (string, error) {
-	url := baseURL + fmt.Sprintf(userWorkspaceFormat, userHandle) + "?limit=2"
-	resp, err := fetchAPIData(url, bearer, client)
+	urlPath, err := url.JoinPath(baseURL, fmt.Sprintf(userWorkspaceFormat, userHandle)+"?limit=2")
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := fetchAPIData(urlPath, bearer, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get user workspace from Steampipe Cloud API: %s ", err.Error())
 	}

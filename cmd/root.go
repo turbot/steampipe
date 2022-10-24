@@ -315,6 +315,7 @@ func AddCommands() {
 		pluginManagerCmd(),
 		dashboardCmd(),
 		variableCmd(),
+		loginCmd(),
 	)
 }
 

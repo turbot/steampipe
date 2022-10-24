@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 )
@@ -57,7 +58,7 @@ func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) 
 func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
 
 	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
-
+	baseUrl := getBaseApiUrl()
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
@@ -65,11 +66,11 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	user := parts[0]
 	worskpaceHandle := parts[1]
 
-	url := fmt.Sprintf("https://%s/api/v0/user/%s/workspace/%s/snapshot",
-		viper.GetString(constants.ArgCloudHost),
-		user,
-		worskpaceHandle)
-
+	urlPath, err := url.JoinPath(baseUrl,
+		fmt.Sprintf("api/v0/user/%s/workspace/%s/snapshot", user, worskpaceHandle))
+	if err != nil {
+		return "", err
+	}
 	// get the cloud token (we have already verifuied this was provided)
 	token := viper.GetString(constants.ArgCloudToken)
 	// create a 'bearer' string by appending the access token
@@ -101,7 +102,7 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyStr))
+	req, err := http.NewRequest("POST", urlPath, bytes.NewBuffer(bodyStr))
 	if err != nil {
 		return "", err
 	}
