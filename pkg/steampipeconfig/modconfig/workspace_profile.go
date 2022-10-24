@@ -11,12 +11,12 @@ import (
 
 type WorkspaceProfile struct {
 	ProfileName       string            `hcl:"name,label" cty:"name"`
-	CloudHost         string            `hcl:"cloud_host,optional" cty:"cloud_host"`
-	CloudToken        string            `hcl:"cloud_token,optional" cty:"cloud_token"`
-	InstallDir        string            `hcl:"install_dir,optional" cty:"install_dir"`
-	ModLocation       string            `hcl:"mod_location,optional" cty:"mod_location"`
-	SnapshotLocation  string            `hcl:"snapshot_location,optional" cty:"snapshot_location"`
-	WorkspaceDatabase string            `hcl:"workspace_database,optional" cty:"workspace_database"`
+	CloudHost         *string           `hcl:"cloud_host,optional" cty:"cloud_host"`
+	CloudToken        *string           `hcl:"cloud_token,optional" cty:"cloud_token"`
+	InstallDir        *string           `hcl:"install_dir,optional" cty:"install_dir"`
+	ModLocation       *string           `hcl:"mod_location,optional" cty:"mod_location"`
+	SnapshotLocation  *string           `hcl:"snapshot_location,optional" cty:"snapshot_location"`
+	WorkspaceDatabase *string           `hcl:"workspace_database,optional" cty:"workspace_database"`
 	Base              *WorkspaceProfile `hcl:"base"`
 
 	// options
@@ -84,33 +84,27 @@ func (p *WorkspaceProfile) OnDecoded() hcl.Diagnostics {
 	return nil
 }
 
-//func (c *WorkspaceProfile) AddReference(*ResourceReference)     {}
-//func (c *WorkspaceProfile) GetReferences() []*ResourceReference { return nil }
-//func (c *WorkspaceProfile) GetDeclRange() *hcl.Range {
-//	return &c.DeclRange
-//}
-
 func (p *WorkspaceProfile) setBaseProperties() {
 	if p.Base == nil {
 		return
 	}
 
-	if p.CloudHost == "" {
+	if p.CloudHost == nil {
 		p.CloudHost = p.Base.CloudHost
 	}
-	if p.CloudToken == "" {
+	if p.CloudToken == nil {
 		p.CloudToken = p.Base.CloudToken
 	}
-	if p.InstallDir == "" {
+	if p.InstallDir == nil {
 		p.InstallDir = p.Base.InstallDir
 	}
-	if p.ModLocation == "" {
+	if p.ModLocation == nil {
 		p.ModLocation = p.Base.ModLocation
 	}
-	if p.SnapshotLocation == "" {
+	if p.SnapshotLocation == nil {
 		p.SnapshotLocation = p.Base.SnapshotLocation
 	}
-	if p.WorkspaceDatabase == "" {
+	if p.WorkspaceDatabase == nil {
 		p.WorkspaceDatabase = p.Base.WorkspaceDatabase
 	}
 }

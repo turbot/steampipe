@@ -10,10 +10,10 @@ import (
 
 type ConfigMap map[string]interface{}
 
-// SetStringItem checks is string is non-empty and if so, add to map with given key
-func (m ConfigMap) SetStringItem(argValue string, argName string) {
-	if argValue != "" {
-		m[argName] = argValue
+// SetStringItem checks is string pointer is non-nul and if so, add to map with given key
+func (m ConfigMap) SetStringItem(argValue *string, argName string) {
+	if argValue != nil {
+		m[argName] = *argValue
 	}
 }
 
@@ -21,10 +21,6 @@ func (m ConfigMap) SetStringItem(argValue string, argName string) {
 // NOTE: this mutates configMap
 func (m ConfigMap) PopulateConfigMapForOptions(o options.Options) {
 	for k, v := range o.ConfigMap() {
-		// skip empty string
-		if s, ok := v.(string); ok && s == "" {
-			continue
-		}
 		m[k] = v
 		// also store a scoped version of the config property
 		m[getScopedKey(o, k)] = v
