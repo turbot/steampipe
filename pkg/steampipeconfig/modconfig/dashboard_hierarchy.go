@@ -303,7 +303,7 @@ func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
 
 // AddCategory implements EdgeAndNodeProvider
 func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) hcl.Diagnostics {
-	categoryName := category.UnqualifiedName
+	categoryName := category.ShortName
 	if _, ok := h.Categories[categoryName]; ok {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,

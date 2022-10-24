@@ -29,7 +29,6 @@ func serviceCmd() *cobra.Command {
 		Use:   "service [command]",
 		Args:  cobra.NoArgs,
 		Short: "Steampipe service management",
-		// TODO(nw) expand long description
 		Long: `Steampipe service management.
 
 Run Steampipe as a local service, exposing it as a database endpoint for
