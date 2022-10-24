@@ -144,5 +144,16 @@ func init() {
 			validator:   exactlyNArgs(1),
 			description: "Set a prefix to the current search-path",
 		},
+		constants.CmdAutoComplete: {
+			title:       "auto-complete",
+			handler:     setAutoComplete,
+			validator:   booleanValidator(constants.CmdAutoComplete, validatorFromArgsOf(constants.CmdAutoComplete)),
+			description: "Enable or disable auto-completion",
+			args: []metaQueryArg{
+				{value: constants.ArgOn, description: "Turn on auto-completion"},
+				{value: constants.ArgOff, description: "Turn off auto-completion"},
+			},
+			completer: completerFromArgsOf(constants.CmdAutoComplete),
+		},
 	}
 }

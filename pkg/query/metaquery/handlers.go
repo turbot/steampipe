@@ -416,3 +416,8 @@ func buildTable(rows [][]string, autoMerge bool) string {
 	}
 	return t.Render()
 }
+
+func setAutoComplete(ctx context.Context, input *HandlerInput) error {
+	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
+	return nil
+}

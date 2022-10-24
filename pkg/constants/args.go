@@ -64,6 +64,7 @@ var ArgOutput = ArgFromMetaquery(CmdOutput)
 var ArgSeparator = ArgFromMetaquery(CmdSeparator)
 var ArgHeader = ArgFromMetaquery(CmdHeaders)
 var ArgMultiLine = ArgFromMetaquery(CmdMulti)
+var ArgAutoComplete = ArgFromMetaquery(CmdAutoComplete)
 
 // BoolToOnOff converts a boolean value onto the string "on" or "off"
 func BoolToOnOff(val bool) string {

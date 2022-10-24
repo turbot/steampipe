@@ -33,8 +33,10 @@ var terminalSeparator = ","
 var terminalTiming = false
 var terminalSearchPath = "aws,gcp"
 var generalUpdateCheck = "true"
+var terminalAutoComplete = true
 
 var workspaceMulti = true
+var workspaceAutoComplete = true
 var workspaceOutput = "json"
 var workspaceSearchPath = "bar,aws,gcp"
 var workspaceSearchPathPrefix = "foobar"
@@ -227,12 +229,13 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
-				Output:     &terminalOutput,
-				Separator:  &terminalSeparator,
-				Header:     &terminalHeader,
-				Multi:      &terminalMulti,
-				Timing:     &terminalTiming,
-				SearchPath: &terminalSearchPath,
+				Output:       &terminalOutput,
+				Separator:    &terminalSeparator,
+				Header:       &terminalHeader,
+				Multi:        &terminalMulti,
+				Timing:       &terminalTiming,
+				SearchPath:   &terminalSearchPath,
+				AutoComplete: &terminalAutoComplete,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
@@ -305,6 +308,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Timing:           &terminalTiming,
 				SearchPath:       &terminalSearchPath,
 				SearchPathPrefix: &workspaceSearchPathPrefix,
+				AutoComplete:     &terminalAutoComplete,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
@@ -372,6 +376,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Timing:           &terminalTiming,
 				SearchPath:       &workspaceSearchPath,
 				SearchPathPrefix: &workspaceSearchPathPrefix,
+				AutoComplete:     &workspaceAutoComplete,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
@@ -434,12 +439,13 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
-				Output:     &terminalOutput,
-				Separator:  &terminalSeparator,
-				Header:     &terminalHeader,
-				Multi:      &terminalMulti,
-				Timing:     &terminalTiming,
-				SearchPath: &terminalSearchPath,
+				Output:       &terminalOutput,
+				Separator:    &terminalSeparator,
+				Header:       &terminalHeader,
+				Multi:        &terminalMulti,
+				Timing:       &terminalTiming,
+				SearchPath:   &terminalSearchPath,
+				AutoComplete: &terminalAutoComplete,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
@@ -460,12 +466,13 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
-				Output:     &terminalOutput,
-				Separator:  &terminalSeparator,
-				Header:     &terminalHeader,
-				Multi:      &terminalMulti,
-				Timing:     &terminalTiming,
-				SearchPath: &terminalSearchPath,
+				Output:       &terminalOutput,
+				Separator:    &terminalSeparator,
+				Header:       &terminalHeader,
+				Multi:        &terminalMulti,
+				Timing:       &terminalTiming,
+				SearchPath:   &terminalSearchPath,
+				AutoComplete: &terminalAutoComplete,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,

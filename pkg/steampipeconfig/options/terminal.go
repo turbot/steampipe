@@ -17,6 +17,7 @@ type Terminal struct {
 	SearchPath       *string `hcl:"search_path"`
 	SearchPathPrefix *string `hcl:"search_path_prefix"`
 	Watch            *bool   `hcl:"watch"`
+	AutoComplete     *bool   `hcl:"auto_complete"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -49,6 +50,9 @@ func (t *Terminal) ConfigMap() map[string]interface{} {
 	if t.Watch != nil {
 		res[constants.ArgWatch] = t.Watch
 	}
+	if t.AutoComplete != nil {
+		res[constants.ArgAutoComplete] = t.AutoComplete
+	}
 	return res
 }
 
@@ -80,6 +84,9 @@ func (t *Terminal) Merge(otherOptions Options) {
 		}
 		if o.Watch != nil {
 			t.Watch = o.Watch
+		}
+		if o.AutoComplete != nil {
+			t.AutoComplete = o.AutoComplete
 		}
 	}
 }
@@ -128,6 +135,11 @@ func (t *Terminal) String() string {
 		str = append(str, "  Watch: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  Watch: %v", *t.Watch))
+	}
+	if t.AutoComplete == nil {
+		str = append(str, "  AutoComplete: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  AutoComplete: %v", *t.AutoComplete))
 	}
 	return strings.Join(str, "\n")
 }
