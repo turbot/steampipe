@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
+	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 )
 
@@ -64,8 +65,8 @@ func (l *WorkspaceProfileLoader) getImplicitWorkspace(name string) *modconfig.Wo
 	if IsCloudWorkspaceIdentifier(name) {
 		log.Printf("[TRACE] getImplicitWorkspace - %s is implicit workspace: SnapshotLocation=%s, WorkspaceDatabase=%s", name, name, name)
 		return &modconfig.WorkspaceProfile{
-			SnapshotLocation:  name,
-			WorkspaceDatabase: name,
+			SnapshotLocation:  utils.ToStringPointer(name),
+			WorkspaceDatabase: utils.ToStringPointer(name),
 		}
 	}
 	return nil

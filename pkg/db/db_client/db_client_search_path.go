@@ -86,9 +86,12 @@ func (c *DbClient) GetRequiredSessionSearchPath() []string {
 }
 
 func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPath, searchPathPrefix []string) ([]string, error) {
+	// strip empty elements from search path and prefix
+	customSearchPath = helpers.RemoveFromStringSlice(customSearchPath, "")
+	searchPathPrefix = helpers.RemoveFromStringSlice(searchPathPrefix, "")
+
 	// store custom search path and search path prefix
 	c.searchPathPrefix = searchPathPrefix
-
 	var requiredSearchPath []string
 	// if a search path was passed, add 'internal' to the end
 	if len(customSearchPath) > 0 {

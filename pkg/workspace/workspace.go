@@ -83,15 +83,6 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 	return workspace, nil
 }
 
-// NewSourceSnapshotWorkspace creates a Workspace which contains ONLY source snapshoyt paths
-func NewSourceSnapshotWorkspace(sourceSnapshots []string) *Workspace {
-	return &Workspace{
-		SourceSnapshots: sourceSnapshots,
-		// empty mod to avoid referencing crashes
-		Mod: &modconfig.Mod{},
-	}
-}
-
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
 // this is use for the variable list command
 func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error) {

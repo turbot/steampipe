@@ -52,7 +52,6 @@ const (
 	ArgShare               = "share"
 	ArgSnapshot            = "snapshot"
 	ArgSnapshotTag         = "snapshot-tag"
-	ArgSourceSnapshot      = "source-snapshot"
 	ArgWorkspaceProfile    = "workspace"
 	ArgModLocation         = "mod-location"
 	ArgSnapshotLocation    = "snapshot-location"

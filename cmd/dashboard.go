@@ -10,7 +10,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe/pkg/cloud"
@@ -65,7 +64,6 @@ The current mod is the working directory, or the directory specified by the --mo
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringArrayFlag(constants.ArgSourceSnapshot, "", nil, "Specify one or more snapshots to display").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
@@ -204,19 +202,6 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 }
 
 func initDashboard(ctx context.Context) *initialisation.InitData {
-	sourceSnapshots := viper.GetStringSlice(constants.ArgSourceSnapshot)
-	if len(sourceSnapshots) > 0 {
-		for _, s := range sourceSnapshots {
-			if !filehelpers.FileExists(s) {
-				return initialisation.NewErrorInitData(fmt.Errorf("source snapshot' %s' does not exist", s))
-			}
-		}
-		dashboardserver.OutputWait(ctx, "Loading Source Snapshots")
-		w := workspace.NewSourceSnapshotWorkspace(sourceSnapshots)
-		// return init data containing only this workspace - do not initialise it
-		return initialisation.NewInitData(w)
-	}
-
 	dashboardserver.OutputWait(ctx, "Loading Workspace")
 	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
 	if err != nil {

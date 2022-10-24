@@ -63,7 +63,6 @@ func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*
 
 }
 func parseWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string]*modconfig.WorkspaceProfile, error) {
-
 	// we may need to decode more than once as we gather dependencies as we go
 	// continue decoding as long as the number of unresolved blocks decreases
 	prevUnresolvedBlocks := 0
@@ -82,7 +81,7 @@ func parseWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string]
 		// if the number of unresolved blocks has NOT reduced, fail
 		if prevUnresolvedBlocks != 0 && unresolvedBlocks >= prevUnresolvedBlocks {
 			str := parseCtx.FormatDependencies()
-			return nil, fmt.Errorf("failed to resolve mod dependencies after %d attempts\nDependencies:\n%s", attempts+1, str)
+			return nil, fmt.Errorf("failed to resolve workspace profile dependencies after %d attempts\nDependencies:\n%s", attempts+1, str)
 		}
 		// update prevUnresolvedBlocks
 		prevUnresolvedBlocks = unresolvedBlocks
@@ -120,16 +119,45 @@ func decodeWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string
 	return profileMap, diags
 }
 
-// func DecodeWorkspaceProfiles(content *hcl.BodyContent, workspaceProfilePath string) map[string]*modconfig.WorkspaceProfile {
-// }
 func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseContext) (*modconfig.WorkspaceProfile, *decodeResult) {
 	res := newDecodeResult()
 	// get shell resource
 	resource := modconfig.NewWorkspaceProfile(block)
 
-	diags := gohcl.DecodeBody(block.Body, parseCtx.EvalCtx, resource)
+	// do a partial decode to get options blocks into workspaceProfileOptions, with all other attributes in rest
+	workspaceProfileOptions, rest, diags := block.Body.PartialContent(WorkspaceProfileBlockSchema)
+	if diags.HasErrors() {
+		res.handleDecodeDiags(diags)
+		return nil, res
+	}
+
+	diags = gohcl.DecodeBody(rest, parseCtx.EvalCtx, resource)
 	if len(diags) > 0 {
 		res.handleDecodeDiags(diags)
+	}
+
+	for _, block := range workspaceProfileOptions.Blocks {
+		switch block.Type {
+		case "options":
+			// if we already found settings, fail
+			opts, moreDiags := DecodeOptions(block)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+				break
+			}
+			moreDiags = resource.SetOptions(opts, block)
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+			}
+
+		default:
+			// this should never happen
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", block.Type),
+				Subject:  &block.DefRange,
+			})
+		}
 	}
 
 	handleWorkspaceProfileDecodeResult(resource, res, block, parseCtx)

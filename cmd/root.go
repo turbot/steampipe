@@ -169,7 +169,7 @@ func initGlobalConfig() {
 
 	// 4) if an explicit workspace profile was set, add to viper as highest precedence default
 	if viper.IsSet(constants.ArgWorkspaceProfile) {
-		cmdconfig.SetDefaultsFromWorkspaceProfile(workspaceProfile)
+		cmdconfig.SetDefaultsFromConfig(workspaceProfile.ConfigMap())
 		// tildefy all paths in viper
 		// (this has already been done in BootstrapViper but we may have added a path from the workspace profile)
 		err = cmdconfig.TildefyPaths()

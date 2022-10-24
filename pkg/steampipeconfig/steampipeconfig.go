@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
@@ -59,7 +57,7 @@ func (c *SteampipeConfig) Validate() error {
 
 // ConfigMap creates a config map to pass to viper
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
-	res := map[string]interface{}{}
+	res := modconfig.ConfigMap{}
 
 	// build flat config map with order or precedence (low to high): general, database, terminal
 	// this means if (for example) 'search-path' is set in both database and terminal options,
@@ -67,33 +65,16 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	// however, we also store all values scoped by their options type, so we will store:
 	// 'database.search-path', 'terminal.search-path' AND 'search-path' (which will be equal to 'terminal.search-path')
 	if c.GeneralOptions != nil {
-		c.populateConfigMapForOptions(c.GeneralOptions, res)
+		res.PopulateConfigMapForOptions(c.GeneralOptions)
 	}
 	if c.DatabaseOptions != nil {
-		c.populateConfigMapForOptions(c.DatabaseOptions, res)
+		res.PopulateConfigMapForOptions(c.DatabaseOptions)
 	}
 	if c.TerminalOptions != nil {
-		c.populateConfigMapForOptions(c.TerminalOptions, res)
+		res.PopulateConfigMapForOptions(c.TerminalOptions)
 	}
 
 	return res
-}
-
-// populate the config map for a given options object
-// NOTE: this mutates configMap
-func (c *SteampipeConfig) populateConfigMapForOptions(o options.Options, configMap map[string]interface{}) {
-	for k, v := range o.ConfigMap() {
-		configMap[k] = v
-		// also store a scoped version of the config property
-		configMap[getScopedKey(o, k)] = v
-	}
-}
-
-// generated a scoped key for the config property. For example if o is a database options object and k is 'search-path'
-// the scoped key will be 'database.search-path'
-func getScopedKey(o options.Options, k string) string {
-	t := reflect.TypeOf(helpers.DereferencePointer(o)).Name()
-	return fmt.Sprintf("%s.%s", strings.ToLower(t), k)
 }
 
 func (c *SteampipeConfig) SetOptions(opts options.Options) {
