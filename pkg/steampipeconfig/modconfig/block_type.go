@@ -109,8 +109,10 @@ var ValidResourceItemTypes = []string{
 	BlockTypeWorkspaceProfile,
 	// local is not an actual block name but is a resource type
 	"local",
-	// references have this item type
+	// references
 	"ref",
+	// variables
+	"var",
 }
 
 func IsValidResourceItemType(blockType string) bool {
