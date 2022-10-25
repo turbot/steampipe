@@ -41,6 +41,7 @@ func WebLogin() (string, error) {
 	// add in id query string
 	browserUrl = fmt.Sprintf("%s?r=%s", browserUrl, id)
 
+	fmt.Printf("\nOpening %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
 		return "", err
@@ -65,11 +66,17 @@ func GetLoginToken(id, code string) (string, error) {
 	var resp = map[string]any{}
 	err = getFromAPI(urlPath, "", client, &resp)
 	if err != nil {
-		return "", err
+
+		return "", handleGetLoginTokenError(err)
+
 	}
 
 	token := resp["token"].(string)
 	return token, nil
+}
+
+func handleGetLoginTokenError(err error) error {
+	return err
 }
 
 // SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.sptt
