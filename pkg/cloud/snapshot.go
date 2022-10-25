@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
@@ -54,7 +55,18 @@ func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) 
 }
 
 func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
+	// we do not know whether this is an org or a user workspace so try uploading to each in turn
+	snapshotUrl, err := uploadSnapshotToTarget(snapshot, share, "user")
+	if err.Error() == "403 Forbidden" {
+		snapshotUrl, err = uploadSnapshotToTarget(snapshot, share, "org")
+	}
+	return snapshotUrl, err
+}
 
+func uploadSnapshotToTarget(snapshot *dashboardtypes.SteampipeSnapshot, share bool, target string) (string, error) {
+	if !helpers.StringSliceContains([]string{"user", "org"}, target) {
+		return "", fmt.Errorf("invalid target '%s', must be either 'org' or 'user'")
+	}
 	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 	baseUrl := getBaseApiUrl()
 	parts := strings.Split(cloudWorkspace, "/")
@@ -65,7 +77,7 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	worskpaceHandle := parts[1]
 
 	urlPath, err := url.JoinPath(baseUrl,
-		fmt.Sprintf("api/v0/user/%s/workspace/%s/snapshot", user, worskpaceHandle))
+		fmt.Sprintf("api/v0/%s/%s/workspace/%s/snapshot", target, user, worskpaceHandle))
 	if err != nil {
 		return "", err
 	}
@@ -107,8 +119,9 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	}
 
 	snapshotId := resp["id"].(string)
-	snapshotUrl := fmt.Sprintf("https://%s/user/%s/workspace/%s/snapshot/%s",
+	snapshotUrl := fmt.Sprintf("https://%s/%s/%s/workspace/%s/snapshot/%s",
 		viper.GetString(constants.ArgCloudHost),
+		target,
 		user,
 		worskpaceHandle,
 		snapshotId)
