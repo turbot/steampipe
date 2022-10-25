@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
@@ -55,38 +54,29 @@ func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) 
 }
 
 func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
-	// we do not know whether this is an org or a user workspace so try uploading to each in turn
-	snapshotUrl, err := uploadSnapshotToTarget(snapshot, share, "user")
-	if err.Error() == "403 Forbidden" {
-		snapshotUrl, err = uploadSnapshotToTarget(snapshot, share, "org")
-	}
-	return snapshotUrl, err
-}
-
-func uploadSnapshotToTarget(snapshot *dashboardtypes.SteampipeSnapshot, share bool, target string) (string, error) {
-	if !helpers.StringSliceContains([]string{"user", "org"}, target) {
-		return "", fmt.Errorf("invalid target '%s', must be either 'org' or 'user'")
-	}
-	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 	baseUrl := getBaseApiUrl()
+	client := &http.Client{}
+	bearer := getBearerToken(viper.GetString(constants.ArgCloudToken))
+	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
+
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
 	}
-	user := parts[0]
+	identity := parts[0]
 	worskpaceHandle := parts[1]
 
-	urlPath, err := url.JoinPath(baseUrl,
-		fmt.Sprintf("api/v0/%s/%s/workspace/%s/snapshot", target, user, worskpaceHandle))
+	// no determine whether this is a user or org workspace
+	workspaceType, err := getWorkspaceType(identity, worskpaceHandle, baseUrl, bearer, client)
 	if err != nil {
 		return "", err
 	}
-	// get the cloud token (we have already verifuied this was provided)
-	token := viper.GetString(constants.ArgCloudToken)
-	// create a 'bearer' string by appending the access token
-	var bearer = "Bearer " + token
 
-	client := &http.Client{}
+	urlPath, err := url.JoinPath(baseUrl,
+		fmt.Sprintf("api/v0/%s/%s/workspace/%s/snapshot", workspaceType, identity, worskpaceHandle))
+	if err != nil {
+		return "", err
+	}
 
 	// set the visibility
 	visibility := "workspace"
@@ -121,12 +111,30 @@ func uploadSnapshotToTarget(snapshot *dashboardtypes.SteampipeSnapshot, share bo
 	snapshotId := resp["id"].(string)
 	snapshotUrl := fmt.Sprintf("https://%s/%s/%s/workspace/%s/snapshot/%s",
 		viper.GetString(constants.ArgCloudHost),
-		target,
-		user,
+		workspaceType,
+		identity,
 		worskpaceHandle,
 		snapshotId)
 
 	return snapshotUrl, nil
+}
+
+func getWorkspaceType(identityHandle, workspaceHandle, baseUrl, bearer string, client *http.Client) (string, error) {
+	workspaces, err := getWorkspaces(baseUrl, bearer, client)
+	if err != nil {
+		return "", err
+	}
+	for _, w := range workspaces {
+		workspace := w.(map[string]any)
+		if workspace["handle"].(string) == workspaceHandle {
+			identity := workspace["identity"].(map[string]any)
+			if identity["handle"].(string) == identityHandle {
+				workspaceType := identity["type"].(string)
+				return workspaceType, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("workspace %s not found", workspaceHandle)
 }
 
 func getTags() map[string]any {

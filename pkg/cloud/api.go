@@ -40,7 +40,6 @@ func getWorkspaces(baseURL, bearer string, client *http.Client) ([]any, error) {
 		return items.([]any), nil
 	}
 	return nil, nil
-
 }
 
 func getWorkspaceData(itemsArray []any, identityHandle, workspaceHandle string) map[string]any {
