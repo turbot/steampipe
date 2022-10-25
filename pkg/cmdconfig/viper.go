@@ -97,22 +97,26 @@ func setDefaultsFromEnv() {
 	}
 
 	for k, v := range envMappings {
-		if val, ok := os.LookupEnv(k); ok {
-			switch v.varType {
-			case "string":
-				viper.SetDefault(v.configVar, val)
-			case "bool":
-				if boolVal, err := types.ToBool(val); err == nil {
-					viper.SetDefault(v.configVar, boolVal)
-				}
-			case "int":
-				if intVal, err := types.ToInt64(val); err == nil {
-					viper.SetDefault(v.configVar, intVal)
-				}
-			default:
-				// must be an invalid value in the map above
-				panic(fmt.Sprintf("invalid env var mapping type: %s", v.varType))
+		SetDefaultFromEnv(k, v.configVar, v.varType)
+	}
+}
+
+func SetDefaultFromEnv(k string, configVar string, varType string) {
+	if val, ok := os.LookupEnv(k); ok {
+		switch varType {
+		case "string":
+			viper.SetDefault(configVar, val)
+		case "bool":
+			if boolVal, err := types.ToBool(val); err == nil {
+				viper.SetDefault(configVar, boolVal)
 			}
+		case "int":
+			if intVal, err := types.ToInt64(val); err == nil {
+				viper.SetDefault(configVar, intVal)
+			}
+		default:
+			// must be an invalid value in the map above
+			panic(fmt.Sprintf("invalid env var mapping type: %s", varType))
 		}
 	}
 }

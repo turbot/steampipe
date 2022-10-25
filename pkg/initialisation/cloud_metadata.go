@@ -1,7 +1,6 @@
 package initialisation
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -26,7 +25,7 @@ func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
-			return nil, fmt.Errorf("cloud token must be set to connect to workspace %s", workspaceDatabase)
+			return nil, constants.MissingCloudTokenError
 		}
 
 		// so we have a database and a token - build the connection string and set it in viper

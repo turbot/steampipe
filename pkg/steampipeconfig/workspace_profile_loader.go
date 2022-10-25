@@ -2,6 +2,8 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -13,6 +15,8 @@ var GlobalWorkspaceProfile *modconfig.WorkspaceProfile
 type WorkspaceProfileLoader struct {
 	workspaceProfiles    map[string]*modconfig.WorkspaceProfile
 	workspaceProfilePath string
+	DefaultProfile       *modconfig.WorkspaceProfile
+	ConfiguredProfile    *modconfig.WorkspaceProfile
 }
 
 func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
@@ -23,15 +27,33 @@ func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLo
 	}
 	loader.workspaceProfiles = workspaceProfiles
 
+	defaultProfile, err := loader.get("default")
+	if err != nil {
+		// there must always be a default - this should have been added by parse.LoadWorkspaceProfiles
+		return nil, err
+	}
+	loader.DefaultProfile = defaultProfile
+
+	if viper.IsSet(constants.ArgWorkspaceProfile) {
+		configuredProfile, err := loader.get(viper.GetString(constants.ArgWorkspaceProfile))
+		if err != nil {
+			// could not find configured profile
+			return nil, err
+		}
+		loader.ConfiguredProfile = configuredProfile
+	}
+
 	return loader, nil
 }
 
-func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile, error) {
-	// get all the config files in the directory
-	return parse.LoadWorkspaceProfiles(l.workspaceProfilePath)
+func (l *WorkspaceProfileLoader) GetActiveWorkspaceProfile() *modconfig.WorkspaceProfile {
+	if l.ConfiguredProfile != nil {
+		return l.ConfiguredProfile
+	}
+	return l.DefaultProfile
 }
 
-func (l *WorkspaceProfileLoader) Get(name string) (*modconfig.WorkspaceProfile, error) {
+func (l *WorkspaceProfileLoader) get(name string) (*modconfig.WorkspaceProfile, error) {
 	if workspaceProfile, ok := l.workspaceProfiles[name]; ok {
 		return workspaceProfile, nil
 	}
@@ -41,6 +63,11 @@ func (l *WorkspaceProfileLoader) Get(name string) (*modconfig.WorkspaceProfile, 
 	}
 
 	return nil, fmt.Errorf("workspace profile %s does not exist", name)
+}
+
+func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile, error) {
+	// get all the config files in the directory
+	return parse.LoadWorkspaceProfiles(l.workspaceProfilePath)
 }
 
 /*

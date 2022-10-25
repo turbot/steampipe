@@ -295,12 +295,20 @@ func publishSnapshotIfNeeded(snapshot *dashboardtypes.SteampipeSnapshot) error {
 
 	message, err := cloud.PublishSnapshot(snapshot, shouldShare)
 	if err != nil {
-		return err
+		// reword "402 Payment Required" error
+		return handlePublishSnapshotError(err)
 	}
 	if viper.GetBool(constants.ArgProgress) {
 		fmt.Println(message)
 	}
 	return nil
+}
+
+func handlePublishSnapshotError(err error) error {
+	if err.Error() == "402 Payment Required" {
+		return fmt.Errorf("maximum number of snapshots reached")
+	}
+	return err
 }
 
 func setExitCodeForDashboardError(err error) {
@@ -325,8 +333,7 @@ func onServerStarted(serverPort dashboardserver.ListenPort, serverListen dashboa
 		// start browser if required
 		if viper.GetBool(constants.ArgBrowser) {
 			url := buildDashboardURL(serverPort, w)
-
-			if err := dashboardserver.OpenBrowser(url); err != nil {
+			if err := utils.OpenBrowser(url); err != nil {
 				log.Println("[TRACE] dashboard server started but failed to start client", err)
 			}
 		}

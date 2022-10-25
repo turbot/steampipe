@@ -1,7 +1,6 @@
 package cloud
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,8 +9,8 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 )
@@ -55,27 +54,29 @@ func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) 
 }
 
 func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
-
+	baseUrl := getBaseApiUrl()
+	client := &http.Client{}
+	bearer := getBearerToken(viper.GetString(constants.ArgCloudToken))
 	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
 	}
-	user := parts[0]
+	identity := parts[0]
 	worskpaceHandle := parts[1]
 
-	url := fmt.Sprintf("https://%s/api/v0/user/%s/workspace/%s/snapshot",
-		viper.GetString(constants.ArgCloudHost),
-		user,
-		worskpaceHandle)
+	// no determine whether this is a user or org workspace
+	workspaceType, err := getWorkspaceType(identity, worskpaceHandle, baseUrl, bearer, client)
+	if err != nil {
+		return "", err
+	}
 
-	// get the cloud token (we have already verifuied this was provided)
-	token := viper.GetString(constants.ArgCloudToken)
-	// create a 'bearer' string by appending the access token
-	var bearer = "Bearer " + token
-
-	client := &http.Client{}
+	urlPath, err := url.JoinPath(baseUrl,
+		fmt.Sprintf("api/v0/%s/%s/workspace/%s/snapshot", workspaceType, identity, worskpaceHandle))
+	if err != nil {
+		return "", err
+	}
 
 	// set the visibility
 	visibility := "workspace"
@@ -88,7 +89,7 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 
 	body := struct {
 		Data       *dashboardtypes.SteampipeSnapshot `json:"data"`
-		Tags       map[string]interface{}            `json:"tags"`
+		Tags       map[string]any                    `json:"tags"`
 		Visibility string                            `json:"visibility"`
 	}{
 		Data:       snapshot,
@@ -101,45 +102,44 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyStr))
+	var resp = map[string]any{}
+	err = postToAPI(urlPath, bearer, string(bodyStr), client, &resp)
 	if err != nil {
 		return "", err
-	}
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", bearer)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode > 206 {
-		return "", fmt.Errorf("%s", resp.Status)
 	}
 
-	var result map[string]interface{}
-	err = json.Unmarshal(bodyBytes, &result)
-	if err != nil {
-		return "", err
-	}
-	snapshotId := result["id"].(string)
-	snapshotUrl := fmt.Sprintf("https://%s/user/%s/workspace/%s/snapshot/%s",
+	snapshotId := resp["id"].(string)
+	snapshotUrl := fmt.Sprintf("https://%s/%s/%s/workspace/%s/snapshot/%s",
 		viper.GetString(constants.ArgCloudHost),
-		user,
+		workspaceType,
+		identity,
 		worskpaceHandle,
 		snapshotId)
 
 	return snapshotUrl, nil
 }
 
-func getTags() map[string]interface{} {
+func getWorkspaceType(identityHandle, workspaceHandle, baseUrl, bearer string, client *http.Client) (string, error) {
+	workspaces, err := getWorkspaces(baseUrl, bearer, client)
+	if err != nil {
+		return "", err
+	}
+	for _, w := range workspaces {
+		workspace := w.(map[string]any)
+		if workspace["handle"].(string) == workspaceHandle {
+			identity := workspace["identity"].(map[string]any)
+			if identity["handle"].(string) == identityHandle {
+				workspaceType := identity["type"].(string)
+				return workspaceType, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("workspace %s not found", workspaceHandle)
+}
+
+func getTags() map[string]any {
 	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
-	res := map[string]interface{}{}
+	res := map[string]any{}
 	if len(tags) == 0 {
 		// if no tags were specified, add the default
 		res["generated_by"] = "cli"

@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-var MissingCloudTokenError = errors.New("to share snapshots to Steampipe Cloud, cloud token must be set")
+var MissingCloudTokenError = errors.New("no token found, please run 'steampipe login'")
 
 // EEXISTS is the universal error string to denote that a resource already exists
 const EEXISTS = "EEXISTS"

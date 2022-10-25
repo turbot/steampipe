@@ -8,11 +8,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
-const actorAPI = "/api/v1/actor"
-const actorWorkspacesAPI = "/api/v1/actor/workspace"
-const passwordAPIFormat = "/api/v1/user/%s/password"
-const userWorkspaceFormat = "/api/v1/user/%s/workspace"
-
 func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {
 	bearer := getBearerToken(token)
 	client := &http.Client{}
@@ -39,23 +34,23 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	workspaceHost := workspace["host"].(string)
 	databaseName := workspace["database_name"].(string)
 
-	userHandle, userId, err := getActor(baseURL, bearer, client)
+	actor, err := getActor(baseURL, bearer, client)
 	if err != nil {
 		return nil, err
 	}
-	password, err := getPassword(baseURL, userHandle, bearer, client)
+	password, err := getPassword(baseURL, actor.Handle, bearer, client)
 	if err != nil {
 		return nil, err
 	}
 
-	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", userHandle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
+	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", actor.Handle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
 	identity := workspaceData["identity"].(map[string]any)
 
 	cloudMetadata := &steampipeconfig.CloudMetadata{
 		Actor: &steampipeconfig.ActorMetadata{
-			Id:     userId,
-			Handle: userHandle,
+			Id:     actor.Id,
+			Handle: actor.Handle,
 		},
 		Identity: &steampipeconfig.IdentityMetadata{
 			Id:     identity["id"].(string),
