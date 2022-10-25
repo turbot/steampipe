@@ -1,7 +1,6 @@
 package cloud
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -89,7 +87,7 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 
 	body := struct {
 		Data       *dashboardtypes.SteampipeSnapshot `json:"data"`
-		Tags       map[string]interface{}            `json:"tags"`
+		Tags       map[string]any                    `json:"tags"`
 		Visibility string                            `json:"visibility"`
 	}{
 		Data:       snapshot,
@@ -102,32 +100,11 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", urlPath, bytes.NewBuffer(bodyStr))
+	result, err := postToAPI(urlPath, bearer, string(bodyStr), client)
 	if err != nil {
 		return "", err
-	}
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", bearer)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode > 206 {
-		return "", fmt.Errorf("%s", resp.Status)
 	}
 
-	var result map[string]interface{}
-	err = json.Unmarshal(bodyBytes, &result)
-	if err != nil {
-		return "", err
-	}
 	snapshotId := result["id"].(string)
 	snapshotUrl := fmt.Sprintf("https://%s/user/%s/workspace/%s/snapshot/%s",
 		viper.GetString(constants.ArgCloudHost),
@@ -138,9 +115,9 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	return snapshotUrl, nil
 }
 
-func getTags() map[string]interface{} {
+func getTags() map[string]any {
 	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
-	res := map[string]interface{}{}
+	res := map[string]any{}
 	if len(tags) == 0 {
 		// if no tags were specified, add the default
 		res["generated_by"] = "cli"

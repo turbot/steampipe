@@ -1,6 +1,7 @@
 package cloud
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/viper"
@@ -26,7 +27,7 @@ func getWorkspaces(baseURL, bearer string, client *http.Client) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := fetchAPIData(urlPath, bearer, client)
+	resp, err := getFromAPI(urlPath, bearer, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -58,7 +59,7 @@ func getActor(baseURL, bearer string, client *http.Client) (string, string, erro
 	if err != nil {
 		return "", "", err
 	}
-	resp, err := fetchAPIData(urlPath, bearer, client)
+	resp, err := getFromAPI(urlPath, bearer, client)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get actor from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -82,7 +83,7 @@ func getPassword(baseURL, userHandle, bearer string, client *http.Client) (strin
 		return "", err
 	}
 
-	resp, err := fetchAPIData(urlPath, bearer, client)
+	resp, err := getFromAPI(urlPath, bearer, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get password from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -94,14 +95,38 @@ func getPassword(baseURL, userHandle, bearer string, client *http.Client) (strin
 	return password, nil
 }
 
-func fetchAPIData(urlPath, bearer string, client *http.Client) (map[string]any, error) {
+func getFromAPI(urlPath, bearer string, client *http.Client) (map[string]any, error) {
+	// build request
 	req, err := http.NewRequest("GET", urlPath, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", bearer)
+	if bearer != "" {
+		req.Header.Add("Authorization", bearer)
+	}
+
+	return executeAPICall(req, client)
+}
+
+func postToAPI(urlPath, bearer, bodyStr string, client *http.Client) (map[string]any, error) {
+	// build request
+	req, err := http.NewRequest("POST", urlPath, bytes.NewBuffer([]byte(bodyStr)))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+	if bearer != "" {
+		req.Header.Add("Authorization", bearer)
+	}
+
+	return executeAPICall(req, client)
+}
+
+func executeAPICall(req *http.Request, client *http.Client) (map[string]any, error) {
+	// execute
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -110,10 +135,14 @@ func fetchAPIData(urlPath, bearer string, client *http.Client) (map[string]any, 
 		return nil, fmt.Errorf("%s", resp.Status)
 	}
 	defer resp.Body.Close()
+
+	// read response
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
+
+	// unmarshal response
 	var result map[string]any
 	err = json.Unmarshal(bodyBytes, &result)
 	if err != nil {

@@ -1,24 +1,31 @@
 package cloud
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/spf13/viper"
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
-	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 )
 
-func WebLogin(context.Context) error {
-	// 1) POST `${envBaseUrl}/api/latest/login/token`
-	client := &http.Client{}
+// WebLogin POSTs to ${envBaseUrl}/api/latest/login/token to retrieve a login is
+// it then opens the login webpage and returns th eid
+func WebLogin() (string, error) {
+	//  POST `${envBaseUrl}/api/latest/login/token`
 	baseURL := getBaseApiUrl()
-
-	result, err := getLoginTokenResponse(baseURL, client)
+	client := &http.Client{}
+	urlPath, err := url.JoinPath(baseURL, loginTokenAPI)
 	if err != nil {
-		return err
+		return "", err
+	}
+	result, err := postToAPI(urlPath, "", "", client)
+	if err != nil {
+		return "", err
 	}
 
 	// Open browser at `${envBaseUrl}/login/token?r=${id}`
@@ -26,71 +33,54 @@ func WebLogin(context.Context) error {
 	id := result["id"].(string)
 	browserUrl, err := url.JoinPath(baseURL, fmt.Sprintf("login/token?r=", id))
 	if err != nil {
-		return err
+		return "", err
 	}
-	return utils.OpenBrowser(browserUrl)
+	err = utils.OpenBrowser(browserUrl)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+
 }
 
-func getLoginTokenResponse(baseURL string, client *http.Client) (map[string]interface{}, error) {
-	urlPath, err := url.JoinPath(baseURL, loginTokenAPI)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("POST", urlPath, bytes.NewBuffer(nil))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode > 206 {
-		return nil, fmt.Errorf("%s", resp.Status)
-	}
-
-	var result map[string]interface{}
-	err = json.Unmarshal(bodyBytes, &result)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func GetLoginToken(ctx context.Context, code string) (string, error) {
+// GetLoginToken uses the login id and code and retrieves an authentication token
+func GetLoginToken(id, code string) (string, error) {
 	// GET `/api/latest/login/token/${id}?code=${fourDigitCode}`
+	baseURL := getBaseApiUrl()
+	client := &http.Client{}
+	urlPath, err := url.JoinPath(baseURL, fmt.Sprintf("/api/latest/login/token/%s?code=%s", id, code))
+	if err != nil {
+		return "", err
+	}
 
-	//client := &http.Client{}
-	//baseURL := getBaseApiUrl()
-	//
-	////
-	//
-	//6) Get back object same shape as 2) with addition of the token
-	//
-	//	{
-	//	  "id": "str_cd8r92r4lvk7115ofr30_21003pb8o07wf13cixfgh9j9i",
-	//	  "client_ip": "127.0.0.1",
-	//	  "state": "confirmed",
-	//	  "created_at": "2022-10-24T12:50:19Z",
-	//	  "updated_at": "2022-10-24T12:51:19Z",
-	//	  "token": "sptt.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJsb2NhbGhvc3QiLCJzdWIiOiJ1X2M5dWVzbDkxZXFsa3ZjMHE0NXYwIiwiZXhwIjoxNjY5MjEyNDkxLCJpYXQiOjE2NjY2MjA0OTEsImp0aSI6Ijg5M2JkMzU5LTM3NmYtNDU5OS05NWZmLTdlZTgyMTc2YmJkNSIsInNjb3BlcyI6WyJhZG1pbiJdfQ.n0Txe-ROU1-YkggsyHpLQM8_c4DVRCO-1L9p-3W4t40"
-	//	}
-	//
-	//*/
+	result, err := getFromAPI(urlPath, "", client)
+	if err != nil {
+		return "", err
+	}
 
-	return "", nil
+	token := result["token"].(string)
+	return token, nil
 }
 
-func SaveToken(ctx context.Context, token string) error {
-	return nil
+// SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.sptt
+func SaveToken(token string) error {
+	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
+	return os.WriteFile(tokenPath, []byte(token), 0600)
 }
 
-func EnsureWorkspace(ctx context.Context, token string) error {
-	return nil
+func LoadToken() (string, error) {
+	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
+	if !filehelpers.FileExists(tokenPath) {
+		return "", nil
+	}
+	tokenBytes, err := os.ReadFile(tokenPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to load token file '%s': %s", tokenPath, err.Error())
+	}
+	return string(tokenBytes), nil
+}
+
+func tokenFilePath(cloudHost string) string {
+	tokenPath := path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", cloudHost, constants.TokenExtension))
+	return tokenPath
 }

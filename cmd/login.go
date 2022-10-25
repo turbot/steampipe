@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"log"
 	"os"
 )
 
@@ -30,30 +32,30 @@ func runLoginCmd(cmd *cobra.Command, args []string) {
 	ctx := cmd.Context()
 
 	// start login flow - this will open a web page prompting user to login, and will give the user a code to enter
-	var err = cloud.WebLogin(ctx)
+	var id, err = cloud.WebLogin()
 	error_helpers.FailOnError(err)
 	// Wait for user to input 4-digit code they obtain through the UI login / approval
 
-	code, err := promptUserForCode()
+	code, err := promptUserForString("Enter login code code: ")
 	error_helpers.FailOnError(err)
 
 	// use this code to get a login token and store it
-	token, err := cloud.GetLoginToken(ctx, code)
+	token, err := cloud.GetLoginToken(id, code)
 	error_helpers.FailOnError(err)
 
 	// save token
-	err = cloud.SaveToken(ctx, token)
+	err = cloud.SaveToken(token)
 	error_helpers.FailOnError(err)
 
 	// ensure user has at least 1 workspace
-	err = cloud.EnsureWorkspace(ctx, token)
+	err = ensureWorkspace(ctx, token)
 	error_helpers.FailOnError(err)
 
 	fmt.Println("Login successful")
 }
 
-func promptUserForCode() (string, error) {
-	fmt.Printf("Enter login code code: ")
+func promptUserForString(prompt string) (string, error) {
+	fmt.Print(prompt)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -64,4 +66,20 @@ func promptUserForCode() (string, error) {
 	code := scanner.Text()
 
 	return code, nil
+}
+
+func ensureWorkspace(ctx context.Context, token string) error {
+	workspaces, _, err := cloud.GetUserWorkspaceHandles(token)
+	if err != nil {
+		return err
+	}
+	if len(workspaces) > 0 {
+		return nil
+	}
+
+	workspaceHandle, err := promptUserForString("Enter handle for default workspace: ")
+	error_helpers.FailOnError(err)
+
+	log.Println(workspaceHandle)
+	return nil
 }

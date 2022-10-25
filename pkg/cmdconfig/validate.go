@@ -115,11 +115,18 @@ func validateSnapshotLocation(cloudToken string) error {
 }
 
 func setSnapshotLocationFromDefaultWorkspace(cloudToken string) error {
-	workspace, err := cloud.GetUserWorkspace(cloudToken)
+	workspaces, userHandle, err := cloud.GetUserWorkspaceHandles(cloudToken)
 	if err != nil {
 		return err
 	}
-	viper.Set(constants.ArgSnapshotLocation, workspace)
+	if len(workspaces) == 0 {
+		return fmt.Errorf("snapshot-location is not specified and no workspaces exist for user %s", userHandle)
+	}
+	if len(workspaces) > 1 {
+		return fmt.Errorf("more than one workspace found for user %s", userHandle)
+	}
+
+	viper.Set(constants.ArgSnapshotLocation, workspaces[0])
 	return nil
 }
 

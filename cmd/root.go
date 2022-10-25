@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/cloud"
 	"log"
 	"os"
 	"runtime/debug"
@@ -26,7 +27,6 @@ import (
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -146,107 +146,106 @@ func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
-	// 1) load workspace profile
-	workspaceProfile, defaultWorkspaceProfile, err := loadWorkspaceProfile()
+	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
+	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, "string")
+
+	// load workspace profile
+	loader, err := loadWorkspaceProfile()
 	error_helpers.FailOnError(err)
 
-	// 2) use workspace profile to set-up viper with defaults
-	err = cmdconfig.BootstrapViper(defaultWorkspaceProfile)
+	// set global workspace profile
+	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
+
+	// use the default workspace profile to set-up viper with defaults
+	err = cmdconfig.BootstrapViper(loader.DefaultProfile)
 	error_helpers.FailOnError(err)
 
 	// set global containing the configured install dir (create directory if needed)
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
-	// 3) load the connection config and HCL options
+	// load the connection config and HCL options
 	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
 	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmdName)
 	error_helpers.FailOnError(err)
 
 	// store global config
 	steampipeconfig.GlobalConfig = config
+
 	// set viper defaults from this config
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
-	// 4) if an explicit workspace profile was set, add to viper as highest precedence default
-	if viper.IsSet(constants.ArgWorkspaceProfile) {
-		cmdconfig.SetDefaultsFromConfig(workspaceProfile.ConfigMap())
+	// if an explicit workspace profile was set, add to viper as highest precedence default
+	if loader.ConfiguredProfile != nil {
+		cmdconfig.SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap())
 		// tildefy all paths in viper
 		// (this has already been done in BootstrapViper but we may have added a path from the workspace profile)
 		err = cmdconfig.TildefyPaths()
 	}
 
-	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
-	err = migrateLegacyFiles()
-	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
+	// NOTE: we need to resolve the token separately
+	// - that is because we need the resolved value of ArgCloudHost in order to load any saved token
+	// and we cannot get this until the other config has been resolved
+	err = setCloudTokenDefault(loader)
+	error_helpers.FailOnError(err)
 
 	// now validate all config values have appropriate values
 	err = validateConfig()
 	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
 
-	/*
-		func (c *WorkspaceProfile) Initialise() hcl.Diagnostics {
-			var diags hcl.Diagnostics
-			var err error
-			if c.InstallDir != "" {
-				c.InstallDir, err = files.Tildefy(c.InstallDir)
-				if err != nil {
-					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
-				}
-			}
-
-			if c.ModLocation != "" {
-				c.ModLocation, err = files.Tildefy(c.ModLocation)
-				if err != nil {
-					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
-				}
-			}
-
-			if c.snapshotLocationIsFilePath() {
-				// so snapshot location _is_ file path
-				// handle ~
-				c.SnapshotLocation, err = files.Tildefy(c.SnapshotLocation)
-				if err != nil {
-					diags = append(diags, &hcl.Diagnostic{Severity: hcl.DiagError, Summary: err.Error()})
-				}
-
-				// ensure location exists
-				if !files.DirectoryExists(c.SnapshotLocation) {
-					diags = append(diags, &hcl.Diagnostic{
-						Severity: hcl.DiagError,
-						Summary:  fmt.Sprintf("SnapshotLocation %s does not exist in local file system", c.SnapshotLocation),
-					})
-				}
-			}
-			return diags
-		}
-	*/
+	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
+	err = migrateLegacyFiles()
+	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
 }
 
-func loadWorkspaceProfile() (workspaceProfile, defaultWorkspaceProfile *modconfig.WorkspaceProfile, err error) {
+func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error {
+	/*
+	   saved cloud token
+	   cloud_token in default workspace
+	   explicit env var (STEAMIPE_CLOUD_TOKEN ) wins over
+	   cloud_token in specific workspace
+	*/
+	// set viper defaults in order of increasing precedence
+	// 1) saved cloud token
+	savedToken, err := cloud.LoadToken()
+	if err != nil {
+		return err
+	}
+	if savedToken != "" {
+		viper.SetDefault(constants.ArgCloudToken, savedToken)
+	}
+	// 2) default profile cloud token
+	if loader.DefaultProfile.CloudToken != nil {
+		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
+	}
+	// 3) env var (STEAMIPE_CLOUD_TOKEN )
+	cmdconfig.SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, "string")
+
+	// 4) explicit workspace profile
+	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
+		viper.SetDefault(constants.ArgCloudToken, *p.CloudToken)
+	}
+	return nil
+}
+
+func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// NOTE: always load workspace profiles  out of DEFAULT install dir
 
 	// set install dir to the default
 	// (NOTE: _do not_ call ensureInstallDir - we do not want to create the default if it is not there)
 	defaultInstallDir, err := filehelpers.Tildefy(filepaths.DefaultInstallDir)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil
 	}
 	filepaths.SteampipeDir = defaultInstallDir
 	workspaceProfileDir := filepaths.WorkspaceProfileDir()
 
 	// create loader
-	workspaceProfileLoader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
+	loader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil
 	}
-	workspaceProfile, err = workspaceProfileLoader.Get(viper.GetString(constants.ArgWorkspaceProfile))
-	error_helpers.FailOnError(err)
 
-	// set global workspace profile
-	steampipeconfig.GlobalWorkspaceProfile = workspaceProfile
-	// get the default workspace profile (must be there)
-	defaultWorkspaceProfile, _ = workspaceProfileLoader.Get("default")
-	return workspaceProfile, defaultWorkspaceProfile, nil
+	return loader, nil
 }
 
 // migrate all data files to use snake casing for property names
