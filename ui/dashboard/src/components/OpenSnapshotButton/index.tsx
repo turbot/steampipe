@@ -39,6 +39,15 @@ const OpenSnapshotButton = () => {
             const data = JSON.parse(fr.result.toString());
             const { action, inputs, ...rest } = data;
             dispatch({
+              type: DashboardActions.CLEAR_DASHBOARD_INPUTS,
+              recordInputsHistory: false,
+            });
+            dispatch({
+              type: DashboardActions.SELECT_DASHBOARD,
+              dashboard: null,
+              recordInputsHistory: false,
+            });
+            dispatch({
               type: DashboardActions.SET_DATA_MODE,
               dataMode: "cli_snapshot",
             });
