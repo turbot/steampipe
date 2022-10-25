@@ -31,7 +31,12 @@ func WebLogin() (string, error) {
 	// Open browser at `${envBaseUrl}/login/token?r=${id}`
 	// build browser url
 	id := result["id"].(string)
-	browserUrl, err := url.JoinPath(baseURL, fmt.Sprintf("login/token?r=", id))
+
+	joinedTokenLoginPath, err := url.JoinPath(baseURL, "login/token")
+	if err != nil {
+		return "", err
+	}
+	browserUrl := fmt.Sprintf("%s?r=%s", joinedTokenLoginPath, id)
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +53,13 @@ func GetLoginToken(id, code string) (string, error) {
 	// GET `/api/latest/login/token/${id}?code=${fourDigitCode}`
 	baseURL := getBaseApiUrl()
 	client := &http.Client{}
-	urlPath, err := url.JoinPath(baseURL, fmt.Sprintf("/api/latest/login/token/%s?code=%s", id, code))
+
+	getLoginTokenApiPath, err := url.JoinPath(baseURL, fmt.Sprintf("/api/latest/login/token/%s", id))
+	if err != nil {
+		return "", err
+	}
+
+	urlPath := fmt.Sprintf("%s?code=%s", getLoginTokenApiPath, code)
 	if err != nil {
 		return "", err
 	}

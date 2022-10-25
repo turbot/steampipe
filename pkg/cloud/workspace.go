@@ -25,12 +25,14 @@ func GetUserWorkspaceHandles(token string) ([]string, string, error) {
 }
 
 func getUserWorkspaceHandles(baseURL, bearer, userHandle string, client *http.Client) ([]string, error) {
-	urlPath, err := url.JoinPath(baseURL, fmt.Sprintf(userWorkspaceFormat, userHandle)+"?limit=2")
+	workspaceApiPath, err := url.JoinPath(baseURL, fmt.Sprintf(userWorkspaceFormat, userHandle))
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := getFromAPI(urlPath, bearer, client)
+	workspaceApiPathWithLimit := fmt.Sprintf("%s?limit=2", workspaceApiPath)
+
+	resp, err := getFromAPI(workspaceApiPathWithLimit, bearer, client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user workspace from Steampipe Cloud API: %s ", err.Error())
 	}
