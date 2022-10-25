@@ -1,9 +1,9 @@
 package cloud
 
 const webLoginTokenUrl = "login/token"
-const actorAPI = "/api/latest/actor"
-const loginIdAPI = "/api/latest/login/token"
-const loginTokenAPIFormat = "/api/latest/login/token/%s"
-const actorWorkspacesAPI = "/api/latest/actor/workspace"
-const passwordAPIFormat = "/api/latest/user/%s/password"
-const userWorkspaceFormat = "/api/latest/user/%s/workspace"
+const actorAPI = "/api/v1/actor"
+const loginIdAPI = "/api/v1/login/token"
+const loginTokenAPIFormat = "/api/v1/login/token/%s"
+const actorWorkspacesAPI = "/api/v1/actor/workspace"
+const passwordAPIFormat = "/api/v1/user/%s/password"
+const userWorkspaceFormat = "/api/v1/user/%s/workspace"
