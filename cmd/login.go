@@ -28,7 +28,7 @@ func loginCmd() *cobra.Command {
 	return cmd
 }
 
-func runLoginCmd(cmd *cobra.Command, args []string) {
+func runLoginCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 
 	// start login flow - this will open a web page prompting user to login, and will give the user a code to enter
@@ -36,7 +36,7 @@ func runLoginCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 	// Wait for user to input 4-digit code they obtain through the UI login / approval
 
-	code, err := promptUserForString("Enter login code code: ")
+	code, err := promptUserForString("Enter login code: ")
 	error_helpers.FailOnError(err)
 
 	// use this code to get a login token and store it
@@ -68,7 +68,7 @@ func promptUserForString(prompt string) (string, error) {
 	return code, nil
 }
 
-func ensureWorkspace(ctx context.Context, token string) error {
+func ensureWorkspace(_ context.Context, token string) error {
 	workspaces, _, err := cloud.GetUserWorkspaceHandles(token)
 	if err != nil {
 		return err
