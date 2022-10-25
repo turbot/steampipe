@@ -55,9 +55,7 @@ const OpenSnapshotButton = () => {
           fr.readAsText(files[0]);
         }}
         type="file"
-      >
-        {/*<>Open Snapshot</>*/}
-      </input>
+      />
     </>
   );
 };
