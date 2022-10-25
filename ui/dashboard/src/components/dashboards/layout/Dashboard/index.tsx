@@ -3,11 +3,7 @@ import DashboardProgress from "./DashboardProgress";
 import LayoutPanel from "../common/LayoutPanel";
 import PanelDetail from "../PanelDetail";
 import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
-import {
-  DashboardDataModeCLISnapshot,
-  DashboardDataModeLive,
-  DashboardDefinition,
-} from "../../../../types";
+import { DashboardDataModeLive, DashboardDefinition } from "../../../../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
