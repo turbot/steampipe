@@ -27,7 +27,9 @@ func getWorkspaces(baseURL, bearer string, client *http.Client) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := getFromAPI(urlPath, bearer, client)
+
+	resp := map[string]any{}
+	err = getFromAPI(urlPath, bearer, client, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace data from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -54,27 +56,18 @@ func getWorkspaceData(itemsArray []any, identityHandle, workspaceHandle string) 
 	return nil
 }
 
-func getActor(baseURL, bearer string, client *http.Client) (string, string, error) {
+func getActor(baseURL, bearer string, client *http.Client) (*Actor, error) {
 	urlPath, err := url.JoinPath(baseURL, actorAPI)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	resp, err := getFromAPI(urlPath, bearer, client)
+	resp := &Actor{}
+	err = getFromAPI(urlPath, bearer, client, &resp)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get actor from Steampipe Cloud API: %s ", err.Error())
+		return nil, fmt.Errorf("failed to get actor from Steampipe Cloud API: %s ", err.Error())
 	}
 
-	handle, ok := resp["handle"].(string)
-	if !ok {
-		return "", "", fmt.Errorf("failed to read handle from Steampipe Cloud API")
-	}
-
-	id, ok := resp["id"].(string)
-	if !ok {
-		return "", "", fmt.Errorf("failed to read id from Steampipe Cloud API")
-	}
-
-	return handle, id, nil
+	return resp, nil
 }
 
 func getPassword(baseURL, userHandle, bearer string, client *http.Client) (string, error) {
@@ -83,7 +76,8 @@ func getPassword(baseURL, userHandle, bearer string, client *http.Client) (strin
 		return "", err
 	}
 
-	resp, err := getFromAPI(urlPath, bearer, client)
+	resp := map[string]any{}
+	err = getFromAPI(urlPath, bearer, client, &resp)
 	if err != nil {
 		return "", fmt.Errorf("failed to get password from Steampipe Cloud API: %s ", err.Error())
 	}
@@ -95,11 +89,11 @@ func getPassword(baseURL, userHandle, bearer string, client *http.Client) (strin
 	return password, nil
 }
 
-func getFromAPI(urlPath, bearer string, client *http.Client) (map[string]any, error) {
+func getFromAPI[T any](urlPath, bearer string, client *http.Client, dest *T) error {
 	// build request
 	req, err := http.NewRequest("GET", urlPath, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
@@ -107,14 +101,14 @@ func getFromAPI(urlPath, bearer string, client *http.Client) (map[string]any, er
 		req.Header.Add("Authorization", bearer)
 	}
 
-	return executeAPICall(req, client)
+	return executeAPICall(req, client, dest)
 }
 
-func postToAPI(urlPath, bearer, bodyStr string, client *http.Client) (map[string]any, error) {
+func postToAPI[T any](urlPath, bearer, bodyStr string, client *http.Client, dest *T) error {
 	// build request
 	req, err := http.NewRequest("POST", urlPath, bytes.NewBuffer([]byte(bodyStr)))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
@@ -122,31 +116,31 @@ func postToAPI(urlPath, bearer, bodyStr string, client *http.Client) (map[string
 		req.Header.Add("Authorization", bearer)
 	}
 
-	return executeAPICall(req, client)
+	return executeAPICall(req, client, dest)
 }
 
-func executeAPICall(req *http.Request, client *http.Client) (map[string]any, error) {
+func executeAPICall[T any](req *http.Request, client *http.Client, dest *T) error {
 	// execute
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 206 {
-		return nil, fmt.Errorf("%s", resp.Status)
+		return fmt.Errorf("%s", resp.Status)
 	}
 	defer resp.Body.Close()
 
 	// read response
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// unmarshal response
-	var result map[string]any
-	err = json.Unmarshal(bodyBytes, &result)
+
+	err = json.Unmarshal(bodyBytes, dest)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return result, nil
+	return nil
 }

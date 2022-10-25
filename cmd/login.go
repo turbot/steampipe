@@ -51,7 +51,16 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	err = ensureWorkspace(ctx, token)
 	error_helpers.FailOnError(err)
 
-	fmt.Println("Login successful")
+	displayLoginMessage(token)
+}
+
+func displayLoginMessage(token string) {
+	userName, err := cloud.GetUserName(token)
+	error_helpers.FailOnErrorWithMessage(err,"Failed to read user name")
+
+
+	fmt.Printf("Login successful for user %s\n", userName)
+
 }
 
 func promptUserForString(prompt string) (string, error) {

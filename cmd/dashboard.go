@@ -295,12 +295,20 @@ func publishSnapshotIfNeeded(snapshot *dashboardtypes.SteampipeSnapshot) error {
 
 	message, err := cloud.PublishSnapshot(snapshot, shouldShare)
 	if err != nil {
-		return err
+		// reword "402 Payment Required" error
+		return handlePublishSnapshotError(err)
 	}
 	if viper.GetBool(constants.ArgProgress) {
 		fmt.Println(message)
 	}
 	return nil
+}
+
+func handlePublishSnapshotError(err error) error {
+	if err.Error() == "402 Payment Required" {
+		return fmt.Errorf("maximum number of snapshots reached")
+	}
+	return err
 }
 
 func setExitCodeForDashboardError(err error) {

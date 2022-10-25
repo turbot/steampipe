@@ -19,27 +19,28 @@ func WebLogin() (string, error) {
 	//  POST `${envBaseUrl}/api/latest/login/token`
 	baseURL := getBaseApiUrl()
 	client := &http.Client{}
-	urlPath, err := url.JoinPath(baseURL, loginTokenAPI)
+	urlPath, err := url.JoinPath(baseURL, loginIdAPI)
 	if err != nil {
 		return "", err
 	}
-	result, err := postToAPI(urlPath, "", "", client)
+
+	var resp = map[string]any{}
+	err = postToAPI(urlPath, "", "", client, &resp)
 	if err != nil {
 		return "", err
 	}
 
 	// Open browser at `${envBaseUrl}/login/token?r=${id}`
 	// build browser url
-	id := result["id"].(string)
+	id := resp["id"].(string)
 
-	joinedTokenLoginPath, err := url.JoinPath(baseURL, "login/token")
+	browserUrl, err := url.JoinPath(baseURL, webLoginTokenUrl)
 	if err != nil {
 		return "", err
 	}
-	browserUrl := fmt.Sprintf("%s?r=%s", joinedTokenLoginPath, id)
-	if err != nil {
-		return "", err
-	}
+	// add in id query string
+	browserUrl = fmt.Sprintf("%s?r=%s", browserUrl, id)
+
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
 		return "", err
@@ -54,22 +55,20 @@ func GetLoginToken(id, code string) (string, error) {
 	baseURL := getBaseApiUrl()
 	client := &http.Client{}
 
-	getLoginTokenApiPath, err := url.JoinPath(baseURL, fmt.Sprintf("/api/latest/login/token/%s", id))
+	getLoginTokenApiPath, err := url.JoinPath(baseURL, fmt.Sprintf(loginTokenAPIFormat, id))
 	if err != nil {
 		return "", err
 	}
-
+	// add in code
 	urlPath := fmt.Sprintf("%s?code=%s", getLoginTokenApiPath, code)
+
+	var resp = map[string]any{}
+	err = getFromAPI(urlPath, "", client, &resp)
 	if err != nil {
 		return "", err
 	}
 
-	result, err := getFromAPI(urlPath, "", client)
-	if err != nil {
-		return "", err
-	}
-
-	token := result["token"].(string)
+	token := resp["token"].(string)
 	return token, nil
 }
 
@@ -89,6 +88,19 @@ func LoadToken() (string, error) {
 		return "", fmt.Errorf("failed to load token file '%s': %s", tokenPath, err.Error())
 	}
 	return string(tokenBytes), nil
+}
+
+func GetUserName(token string) (string, error) {
+	baseURL := getBaseApiUrl()
+	client := &http.Client{}
+	bearer := getBearerToken(token)
+
+	actor, err := getActor(baseURL, bearer, client)
+	if err != nil {
+		return "", err
+	}
+
+	return actor.DisplayName, nil
 }
 
 func tokenFilePath(cloudHost string) string {

@@ -100,12 +100,13 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 		return "", err
 	}
 
-	result, err := postToAPI(urlPath, bearer, string(bodyStr), client)
+	var resp = map[string]any{}
+	err = postToAPI(urlPath, bearer, string(bodyStr), client, &resp)
 	if err != nil {
 		return "", err
 	}
 
-	snapshotId := result["id"].(string)
+	snapshotId := resp["id"].(string)
 	snapshotUrl := fmt.Sprintf("https://%s/user/%s/workspace/%s/snapshot/%s",
 		viper.GetString(constants.ArgCloudHost),
 		user,

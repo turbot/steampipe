@@ -234,7 +234,7 @@ func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// (NOTE: _do not_ call ensureInstallDir - we do not want to create the default if it is not there)
 	defaultInstallDir, err := filehelpers.Tildefy(filepaths.DefaultInstallDir)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	filepaths.SteampipeDir = defaultInstallDir
 	workspaceProfileDir := filepaths.WorkspaceProfileDir()
@@ -242,7 +242,7 @@ func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// create loader
 	loader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	return loader, nil

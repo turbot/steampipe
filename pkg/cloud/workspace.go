@@ -13,26 +13,27 @@ func GetUserWorkspaceHandles(token string) ([]string, string, error) {
 	bearer := getBearerToken(token)
 	client := &http.Client{}
 	// get actor
-	userHandle, _, err := getActor(baseURL, bearer, client)
+	actor, err := getActor(baseURL, bearer, client)
 	if err != nil {
 		return nil, "", err
 	}
-	workspaceHandles, err := getUserWorkspaceHandles(baseURL, bearer, userHandle, client)
+	workspaceHandles, err := getUserWorkspaceHandles(baseURL, bearer, actor.Handle, client)
 	if err != nil {
 		return nil, "", err
 	}
-	return workspaceHandles, userHandle, nil
+	return workspaceHandles, actor.Handle, nil
 }
 
 func getUserWorkspaceHandles(baseURL, bearer, userHandle string, client *http.Client) ([]string, error) {
-	workspaceApiPath, err := url.JoinPath(baseURL, fmt.Sprintf(userWorkspaceFormat, userHandle))
+	urlPath, err := url.JoinPath(baseURL, fmt.Sprintf(userWorkspaceFormat, userHandle))
 	if err != nil {
 		return nil, err
 	}
+	// add in limit
+	urlPath += "?limit=2"
 
-	workspaceApiPathWithLimit := fmt.Sprintf("%s?limit=2", workspaceApiPath)
-
-	resp, err := getFromAPI(workspaceApiPathWithLimit, bearer, client)
+	var resp map[string]any
+	err = getFromAPI(urlPath, bearer, client, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user workspace from Steampipe Cloud API: %s ", err.Error())
 	}
