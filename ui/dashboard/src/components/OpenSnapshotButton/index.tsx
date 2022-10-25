@@ -8,6 +8,7 @@ const OpenSnapshotButton = () => {
   const { dispatch } = useDashboard();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
+
   return (
     <>
       <NeutralButton
@@ -23,6 +24,7 @@ const OpenSnapshotButton = () => {
         className="hidden"
         id="open-snapshot"
         name="open-snapshot"
+        type="file"
         onChange={(e) => {
           const files = e.target.files;
           if (!files || files.length === 0) {
@@ -33,6 +35,7 @@ const OpenSnapshotButton = () => {
             if (!fr.result) {
               return;
             }
+            e.target.value = "";
             const data = JSON.parse(fr.result.toString());
             const { action, inputs, ...rest } = data;
             dispatch({
@@ -51,10 +54,8 @@ const OpenSnapshotButton = () => {
             });
             navigate(`/${data.layout.name}`);
           };
-
           fr.readAsText(files[0]);
         }}
-        type="file"
       />
     </>
   );
