@@ -1,9 +1,9 @@
 package interactive
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -29,6 +29,7 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
@@ -345,8 +346,21 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
-		// ignore suppressed ASCII codes
-		prompt.OptionAddASCIICodeBind(c.suppressOnInput()...),
+		prompt.OptionBufferPresetHook(func(s string) string {
+			isWsl, err := utils.IsWSL()
+			// if we got an error or this is not WSL, return as-is
+			if err != nil || !isWsl {
+				return s
+			}
+			b := []byte(s)
+			// in WSL, 'Alt' characters are denoted by [EscapeCode, ASCII of character]
+			// if we get a combination which has EscapeCode as prefix
+			if len(b) > 1 && bytes.HasPrefix(b, []byte{byte(prompt.Escape)}) {
+				// trim the EscapeCode
+				b = bytes.TrimPrefix(b, []byte{byte(prompt.Escape)})
+			}
+			return string(b)
+		}),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
