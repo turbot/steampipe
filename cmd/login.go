@@ -39,6 +39,12 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	code, err := promptUserForString("Enter login code: ")
 	error_helpers.FailOnError(err)
 
+	// handle ctrl+d
+	if len(code) == 0 {
+		fmt.Println()
+		return
+	}
+
 	// use this code to get a login token and store it
 	token, err := cloud.GetLoginToken(id, code)
 	error_helpers.FailOnError(err)
@@ -58,7 +64,7 @@ func displayLoginMessage(token string) {
 	userName, err := cloud.GetUserName(token)
 	error_helpers.FailOnErrorWithMessage(err, "Failed to read user name")
 
-	fmt.Printf("\nLogin successful for user %s\n\n", userName)
+	fmt.Printf("Login successful for user %s\n", userName)
 
 }
 

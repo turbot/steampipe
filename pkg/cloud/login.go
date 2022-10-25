@@ -41,7 +41,7 @@ func WebLogin() (string, error) {
 	// add in id query string
 	browserUrl = fmt.Sprintf("%s?r=%s", browserUrl, id)
 
-	fmt.Printf("\nOpening %s\n", browserUrl)
+	fmt.Printf("Opening %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
 		return "", err
