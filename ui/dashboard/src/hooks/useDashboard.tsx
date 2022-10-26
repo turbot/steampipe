@@ -255,6 +255,7 @@ function reducer(state, action) {
         execution_id: action.execution_id,
         refetchDashboard: false,
         progress: 0,
+        snapshot: null,
         state: "ready",
       };
     }
@@ -300,6 +301,7 @@ function reducer(state, action) {
         dashboard,
         sqlDataMap,
         progress: 100,
+        snapshot: action.snapshot,
         state: "complete",
       };
     }
@@ -311,13 +313,6 @@ function reducer(state, action) {
       return leafNodesCompleteEventHandler(action, state);
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
-    case DashboardActions.CLEAR_SNAPSHOT:
-      return {
-        ...state,
-        selectedSnapshot: null,
-        snapshotId: null,
-        dataMode: DashboardDataModeLive,
-      };
     case DashboardActions.SET_DATA_MODE:
       return {
         ...state,
@@ -494,7 +489,7 @@ const getInitialState = (searchParams, defaults: any = {}) => {
     selectedDashboard: null,
     selectedDashboardInputs:
       buildSelectedDashboardInputsFromSearchParams(searchParams),
-    selectedSnapshot: null,
+    snapshot: null,
     lastChangedInput: null,
 
     search: {
@@ -594,7 +589,6 @@ const DashboardProvider = ({
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
-      selectedSnapshot: state.selectedSnapshot,
     });
 
   // Alert analytics
