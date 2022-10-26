@@ -160,7 +160,6 @@ func (r *DashboardRun) Execute(ctx context.Context) {
 			errors = append(errors, completeChild.GetError())
 		}
 		// fall through to recheck ChildrenCompletes
-		// TODO [reports]  timeout?
 	}
 
 	// so all children have completed - check for errors
