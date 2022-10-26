@@ -8,6 +8,7 @@ options "database" {
   port   = 9193    # any valid, open port number
   listen = "local" # local, network
   search_path    = "aws,gcp,foo"
+  query_timeout  = 240
 }
 
 options "terminal" {

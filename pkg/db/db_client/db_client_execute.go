@@ -107,13 +107,17 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		return nil, fmt.Errorf("nil database connection passed to ExecuteInSession")
 	}
 	startTime := time.Now()
+	// get a context with a timeout for the query to execute within
+	// we don't use the cancelFn from this timeout context, since usage will lead to 'pgx'
+	// prematurely closing the database connection that this query executed in
+	ctxExecute := c.getExecuteContext(ctx)
 
 	var tx *sql.Tx
 
 	defer func() {
 		if err != nil {
 			// stop spinner in case of error
-			statushooks.Done(ctx)
+			statushooks.Done(ctxExecute)
 			// error - rollback transaction if we have one
 			if tx != nil {
 				tx.Rollback()
@@ -125,11 +129,11 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		}
 	}()
 
-	statushooks.SetStatus(ctx, "Loading results...")
+	statushooks.SetStatus(ctxExecute, "Loading results...")
 
 	// start query
 	var rows pgx.Rows
-	rows, err = c.startQuery(ctx, query, session.Connection)
+	rows, err = c.startQuery(ctxExecute, query, session.Connection)
 	if err != nil {
 		return
 	}
@@ -143,11 +147,11 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		// define a callback which fetches the timing information
 		// this will be invoked after reading rows is complete but BEFORE closing the rows object (which closes the connection)
 		timingCallback := func() {
-			c.getQueryTiming(ctx, startTime, session, result.TimingResult)
+			c.getQueryTiming(ctxExecute, startTime, session, result.TimingResult)
 		}
 
 		// read in the rows and stream to the query result object
-		c.readRows(ctx, rows, result, timingCallback)
+		c.readRows(ctxExecute, rows, result, timingCallback)
 
 		// call the completion callback - if one was provided
 		if onComplete != nil {
@@ -156,6 +160,16 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	}()
 
 	return result, nil
+}
+
+func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
+	queryTimeout := time.Duration(viper.GetInt(constants.ArgDatabaseQueryTimeout)) * time.Second
+	// create a context with a deadline
+	shouldBeDoneBy := time.Now().Add(queryTimeout)
+	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
+	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
+
+	return newCtx
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {

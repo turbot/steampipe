@@ -21,8 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-const controlQueryTimeout = 240 * time.Second
-
 // ControlRun is a struct representing the execution of a control run. It will contain one or more result items (i.e. for one or more resources).
 type ControlRun struct {
 	// properties from control
@@ -276,9 +274,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		return
 	}
 
-	// get a context with a timeout for the control to execute within
-	// we don't use the cancelFn from this timeout context, since usage will lead to 'pgx'
-	// prematurely closing the database connection that this query executed in
 	controlExecutionCtx := r.getControlQueryContext(ctx)
 
 	// execute the control query
@@ -328,15 +323,10 @@ func (r *ControlRun) acquireSession(ctx context.Context, client db_common.Client
 	return sessionResult
 }
 
-// create a context with a deadline, and with status updates disabled (we do not want to show 'loading' results)
+// create a context with status updates disabled (we do not want to show 'loading' results)
 func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context {
-	// create a context with a deadline
-	shouldBeDoneBy := time.Now().Add(controlQueryTimeout)
-	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
-	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
-
 	// disable the status spinner to hide 'loading' results)
-	newCtx = statushooks.DisableStatusHooks(newCtx)
+	newCtx := statushooks.DisableStatusHooks(ctx)
 
 	return newCtx
 }
