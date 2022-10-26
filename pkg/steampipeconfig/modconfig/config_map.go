@@ -17,6 +17,13 @@ func (m ConfigMap) SetStringItem(argValue *string, argName string) {
 	}
 }
 
+// SetIntItem checks is int pointer is non-nul and if so, add to map with given key
+func (m ConfigMap) SetIntItem(argValue *int, argName string) {
+	if argValue != nil {
+		m[argName] = *argValue
+	}
+}
+
 // PopulateConfigMapForOptions populates the config map for a given options object
 // NOTE: this mutates configMap
 func (m ConfigMap) PopulateConfigMapForOptions(o options.Options) {

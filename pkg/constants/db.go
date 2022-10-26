@@ -20,8 +20,9 @@ const (
 var DatabaseListenAddresses = []string{"localhost", "127.0.0.1"}
 
 const (
-	DatabaseDefaultPort         = 9193
-	DatabaseDefaultQueryTimeout = 240
+	DatabaseDefaultPort = 9193
+	// disabled
+	DatabaseDefaultQueryTimeout = 0
 	DatabaseSuperUser           = "root"
 	DatabaseUser                = "steampipe"
 	DatabaseName                = "steampipe"

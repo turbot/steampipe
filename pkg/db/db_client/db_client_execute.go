@@ -164,6 +164,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 	queryTimeout := time.Duration(viper.GetInt(constants.ArgDatabaseQueryTimeout)) * time.Second
+	// if timeout is zero, do not set a timeout
+	if queryTimeout == 0 {
+		return ctx
+	}
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(queryTimeout)
 	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'

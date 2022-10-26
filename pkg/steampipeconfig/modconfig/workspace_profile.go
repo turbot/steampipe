@@ -17,6 +17,7 @@ type WorkspaceProfile struct {
 	ModLocation       *string           `hcl:"mod_location,optional" cty:"mod_location"`
 	SnapshotLocation  *string           `hcl:"snapshot_location,optional" cty:"snapshot_location"`
 	WorkspaceDatabase *string           `hcl:"workspace_database,optional" cty:"workspace_database"`
+	QueryTimeout      *int              `hcl:"query_timeout,optional" cty:"query_timeout"`
 	Base              *WorkspaceProfile `hcl:"base"`
 
 	// options
@@ -107,6 +108,9 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	if p.WorkspaceDatabase == nil {
 		p.WorkspaceDatabase = p.Base.WorkspaceDatabase
 	}
+	if p.QueryTimeout == nil {
+		p.QueryTimeout = p.Base.QueryTimeout
+	}
 }
 
 // ConfigMap creates a config map containing all options to pass to viper
@@ -120,6 +124,7 @@ func (p *WorkspaceProfile) ConfigMap() map[string]interface{} {
 	res.SetStringItem(p.ModLocation, constants.ArgModLocation)
 	res.SetStringItem(p.SnapshotLocation, constants.ArgSnapshotLocation)
 	res.SetStringItem(p.WorkspaceDatabase, constants.ArgWorkspaceDatabase)
+	res.SetIntItem(p.QueryTimeout, constants.ArgDatabaseQueryTimeout)
 
 	// now add options
 	// build flat config map with order or precedence (low to high): general, terminal, connection
