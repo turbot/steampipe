@@ -74,22 +74,18 @@ func BackupsDir() string {
 }
 
 // WorkspaceProfileDir returns the path to the workspace profiles directory
+// if  STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set use that
+// otherwise look in the config folder for the DEFAULT install dir
 func WorkspaceProfileDir() (string, error) {
-	workspaceProfileLocation, ok := os.LookupEnv(constants.EnvWorkspaceProfileLocation)
-	if ok {
-		var err error
-		workspaceProfileLocation, err = filehelpers.Tildefy(workspaceProfileLocation)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		defaultInstallDir, err := filehelpers.Tildefy(DefaultInstallDir)
-		if err != nil {
-			return "", err
-		}
-		workspaceProfileLocation = filepath.Join(defaultInstallDir, "workspaces")
+	if workspaceProfileLocation, ok := os.LookupEnv(constants.EnvWorkspaceProfileLocation); ok {
+		return filehelpers.Tildefy(workspaceProfileLocation)
 	}
-	return workspaceProfileLocation, nil
+
+	defaultInstallDir, err := filehelpers.Tildefy(DefaultInstallDir)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(defaultInstallDir, "config"), nil
 }
 
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)
