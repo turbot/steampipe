@@ -5,7 +5,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func AddSelfRootCert(config *pgconn.Config, certLocation string) error {
+func AddRootCertToConfig(config *pgconn.Config, certLocation string) error {
 	rootCert, err := utils.ParseCertificateInLocation(certLocation)
 	if err != nil {
 		return err
