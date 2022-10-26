@@ -2,7 +2,7 @@ package cmdconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"os"
 
@@ -40,7 +40,7 @@ func TildefyPaths() error {
 	var err error
 	for _, argName := range pathArgs {
 		if argVal := viper.GetString(argName); argVal != "" {
-			if argVal, err = helpers.Tildefy(argVal); err != nil {
+			if argVal, err = filehelpers.Tildefy(argVal); err != nil {
 				return err
 			}
 			viper.Set(argName, argVal)

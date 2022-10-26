@@ -114,6 +114,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
+	// if diagnostic mode is set, print out config and return
+	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+		cmdconfig.DisplayConfig()
+		return
+	}
 
 	// initialise
 	initData = initialiseCheck(ctx)
@@ -122,7 +127,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	initData.Result.DisplayMessages()
 
 	// pull out useful properties
-	workspace := initData.Workspace
+	w := initData.Workspace
 	client := initData.Client
 	failures := 0
 	var durations []time.Duration
@@ -141,7 +146,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, workspace, client, targetName)
+		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName)
 		error_helpers.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of failures)
@@ -155,7 +160,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// if the share args are set, create a snapshot and share it
 		if generateSnapshot {
-			controldisplay.PublishSnapshot(executionTree, shouldShare)
+			err = controldisplay.PublishSnapshot(executionTree, shouldShare)
+			error_helpers.FailOnError(err)
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
@@ -185,6 +191,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		error_helpers.ShowError(ctx, err)
 		return false
 	}
+
 	// only 1 of 'share' and 'snapshot' may be set
 	if viper.GetBool(constants.ArgShare) && viper.GetBool(constants.ArgSnapshot) {
 		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))

@@ -1,0 +1,40 @@
+[
+  {
+    "test": "default workspace profile value set 1",
+    "setup": {
+      "exports": [
+        "STEAMPIPE_DIAGNOSTICS=config_json",
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
+      ],
+      "args": ""
+    },
+    "expected": {
+      "cloud-host": "latestpipe.turbot.io/",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
+      "install-dir": "sp_install_dir",
+      "mod-location": "sp_install_dir",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e7"
+    }
+  },
+  {
+    "test": "default workspace profile value set 2",
+    "setup": {
+      "exports": [
+        "STEAMPIPE_DIAGNOSTICS=config_json",
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
+      ],
+      "args": "--output=json"
+    },
+    "expected": {
+      "cloud-host": "testpipe.turbot.io/",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
+      "install-dir": "sp_install_dir",
+      "mod-location": "sp_install_dir",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e7"
+    }
+  }
+]

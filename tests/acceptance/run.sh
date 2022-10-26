@@ -28,6 +28,7 @@ export FUNCTIONALITY_TEST_MOD=$MY_PATH/test_data/functionality_test_mod
 export CONTROL_RENDERING_TEST_MOD=$MY_PATH/test_data/control_rendering_test_mod
 export STEAMPIPE_CONNECTION_WATCHER=false
 export STEAMPIPE_INTROSPECTION=info
+export DEFAULT_WORKSPACE_PROFILE_LOCATION=$MY_PATH/test_data/source_files/workspace_profile_default
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")

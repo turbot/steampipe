@@ -111,7 +111,13 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// validate args
-	error_helpers.FailOnError(validateQueryArgs(cmd, args))
+	error_helpers.FailOnError(validateQueryArgs(args))
+
+	// if diagnostic mode is set, print out config and return
+	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+		cmdconfig.DisplayConfig()
+		return
+	}
 
 	// enable spinner only in interactive mode
 	interactiveMode := len(args) == 0
@@ -145,7 +151,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func validateQueryArgs(cmd *cobra.Command, args []string) error {
+func validateQueryArgs(args []string) error {
 	interactiveMode := len(args) == 0
 	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
 		return fmt.Errorf("cannot share snapshots in interactive mode")

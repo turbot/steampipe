@@ -5,13 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 // Constants for Config
 const (
 	DefaultInstallDir = "~/.steampipe"
-	
+
 	connectionsStateFileName     = "connection.json"
 	versionFileName              = "versions.json"
 	databaseRunningInfoFileName  = "steampipe.json"
@@ -72,8 +74,18 @@ func BackupsDir() string {
 }
 
 // WorkspaceProfileDir returns the path to the workspace profiles directory
-func WorkspaceProfileDir() string {
-	return steampipeSubDir("workspaces")
+// if  STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set use that
+// otherwise look in the config folder for the DEFAULT install dir
+func WorkspaceProfileDir() (string, error) {
+	if workspaceProfileLocation, ok := os.LookupEnv(constants.EnvWorkspaceProfileLocation); ok {
+		return filehelpers.Tildefy(workspaceProfileLocation)
+	}
+
+	defaultInstallDir, err := filehelpers.Tildefy(DefaultInstallDir)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(defaultInstallDir, "config"), nil
 }
 
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)

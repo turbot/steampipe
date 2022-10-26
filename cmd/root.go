@@ -14,7 +14,6 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
@@ -228,16 +227,11 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 }
 
 func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
-	// NOTE: always load workspace profiles  out of DEFAULT install dir
-
-	// set install dir to the default
-	// (NOTE: _do not_ call ensureInstallDir - we do not want to create the default if it is not there)
-	defaultInstallDir, err := filehelpers.Tildefy(filepaths.DefaultInstallDir)
+	// resolve the workspace profile dir
+	workspaceProfileDir, err := filepaths.WorkspaceProfileDir()
 	if err != nil {
 		return nil, err
 	}
-	filepaths.SteampipeDir = defaultInstallDir
-	workspaceProfileDir := filepaths.WorkspaceProfileDir()
 
 	// create loader
 	loader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
