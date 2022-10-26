@@ -2,6 +2,7 @@ package filepaths
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 
@@ -80,12 +81,13 @@ func WorkspaceProfileDir() (string, error) {
 	if workspaceProfileLocation, ok := os.LookupEnv(constants.EnvWorkspaceProfileLocation); ok {
 		return filehelpers.Tildefy(workspaceProfileLocation)
 	}
-
-	defaultInstallDir, err := filehelpers.Tildefy(DefaultInstallDir)
+	// respect install dir passed as arg but at this point we have not loaded env vars into viper
+	// so we will NOT take STEAMPIPE_INSTALL_DIR into account - this is by design
+	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(defaultInstallDir, "config"), nil
+	return filepath.Join(installDir, "config"), nil
 }
 
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)
