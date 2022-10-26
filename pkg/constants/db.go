@@ -32,7 +32,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.4.3-rc.0"
+	FdwVersion      = "1.4.4-rc.0"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
