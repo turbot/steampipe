@@ -91,7 +91,7 @@ Examples:
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status").
-		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", constants.DatabaseDefaultQueryTimeout, "The query timeout")
+		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", 0, "The query timeout")
 
 	return cmd
 }

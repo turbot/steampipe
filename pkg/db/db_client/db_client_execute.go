@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
@@ -116,6 +115,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	defer func() {
 		if err != nil {
+			err = error_helpers.HandleQueryTimeoutError(err)
 			// stop spinner in case of error
 			statushooks.Done(ctxExecute)
 			// error - rollback transaction if we have one
@@ -164,6 +164,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 	queryTimeout := time.Duration(viper.GetInt(constants.ArgDatabaseQueryTimeout)) * time.Second
+	// if timeout is zero, do not set a timeout
+	if queryTimeout == 0 {
+		return ctx
+	}
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(queryTimeout)
 	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
@@ -243,15 +247,7 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 // in case the client becomes unresponsive and does not respect context cancellation
 func (c *DbClient) startQuery(ctx context.Context, query string, conn *pgxpool.Conn) (rows pgx.Rows, err error) {
 	doneChan := make(chan bool)
-	defer func() {
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				// if the context deadline has been exceeded, call refreshDbClient to create a new SQL client
-				// this will refresh the session data which will have been cleared by the SQL client error handling
-				c.refreshDbClient(context.Background())
-			}
-		}
-	}()
+
 	go func() {
 		// start asynchronous query
 		rows, err = conn.Query(ctx, query)

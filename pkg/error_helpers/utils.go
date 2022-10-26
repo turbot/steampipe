@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"os"
 	"strings"
 
@@ -92,6 +94,14 @@ func TransformErrorToSteampipe(err error) error {
 func HandleCancelError(err error) error {
 	if IsCancelledError(err) {
 		err = errors.New("execution cancelled")
+	}
+
+	return err
+}
+
+func HandleQueryTimeoutError(err error) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		err = fmt.Errorf("query timeout exceeded (%ds)", viper.GetInt(constants.ArgDatabaseQueryTimeout))
 	}
 	return err
 }

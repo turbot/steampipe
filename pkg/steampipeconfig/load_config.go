@@ -89,9 +89,8 @@ func loadSteampipeConfig(workspacePath string, commandName string) (steampipeCon
 	}
 
 	// now set default options on all connections without options set
+	// this is needed as the connection config is also loaded by the FDW which has no access to viper
 	steampipeConfig.setDefaultConnectionOptions()
-
-	steampipeConfig.setDatabaseOptions()
 
 	// now validate the config
 	if err := steampipeConfig.Validate(); err != nil {
