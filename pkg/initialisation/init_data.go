@@ -120,7 +120,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	}
 
 	// get a client
-	statushooks.SetStatus(ctx, "Connecting to service...")
 	// add a message rendering function to the context - this is used for the fdw update message and
 	// allows us to render it as a standard initialisation message
 	getClientCtx := statushooks.AddMessageRendererToContext(ctx, func(format string, a ...any) {
@@ -159,8 +158,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
 func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
-	statushooks.SetStatus(ctx, "Connecting to service...")
-	defer statushooks.Done(ctx)
 
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
