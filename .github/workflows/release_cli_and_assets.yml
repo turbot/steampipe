@@ -310,7 +310,6 @@ jobs:
           - "mod"
           - "check"
           - "performance"
-          - "workspace"
           - "exit_codes"
           - "force_stop"
         exclude:
