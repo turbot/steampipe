@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -41,18 +42,23 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		opts.DatabaseName = "postgres"
 	}
 
-	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s %s",
-		info.Listen[0],
-		info.Port,
-		opts.Username,
-		opts.DatabaseName,
-		dsnSSLParams(info, opts),
-	)
+	psqlInfoMap := map[string]string{
+		// Connect to the database using the first listen address, which is usually localhost
+		"host":   info.Listen[0],
+		"port":   fmt.Sprintf("%d", info.Port),
+		"user":   opts.Username,
+		"dbname": opts.DatabaseName,
+	}
+	psqlInfoMap = utils.MergeMaps(psqlInfoMap, dsnSSLParams())
+	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 
+	psqlInfo := []string{}
+	for k, v := range psqlInfoMap {
+		psqlInfo = append(psqlInfo, fmt.Sprintf("%s=%s", k, v))
+	}
 	log.Println("[TRACE] PSQLInfo >>>", psqlInfo)
 
-	return psqlInfo, nil
+	return strings.Join(psqlInfo, " "), nil
 }
 
 type CreateDbOptions struct {

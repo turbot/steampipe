@@ -207,10 +207,10 @@ func sslStatus() string {
 	return "off"
 }
 
-// derive ssl mode from the prsesnce of the server certificate and key file
-func dsnSSLParams(info *RunningDBInstanceInfo, opts *CreateDbOptions) string {
-	if serverCertificateAndKeyExist() {
-		// as per https://www.postgresql.org/docs/current/libpq-ssl.html#LIBQ-SSL-CERTIFICATES:
+// derive ssl parameters from the presence of the server certificate and key file
+func dsnSSLParams() map[string]string {
+	if serverCertificateAndKeyExist() && rootCertificateAndKeyExists() {
+		// as per https://www.postgresql.org/docs/current/libpq-ssl.html#LIBQ-SSL-CERTIFICATES :
 		//
 		// For backwards compatibility with earlier versions of PostgreSQL, if a root CA file exists, the
 		// behavior of sslmode=require will be the same as that of verify-ca, meaning the
@@ -218,14 +218,14 @@ func dsnSSLParams(info *RunningDBInstanceInfo, opts *CreateDbOptions) string {
 		// applications that need certificate validation should always use verify-ca or verify-full.
 		//
 		// Since we are using the Root Certificate, 'require' is overridden with 'verify-ca' anyway
-		return fmt.Sprintf(
-			"sslmode=verify-ca sslrootcert=%s sslcert=%s sslkey=%s",
-			getRootCertLocation(),
-			getServerCertLocation(),
-			getServerCertKeyLocation(),
-		)
+		return map[string]string{
+			"sslmode":     "verify-ca",
+			"sslrootcert": getRootCertLocation(),
+			"sslcert":     getServerCertLocation(),
+			"sslkey":      getServerCertKeyLocation(),
+		}
 	}
-	return "sslmode=disable"
+	return map[string]string{"sslmode": "disable"}
 }
 
 func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
