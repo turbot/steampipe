@@ -1,13 +1,14 @@
 package cloud
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
+	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
-	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -15,31 +16,20 @@ import (
 
 // WebLogin POSTs to ${envBaseUrl}/api/latest/login/token to retrieve a login is
 // it then opens the login webpage and returns th eid
-func WebLogin() (string, error) {
-	//  POST `${envBaseUrl}/api/latest/login/token`
-	baseURL := getBaseApiUrl()
-	client := &http.Client{}
-	urlPath, err := url.JoinPath(baseURL, loginIdAPI)
+func WebLogin(ctx context.Context) (string, error) {
+	client := newSteampipeCloudClient(viper.GetString(constants.ArgCloudToken))
+
+	tempTokenReq, _, err := client.Auth.LoginTokenCreate(ctx).Execute()
 	if err != nil {
 		return "", err
 	}
-
-	var resp = map[string]any{}
-	err = postToAPI(urlPath, "", "", client, &resp)
-	if err != nil {
-		return "", err
-	}
-
-	// Open browser at `${envBaseUrl}/login/token?r=${id}`
-	// build browser url
-	id := resp["id"].(string)
-
-	browserUrl, err := url.JoinPath(baseURL, webLoginTokenUrl)
+	id := tempTokenReq.Id
+	browserUrl, err := url.JoinPath(getBaseApiUrl(), id)
 	if err != nil {
 		return "", err
 	}
 	// add in id query string
-	browserUrl = fmt.Sprintf("%s?r=%s", browserUrl, id)
+	browserUrl = fmt.Sprintf("%s?r=%s", browserUrl, tempTokenReq)
 
 	fmt.Printf("Opening %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
@@ -52,28 +42,29 @@ func WebLogin() (string, error) {
 
 // GetLoginToken uses the login id and code and retrieves an authentication token
 func GetLoginToken(id, code string) (string, error) {
-	// GET `/api/latest/login/token/${id}?code=${fourDigitCode}`
-	baseURL := getBaseApiUrl()
-	client := &http.Client{}
-
-	getLoginTokenApiPath, err := url.JoinPath(baseURL, fmt.Sprintf(loginTokenAPIFormat, id))
-	if err != nil {
-		return "", err
-	}
-	// add in code
-	urlPath := fmt.Sprintf("%s?code=%s", getLoginTokenApiPath, code)
-
-	var resp = map[string]any{}
-	err = getFromAPI(urlPath, "", client, &resp)
-	if err != nil {
-		return "", err
-	}
-	// ensure the result is successful
-	if resp["state"].(string) != "confirmed" {
-		return "", fmt.Errorf("invalid code")
-	}
-
-	token := resp["token"].(string)
+	//// GET `/api/latest/login/token/${id}?code=${fourDigitCode}`
+	//baseURL := getBaseApiUrl()
+	//client := &http.Client{}
+	//
+	//getLoginTokenApiPath, err := url.JoinPath(baseURL, fmt.Sprintf(loginTokenAPIFormat, id))
+	//if err != nil {
+	//	return "", err
+	//}
+	//// add in code
+	//urlPath := fmt.Sprintf("%s?code=%s", getLoginTokenApiPath, code)
+	//
+	//var resp = map[string]any{}
+	//err = getFromAPI(urlPath, "", client, &resp)
+	//if err != nil {
+	//	return "", err
+	//}
+	//// ensure the result is successful
+	//if resp["state"].(string) != "confirmed" {
+	//	return "", fmt.Errorf("invalid code")
+	//}
+	//
+	//token := resp["token"].(string)
+	var token string
 	return token, nil
 }
 
@@ -95,17 +86,20 @@ func LoadToken() (string, error) {
 	return string(tokenBytes), nil
 }
 
-func GetUserName(token string) (string, error) {
-	baseURL := getBaseApiUrl()
-	client := &http.Client{}
-	bearer := getBearerToken(token)
-
-	actor, err := getActor(baseURL, bearer, client)
+func GetUserName(ctx context.Context, token string) (string, error) {
+	client := newSteampipeCloudClient(token)
+	actor, _, err := client.Actors.Get(ctx).Execute()
 	if err != nil {
 		return "", err
 	}
+	return getActorName(actor), nil
+}
 
-	return actor.DisplayName, nil
+func getActorName(actor steampipecloud.User) string {
+	if actor.DisplayName != nil {
+		return *actor.DisplayName
+	}
+	return actor.Handle
 }
 
 func tokenFilePath(cloudHost string) string {

@@ -111,7 +111,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// validate args
-	error_helpers.FailOnError(validateQueryArgs(args))
+	error_helpers.FailOnError(validateQueryArgs(ctx, args))
 
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
@@ -151,13 +151,13 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func validateQueryArgs(args []string) error {
+func validateQueryArgs(ctx context.Context, args []string) error {
 	interactiveMode := len(args) == 0
 	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
 		return fmt.Errorf("cannot share snapshots in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
-	err := cmdconfig.ValidateCloudArgs()
+	err := cmdconfig.ValidateCloudArgs(ctx)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			}
 
 			// share the snapshot if necessary
-			err = publishSnapshotIfNeeded(snap)
+			err = publishSnapshotIfNeeded(ctx, snap)
 			error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
 
 			// export the result if necessary

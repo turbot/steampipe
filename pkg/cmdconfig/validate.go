@@ -1,6 +1,7 @@
 package cmdconfig
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -10,7 +11,7 @@ import (
 	"strings"
 )
 
-func ValidateCloudArgs() error {
+func ValidateCloudArgs(ctx context.Context) error {
 	// only 1 of 'share' and 'snapshot' may be set
 	share := viper.GetBool(constants.ArgShare)
 	snapshot := viper.GetBool(constants.ArgSnapshot)
@@ -27,7 +28,7 @@ func ValidateCloudArgs() error {
 
 	// determine whether snapshot location is a cloud workspace or a file location
 	// if a file location, check it exists
-	if err := validateSnapshotLocation(token); err != nil {
+	if err := validateSnapshotLocation(ctx, token); err != nil {
 		return err
 	}
 
@@ -48,7 +49,7 @@ func ValidateCloudArgs() error {
 	return validateSnapshotTags()
 }
 
-func validateSnapshotLocation(cloudToken string) error {
+func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
 
 	// if snapshot location is not set, set to the users default
@@ -56,7 +57,7 @@ func validateSnapshotLocation(cloudToken string) error {
 		if cloudToken == "" {
 			return constants.MissingCloudTokenError
 		}
-		return setSnapshotLocationFromDefaultWorkspace(cloudToken)
+		return setSnapshotLocationFromDefaultWorkspace(ctx, cloudToken)
 	}
 
 	// if it is NOT a workspace handle, assume it is a local file location:
@@ -78,16 +79,16 @@ func validateSnapshotLocation(cloudToken string) error {
 	return nil
 }
 
-func setSnapshotLocationFromDefaultWorkspace(cloudToken string) error {
-	workspaces, userHandle, err := cloud.GetUserWorkspaceHandles(cloudToken)
+func setSnapshotLocationFromDefaultWorkspace(ctx context.Context, cloudToken string) error {
+	workspaces, actorName, err := cloud.GetUserWorkspaceHandles(ctx, cloudToken)
 	if err != nil {
 		return err
 	}
 	if len(workspaces) == 0 {
-		return fmt.Errorf("snapshot-location is not specified and no workspaces exist for user %s", userHandle)
+		return fmt.Errorf("snapshot-location is not specified and no workspaces exist for user %s", actorName)
 	}
 	if len(workspaces) > 1 {
-		return fmt.Errorf("more than one workspace found for user %s", userHandle)
+		return fmt.Errorf("more than one workspace found for user %s", actorName)
 	}
 
 	viper.Set(constants.ArgSnapshotLocation, workspaces[0])

@@ -88,7 +88,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	}
 
 	// retrieve cloud metadata
-	cloudMetadata, err := getCloudMetadata()
+	cloudMetadata, err := getCloudMetadata(ctx)
 	if err != nil {
 		i.Result.Error = err
 		return

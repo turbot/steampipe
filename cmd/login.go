@@ -9,7 +9,6 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"log"
 	"os"
 )
 
@@ -32,7 +31,7 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 
 	// start login flow - this will open a web page prompting user to login, and will give the user a code to enter
-	var id, err = cloud.WebLogin()
+	var id, err = cloud.WebLogin(ctx)
 	error_helpers.FailOnError(err)
 	// Wait for user to input 4-digit code they obtain through the UI login / approval
 
@@ -53,15 +52,11 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	err = cloud.SaveToken(token)
 	error_helpers.FailOnError(err)
 
-	// ensure user has at least 1 workspace
-	err = ensureWorkspace(ctx, token)
-	error_helpers.FailOnError(err)
-
-	displayLoginMessage(token)
+	displayLoginMessage(ctx, token)
 }
 
-func displayLoginMessage(token string) {
-	userName, err := cloud.GetUserName(token)
+func displayLoginMessage(ctx context.Context, token string) {
+	userName, err := cloud.GetUserName(ctx, token)
 	error_helpers.FailOnErrorWithMessage(err, "Failed to read user name")
 
 	fmt.Printf("Login successful for user %s\n", userName)
@@ -80,20 +75,4 @@ func promptUserForString(prompt string) (string, error) {
 	code := scanner.Text()
 
 	return code, nil
-}
-
-func ensureWorkspace(_ context.Context, token string) error {
-	workspaces, _, err := cloud.GetUserWorkspaceHandles(token)
-	if err != nil {
-		return err
-	}
-	if len(workspaces) > 0 {
-		return nil
-	}
-
-	workspaceHandle, err := promptUserForString("Enter handle for default workspace: ")
-	error_helpers.FailOnError(err)
-
-	log.Println(workspaceHandle)
-	return nil
 }

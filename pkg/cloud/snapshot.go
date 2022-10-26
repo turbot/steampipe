@@ -2,20 +2,18 @@ package cloud
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/viper"
+	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"net/http"
-	"net/url"
 	"path"
 	"strings"
 )
 
-func PublishSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
+func PublishSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
 	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
 	// snapshotLocation must be set (validation should ensure this)
 	if snapshotLocation == "" {
@@ -24,7 +22,7 @@ func PublishSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (st
 
 	// if snapshot location is a workspace handle, upload it
 	if steampipeconfig.IsCloudWorkspaceIdentifier(snapshotLocation) {
-		url, err := uploadSnapshot(snapshot, share)
+		url, err := uploadSnapshot(ctx, snapshot, share)
 		if err != nil {
 			return "", err
 		}
@@ -53,30 +51,25 @@ func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) 
 	return filePath, nil
 }
 
-func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
-	baseUrl := getBaseApiUrl()
-	client := &http.Client{}
-	bearer := getBearerToken(viper.GetString(constants.ArgCloudToken))
-	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
+func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
+	client := newSteampipeCloudClient(viper.GetString(constants.ArgCloudToken))
 
+	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
 	}
-	identity := parts[0]
-	worskpaceHandle := parts[1]
+	identityHandle := parts[0]
+	workspaceHandle := parts[1]
 
 	// no determine whether this is a user or org workspace
-	workspaceType, err := getWorkspaceType(identity, worskpaceHandle, baseUrl, bearer, client)
+	// get the identity
+	identity, _, err := client.Identities.Get(ctx, identityHandle).Execute()
 	if err != nil {
 		return "", err
 	}
 
-	urlPath, err := url.JoinPath(baseUrl,
-		fmt.Sprintf("api/v0/%s/%s/workspace/%s/snapshot", workspaceType, identity, worskpaceHandle))
-	if err != nil {
-		return "", err
-	}
+	workspaceType := identity.Type
 
 	// set the visibility
 	visibility := "workspace"
@@ -87,64 +80,33 @@ func uploadSnapshot(snapshot *dashboardtypes.SteampipeSnapshot, share bool) (str
 	// populate map of tags tags been set?
 	tags := getTags()
 
-	body := struct {
-		Data       *dashboardtypes.SteampipeSnapshot `json:"data"`
-		Tags       map[string]any                    `json:"tags"`
-		Visibility string                            `json:"visibility"`
-	}{
-		Data:       snapshot,
-		Tags:       tags,
-		Visibility: visibility,
-	}
-
-	bodyStr, err := json.Marshal(body)
+	cloudSnapshot, err := snapshot.AsCloudSnapshot()
 	if err != nil {
 		return "", err
 	}
+	req := steampipecloud.CreateWorkspaceSnapshotRequest{Data: *cloudSnapshot, Tags: tags, Visibility: &visibility}
 
-	var resp = map[string]any{}
-	err = postToAPI(urlPath, bearer, string(bodyStr), client, &resp)
-	if err != nil {
-		return "", err
+	var uploadedSnapshot steampipecloud.WorkspaceSnapshot
+	if identity.Type == "user" {
+		uploadedSnapshot, _, err = client.UserWorkspaceSnapshots.Create(ctx, identityHandle, workspaceHandle).Request(req).Execute()
+	} else {
+		uploadedSnapshot, _, err = client.OrgWorkspaceSnapshots.Create(ctx, identityHandle, workspaceHandle).Request(req).Execute()
 	}
 
-	snapshotId := resp["id"].(string)
+	snapshotId := uploadedSnapshot.Id
 	snapshotUrl := fmt.Sprintf("https://%s/%s/%s/workspace/%s/snapshot/%s",
 		viper.GetString(constants.ArgCloudHost),
 		workspaceType,
-		identity,
-		worskpaceHandle,
+		identityHandle,
+		workspaceHandle,
 		snapshotId)
 
 	return snapshotUrl, nil
 }
 
-func getWorkspaceType(identityHandle, workspaceHandle, baseUrl, bearer string, client *http.Client) (string, error) {
-	workspaces, err := getWorkspaces(baseUrl, bearer, client)
-	if err != nil {
-		return "", err
-	}
-	for _, w := range workspaces {
-		workspace := w.(map[string]any)
-		if workspace["handle"].(string) == workspaceHandle {
-			identity := workspace["identity"].(map[string]any)
-			if identity["handle"].(string) == identityHandle {
-				workspaceType := identity["type"].(string)
-				return workspaceType, nil
-			}
-		}
-	}
-	return "", fmt.Errorf("workspace %s not found", workspaceHandle)
-}
-
 func getTags() map[string]any {
 	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
 	res := map[string]any{}
-	if len(tags) == 0 {
-		// if no tags were specified, add the default
-		res["generated_by"] = "cli"
-		return res
-	}
 
 	for _, tagStr := range tags {
 		parts := strings.Split(tagStr, "=")

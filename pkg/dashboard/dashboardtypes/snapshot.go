@@ -1,6 +1,8 @@
 package dashboardtypes
 
 import (
+	"encoding/json"
+	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"time"
 )
 
@@ -19,3 +21,16 @@ type SteampipeSnapshot struct {
 
 // IsExportSourceData implements ExportSourceData
 func (*SteampipeSnapshot) IsExportSourceData() {}
+
+func (s *SteampipeSnapshot) AsCloudSnapshot() (*steampipecloud.WorkspaceSnapshotData, error) {
+	jsonbytes, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &steampipecloud.WorkspaceSnapshotData{}
+	if err := json.Unmarshal(jsonbytes, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
