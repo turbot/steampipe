@@ -29,6 +29,9 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 		handleDashboardEvent(event, resultChannel, errorChannel)
 	}
 	w.RegisterDashboardEventHandler(dashboardEventHandler)
+
+	// all runtime dependencies must be resolved before execution (i.e. inputs must be passed in)
+	Executor.allInputsMustBeSpecified = true
 	Executor.ExecuteDashboard(snapshotCtx, sessionId, target, inputs, w, initData.Client)
 
 	select {
@@ -38,7 +41,7 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 	// clear event handlers again in case another snapshot will be generated in this run
 	w.UnregisterDashboardEventHandlers()
 
-	return snapshot, err
+	return snapshot, snapshotCtx.Err()
 }
 
 // create the context for the check run - add a control status renderer

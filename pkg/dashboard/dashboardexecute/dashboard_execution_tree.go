@@ -3,6 +3,7 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"sync"
 	"time"
@@ -196,6 +197,45 @@ func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.Dashboa
 	return e.runComplete
 }
 
+func (e *DashboardExecutionTree) Cancel() {
+	// if we have not completed, and already have a cancel function - cancel
+	if e.GetRunStatus() != dashboardtypes.DashboardRunReady || e.cancel == nil {
+		return
+	}
+	e.cancel()
+
+	// if there are any children, wait for the execution to complete
+	if !e.Root.RunComplete() {
+		<-e.runComplete
+	}
+}
+
+func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
+	return e.inputValues[name]
+}
+
+func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
+	res := map[string]dashboardtypes.SnapshotPanel{}
+	// if this node is a snapshot node, add to map
+	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
+		res[e.Root.GetName()] = snapshotNode
+	}
+	return e.buildSnapshotPanelsUnder(e.Root, res)
+}
+
+// RuntimeDependencies returns the runtime depedencies for all leaf nodes
+func (e *DashboardExecutionTree) RuntimeDependencies() []string {
+	var deps = map[string]struct{}{}
+	for _, r := range e.runs {
+		if leafRun, ok := r.(*LeafRun); ok {
+			for _, v := range leafRun.runtimeDependencies {
+				deps[v.dependency.SourceResource.GetUnqualifiedName()] = struct{}{}
+			}
+		}
+	}
+	return maps.Keys(deps)
+}
+
 func (e *DashboardExecutionTree) waitForRuntimeDependency(ctx context.Context, dependency *modconfig.RuntimeDependency) error {
 	depChan := make(chan bool, 1)
 
@@ -240,32 +280,6 @@ func (e *DashboardExecutionTree) unsubscribeToInput(inputName string, depChan *c
 		return
 	}
 	delete(subscribers, depChan)
-}
-
-func (e *DashboardExecutionTree) Cancel() {
-	// if we have not completed, and already have a cancel function - cancel
-	if e.GetRunStatus() != dashboardtypes.DashboardRunReady || e.cancel == nil {
-		return
-	}
-	e.cancel()
-
-	// if there are any children, wait for the execution to complete
-	if !e.Root.RunComplete() {
-		<-e.runComplete
-	}
-}
-
-func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
-	return e.inputValues[name]
-}
-
-func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
-	res := map[string]dashboardtypes.SnapshotPanel{}
-	// if this node is a snapshot node, add to map
-	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
-		res[e.Root.GetName()] = snapshotNode
-	}
-	return e.buildSnapshotPanelsUnder(e.Root, res)
 }
 
 func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardNodeRun, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {

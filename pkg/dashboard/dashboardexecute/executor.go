@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/utils"
 	"os"
+	"strings"
 	"sync"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -18,6 +20,9 @@ type DashboardExecutor struct {
 	// map of executions, keyed by session id
 	executions    map[string]*DashboardExecutionTree
 	executionLock sync.Mutex
+	// are all input value required before execution
+	// true when running a single dashboard in batch mode
+	allInputsMustBeSpecified bool
 }
 
 func newDashboardExecutor() *DashboardExecutor {
@@ -31,6 +36,9 @@ var Executor = newDashboardExecutor()
 func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]interface{}, workspace *workspace.Workspace, client db_common.Client) (err error) {
 	var executionTree *DashboardExecutionTree
 	defer func() {
+		if err != nil && ctx.Err() != nil {
+			err = ctx.Err()
+		}
 		// if there was an error executing, send an ExecutionError event
 		if err != nil {
 			errorEvent := &dashboardevents.ExecutionError{
@@ -50,6 +58,12 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 		return err
 	}
 
+	// if inputs must be provided before execution (i.e. this is a batch dashboard execution),
+	// verify all required inputs are provided
+	if err := e.validateInputs(executionTree, inputs); err != nil {
+		return err
+	}
+
 	// add to execution map
 	e.setExecution(sessionId, executionTree)
 
@@ -59,6 +73,26 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 	}
 
 	go executionTree.Execute(ctx)
+
+	return nil
+}
+
+// if inputs must be provided before execution (i.e. this is a batch dashboard execution),
+// verify all required inputs are provided
+func (e *DashboardExecutor) validateInputs(executionTree *DashboardExecutionTree, inputs map[string]interface{}) error {
+	if !e.allInputsMustBeSpecified {
+		// this must be an interactive dashboard execution - no need to validate
+		return nil
+	}
+	var missingInputs []string
+	for _, dep := range executionTree.RuntimeDependencies() {
+		if _, ok := inputs[dep]; !ok {
+			missingInputs = append(missingInputs, dep)
+		}
+	}
+	if missingCount := len(missingInputs); missingCount > 0 {
+		return fmt.Errorf("%s %s must be provided using '--dashboard-input name=value", utils.Pluralize("input", missingCount), strings.Join(missingInputs, ","))
+	}
 
 	return nil
 }
