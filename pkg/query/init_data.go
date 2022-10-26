@@ -87,11 +87,11 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	i.Queries = queries
 	i.PreparedStatementSource = preparedStatementSource
 
+	// and call base init
+	i.InitData.Init(ctx, constants.InvokerQuery)
+
 	if len(args) > 0 {
 		// disable status hooks for batch mode
 		ctx = statushooks.DisableStatusHooks(ctx)
 	}
-
-	// and call base init
-	i.InitData.Init(ctx, constants.InvokerQuery)
 }
