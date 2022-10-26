@@ -87,7 +87,7 @@ Examples:
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
 		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
-		AddStringSliceFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
+		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status").
