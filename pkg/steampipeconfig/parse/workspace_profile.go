@@ -49,9 +49,8 @@ func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*
 	}
 
 	// do a partial decode
-	content, diags := body.Content(WorkspaceProfileListBlockSchema)
+	content, diags := body.Content(ConfigBlockSchema)
 	if diags.HasErrors() {
-
 		return nil, plugin.DiagsToError("Failed to load workspace profiles", diags)
 	}
 
@@ -109,11 +108,13 @@ func decodeWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string
 	parseCtx.ClearDependencies()
 
 	for _, block := range blocksToDecode {
-		workspaceProfile, res := decodeWorkspaceProfile(block, parseCtx)
+		if block.Type == modconfig.BlockTypeWorkspaceProfile {
+			workspaceProfile, res := decodeWorkspaceProfile(block, parseCtx)
 
-		if res.Success() {
-			// success - add to map
-			profileMap[workspaceProfile.ProfileName] = workspaceProfile
+			if res.Success() {
+				// success - add to map
+				profileMap[workspaceProfile.ProfileName] = workspaceProfile
+			}
 		}
 	}
 	return profileMap, diags

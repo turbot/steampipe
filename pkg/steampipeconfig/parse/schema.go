@@ -17,13 +17,6 @@ var ConfigBlockSchema = &hcl.BodySchema{
 			Type:       "options",
 			LabelNames: []string{"type"},
 		},
-	},
-}
-
-var WorkspaceProfileListBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{},
-	Blocks: []hcl.BlockHeaderSchema{
-
 		{
 			Type:       "workspace",
 			LabelNames: []string{"name"},
