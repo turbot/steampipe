@@ -3,6 +3,7 @@ import { DashboardActions } from "../../types";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
+import Icon from "../Icon";
 
 const OpenSnapshotButton = () => {
   const { dispatch } = useDashboard();
@@ -12,11 +13,17 @@ const OpenSnapshotButton = () => {
   return (
     <>
       <NeutralButton
+        className="inline-flex items-center space-x-1"
         onClick={() => {
           fileInputRef.current?.click();
         }}
+        size="sm"
       >
-        <>Open Snapshot</>
+        <Icon
+          className="inline-block text-foreground-lighter w-5 -mt-0.5"
+          icon="arrow-up-tray"
+        />
+        <span className="hidden lg:block">Open</span>
       </NeutralButton>
       <input
         ref={fileInputRef}
