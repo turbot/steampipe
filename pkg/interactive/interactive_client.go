@@ -347,10 +347,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 		}),
 		// ignore suppressed ASCII codes
 		prompt.OptionAddASCIICodeBind(c.suppressOnInput()...),
-		prompt.OptionAddKeyBind(prompt.KeyBind{
-			Key: prompt.ControlC,
-			Fn:  func(b *prompt.Buffer) { c.enabeAutoComplete(b) },
-		}),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
@@ -587,14 +583,17 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 	if !c.isInitialised() {
 		return nil
 	}
+	if !cmdconfig.Viper().GetBool(constants.ArgAutoComplete) {
+		return nil
+	}
+
+	var s []prompt.Suggest
 
 	text := strings.TrimLeft(strings.ToLower(d.Text), " ")
 
 	if len(c.interactiveBuffer) > 0 {
 		text = strings.Join(append(c.interactiveBuffer, text), " ")
 	}
-
-	var s []prompt.Suggest
 
 	if len(d.CurrentLine()) == 0 && !c.autocompleteOnEmpty {
 		// if nothing has been typed yet, no point
@@ -638,6 +637,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		// }
 
 	}
+
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 
