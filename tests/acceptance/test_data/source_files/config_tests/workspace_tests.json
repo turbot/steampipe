@@ -28,7 +28,7 @@
       "args": "--output=json"
     },
     "expected": {
-      "cloud-host": "testpipe.turbot.io/",
+      "cloud-host": "latestpipe.turbot.io/",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
       "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
