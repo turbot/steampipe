@@ -74,8 +74,8 @@ func GetUserName(ctx context.Context, token string) (string, error) {
 }
 
 func getActorName(actor steampipecloud.User) string {
-	if actor.DisplayName != nil {
-		return *actor.DisplayName
+	if name, ok := actor.GetDisplayNameOk(); ok {
+		return *name
 	}
 	return actor.Handle
 }

@@ -111,7 +111,8 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// validate args
-	error_helpers.FailOnError(validateQueryArgs(ctx, args))
+	err := validateQueryArgs(ctx, args)
+	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
@@ -194,7 +195,9 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			query := initData.Queries[name]
 			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 			// this is to allow us to use existing dashboard execution code
-			targetName := ensureQueryResource(name, query, i, w)
+
+			// build query name and title
+			targetName := ensureQueryResource(name, query, i, len(queryNames), w)
 
 			// we need to pass the embedded initData to  GenerateSnapshot
 			baseInitData := &initData.InitData
@@ -266,25 +269,32 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	return res, nil
 }
 
-func ensureQueryResource(name string, query string, queryIdx int, w *workspace.Workspace) string {
-	var found bool
-	var resource modconfig.HclResource
+// convert the givenb command line query intos a query resource and add to workspace
+// this is to allow us to use existing dashboard execution code
+func ensureQueryResource(name string, query string, queryIdx, queryCount int, w *workspace.Workspace) string {
+	// is this an existing resource?
 	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
-		resource, found = modconfig.GetResource(w, parsedName)
+		if resource, found := modconfig.GetResource(w, parsedName); found {
+			return resource.Name()
+		}
 	}
-	if found {
-		return resource.Name()
+
+	// build name and title
+	shortName := "command_line_query"
+	title := "Command line query"
+	if queryCount > 1 {
+		shortName = fmt.Sprintf("%s_%d", shortName, queryIdx)
+		title = fmt.Sprintf("%s %d", title, queryIdx)
 	}
-	// so this must be an ad hoc query - create a query resource and add to mod
-	shortName := fmt.Sprintf("command_line_query_%d", queryIdx)
-	title := fmt.Sprintf("Command line query %d", queryIdx)
+
+	// create the query
 	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName).(*modconfig.Query)
 	q.Title = utils.ToStringPointer(title)
 	q.SQL = utils.ToStringPointer(query)
 	// add empty metadata
 	q.SetMetadata(&modconfig.ResourceMetadata{})
 
-	// add this to the workspace mod so the dashboard execution code can find it
+	// add to the workspace mod so the dashboard execution code can find it
 	w.Mod.AddResource(q)
 	// return the new resource name
 	return q.Name()

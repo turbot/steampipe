@@ -92,6 +92,9 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 	} else {
 		uploadedSnapshot, _, err = client.OrgWorkspaceSnapshots.Create(ctx, identityHandle, workspaceHandle).Request(req).Execute()
 	}
+	if err != nil {
+		return "", err
+	}
 
 	snapshotId := uploadedSnapshot.Id
 	snapshotUrl := fmt.Sprintf("https://%s/%s/%s/workspace/%s/snapshot/%s",
