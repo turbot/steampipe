@@ -1,7 +1,6 @@
 package db_local
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -59,7 +58,7 @@ func ValidateRootCertificate() bool {
 	utils.LogTime("db_local.ValidateRootCertificates start")
 	defer utils.LogTime("db_local.ValidateRootCertificates end")
 
-	rootCertificate, err := parseCertificateInLocation(getRootCertLocation())
+	rootCertificate, err := utils.ParseCertificateInLocation(getRootCertLocation())
 	if err != nil {
 		return false
 	}
@@ -72,7 +71,7 @@ func ValidateServerCertificate() bool {
 	utils.LogTime("db_local.ValidateServerCertificates start")
 	defer utils.LogTime("db_local.ValidateServerCertificates end")
 
-	serverCertificate, err := parseCertificateInLocation(getServerCertLocation())
+	serverCertificate, err := utils.ParseCertificateInLocation(getServerCertLocation())
 	if err != nil {
 		return false
 	}
@@ -95,7 +94,7 @@ func ensureSelfSignedCertificate() (err error) {
 		if err != nil {
 			return err
 		}
-		rootCertificate, err = parseCertificateInLocation(getRootCertLocation())
+		rootCertificate, err = utils.ParseCertificateInLocation(getRootCertLocation())
 	} else {
 		// otherwise generate them
 		rootCertificate, rootPrivateKey, err = generateRootCertificate()
@@ -122,24 +121,6 @@ func serverCertificateAndKeyExist() bool {
 // isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)
 func isCerticateExpiring(certificate *x509.Certificate) bool {
 	return certificate.NotAfter.Add(-CertExpiryTolerance).After(time.Now())
-}
-
-func parseCertificateInLocation(location string) (*x509.Certificate, error) {
-	utils.LogTime("db_local.parseCertificateInLocation start")
-	defer utils.LogTime("db_local.parseCertificateInLocation end")
-
-	rootCertRaw, err := os.ReadFile(getRootCertLocation())
-	if err != nil {
-		// if we can't read the certificate, then there's a problem with permissions
-		return nil, err
-	}
-	// decode the pem blocks
-	rootPemBlock, _ := pem.Decode(rootCertRaw)
-	if rootPemBlock == nil {
-		return nil, fmt.Errorf("could not decode PEM blocks from certificate at %s", location)
-	}
-	// parse the PEM Blocks to Certificates
-	return x509.ParseCertificate(rootPemBlock.Bytes)
 }
 
 func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
@@ -170,17 +151,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 		return nil, nil, err
 	}
 
-	caCertificatePem := &bytes.Buffer{}
-	err = pem.Encode(caCertificatePem, &pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: caCertificate,
-	})
-	if err != nil {
-		log.Println("[WARN] failed to encode to PEM")
-		return nil, nil, err
-	}
-
-	if err := writeCertFile(getRootCertLocation(), caCertificatePem.String()); err != nil {
+	if err := utils.WriteCertificate(getRootCertLocation(), caCertificate); err != nil {
 		log.Println("[WARN] failed to save the certificate")
 		return nil, nil, err
 	}
@@ -216,32 +187,11 @@ func generateServerCertificates(caCertificateData *x509.Certificate, caPrivateKe
 		return err
 	}
 
-	// Encode and save the server certificate
-	serverCertPem := new(bytes.Buffer)
-	err = pem.Encode(serverCertPem, &pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: serverCertBytes,
-	})
-	if err != nil {
-		log.Println("[INFO] Failed to encode to PEM for server certificate")
-		return err
-	}
-	if err := writeCertFile(getServerCertLocation(), serverCertPem.String()); err != nil {
+	if err := utils.WriteCertificate(getServerCertLocation(), serverCertBytes); err != nil {
 		log.Println("[INFO] Failed to save server certificate")
 		return err
 	}
-
-	// Encode and save the server private key
-	serverPrivKeyPem := new(bytes.Buffer)
-	err = pem.Encode(serverPrivKeyPem, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(serverPrivKey),
-	})
-	if err != nil {
-		log.Println("[INFO] Failed to encode to PEM for server private key")
-		return err
-	}
-	if err := writeCertFile(getServerCertKeyLocation(), serverPrivKeyPem.String()); err != nil {
+	if err := utils.WritePrivateKey(getServerCertKeyLocation(), serverPrivKey); err != nil {
 		log.Println("[INFO] Failed to save server private key")
 		return err
 	}
@@ -251,19 +201,31 @@ func generateServerCertificates(caCertificateData *x509.Certificate, caPrivateKe
 
 // derive ssl status from out ssl mode
 func sslStatus() string {
-	status := sslMode()
-	if status == "require" {
+	if serverCertificateAndKeyExist() {
 		return "on"
 	}
 	return "off"
 }
 
-// derive ssl mode from the prsesnce of the server certificate and key file
-func sslMode() string {
-	if serverCertificateAndKeyExist() {
-		return "require"
+// derive ssl parameters from the presence of the server certificate and key file
+func dsnSSLParams() map[string]string {
+	if serverCertificateAndKeyExist() && rootCertificateAndKeyExists() {
+		// as per https://www.postgresql.org/docs/current/libpq-ssl.html#LIBQ-SSL-CERTIFICATES :
+		//
+		// For backwards compatibility with earlier versions of PostgreSQL, if a root CA file exists, the
+		// behavior of sslmode=require will be the same as that of verify-ca, meaning the
+		// server certificate is validated against the CA. Relying on this behavior is discouraged, and
+		// applications that need certificate validation should always use verify-ca or verify-full.
+		//
+		// Since we are using the Root Certificate, 'require' is overridden with 'verify-ca' anyway
+		return map[string]string{
+			"sslmode":     "verify-ca",
+			"sslrootcert": getRootCertLocation(),
+			"sslcert":     getServerCertLocation(),
+			"sslkey":      getServerCertKeyLocation(),
+		}
 	}
-	return "disable"
+	return map[string]string{"sslmode": "disable"}
 }
 
 func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
@@ -281,16 +243,7 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 		log.Println("[WARN] private key creation failed for ca failed")
 		return nil, err
 	}
-	caPrivateKeyPem := new(bytes.Buffer)
-	err = pem.Encode(caPrivateKeyPem, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(caPrivateKey),
-	})
-	if err != nil {
-		log.Println("[WARN] failed to encode to PEM for ca private key")
-		return nil, err
-	}
-	if err := writeCertFile(getRootCertKeyLocation(), caPrivateKeyPem.String()); err != nil {
+	if err := utils.WritePrivateKey(getRootCertKeyLocation(), caPrivateKey); err != nil {
 		log.Println("[WARN] failed to save root private key")
 		return nil, err
 	}
@@ -331,8 +284,4 @@ func loadRootPrivateKey() (*rsa.PrivateKey, error) {
 		return nil, fmt.Errorf("failed to parse RSA private key")
 	}
 	return privateKey, nil
-}
-
-func writeCertFile(filePath string, cert string) error {
-	return os.WriteFile(filePath, []byte(cert), 0600)
 }

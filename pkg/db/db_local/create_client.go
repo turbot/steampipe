@@ -3,6 +3,9 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
@@ -39,15 +42,23 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		opts.DatabaseName = "postgres"
 	}
 
-	// Connect to the database using the first listen address, which is usually localhost
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s",
-		info.Listen[0],
-		info.Port,
-		opts.Username,
-		opts.DatabaseName,
-		sslMode())
+	psqlInfoMap := map[string]string{
+		// Connect to the database using the first listen address, which is usually localhost
+		"host":   info.Listen[0],
+		"port":   fmt.Sprintf("%d", info.Port),
+		"user":   opts.Username,
+		"dbname": opts.DatabaseName,
+	}
+	psqlInfoMap = utils.MergeMaps(psqlInfoMap, dsnSSLParams())
+	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 
-	return psqlInfo, nil
+	psqlInfo := []string{}
+	for k, v := range psqlInfoMap {
+		psqlInfo = append(psqlInfo, fmt.Sprintf("%s=%s", k, v))
+	}
+	log.Println("[TRACE] PSQLInfo >>>", psqlInfo)
+
+	return strings.Join(psqlInfo, " "), nil
 }
 
 type CreateDbOptions struct {
@@ -77,6 +88,10 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 	// this is used to determine whether the database can safely be closed
 	connConfig.Config.RuntimeParams = map[string]string{
 		"application_name": runtime.PgClientAppName,
+	}
+	err = db_common.AddRootCertToConfig(&connConfig.Config, getRootCertLocation())
+	if err != nil {
+		return nil, err
 	}
 
 	conn, err := pgx.ConnectConfig(ctx, connConfig)
