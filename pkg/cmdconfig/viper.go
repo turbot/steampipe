@@ -94,6 +94,7 @@ func setDefaultsFromEnv() {
 		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
 		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},
+		constants.EnvQueryTimeout:      {constants.ArgDatabaseQueryTimeout, "int"},
 	}
 
 	for k, v := range envMappings {
