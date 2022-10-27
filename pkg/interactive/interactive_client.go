@@ -576,6 +576,9 @@ func (c *InteractiveClient) shouldExecute(line string, namedQuery bool) bool {
 }
 
 func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
+	if !cmdconfig.Viper().GetBool(constants.ArgAutoComplete) {
+		return nil
+	}
 	if !c.isInitialised() {
 		return nil
 	}
@@ -630,6 +633,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		// }
 
 	}
+
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 

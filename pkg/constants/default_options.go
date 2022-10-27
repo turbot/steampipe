@@ -29,6 +29,7 @@ const DefaultConnectionConfigContent = `
 #   search_path         =  ""     # comma-separated string
 #   search_path_prefix  =  ""     # comma-separated string
 #   watch  			    =  true   # true, false
+#   auto_complete       =  true   # true, false
 # }
 
 # options "general" {
