@@ -37,7 +37,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # get the diagnostics by running steampipe
     diagnostics=$(STEAMPIPE_DIAGNOSTICS=config_json steampipe query $args)
-    echo $diagnostics
+    echo $diagnostics ## rename
 
     # get expected diagnostics
     expected=$(echo $i | jq '.expected')
@@ -63,8 +63,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
         err="FAILED: $test_name >> key: $key ; expected: $ex_val ; actual: $diag_val"
       fi
     done
+    env | grep "STEAMPIPE" # debug
 
-  done < <(echo $tests | jq -c -r '.[]')
+  done < <(echo $tests | jq -c -r '.[]') # comment
   echo $err
   assert_equal "$err" ""
   rm -f err
