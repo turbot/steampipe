@@ -52,10 +52,13 @@ type DashboardSnapshotSchemaVersion = "20220614" | "20220929";
 
 export interface DashboardSnapshot {
   schema_version: DashboardSnapshotSchemaVersion;
+  layout: DashboardLayoutNode;
+  panels: PanelsMap;
+  inputs: DashboardInputs;
+  variables: DashboardVariables;
+  search_path: string[];
   start_time: string;
   end_time: string;
-  search_path: string[];
-  inputs: DashboardInputs;
 }
 
 export interface IBreakpointContext {
@@ -125,6 +128,20 @@ export const DashboardActions: IActions = {
   SET_REFETCH_DASHBOARD: "set_refetch_dashboard",
   WORKSPACE_ERROR: "workspace_error",
 };
+
+type DashboardExecutionEventSchemaVersion = "20220614" | "20220929";
+
+export interface DashboardExecutionEventWithSchema {
+  schema_version: DashboardExecutionEventSchemaVersion;
+  [key: string]: any;
+}
+
+export interface DashboardExecutionCompleteEvent {
+  action: string;
+  schema_version: DashboardExecutionEventSchemaVersion;
+  execution_id: string;
+  snapshot: DashboardSnapshot;
+}
 
 // https://github.com/microsoft/TypeScript/issues/28046
 export type ElementType<T extends ReadonlyArray<unknown>> =

@@ -26,6 +26,7 @@ import {
   DashboardRenderOptions,
   DashboardsCollection,
   IDashboardContext,
+  PanelDefinition,
   PanelsMap,
   SelectedDashboardStates,
   SocketURLFactory,
@@ -35,6 +36,7 @@ import { buildComponentsMap } from "../components";
 import {
   controlsUpdatedEventHandler,
   leafNodesCompleteEventHandler,
+  migrateDashboardExecutionCompleteSchema,
 } from "../utils/dashboardEventHandlers";
 import { GlobalHotKeys } from "react-hotkeys";
 import { KeyValueStringPairs } from "../components/dashboards/common/types";
@@ -167,7 +169,7 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
 }
 
 const wrapDefinitionInArtificialDashboard = (
-  definition: DashboardDefinition,
+  definition: PanelDefinition,
   layout: any
 ): DashboardDefinition => {
   const { title: defTitle, ...definitionWithoutTitle } = definition;
@@ -268,17 +270,11 @@ function reducer(state, action) {
         return state;
       }
 
-      // Migrate from old format
-      if (!action.snapshot) {
-        const { action: eventAction, dashboard_node, ...rest } = action;
-        action.snapshot = {
-          ...rest,
-        };
-      }
-
-      const layout = action.snapshot.layout;
-      const panels = action.snapshot.panels;
-      const rootLayoutPanel = action.snapshot.layout;
+      const migratedEvent = migrateDashboardExecutionCompleteSchema(action);
+      console.log(migratedEvent);
+      const layout = migratedEvent.snapshot.layout;
+      const panels = migratedEvent.snapshot.panels;
+      const rootLayoutPanel = migratedEvent.snapshot.layout;
       const rootPanel = panels[rootLayoutPanel.name];
       let dashboard;
 

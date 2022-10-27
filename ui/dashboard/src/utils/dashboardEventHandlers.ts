@@ -1,4 +1,48 @@
-import { PanelDefinition } from "../types";
+import {
+  DashboardExecutionCompleteEvent,
+  DashboardExecutionEventWithSchema,
+  PanelDefinition,
+} from "../types";
+import { LATEST_EXECUTION_SCHEMA_VERSION } from "../constants/versions";
+
+const migrateDashboardExecutionCompleteSchema = (
+  event: DashboardExecutionEventWithSchema
+): DashboardExecutionCompleteEvent => {
+  switch (event.schema_version) {
+    case "20220614":
+      const {
+        action,
+        execution_id,
+        layout,
+        panels,
+        inputs,
+        variables,
+        search_path,
+        start_time,
+        end_time,
+      } = event;
+      return {
+        action,
+        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        execution_id,
+        snapshot: {
+          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          layout,
+          panels,
+          inputs,
+          variables,
+          search_path,
+          start_time,
+          end_time,
+        },
+      };
+    case LATEST_EXECUTION_SCHEMA_VERSION:
+      // Nothing to do here as this event is already in the latest supported schema
+      return event as DashboardExecutionCompleteEvent;
+    default:
+      throw new Error(`Unsupported dashboard event schema`);
+  }
+};
 
 const updatePanelsMapWithControlEvent = (panelsMap, action) => {
   return {
@@ -96,4 +140,8 @@ const calculateProgress = (panelsMap) => {
   return Math.min(Math.ceil((completeDataPanels / dataPanels) * 100), 100);
 };
 
-export { controlsUpdatedEventHandler, leafNodesCompleteEventHandler };
+export {
+  controlsUpdatedEventHandler,
+  leafNodesCompleteEventHandler,
+  migrateDashboardExecutionCompleteSchema,
+};
