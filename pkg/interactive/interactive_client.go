@@ -571,10 +571,6 @@ func (c *InteractiveClient) shouldExecute(line string, namedQuery bool) bool {
 		// statement has terminating ';'
 		return true
 	}
-	if !cmdconfig.Viper().GetBool(constants.ArgAutoComplete) {
-		// Enabled auto completion
-		return true
-	}
 
 	return false
 }
@@ -676,8 +672,4 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 		}
 	}()
 	return quitChannel
-}
-
-func (c *InteractiveClient) enabeAutoComplete(buffer *prompt.Buffer) {
-	c.interactiveBuffer = []string{}
 }
