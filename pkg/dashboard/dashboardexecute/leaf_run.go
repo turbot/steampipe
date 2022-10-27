@@ -300,7 +300,12 @@ func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 // resolve the sql for this leaf run into the source sql (i.e. NOT the prepared statement name) and resolved args
 func (r *LeafRun) resolveSQL() error {
 	log.Printf("[TRACE] LeafRun '%s' resolveSQL", r.DashboardNode.Name())
-	queryProvider := r.DashboardNode.(modconfig.QueryProvider)
+	queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider)
+	if !ok {
+		// not a query provider - nothing to do
+		return nil
+	}
+
 	if !queryProvider.RequiresExecution(queryProvider) {
 		log.Printf("[TRACE] LeafRun '%s'does NOT require execution - returning", r.DashboardNode.Name())
 		return nil
