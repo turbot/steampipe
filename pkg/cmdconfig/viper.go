@@ -63,6 +63,7 @@ func setBaseDefaults() {
 		constants.ArgTelemetry:      constants.TelemetryInfo,
 		constants.ArgDatabasePort:   constants.DatabaseDefaultPort,
 		constants.ArgMaxCacheSizeMb: constants.DefaultMaxCacheSizeMb,
+		constants.ArgAutoComplete:   true,
 	}
 
 	for k, v := range defaults {
