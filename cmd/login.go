@@ -45,7 +45,7 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	}
 
 	// use this code to get a login token and store it
-	token, err := cloud.GetLoginToken(id, code)
+	token, err := cloud.GetLoginToken(ctx, id, code)
 	error_helpers.FailOnError(err)
 
 	// save token

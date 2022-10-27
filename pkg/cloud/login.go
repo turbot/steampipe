@@ -41,31 +41,16 @@ func WebLogin(ctx context.Context) (string, error) {
 }
 
 // GetLoginToken uses the login id and code and retrieves an authentication token
-func GetLoginToken(id, code string) (string, error) {
-	//// GET `/api/latest/login/token/${id}?code=${fourDigitCode}`
-	//baseURL := getBaseApiUrl()
-	//client := &http.Client{}
-	//
-	//getLoginTokenApiPath, err := url.JoinPath(baseURL, fmt.Sprintf(loginTokenAPIFormat, id))
-	//if err != nil {
-	//	return "", err
-	//}
-	//// add in code
-	//urlPath := fmt.Sprintf("%s?code=%s", getLoginTokenApiPath, code)
-	//
-	//var resp = map[string]any{}
-	//err = getFromAPI(urlPath, "", client, &resp)
-	//if err != nil {
-	//	return "", err
-	//}
-	//// ensure the result is successful
-	//if resp["state"].(string) != "confirmed" {
-	//	return "", fmt.Errorf("invalid code")
-	//}
-	//
-	//token := resp["token"].(string)
-	var token string
-	return token, nil
+func GetLoginToken(ctx context.Context, id, code string) (string, error) {
+	client := newSteampipeCloudClient("")
+	client.Auth.LoginTokenGet(ctx, id).Code(code).Execute()
+
+	tokenResp, _, err := client.Auth.LoginTokenGet(ctx, code).Execute()
+	if err != nil {
+		return "", err
+	}
+
+	return tokenResp.GetToken(), nil
 }
 
 // SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.sptt
