@@ -130,15 +130,18 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	}
 
 	panels := e.BuildSnapshotPanels()
+	// build map of those variables referenced by the dashboard run
+	referencedVariables := GetReferencedVariables(e.Root, e.workspace)
+
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
 		Panels:      panels,
+		Inputs:      e.inputValues,
+		Variables:   referencedVariables,
 	})
 	defer func() {
-		// build map of those variables referenced by the dashboard run
-		referencedVariables := GetReferencedVariables(e.Root, e.workspace)
 		e := &dashboardevents.ExecutionComplete{
 			Root:        e.Root,
 			Session:     e.sessionId,
@@ -229,7 +232,10 @@ func (e *DashboardExecutionTree) RuntimeDependencies() []string {
 	for _, r := range e.runs {
 		if leafRun, ok := r.(*LeafRun); ok {
 			for _, v := range leafRun.runtimeDependencies {
-				deps[v.dependency.SourceResource.GetUnqualifiedName()] = struct{}{}
+				// we want the short name
+				// TODO add a GetShortName function to HclResource https://github.com/turbot/steampipe/issues/2604
+				// for now we know the runtime dependency will be an input
+				deps[v.dependency.SourceResource.(*modconfig.DashboardInput).ShortName] = struct{}{}
 			}
 		}
 	}
