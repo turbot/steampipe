@@ -37,8 +37,8 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 		return nil, err
 	}
 
-	workspaceHost := cloudWorkspace.Host
-	databaseName := cloudWorkspace.DatabaseName
+	workspaceHost := cloudWorkspace.GetHost()
+	databaseName := cloudWorkspace.GetDatabaseName()
 
 	actor, _, err := client.Actors.Get(ctx).Execute()
 	if err != nil {
@@ -50,7 +50,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 		return nil, err
 	}
 
-	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", actor.Handle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
+	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", actor.Handle, password.Password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
 	cloudMetadata := &steampipeconfig.CloudMetadata{
 		Actor: &steampipeconfig.ActorMetadata{
