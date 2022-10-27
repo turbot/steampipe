@@ -1,5 +1,5 @@
-[
-  {
+{
+  "t1": {
     "test": "default workspace profile location env variable set",
     "description": "",
     "setup": {
@@ -18,7 +18,32 @@
       "workspace-database": "fk43e7"
     }
   },
-  {
+  "t2": {
+    "test": "default workspace profile location env variable set, all env variables set and all command line arguments set",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
+        "STEAMPIPE_CLOUD_HOST=testpipe.turbot.io",
+        "STEAMPIPE_INSTALL_DIR=sp_install_dir",
+        "STEAMPIPE_MOD_LOCATION=sp_install_dir",
+        "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
+        "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
+        "STEAMPIPE_WORKSPACE_DATABASE=fk/43e7"
+      ],
+      "args": "--install-dir sp_install_dir --mod-location sp_install_dir --cloud-host fastestpipe.turbot.io --cloud-token spt_012faketoken34567890_012faketoken3456789099990 --snapshot-location snaps --workspace-database fk43e9"
+    },
+    "expected": {
+      "cloud-host": "fastestpipe.turbot.io",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
+      "install-dir": "sp_install_dir",
+      "mod-location": "sp_install_dir",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e9"
+    }
+  },
+  "t3": {
     "test": "env variables set",
     "description": "",
     "setup": {
@@ -42,7 +67,7 @@
       "workspace-database": "fk43e7"
     }
   },
-  {
+  "t4": {
     "test": "default workspace profile location env variable set and --workspace arg passed",
     "description": "",
     "setup": {
@@ -61,8 +86,8 @@
       "workspace-database": "fk43e8"
     }
   },
-  {
-    "test": "all arguments set",
+  "t5": {
+    "test": "all command line arguments set",
     "description": "",
     "setup": {
       "env": [],
@@ -78,7 +103,7 @@
       "workspace-database": "fk43e9"
     }
   },
-  {
+  "t6": {
     "test": "default workspace profile location env variable set and all env variables set",
     "description": "",
     "setup": {
@@ -103,7 +128,7 @@
       "workspace-database": "ab43e6"
     }
   },
-  {
+  "t7": {
     "test": "default workspace profile location env variable set, all env variables set and --workspace arg passed",
     "description": "",
     "setup": {
@@ -128,4 +153,4 @@
       "workspace-database": "fk43e8"
     }
   }
-]
+}

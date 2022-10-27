@@ -7,23 +7,28 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # setup test folder and read the test-cases file
   cd $FILE_PATH/test_data/source_files/config_tests
   tests=$(cat workspace_tests.json)
+  # echo $tests
 
   # to create the failure message
   err=""
+  flag=0
 
-  while read i; do
-    # each test case
-    echo $i
+  # fetch the keys(test names)
+  test_keys=$(echo $tests | jq '. | keys[]')
+  # echo $test_keys
+
+  for i in $test_keys; do
+    # each test case do the following
     unset STEAMPIPE_INSTALL_DIR
     cwd=$(pwd)
-
-    # test name
-    test_name=$(echo $i | jq '.test')
-    echo ">>> Running: $test_name <<<"
+    # key=$(echo $i)
+    echo -e "\n"
+    test_name=$(echo $tests | jq -c ".[${i}]" | jq ".test")
+    echo ">>> TEST NAME: $test_name"
 
     # env variables needed for setup
-    env=$(echo $i | jq '.setup.env')
-    echo $env
+    env=$(echo $tests | jq -c ".[${i}]" | jq ".setup.env")
+    # echo $env
 
     # set env variables
     for e in $(echo "${env}" | jq -r '.[]'); do
@@ -31,42 +36,50 @@ load "$LIB_BATS_SUPPORT/load.bash"
     done
 
     # args to run with steampipe query command
-    args=$(echo $i | jq '.setup.args')
-    args=$(echo "$args" | tr -d '"')
-    echo $args
+    args=$(echo $tests | jq -c ".[${i}]" | jq ".setup.args" | tr -d '"')
+    # echo $args
 
-    # get the diagnostics by running steampipe
-    diagnostics=$(STEAMPIPE_DIAGNOSTICS=config_json steampipe query $args)
-    echo $diagnostics ## rename
+    # get the actual config by running steampipe
+    actual_config=$(STEAMPIPE_DIAGNOSTICS=config_json steampipe query $args)
+    # echo $actual_config
 
-    # get expected diagnostics
-    expected=$(echo $i | jq '.expected')
-    echo $expected
+    # get expected config from test case
+    expected_config=$(echo $tests | jq -c ".[${i}]" | jq ".expected")
+    # echo $expected_config
 
     # fetch only keys from expected diagnostics
-    exp_keys=$(echo $expected | jq '. | keys[]' | jq -s 'flatten | @sh' | tr -d '\'\' | tr -d '"')
+    exp_keys=$(echo $expected_config | jq '. | keys[]' | jq -s 'flatten | @sh' | tr -d '\'\' | tr -d '"')
 
     for key in $exp_keys; do
       # get the expected and the actual value for the keys
-      ex_val=$(echo $(echo $expected | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
-      diag_val=$(echo $(echo $diagnostics | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
+      exp_val=$(echo $(echo $expected_config | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
+      act_val=$(echo $(echo $actual_config | jq --arg KEY $key '.[$KEY]' | tr -d '"'))
 
       # get the absolute paths for install-dir and mod-location
       if [[ $key == "install-dir" ]] || [[ $key == "mod-location" ]]; then
-        ex_val="${cwd}/${ex_val}"
+        exp_val="${cwd}/${exp_val}"
       fi
-      echo $ex_val
-      echo $diag_val
+      echo "expected $key: $exp_val"
+      echo "actual $key: $act_val"
 
-      # check
-      if [[ "$ex_val" != "$diag_val" ]]; then
-        err="FAILED: $test_name >> key: $key ; expected: $ex_val ; actual: $diag_val"
+      # check the values
+      if [[ "$exp_val" != "$act_val" ]]; then
+        flag=1
+        err="FAILED: $test_name >> key: $key ; expected: $exp_val ; actual: $act_val \n${err}"
       fi
     done
-    env | grep "STEAMPIPE" # debug
 
-  done < <(echo $tests | jq -c -r '.[]') # comment
-  echo $err
+    # check if all passed
+    if [[ $flag -eq 0 ]]; then
+      echo "PASSED ✅"
+    else
+      echo "FAILED ❌"
+    fi
+    # reset flag back to 0 for the next test case 
+    flag=0
+  done
+  echo -e "\n"
+  echo -e "$err"
   assert_equal "$err" ""
   rm -f err
 }
