@@ -11,7 +11,6 @@ const SaveSnapshotButton = () => {
     if (!dashboard || !snapshot) {
       return;
     }
-    console.log(snapshot);
     const blob = new Blob([JSON.stringify(snapshot)], {
       type: "application/json",
     });
