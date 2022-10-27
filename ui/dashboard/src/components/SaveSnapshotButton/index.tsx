@@ -1,5 +1,5 @@
-import moment from "moment/moment";
 import Icon from "../Icon";
+import moment from "moment/moment";
 import NeutralButton from "../forms/NeutralButton";
 import { saveAs } from "file-saver";
 import { useDashboard } from "../../hooks/useDashboard";
@@ -11,6 +11,7 @@ const SaveSnapshotButton = () => {
     if (!dashboard || !snapshot) {
       return;
     }
+    console.log(snapshot);
     const blob = new Blob([JSON.stringify(snapshot)], {
       type: "application/json",
     });
@@ -31,7 +32,6 @@ const SaveSnapshotButton = () => {
       className="inline-flex items-center space-x-1"
       disabled={!dashboard || !snapshot}
       onClick={saveSnapshot}
-      size="sm"
     >
       <>
         <Icon

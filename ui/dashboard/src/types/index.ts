@@ -46,6 +46,7 @@ export interface IDashboardContext {
   };
 
   snapshot: DashboardSnapshot | null;
+  snapshotFileName: string | null;
 }
 
 type DashboardSnapshotSchemaVersion = "20220614" | "20220929";

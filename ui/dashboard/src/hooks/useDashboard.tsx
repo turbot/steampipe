@@ -271,7 +271,6 @@ function reducer(state, action) {
       }
 
       const migratedEvent = migrateDashboardExecutionCompleteSchema(action);
-      console.log(migratedEvent);
       const layout = migratedEvent.snapshot.layout;
       const panels = migratedEvent.snapshot.panels;
       const rootLayoutPanel = migratedEvent.snapshot.layout;
@@ -313,6 +312,7 @@ function reducer(state, action) {
       return {
         ...state,
         dataMode: action.dataMode,
+        snapshotFileName: action.snapshotFileName,
       };
     case DashboardActions.SET_REFETCH_DASHBOARD:
       return {

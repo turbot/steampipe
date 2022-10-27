@@ -115,6 +115,7 @@ export const PanelStoryDecorator = ({
         progress: 100,
         render: { headless: false, snapshotCompleteDiv: false },
         snapshot: null,
+        snapshotFileName: null,
       }}
     >
       <Dashboard allowPanelExpand={false} />

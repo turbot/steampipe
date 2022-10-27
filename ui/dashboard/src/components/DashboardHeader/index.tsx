@@ -23,7 +23,7 @@ const DashboardHeader = () => {
       )}
     >
       <SteampipeLogo />
-      <div className="flex flex-grow space-x-2 md:space-x-4">
+      <div className="flex flex-grow items-center space-x-2 md:space-x-4">
         <DashboardSearch />
         <DashboardTagGroupSelect />
         <OpenSnapshotButton />
