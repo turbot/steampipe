@@ -1,6 +1,7 @@
 package controldisplay
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
@@ -64,13 +65,13 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 	return res, nil
 }
 
-func PublishSnapshot(e *controlexecute.ExecutionTree, shouldShare bool) error {
+func PublishSnapshot(ctx context.Context, e *controlexecute.ExecutionTree, shouldShare bool) error {
 	snapshot, err := executionTreeToSnapshot(e)
 	if err != nil {
 		return err
 	}
 
-	message, err := cloud.PublishSnapshot(snapshot, shouldShare)
+	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
 	if err != nil {
 		return err
 	}

@@ -160,7 +160,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// if the share args are set, create a snapshot and share it
 		if generateSnapshot {
-			err = controldisplay.PublishSnapshot(executionTree, shouldShare)
+			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
 			error_helpers.FailOnError(err)
 		}
 
@@ -187,7 +187,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 
-	if err := cmdconfig.ValidateCloudArgs(); err != nil {
+	if err := cmdconfig.ValidateCloudArgs(ctx); err != nil {
 		error_helpers.ShowError(ctx, err)
 		return false
 	}

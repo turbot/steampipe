@@ -1,6 +1,7 @@
 package initialisation
 
 import (
+	"context"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -9,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
-func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
+func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, error) {
 	workspaceDatabase := viper.GetString(constants.ArgWorkspaceDatabase)
 	if workspaceDatabase == "local" {
 		// local database - nothing to do here
@@ -30,7 +31,7 @@ func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
 
 		// so we have a database and a token - build the connection string and set it in viper
 		var err error
-		if cloudMetadata, err = cloud.GetCloudMetadata(workspaceDatabase, cloudToken); err != nil {
+		if cloudMetadata, err = cloud.GetCloudMetadata(ctx, workspaceDatabase, cloudToken); err != nil {
 			return nil, err
 		}
 		// read connection string out of cloudMetadata

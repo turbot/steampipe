@@ -1,17 +1,16 @@
 package cloud
 
 import (
+	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
+	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
-func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {
-	bearer := getBearerToken(token)
-	client := &http.Client{}
-	baseURL := getBaseApiUrl()
+func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {
+	client := newSteampipeCloudClient(token)
 
 	parts := strings.Split(workspaceDatabaseString, "/")
 	if len(parts) != 2 {
@@ -20,32 +19,38 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 	identityHandle := parts[0]
 	workspaceHandle := parts[1]
 
-	// org or user?
-	workspaces, err := getWorkspaces(baseURL, bearer, client)
-	if err != nil {
-		return nil, err
-	}
-	workspaceData := getWorkspaceData(workspaces, identityHandle, workspaceHandle)
-	if workspaceData == nil {
-		return nil, fmt.Errorf("failed to resolve workspace with identity handle '%s', workspace handle '%s'", identityHandle, workspaceHandle)
-	}
-
-	workspace := workspaceData["workspace"].(map[string]any)
-	workspaceHost := workspace["host"].(string)
-	databaseName := workspace["database_name"].(string)
-
-	actor, err := getActor(baseURL, bearer, client)
-	if err != nil {
-		return nil, err
-	}
-	password, err := getPassword(baseURL, actor.Handle, bearer, client)
+	// get the identity
+	identity, _, err := client.Identities.Get(ctx, identityHandle).Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", actor.Handle, password, identityHandle, workspaceHandle, workspaceHost, databaseName)
+	// get the workspace
+	var cloudWorkspace steampipecloud.Workspace
+	if identity.Type == "user" {
+		cloudWorkspace, _, err = client.UserWorkspaces.Get(ctx, identityHandle, workspaceHandle).Execute()
+	} else {
+		cloudWorkspace, _, err = client.OrgWorkspaces.Get(ctx, identityHandle, workspaceHandle).Execute()
+	}
 
-	identity := workspaceData["identity"].(map[string]any)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceHost := cloudWorkspace.GetHost()
+	databaseName := cloudWorkspace.GetDatabaseName()
+
+	actor, _, err := client.Actors.Get(ctx).Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	password, _, err := client.Users.GetDBPassword(ctx, identityHandle).Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", actor.Handle, password.Password, identityHandle, workspaceHandle, workspaceHost, databaseName)
 
 	cloudMetadata := &steampipeconfig.CloudMetadata{
 		Actor: &steampipeconfig.ActorMetadata{
@@ -53,13 +58,13 @@ func GetCloudMetadata(workspaceDatabaseString, token string) (*steampipeconfig.C
 			Handle: actor.Handle,
 		},
 		Identity: &steampipeconfig.IdentityMetadata{
-			Id:     identity["id"].(string),
-			Type:   identity["type"].(string),
+			Id:     cloudWorkspace.IdentityId,
+			Type:   identity.Type,
 			Handle: identityHandle,
 		},
 		WorkspaceDatabase: &steampipeconfig.WorkspaceMetadata{
-			Id:     workspace["id"].(string),
-			Handle: workspace["handle"].(string),
+			Id:     cloudWorkspace.Id,
+			Handle: cloudWorkspace.Handle,
 		},
 
 		ConnectionString: connectionString,

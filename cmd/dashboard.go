@@ -90,7 +90,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// first check whether a dashboard name has been passed as an arg
-	dashboardName, err := validateDashboardArgs(cmd, args)
+	dashboardName, err := validateDashboardArgs(dashboardCtx, args)
 	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
@@ -164,7 +164,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 }
 
 // validate the args and extract a dashboard name, if provided
-func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
+func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 	if len(args) > 1 {
 		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
 	}
@@ -173,7 +173,7 @@ func validateDashboardArgs(cmd *cobra.Command, args []string) (string, error) {
 		dashboardName = args[0]
 	}
 
-	err := cmdconfig.ValidateCloudArgs()
+	err := cmdconfig.ValidateCloudArgs(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -267,7 +267,7 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	displaySnapshot(snap)
 
 	// upload the snapshot (if needed)
-	err = publishSnapshotIfNeeded(snap)
+	err = publishSnapshotIfNeeded(ctx, snap)
 	error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
 
 	// export the result (if needed)
@@ -292,7 +292,7 @@ func verifyNamedResource(targetName string, w *workspace.Workspace) error {
 	return nil
 }
 
-func publishSnapshotIfNeeded(snapshot *dashboardtypes.SteampipeSnapshot) error {
+func publishSnapshotIfNeeded(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot) error {
 	shouldShare := viper.GetBool(constants.ArgShare)
 	shouldUpload := viper.GetBool(constants.ArgSnapshot)
 
@@ -300,7 +300,7 @@ func publishSnapshotIfNeeded(snapshot *dashboardtypes.SteampipeSnapshot) error {
 		return nil
 	}
 
-	message, err := cloud.PublishSnapshot(snapshot, shouldShare)
+	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
 	if err != nil {
 		// reword "402 Payment Required" error
 		return handlePublishSnapshotError(err)
