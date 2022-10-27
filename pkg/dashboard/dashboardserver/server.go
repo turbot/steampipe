@@ -300,7 +300,6 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			// 			outputMessage(s.context, fmt.Sprintf("Input Values Cleared - dashboard inputs updated: %v", sessionInfo.DashboardInputs))
 		}
 		s.writePayloadToSession(e.Session, payload)
-
 	}
 }
 

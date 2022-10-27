@@ -7,6 +7,8 @@ type ExecutionStarted struct {
 	Panels      map[string]dashboardtypes.SnapshotPanel
 	Session     string
 	ExecutionId string
+	Inputs      map[string]interface{}
+	Variables   map[string]string
 }
 
 // IsDashboardEvent implements DashboardEvent interface

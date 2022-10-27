@@ -47,6 +47,8 @@ type ExecutionStartedPayload struct {
 	ExecutionId   string                                  `json:"execution_id"`
 	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`
 	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout"`
+	Inputs        map[string]interface{}                  `json:"inputs,omitempty"`
+	Variables     map[string]string                       `json:"variables,omitempty"`
 }
 
 type LeafNodeCompletePayload struct {
