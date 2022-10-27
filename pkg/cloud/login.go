@@ -9,7 +9,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
-	"net/url"
 	"os"
 	"path"
 )
@@ -24,12 +23,8 @@ func WebLogin(ctx context.Context) (string, error) {
 		return "", err
 	}
 	id := tempTokenReq.Id
-	browserUrl, err := url.JoinPath(getBaseApiUrl(), id)
-	if err != nil {
-		return "", err
-	}
 	// add in id query string
-	browserUrl = fmt.Sprintf("%s?r=%s", browserUrl, tempTokenReq)
+	browserUrl := fmt.Sprintf("%s?r=%s", getLoginTokenUrl(), id)
 
 	fmt.Printf("Opening %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
@@ -43,9 +38,7 @@ func WebLogin(ctx context.Context) (string, error) {
 // GetLoginToken uses the login id and code and retrieves an authentication token
 func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 	client := newSteampipeCloudClient("")
-	client.Auth.LoginTokenGet(ctx, id).Code(code).Execute()
-
-	tokenResp, _, err := client.Auth.LoginTokenGet(ctx, code).Execute()
+	tokenResp, _, err := client.Auth.LoginTokenGet(ctx, id).Code(code).Execute()
 	if err != nil {
 		return "", err
 	}
