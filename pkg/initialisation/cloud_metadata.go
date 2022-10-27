@@ -1,7 +1,6 @@
 package initialisation
 
 import (
-	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -11,9 +10,6 @@ import (
 )
 
 func getCloudMetadata() (*steampipeconfig.CloudMetadata, error) {
-	if _, ok := os.LookupEnv(constants.EnvDiagnostics);	ok {
-		return &steampipeconfig.CloudMetadata{}, nil
-	}
 	workspaceDatabase := viper.GetString(constants.ArgWorkspaceDatabase)
 	if workspaceDatabase == "local" {
 		// local database - nothing to do here
