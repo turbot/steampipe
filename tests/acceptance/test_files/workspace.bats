@@ -3,7 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 ## workspace tests
 
-@test "generic test 2" {
+@test "generic test" {
   # setup test folder and read the test-cases file
   cd $FILE_PATH/test_data/source_files/config_tests
   tests=$(cat workspace_tests.json)
@@ -32,19 +32,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # args to run with steampipe query command
     args=$(echo $i | jq '.setup.args')
+    args=$(echo "$args" | tr -d '"')
     echo $args
 
     # get the diagnostics by running steampipe
-    diagnostics=$(STEAMPIPE_DIAGNOSTICS=config_json steampipe query "select 1" "$args")
+    diagnostics=$(STEAMPIPE_DIAGNOSTICS=config_json steampipe query $args)
     echo $diagnostics
 
     # get expected diagnostics
     expected=$(echo $i | jq '.expected')
-    # echo $expected
+    echo $expected
 
-    # get only keys
+    # fetch only keys from expected diagnostics
     exp_keys=$(echo $expected | jq '. | keys[]' | jq -s 'flatten | @sh' | tr -d '\'\' | tr -d '"')
-    # echo $exp_keys
 
     for key in $exp_keys; do
       # get the expected and the actual value for the keys
