@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/convert"
 )
 
 // Variable is a struct representing a Variable resource
@@ -123,14 +124,32 @@ func (v *Variable) Required() bool {
 	return v.Default == cty.NilVal
 }
 
-func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange tfdiags.SourceRange) {
+func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange tfdiags.SourceRange) error {
+	// if no type is set and a default _is_ set, use default to set the type
+	if v.Type.Equals(cty.DynamicPseudoType) && !v.Default.IsNull() {
+		v.Type = v.Default.Type()
+	}
+
+	// if the value type is a tuple with no elem type, and we have a type, set the variable to have our type
+	if value.Type().Equals(cty.Tuple(nil)) && !v.Type.Equals(cty.DynamicPseudoType) {
+		var err error
+		value, err = convert.Convert(value, v.Type)
+		if err != nil {
+			return err
+		}
+	}
+
 	v.Value = value
 	v.ValueSourceType = sourceType
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
 	v.ValueGo, _ = utils.CtyToGo(value)
-	v.TypeString = utils.CtyTypeToHclType(value.Type())
+	// if type string is not set, derive from the type of value
+	if v.TypeString == "" {
+		v.TypeString = utils.CtyTypeToHclType(value.Type())
+	}
+	return nil
 }
 
 // AddParent implements ModTreeItem
