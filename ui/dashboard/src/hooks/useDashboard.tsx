@@ -828,11 +828,15 @@ const DashboardProvider = ({
   ]);
 
   useEffect(() => {
-    if (!dashboard_name && state.snapshot) {
+    if (
+      !dashboard_name &&
+      state.snapshot &&
+      state.dataMode === DashboardDataModeCLISnapshot
+    ) {
       dispatch({
         type: DashboardActions.SELECT_DASHBOARD,
         dashboard: null,
-        dataMode: "live",
+        dataMode: DashboardDataModeLive,
       });
     }
   }, [dashboard_name, dispatch, state.dataMode, state.snapshot]);
