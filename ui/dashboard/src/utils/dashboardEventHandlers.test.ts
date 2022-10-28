@@ -2,38 +2,20 @@ import {
   controlsUpdatedEventHandler,
   leafNodesCompleteEventHandler,
   migrateDashboardExecutionCompleteSchema,
+  migrateSnapshotDataToExecutionCompleteEvent,
 } from "./dashboardEventHandlers";
-import { DashboardExecutionEventWithSchema } from "../types";
+import { DashboardActions, DashboardExecutionEventWithSchema } from "../types";
 import { LATEST_EXECUTION_SCHEMA_VERSION } from "../constants/versions";
 
 describe("dashboard event handlers", () => {
-  describe("migrateDashboardExecutionCompleteSchema", () => {
+  describe("migrateSnapshotDataToExecutionCompleteEvent", () => {
     test("Schema 20220614 to 20220929", () => {
-      const inputEvent: DashboardExecutionEventWithSchema = {
-        action: "execution_complete",
+      const inputSnapshot: DashboardExecutionEventWithSchema = {
         schema_version: "20220614",
+        execution_id: "0x140029247e0",
         dashboard_node: {
           name: "aws_insights.dashboard.aws_iam_user_dashboard",
         },
-        panels: {
-          "aws_insights.dashboard.aws_iam_user_dashboard": {
-            name: "aws_insights.dashboard.aws_iam_user_dashboard",
-          },
-          "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
-            {
-              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
-            },
-        },
-        execution_id: "0x140029247e0",
-        inputs: {
-          "input.foo": "bar",
-        },
-        variables: {
-          foo: "bar",
-        },
-        search_path: ["some_schema"],
-        start_time: "2022-10-27T14:43:57.79514+01:00",
-        end_time: "2022-10-27T14:43:58.045925+01:00",
         layout: {
           name: "aws_insights.dashboard.aws_iam_user_dashboard",
           panel_type: "dashboard",
@@ -44,6 +26,152 @@ describe("dashboard event handlers", () => {
             },
           ],
         },
+        panels: {
+          "aws_insights.dashboard.aws_iam_user_dashboard": {
+            name: "aws_insights.dashboard.aws_iam_user_dashboard",
+          },
+          "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
+            {
+              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+            },
+        },
+        inputs: {
+          "input.foo": "bar",
+        },
+        variables: {
+          foo: "bar",
+        },
+        search_path: ["some_schema"],
+        start_time: "2022-10-27T14:43:57.79514+01:00",
+        end_time: "2022-10-27T14:43:58.045925+01:00",
+      };
+
+      const migratedEvent =
+        migrateSnapshotDataToExecutionCompleteEvent(inputSnapshot);
+
+      const expectedEvent = {
+        action: DashboardActions.EXECUTION_COMPLETE,
+        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        snapshot: {
+          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          layout: inputSnapshot.layout,
+          panels: inputSnapshot.panels,
+          inputs: inputSnapshot.inputs,
+          variables: inputSnapshot.variables,
+          search_path: inputSnapshot.search_path,
+          start_time: inputSnapshot.start_time,
+          end_time: inputSnapshot.end_time,
+        },
+      };
+
+      expect(migratedEvent).toEqual(expectedEvent);
+    });
+
+    test("Schema 20220929 to 20220929", () => {
+      const inputSnapshot: DashboardExecutionEventWithSchema = {
+        schema_version: "20220929",
+        layout: {
+          name: "aws_insights.dashboard.aws_iam_user_dashboard",
+          panel_type: "dashboard",
+          children: [
+            {
+              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+              panel_type: "container",
+            },
+          ],
+        },
+        panels: {
+          "aws_insights.dashboard.aws_iam_user_dashboard": {
+            name: "aws_insights.dashboard.aws_iam_user_dashboard",
+          },
+          "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
+            {
+              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+            },
+        },
+        inputs: {
+          "input.foo": "bar",
+        },
+        variables: {
+          foo: "bar",
+        },
+        search_path: ["some_schema"],
+        start_time: "2022-10-27T14:43:57.79514+01:00",
+        end_time: "2022-10-27T14:43:58.045925+01:00",
+      };
+
+      const migratedEvent =
+        migrateSnapshotDataToExecutionCompleteEvent(inputSnapshot);
+
+      const expectedEvent = {
+        action: DashboardActions.EXECUTION_COMPLETE,
+        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        snapshot: {
+          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          layout: inputSnapshot.layout,
+          panels: inputSnapshot.panels,
+          inputs: inputSnapshot.inputs,
+          variables: inputSnapshot.variables,
+          search_path: inputSnapshot.search_path,
+          start_time: inputSnapshot.start_time,
+          end_time: inputSnapshot.end_time,
+        },
+      };
+
+      expect(migratedEvent).toEqual(expectedEvent);
+    });
+
+    test("Unsupported schema", () => {
+      const inputSnapshot: DashboardExecutionEventWithSchema = {
+        // @ts-ignore
+        schema_version: "20221010",
+      };
+
+      expect(() =>
+        migrateSnapshotDataToExecutionCompleteEvent(inputSnapshot)
+      ).toThrow(
+        `Unsupported dashboard event schema ${inputSnapshot.schema_version}`
+      );
+    });
+  });
+
+  describe("migrateDashboardExecutionCompleteSchema", () => {
+    test("Schema 20220614 to 20220929", () => {
+      const inputEvent: DashboardExecutionEventWithSchema = {
+        action: "execution_complete",
+        schema_version: "20220614",
+        execution_id: "0x140029247e0",
+        dashboard_node: {
+          name: "aws_insights.dashboard.aws_iam_user_dashboard",
+        },
+        layout: {
+          name: "aws_insights.dashboard.aws_iam_user_dashboard",
+          panel_type: "dashboard",
+          children: [
+            {
+              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+              panel_type: "container",
+            },
+          ],
+        },
+        panels: {
+          "aws_insights.dashboard.aws_iam_user_dashboard": {
+            name: "aws_insights.dashboard.aws_iam_user_dashboard",
+          },
+          "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
+            {
+              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+            },
+        },
+        inputs: {
+          "input.foo": "bar",
+        },
+        variables: {
+          foo: "bar",
+        },
+        search_path: ["some_schema"],
+        start_time: "2022-10-27T14:43:57.79514+01:00",
+        end_time: "2022-10-27T14:43:58.045925+01:00",
       };
 
       const migratedEvent = migrateDashboardExecutionCompleteSchema(inputEvent);
@@ -108,6 +236,17 @@ describe("dashboard event handlers", () => {
       const migratedEvent = migrateDashboardExecutionCompleteSchema(inputEvent);
 
       expect(migratedEvent).toEqual(inputEvent);
+    });
+
+    test("Unsupported schema", () => {
+      const inputEvent: DashboardExecutionEventWithSchema = {
+        // @ts-ignore
+        schema_version: "20221010",
+      };
+
+      expect(() => migrateDashboardExecutionCompleteSchema(inputEvent)).toThrow(
+        `Unsupported dashboard event schema ${inputEvent.schema_version}`
+      );
     });
   });
 

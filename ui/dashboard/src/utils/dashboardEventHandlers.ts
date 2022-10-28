@@ -1,9 +1,44 @@
 import {
+  DashboardActions,
   DashboardExecutionCompleteEvent,
   DashboardExecutionEventWithSchema,
   PanelDefinition,
 } from "../types";
 import { LATEST_EXECUTION_SCHEMA_VERSION } from "../constants/versions";
+
+const migrateSnapshotDataToExecutionCompleteEvent = (snapshot) => {
+  switch (snapshot.schema_version) {
+    case "20220614":
+    case "20220929":
+      const {
+        layout,
+        panels,
+        inputs,
+        variables,
+        search_path,
+        start_time,
+        end_time,
+      } = snapshot;
+      return {
+        action: DashboardActions.EXECUTION_COMPLETE,
+        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        snapshot: {
+          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          layout,
+          panels,
+          inputs,
+          variables,
+          search_path,
+          start_time,
+          end_time,
+        },
+      };
+    default:
+      throw new Error(
+        `Unsupported dashboard event schema ${snapshot.schema_version}`
+      );
+  }
+};
 
 const migrateDashboardExecutionCompleteSchema = (
   event: DashboardExecutionEventWithSchema
@@ -40,7 +75,9 @@ const migrateDashboardExecutionCompleteSchema = (
       // Nothing to do here as this event is already in the latest supported schema
       return event as DashboardExecutionCompleteEvent;
     default:
-      throw new Error(`Unsupported dashboard event schema`);
+      throw new Error(
+        `Unsupported dashboard event schema ${event.schema_version}`
+      );
   }
 };
 
@@ -144,4 +181,5 @@ export {
   controlsUpdatedEventHandler,
   leafNodesCompleteEventHandler,
   migrateDashboardExecutionCompleteSchema,
+  migrateSnapshotDataToExecutionCompleteEvent,
 };
