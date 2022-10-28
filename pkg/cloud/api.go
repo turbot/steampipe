@@ -21,7 +21,7 @@ func newSteampipeCloudClient(token string) *steampipecloud.APIClient {
 	return steampipecloud.NewAPIClient(configuration)
 }
 
-func getLoginTokenUrl() string {
-	return fmt.Sprintf("https://%s/login/token", viper.GetString(constants.ArgCloudHost))
+func getLoginTokenConfirmUIUrl() string {
+	return fmt.Sprintf("https://%s/login/confirm", viper.GetString(constants.ArgCloudHost))
 
 }

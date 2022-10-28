@@ -24,7 +24,7 @@ func WebLogin(ctx context.Context) (string, error) {
 	}
 	id := tempTokenReq.Id
 	// add in id query string
-	browserUrl := fmt.Sprintf("%s?r=%s", getLoginTokenUrl(), id)
+	browserUrl := fmt.Sprintf("%s?r=%s", getLoginTokenConfirmUIUrl(), id)
 
 	fmt.Printf("Opening %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
