@@ -85,12 +85,6 @@ func NewInitData(ctx context.Context) *InitData {
 	}
 	i.OutputFormatter = formatter
 
-	// if both '--where' and '--tag' have been used, then it's an error
-	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
-		i.Result.Error = fmt.Errorf("'--%s' and '--%s' cannot be used together", constants.ArgWhere, constants.ArgTag)
-		return i
-	}
-
 	i.setControlFilterClause()
 	return i
 }
