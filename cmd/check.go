@@ -14,14 +14,12 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
+	"github.com/turbot/steampipe/pkg/control"
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/interactive"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -91,7 +89,6 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
-	initData := &initialisation.InitData{}
 
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
@@ -105,8 +102,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
-
-		initData.Cleanup(ctx)
 	}()
 
 	// verify we have an argument
@@ -121,8 +116,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// initialise
-	initData = initialiseCheck(ctx)
+	initData := control.NewInitData(ctx)
 	error_helpers.FailOnError(initData.Result.Error)
+	defer initData.Cleanup(ctx)
+
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
@@ -151,7 +148,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// execute controls synchronously (execute returns the number of failures)
 		failures += executionTree.Execute(ctx)
-		err = displayControlResults(ctx, executionTree)
+		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
@@ -201,78 +198,6 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 	return true
 }
 
-func initialiseCheck(ctx context.Context) *initialisation.InitData {
-	statushooks.SetStatus(ctx, "Initializing...")
-	defer statushooks.Done(ctx)
-
-	// load the workspace
-	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	initData := initialisation.NewInitData(w).Init(ctx, constants.InvokerCheck)
-	if initData.Result.Error != nil {
-		return initData
-	}
-
-	// control specific init
-	if !w.ModfileExists() {
-		initData.Result.Error = workspace.ErrorNoModDefinition
-	}
-
-	if viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
-		// set progress to false
-		viper.Set(constants.ArgProgress, false)
-	}
-	// set color schema
-	err = initialiseCheckColorScheme()
-	if err != nil {
-		initData.Result.Error = err
-		return initData
-	}
-
-	if len(initData.Workspace.GetResourceMaps().Controls) == 0 {
-		initData.Result.AddWarnings("no controls found in current workspace")
-	}
-
-	if err := controldisplay.EnsureTemplates(); err != nil {
-		initData.Result.Error = err
-		return initData
-	}
-
-	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
-		registerCheckExporters(initData)
-	}
-
-	return initData
-}
-
-// register exporters for each of the supported check formats
-func registerCheckExporters(initData *initialisation.InitData) {
-	exporters, err := controldisplay.GetExporters()
-	error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
-
-	// register all exporters
-	initData.RegisterExporters(exporters...)
-}
-
-func initialiseCheckColorScheme() error {
-	theme := viper.GetString(constants.ArgTheme)
-	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
-		// enforce plain output for non-terminals
-		theme = "plain"
-	}
-	themeDef, ok := controldisplay.ColorSchemes[theme]
-	if !ok {
-		return fmt.Errorf("invalid theme '%s'", theme)
-	}
-	scheme, err := controldisplay.NewControlColorScheme(themeDef)
-	if err != nil {
-		return err
-	}
-	controldisplay.ControlColors = scheme
-	return nil
-}
-
 func printTiming(args []string, durations []time.Duration) {
 	headers := []string{"", "Duration"}
 	var rows [][]string
@@ -292,27 +217,11 @@ func shouldPrintTiming() bool {
 		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
-func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree) error {
-	output := viper.GetString(constants.ArgOutput)
-	formatter, err := parseOutputArg(output)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formatter controldisplay.Formatter) error {
 	reader, err := formatter.Format(ctx, executionTree)
 	if err != nil {
 		return err
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	return err
-}
-
-// parseOutputArg parses the --output flag value and returns the Formatter that can format the data
-func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) {
-	formatResolver, err := controldisplay.NewFormatResolver()
-	if err != nil {
-		return nil, err
-	}
-
-	return formatResolver.GetFormatter(arg)
 }

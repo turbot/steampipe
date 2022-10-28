@@ -34,9 +34,6 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 }
 
 func RunBatchSession(ctx context.Context, initData *query.InitData) int {
-	// ensure we close client
-	defer initData.Cleanup(ctx)
-
 	// start cancel handler to intercept interrupts and cancel the context
 	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
 	contexthelpers.StartCancelHandler(initData.Cancel)

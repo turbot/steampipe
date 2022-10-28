@@ -3,10 +3,12 @@ package export
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"golang.org/x/exp/maps"
 	"path"
 	"strings"
+
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type Manager struct {
@@ -147,4 +149,18 @@ func (m *Manager) DoExport(ctx context.Context, targetName string, source Export
 		}
 	}
 	return error_helpers.CombineErrors(errors...)
+}
+
+func (m *Manager) ValidateExportFormat(exports []string) error {
+	var invalidFormats []string
+	for _, export := range exports {
+		if _, ok := m.registeredExporters[export]; !ok {
+			invalidFormats = append(invalidFormats, export)
+		}
+	}
+	if invalidCount := len(invalidFormats); invalidCount > 0 {
+		return fmt.Errorf("invalid export %s: '%s'", utils.Pluralize("format", invalidCount), strings.Join(invalidFormats, "','"))
+	}
+	return nil
+
 }

@@ -1,17 +1,46 @@
-package interactive
+package workspace
 
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func PromptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {
+func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, error) {
+	workspacePath := viper.GetString(constants.ArgModLocation)
+
+	w, err := Load(ctx, workspacePath)
+	if err == nil {
+		return w, nil
+	}
+	missingVariablesError, ok := err.(modconfig.MissingVariableError)
+	// if there was an error which is NOT a MissingVariableError, return it
+	if !ok {
+		return nil, err
+	}
+	// if interactive input is disabled, return the missing variables error
+	if !viper.GetBool(constants.ArgInput) {
+		return nil, missingVariablesError
+	}
+	// so we have missing variables - prompt for them
+	// first hide spinner if it is there
+	statushooks.Done(ctx)
+	if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, workspacePath); err != nil {
+		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
+		return nil, err
+	}
+	// ok we should have all variables now - reload workspace
+	return Load(ctx, workspacePath)
+}
+
+func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {
 	fmt.Println()
 	fmt.Println("Variables defined with no value set.")
 	for _, v := range missingVariables {

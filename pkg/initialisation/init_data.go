@@ -171,7 +171,6 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	if i.Client != nil {
 		i.Client.Close(ctx)
 	}
-
 	if i.ShutdownTelemetry != nil {
 		i.ShutdownTelemetry()
 	}

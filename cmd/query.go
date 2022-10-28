@@ -20,7 +20,6 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
@@ -125,15 +124,10 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
-	// load the workspace
-	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	// so we have loaded a workspace - be sure to close it
-	defer w.Close()
-
 	// start the initializer
-	initData := query.NewInitData(ctx, w, args)
+	initData := query.NewInitData(ctx, args)
+	error_helpers.FailOnError(initData.Result.Error)
+	defer initData.Cleanup(ctx)
 
 	switch {
 	case interactiveMode:
@@ -141,7 +135,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	case snapshotRequired():
 		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
 		// as a dashboard
-		exitCode = executeSnapshotQuery(initData, w, ctx)
+		exitCode = executeSnapshotQuery(initData, ctx)
 	default:
 		// NOTE: disable any status updates - we do not want 'loading' output from any queries
 		ctx = statushooks.DisableStatusHooks(ctx)
@@ -166,16 +160,13 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
-		return fmt.Errorf("invalid output format '%s', must be one of %s", output, strings.Join(validOutputFormats, ","))
+		return fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
 	}
 
 	return nil
 }
 
-func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx context.Context) int {
-	// ensure we close client
-	defer initData.Cleanup(ctx)
-
+func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	// start cancel handler to intercept interrupts and cancel the context
 	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
 	contexthelpers.StartCancelHandler(initData.Cancel)
@@ -197,7 +188,7 @@ func executeSnapshotQuery(initData *query.InitData, w *workspace.Workspace, ctx 
 			// this is to allow us to use existing dashboard execution code
 
 			// build query name and title
-			targetName := ensureQueryResource(name, query, i, len(queryNames), w)
+			targetName := ensureQueryResource(name, query, i, len(queryNames), initData.Workspace)
 
 			// we need to pass the embedded initData to  GenerateSnapshot
 			baseInitData := &initData.InitData

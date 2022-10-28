@@ -23,7 +23,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -86,7 +85,6 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 			}
 		}
 		setExitCodeForDashboardError(err)
-
 	}()
 
 	// first check whether a dashboard name has been passed as an arg
@@ -103,7 +101,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		inputs, err := collectInputs()
 		error_helpers.FailOnError(err)
 
-		// run just this dashboard
+		// run just this dashboard - this handles all initialisation
 		err = runSingleDashboard(dashboardCtx, dashboardName, inputs)
 		error_helpers.FailOnError(err)
 
@@ -192,7 +190,7 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
-		return "", fmt.Errorf("invalid output format '%s', must be one of %s", output, strings.Join(validOutputFormats, ","))
+		return "", fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
 	}
 
 	return dashboardName, nil
@@ -210,23 +208,27 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 
 func initDashboard(ctx context.Context) *initialisation.InitData {
 	dashboardserver.OutputWait(ctx, "Loading Workspace")
-	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	if err != nil {
-		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error()))
-	}
 
 	// initialise
-	initData := getInitData(ctx, w)
+	initData := getInitData(ctx)
+	if initData.Result.Error != nil {
+		return initData
+	}
 
 	// there must be a mod-file
-	if !w.ModfileExists() {
+	if !initData.Workspace.ModfileExists() {
 		initData.Result.Error = workspace.ErrorNoModDefinition
 	}
 
 	return initData
 }
 
-func getInitData(ctx context.Context, w *workspace.Workspace) *initialisation.InitData {
+func getInitData(ctx context.Context) *initialisation.InitData {
+	w, err := workspace.LoadWorkspacePromptingForVariables(ctx)
+	if err != nil {
+		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error()))
+	}
+
 	initData := initialisation.NewInitData(w).
 		RegisterExporters(dashboardExporters()...).
 		Init(ctx, constants.InvokerDashboard)
@@ -238,21 +240,16 @@ func dashboardExporters() []export.Exporter {
 }
 
 func runSingleDashboard(ctx context.Context, targetName string, inputs map[string]interface{}) error {
-	w, err := interactive.LoadWorkspacePromptingForVariables(ctx)
-	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
-
-	// targetName must be a named resource
-	// parse the name to verify
-	if err := verifyNamedResource(targetName, w); err != nil {
-		return err
-	}
-
-	initData := getInitData(ctx, w)
-
+	initData := getInitData(ctx)
 	// shutdown the service on exit
 	defer initData.Cleanup(ctx)
 	if err := initData.Result.Error; err != nil {
 		return initData.Result.Error
+	}
+	// targetName must be a named resource
+	// parse the name to verify
+	if err := verifyNamedResource(targetName, initData.Workspace); err != nil {
+		return err
 	}
 
 	// if there is a usage warning we display it

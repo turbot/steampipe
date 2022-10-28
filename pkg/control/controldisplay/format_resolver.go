@@ -56,7 +56,7 @@ func (r *FormatResolver) GetFormatter(arg string) (Formatter, error) {
 		return formatter, nil
 	}
 
-	return nil, fmt.Errorf("could not resolve formatter for %s", arg)
+	return nil, fmt.Errorf(" invalid output format: '%s'", arg)
 }
 
 func (r *FormatResolver) registerFormatter(f Formatter) error {
