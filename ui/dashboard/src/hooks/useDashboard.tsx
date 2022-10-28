@@ -26,6 +26,7 @@ import {
   DashboardRenderOptions,
   DashboardsCollection,
   IDashboardContext,
+  PanelDefinition,
   PanelsMap,
   SelectedDashboardStates,
   SocketURLFactory,
@@ -35,6 +36,7 @@ import { buildComponentsMap } from "../components";
 import {
   controlsUpdatedEventHandler,
   leafNodesCompleteEventHandler,
+  migrateDashboardExecutionCompleteSchema,
 } from "../utils/dashboardEventHandlers";
 import { GlobalHotKeys } from "react-hotkeys";
 import { KeyValueStringPairs } from "../components/dashboards/common/types";
@@ -167,7 +169,7 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
 }
 
 const wrapDefinitionInArtificialDashboard = (
-  definition: DashboardDefinition,
+  definition: PanelDefinition,
   layout: any
 ): DashboardDefinition => {
   const { title: defTitle, ...definitionWithoutTitle } = definition;
@@ -255,6 +257,7 @@ function reducer(state, action) {
         execution_id: action.execution_id,
         refetchDashboard: false,
         progress: 0,
+        snapshot: null,
         state: "ready",
       };
     }
@@ -267,17 +270,10 @@ function reducer(state, action) {
         return state;
       }
 
-      // Migrate from old format
-      if (!action.snapshot) {
-        const { action: eventAction, dashboard_node, ...rest } = action;
-        action.snapshot = {
-          ...rest,
-        };
-      }
-
-      const layout = action.snapshot.layout;
-      const panels = action.snapshot.panels;
-      const rootLayoutPanel = action.snapshot.layout;
+      const migratedEvent = migrateDashboardExecutionCompleteSchema(action);
+      const layout = migratedEvent.snapshot.layout;
+      const panels = migratedEvent.snapshot.panels;
+      const rootLayoutPanel = migratedEvent.snapshot.layout;
       const rootPanel = panels[rootLayoutPanel.name];
       let dashboard;
 
@@ -300,6 +296,7 @@ function reducer(state, action) {
         dashboard,
         sqlDataMap,
         progress: 100,
+        snapshot: action.snapshot,
         state: "complete",
       };
     }
@@ -311,18 +308,22 @@ function reducer(state, action) {
       return leafNodesCompleteEventHandler(action, state);
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
-    case DashboardActions.CLEAR_SNAPSHOT:
-      return {
-        ...state,
-        selectedSnapshot: null,
-        snapshotId: null,
-        dataMode: DashboardDataModeLive,
-      };
     case DashboardActions.SET_DATA_MODE:
-      return {
+      const newState = {
         ...state,
         dataMode: action.dataMode,
       };
+      if (action.dataMode === DashboardDataModeCLISnapshot) {
+        newState.snapshotFileName = action.snapshotFileName;
+      } else if (
+        state.dataMode !== DashboardDataModeLive &&
+        action.dataMode === DashboardDataModeLive
+      ) {
+        newState.snapshot = null;
+        newState.snapshotFileName = null;
+        newState.snapshotId = null;
+      }
+      return newState;
     case DashboardActions.SET_REFETCH_DASHBOARD:
       return {
         ...state,
@@ -358,7 +359,11 @@ function reducer(state, action) {
         dataMode: DashboardDataModeLive,
         dashboard: null,
         execution_id: null,
+        panelsMap: {},
+        snapshot: null,
+        snapshotFileName: null,
         snapshotId: null,
+        sqlDataMap: {},
         state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
@@ -494,7 +499,7 @@ const getInitialState = (searchParams, defaults: any = {}) => {
     selectedDashboard: null,
     selectedDashboardInputs:
       buildSelectedDashboardInputsFromSearchParams(searchParams),
-    selectedSnapshot: null,
+    snapshot: null,
     lastChangedInput: null,
 
     search: {
@@ -594,7 +599,6 @@ const DashboardProvider = ({
       search: state.search,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
-      selectedSnapshot: state.selectedSnapshot,
     });
 
   // Alert analytics
@@ -605,6 +609,19 @@ const DashboardProvider = ({
   useEffect(() => {
     setAnalyticsSelectedDashboard(state.selectedDashboard);
   }, [state.selectedDashboard, setAnalyticsSelectedDashboard]);
+
+  useEffect(() => {
+    if (
+      !!dashboard_name &&
+      !location.pathname.startsWith("/snapshot/") &&
+      state.dataMode === DashboardDataModeCLISnapshot
+    ) {
+      dispatch({
+        type: DashboardActions.SET_DATA_MODE,
+        dataMode: DashboardDataModeLive,
+      });
+    }
+  }, [dashboard_name, location, navigate, state.dataMode]);
 
   // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
@@ -671,7 +688,7 @@ const DashboardProvider = ({
   useEffect(() => {
     // If no search params have changed
     if (
-      state.dataMode === DashboardDataModeCLISnapshot ||
+      state.dataMode === DashboardDataModeCloudSnapshot ||
       state.dataMode === DashboardDataModeCLISnapshot ||
       (previousSelectedDashboardStates &&
         // @ts-ignore
@@ -760,18 +777,26 @@ const DashboardProvider = ({
         dashboard: null,
         recordInputsHistory: false,
       });
+      dispatch({
+        type: DashboardActions.SELECT_SNAPSHOT,
+        dashboard: null,
+        recordInputsHistory: false,
+      });
       return;
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
     // select that dashboard
-    if (dashboard_name && !state.selectedDashboard) {
+    if (
+      dashboard_name &&
+      !state.selectedDashboard &&
+      state.dataMode === DashboardDataModeLive
+    ) {
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboard_name
       );
       dispatch({
         type: DashboardActions.SELECT_DASHBOARD,
         dashboard,
-        dataMode: state.dataMode,
       });
       return;
     }
@@ -801,6 +826,20 @@ const DashboardProvider = ({
     state.dataMode,
     state.selectedDashboard,
   ]);
+
+  useEffect(() => {
+    if (
+      !dashboard_name &&
+      state.snapshot &&
+      state.dataMode === DashboardDataModeCLISnapshot
+    ) {
+      dispatch({
+        type: DashboardActions.SELECT_DASHBOARD,
+        dashboard: null,
+        dataMode: DashboardDataModeLive,
+      });
+    }
+  }, [dashboard_name, dispatch, state.dataMode, state.snapshot]);
 
   useEffect(() => {
     // This effect will send events over websockets and depends on there being a dashboard selected
@@ -948,9 +987,14 @@ const DashboardProvider = ({
   ]);
 
   useEffect(() => {
-    if (!state.availableDashboardsLoaded || !dashboard_name) {
+    if (
+      !state.availableDashboardsLoaded ||
+      !dashboard_name ||
+      state.dataMode === DashboardDataModeCLISnapshot
+    ) {
       return;
     }
+
     // If the dashboard we're viewing no longer exists, go back to the main page
     if (!state.dashboards.find((r) => r.full_name === dashboard_name)) {
       navigate("../", { replace: true });
@@ -960,7 +1004,17 @@ const DashboardProvider = ({
     dashboard_name,
     state.availableDashboardsLoaded,
     state.dashboards,
+    state.dataMode,
   ]);
+
+  useEffect(() => {
+    if (
+      location.pathname.startsWith("/snapshot/") &&
+      state.dataMode !== DashboardDataModeCLISnapshot
+    ) {
+      navigate("/");
+    }
+  }, [location, navigate, state.dataMode]);
 
   useEffect(() => {
     if (!state.selectedDashboard) {

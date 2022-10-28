@@ -110,11 +110,12 @@ export const PanelStoryDecorator = ({
         },
 
         components: buildComponentsMap(),
-        selectedSnapshot: null,
         refetchDashboard: false,
         state: "complete",
         progress: 100,
         render: { headless: false, snapshotCompleteDiv: false },
+        snapshot: null,
+        snapshotFileName: null,
       }}
     >
       <Dashboard allowPanelExpand={false} />

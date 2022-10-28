@@ -1,5 +1,7 @@
 import DashboardSearch from "../DashboardSearch";
 import DashboardTagGroupSelect from "../DashboardTagGroupSelect";
+import OpenSnapshotButton from "../OpenSnapshotButton";
+import SaveSnapshotButton from "../SaveSnapshotButton";
 import SteampipeLogo from "./SteampipeLogo";
 import ThemeToggle from "../ThemeToggle";
 import { classNames } from "../../utils/styles";
@@ -21,9 +23,11 @@ const DashboardHeader = () => {
       )}
     >
       <SteampipeLogo />
-      <div className="flex flex-grow space-x-2 md:space-x-4">
+      <div className="flex flex-grow items-center space-x-2 md:space-x-4">
         <DashboardSearch />
         <DashboardTagGroupSelect />
+        <OpenSnapshotButton />
+        <SaveSnapshotButton />
       </div>
       <div className="space-x-2 sm:space-x-4 md:space-x-8 flex items-center justify-end">
         <ExternalLink

@@ -25,7 +25,6 @@ export interface IDashboardContext {
   selectedPanel: PanelDefinition | null;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
-  selectedSnapshot: DashboardSnapshot | null;
   lastChangedInput: string | null;
 
   sqlDataMap: SQLDataMap;
@@ -45,6 +44,22 @@ export interface IDashboardContext {
     headless: boolean;
     snapshotCompleteDiv: boolean;
   };
+
+  snapshot: DashboardSnapshot | null;
+  snapshotFileName: string | null;
+}
+
+type DashboardSnapshotSchemaVersion = "20220614" | "20220929";
+
+export interface DashboardSnapshot {
+  schema_version: DashboardSnapshotSchemaVersion;
+  layout: DashboardLayoutNode;
+  panels: PanelsMap;
+  inputs: DashboardInputs;
+  variables: DashboardVariables;
+  search_path: string[];
+  start_time: string;
+  end_time: string;
 }
 
 export interface IBreakpointContext {
@@ -90,7 +105,6 @@ export type DashboardRunState = "ready" | "error" | "complete";
 export const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
   CLEAR_DASHBOARD_INPUTS: "clear_dashboard_inputs",
-  CLEAR_SNAPSHOT: "clear_snapshot",
   CONTROL_COMPLETE: "control_complete",
   CONTROL_ERROR: "control_error",
   CONTROLS_UPDATED: "controls_updated",
@@ -115,6 +129,20 @@ export const DashboardActions: IActions = {
   SET_REFETCH_DASHBOARD: "set_refetch_dashboard",
   WORKSPACE_ERROR: "workspace_error",
 };
+
+type DashboardExecutionEventSchemaVersion = "20220614" | "20220929";
+
+export interface DashboardExecutionEventWithSchema {
+  schema_version: DashboardExecutionEventSchemaVersion;
+  [key: string]: any;
+}
+
+export interface DashboardExecutionCompleteEvent {
+  action: string;
+  schema_version: DashboardExecutionEventSchemaVersion;
+  execution_id: string;
+  snapshot: DashboardSnapshot;
+}
 
 // https://github.com/microsoft/TypeScript/issues/28046
 export type ElementType<T extends ReadonlyArray<unknown>> =
@@ -162,11 +190,6 @@ interface DashboardInputs {
 interface DashboardVariables {
   [name: string]: any;
 }
-
-interface DashboardSnapshotTags {
-  [name: string]: string;
-}
-
 export interface ModDashboardMetadata {
   title: string;
   full_name: string;
@@ -206,16 +229,35 @@ export interface DashboardMetadata {
   telemetry: "info" | "none";
 }
 
+type DashboardPanelType =
+  | "dashboard"
+  | "container"
+  | "benchmark"
+  | "input"
+  | "card"
+  | "chart"
+  | "flow"
+  | "graph"
+  | "hierarchy"
+  | "table"
+  | "text"
+  | "image";
+
+interface DashboardLayoutNode {
+  name: string;
+  panel_type: DashboardPanelType;
+  children?: DashboardLayoutNode[];
+}
+
 export interface DashboardSnapshot {
-  id: string;
-  dashboard_name: string;
   start_time: string;
   end_time: string;
-  schema_version: string;
-  search_path: string;
+  schema_version: DashboardSnapshotSchemaVersion;
+  search_path: string[];
+  layout: DashboardLayoutNode;
+  panels: PanelsMap;
   variables: DashboardVariables;
   inputs: DashboardInputs;
-  tags: DashboardSnapshotTags;
 }
 
 interface AvailableDashboardTags {

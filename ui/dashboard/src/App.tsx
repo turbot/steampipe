@@ -3,6 +3,7 @@ import Dashboard from "./components/dashboards/layout/Dashboard";
 import DashboardErrorModal from "./components/dashboards/DashboardErrorModal";
 import DashboardHeader from "./components/DashboardHeader";
 import DashboardList from "./components/DashboardList";
+import SnapshotHeader from "./components/SnapshotHeader";
 import useAnalytics from "./hooks/useAnalytics";
 import { DashboardProvider } from "./hooks/useDashboard";
 import { FullHeightThemeWrapper, useTheme } from "./hooks/useTheme";
@@ -16,6 +17,7 @@ const Dashboards = ({ analyticsContext, breakpointContext, themeContext }) => (
     themeContext={themeContext}
   >
     <DashboardHeader />
+    <SnapshotHeader />
     <DashboardErrorModal />
     <DashboardList wrapperClassName="p-4 h-full overflow-y-auto" />
     <Dashboard />
@@ -38,6 +40,7 @@ const DashboardApp = ({
   return (
     <Routes>
       <Route path="/" element={dashboards} />
+      <Route path="/snapshot/:dashboard_name" element={dashboards} />
       <Route path="/:dashboard_name" element={dashboards} />
     </Routes>
   );
