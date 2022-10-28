@@ -21,6 +21,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # each test case do the following
     unset STEAMPIPE_INSTALL_DIR
     cwd=$(pwd)
+    export STEAMPIPE_DIAGNOSTICS=config_json
+    cmd='steampipe query "select 1"'
     # key=$(echo $i)
     echo -e "\n"
     test_name=$(echo $tests | jq -c ".[${i}]" | jq ".test")
@@ -36,11 +38,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
     done
 
     # args to run with steampipe query command
-    args=$(echo $tests | jq -c ".[${i}]" | jq ".setup.args" | tr -d '"')
-    # echo $args
+    args=$(echo $tests | jq -c ".[${i}]" | jq ".setup.args")
+    echo $args
 
-    # get the actual config by running steampipe
-    actual_config=$(STEAMPIPE_DIAGNOSTICS=config_json steampipe query $args)
+    # construct the steampipe query command to be run with the args
+    for arg in $(echo "${args}" | jq -r '.[]'); do
+      cmd="${cmd} ${arg}"
+    done
+    # echo $cmd
+
+    # get the actual config by running the constructed steampipe command
+    run $cmd
+    actual_config=$(echo $output | jq -c '.')
     # echo $actual_config
 
     # get expected config from test case
