@@ -3,7 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 ## workspace tests
 
-@test "generic test" {
+@test "generic workspace test" {
   # setup test folder and read the test-cases file
   cd $FILE_PATH/test_data/source_files/config_tests
   tests=$(cat workspace_tests.json)
@@ -47,7 +47,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     expected_config=$(echo $tests | jq -c ".[${i}]" | jq ".expected")
     # echo $expected_config
 
-    # fetch only keys from expected diagnostics
+    # fetch only keys from expected config
     exp_keys=$(echo $expected_config | jq '. | keys[]' | jq -s 'flatten | @sh' | tr -d '\'\' | tr -d '"')
 
     for key in $exp_keys; do
