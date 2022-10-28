@@ -309,11 +309,21 @@ function reducer(state, action) {
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
     case DashboardActions.SET_DATA_MODE:
-      return {
+      const newState = {
         ...state,
         dataMode: action.dataMode,
-        snapshotFileName: action.snapshotFileName,
       };
+      if (action.dataMode === DashboardDataModeCLISnapshot) {
+        newState.snapshotFileName = action.snapshotFileName;
+      } else if (
+        state.dataMode !== DashboardDataModeLive &&
+        action.dataMode === DashboardDataModeLive
+      ) {
+        newState.snapshot = null;
+        newState.snapshotFileName = null;
+        newState.snapshotId = null;
+      }
+      return newState;
     case DashboardActions.SET_REFETCH_DASHBOARD:
       return {
         ...state,
@@ -349,7 +359,11 @@ function reducer(state, action) {
         dataMode: DashboardDataModeLive,
         dashboard: null,
         execution_id: null,
+        panelsMap: {},
+        snapshot: null,
+        snapshotFileName: null,
         snapshotId: null,
+        sqlDataMap: {},
         state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
@@ -596,6 +610,19 @@ const DashboardProvider = ({
     setAnalyticsSelectedDashboard(state.selectedDashboard);
   }, [state.selectedDashboard, setAnalyticsSelectedDashboard]);
 
+  useEffect(() => {
+    if (
+      !!dashboard_name &&
+      !location.pathname.startsWith("/snapshot/") &&
+      state.dataMode === DashboardDataModeCLISnapshot
+    ) {
+      dispatch({
+        type: DashboardActions.SET_DATA_MODE,
+        dataMode: DashboardDataModeLive,
+      });
+    }
+  }, [dashboard_name, location, navigate, state.dataMode]);
+
   // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
     if (navigationType !== "POP" && navigationType !== "PUSH") {
@@ -661,7 +688,7 @@ const DashboardProvider = ({
   useEffect(() => {
     // If no search params have changed
     if (
-      state.dataMode === DashboardDataModeCLISnapshot ||
+      state.dataMode === DashboardDataModeCloudSnapshot ||
       state.dataMode === DashboardDataModeCLISnapshot ||
       (previousSelectedDashboardStates &&
         // @ts-ignore
@@ -750,18 +777,26 @@ const DashboardProvider = ({
         dashboard: null,
         recordInputsHistory: false,
       });
+      dispatch({
+        type: DashboardActions.SELECT_SNAPSHOT,
+        dashboard: null,
+        recordInputsHistory: false,
+      });
       return;
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
     // select that dashboard
-    if (dashboard_name && !state.selectedDashboard) {
+    if (
+      dashboard_name &&
+      !state.selectedDashboard &&
+      state.dataMode === DashboardDataModeLive
+    ) {
       const dashboard = state.dashboards.find(
         (dashboard) => dashboard.full_name === dashboard_name
       );
       dispatch({
         type: DashboardActions.SELECT_DASHBOARD,
         dashboard,
-        dataMode: state.dataMode,
       });
       return;
     }
@@ -791,6 +826,16 @@ const DashboardProvider = ({
     state.dataMode,
     state.selectedDashboard,
   ]);
+
+  useEffect(() => {
+    if (!dashboard_name && state.snapshot) {
+      dispatch({
+        type: DashboardActions.SELECT_DASHBOARD,
+        dashboard: null,
+        dataMode: "live",
+      });
+    }
+  }, [dashboard_name, dispatch, state.dataMode, state.snapshot]);
 
   useEffect(() => {
     // This effect will send events over websockets and depends on there being a dashboard selected
@@ -938,9 +983,14 @@ const DashboardProvider = ({
   ]);
 
   useEffect(() => {
-    if (!state.availableDashboardsLoaded || !dashboard_name) {
+    if (
+      !state.availableDashboardsLoaded ||
+      !dashboard_name ||
+      state.dataMode === DashboardDataModeCLISnapshot
+    ) {
       return;
     }
+
     // If the dashboard we're viewing no longer exists, go back to the main page
     if (!state.dashboards.find((r) => r.full_name === dashboard_name)) {
       navigate("../", { replace: true });
@@ -950,7 +1000,17 @@ const DashboardProvider = ({
     dashboard_name,
     state.availableDashboardsLoaded,
     state.dashboards,
+    state.dataMode,
   ]);
+
+  useEffect(() => {
+    if (
+      location.pathname.startsWith("/snapshot/") &&
+      state.dataMode !== DashboardDataModeCLISnapshot
+    ) {
+      navigate("/");
+    }
+  }, [location, navigate, state.dataMode]);
 
   useEffect(() => {
     if (!state.selectedDashboard) {

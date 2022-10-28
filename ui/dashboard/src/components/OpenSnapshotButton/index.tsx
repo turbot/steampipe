@@ -1,4 +1,4 @@
-import { DashboardActions } from "../../types";
+import { DashboardActions, DashboardDataModeCLISnapshot } from "../../types";
 import { LATEST_EXECUTION_SCHEMA_VERSION } from "../../constants/versions";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useNavigate } from "react-router-dom";
@@ -80,9 +80,10 @@ const OpenSnapshotButton = () => {
                 dashboard: null,
                 recordInputsHistory: false,
               });
+              navigate(`/snapshot/${fileName}`);
               dispatch({
                 type: DashboardActions.SET_DATA_MODE,
-                dataMode: "cli_snapshot",
+                dataMode: DashboardDataModeCLISnapshot,
                 snapshotFileName: fileName,
               });
               dispatch({
@@ -94,7 +95,6 @@ const OpenSnapshotButton = () => {
                 value: event.snapshot.inputs,
                 recordInputsHistory: false,
               });
-              navigate(`/${data.layout.name}`);
             } catch (err: any) {
               dispatch({
                 type: DashboardActions.WORKSPACE_ERROR,

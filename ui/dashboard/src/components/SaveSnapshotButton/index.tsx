@@ -22,7 +22,7 @@ const SaveSnapshotButton = () => {
     );
   };
 
-  if (!selectedDashboard) {
+  if (!selectedDashboard && !snapshot) {
     return null;
   }
 
