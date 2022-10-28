@@ -2,6 +2,8 @@ package cloud
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -12,6 +14,8 @@ import (
 	"os"
 	"path"
 )
+
+var UnconfirmedError = "Not confirmed"
 
 // WebLogin POSTs to ${envBaseUrl}/api/latest/login/token to retrieve a login is
 // it then opens the login webpage and returns th eid
@@ -26,7 +30,7 @@ func WebLogin(ctx context.Context) (string, error) {
 	// add in id query string
 	browserUrl := fmt.Sprintf("%s?r=%s", getLoginTokenConfirmUIUrl(), id)
 
-	fmt.Printf("Opening %s\n", browserUrl)
+	fmt.Printf("Verify login at %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
 		return "", err
@@ -40,9 +44,17 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 	client := newSteampipeCloudClient("")
 	tokenResp, _, err := client.Auth.LoginTokenGet(ctx, id).Code(code).Execute()
 	if err != nil {
+		if apiErr, ok := err.(steampipecloud.GenericOpenAPIError); ok {
+			var body = map[string]any{}
+			if err := json.Unmarshal(apiErr.Body(), &body); err == nil {
+				return "", errors.New(body["detail"].(string))
+			}
+		}
 		return "", err
 	}
-
+	if tokenResp.GetToken() == "" && tokenResp.GetState() == "pending" {
+		return "", fmt.Errorf("Login request has not been confirmed - select 'allow' and enter the verification code")
+	}
 	return tokenResp.GetToken(), nil
 }
 
