@@ -143,7 +143,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName)
+		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
 		error_helpers.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of failures)
@@ -191,7 +191,13 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 
 	// only 1 of 'share' and 'snapshot' may be set
 	if viper.GetBool(constants.ArgShare) && viper.GetBool(constants.ArgSnapshot) {
-		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of 'share' and 'snapshot' may be set"))
+		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of '--%s' and '--%s' may be set", constants.ArgShare, constants.ArgSnapshot))
+		return false
+	}
+
+	// if both '--where' and '--tag' have been used, then it's an error
+	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
+		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of '--%s' and '--%s' may be set", constants.ArgWhere, constants.ArgWhere))
 		return false
 	}
 

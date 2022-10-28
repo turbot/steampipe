@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/url"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -39,8 +37,7 @@ type ExecutionTree struct {
 	controlNameFilterMap map[string]bool
 }
 
-func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg string) (*ExecutionTree, error) {
-	// TODO [reports] FAIL IF any resources in the tree have runtime dependencies
+func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg, controlFilterWhereClause string) (*ExecutionTree, error) {
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
 		Workspace:  workspace,
@@ -50,7 +47,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
 	// create a context with status hooks disabled
 	noStatusCtx := statushooks.DisableStatusHooks(ctx)
-	err := executionTree.populateControlFilterMap(noStatusCtx)
+	err := executionTree.populateControlFilterMap(noStatusCtx, controlFilterWhereClause)
 	if err != nil {
 		return nil, err
 	}
@@ -138,29 +135,9 @@ func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, paralle
 	return parallelismLock.Acquire(waitCtx, maxParallelGoRoutines)
 }
 
-func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
-	// if both '--where' and '--tag' have been used, then it's an error
-	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
-		return fmt.Errorf("'--%s' and '--%s' cannot be used together", constants.ArgWhere, constants.ArgTag)
-	}
-
-	controlFilterWhereClause := ""
-
-	if viper.IsSet(constants.ArgTag) {
-		// if '--tag' args were used, derive the whereClause from them
-		tags := viper.GetStringSlice(constants.ArgTag)
-		controlFilterWhereClause = e.generateWhereClauseFromTags(tags)
-	} else if viper.IsSet(constants.ArgWhere) {
-		// if a 'where' arg was used, execute this sql to get a list of  control names
-		// use this list to build a name map used to determine whether to run a particular control
-		controlFilterWhereClause = viper.GetString(constants.ArgWhere)
-	}
-
+func (e *ExecutionTree) populateControlFilterMap(ctx context.Context, controlFilterWhereClause string) error {
 	// if we derived or were passed a where clause, run the filter
 	if len(controlFilterWhereClause) > 0 {
-		// if we have a control filter where clause, we must create the control introspection tables
-		viper.Set(constants.ArgIntrospection, constants.IntrospectionControl)
-
 		log.Println("[TRACE]", "filtering controls with", controlFilterWhereClause)
 		var err error
 		e.controlNameFilterMap, err = e.getControlMapFromWhereClause(ctx, controlFilterWhereClause)
@@ -170,35 +147,6 @@ func (e *ExecutionTree) populateControlFilterMap(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (e *ExecutionTree) generateWhereClauseFromTags(tags []string) string {
-	whereMap := map[string][]string{}
-
-	// 'tags' should be KV Pairs of the form: 'benchmark=pic' or 'cis_level=1'
-	for _, tag := range tags {
-		value, _ := url.ParseQuery(tag)
-		for k, v := range value {
-			if _, found := whereMap[k]; !found {
-				whereMap[k] = []string{}
-			}
-			whereMap[k] = append(whereMap[k], v...)
-		}
-	}
-	whereComponents := []string{}
-	for key, values := range whereMap {
-		thisComponent := []string{}
-		for _, x := range values {
-			if len(x) == 0 {
-				// ignore
-				continue
-			}
-			thisComponent = append(thisComponent, fmt.Sprintf("tags->>'%s'='%s'", key, x))
-		}
-		whereComponents = append(whereComponents, fmt.Sprintf("(%s)", strings.Join(thisComponent, " OR ")))
-	}
-
-	return strings.Join(whereComponents, " AND ")
 }
 
 func (e *ExecutionTree) ShouldIncludeControl(controlName string) bool {

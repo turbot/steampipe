@@ -6,6 +6,8 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"net/url"
+	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -15,7 +17,8 @@ import (
 
 type InitData struct {
 	initialisation.InitData
-	OutputFormatter controldisplay.Formatter
+	OutputFormatter          controldisplay.Formatter
+	ControlFilterWhereClause string
 }
 
 // NewInitData returns a new InitData object
@@ -82,16 +85,64 @@ func NewInitData(ctx context.Context) *InitData {
 	}
 	i.OutputFormatter = formatter
 
+	i.setControlFilterClause()
 	return i
 }
 
+func (i *InitData) setControlFilterClause() {
+	if viper.IsSet(constants.ArgTag) {
+		// if '--tag' args were used, derive the whereClause from them
+		tags := viper.GetStringSlice(constants.ArgTag)
+		i.ControlFilterWhereClause = generateWhereClauseFromTags(tags)
+	} else if viper.IsSet(constants.ArgWhere) {
+		// if a 'where' arg was used, execute this sql to get a list of  control names
+		// use this list to build a name map used to determine whether to run a particular control
+		i.ControlFilterWhereClause = viper.GetString(constants.ArgWhere)
+	}
+
+	// if we derived or were passed a where clause, run the filter
+	if len(i.ControlFilterWhereClause) > 0 {
+		// if we have a control filter where clause, we must create the control introspection tables
+		viper.Set(constants.ArgIntrospection, constants.IntrospectionControl)
+	}
+}
+
+func generateWhereClauseFromTags(tags []string) string {
+	whereMap := map[string][]string{}
+
+	// 'tags' should be KV Pairs of the form: 'benchmark=pic' or 'cis_level=1'
+	for _, tag := range tags {
+		value, _ := url.ParseQuery(tag)
+		for k, v := range value {
+			if _, found := whereMap[k]; !found {
+				whereMap[k] = []string{}
+			}
+			whereMap[k] = append(whereMap[k], v...)
+		}
+	}
+	whereComponents := []string{}
+	for key, values := range whereMap {
+		thisComponent := []string{}
+		for _, x := range values {
+			if len(x) == 0 {
+				// ignore
+				continue
+			}
+			thisComponent = append(thisComponent, fmt.Sprintf("tags->>'%s'='%s'", key, x))
+		}
+		whereComponents = append(whereComponents, fmt.Sprintf("(%s)", strings.Join(thisComponent, " OR ")))
+	}
+
+	return strings.Join(whereComponents, " AND ")
+}
+
 // register exporters for each of the supported check formats
-func (initData *InitData) registerCheckExporters() {
+func (i *InitData) registerCheckExporters() {
 	exporters, err := controldisplay.GetExporters()
 	error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
 
 	// register all exporters
-	initData.RegisterExporters(exporters...)
+	i.RegisterExporters(exporters...)
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
