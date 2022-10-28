@@ -36,7 +36,6 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	error_helpers.FailOnError(err)
 
 	token, err := getToken(ctx, id)
-
 	error_helpers.FailOnError(err)
 
 	// save token
@@ -78,27 +77,6 @@ func getToken(ctx context.Context, id string) (loginToken string, err error) {
 	return
 }
 
-//
-//func getLoginToken(ctx context.Context, id string) (string, error) {
-//
-//	for retryCount := 0; retryCount < 3; retryCount++ {
-//		// Wait for user to enter confirmation code they obtain through the UI login / approval
-//		code, err := promptUserForString("Enter verification code: ", id)
-//		error_helpers.FailOnError(err)
-//
-//		// handle ctrl+d
-//		if len(code) == 0 {
-//			fmt.Println()
-//			return "", nil
-//		}
-//
-//		// seek console output backwards 1 line
-//		fmt.Println("\033[1A")
-//
-//	}
-//	return "", fmt.Errorf("invalid code")
-//}
-
 func displayLoginMessage(ctx context.Context, token string) {
 	userName, err := cloud.GetUserName(ctx, token)
 	error_helpers.FailOnErrorWithMessage(err, "Failed to read user name")
@@ -107,38 +85,7 @@ func displayLoginMessage(ctx context.Context, token string) {
 
 }
 
-//	func promptUserForString(promptStr string, id string) (token string, err error) {
-//		ctx, cancel := context.WithCancel(context.Background())
-//		retries := 0
-//		contexthelpers.StartCancelHandler(cancel)
-//
-//		fmt.Println()
-//		callExecutor := func(code string) {
-//			// use this code to get a login token and store it
-//			token, err = cloud.GetLoginToken(ctx, id, code)
-//			if err == nil {
-//				cancel()
-//			}
-//
-//			fmt.Print("\033[1A\033[K") //one up, remove line
-//
-//			retries++
-//			if retries == 3 {
-//				fmt.Print("\033[1A\033[K") //one up, remove line
-//				cancel()
-//				return
-//			}
-//			error_helpers.ShowWarning(err.Error())
-//
-//		}
-//		var completer = func(d prompt.Document) []prompt.Suggest { return nil }
-//		p := prompt.New(callExecutor, completer, prompt.OptionPrefix(promptStr))
-//
-//		p.RunCtx(ctx)
-//
-//		return
-//
-// }
+
 func promptUserForString(prompt string) (string, error) {
 	fmt.Print(prompt)
 
