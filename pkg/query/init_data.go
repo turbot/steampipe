@@ -2,12 +2,11 @@ package query
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -22,13 +21,29 @@ type InitData struct {
 // NewInitData returns a new InitData object
 // It also starts an asynchronous population of the object
 // InitData.Done closes after asynchronous initialization completes
-func NewInitData(ctx context.Context, w *workspace.Workspace, args []string) *InitData {
+func NewInitData(ctx context.Context, args []string) *InitData {
+	// load the workspace
+	w, err := workspace.LoadWorkspacePromptingForVariables(ctx)
+	if err != nil {
+		return &InitData{
+			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error())),
+		}
+	}
+
 	i := &InitData{
 		InitData: *initialisation.NewInitData(w),
 		Loaded:   make(chan struct{}),
 	}
 
-	i.RegisterExporters(queryExporters()...)
+	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+		i.RegisterExporters(queryExporters()...)
+
+		// validate required export formats
+		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
+			i.Result.Error = err
+			return i
+		}
+	}
 
 	go i.init(ctx, w, args)
 
@@ -90,8 +105,4 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// and call base init
 	i.InitData.Init(ctx, constants.InvokerQuery)
 
-	if len(args) > 0 {
-		// disable status hooks for batch mode
-		ctx = statushooks.DisableStatusHooks(ctx)
-	}
 }

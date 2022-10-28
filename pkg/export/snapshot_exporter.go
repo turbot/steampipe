@@ -33,6 +33,10 @@ func (e *SnapshotExporter) FileExtension() string {
 	return constants.SnapshotExtension
 }
 
-func (e SnapshotExporter) Name() string {
+func (e *SnapshotExporter) Name() string {
 	return constants.OutputFormatSnapshot
+}
+
+func (*SnapshotExporter) Alias() string {
+	return "sps"
 }

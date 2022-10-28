@@ -40,5 +40,5 @@ func (f SnapshotFormatter) Name() string {
 }
 
 func (f *SnapshotFormatter) Alias() string {
-	return ""
+	return "sps"
 }
