@@ -17,7 +17,7 @@ type Terminal struct {
 	SearchPath       *string `hcl:"search_path"`
 	SearchPathPrefix *string `hcl:"search_path_prefix"`
 	Watch            *bool   `hcl:"watch"`
-	AutoComplete     *bool   `hcl:"auto_complete"`
+	AutoComplete     *bool   `hcl:"autocomplete"`
 }
 
 // ConfigMap :: create a config map to pass to viper
