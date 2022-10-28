@@ -35,7 +35,7 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	error_helpers.FailOnError(err)
 	// Wait for user to input 4-digit code they obtain through the UI login / approval
 
-	code, err := promptUserForString("Enter login code: ")
+	code, err := promptUserForString("Enter verification code: ")
 	error_helpers.FailOnError(err)
 
 	// handle ctrl+d

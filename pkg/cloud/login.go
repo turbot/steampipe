@@ -26,7 +26,7 @@ func WebLogin(ctx context.Context) (string, error) {
 	// add in id query string
 	browserUrl := fmt.Sprintf("%s?r=%s", getLoginTokenConfirmUIUrl(), id)
 
-	fmt.Printf("Opening %s\n", browserUrl)
+	fmt.Printf("Verify login at %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
 		return "", err
