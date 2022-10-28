@@ -346,20 +346,21 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
-		prompt.OptionBufferPresetHook(func(s string) string {
+		prompt.OptionBufferPreHook(func(s string) (string, bool) {
 			isWsl, err := utils.IsWSL()
 			// if we got an error or this is not WSL, return as-is
 			if err != nil || !isWsl {
-				return s
+				return s, false
 			}
 			b := []byte(s)
-			// in WSL, 'Alt' characters are denoted by [EscapeCode, ASCII of character]
-			// if we get a combination which has EscapeCode as prefix
-			if len(b) > 1 && bytes.HasPrefix(b, []byte{byte(prompt.Escape)}) {
-				// trim the EscapeCode
-				b = bytes.TrimPrefix(b, []byte{byte(prompt.Escape)})
+			// in WSL, 'Alt' combo-characters are denoted by [27, ASCII of character]
+			// if we get a combination which has 27 as prefix - we should ignore it
+			// this is inline with other interactive clients like pgcli
+			if len(b) > 1 && bytes.HasPrefix(b, []byte{byte(27)}) {
+				// ignore it
+				return "", true
 			}
-			return string(b)
+			return string(b), false
 		}),
 	)
 	// set this to a default
@@ -367,28 +368,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 	c.interactivePrompt.RunCtx(ctx)
 
 	return
-}
-
-// suppressOnInput adds handlers which explicitly ignores certain ASCII codes from input
-func (c *InteractiveClient) suppressOnInput() []prompt.ASCIICodeBind {
-	mapped := utils.Map(constants.SuppressedASCIICodes, func(k []byte) prompt.ASCIICodeBind {
-		return prompt.ASCIICodeBind{
-			ASCIICode: k,
-			Fn:        func(b *prompt.Buffer) { /* ignore */ },
-		}
-	})
-
-	isWSL, _ := utils.IsWSL()
-	if isWSL {
-		mapped = append(mapped, utils.Map(constants.SuppressedASCIICodesForWSL, func(k []byte) prompt.ASCIICodeBind {
-			return prompt.ASCIICodeBind{
-				ASCIICode: k,
-				Fn:        func(b *prompt.Buffer) { /* ignore */ },
-			}
-		})...)
-	}
-
-	return mapped
 }
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
