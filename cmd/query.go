@@ -157,7 +157,7 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 		return err
 	}
 
-	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatNone}
+	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
 		return fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
@@ -201,7 +201,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			switch viper.GetString(constants.ArgOutput) {
 			case constants.OutputFormatNone:
 				// do nothing
-			case constants.OutputFormatSnapshot:
+			case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
 				// if the format is snapshot, just dump it out
 				jsonOutput, err := json.MarshalIndent(snap, "", "  ")
 				if err != nil {
@@ -292,16 +292,17 @@ func ensureQueryResource(name string, query string, queryIdx, queryCount int, w 
 }
 
 func snapshotRequired() bool {
+	SnapshotFormatNames := []string{constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort}
 	// if a snapshot exporter is specified return true
 	for _, e := range viper.GetStringSlice(constants.ArgExport) {
-		if e == constants.OutputFormatSnapshot || path.Ext(e) == constants.SnapshotExtension {
+		if helpers.StringSliceContains(SnapshotFormatNames, e) || path.Ext(e) == constants.SnapshotExtension {
 			return true
 		}
 	}
 	// if share/snapshot args are set or output is snapshot, return true
 	return viper.IsSet(constants.ArgShare) ||
 		viper.IsSet(constants.ArgSnapshot) ||
-		viper.GetString(constants.ArgOutput) == constants.OutputFormatSnapshot
+		helpers.StringSliceContains(SnapshotFormatNames, viper.GetString(constants.ArgOutput))
 
 }
 

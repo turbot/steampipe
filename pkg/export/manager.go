@@ -154,7 +154,7 @@ func (m *Manager) DoExport(ctx context.Context, targetName string, source Export
 func (m *Manager) ValidateExportFormat(exports []string) error {
 	var invalidFormats []string
 	for _, export := range exports {
-		if _, ok := m.registeredExporters[export]; !ok {
+		if _, err := m.getExportTarget(export, "dummy_target_name"); err != nil {
 			invalidFormats = append(invalidFormats, export)
 		}
 	}

@@ -187,7 +187,7 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 		}
 	}
 
-	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatNone}
+	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
 		return "", fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
@@ -198,7 +198,7 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 
 func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	switch viper.GetString(constants.ArgOutput) {
-	case constants.OutputFormatSnapshot:
+	case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
 		// just display result
 		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
 		error_helpers.FailOnError(err)
@@ -229,10 +229,19 @@ func getInitData(ctx context.Context) *initialisation.InitData {
 		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error()))
 	}
 
-	initData := initialisation.NewInitData(w).
-		RegisterExporters(dashboardExporters()...).
+	i := initialisation.NewInitData(w).
 		Init(ctx, constants.InvokerDashboard)
-	return initData
+
+	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+		i.RegisterExporters(dashboardExporters()...)
+		// validate required export formats
+		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
+			i.Result.Error = err
+			return i
+		}
+	}
+
+	return i
 }
 
 func dashboardExporters() []export.Exporter {
