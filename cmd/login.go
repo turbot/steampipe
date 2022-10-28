@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
+	"time"
 )
 
 func loginCmd() *cobra.Command {
@@ -33,19 +34,8 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	// start login flow - this will open a web page prompting user to login, and will give the user a code to enter
 	var id, err = cloud.WebLogin(ctx)
 	error_helpers.FailOnError(err)
-	// Wait for user to input 4-digit code they obtain through the UI login / approval
 
-	code, err := promptUserForString("Enter login code: ")
-	error_helpers.FailOnError(err)
-
-	// handle ctrl+d
-	if len(code) == 0 {
-		fmt.Println()
-		return
-	}
-
-	// use this code to get a login token and store it
-	token, err := cloud.GetLoginToken(ctx, id, code)
+	token, err := getToken(ctx, id)
 	error_helpers.FailOnError(err)
 
 	// save token
@@ -55,6 +45,38 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	displayLoginMessage(ctx, token)
 }
 
+func getToken(ctx context.Context, id string) (loginToken string, err error) {
+	fmt.Println()
+	for retries := 0; ; retries++ {
+		code, err := promptUserForString("Enter verification code: ")
+		error_helpers.FailOnError(err)
+
+		// handle ctrl+d
+		if len(code) == 0 {
+			fmt.Println()
+			os.Exit(0)
+		}
+
+		// use this code to get a login token and store it
+		loginToken, err = cloud.GetLoginToken(ctx, id, code)
+		if err == nil {
+			return loginToken, nil
+		}
+
+		fmt.Print("\033[1A\033[K")
+		if retries > 0 {
+			fmt.Print("\033[1A\033[K")
+		}
+		if retries == 2 {
+			return "", err
+		}
+		time.Sleep(20 * time.Millisecond)
+		error_helpers.ShowWarning(err.Error())
+	}
+
+	return
+}
+
 func displayLoginMessage(ctx context.Context, token string) {
 	userName, err := cloud.GetUserName(ctx, token)
 	error_helpers.FailOnErrorWithMessage(err, "Failed to read user name")
@@ -62,6 +84,7 @@ func displayLoginMessage(ctx context.Context, token string) {
 	fmt.Printf("Login successful for user %s\n", userName)
 
 }
+
 
 func promptUserForString(prompt string) (string, error) {
 	fmt.Print(prompt)
