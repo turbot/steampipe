@@ -621,7 +621,7 @@ const DashboardProvider = ({
         dataMode: DashboardDataModeLive,
       });
     }
-  }, [dashboard_name, location, navigate, state.dataMode]);
+  }, [dashboard_name, dispatch, location, navigate, state.dataMode]);
 
   // Ensure that on history pop / push we sync the new values into state
   useEffect(() => {
