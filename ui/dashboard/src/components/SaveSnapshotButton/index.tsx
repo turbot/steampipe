@@ -1,11 +1,12 @@
 import Icon from "../Icon";
 import moment from "moment/moment";
 import NeutralButton from "../forms/NeutralButton";
+import { DashboardDataModeCLISnapshot } from "../../types";
 import { saveAs } from "file-saver";
 import { useDashboard } from "../../hooks/useDashboard";
 
 const SaveSnapshotButton = () => {
-  const { dashboard, selectedDashboard, snapshot } = useDashboard();
+  const { dashboard, dataMode, selectedDashboard, snapshot } = useDashboard();
 
   const saveSnapshot = () => {
     if (!dashboard || !snapshot) {
@@ -22,7 +23,10 @@ const SaveSnapshotButton = () => {
     );
   };
 
-  if (!selectedDashboard && !snapshot) {
+  if (
+    dataMode === DashboardDataModeCLISnapshot ||
+    (!selectedDashboard && !snapshot)
+  ) {
     return null;
   }
 
