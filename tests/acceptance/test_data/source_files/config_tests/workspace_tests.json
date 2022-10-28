@@ -1,5 +1,5 @@
-{
-  "t1": {
+[
+  {
     "test": "default workspace profile location env variable set",
     "description": "",
     "setup": {
@@ -18,7 +18,7 @@
       "workspace-database": "fk43e7"
     }
   },
-  "t2": {
+  {
     "test": "default workspace profile location env variable set, all env variables set and all command line arguments set",
     "description": "",
     "setup": {
@@ -43,7 +43,7 @@
       "workspace-database": "fk43e9"
     }
   },
-  "t3": {
+  {
     "test": "env variables set",
     "description": "",
     "setup": {
@@ -67,7 +67,7 @@
       "workspace-database": "fk43e7"
     }
   },
-  "t4": {
+  {
     "test": "default workspace profile location env variable set and --workspace arg passed",
     "description": "",
     "setup": {
@@ -86,7 +86,7 @@
       "workspace-database": "fk43e8"
     }
   },
-  "t5": {
+  {
     "test": "all command line arguments set",
     "description": "",
     "setup": {
@@ -103,7 +103,7 @@
       "workspace-database": "fk43e9"
     }
   },
-  "t6": {
+  {
     "test": "default workspace profile location env variable set and all env variables set",
     "description": "",
     "setup": {
@@ -128,7 +128,7 @@
       "workspace-database": "ab43e6"
     }
   },
-  "t7": {
+  {
     "test": "default workspace profile location env variable set, all env variables set and --workspace arg passed",
     "description": "",
     "setup": {
@@ -153,4 +153,4 @@
       "workspace-database": "fk43e8"
     }
   }
-}
+]
