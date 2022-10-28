@@ -143,7 +143,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName)
+		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
 		error_helpers.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of failures)

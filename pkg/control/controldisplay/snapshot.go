@@ -79,4 +79,5 @@ func PublishSnapshot(ctx context.Context, e *controlexecute.ExecutionTree, shoul
 		fmt.Println(message)
 	}
 	return nil
+	
 }
