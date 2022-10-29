@@ -64,4 +64,4 @@ else
 fi
 
 # Setting the exit_code, to use in the github workflow(This only gets set to 0 when the above bats test suite passes)
-echo "::set-output name=exit_code::$(echo $?)"
+echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
