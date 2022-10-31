@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"golang.org/x/exp/maps"
 	"sort"
+
+	"golang.org/x/exp/maps"
 )
 
 // MergeMaps merges 'new' onto 'old'.
@@ -27,6 +28,6 @@ func MergeMaps[M ~map[K]V, K comparable, V any](old, new M) M {
 
 func SortedMapKeys[V any](m map[string]V) []string {
 	var keys = maps.Keys(m)
-	sort.Strings(maps.Keys(m))
+	sort.Strings(keys)
 	return keys
 }
