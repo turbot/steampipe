@@ -24,7 +24,7 @@ jobs:
       - name: Clean Version for Tag
         id: generate_docker_tag
         run: |
-          echo "::set-output name=docker_tag::${STEAMPIPE_VERSION#"v"}"
+          echo "docker_tag=${STEAMPIPE_VERSION#"v"}" >> $GITHUB_OUTPUT
           
       - name: Build and Push to Docker Hub
         id: docker_build
@@ -57,9 +57,9 @@ jobs:
       - name: Get pull request title
         id: pr_title
         run: >-
-          echo "::set-output name=PR_TITLE::$(
+          echo "PR_TITLE=$(
             gh pr view $STEAMPIPE_VERSION --json title | jq .title | tr -d '"'
-          )"
+          )" >> $GITHUB_OUTPUT
 
       - name: Output
         run: |

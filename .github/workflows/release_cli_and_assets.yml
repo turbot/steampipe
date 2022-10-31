@@ -214,7 +214,7 @@ jobs:
         cat annotations.json
         cat dashboard_ui_build/versions.json
         REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:$GITHUB_RUN_ID"
-        echo "::set-output name=REF::$REF"
+        echo "REF=$REF" >> $GITHUB_OUTPUT
 
     - name: Push to registry
       run: |-
