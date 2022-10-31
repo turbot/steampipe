@@ -45,7 +45,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 		return nil, err
 	}
 
-	password, _, err := client.Users.GetDBPassword(ctx, identityHandle).Execute()
+	password, _, err := client.Users.GetDBPassword(ctx, actor.GetHandle()).Execute()
 	if err != nil {
 		return nil, err
 	}
