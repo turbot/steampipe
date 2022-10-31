@@ -6,9 +6,15 @@ import (
 	"strings"
 )
 
+// cache for the WSL value, so that we don't have to query the OS all the time
+var wslValue *bool = nil
+
 // IsWSL :: detects whether app is running in WSL environment
 // refer to: https://github.com/Microsoft/WSL/issues/423#issuecomment-679190758
 func IsWSL() (bool, error) {
+	if wslValue != nil {
+		return *wslValue, nil
+	}
 	if runtime.GOOS != "linux" {
 		return false, nil
 	}
@@ -18,5 +24,7 @@ func IsWSL() (bool, error) {
 		return false, err
 	}
 	osRelease := strings.ToLower(string(osReleaseContent))
-	return (strings.Contains(osRelease, "microsoft") || strings.Contains(osRelease, "wsl")), nil
+	w := (strings.Contains(osRelease, "microsoft") || strings.Contains(osRelease, "wsl"))
+	wslValue = &w
+	return *wslValue, nil
 }
