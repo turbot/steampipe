@@ -90,7 +90,13 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		}
 	}
 
+	// sort the report
 	sort.Stable(reports)
+	// sort the individual chunks
+	sort.Stable(installedOrUpdated)
+	sort.Stable(canBeInstalled)
+	sort.Stable(canBeUpdated)
+	sort.Stable(notFound)
 
 	if len(installedOrUpdated) > 0 {
 		fmt.Println()
