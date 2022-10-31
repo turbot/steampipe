@@ -9,7 +9,6 @@ import (
 
 	"github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -38,31 +37,10 @@ func main() {
 	// ensure steampipe is not run on WSL1
 	checkWsl1(ctx)
 
-	// increase the soft ULIMIT to match the hard limit
-	err := setULimit()
-	error_helpers.FailOnErrorWithMessage(err, "failed to increase the file limit")
-
 	cmd.InitCmd()
 
 	// execute the command
 	exitCode = cmd.Execute()
-}
-
-// set the current to the max to avoid any file handle shortages
-func setULimit() error {
-	ulimit, err := filehelpers.GetULimit()
-	if err != nil {
-		return err
-	}
-
-	// set the current ulimit to 8192 (or the max, if less)
-	// this is to ensure we do not run out of file handler when watching files
-	var newULimit uint64 = 8192
-	if newULimit > ulimit.Max {
-		newULimit = ulimit.Max
-	}
-	err = filehelpers.SetULimit(newULimit)
-	return err
 }
 
 // this is to replicate the user security mechanism of out underlying
