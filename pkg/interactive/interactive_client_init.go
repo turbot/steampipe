@@ -40,8 +40,8 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 
 	if initResult.HasMessages() {
-		c.hidePrompt = true
 		c.interactivePrompt.ClearLine()
+		c.hidePrompt = true
 		fmt.Println()
 		initResult.DisplayMessages()
 		c.hidePrompt = false
