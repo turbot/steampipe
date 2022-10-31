@@ -500,8 +500,8 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	// get total connection count for this plugin (excluding aggregators)
 	numConnections := m.nonAggregatorConnectionCount()
 
-	log.Printf("[WARN] PluginManager setPluginCacheSizeMap: %d %s.", numConnections, utils.Pluralize("connection", numConnections))
-	log.Printf("[WARN] Total cache size %dMb", maxCacheSizeMb)
+	log.Printf("[TRACE] PluginManager setPluginCacheSizeMap: %d %s.", numConnections, utils.Pluralize("connection", numConnections))
+	log.Printf("[TRACE] Total cache size %dMb", maxCacheSizeMb)
 
 	for plugin, connections := range m.pluginConnectionConfigMap {
 		var size int64 = 0
