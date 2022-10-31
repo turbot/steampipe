@@ -15,6 +15,12 @@ jobs:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -31,9 +37,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
+          platforms: linux/amd64,linux/arm64
           build-args: |
-            TARGETOS=linux
-            TARGETARCH=amd64
             TARGETVERSION=${{ env.STEAMPIPE_VERSION }}
           tags: |
             turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
