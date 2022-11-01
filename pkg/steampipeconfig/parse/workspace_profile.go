@@ -115,6 +115,7 @@ func decodeWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string
 				// success - add to map
 				profileMap[workspaceProfile.ProfileName] = workspaceProfile
 			}
+			diags = append(diags, res.Diags...)
 		}
 	}
 	return profileMap, diags

@@ -97,6 +97,8 @@ func decodeLocalsBlock(block *hcl.Block, parseCtx *ModParseContext) ([]modconfig
 	var resources []modconfig.HclResource
 	var res = newDecodeResult()
 
+	// TODO remove and call ShouldIncludeBlock from BlocksToDecode
+	// https://github.com/turbot/steampipe/issues/2640
 	// if opts specifies block types, then check whether this type is included
 	if !parseCtx.ShouldIncludeBlock(block) {
 		return nil, res
@@ -122,6 +124,8 @@ func decodeBlock(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclReso
 	var resource modconfig.HclResource
 	var res = newDecodeResult()
 
+	// TODO remove and call ShouldIncludeBlock from BlocksToDecode
+	// https://github.com/turbot/steampipe/issues/2640
 	// if opts specifies block types, then check whether this type is included
 	if !parseCtx.ShouldIncludeBlock(block) {
 		return nil, res
