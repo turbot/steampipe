@@ -202,6 +202,10 @@ func (w *Workspace) ModfileExists() bool {
 }
 
 func (w *Workspace) HandlePreparedStatementFailures(failures *db_common.PrepareStatementFailures) {
+	if failures == nil {
+		return
+	}
+	
 	// avoid concurrent map access when multiple db connections may try to access preparedStatementFailures
 	w.preparedStatementFailureLock.Lock()
 	defer w.preparedStatementFailureLock.Unlock()
