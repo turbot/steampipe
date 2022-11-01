@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 
@@ -29,6 +30,11 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 
 	// map of prepared statement failures, keyed by query name
 	failureMap := make(map[string]error)
+	sql := strings.Join(maps.Values(sqlMap), ";\n")
+	if _, err := conn.Exec(ctx, sql); err != nil {
+		failureMap["BOO"] = err
+	}
+
 	for name, sql := range sqlMap {
 		if _, err := conn.Exec(ctx, sql); err != nil {
 			failureMap[name] = err
