@@ -416,8 +416,8 @@ func collectInputs() (map[string]interface{}, error) {
 		if _, ok := res[name]; ok {
 			return nil, fmt.Errorf("the dashboard-input option '%s' is provided more than once", name)
 		}
-		// TACTICAL: add `input. to start of name
-		key := fmt.Sprintf("input.%s", name)
+		// add `input. to start of name
+		key := modconfig.BuildModResourceName(modconfig.BlockTypeInput, name)
 		res[key] = rawVal
 	}
 
