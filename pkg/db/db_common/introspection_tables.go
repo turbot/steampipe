@@ -30,7 +30,7 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	case constants.IntrospectionControl:
 		return populateControlIntrospectionTables(ctx, workspaceResources, conn, commonColumnSql)
 	default:
-		// just create (but do not populate) the create mod introspection table
+		// just create (but do not populate) the mod introspection table
 		// - this is used to check if the session is initialised
 		return createModIntrospectionTable(ctx, workspaceResources, conn, commonColumnSql)
 	}

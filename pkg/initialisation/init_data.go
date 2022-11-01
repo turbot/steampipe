@@ -111,11 +111,16 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	}
 
 	// setup the session data - prepared statements and introspection tables
-	sessionDataSource := workspace.NewSessionDataSource(i.Workspace, nil)
+	sessionDataSource := workspace.NewSessionDataSource(i.Workspace, i.PreparedStatementSource)
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
-		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+		// if we are connecting to Steampipecloud, combine prepared statement sql when creating prepared statements
+		// to optimise performance
+		combineSql := cloudMetadata != nil
+		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn, combineSql)
+
 		i.Workspace.HandlePreparedStatementFailures(preparedStatementFailures)
+
 		return err
 	}
 
@@ -139,10 +144,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 		i.Result.Error = refreshResult.Error
 		return
 	}
-	// add refresh connection warnings
-	i.Result.AddWarnings(refreshResult.Warnings...)
-	// add warnings from prepared statement creation
-	i.Result.AddPreparedStatementFailures(i.Workspace.GetPreparedStatementFailures())
 
 	// force creation of session data - se we see any prepared statement errors at once
 	sessionResult := i.Client.AcquireSession(ctx)
@@ -152,6 +153,10 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	} else {
 		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	}
+	// add refresh connection warnings
+	i.Result.AddWarnings(refreshResult.Warnings...)
+	// add warnings from prepared statement creation
+	i.Result.AddPreparedStatementFailures(i.Workspace.GetPreparedStatementFailures())
 
 	return
 }
