@@ -24,7 +24,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 		return nil, nil
 	}
 
-	// map of prepared statement failures, keyed by query name
+	// a map of prepared statement failures, keyed by query name
 	failureMap := make(map[string]error)
 	for name, sql := range sqlMap {
 		if _, err := conn.Exec(ctx, sql); err != nil {
