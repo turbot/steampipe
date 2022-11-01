@@ -347,9 +347,8 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			Fn:        prompt.GoRightWord,
 		}),
 		prompt.OptionBufferPreHook(func(s string) (string, bool) {
-			isWsl, err := utils.IsWSL()
-			// if we got an error or this is not WSL, return as-is
-			if err != nil || !isWsl {
+			// if this is not WSL, return as-is
+			if !utils.IsWSL() {
 				return s, false
 			}
 			b := []byte(s)
