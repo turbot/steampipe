@@ -1,6 +1,7 @@
 package pluginmanager
 
 import (
+	"crypto/md5"
 	"fmt"
 	"log"
 	"os"
@@ -541,12 +542,22 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 		pluginName: &sdkshared.WrapperPlugin{},
 	}
 
+	utils.LogTime("getting plugin exec hash")
+	pluginChecksum, err := utils.FileMD5Hash(pluginPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	utils.LogTime("got plugin exec hash")
 	cmd := exec.Command(pluginPath)
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  sdkshared.Handshake,
 		Plugins:          pluginMap,
 		Cmd:              cmd,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		SecureConfig: &plugin.SecureConfig{
+			Checksum: pluginChecksum,
+			Hash:     md5.New(),
+		},
 		// pass our logger to the plugin client to ensure plugin logs end up in logfile
 		Logger: m.logger,
 	})
