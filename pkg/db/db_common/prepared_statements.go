@@ -23,6 +23,9 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 	if len(sqlMap) == 0 {
 		return nil, nil
 	}
+	a := len(sqlMap)
+	fmt.Println(a)
+	idx := 0
 
 	// map of prepared statement failures, keyed by query name
 	failureMap := make(map[string]error)
@@ -30,6 +33,8 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 		if _, err := conn.Exec(ctx, sql); err != nil {
 			failureMap[name] = err
 		}
+		log.Println(idx)
+		idx++
 	}
 
 	// return context error - this enables calling code to respond to cancellation
