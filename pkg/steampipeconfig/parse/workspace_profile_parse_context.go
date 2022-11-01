@@ -15,6 +15,8 @@ type WorkspaceProfileParseContext struct {
 
 func NewWorkspaceProfileParseContext(rootEvalPath string) *WorkspaceProfileParseContext {
 	parseContext := NewParseContext(rootEvalPath)
+	// TODO uncomment once https://github.com/turbot/steampipe/issues/2640 is done
+	//parseContext.BlockTypes = []string{modconfig.BlockTypeWorkspaceProfile}
 	c := &WorkspaceProfileParseContext{
 		ParseContext:      parseContext,
 		workspaceProfiles: make(map[string]*modconfig.WorkspaceProfile),
