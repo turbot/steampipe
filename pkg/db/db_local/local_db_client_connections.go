@@ -34,7 +34,7 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 		return res
 	}
 
-	var conn_names []string
+	var conn_names, plugin_names []string
 	// add warning if there are connections left over, from missing plugins
 	if len(connectionUpdates.MissingPlugins) > 0 {
 		// warning
@@ -42,12 +42,14 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 			for _, con := range conns {
 				conn_names = append(conn_names, con.Name)
 			}
-			res.AddWarning(fmt.Sprintf("plugin %s required by %s %s but is not installed",
-				strings.Split(a, "/")[3],
-				utils.Pluralize("connection", len(conn_names)),
-				strings.Join(conn_names, ",")))
-			conn_names = []string{}
+			plugin_names = append(plugin_names, utils.GetPluginName(a))
 		}
+		res.AddWarning(fmt.Sprintf("%d %s required by %s %s missing. To install, please run %s",
+			len(plugin_names),
+			utils.Pluralize("plugin", len(plugin_names)),
+			utils.Pluralize("connection", len(conn_names)),
+			utils.Pluralize("is", len(plugin_names)),
+			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(plugin_names, " ")))))
 	}
 
 	if !connectionUpdates.HasUpdates() {
