@@ -33,7 +33,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 		if _, err := conn.Exec(ctx, sql); err != nil {
 			failureMap[name] = err
 		}
-		log.Println(idx)
+		log.Println("[WARN]", idx)
 		idx++
 	}
 
