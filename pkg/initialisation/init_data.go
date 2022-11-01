@@ -111,7 +111,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	}
 
 	// setup the session data - prepared statements and introspection tables
-	sessionDataSource := workspace.NewSessionDataSource(i.Workspace, nil)
+	sessionDataSource := workspace.NewSessionDataSource(i.Workspace, i.PreparedStatementSource)
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
 		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn)
