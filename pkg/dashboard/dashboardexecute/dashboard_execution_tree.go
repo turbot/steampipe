@@ -226,16 +226,13 @@ func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes
 	return e.buildSnapshotPanelsUnder(e.Root, res)
 }
 
-// RuntimeDependencies returns the runtime depedencies for all leaf nodes
+// RuntimeDependencies returns the runtime dependencies for all leaf nodes
 func (e *DashboardExecutionTree) RuntimeDependencies() []string {
 	var deps = map[string]struct{}{}
 	for _, r := range e.runs {
 		if leafRun, ok := r.(*LeafRun); ok {
 			for _, v := range leafRun.runtimeDependencies {
-				// we want the short name
-				// TODO add a GetShortName function to HclResource https://github.com/turbot/steampipe/issues/2604
-				// for now we know the runtime dependency will be an input
-				deps[v.dependency.SourceResource.(*modconfig.DashboardInput).ShortName] = struct{}{}
+				deps[v.dependency.SourceResource.GetUnqualifiedName()] = struct{}{}
 			}
 		}
 	}
