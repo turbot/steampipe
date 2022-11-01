@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 
@@ -12,7 +13,16 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ResourceMaps, conn *pgx.Conn) (error, map[string]error) {
+type PrepareStatementFailures struct {
+	Failures map[string]error
+	Error    error
+}
+
+func NewPrepareStatementFailures() *PrepareStatementFailures {
+	return &PrepareStatementFailures{Failures: make(map[string]error)}
+}
+
+func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.ResourceMaps, conn *pgx.Conn, combineSql bool) (error, *PrepareStatementFailures) {
 	log.Printf("[TRACE] CreatePreparedStatements")
 
 	utils.LogTime("db.CreatePreparedStatements start")
@@ -23,18 +33,21 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 	if len(sqlMap) == 0 {
 		return nil, nil
 	}
-	a := len(sqlMap)
-	fmt.Println(a)
-	idx := 0
 
 	// map of prepared statement failures, keyed by query name
-	failureMap := make(map[string]error)
-	for name, sql := range sqlMap {
+	failureMap := NewPrepareStatementFailures()
+
+	if combineSql {
+		sql := strings.Join(maps.Values(sqlMap), ";\n")
 		if _, err := conn.Exec(ctx, sql); err != nil {
-			failureMap[name] = err
+			failureMap.Error = err
 		}
-		log.Println("[WARN]", idx)
-		idx++
+	} else {
+		for name, sql := range sqlMap {
+			if _, err := conn.Exec(ctx, sql); err != nil {
+				failureMap.Failures[name] = err
+			}
+		}
 	}
 
 	// return context error - this enables calling code to respond to cancellation
