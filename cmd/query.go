@@ -27,7 +27,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
-	"golang.org/x/exp/maps"
 )
 
 func queryCmd() *cobra.Command {
@@ -251,8 +250,12 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	close(res.TimingResult)
 	// start a goroutine to stream the results as rows
 	go func() {
+		rowVals := make([]interface{}, len(chartRun.Data.Columns))
 		for _, d := range chartRun.Data.Rows {
-			res.StreamRow(maps.Values(d))
+			for i, c := range chartRun.Data.Columns {
+				rowVals[i] = d[c.Name]
+			}
+			res.StreamRow(rowVals)
 		}
 		res.Close()
 	}()
