@@ -201,20 +201,30 @@ func (w *Workspace) ModfileExists() bool {
 	return len(w.modFilePath) > 0
 }
 
-func (w *Workspace) HandlePreparedStatementFailures(failures map[string]error) {
+func (w *Workspace) HandlePreparedStatementFailures(failures *db_common.PrepareStatementFailures) {
+	if failures == nil {
+		return
+	}
+	
 	// avoid concurrent map access when multiple db connections may try to access preparedStatementFailures
 	w.preparedStatementFailureLock.Lock()
 	defer w.preparedStatementFailureLock.Unlock()
 
 	// replace the map of failures with the current map
 	w.preparedStatementFailures = make(map[string]*steampipeconfig.PreparedStatementFailure)
-	for queryName, err := range failures {
+	for queryName, err := range failures.Failures {
 		if query, ok := w.GetQueryProvider(queryName); ok {
 			w.preparedStatementFailures[queryName] = &steampipeconfig.PreparedStatementFailure{
 				Query: query,
 				Error: err,
 			}
 		}
+	}
+	if failures.Error != nil {
+		w.preparedStatementFailures["preparedStatementGlobalError"] = &steampipeconfig.PreparedStatementFailure{
+			Error: failures.Error,
+		}
+
 	}
 }
 
