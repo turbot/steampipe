@@ -8,7 +8,6 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/types"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -38,7 +37,7 @@ func listSubCmd(opts listSubCmdOptions) *cobra.Command {
 
 func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
 	if opts.parent == nil {
-		// we can panic here, since this will always come up during development
+		// this should never happen
 		panic("parent is required")
 	}
 
@@ -49,17 +48,10 @@ func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		error_helpers.FailOnError(err)
 
 		items := []modconfig.ModTreeItem{}
-		setOfResourceTypes := getResourceTypesToDisplay(cmd)
-
+		resourceTypesToDisplay := getResourceTypesToDisplay(cmd)
 		w.Mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
-			if setOfResourceTypes.Has(item.BlockType()) {
+			if _, found := resourceTypesToDisplay[item.BlockType()]; found {
 				if cast, ok := item.(modconfig.ModTreeItem); ok {
-					if cast.GetParents()[0] != w.Mod && !viper.GetBool(constants.ArgAll) {
-						// this is not a direct child of the mod and '--all' is not used
-						// do not add
-						return true, nil
-					}
-
 					items = append(items, cast)
 				}
 			}
@@ -79,7 +71,7 @@ func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 
 }
 
-func getResourceTypesToDisplay(cmd *cobra.Command) *types.Set[string] {
+func getResourceTypesToDisplay(cmd *cobra.Command) map[string]struct{} {
 	parent := cmd.Parent().Name()
 	cmdToTypeMapping := map[string][]string{
 		"check": {"benchmark", "control"},
@@ -88,13 +80,10 @@ func getResourceTypesToDisplay(cmd *cobra.Command) *types.Set[string] {
 	if !found {
 		resourceTypesToList = []string{cmd.Parent().Name()}
 	}
-	// construct a Set with the resource types (Set uses a map under the hood)
-	// that way, look ups are going to be cheaper
-	// we need this optimization since a workspace can have
-	// a huge number of resources and we need to iterate over all of them
-	lookupResourceTypes := types.NewSet[string]()
+	// add resource types to a map for cheap lookup
+	lookupResourceTypes := map[string]struct{}{}
 	for _, t := range resourceTypesToList {
-		lookupResourceTypes.Add(t)
+		lookupResourceTypes[t] = struct{}{}
 	}
 	return lookupResourceTypes
 }
