@@ -54,6 +54,12 @@ func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		w.Mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
 			if setOfResourceTypes.Has(item.BlockType()) {
 				if cast, ok := item.(modconfig.ModTreeItem); ok {
+					if cast.GetParents()[0] != w.Mod && !viper.GetBool(constants.ArgAll) {
+						// this is not a direct child of the mod and '--all' is not used
+						// do not add
+						return true, nil
+					}
+
 					items = append(items, cast)
 				}
 			}
