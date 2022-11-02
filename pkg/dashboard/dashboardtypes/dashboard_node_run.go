@@ -17,6 +17,7 @@ type DashboardNodeRun interface {
 	Initialise(ctx context.Context)
 	Execute(ctx context.Context)
 	GetName() string
+	GetTitle() string
 	GetRunStatus() DashboardRunStatus
 	SetError(context.Context, error)
 	GetError() error

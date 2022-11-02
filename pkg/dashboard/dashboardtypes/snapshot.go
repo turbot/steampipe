@@ -18,6 +18,7 @@ type SteampipeSnapshot struct {
 	EndTime       time.Time                `json:"end_time"`
 	Layout        *SnapshotTreeNode        `json:"layout"`
 	FileNameRoot  string                   `json:"-"`
+	Title         string                   `json:"-"`
 }
 
 // IsExportSourceData implements ExportSourceData

@@ -186,7 +186,7 @@ func (r *CheckRun) ChildrenComplete() bool {
 // IsSnapshotPanel implements SnapshotPanel
 func (*CheckRun) IsSnapshotPanel() {}
 
-// GetTitle implements SnapshotPanel
+// GetTitle implements DashboardNodeRun
 func (r *CheckRun) GetTitle() string {
 	return r.Title
 }

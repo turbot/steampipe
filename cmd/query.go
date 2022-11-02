@@ -86,7 +86,7 @@ Examples:
 		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
 		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringFlag(constants.ArgSnapshotTitle, "", "query", "The title to give a snapshot.").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.").
 		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", 0, "The query timeout").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
@@ -186,7 +186,6 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			queryString := initData.Queries[name]
 			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 			// this is to allow us to use existing dashboard execution code
-
 			queryProvider, existingResource := ensureQueryResource(name, queryString, i, len(queryNames), initData.Workspace)
 
 			// we need to pass the embedded initData to  GenerateSnapshot
@@ -278,19 +277,11 @@ func ensureQueryResource(name string, query string, queryIdx, queryCount int, w 
 		}
 	}
 
-	// build name and title
+	// build name
 	shortName := "command_line_query"
-
-	// get title from the snapshot-title arg (defaulting to "query"
-	title := viper.GetString(constants.ArgSnapshotTitle)
-	if queryCount > 1 {
-		shortName = fmt.Sprintf("%s_%d", shortName, queryIdx)
-		title = fmt.Sprintf("%s %d", title, queryIdx)
-	}
 
 	// create the query
 	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName).(*modconfig.Query)
-	q.Title = utils.ToStringPointer(title)
 	q.SQL = utils.ToStringPointer(query)
 	// add empty metadata
 	q.SetMetadata(&modconfig.ResourceMetadata{})

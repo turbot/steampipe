@@ -80,7 +80,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 
 	// resolve the snapshot title
 	title := resolveSnapshotTitle(snapshot)
-	log.Println(title)
+	log.Printf("[WARN] UPLOADING WITH TITLE %s", title)
 	// populate map of tags tags been set?
 	tags := getTags()
 
@@ -115,12 +115,11 @@ func resolveSnapshotTitle(snapshot *dashboardtypes.SteampipeSnapshot) string {
 	if titleArg := viper.GetString(constants.ArgSnapshotTitle); titleArg != "" {
 		return titleArg
 	}
-	// get the root resource
-	r := snapshot.Panels[snapshot.Layout.Name]
-	if rootTitle := r.GetTitle(); rootTitle != "" {
-		return rootTitle
+	// is there a title property set on the snapshot
+	if snapshotTitle := snapshot.Title; snapshotTitle != "" {
+		return snapshotTitle
 	}
-	// fall back o the fully qualified name of the root resource (which is also the FileNameRoot)
+	// fall back to the fully qualified name of the root resource (which is also the FileNameRoot)
 	return snapshot.FileNameRoot
 }
 

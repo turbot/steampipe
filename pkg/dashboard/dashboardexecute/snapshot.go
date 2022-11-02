@@ -72,5 +72,6 @@ func ExecutionCompleteToSnapshot(event *dashboardevents.ExecutionComplete) *dash
 		SearchPath:    event.SearchPath,
 		StartTime:     event.StartTime,
 		EndTime:       event.EndTime,
+		Title:         event.Root.GetTitle(),
 	}
 }

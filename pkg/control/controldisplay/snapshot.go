@@ -61,6 +61,8 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 		SearchPath:    e.SearchPath,
 		StartTime:     e.StartTime,
 		EndTime:       e.EndTime,
+		Title:         dashboardNode.GetTitle(),
+		FileNameRoot:  dashboardNode.Name(),
 	}
 	return res, nil
 }
@@ -79,5 +81,5 @@ func PublishSnapshot(ctx context.Context, e *controlexecute.ExecutionTree, shoul
 		fmt.Println(message)
 	}
 	return nil
-	
+
 }
