@@ -38,15 +38,23 @@ func ShowOutput(ctx context.Context, result *queryresult.Result) {
 	}
 }
 
-func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
+type ShowWrappedTableOptions struct {
+	AutoMerge        bool
+	HideEmptyColumns bool
+}
+
+func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableOptions) {
+	if opts == nil {
+		opts = &ShowWrappedTableOptions{}
+	}
 	t := table.NewWriter()
 
 	t.SetStyle(table.StyleDefault)
 	t.Style().Format.Header = text.FormatDefault
 	t.SetOutputMirror(os.Stdout)
 
-	rowConfig := table.RowConfig{AutoMerge: autoMerge}
-	colConfigs, headerRow := getColumnSettings(headers, rows)
+	rowConfig := table.RowConfig{AutoMerge: opts.AutoMerge}
+	colConfigs, headerRow := getColumnSettings(headers, rows, opts)
 
 	t.SetColumnConfigs(colConfigs)
 	t.AppendHeader(headerRow)
@@ -62,7 +70,7 @@ func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
 }
 
 // calculate and returns column configuration based on header and row content
-func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig, table.Row) {
+func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTableOptions) ([]table.ColumnConfig, table.Row) {
 	maxCols, _, _ := gows.GetWinSize()
 	colConfigs := make([]table.ColumnConfig, len(headers))
 	headerRow := make(table.Row, len(headers))
@@ -77,8 +85,15 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 
 		// get the maximum len of strings in this column
 		maxLen := 0
+		colHasValue := false
 		for _, row := range rows {
 			colVal := row[idx]
+			if !colHasValue && len(colVal) > 0 {
+				// the !colHasValue is necessary in the condition,
+				// otherwise, even after being set, we will keep
+				// evaluating the length
+				colHasValue = true
+			}
 			if len(colVal) > maxLen {
 				maxLen = len(colVal)
 			}
@@ -91,6 +106,9 @@ func getColumnSettings(headers []string, rows [][]string) ([]table.ColumnConfig,
 			Number:   idx + 1,
 			WidthMax: maxLen,
 			WidthMin: maxLen,
+		}
+		if opts.HideEmptyColumns && !colHasValue {
+			colConfigs[idx].Hidden = true
 		}
 		sumOfAllCols += maxLen
 	}

@@ -221,7 +221,7 @@ func printTiming(args []string, durations []time.Duration) {
 	// blank line after renderer output
 	fmt.Println()
 	fmt.Println("Timing:")
-	display.ShowWrappedTable(headers, rows, false)
+	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 }
 
 func shouldPrintTiming() bool {
