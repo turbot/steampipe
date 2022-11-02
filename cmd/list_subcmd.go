@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"log"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -43,37 +41,18 @@ func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		// we can panic here, since this will always come up during development
 		panic("parent is required")
 	}
+
 	return func(cmd *cobra.Command, args []string) {
-		parent := cmd.Parent().Name()
-		cmdToTypeMapping := map[string][]string{
-			"check": {"benchmark", "control"},
-		}
-		typ, found := cmdToTypeMapping[parent]
-		if !found {
-			typ = []string{cmd.Parent().Name()}
-		}
-
 		workspacePath := viper.GetString(constants.ArgModLocation)
-		log.Println("[TRACE] workspace path:", workspacePath)
 
-		wrkspc, err := workspace.Load(cmd.Context(), workspacePath)
-		log.Println("[TRACE] workspace loaded:")
+		w, err := workspace.Load(cmd.Context(), workspacePath)
 		error_helpers.FailOnError(err)
 
-		// construct a Set with the resource types (Set uses a map under the hood)
-		// that way, look ups are going to be cheaper
-		// we need this optimization since a workspace can have
-		// a huge number of resources and we need to iterate over all of them
-		lookupResourceTypes := types.NewSet[string]()
-		for _, t := range typ {
-			lookupResourceTypes.Add(t)
-		}
-
 		items := []modconfig.ModTreeItem{}
+		setOfResourceTypes := getResourceTypesToDisplay(cmd)
 
-		log.Println("[TRACE] listing:", lookupResourceTypes)
-		wrkspc.Mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
-			if lookupResourceTypes.Has(item.BlockType()) {
+		w.Mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
+			if setOfResourceTypes.Has(item.BlockType()) {
 				if cast, ok := item.(modconfig.ModTreeItem); ok {
 					items = append(items, cast)
 				}
@@ -81,9 +60,10 @@ func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 			return true, nil
 		})
 
-		rows := [][]string{}
-		for _, modItem := range items {
-			rows = append(rows, []string{modItem.GetUnqualifiedName(), modItem.GetTitle()})
+		rows := make([][]string, len(items))
+
+		for idx, modItem := range items {
+			rows[idx] = []string{modItem.GetUnqualifiedName(), modItem.GetTitle()}
 		}
 		display.ShowWrappedTable([]string{"name", "title"}, rows, &display.ShowWrappedTableOptions{
 			AutoMerge:        false,
@@ -91,4 +71,24 @@ func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		})
 	}
 
+}
+
+func getResourceTypesToDisplay(cmd *cobra.Command) *types.Set[string] {
+	parent := cmd.Parent().Name()
+	cmdToTypeMapping := map[string][]string{
+		"check": {"benchmark", "control"},
+	}
+	resourceTypesToList, found := cmdToTypeMapping[parent]
+	if !found {
+		resourceTypesToList = []string{cmd.Parent().Name()}
+	}
+	// construct a Set with the resource types (Set uses a map under the hood)
+	// that way, look ups are going to be cheaper
+	// we need this optimization since a workspace can have
+	// a huge number of resources and we need to iterate over all of them
+	lookupResourceTypes := types.NewSet[string]()
+	for _, t := range resourceTypesToList {
+		lookupResourceTypes.Add(t)
+	}
+	return lookupResourceTypes
 }
