@@ -83,8 +83,11 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
 		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.")
 
-	cmd.AddCommand(listSubCmd("", ""))
-
+	cmd.AddCommand(listSubCmd(listSubCmdOptions{
+		shortDescription: "",
+		longDescription:  "",
+		parent:           cmd,
+	}))
 	return cmd
 }
 

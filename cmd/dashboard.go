@@ -69,7 +69,11 @@ The current mod is the working directory, or the directory specified by the --mo
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
-	cmd.AddCommand(listSubCmd("", ""))
+	cmd.AddCommand(listSubCmd(listSubCmdOptions{
+		shortDescription: "",
+		longDescription:  "",
+		parent:           cmd,
+	}))
 
 	return cmd
 }
