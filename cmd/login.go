@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
-	"time"
 )
 
 func loginCmd() *cobra.Command {
@@ -47,31 +46,29 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 
 func getToken(ctx context.Context, id string) (loginToken string, err error) {
 	fmt.Println()
-	for retries := 0; ; retries++ {
-		code, err := promptUserForString("Enter verification code: ")
+	retries := 0
+	for {
+		var code string
+		code, err = promptUserForString("Enter verification code: ")
 		error_helpers.FailOnError(err)
-
-		// handle ctrl+d
-		if len(code) == 0 {
-			fmt.Println()
-			os.Exit(0)
+		if code != "" {
+			// use this code to get a login token and store it
+			loginToken, err = cloud.GetLoginToken(ctx, id, code)
+			if err == nil {
+				return loginToken, nil
+			}
+			// a code was entered but it failed - inc retry count
+			retries++
 		}
 
-		// use this code to get a login token and store it
-		loginToken, err = cloud.GetLoginToken(ctx, id, code)
-		if err == nil {
-			return loginToken, nil
+		// if we have used our retries, break out before displaying wanring - we will display an error
+		if retries == 3 {
+			return "", fmt.Errorf("Too many attempts.")
 		}
 
-		fmt.Print("\033[1A\033[K")
-		if retries > 0 {
-			fmt.Print("\033[1A\033[K")
+		if err != nil {
+			error_helpers.ShowWarning(err.Error())
 		}
-		if retries == 2 {
-			return "", err
-		}
-		time.Sleep(20 * time.Millisecond)
-		error_helpers.ShowWarning(err.Error())
 	}
 
 	return
@@ -81,16 +78,21 @@ func displayLoginMessage(ctx context.Context, token string) {
 	userName, err := cloud.GetUserName(ctx, token)
 	error_helpers.FailOnErrorWithMessage(err, "Failed to read user name")
 
-	fmt.Printf("Login successful for user %s\n", userName)
-
+	fmt.Println()
+	fmt.Printf("Logged in as %s\n", constants.Bold(userName))
+	fmt.Println()
 }
-
 
 func promptUserForString(prompt string) (string, error) {
 	fmt.Print(prompt)
 
 	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
+	if !scanner.Scan() {
+		// handle ctrl+d
+		fmt.Println()
+		os.Exit(0)
+	}
+
 	err := scanner.Err()
 	if err != nil {
 		return "", err

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
@@ -26,7 +27,7 @@ func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, erro
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
-			return nil, constants.MissingCloudTokenError
+			return nil, error_helpers.MissingCloudTokenError
 		}
 
 		// so we have a database and a token - build the connection string and set it in viper
