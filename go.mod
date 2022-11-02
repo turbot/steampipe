@@ -11,6 +11,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/containerd/containerd v1.4.13
 	github.com/deislabs/oras v0.9.0
+	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/fatih/color v1.13.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gertd/go-pluralize v0.2.1
