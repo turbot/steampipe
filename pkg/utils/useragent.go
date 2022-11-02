@@ -28,8 +28,7 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 
 	// change the platform to "windows_linux" if we are running in "Windows Subsystem for Linux"
 	if runtime.GOOS == "linux" {
-		wsl, err := IsWSL()
-		if err == nil && wsl {
+		if IsWSL() {
 			requestPayload["os_platform"] = "windows_linux"
 		}
 	}
