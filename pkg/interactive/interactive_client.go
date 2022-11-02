@@ -346,7 +346,13 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
-		prompt.OptionBufferPreHook(cleanBufferForWSL),
+		prompt.OptionBufferPreHook(func(input string) (modifiedInput string, ignore bool) {
+			// if this is not WSL, return as-is
+			if !utils.IsWSL() {
+				return input, false
+			}
+			return cleanBufferForWSL(input)
+		}),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
@@ -356,10 +362,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 }
 
 func cleanBufferForWSL(s string) (string, bool) {
-	// if this is not WSL, return as-is
-	if !utils.IsWSL() {
-		return s, false
-	}
 	b := []byte(s)
 	// in WSL, 'Alt' combo-characters are denoted by [27, ASCII of character]
 	// if we get a combination which has 27 as prefix - we should ignore it
