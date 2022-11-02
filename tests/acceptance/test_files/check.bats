@@ -4,7 +4,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check check_rendering_benchmark" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check benchmark.control_check_rendering_benchmark
-  assert_equal $status 10
+  assert_equal $status 0
   cd -
 }
 
