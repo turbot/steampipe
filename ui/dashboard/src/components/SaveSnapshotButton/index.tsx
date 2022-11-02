@@ -15,12 +15,7 @@ const SaveSnapshotButton = () => {
     const blob = new Blob([JSON.stringify(snapshot)], {
       type: "application/json",
     });
-    saveAs(
-      blob,
-      `${dashboard.name.replaceAll(".", "_")}_${moment().format(
-        "YYYYMMDD_HHmmss"
-      )}.sps`
-    );
+    saveAs(blob, `${dashboard.name}.${moment().format("YYYYMMDDTHHmmss")}.sps`);
   };
 
   if (
