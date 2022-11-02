@@ -43,7 +43,13 @@ func TildefyPaths() error {
 			if argVal, err = filehelpers.Tildefy(argVal); err != nil {
 				return err
 			}
-			viper.Set(argName, argVal)
+			if viper.IsSet(argName) {
+				// if the value was already set re-set
+				viper.Set(argName, argVal)
+			} else {
+				// otherwise just update the default
+				viper.SetDefault(argName, argVal)
+			}
 		}
 	}
 	return nil
