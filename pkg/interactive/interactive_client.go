@@ -1,9 +1,9 @@
 package interactive
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -29,6 +29,7 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
@@ -345,8 +346,13 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
-		// ignore suppressed ASCII codes
-		prompt.OptionAddASCIICodeBind(c.suppressOnInput()...),
+		prompt.OptionBufferPreHook(func(input string) (modifiedInput string, ignore bool) {
+			// if this is not WSL, return as-is
+			if !utils.IsWSL() {
+				return input, false
+			}
+			return cleanBufferForWSL(input)
+		}),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
@@ -355,26 +361,16 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 	return
 }
 
-// suppressOnInput adds handlers which explicitly ignores certain ASCII codes from input
-func (c *InteractiveClient) suppressOnInput() []prompt.ASCIICodeBind {
-	mapped := utils.Map(constants.SuppressedASCIICodes, func(k []byte) prompt.ASCIICodeBind {
-		return prompt.ASCIICodeBind{
-			ASCIICode: k,
-			Fn:        func(b *prompt.Buffer) { /* ignore */ },
-		}
-	})
-
-	isWSL, _ := utils.IsWSL()
-	if isWSL {
-		mapped = append(mapped, utils.Map(constants.SuppressedASCIICodesForWSL, func(k []byte) prompt.ASCIICodeBind {
-			return prompt.ASCIICodeBind{
-				ASCIICode: k,
-				Fn:        func(b *prompt.Buffer) { /* ignore */ },
-			}
-		})...)
+func cleanBufferForWSL(s string) (string, bool) {
+	b := []byte(s)
+	// in WSL, 'Alt' combo-characters are denoted by [27, ASCII of character]
+	// if we get a combination which has 27 as prefix - we should ignore it
+	// this is inline with other interactive clients like pgcli
+	if len(b) > 1 && bytes.HasPrefix(b, []byte{byte(27)}) {
+		// ignore it
+		return "", true
 	}
-
-	return mapped
+	return string(b), false
 }
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
