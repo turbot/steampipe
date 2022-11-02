@@ -11,11 +11,11 @@ cd steampipe
 git init
 git submodule update --init
 git submodule update --recursive
-git checkout $1
+git checkout docker-tests
 git branch
 
 # declare the test file names
-declare -a arr=("migration" "service_and_plugin" "search_path" "chaos_and_query" "dynamic_schema" "cache" "mod_install" "mod" "check" "performance" "exit_codes")
+declare -a arr=("exit_codes")
 failure_count=0
 
 # run test suite
@@ -24,10 +24,11 @@ do
   echo ""
   echo ">>>>> running $i.bats"
   ./tests/acceptance/run.sh $i.bats
-  failure_count=$(echo $?)
+  failure_count=$?
 done
+echo $failure_count
 
-if [[ $failure_count == 0 ]]; then
+if [[ $failure_count -eq 0 ]]; then
   echo "test run successful"
   exit 0
 else
