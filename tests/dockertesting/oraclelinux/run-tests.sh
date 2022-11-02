@@ -26,8 +26,9 @@ do
   ./tests/acceptance/run.sh $i.bats
   failure_count=$(echo $?)
 done
+echo $failure_count
 
-if [[ $failure_count == 0 ]]; then
+if [[ $failure_count -eq 0 ]]; then
   echo "test run successful"
   exit 0
 else
