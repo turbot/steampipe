@@ -174,14 +174,14 @@ func (v *Variable) GetDescription() string {
 	return ""
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements HclResource
 func (v *Variable) GetTitle() string {
 	return typehelpers.SafeString(v.ShortName)
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements HclResource
 func (v *Variable) GetTags() map[string]string {
-	return nil
+	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem

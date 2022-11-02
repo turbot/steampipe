@@ -281,14 +281,17 @@ func (q *Query) GetDescription() string {
 	return ""
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements HclResource
 func (q *Query) GetTitle() string {
 	return typehelpers.SafeString(q.Title)
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements HclResource
 func (q *Query) GetTags() map[string]string {
-	return nil
+	if q.Tags != nil {
+		return q.Tags
+	}
+	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem

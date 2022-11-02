@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"log"
 	"path"
 	"strings"
 )
@@ -40,7 +41,7 @@ func PublishSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnap
 func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) {
 	exporter := &export.SnapshotExporter{}
 
-	fileName := export.GenerateDefaultExportFileName(exporter, snapshot.Layout.Name)
+	fileName := export.GenerateDefaultExportFileName(snapshot.FileNameRoot, exporter.FileExtension())
 	dirName := viper.GetString(constants.ArgSnapshotLocation)
 	filePath := path.Join(dirName, fileName)
 
@@ -77,6 +78,9 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 		visibility = "anyone_with_link"
 	}
 
+	// resolve the snapshot title
+	title := resolveSnapshotTitle(snapshot)
+	log.Println(title)
 	// populate map of tags tags been set?
 	tags := getTags()
 
@@ -105,6 +109,19 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 		snapshotId)
 
 	return snapshotUrl, nil
+}
+
+func resolveSnapshotTitle(snapshot *dashboardtypes.SteampipeSnapshot) string {
+	if titleArg := viper.GetString(constants.ArgSnapshotTitle); titleArg != "" {
+		return titleArg
+	}
+	// get the root resource
+	r := snapshot.Panels[snapshot.Layout.Name]
+	if rootTitle := r.GetTitle(); rootTitle != "" {
+		return rootTitle
+	}
+	// fall back o the fully qualified name of the root resource (which is also the FileNameRoot)
+	return snapshot.FileNameRoot
 }
 
 func getTags() map[string]any {

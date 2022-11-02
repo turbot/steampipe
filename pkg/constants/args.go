@@ -56,6 +56,7 @@ const (
 	ArgWorkspaceProfile     = "workspace"
 	ArgModLocation          = "mod-location"
 	ArgSnapshotLocation     = "snapshot-location"
+	ArgSnapshotTitle        = "snapshot-title"
 )
 
 // metaquery mode arguments

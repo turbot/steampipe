@@ -60,6 +60,7 @@ The current mod is the working directory, or the directory specified by the --mo
 		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
 		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.").
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").

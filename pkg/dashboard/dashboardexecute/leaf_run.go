@@ -262,6 +262,11 @@ func (r *LeafRun) ChildrenComplete() bool {
 // IsSnapshotPanel implements SnapshotPanel
 func (*LeafRun) IsSnapshotPanel() {}
 
+// GetTitle implements SnapshotPanel
+func (r *LeafRun) GetTitle() string {
+	return r.Title
+}
+
 // GetInputsDependingOn implements DashboardNodeRun
 // return nothing for LeafRun
 func (r *LeafRun) GetInputsDependingOn(changedInputName string) []string { return nil }

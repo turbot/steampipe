@@ -79,7 +79,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
 		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ")
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.")
 
 	return cmd
 }
