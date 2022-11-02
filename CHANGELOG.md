@@ -15,7 +15,7 @@ _What's new?_
 * Add better help messages for mod plugin requirements not satisfied error. ([#2361](https://github.com/turbot/steampipe/issues/2361))
 * Reduce the max frequency of connection config changed events to every 4 second. ([#2535](https://github.com/turbot/steampipe/issues/2535))
 * Add `Variables` and `Inputs` to dashboard `ExecutionStarted` event. ([#2606](https://github.com/turbot/steampipe/issues/2606))
-* Validate checkout output and export formats before execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
+* Validate check output and export formats before execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
 
 _Bug fixes_
 * Update `GetPathKeys` to treat key columns with `AnyOf` require property with the same precedence as `Required`. ([#254](https://github.com/turbot/steampipe-postgres-fdw/issues/254))
