@@ -2,12 +2,12 @@ package initialisation
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
@@ -27,7 +27,7 @@ func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, erro
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)
 		if cloudToken == "" {
-			return nil, missingCloudTokenError()
+			return nil, error_helpers.MissingCloudTokenError
 		}
 
 		// so we have a database and a token - build the connection string and set it in viper
@@ -43,8 +43,4 @@ func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, erro
 	viper.Set(constants.ArgConnectionString, connectionString)
 
 	return cloudMetadata, nil
-}
-
-func missingCloudTokenError() error {
-	return errors.New("No cloud token available to connect to Steampipe cloud workspace . Run 'steampipe login' to setup.")
 }

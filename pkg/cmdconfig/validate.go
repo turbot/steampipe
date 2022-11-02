@@ -7,6 +7,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"strings"
 )
@@ -24,19 +25,11 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 		return nil
 	}
 
-	// get string containing the action ("share" / "snashot") - this is used for missingCloudTokenError
-	var action string
-	if share {
-		action = constants.ArgShare
-	} else {
-		action = constants.ArgSnapshot
-	}
-
 	token := viper.GetString(constants.ArgCloudToken)
 
 	// determine whether snapshot location is a cloud workspace or a file location
 	// if a file location, check it exists
-	if err := validateSnapshotLocation(ctx, token, action); err != nil {
+	if err := validateSnapshotLocation(ctx, token); err != nil {
 		return err
 	}
 
@@ -46,7 +39,7 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 
 	// verify cloud token and workspace has been set
 	if requireCloudToken && token == "" {
-		return missingCloudTokenError(action)
+		return error_helpers.MissingCloudTokenError
 	}
 
 	// should never happen as there is a default set
@@ -57,17 +50,13 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 	return validateSnapshotTags()
 }
 
-func missingCloudTokenError(action string) error {
-	return fmt.Errorf("No cloud token available for --%s. Run 'steampipe login' to setup.", action)
-}
-
-func validateSnapshotLocation(ctx context.Context, cloudToken string, action string) error {
+func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
 
 	// if snapshot location is not set, set to the users default
 	if snapshotLocation == "" {
 		if cloudToken == "" {
-			return missingCloudTokenError(action)
+			return error_helpers.MissingCloudTokenError
 		}
 		return setSnapshotLocationFromDefaultWorkspace(ctx, cloudToken)
 	}
