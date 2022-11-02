@@ -1,3 +1,44 @@
+## v0.17.0 [tbd]
+_What's new?_
+* Add support for `workspace profiles`. Parse from HCL config and select using `--workspace` arg. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2574](https://github.com/turbot/steampipe/issues/2574))
+* Update CLI to upload snapshots to Steampipe cloud using `--share` and `--snapshot` options. ([#2367](https://github.com/turbot/steampipe/issues/2367))
+* Add `steampipe login` command. ([#2583](https://github.com/turbot/steampipe/issues/2583))
+* Update `dashboard` command to support passing a dashboard name as an argument. ([#2365](https://github.com/turbot/steampipe/issues/2365))
+* Add `snapshot`/`sps` output and export format. ([#2473](https://github.com/turbot/steampipe/issues/2473))
+* Add `autocomplete` meta command and terminal option. ([#2560](https://github.com/turbot/steampipe/issues/2560), [#1692](https://github.com/turbot/steampipe/issues/1692))
+* Add ability to save and open snapshots from the dashboard UI. ([#2577](https://github.com/turbot/steampipe/issues/2577))
+* Add a configurable query timeout. ([#666](https://github.com/turbot/steampipe/issues/666), [#2593](https://github.com/turbot/steampipe/issues/2593)) 
+* Update database code to use `pgx` interface so we can leverage the connection pool hook functions to pre-warm connections. ([#2422](https://github.com/turbot/steampipe/issues/2422))
+* Rationalise and simplify postgres configuration. ([#2471](https://github.com/turbot/steampipe/issues/2471))
+* Support executing any query-provider resources using the steampipe query command. ([#2558](https://github.com/turbot/steampipe/issues/2558))
+* Improve help messages when a plugin is installed but the connection is not configured. ([#2319](https://github.com/turbot/steampipe/issues/2319))
+* Add better help messages for mod plugin requirements not satisfied error. ([#2361](https://github.com/turbot/steampipe/issues/2361))
+* Reduce the max frequency of connection config changed events to every 4 second. ([#2535](https://github.com/turbot/steampipe/issues/2535))
+* Add `Variables` and `Inputs` to dashboard `ExecutionStarted` event. ([#2606](https://github.com/turbot/steampipe/issues/2606))
+* Validate check output and export formats before execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
+
+_Bug fixes_
+* Update `GetPathKeys` to treat key columns with `AnyOf` require property with the same precedence as `Required`. ([#254](https://github.com/turbot/steampipe-postgres-fdw/issues/254))
+* Remove blank lines in CSV and JSON query results ([#2333](https://github.com/turbot/steampipe/issues/2333), [#2340](https://github.com/turbot/steampipe/issues/2340))
+* Fix UpdateConnectionConfigs call to pass the new connection for changed connections (currently the old connection is passed). ([#2349](https://github.com/turbot/steampipe/issues/2349))
+* When passing empty array as variable, cast to correct type if possible. ([#2094](https://github.com/turbot/steampipe/issues/2094))
+* Fixes issue where progress bars are not sorted for plugin update. ([#2501](https://github.com/turbot/steampipe/issues/2501))
+* Fix intermittent dashboard shutdown stall. ([#2328](https://github.com/turbot/steampipe/issues/2328))
+* Fix connection watching only adding first changed connection config to the payload of the UpdateConnectionConfigs call. ([#2395](https://github.com/turbot/steampipe/issues/2395))
+* Fix the alignment of plugin update/install outputs. ([#2417](https://github.com/turbot/steampipe/issues/2417))
+* Fix timeout running `service start --dashboard` with many mods installed - increase dashboard service startup timeout to 30s. ([#2434](https://github.com/turbot/steampipe/issues/2434))
+* Ensure `dashboard` and `control` return exit status zero after successful run ([#2449](https://github.com/turbot/steampipe/issues/2449), [#2447](https://github.com/turbot/steampipe/issues/2447))
+* Fixes issue where steampipe requests for firewall exceptions during installation. ([#2478](https://github.com/turbot/steampipe/issues/2478))
+* Fix retrieval of default user workspace. ([#2499](https://github.com/turbot/steampipe/issues/2499))
+* Fix plugin-manager panic when plugin startup times out. ([#2546](https://github.com/turbot/steampipe/issues/2546))
+* Fix prompt failing to show when service installation runs in interactive mode. ([#2529](https://github.com/turbot/steampipe/issues/2529))
+* Validate inputs when running single dashboard. Do not upload snapshot if dashboard was cancelled. ([#2551](https://github.com/turbot/steampipe/issues/2551))
+* Fixes issue where the CLI would fail to connect to local service if there are credential files in `~/.postgresql`. ([#1417](https://github.com/turbot/steampipe/issues/1417))
+
+_Deprecations_
+* Deprecate `workspace-chdir`, replace with `mod-location`. ([#2511](https://github.com/turbot/steampipe/issues/2511))
+
+
 ## v0.16.4 [2022-09-26]
 _Bug fixes_
 * Fix `Plugin.GetSchema failed - no connection name passed and multiple connections loaded` error - update FDW to fix packaging issue affecting Arm Linux. ([#2464](https://github.com/turbot/steampipe/issues/2464))
@@ -12,7 +53,7 @@ _Bug fixes_
 * Update FDW to not start scan until the first time IterateForeignScan is called. ([#237](https://github.com/turbot/steampipe-postgres-fdw/issues/237))
 * Fix database initialisation failures due to invalid locale. ([#2368](https://github.com/turbot/steampipe/issues/2368))
 * Use ellipsis char instead of 3 dots in plugin update/install when cutting off the plugin name. ([#2355](https://github.com/turbot/steampipe/issues/2355))
-* Add help message for WSL1 installation failures.([#2379](https://github.com/turbot/steampipe/issues/2379))
+* Add help message for WSL1 installation failures. ([#2379](https://github.com/turbot/steampipe/issues/2379))
 * Show query timing information even if query returns an error.([#2331](https://github.com/turbot/steampipe/issues/2331))
 * Fix dashboard UI benchmarks with both child controls and benchmarks not rendering their controls. ([#2440](https://github.com/turbot/steampipe/issues/2440))
 

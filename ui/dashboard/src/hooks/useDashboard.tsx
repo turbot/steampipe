@@ -777,11 +777,6 @@ const DashboardProvider = ({
         dashboard: null,
         recordInputsHistory: false,
       });
-      dispatch({
-        type: DashboardActions.SELECT_SNAPSHOT,
-        dashboard: null,
-        recordInputsHistory: false,
-      });
       return;
     }
     // Else if we've got a dashboard selected in the URL and don't have one selected in state,
