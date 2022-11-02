@@ -205,7 +205,7 @@ func (w *Workspace) HandlePreparedStatementFailures(failures *db_common.PrepareS
 	if failures == nil {
 		return
 	}
-	
+
 	// avoid concurrent map access when multiple db connections may try to access preparedStatementFailures
 	w.preparedStatementFailureLock.Lock()
 	defer w.preparedStatementFailureLock.Unlock()
