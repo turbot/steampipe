@@ -171,7 +171,7 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 		dashboardName = args[0]
 	}
 
-	err := cmdconfig.ValidateCloudArgs(ctx)
+	err := cmdconfig.ValidateSnapshotArgs(ctx)
 	if err != nil {
 		return "", err
 	}
