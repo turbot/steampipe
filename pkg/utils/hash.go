@@ -9,23 +9,32 @@ import (
 	"os"
 )
 
+func FileMD5Hash(filePath string) ([]byte, error) {
+	LogTime(fmt.Sprintf("utils.FileMD5Hash %s start", filePath))
+	defer LogTime(fmt.Sprintf("utils.FileMD5Hash %s end", filePath))
+
+	// get checksum
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	hasher := md5.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return nil, err
+	}
+	return hasher.Sum(nil), nil
+}
+
 func FileHash(filePath string) (string, error) {
 	LogTime(fmt.Sprintf("utils.FileHash %s start", filePath))
 	defer LogTime(fmt.Sprintf("utils.FileHash %s end", filePath))
-
-	// get checksum
-	f, err := os.Open(filePath)
+	hash, err := FileMD5Hash(filePath)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
-
-	h := md5.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return hex.EncodeToString(hash), nil
 }
 
 func StringHash(s string) uint32 {
