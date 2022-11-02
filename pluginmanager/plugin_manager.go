@@ -535,6 +535,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	if err != nil {
 		return nil, nil, err
 	}
+	log.Printf("[TRACE] ************ plugin path %s ********************\n", pluginPath)
 
 	// create the plugin map
 	pluginName := connectionConfig.Plugin
