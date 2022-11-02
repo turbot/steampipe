@@ -151,7 +151,7 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 		return fmt.Errorf("cannot share snapshots in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
-	err := cmdconfig.ValidateCloudArgs(ctx)
+	err := cmdconfig.ValidateSnapshotArgs(ctx)
 	if err != nil {
 		return err
 	}

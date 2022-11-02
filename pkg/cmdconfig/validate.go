@@ -7,11 +7,12 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"strings"
 )
 
-func ValidateCloudArgs(ctx context.Context) error {
+func ValidateSnapshotArgs(ctx context.Context) error {
 	// only 1 of 'share' and 'snapshot' may be set
 	share := viper.GetBool(constants.ArgShare)
 	snapshot := viper.GetBool(constants.ArgSnapshot)
@@ -38,7 +39,7 @@ func ValidateCloudArgs(ctx context.Context) error {
 
 	// verify cloud token and workspace has been set
 	if requireCloudToken && token == "" {
-		return constants.MissingCloudTokenError
+		return error_helpers.MissingCloudTokenError
 	}
 
 	// should never happen as there is a default set
@@ -55,7 +56,7 @@ func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 	// if snapshot location is not set, set to the users default
 	if snapshotLocation == "" {
 		if cloudToken == "" {
-			return constants.MissingCloudTokenError
+			return error_helpers.MissingCloudTokenError
 		}
 		return setSnapshotLocationFromDefaultWorkspace(ctx, cloudToken)
 	}

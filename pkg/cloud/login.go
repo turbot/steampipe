@@ -30,6 +30,7 @@ func WebLogin(ctx context.Context) (string, error) {
 	// add in id query string
 	browserUrl := fmt.Sprintf("%s?r=%s", getLoginTokenConfirmUIUrl(), id)
 
+	fmt.Println()
 	fmt.Printf("Verify login at %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
@@ -53,7 +54,7 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 		return "", err
 	}
 	if tokenResp.GetToken() == "" && tokenResp.GetState() == "pending" {
-		return "", fmt.Errorf("Login request has not been confirmed - select 'allow' and enter the verification code")
+		return "", fmt.Errorf("Login request has not been confirmed - select 'Verify' and enter the verification code.")
 	}
 	return tokenResp.GetToken(), nil
 }
