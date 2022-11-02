@@ -346,27 +346,29 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
-		prompt.OptionBufferPreHook(func(s string) (string, bool) {
-			// if this is not WSL, return as-is
-			if !utils.IsWSL() {
-				return s, false
-			}
-			b := []byte(s)
-			// in WSL, 'Alt' combo-characters are denoted by [27, ASCII of character]
-			// if we get a combination which has 27 as prefix - we should ignore it
-			// this is inline with other interactive clients like pgcli
-			if len(b) > 1 && bytes.HasPrefix(b, []byte{byte(27)}) {
-				// ignore it
-				return "", true
-			}
-			return string(b), false
-		}),
+		prompt.OptionBufferPreHook(cleanBufferForWSL),
 	)
 	// set this to a default
 	c.autocompleteOnEmpty = false
 	c.interactivePrompt.RunCtx(ctx)
 
 	return
+}
+
+func cleanBufferForWSL(s string) (string, bool) {
+	// if this is not WSL, return as-is
+	if !utils.IsWSL() {
+		return s, false
+	}
+	b := []byte(s)
+	// in WSL, 'Alt' combo-characters are denoted by [27, ASCII of character]
+	// if we get a combination which has 27 as prefix - we should ignore it
+	// this is inline with other interactive clients like pgcli
+	if len(b) > 1 && bytes.HasPrefix(b, []byte{byte(27)}) {
+		// ignore it
+		return "", true
+	}
+	return string(b), false
 }
 
 func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
