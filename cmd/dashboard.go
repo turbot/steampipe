@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
+	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
@@ -55,7 +56,7 @@ The current mod is the working directory, or the directory specified by the --mo
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
-		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatSnapshot, "Select a console output format: snapshot").
+		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatNone, "Select a console output format: none, snapshot").
 		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
 		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
@@ -198,6 +199,10 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 
 func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	switch viper.GetString(constants.ArgOutput) {
+	case constants.OutputFormatNone:
+		if viper.GetBool(constants.ArgProgress) && !viper.IsSet(constants.ArgOutput) {
+			fmt.Println("Output format defaulted to 'none'. Supported formats: none, snapshot.")
+		}
 	case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
 		// just display result
 		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
@@ -250,6 +255,9 @@ func dashboardExporters() []export.Exporter {
 
 func runSingleDashboard(ctx context.Context, targetName string, inputs map[string]interface{}) error {
 	initData := getInitData(ctx)
+	// create context for the dashboard execution
+	ctx = createSnapshotContext(ctx, targetName)
+
 	// shutdown the service on exit
 	defer initData.Cleanup(ctx)
 	if err := initData.Result.Error; err != nil {
@@ -423,4 +431,23 @@ func collectInputs() (map[string]interface{}, error) {
 
 	return res, nil
 
+}
+
+// create the context for the check run - add a control status renderer
+func createSnapshotContext(ctx context.Context, target string) context.Context {
+	// create context for the dashboard execution
+	snapshotCtx, cancel := context.WithCancel(ctx)
+	contexthelpers.StartCancelHandler(cancel)
+
+	// if progress is disabled, OR output is none, do not show status hooks
+	if !viper.GetBool(constants.ArgProgress) || viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
+		snapshotCtx = statushooks.DisableStatusHooks(snapshotCtx)
+	}
+
+	snapshotProgressReporter := statushooks.NewSnapshotProgressReporter(target)
+	snapshotCtx = statushooks.AddSnapshotProgressToContext(snapshotCtx, snapshotProgressReporter)
+
+	// create a context with a SnapshotControlHooks to report execution progress of any controls in this snapshot
+	snapshotCtx = controlstatus.AddControlHooksToContext(snapshotCtx, controlstatus.NewSnapshotControlHooks())
+	return snapshotCtx
 }
