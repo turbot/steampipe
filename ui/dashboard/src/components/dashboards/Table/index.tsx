@@ -45,6 +45,7 @@ interface TableColumnInfo {
   display?: "all" | "none";
   wrap: TableColumnWrap;
   href_template?: string;
+  sortType?: any;
 }
 
 const getColumns = (
@@ -78,6 +79,9 @@ const getColumns = (
       name: col.name,
       data_type: col.data_type,
       wrap: colWrap,
+      // Boolean data types do not sort under the default alphanumeric sorting logic of react-table
+      // On the next column type that needs specialising we'll move this out into a function / hook
+      sortType: col.data_type === "BOOL" ? "basic" : "alphanumeric",
     };
     if (colHref) {
       colInfo.href_template = colHref;
