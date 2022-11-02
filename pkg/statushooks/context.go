@@ -10,7 +10,7 @@ import (
 var (
 	contextKeySnapshotProgress = contexthelpers.ContextKey("snapshot_progress")
 	contextKeyStatusHook       = contexthelpers.ContextKey("status_hook")
-	contextKeyMessageRenderer  = contexthelpers.ContextKey("meddage_renderer")
+	contextKeyMessageRenderer  = contexthelpers.ContextKey("message_renderer")
 )
 
 func DisableStatusHooks(ctx context.Context) context.Context {
