@@ -457,4 +457,5 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
+  rm -f $STEAMPIPE_INSTALL_DIR/config/steampipe.spc
 }
