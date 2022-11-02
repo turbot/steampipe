@@ -92,6 +92,8 @@ Examples:
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status")
 
+	cmd.AddCommand(listSubCmd("", ""))
+
 	return cmd
 }
 
