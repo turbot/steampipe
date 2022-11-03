@@ -572,12 +572,13 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	pluginConnectionMap, missingPluginMap, err := getPluginConnectionMap(cmd.Context())
+	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
 		exitCode = constants.ExitCodePluginListFailure
-		return
 	}
+
+	missingPluginMap := res.Updates.MissingPlugins
 	log.Printf("[TRACE] missing plugins: %v", missingPluginMap)
 
 	list, err := plugin.List(pluginConnectionMap)
@@ -602,8 +603,8 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 		// List missing plugins
 		headers := []string{"Missing Plugin", "Connections"}
-		conns := []string{}
-		missingRows := [][]string{}
+		var conns = []string{}
+		var missingRows [][]string
 		for p, item := range missingPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
@@ -619,6 +620,13 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 		}
 		display.ShowWrappedTable(headers, rows, false)
+	}
+
+	// display any initialisation warnings
+	if len(res.Warnings) > 0 {
+		fmt.Println()
+		res.ShowWarnings()
+		fmt.Printf("\n")
 	}
 }
 
@@ -666,8 +674,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	reports.Print()
 }
 
-// returns a map of pluginFullName -> []{connections using pluginFullName}
-func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, map[string][]modconfig.Connection, error) {
+func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
 		return nil, nil, err
@@ -677,17 +684,8 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 	if res.Error != nil {
 		return nil, nil, res.Error
 	}
-	// display any initialisation warnings
-	if len(res.Warnings) > 0 {
-		res.ShowWarnings()
-		fmt.Printf("\n")
-	}
-
-	missingPlugins := res.Updates.MissingPlugins
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
-	// missingPluginConnectionMap := make(map[string][]modconfig.Connection)
-
 	for _, v := range *client.ConnectionMap() {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
@@ -696,8 +694,5 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], *v.Connection)
 	}
 
-	if missingPlugins != nil {
-		return pluginConnectionMap, missingPlugins, nil
-	}
-	return pluginConnectionMap, nil, nil
+	return pluginConnectionMap, res, nil
 }
