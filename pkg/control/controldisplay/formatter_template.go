@@ -2,10 +2,12 @@ package controldisplay
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/utils"
+	"fmt"
 	"io"
 	"os"
 	"text/template"
+
+	"github.com/turbot/steampipe/pkg/utils"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -29,9 +31,13 @@ func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
 	// won't parse and will throw Error: template: ****: function "render_context" not defined
 	templateFuncs["render_context"] = func() TemplateRenderContext { return TemplateRenderContext{} }
 
-	t := template.Must(template.New("outlet").
+	t, err := template.New("outlet").
 		Funcs(templateFuncs).
-		ParseFS(os.DirFS(input.TemplatePath), "*"))
+		ParseFS(os.DirFS(input.TemplatePath), "*")
+
+	if err != nil {
+		return nil, fmt.Errorf("could not load template '%s' - %v", input.TemplatePath, err)
+	}
 
 	return &TemplateFormatter{exportFormat: input, template: t}, nil
 }
@@ -74,7 +80,7 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 	}()
 
 	// tactical - for json, prettify the output
-	if tf.shouldPrettify(){
+	if tf.shouldPrettify() {
 		return utils.PrettifyJsonFromReader(reader)
 	}
 
