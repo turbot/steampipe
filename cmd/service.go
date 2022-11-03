@@ -569,7 +569,7 @@ func showAllStatus(ctx context.Context) {
 		rows = append(rows, []string{pid, installDir, port, string(listen)})
 	}
 
-	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{Wrap: true, AutoMerge: false})
 }
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {

@@ -39,9 +39,9 @@ func ShowOutput(ctx context.Context, result *queryresult.Result) {
 }
 
 type ShowWrappedTableOptions struct {
-	AutoMerge           bool
-	HideEmptyColumns    bool
-	DoNotWrapLastColumn bool
+	AutoMerge        bool
+	HideEmptyColumns bool
+	Wrap             bool
 }
 
 func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableOptions) {
@@ -110,14 +110,18 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 		if opts.HideEmptyColumns && !colHasValue {
 			colConfigs[idx].Hidden = true
 		}
+		if !opts.Wrap {
+			// just set the widths to a constant
+			colConfigs[idx].WidthMax = constants.MaxColumnWidth
+			colConfigs[idx].WidthMin = 0
+		}
 		sumOfAllCols += maxLen
 	}
 
-	if !opts.DoNotWrapLastColumn {
+	if opts.Wrap {
 		// now that all columns are set to the widths that they need,
 		// set the last one to occupy as much as is available - no more - no less
 		sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
-
 		maxCols, _, _ := gows.GetWinSize()
 		if sumOfAllCols > maxCols {
 			colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
