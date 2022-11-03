@@ -6,20 +6,20 @@ import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface ContainerProps {
-  allowChildPanelExpand?: boolean;
-  allowExpand?: boolean;
   layoutDefinition?: ContainerDefinition;
   definition?: ContainerDefinition;
   expandDefinition: ContainerDefinition;
+  showChildPanelControls?: boolean;
+  showControls?: boolean;
   withNarrowVertical?: boolean;
   withTitle?: boolean;
 }
 
 const Container = ({
-  allowChildPanelExpand = true,
-  allowExpand = false,
   definition,
   layoutDefinition,
+  showChildPanelControls = true,
+  showControls = false,
 }: ContainerProps) => {
   // const [showZoomIcon, setShowZoomIcon] = useState(false);
   const { panelsMap } = useDashboard();
@@ -46,7 +46,6 @@ const Container = ({
     <Grid name={panelDefinition.name} width={panelDefinition.width}>
       {title}
       <Children
-        allowPanelExpand={allowChildPanelExpand}
         children={
           definition
             ? definition.children
@@ -54,23 +53,24 @@ const Container = ({
             ? layoutDefinition.children
             : []
         }
+        showPanelControls={showChildPanelControls}
       />
     </Grid>
   );
 
   // return (
   //   <LayoutPanel
-  //     allowExpand={allowExpand}
+  //     showControls={showControls}
   //     className="relative"
   //     definition={panelDefinition}
   //     events={{
-  //       onMouseEnter: allowExpand
+  //       onMouseEnter: showControls
   //         ? () => {
   //             setShowZoomIcon(true);
   //           }
   //         : undefined,
   //
-  //       onMouseLeave: allowExpand
+  //       onMouseLeave: showControls
   //         ? () => {
   //             setShowZoomIcon(false);
   //           }
@@ -108,7 +108,7 @@ const Container = ({
   //       )}
   //     </>
   //     <Children
-  //       allowPanelExpand={allowChildPanelExpand}
+  //       showPanelControls={showChildPanelControls}
   //       children={
   //         definition
   //           ? definition.children

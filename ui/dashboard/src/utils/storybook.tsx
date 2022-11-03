@@ -122,7 +122,7 @@ export const PanelStoryDecorator = ({
         snapshotFileName: null,
       }}
     >
-      <Dashboard allowPanelExpand={false} />
+      <Dashboard showPanelControls={false} />
     </DashboardContext.Provider>
   );
 };

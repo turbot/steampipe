@@ -9,21 +9,21 @@ import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface DashboardProps {
-  allowPanelExpand?: boolean;
   definition: DashboardDefinition;
   isRoot?: boolean;
+  showPanelControls?: boolean;
   withPadding?: boolean;
 }
 
 interface DashboardWrapperProps {
-  allowPanelExpand?: boolean;
+  showPanelControls?: boolean;
 }
 
 // TODO allow full-screen of a panel
 const Dashboard = ({
-  allowPanelExpand = true,
   definition,
   isRoot = true,
+  showPanelControls = true,
 }: DashboardProps) => {
   const title =
     isRoot && definition.title ? (
@@ -33,7 +33,7 @@ const Dashboard = ({
     <Grid name={definition.name} width={isRoot ? 12 : definition.width}>
       {title}
       <Children
-        allowPanelExpand={allowPanelExpand}
+        showPanelControls={showPanelControls}
         children={definition.children}
       />
     </Grid>
@@ -47,7 +47,7 @@ const Dashboard = ({
 };
 
 const DashboardWrapper = ({
-  allowPanelExpand = true,
+  showPanelControls = true,
 }: DashboardWrapperProps) => {
   const { dashboard, dataMode, search, selectedDashboard, selectedPanel } =
     useDashboard();
@@ -67,8 +67,8 @@ const DashboardWrapper = ({
   return (
     <>
       <Dashboard
-        allowPanelExpand={allowPanelExpand}
         definition={dashboard}
+        showPanelControls={showPanelControls}
         withPadding={true}
       />
       <SnapshotRenderComplete />

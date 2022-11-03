@@ -149,8 +149,7 @@ const Benchmark = (props: InnerCheckProps) => {
 
   return (
     <Container
-      allowChildPanelExpand={false}
-      allowExpand={true}
+      showChildPanelControls={false}
       definition={{
         name: props.definition.name,
         panel_type: "container",
@@ -187,6 +186,7 @@ const Benchmark = (props: InnerCheckProps) => {
         title: props.benchmark.title || selectedDashboard?.title,
         data: benchmarkDataTable,
       }}
+      showControls={true}
       withTitle={props.withTitle}
     />
   );

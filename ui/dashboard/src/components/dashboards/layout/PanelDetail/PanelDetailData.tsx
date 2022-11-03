@@ -9,7 +9,7 @@ const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
     <Panel
       className={"overflow-x-auto"}
       definition={definition}
-      allowExpand={false}
+      showControls={false}
       forceBackground={true}
     >
       <Table

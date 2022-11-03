@@ -36,7 +36,7 @@ interface PanelProps {
     | PanelDefinition
     | TableProps
     | TextProps;
-  allowExpand?: boolean;
+  showControls?: boolean;
   forceBackground?: boolean;
   ready?: boolean;
 }
@@ -46,7 +46,7 @@ const Panel = memo(
     children,
     className,
     definition,
-    allowExpand = true,
+    showControls = true,
     forceBackground = false,
     ready = true,
   }: PanelProps) => {
@@ -70,21 +70,21 @@ const Panel = memo(
     return (
       <PanelProvider
         definition={definition}
-        allowExpand={allowExpand}
+        showControls={showControls}
         setZoomIconClassName={setZoomIconClassName}
       >
         <div
           id={definition.name}
           className={baseStyles}
           onMouseEnter={
-            allowExpand
+            showControls
               ? () => {
                   setShowZoomIcon(true);
                 }
               : undefined
           }
           onMouseLeave={
-            allowExpand
+            showControls
               ? () => {
                   setShowZoomIcon(false);
                 }

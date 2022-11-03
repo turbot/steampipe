@@ -3,8 +3,8 @@ import { PanelDefinition } from "../types";
 
 interface IPanelContext {
   definition: PanelDefinition;
-  allowExpand: boolean;
   setZoomIconClassName: (className: string) => void;
+  showControls: boolean;
 }
 
 const PanelContext = createContext<IPanelContext | null>(null);
@@ -12,11 +12,11 @@ const PanelContext = createContext<IPanelContext | null>(null);
 const PanelProvider = ({
   children,
   definition,
-  allowExpand,
+  showControls,
   setZoomIconClassName,
 }) => (
   <PanelContext.Provider
-    value={{ definition, allowExpand, setZoomIconClassName }}
+    value={{ definition, showControls, setZoomIconClassName }}
   >
     {children}
   </PanelContext.Provider>

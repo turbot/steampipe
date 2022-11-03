@@ -6,10 +6,13 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
-  allowPanelExpand?: boolean;
+  showPanelControls?: boolean;
 }
 
-const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
+const Children = ({
+  children = [],
+  showPanelControls = true,
+}: ChildrenProps) => {
   const { panelsMap } = useDashboard();
   const Panel = getComponent("panel");
   return (
@@ -38,7 +41,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
               <Panel
                 key={definition.name}
                 definition={definition}
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <Card {...definition} />
               </Panel>
@@ -50,7 +53,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
                 key={definition.name}
                 definition={definition}
                 ready={!!definition.data}
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <Chart {...definition} />
               </Panel>
@@ -60,9 +63,9 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
             return (
               <Container
                 key={definition.name}
-                allowChildPanelExpand={child.allow_child_panel_expand}
-                expandDefinition={child}
                 definition={child}
+                expandDefinition={child}
+                showChildPanelControls={child.allow_child_panel_expand}
               />
             );
           case "dashboard":
@@ -80,7 +83,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
               <Panel
                 key={definition.name}
                 definition={definition}
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <ErrorPanel {...definition} />
               </Panel>
@@ -96,7 +99,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
                   definition.properties as NodeAndEdgeProperties,
                   panelsMap
                 )}
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <Flow {...definition} />
               </Panel>
@@ -112,7 +115,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
                   definition.properties as NodeAndEdgeProperties,
                   panelsMap
                 )}
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <Graph {...definition} />
               </Panel>
@@ -128,7 +131,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
                   definition.properties as NodeAndEdgeProperties,
                   panelsMap
                 )}
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <Hierarchy {...definition} />
               </Panel>
@@ -144,7 +147,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
                     ? !!definition.data
                     : !!definition.properties?.src
                 }
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <Image {...definition} />
               </Panel>
@@ -155,8 +158,8 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
               <Panel
                 key={definition.name}
                 definition={definition}
-                allowExpand={
-                  allowPanelExpand &&
+                showControls={
+                  showPanelControls &&
                   (child.title || child.display_type === "table")
                 }
               >
@@ -170,7 +173,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
                 key={definition.name}
                 definition={definition}
                 ready={!!definition.data}
-                allowExpand={allowPanelExpand}
+                showControls={showPanelControls}
               >
                 <Table {...definition} />
               </Panel>
@@ -181,7 +184,7 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
               <Panel
                 key={definition.name}
                 definition={definition}
-                allowExpand={false}
+                showControls={false}
               >
                 <Text {...definition} />
               </Panel>
@@ -194,4 +197,4 @@ const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
   );
 };
 
-export default Index;
+export default Children;
