@@ -35,7 +35,7 @@ func PublishSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnap
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("\nSnapshot copied to %s\n", filePath), nil
+	return fmt.Sprintf("\nSnapshot saved to %s\n", filePath), nil
 }
 
 func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) {
