@@ -39,8 +39,9 @@ func ShowOutput(ctx context.Context, result *queryresult.Result) {
 }
 
 type ShowWrappedTableOptions struct {
-	AutoMerge        bool
-	HideEmptyColumns bool
+	AutoMerge           bool
+	HideEmptyColumns    bool
+	DoNotWrapLastColumn bool
 }
 
 func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableOptions) {
@@ -71,7 +72,6 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 
 // calculate and returns column configuration based on header and row content
 func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTableOptions) ([]table.ColumnConfig, table.Row) {
-	maxCols, _, _ := gows.GetWinSize()
 	colConfigs := make([]table.ColumnConfig, len(headers))
 	headerRow := make(table.Row, len(headers))
 
@@ -113,13 +113,16 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 		sumOfAllCols += maxLen
 	}
 
-	// now that all columns are set to the widths that they need,
-	// set the last one to occupy as much as is available - no more - no less
-	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
+	if !opts.DoNotWrapLastColumn {
+		// now that all columns are set to the widths that they need,
+		// set the last one to occupy as much as is available - no more - no less
+		sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
 
-	if sumOfAllCols > maxCols {
-		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
-		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
+		maxCols, _, _ := gows.GetWinSize()
+		if sumOfAllCols > maxCols {
+			colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
+			colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
+		}
 	}
 
 	return colConfigs, headerRow
