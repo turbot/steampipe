@@ -160,6 +160,7 @@ jobs:
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+          echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
           steampipe service stop --force
 
       - name: Save Test Suite Logs
