@@ -26,9 +26,7 @@ func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
 		Args:             cobra.NoArgs,
 		Run:              getRunListSubCmd(opts),
 		Short:            fmt.Sprintf("List all resources that can be executed with the '%s' command", opts.parentCmd.Name()),
-		Long: fmt.Sprintf(`
-List all resources that can be executed with the '%s' command.
-`, opts.parentCmd.Name()),
+		Long:             fmt.Sprintf("List all resources that can be executed with the '%s' command", opts.parentCmd.Name()),
 	}
 
 	cmdconfig.
@@ -37,8 +35,7 @@ List all resources that can be executed with the '%s' command.
 	return cmd
 }
 
-// getRunListSubCmd generates a command handler based
-// on the command that the runner is used for
+// getRunListSubCmd generates a command handler based on the parent command
 func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
 	if opts.parentCmd == nil {
 		// this should never happen
@@ -51,56 +48,70 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		w, err := workspace.Load(cmd.Context(), workspacePath)
 		error_helpers.FailOnError(err)
 
-		resourceTypesToDisplay := getResourceTypesToDisplay(cmd)
-		resources, err := listResourcesInMod(cmd.Context(), w.Mod, resourceTypesToDisplay)
+		modResources, depResources, err := listResourcesInMod(cmd.Context(), w.Mod, cmd)
 		error_helpers.FailOnErrorWithMessage(err, "could not list resources")
+		if len(modResources)+len(depResources) == 0 {
+			fmt.Println("No resources available to execute.")
+		}
 
-		sortResources(resources, w)
-		headers, rows := getOutputDataTable(resources, w)
+		sortResources(modResources)
+		sortResources(depResources)
+		headers, rows := getOutputDataTable(modResources, depResources)
 
 		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{
 			AutoMerge:        false,
 			HideEmptyColumns: true,
 		})
 	}
-
 }
 
-// listResourcesInMod walks through the resources in the given mod and
-// uses the function to filter.
-//
-// if an error occurs, this function returns the list as has been generated till the error occured
-// with the error
-func listResourcesInMod(ctx context.Context, mod *modconfig.Mod, resourceTypes map[string]bool) ([]modconfig.ModTreeItem, error) {
-	items := []modconfig.ModTreeItem{}
-	err := mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
+func listResourcesInMod(ctx context.Context, mod *modconfig.Mod, cmd *cobra.Command) (modResources, depResources []modconfig.ModTreeItem, err error) {
+	resourceTypesToDisplay := getResourceTypesToDisplay(cmd)
+
+	err = mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
 		if ctx.Err() != nil {
-			// break
 			return false, ctx.Err()
 		}
 
-		// we need to 'cast' this since the GetParents is available only in the
-		// ModTreeItem interface
-		if cast, ok := item.(modconfig.ModTreeItem); ok {
-			if resourceTypes[cast.BlockType()] && cast.GetParents()[0] == mod {
-				items = append(items, cast)
-			}
+		// if we are not showing this resource type, return
+		if !resourceTypesToDisplay[item.BlockType()] {
+			return true, nil
 		}
+
+		m := item.(modconfig.ModTreeItem)
+
+		itemMod := m.GetMod()
+		if m.GetParents()[0] == itemMod {
+
+			// add to the appropriate array
+			if itemMod.Name() == mod.Name() {
+				modResources = append(modResources, m)
+			} else {
+				depResources = append(depResources, m)
+			}
+
+		}
+
 		return true, nil
 	})
-	return items, err
+	return modResources, depResources, err
 }
 
-func sortResources(items []modconfig.ModTreeItem, workspace *workspace.Workspace) {
+func sortResources(items []modconfig.ModTreeItem) {
 	sort.SliceStable(items, func(i, j int) bool {
-		return items[i].GetUnqualifiedName() < items[j].GetUnqualifiedName()
+		return items[i].Name() < items[j].Name()
 	})
 }
 
-func getOutputDataTable(items []modconfig.ModTreeItem, workspace *workspace.Workspace) ([]string, [][]string) {
-	rows := make([][]string, len(items))
-	for idx, modItem := range items {
-		rows[idx] = []string{modItem.GetUnqualifiedName(), modItem.GetTitle()}
+func getOutputDataTable(modResources, depResources []modconfig.ModTreeItem) ([]string, [][]string) {
+	rows := make([][]string, len(modResources)+len(depResources))
+	for i, modItem := range modResources {
+		rows[i] = []string{modItem.GetUnqualifiedName(), modItem.GetTitle()}
+	}
+	offset := len(modResources)
+	for i, modItem := range depResources {
+		// use fully qualified name for dependency resources
+		rows[i+offset] = []string{modItem.Name(), modItem.GetTitle()}
 	}
 	return []string{"Name", "Title"}, rows
 }
@@ -112,13 +123,13 @@ func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
 		"dashboard": {"dashboard", "benchmark"},
 		"query":     {"query"},
 	}
-	resourceTypesToList, found := cmdToTypeMapping[parent]
+	resourceTypesToDisplay, found := cmdToTypeMapping[parent]
 	if !found {
 		panic(fmt.Sprintf("could not find resource type lookup list for '%s'", parent))
 	}
 	// add resource types to a map for cheap lookup
 	res := map[string]bool{}
-	for _, t := range resourceTypesToList {
+	for _, t := range resourceTypesToDisplay {
 		res[t] = true
 	}
 	return res
