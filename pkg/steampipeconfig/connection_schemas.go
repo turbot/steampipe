@@ -36,15 +36,20 @@ func NewConnectionSchemaMap() (ConnectionSchemaMap, error) {
 		}
 	}
 	// now build the ConnectionSchemaMap
-	return NewConnectionSchemaMapForConnections(GlobalConfig.ConnectionList(), schemaModeMap), nil
+	return NewConnectionSchemaMapForConnections(GlobalConfig.ConnectionList(), schemaModeMap, connectionState), nil
 
 }
 
-func NewConnectionSchemaMapForConnections(connections []*modconfig.Connection, schemaModeMap map[string]string) ConnectionSchemaMap {
+func NewConnectionSchemaMapForConnections(connections []*modconfig.Connection, schemaModeMap map[string]string, connectionState ConnectionDataMap) ConnectionSchemaMap {
 	var res = make(ConnectionSchemaMap)
 	// map of plugin name to first connection which uses it
 	pluginMap := make(map[string]string)
 	for _, connection := range connections {
+		// if this does not exist in state, skip it
+		if _, ok := connectionState[connection.Name]; !ok {
+			continue
+		}
+
 		p := connection.Plugin
 
 		// look for this plugin in the map - read out the first conneciton which uses it
