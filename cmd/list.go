@@ -18,12 +18,12 @@ type listSubCmdOptions struct {
 	parent           *cobra.Command
 }
 
-func listSubCmd(opts listSubCmdOptions) *cobra.Command {
+func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "list",
 		TraverseChildren: true,
 		Args:             cobra.NoArgs,
-		Run:              listSubCmdRunner(opts),
+		Run:              getRunListSubCmdRun(opts),
 		Short:            opts.shortDescription,
 		Long:             opts.longDescription,
 	}
@@ -35,7 +35,7 @@ func listSubCmd(opts listSubCmdOptions) *cobra.Command {
 	return cmd
 }
 
-func listSubCmdRunner(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
+func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
 	if opts.parent == nil {
 		// this should never happen
 		panic("parent is required")
