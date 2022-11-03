@@ -211,7 +211,7 @@ const BenchmarkTableView = ({
 
   return (
     <Panel
-      layoutDefinition={{
+      definition={{
         name: definition.name,
         panel_type: "table",
         width: definition.width,
@@ -219,15 +219,13 @@ const BenchmarkTableView = ({
         data: benchmarkDataTable,
         status: benchmarkDataTable ? "complete" : "ready",
       }}
-      ready={() => !!benchmarkDataTable}
+      ready={!!benchmarkDataTable}
     >
-      {() => (
-        <Table
-          name={`${definition.name}.table`}
-          panel_type="table"
-          data={benchmarkDataTable}
-        />
-      )}
+      <Table
+        name={`${definition.name}.table`}
+        panel_type="table"
+        data={benchmarkDataTable}
+      />
     </Panel>
   );
 };
@@ -262,18 +260,16 @@ const Inner = ({ withTitle }) => {
   } else {
     return (
       <Panel
-        layoutDefinition={{
+        definition={{
           name: definition.name,
           panel_type: "benchmark",
           width: definition.width,
           status: "error",
         }}
       >
-        {() => (
-          <Error
-            error={`Unsupported benchmark type ${definition.display_type}`}
-          />
-        )}
+        <Error
+          error={`Unsupported benchmark type ${definition.display_type}`}
+        />
       </Panel>
     );
   }

@@ -13,12 +13,12 @@ import {
 } from "../common";
 import { classNames } from "../../../utils/styles";
 import { DashboardDataModeLive } from "../../../types";
+import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
   getTextClasses,
   getWrapperClasses,
 } from "../../../utils/card";
-import { getComponent, registerComponent } from "../index";
 import { isRelativeUrl } from "../../../utils/url";
 import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";

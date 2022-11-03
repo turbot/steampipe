@@ -1,203 +1,189 @@
 import { ContainerDefinition, PanelDefinition } from "../../../../types";
 import { getComponent } from "../../index";
+import { NodeAndEdgeProperties } from "../../common/types";
 import { nodeAndEdgeResourceHasData } from "../../common";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface ChildrenProps {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
   allowPanelExpand?: boolean;
-  withTitle?: boolean;
 }
 
-const Children = ({
-  children = [],
-  allowPanelExpand = true,
-  withTitle = true,
-}: ChildrenProps) => {
+const Index = ({ children = [], allowPanelExpand = true }: ChildrenProps) => {
   const { panelsMap } = useDashboard();
   const Panel = getComponent("panel");
   return (
     <>
       {children.map((child) => {
+        const definition = panelsMap[child.name];
+        if (!definition) {
+          return null;
+        }
         switch (child.panel_type) {
           case "benchmark":
           case "control":
             const Benchmark = getComponent("benchmark");
             return (
               <Benchmark
-                key={child.name}
+                key={definition.name}
                 {...(child as PanelDefinition)}
-                withTitle={withTitle}
               />
             );
           case "benchmark_tree":
             const BenchmarkTree = getComponent("benchmark_tree");
-            return <BenchmarkTree key={child.name} {...child} />;
+            return <BenchmarkTree key={definition.name} {...child} />;
           case "card":
             const Card = getComponent("card");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
+                key={definition.name}
+                definition={definition}
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <Card {...definition} />}
+                <Card {...definition} />
               </Panel>
             );
           case "chart":
             const Chart = getComponent("chart");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
-                ready={(definition) => !!definition.data}
+                key={definition.name}
+                definition={definition}
+                ready={!!definition.data}
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <Chart {...definition} />}
+                <Chart {...definition} />
               </Panel>
             );
           case "container":
             const Container = getComponent("container");
             return (
               <Container
-                key={child.name}
+                key={definition.name}
                 allowChildPanelExpand={child.allow_child_panel_expand}
                 expandDefinition={child}
-                layoutDefinition={child}
-                withTitle={withTitle}
+                definition={child}
               />
             );
           case "dashboard":
             const Dashboard = getComponent("dashboard");
             return (
-              <Dashboard key={child.name} definition={child} isRoot={false} />
+              <Dashboard
+                key={definition.name}
+                definition={definition}
+                isRoot={false}
+              />
             );
           case "error":
             const ErrorPanel = getComponent("error");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
+                key={definition.name}
+                definition={definition}
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <ErrorPanel {...definition} />}
+                <ErrorPanel {...definition} />
               </Panel>
             );
           case "flow":
             const Flow = getComponent("flow");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
-                ready={(definition) =>
-                  nodeAndEdgeResourceHasData(
-                    definition.data,
-                    definition.properties,
-                    panelsMap
-                  )
-                }
+                key={definition.name}
+                definition={definition}
+                ready={nodeAndEdgeResourceHasData(
+                  definition.data,
+                  definition.properties as NodeAndEdgeProperties,
+                  panelsMap
+                )}
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <Flow {...definition} />}
+                <Flow {...definition} />
               </Panel>
             );
           case "graph":
             const Graph = getComponent("graph");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
-                ready={(definition) =>
-                  nodeAndEdgeResourceHasData(
-                    definition.data,
-                    definition.properties,
-                    panelsMap
-                  )
-                }
+                key={definition.name}
+                definition={definition}
+                ready={nodeAndEdgeResourceHasData(
+                  definition.data,
+                  definition.properties as NodeAndEdgeProperties,
+                  panelsMap
+                )}
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <Graph {...definition} />}
+                <Graph {...definition} />
               </Panel>
             );
           case "hierarchy":
             const Hierarchy = getComponent("hierarchy");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
-                ready={(definition) =>
-                  nodeAndEdgeResourceHasData(
-                    definition.data,
-                    definition.properties,
-                    panelsMap
-                  )
-                }
+                key={definition.name}
+                definition={definition}
+                ready={nodeAndEdgeResourceHasData(
+                  definition.data,
+                  definition.properties as NodeAndEdgeProperties,
+                  panelsMap
+                )}
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <Hierarchy {...definition} />}
+                <Hierarchy {...definition} />
               </Panel>
             );
           case "image":
             const Image = getComponent("image");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
-                ready={(definition) =>
+                key={definition.name}
+                definition={definition}
+                ready={
                   definition.sql
                     ? !!definition.data
-                    : !!definition.properties.src
+                    : !!definition.properties?.src
                 }
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <Image {...definition} />}
+                <Image {...definition} />
               </Panel>
             );
           case "input":
             const Input = getComponent("input");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
+                key={definition.name}
+                definition={definition}
                 allowExpand={
                   allowPanelExpand &&
                   (child.title || child.display_type === "table")
                 }
-                withTitle={withTitle}
               >
-                {(definition) => <Input {...definition} />}
+                <Input {...definition} />
               </Panel>
             );
           case "table":
             const Table = getComponent("table");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
-                ready={(definition) => !!definition.data}
+                key={definition.name}
+                definition={definition}
+                ready={!!definition.data}
                 allowExpand={allowPanelExpand}
-                withTitle={withTitle}
               >
-                {(definition) => <Table {...definition} />}
+                <Table {...definition} />
               </Panel>
             );
           case "text":
             const Text = getComponent("text");
             return (
               <Panel
-                key={child.name}
-                layoutDefinition={child}
+                key={definition.name}
+                definition={definition}
                 allowExpand={false}
-                withTitle={withTitle}
               >
-                {(definition) => <Text {...definition} />}
+                <Text {...definition} />
               </Panel>
             );
           default:
@@ -208,4 +194,4 @@ const Children = ({
   );
 };
 
-export default Children;
+export default Index;

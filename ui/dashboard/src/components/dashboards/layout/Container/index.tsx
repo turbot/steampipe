@@ -1,11 +1,9 @@
-import Children from "../common/Children";
-import LayoutPanel from "../common/LayoutPanel";
+import Children from "../Children";
+import Grid from "../Grid";
 import { classNames } from "../../../../utils/styles";
-import { ContainerDefinition, DashboardActions } from "../../../../types";
+import { ContainerDefinition } from "../../../../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useState } from "react";
-import { ZoomIcon } from "../../../../constants/icons";
 
 interface ContainerProps {
   allowChildPanelExpand?: boolean;
@@ -21,13 +19,10 @@ const Container = ({
   allowChildPanelExpand = true,
   allowExpand = false,
   definition,
-  expandDefinition,
   layoutDefinition,
-  withNarrowVertical,
-  withTitle,
 }: ContainerProps) => {
-  const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const { dispatch, panelsMap } = useDashboard();
+  // const [showZoomIcon, setShowZoomIcon] = useState(false);
+  const { panelsMap } = useDashboard();
 
   if (!definition && !layoutDefinition) {
     return null;
@@ -43,55 +38,13 @@ const Container = ({
     return null;
   }
 
-  return (
-    <LayoutPanel
-      allowExpand={allowExpand}
-      className="relative"
-      definition={panelDefinition}
-      events={{
-        onMouseEnter: allowExpand
-          ? () => {
-              setShowZoomIcon(true);
-            }
-          : undefined,
+  const title = panelDefinition.title ? (
+    <h2 className={classNames("col-span-12")}>{panelDefinition.title}</h2>
+  ) : null;
 
-        onMouseLeave: allowExpand
-          ? () => {
-              setShowZoomIcon(false);
-            }
-          : undefined,
-      }}
-      withNarrowVertical={withNarrowVertical}
-      withTitle={withTitle}
-    >
-      <>
-        {showZoomIcon && (
-          <div
-            className={classNames(
-              "absolute cursor-pointer z-50 right-1 top-1 text-black-scale-4"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              dispatch({
-                type: DashboardActions.SELECT_PANEL,
-                panel: { ...expandDefinition },
-                // panel: {
-                //   ...{
-                //     ...panelDefinition,
-                //     children: definition
-                //       ? definition.children
-                //       : layoutDefinition
-                //       ? layoutDefinition.children
-                //       : [],
-                //   },
-                // },
-              });
-            }}
-          >
-            <ZoomIcon className="h-5 w-5" />
-          </div>
-        )}
-      </>
+  return (
+    <Grid name={panelDefinition.name} width={panelDefinition.width}>
+      {title}
       <Children
         allowPanelExpand={allowChildPanelExpand}
         children={
@@ -102,8 +55,70 @@ const Container = ({
             : []
         }
       />
-    </LayoutPanel>
+    </Grid>
   );
+
+  // return (
+  //   <LayoutPanel
+  //     allowExpand={allowExpand}
+  //     className="relative"
+  //     definition={panelDefinition}
+  //     events={{
+  //       onMouseEnter: allowExpand
+  //         ? () => {
+  //             setShowZoomIcon(true);
+  //           }
+  //         : undefined,
+  //
+  //       onMouseLeave: allowExpand
+  //         ? () => {
+  //             setShowZoomIcon(false);
+  //           }
+  //         : undefined,
+  //     }}
+  //     withNarrowVertical={withNarrowVertical}
+  //     withTitle={withTitle}
+  //   >
+  //     <>
+  //       {showZoomIcon && (
+  //         <div
+  //           className={classNames(
+  //             "absolute cursor-pointer z-50 right-1 top-1 text-black-scale-4"
+  //           )}
+  //           onClick={(e) => {
+  //             e.stopPropagation();
+  //             dispatch({
+  //               type: DashboardActions.SELECT_PANEL,
+  //               panel: { ...expandDefinition },
+  //               // panel: {
+  //               //   ...{
+  //               //     ...panelDefinition,
+  //               //     children: definition
+  //               //       ? definition.children
+  //               //       : layoutDefinition
+  //               //       ? layoutDefinition.children
+  //               //       : [],
+  //               //   },
+  //               // },
+  //             });
+  //           }}
+  //         >
+  //           <ZoomIcon className="h-5 w-5" />
+  //         </div>
+  //       )}
+  //     </>
+  //     <Children
+  //       allowPanelExpand={allowChildPanelExpand}
+  //       children={
+  //         definition
+  //           ? definition.children
+  //           : layoutDefinition
+  //           ? layoutDefinition.children
+  //           : []
+  //       }
+  //     />
+  //   </LayoutPanel>
+  // );
 };
 
 registerComponent("container", Container);

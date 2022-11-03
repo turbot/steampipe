@@ -1,4 +1,4 @@
-import LayoutPanel from "../common/LayoutPanel";
+import Grid from "../Grid";
 import moment from "moment";
 import NeutralButton from "../../../forms/NeutralButton";
 import PanelDetailData from "./PanelDetailData";
@@ -119,75 +119,75 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
   }, [definition, jsonToCSV, selectedDashboard]);
 
   return (
-    <LayoutPanel
-      definition={definition}
-      withNarrowVertical
-      withPadding
-      withTitle={false}
-    >
-      <div className="col-span-6">
-        <h2 className="break-all">{definition.title || "Panel Detail"}</h2>
-      </div>
-      <div className="col-span-6 space-x-2 text-right">
-        <PanelDetailDataDownloadButton
-          downloadQueryData={downloadQueryData}
-          size={isTablet ? "md" : "sm"}
-        />
-        <NeutralButton onClick={closePanelDetail} size={isTablet ? "md" : "sm"}>
-          <>
-            Close<span className="ml-2 font-light text-xxs">ESC</span>
-          </>
-        </NeutralButton>
-      </div>
-      <div className="col-span-12 sm:hidden ">
-        <label htmlFor="tabs" className="sr-only">
-          Select a tab
-        </label>
-        {/* Use an "onChange" listener to redirect the user to the selected tab URL. */}
-        <select
-          id="tabs"
-          name="tabs"
-          className="mt-2 block w-full pl-3 pr-10 py-2 bg-dashboard print:bg-white text-foreground border-black-scale-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
-          defaultValue={selectedTab.name}
-          onChange={(e) =>
-            setSelectedTab(
-              availableTabs.find((tab) => tab.name === e.target.value) ||
-                availableTabs[0]
-            )
-          }
-        >
-          {availableTabs.map((tab) => (
-            <option key={tab.name} value={tab.name}>
-              {tab.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="col-span-12 hidden sm:block">
-        <div className="border-b border-black-scale-3">
-          <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-            {availableTabs.map((tab) => (
-              <span
-                key={tab.name}
-                className={classNames(
-                  tab.selected
-                    ? "border-black-scale-4 text-foreground cursor-pointer"
-                    : "border-transparent text-foreground-lighter hover:text-foreground cursor-pointer",
-                  "whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
-                )}
-                onClick={() => setSelectedTab(tab)}
-              >
-                {tab.label}
-              </span>
-            ))}
-          </nav>
+    <div className="h-full overflow-y-auto p-4">
+      <Grid name={definition.name}>
+        <div className="col-span-6">
+          <h2 className="break-all">{definition.title || "Panel Detail"}</h2>
         </div>
-      </div>
+        <div className="col-span-6 space-x-2 text-right">
+          <PanelDetailDataDownloadButton
+            downloadQueryData={downloadQueryData}
+            size={isTablet ? "md" : "sm"}
+          />
+          <NeutralButton
+            onClick={closePanelDetail}
+            size={isTablet ? "md" : "sm"}
+          >
+            <>
+              Close<span className="ml-2 font-light text-xxs">ESC</span>
+            </>
+          </NeutralButton>
+        </div>
+        <div className="col-span-12 sm:hidden ">
+          <label htmlFor="tabs" className="sr-only">
+            Select a tab
+          </label>
+          {/* Use an "onChange" listener to redirect the user to the selected tab URL. */}
+          <select
+            id="tabs"
+            name="tabs"
+            className="mt-2 block w-full pl-3 pr-10 py-2 bg-dashboard print:bg-white text-foreground border-black-scale-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
+            defaultValue={selectedTab.name}
+            onChange={(e) =>
+              setSelectedTab(
+                availableTabs.find((tab) => tab.name === e.target.value) ||
+                  availableTabs[0]
+              )
+            }
+          >
+            {availableTabs.map((tab) => (
+              <option key={tab.name} value={tab.name}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="col-span-12 hidden sm:block">
+          <div className="border-b border-black-scale-3">
+            <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+              {availableTabs.map((tab) => (
+                <span
+                  key={tab.name}
+                  className={classNames(
+                    tab.selected
+                      ? "border-black-scale-4 text-foreground cursor-pointer"
+                      : "border-transparent text-foreground-lighter hover:text-foreground cursor-pointer",
+                    "whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
+                  )}
+                  onClick={() => setSelectedTab(tab)}
+                >
+                  {tab.label}
+                </span>
+              ))}
+            </nav>
+          </div>
+        </div>
 
-      <div className="col-span-12 mt-4">
-        {<selectedTab.Component definition={definition} />}
-      </div>
-    </LayoutPanel>
+        <div className="col-span-12 mt-4">
+          {<selectedTab.Component definition={definition} />}
+        </div>
+      </Grid>
+    </div>
   );
 };
 

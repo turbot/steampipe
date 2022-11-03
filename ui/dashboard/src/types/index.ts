@@ -229,7 +229,7 @@ export interface DashboardMetadata {
   telemetry: "info" | "none";
 }
 
-type DashboardPanelType =
+export type DashboardPanelType =
   | "dashboard"
   | "container"
   | "benchmark"
