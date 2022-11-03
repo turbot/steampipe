@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"sort"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -56,6 +58,10 @@ func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args [
 				}
 			}
 			return true, nil
+		})
+
+		sort.SliceStable(items, func(i, j int) bool {
+			return items[i].GetUnqualifiedName() < items[j].GetUnqualifiedName()
 		})
 
 		rows := make([][]string, len(items))
