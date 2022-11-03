@@ -92,11 +92,7 @@ Examples:
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status")
 
-	cmd.AddCommand(getListSubCmd(listSubCmdOptions{
-		shortDescription: "",
-		longDescription:  "",
-		parent:           cmd,
-	}))
+	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))
 
 	return cmd
 }

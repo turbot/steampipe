@@ -17,10 +17,33 @@ type listSubCmdOptions struct {
 	shortDescription string
 	longDescription  string
 	allDescription   string
-	parent           *cobra.Command
+	parentCmd        *cobra.Command
+}
+
+func setListSubCmdOptDefaults(opts *listSubCmdOptions) {
+	// these should never happen
+	if opts == nil {
+		panic("Options MUST be set")
+	}
+	if opts.parentCmd == nil {
+		panic("The Parent CMD MUST be set")
+	}
+
+	if len(opts.shortDescription) == 0 {
+		opts.shortDescription = ""
+	}
+	if len(opts.longDescription) == 0 {
+		opts.longDescription = ""
+	}
+	if len(opts.allDescription) == 0 {
+		opts.allDescription = ""
+	}
 }
 
 func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
+
+	setListSubCmdOptDefaults(&opts)
+
 	cmd := &cobra.Command{
 		Use:              "list",
 		TraverseChildren: true,
@@ -38,7 +61,7 @@ func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
 }
 
 func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
-	if opts.parent == nil {
+	if opts.parentCmd == nil {
 		// this should never happen
 		panic("parent is required")
 	}
