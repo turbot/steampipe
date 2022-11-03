@@ -31,13 +31,13 @@ func setListSubCmdOptionsDefaults(opts *listSubCmdOptions) {
 	}
 
 	if len(opts.shortDescription) == 0 {
-		opts.shortDescription = ""
+		opts.shortDescription = "List all resources that can be executed"
 	}
 	if len(opts.longDescription) == 0 {
-		opts.longDescription = ""
+		opts.longDescription = "long description placeholder"
 	}
 	if len(opts.allDescription) == 0 {
-		opts.allDescription = ""
+		opts.allDescription = "all flag description placeholder"
 	}
 }
 
