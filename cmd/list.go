@@ -61,7 +61,7 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{
 			AutoMerge:        false,
 			HideEmptyColumns: true,
-			Wrap:             false,
+			Truncate:         true,
 		})
 	}
 }

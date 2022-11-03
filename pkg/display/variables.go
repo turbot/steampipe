@@ -21,5 +21,5 @@ func ShowVarsListTable(vars []*modconfig.Variable) {
 	for i, v := range vars {
 		rows[i] = []string{v.ModName, v.ShortName, v.Description, fmt.Sprintf("%v", v.ValueGo), fmt.Sprintf("%v", v.DefaultGo), v.TypeString}
 	}
-	ShowWrappedTable(headers, rows, &ShowWrappedTableOptions{Wrap: true, AutoMerge: false})
+	ShowWrappedTable(headers, rows, &ShowWrappedTableOptions{AutoMerge: false})
 }
