@@ -288,13 +288,13 @@ const DashboardList = () => {
       const dashboardMod = dashboard.mod_full_name;
       let mod: ModDashboardMetadata;
       if (dashboardMod === metadata.mod.full_name) {
-        mod = get(metadata, "mod", {} as ModDashboardMetadata);
+        mod = get(metadata, "mod", {}) as ModDashboardMetadata;
       } else {
         mod = get(
           metadata,
           `installed_mods["${dashboardMod}"]`,
-          {} as ModDashboardMetadata
-        );
+          {}
+        ) as ModDashboardMetadata;
       }
       let dashboardWithMod: AvailableDashboardWithMod;
       dashboardWithMod = { ...dashboard };

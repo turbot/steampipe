@@ -157,13 +157,13 @@ const useAnalyticsProvider = () => {
     ) {
       let mod: ModDashboardMetadata;
       if (selectedDashboard.mod_full_name === metadata.mod.full_name) {
-        mod = get(metadata, "mod", {} as ModDashboardMetadata);
+        mod = get(metadata, "mod", {}) as ModDashboardMetadata;
       } else {
         mod = get(
           metadata,
           `installed_mods["${selectedDashboard.mod_full_name}"]`,
-          {} as ModDashboardMetadata
-        );
+          {}
+        ) as ModDashboardMetadata;
       }
       track("cli.ui.dashboard.select", {
         "mod.title": mod
