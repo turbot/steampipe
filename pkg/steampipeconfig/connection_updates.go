@@ -15,7 +15,7 @@ import (
 type ConnectionUpdates struct {
 	Update         ConnectionDataMap
 	Delete         ConnectionDataMap
-	MissingPlugins []string
+	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
 	RequiredConnectionState ConnectionDataMap
 	// connection plugins required to perform the updates
@@ -103,7 +103,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// set the schema mode and hash on the connection data in required state
 	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
-
+	res.Updates = updates
 	return updates, res
 }
 

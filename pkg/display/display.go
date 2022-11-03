@@ -6,11 +6,12 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/turbot/steampipe/pkg/error_helpers"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -39,6 +40,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result) {
 
 func ShowWrappedTable(headers []string, rows [][]string, autoMerge bool) {
 	t := table.NewWriter()
+
 	t.SetStyle(table.StyleDefault)
 	t.Style().Format.Header = text.FormatDefault
 	t.SetOutputMirror(os.Stdout)
