@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/spf13/cobra"
@@ -15,55 +16,29 @@ import (
 )
 
 type listSubCmdOptions struct {
-	shortDescription string
-	longDescription  string
-	allDescription   string
-	parentCmd        *cobra.Command
-}
-
-func setListSubCmdOptionsDefaults(opts *listSubCmdOptions) {
-	// these should never happen
-	if opts == nil {
-		panic("Options MUST be set")
-	}
-	if opts.parentCmd == nil {
-		panic("The Parent CMD MUST be set")
-	}
-
-	if len(opts.shortDescription) == 0 {
-		opts.shortDescription = "List all resources that can be executed"
-	}
-	if len(opts.longDescription) == 0 {
-		opts.longDescription = "long description placeholder"
-	}
-	if len(opts.allDescription) == 0 {
-		opts.allDescription = "all flag description placeholder"
-	}
+	parentCmd *cobra.Command
 }
 
 func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
-
-	setListSubCmdOptionsDefaults(&opts)
-
 	cmd := &cobra.Command{
 		Use:              "list",
 		TraverseChildren: true,
 		Args:             cobra.NoArgs,
-		Run:              getRunListSubCmdRun(opts),
-		Short:            opts.shortDescription,
-		Long:             opts.longDescription,
+		Run:              getRunListSubCmd(opts),
+		Short:            "Short Description Placeholder",
+		Long:             "Long Description Placeholder",
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgAll, "", false, opts.allDescription)
+		AddBoolFlag(constants.ArgAll, "", false, "allDescription")
 
 	return cmd
 }
 
-// getRunListSubCmdRun generates a command handler based
+// getRunListSubCmd generates a command handler based
 // on the command that the runner is used for
-func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
+func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
 	if opts.parentCmd == nil {
 		// this should never happen
 		panic("parent is required")
@@ -77,7 +52,7 @@ func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args [
 
 		resourceTypesToDisplay := getResourceTypesToDisplay(cmd)
 		resources, err := listResourcesInMod(cmd.Context(), w.Mod, func(item modconfig.ModTreeItem) bool {
-			return resourceTypesToDisplay[item.BlockType()]
+			return resourceTypesToDisplay[item.BlockType()] && item.GetParents()[0] == w.Mod
 		})
 		error_helpers.FailOnErrorWithMessage(err, "could not list resources")
 
@@ -133,28 +108,29 @@ func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
 	cmdToTypeMapping := map[string][]string{
 		"check":     {"benchmark", "control"},
 		"dashboard": {"dashboard", "benchmark"},
+		"query":     {"query"},
 	}
 	xtraTypesForAll := map[string][]string{}
 
 	resourceTypesToList, found := cmdToTypeMapping[parent]
 	if !found {
-		resourceTypesToList = []string{cmd.Parent().Name()}
+		panic(fmt.Sprintf("could not find resource type lookup list for '%s'", parent))
 	}
 	// add resource types to a map for cheap lookup
-	lookupResourceTypes := map[string]bool{}
+	res := map[string]bool{}
 	for _, t := range resourceTypesToList {
-		lookupResourceTypes[t] = true
+		res[t] = true
 	}
 
 	// if the '--all' flag is set
 	if viper.GetBool(constants.ArgAll) {
 		xtraTypesToList, found := xtraTypesForAll[parent]
-		if !found {
-			xtraTypesToList = []string{cmd.Parent().Name()}
-		}
-		for _, t := range xtraTypesToList {
-			lookupResourceTypes[t] = true
+		if found {
+			for _, t := range xtraTypesToList {
+				res[t] = true
+			}
 		}
 	}
-	return lookupResourceTypes
+
+	return res
 }
