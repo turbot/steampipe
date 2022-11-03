@@ -195,7 +195,7 @@ func (m *Mod) GetModDependencyPath() string {
 	return m.NameWithVersion()
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements HclResource
 func (m *Mod) GetTitle() string {
 	return typehelpers.SafeString(m.Title)
 }
@@ -205,7 +205,7 @@ func (m *Mod) GetDescription() string {
 	return typehelpers.SafeString(m.Description)
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements HclResource
 func (m *Mod) GetTags() map[string]string {
 	if m.Tags != nil {
 		return m.Tags

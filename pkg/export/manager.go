@@ -114,7 +114,7 @@ func (m *Manager) getExportTarget(export, executionName string) (*Target, error)
 	if e, ok := m.registeredExporters[export]; ok {
 		t := &Target{
 			exporter: e,
-			filePath: GenerateDefaultExportFileName(e, executionName),
+			filePath: GenerateDefaultExportFileName(executionName, e.FileExtension()),
 		}
 		return t, nil
 	}

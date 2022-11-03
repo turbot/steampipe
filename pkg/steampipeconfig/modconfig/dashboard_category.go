@@ -138,7 +138,7 @@ func (c *DashboardCategory) GetParents() []ModTreeItem {
 	return c.Parents
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements HclResource
 func (c *DashboardCategory) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
@@ -148,7 +148,7 @@ func (c *DashboardCategory) GetDescription() string {
 	return ""
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements HclResource
 func (c *DashboardCategory) GetTags() map[string]string {
 	return map[string]string{}
 }

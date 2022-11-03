@@ -139,7 +139,7 @@ func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
 	return children
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements HclResource
 func (h *DashboardHierarchy) GetTitle() string {
 	return typehelpers.SafeString(h.Title)
 }
@@ -149,9 +149,9 @@ func (h *DashboardHierarchy) GetDescription() string {
 	return ""
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements HclResource
 func (h *DashboardHierarchy) GetTags() map[string]string {
-	return nil
+	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem

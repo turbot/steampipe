@@ -21,12 +21,14 @@ type MappableResource interface {
 // HclResource must be implemented by resources defined in HCL
 type HclResource interface {
 	Name() string
+	GetTitle() string
 	GetUnqualifiedName() string
 	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
 	GetDeclRange() *hcl.Range
 	BlockType() string
 	GetDescription() string
+	GetTags() map[string]string
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
@@ -36,9 +38,7 @@ type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	GetParents() []ModTreeItem
 	GetChildren() []ModTreeItem
-	GetTitle() string
 	GetDocumentation() string
-	GetTags() map[string]string
 	// GetPaths returns an array resource paths
 	GetPaths() []NodePath
 	SetPaths()

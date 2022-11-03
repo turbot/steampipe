@@ -232,6 +232,11 @@ func (r *DashboardContainerRun) ChildrenComplete() bool {
 	return true
 }
 
+// GetTitle implements DashboardNodeRun
+func (r *DashboardContainerRun) GetTitle() string {
+	return r.Title
+}
+
 // ChildCompleteChan implements DashboardNodeParent
 func (r *DashboardContainerRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 	return r.childComplete
