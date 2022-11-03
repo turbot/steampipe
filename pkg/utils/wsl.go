@@ -17,7 +17,8 @@ func IsWSL() bool {
 		return *isWsl
 	}
 	if runtime.GOOS != "linux" {
-		*isWsl = false
+		w := false
+		isWsl = &w
 		return false
 	}
 	// https://github.com/Microsoft/WSL/issues/2299#issuecomment-361366982
