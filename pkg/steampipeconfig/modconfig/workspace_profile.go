@@ -13,7 +13,6 @@ type WorkspaceProfile struct {
 	ProfileName       string            `hcl:"name,label" cty:"name"`
 	CloudHost         *string           `hcl:"cloud_host,optional" cty:"cloud_host"`
 	CloudToken        *string           `hcl:"cloud_token,optional" cty:"cloud_token"`
-	InstallDir        *string           `hcl:"install_dir,optional" cty:"install_dir"`
 	ModLocation       *string           `hcl:"mod_location,optional" cty:"mod_location"`
 	SnapshotLocation  *string           `hcl:"snapshot_location,optional" cty:"snapshot_location"`
 	WorkspaceDatabase *string           `hcl:"workspace_database,optional" cty:"workspace_database"`
@@ -96,9 +95,6 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	if p.CloudToken == nil {
 		p.CloudToken = p.Base.CloudToken
 	}
-	if p.InstallDir == nil {
-		p.InstallDir = p.Base.InstallDir
-	}
 	if p.ModLocation == nil {
 		p.ModLocation = p.Base.ModLocation
 	}
@@ -120,7 +116,6 @@ func (p *WorkspaceProfile) ConfigMap() map[string]interface{} {
 
 	res.SetStringItem(p.CloudHost, constants.ArgCloudHost)
 	res.SetStringItem(p.CloudToken, constants.ArgCloudToken)
-	res.SetStringItem(p.InstallDir, constants.ArgInstallDir)
 	res.SetStringItem(p.ModLocation, constants.ArgModLocation)
 	res.SetStringItem(p.SnapshotLocation, constants.ArgSnapshotLocation)
 	res.SetStringItem(p.WorkspaceDatabase, constants.ArgWorkspaceDatabase)
