@@ -83,6 +83,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
 		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.")
 
+	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))
 	return cmd
 }
 
@@ -219,7 +220,7 @@ func printTiming(args []string, durations []time.Duration) {
 	// blank line after renderer output
 	fmt.Println()
 	fmt.Println("Timing:")
-	display.ShowWrappedTable(headers, rows, false)
+	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 }
 
 func shouldPrintTiming() bool {
