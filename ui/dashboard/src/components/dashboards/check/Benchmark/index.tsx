@@ -149,7 +149,6 @@ const Benchmark = (props: InnerCheckProps) => {
 
   return (
     <Container
-      showChildPanelControls={false}
       definition={{
         name: props.definition.name,
         panel_type: "container",
@@ -157,13 +156,11 @@ const Benchmark = (props: InnerCheckProps) => {
           {
             name: `${props.definition.name}.container.summary`,
             panel_type: "container",
-            allow_child_panel_expand: false,
             children: summary_cards,
           },
           {
             name: `${props.definition.name}.container.tree`,
             panel_type: "container",
-            allow_child_panel_expand: false,
             children: [
               {
                 name: `${props.definition.name}.container.tree.results`,

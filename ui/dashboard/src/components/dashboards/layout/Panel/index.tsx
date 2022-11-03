@@ -70,8 +70,8 @@ const Panel = memo(
     return (
       <PanelProvider
         definition={definition}
-        showControls={showControls}
         setZoomIconClassName={setZoomIconClassName}
+        showControls={showControls}
       >
         <div
           id={definition.name}

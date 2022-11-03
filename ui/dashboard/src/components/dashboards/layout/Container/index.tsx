@@ -9,7 +9,6 @@ interface ContainerProps {
   layoutDefinition?: ContainerDefinition;
   definition?: ContainerDefinition;
   expandDefinition: ContainerDefinition;
-  showChildPanelControls?: boolean;
   showControls?: boolean;
   withNarrowVertical?: boolean;
   withTitle?: boolean;
@@ -18,7 +17,6 @@ interface ContainerProps {
 const Container = ({
   definition,
   layoutDefinition,
-  showChildPanelControls = true,
   showControls = false,
 }: ContainerProps) => {
   // const [showZoomIcon, setShowZoomIcon] = useState(false);
@@ -53,7 +51,6 @@ const Container = ({
             ? layoutDefinition.children
             : []
         }
-        showPanelControls={showChildPanelControls}
       />
     </Grid>
   );

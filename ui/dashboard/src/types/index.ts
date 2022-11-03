@@ -229,25 +229,28 @@ export interface DashboardMetadata {
   telemetry: "info" | "none";
 }
 
-export type DashboardPanelType =
-  | "dashboard"
-  | "container"
-  | "benchmark"
-  | "input"
-  | "card"
-  | "chart"
-  | "flow"
-  | "graph"
-  | "hierarchy"
-  | "table"
-  | "text"
-  | "image";
-
-interface DashboardLayoutNode {
+export type DashboardLayoutNode = {
   name: string;
   panel_type: DashboardPanelType;
   children?: DashboardLayoutNode[];
-}
+};
+
+export type DashboardPanelType =
+  | "benchmark"
+  | "benchmark_tree"
+  | "card"
+  | "chart"
+  | "container"
+  | "control"
+  | "dashboard"
+  | "error"
+  | "flow"
+  | "graph"
+  | "hierarchy"
+  | "image"
+  | "input"
+  | "table"
+  | "text";
 
 export interface DashboardSnapshot {
   start_time: string;
@@ -285,7 +288,6 @@ export interface AvailableDashboardsDictionary {
 export interface ContainerDefinition {
   name: string;
   panel_type?: string;
-  allow_child_panel_expand?: boolean;
   data?: LeafNodeData;
   title?: string;
   width?: number;
@@ -303,7 +305,7 @@ export interface SQLDataMap {
 export interface PanelDefinition {
   name: string;
   display_type?: string;
-  panel_type?: string;
+  panel_type: DashboardPanelType;
   title?: string;
   description?: string;
   documentation?: string;
