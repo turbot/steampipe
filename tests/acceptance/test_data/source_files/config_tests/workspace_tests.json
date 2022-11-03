@@ -11,7 +11,6 @@
     "expected": {
       "cloud-host": "latestpipe.turbot.io/",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "default",
@@ -25,14 +24,12 @@
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "STEAMPIPE_CLOUD_HOST=testpipe.turbot.io",
-        "STEAMPIPE_INSTALL_DIR=sp_install_dir",
         "STEAMPIPE_MOD_LOCATION=sp_install_dir",
         "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
         "STEAMPIPE_WORKSPACE_DATABASE=fk/43e7"
       ],
       "args": [
-        "--install-dir=sp_install_dir",
         "--mod-location=sp_install_dir",
         "--cloud-host=fastestpipe.turbot.io",
         "--cloud-token=spt_012faketoken34567890_012faketoken3456789099990",
@@ -43,7 +40,6 @@
     "expected": {
       "cloud-host": "fastestpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "default",
@@ -56,7 +52,6 @@
     "setup": {
       "env": [
         "STEAMPIPE_CLOUD_HOST=latestpipe.turbot.io/",
-        "STEAMPIPE_INSTALL_DIR=sp_install_dir",
         "STEAMPIPE_MOD_LOCATION=sp_install_dir",
         "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099999",
         "STEAMPIPE_SNAPSHOT_LOCATION=snaps",
@@ -67,7 +62,6 @@
     "expected": {
       "cloud-host": "latestpipe.turbot.io/",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "default",
@@ -88,7 +82,6 @@
     "expected": {
       "cloud-host": "testpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "sample",
@@ -101,7 +94,6 @@
     "setup": {
       "env": [],
       "args": [
-        "--install-dir=sp_install_dir",
         "--mod-location=sp_install_dir",
         "--cloud-host=fastestpipe.turbot.io",
         "--cloud-token=spt_012faketoken34567890_012faketoken3456789099990",
@@ -112,7 +104,6 @@
     "expected": {
       "cloud-host": "fastestpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "default",
@@ -126,7 +117,6 @@
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "STEAMPIPE_CLOUD_HOST=fastestpipe.turbot.io/",
-        "STEAMPIPE_INSTALL_DIR=sp_install_dir",
         "STEAMPIPE_MOD_LOCATION=sp_install_dir",
         "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
@@ -137,7 +127,6 @@
     "expected": {
       "cloud-host": "fastestpipe.turbot.io/",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099996",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snapshot",
       "workspace": "default",
@@ -151,7 +140,6 @@
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "STEAMPIPE_CLOUD_HOST=fastestpipe.turbot.io/",
-        "STEAMPIPE_INSTALL_DIR=sp_install_dir",
         "STEAMPIPE_MOD_LOCATION=sp_install_dir",
         "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
@@ -164,7 +152,6 @@
     "expected": {
       "cloud-host": "testpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "sample",
@@ -178,7 +165,6 @@
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "STEAMPIPE_CLOUD_HOST=fastestpipe.turbot.io/",
-        "STEAMPIPE_INSTALL_DIR=sp_install_dir",
         "STEAMPIPE_MOD_LOCATION=sp_install_dir",
         "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
@@ -191,7 +177,6 @@
     "expected": {
       "cloud-host": "testpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "sample",
@@ -206,7 +191,6 @@
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
       ],
       "args": [
-        "--install-dir=sp_install_dir",
         "--mod-location=sp_install_dir",
         "--cloud-host=fastestpipe.turbot.io",
         "--cloud-token=spt_012faketoken34567890_012faketoken3456789099990",
@@ -217,7 +201,6 @@
     "expected": {
       "cloud-host": "fastestpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
-      "install-dir": "sp_install_dir",
       "mod-location": "sp_install_dir",
       "snapshot-location": "snaps",
       "workspace": "default",

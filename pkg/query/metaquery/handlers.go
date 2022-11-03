@@ -74,7 +74,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 			[][]string{
 				{strings.Join(currentPath, ",")},
 			},
-			false,
+			&display.ShowWrappedTableOptions{AutoMerge: false},
 		)
 	} else {
 		arg := input.args()[0]
@@ -242,7 +242,7 @@ To get information about the columns in a table, run %s
 			})
 			rows = append(rows, tables...)
 		}
-		display.ShowWrappedTable(header, rows, true)
+		display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: true})
 	}
 
 	return nil
@@ -326,7 +326,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, false)
+	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
 	fmt.Printf(`
 To get information about the tables in a connection, run %s
@@ -356,7 +356,7 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, false)
+	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
 	return true
 }
@@ -388,7 +388,7 @@ func inspectTable(connectionName string, tableName string, input *HandlerInput) 
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, false)
+	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
 	return nil
 }

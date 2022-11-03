@@ -597,7 +597,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			for _, item := range list {
 				rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 			}
-			display.ShowWrappedTable(headers, rows, false)
+			display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 			fmt.Printf("\n")
 		}
 
@@ -612,14 +612,14 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			missingRows = append(missingRows, []string{p, strings.Join(conns, ",")})
 			conns = []string{}
 		}
-		display.ShowWrappedTable(headers, missingRows, false)
+		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
 	} else {
 		headers := []string{"Installed Plugin", "Version", "Connections"}
 		rows := [][]string{}
 		for _, item := range list {
 			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 		}
-		display.ShowWrappedTable(headers, rows, false)
+		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 	}
 
 	// display any initialisation warnings

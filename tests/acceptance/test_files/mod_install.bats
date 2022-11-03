@@ -3,7 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "list with no mods installed" {
   run steampipe mod list
-  assert_output 'No mods installed'
+  assert_output 'No mods installed.'
 }
 
 @test "install latest" {
