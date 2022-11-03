@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"sort"
 
 	"github.com/spf13/cobra"
@@ -74,19 +75,14 @@ func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args [
 		w, err := workspace.Load(cmd.Context(), workspacePath)
 		error_helpers.FailOnError(err)
 
-		items := []modconfig.ModTreeItem{}
 		resourceTypesToDisplay := getResourceTypesToDisplay(cmd)
-		w.Mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
-			if found := resourceTypesToDisplay[item.BlockType()]; found {
-				if cast, ok := item.(modconfig.ModTreeItem); ok {
-					items = append(items, cast)
-				}
-			}
-			return true, nil
+		resources, err := listResourcesInMod(cmd.Context(), w.Mod, func(item modconfig.ModTreeItem) bool {
+			return resourceTypesToDisplay[item.BlockType()]
 		})
+		error_helpers.FailOnErrorWithMessage(err, "could not list resources")
 
-		sortItems(items, w)
-		headers, rows := getOutputDataTable(items, w)
+		sortResources(resources, w)
+		headers, rows := getOutputDataTable(resources, w)
 
 		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{
 			AutoMerge:        false,
@@ -96,7 +92,29 @@ func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args [
 
 }
 
-func sortItems(items []modconfig.ModTreeItem, workspace *workspace.Workspace) {
+// listResourcesInMod walks through the resources in the given mod and
+// uses the function to filter.
+//
+// if an error occurs, this function returns the list as has been generated till the error occured
+// with the error
+func listResourcesInMod(ctx context.Context, mod *modconfig.Mod, filter func(modconfig.ModTreeItem) bool) ([]modconfig.ModTreeItem, error) {
+	items := []modconfig.ModTreeItem{}
+	err := mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
+		if ctx.Err() != nil {
+			// break
+			return false, ctx.Err()
+		}
+		if cast, ok := item.(modconfig.ModTreeItem); ok {
+			if filter(cast) {
+				items = append(items, cast)
+			}
+		}
+		return true, nil
+	})
+	return items, err
+}
+
+func sortResources(items []modconfig.ModTreeItem, workspace *workspace.Workspace) {
 	sort.SliceStable(items, func(i, j int) bool {
 		return items[i].GetUnqualifiedName() < items[j].GetUnqualifiedName()
 	})
@@ -116,6 +134,8 @@ func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
 		"check":     {"benchmark", "control"},
 		"dashboard": {"dashboard", "benchmark"},
 	}
+	xtraTypesForAll := map[string][]string{}
+
 	resourceTypesToList, found := cmdToTypeMapping[parent]
 	if !found {
 		resourceTypesToList = []string{cmd.Parent().Name()}
@@ -124,6 +144,17 @@ func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
 	lookupResourceTypes := map[string]bool{}
 	for _, t := range resourceTypesToList {
 		lookupResourceTypes[t] = true
+	}
+
+	// if the '--all' flag is set
+	if viper.GetBool(constants.ArgAll) {
+		xtraTypesToList, found := xtraTypesForAll[parent]
+		if !found {
+			xtraTypesToList = []string{cmd.Parent().Name()}
+		}
+		for _, t := range xtraTypesToList {
+			lookupResourceTypes[t] = true
+		}
 	}
 	return lookupResourceTypes
 }
