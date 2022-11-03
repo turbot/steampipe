@@ -20,7 +20,7 @@ type listSubCmdOptions struct {
 	parentCmd        *cobra.Command
 }
 
-func setListSubCmdOptDefaults(opts *listSubCmdOptions) {
+func setListSubCmdOptionsDefaults(opts *listSubCmdOptions) {
 	// these should never happen
 	if opts == nil {
 		panic("Options MUST be set")
@@ -42,7 +42,7 @@ func setListSubCmdOptDefaults(opts *listSubCmdOptions) {
 
 func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
 
-	setListSubCmdOptDefaults(&opts)
+	setListSubCmdOptionsDefaults(&opts)
 
 	cmd := &cobra.Command{
 		Use:              "list",
@@ -60,6 +60,8 @@ func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
 	return cmd
 }
 
+// getRunListSubCmdRun generates a command handler based
+// on the command that the runner is used for
 func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args []string) {
 	if opts.parentCmd == nil {
 		// this should never happen
@@ -75,7 +77,7 @@ func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args [
 		items := []modconfig.ModTreeItem{}
 		resourceTypesToDisplay := getResourceTypesToDisplay(cmd)
 		w.Mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
-			if _, found := resourceTypesToDisplay[item.BlockType()]; found {
+			if found := resourceTypesToDisplay[item.BlockType()]; found {
 				if cast, ok := item.(modconfig.ModTreeItem); ok {
 					items = append(items, cast)
 				}
@@ -83,16 +85,10 @@ func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args [
 			return true, nil
 		})
 
-		sort.SliceStable(items, func(i, j int) bool {
-			return items[i].GetUnqualifiedName() < items[j].GetUnqualifiedName()
-		})
+		sortItems(items, w)
+		headers, rows := getOutputDataTable(items, w)
 
-		rows := make([][]string, len(items))
-
-		for idx, modItem := range items {
-			rows[idx] = []string{modItem.GetUnqualifiedName(), modItem.GetTitle()}
-		}
-		display.ShowWrappedTable([]string{"name", "title"}, rows, &display.ShowWrappedTableOptions{
+		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{
 			AutoMerge:        false,
 			HideEmptyColumns: true,
 		})
@@ -100,19 +96,34 @@ func getRunListSubCmdRun(opts listSubCmdOptions) func(cmd *cobra.Command, args [
 
 }
 
-func getResourceTypesToDisplay(cmd *cobra.Command) map[string]struct{} {
+func sortItems(items []modconfig.ModTreeItem, workspace *workspace.Workspace) {
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].GetUnqualifiedName() < items[j].GetUnqualifiedName()
+	})
+}
+
+func getOutputDataTable(items []modconfig.ModTreeItem, workspace *workspace.Workspace) ([]string, [][]string) {
+	rows := make([][]string, len(items))
+	for idx, modItem := range items {
+		rows[idx] = []string{modItem.GetUnqualifiedName(), modItem.GetTitle()}
+	}
+	return []string{"name", "title"}, rows
+}
+
+func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
 	parent := cmd.Parent().Name()
 	cmdToTypeMapping := map[string][]string{
-		"check": {"benchmark", "control"},
+		"check":     {"benchmark", "control"},
+		"dashboard": {"dashboard", "benchmark"},
 	}
 	resourceTypesToList, found := cmdToTypeMapping[parent]
 	if !found {
 		resourceTypesToList = []string{cmd.Parent().Name()}
 	}
 	// add resource types to a map for cheap lookup
-	lookupResourceTypes := map[string]struct{}{}
+	lookupResourceTypes := map[string]bool{}
 	for _, t := range resourceTypesToList {
-		lookupResourceTypes[t] = struct{}{}
+		lookupResourceTypes[t] = true
 	}
 	return lookupResourceTypes
 }
