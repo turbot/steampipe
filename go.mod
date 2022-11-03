@@ -49,7 +49,7 @@ require (
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.7
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.11.1
-	github.com/zclconf/go-cty-yaml v1.0.2
+	github.com/zclconf/go-cty-yaml v1.0.3
 	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.4.0
