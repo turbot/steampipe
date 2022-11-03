@@ -80,7 +80,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 
 	// resolve the snapshot title
 	title := resolveSnapshotTitle(snapshot)
-	log.Printf("[WARN] UPLOADING WITH TITLE %s", title)
+	log.Printf("[TRACE] Uploading snapshot with title %s", title)
 	// populate map of tags tags been set?
 	tags := getTags()
 
@@ -89,6 +89,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 		return "", err
 	}
 	req := steampipecloud.CreateWorkspaceSnapshotRequest{Data: *cloudSnapshot, Tags: tags, Visibility: &visibility}
+	req.SetTitle(title)
 
 	var uploadedSnapshot steampipecloud.WorkspaceSnapshot
 	if identity.Type == "user" {
