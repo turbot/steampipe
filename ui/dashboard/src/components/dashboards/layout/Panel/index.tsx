@@ -18,8 +18,8 @@ import { PanelProvider } from "../../../../hooks/usePanel";
 import { ReactNode } from "react";
 import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
-import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
+import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { ZoomIcon } from "../../../../constants/icons";
 
@@ -66,14 +66,6 @@ const Panel = memo(
 
     const ErrorComponent = Error;
     const PlaceholderComponent = Placeholder.component;
-
-    console.log({
-      definition,
-      overflow:
-        (definition.panel_type === "table" &&
-          definition.display_type !== "line") ||
-        definition.display_type === "table",
-    });
 
     return (
       <PanelProvider

@@ -99,22 +99,20 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
           ? JSON.stringify(row[col])
           : row[col];
       });
-      // for (const jsobColIndex of jsonbColIndices) {
-      //   temp[jsobColIndex] = JSON.stringify(temp[jsobColIndex]);
-      // }
       csvRows.push(csvRow);
     }
 
     const csv = jsonToCSV([colNames, ...csvRows]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const datetime = moment().format("YYYYMMDDHHmmss");
+    const datetime = moment().format("YYYYMMDDTHHmmss");
+
     saveAs(
       blob,
       `${(
         selectedDashboard?.full_name ||
         definition.dashboard ||
         ""
-      ).replaceAll(".", "_")}_${definition.panel_type}_${datetime}`
+      ).replaceAll(".", "_")}_${definition.panel_type}_${datetime}.csv`
     );
   }, [definition, jsonToCSV, selectedDashboard]);
 
