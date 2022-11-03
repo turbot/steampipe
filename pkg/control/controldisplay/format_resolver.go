@@ -2,18 +2,18 @@ package controldisplay
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"os"
-	"path/filepath"
 )
 
 type FormatResolver struct {
-	templates       []*OutputTemplate
-	formatterByName map[string]Formatter
 	// array of unique formatters used for export
 	exportFormatters []Formatter
+	formatterByName  map[string]Formatter
 }
 
 func NewFormatResolver() (*FormatResolver, error) {
