@@ -206,5 +206,133 @@
       "workspace": "default",
       "workspace-database": "fk43e9"
     }
+  },
+  {
+    "test": "options set in default workspace profile(2)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
+      ],
+      "args": []
+    },
+    "expected": {
+      "autocomplete": false,
+      "header": false,
+      "max-parallel": null,
+      "multi": true,
+      "output": "json",
+      "query-timeout": 0,
+      "search-path": "[ ]",
+      "search-path-prefix": "[ abc ]",
+      "separator": "|",
+      "telemetry": "info",
+      "update-check": "false",
+      "watch": false
+    }
+  },
+  {
+    "test": "env variables set(3)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": []
+    },
+    "expected": {
+      "max-parallel": 10,
+      "query-timeout": 100,
+      "telemetry": "none",
+      "update-check": true
+    }
+  },
+  {
+    "test": "default workspace location set and --workspace arg passed(4)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
+      ],
+      "args": [
+        "--workspace=sample"
+      ]
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": false,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "csv",
+      "query-timeout": 100,
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ abc, def ]",
+      "separator": ";",
+      "telemetry": "none",
+      "update-check": "true",
+      "watch": false
+    }
+  },
+  {
+    "test": "all command line args passed(5)",
+    "description": "",
+    "setup": {
+      "env": [],
+      "args": [
+        "--header=true",
+        "--output=table",
+        "--query-timeout=190",
+        "--search-path=abc",
+        "--search-path-prefix=def",
+        "--separator=+",
+        "--timing=true", 
+        "--watch=true"
+      ]
+    },
+    "expected": {
+      "autocomplete": false,
+      "header": true,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "table",
+      "query-timeout": 190,
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ def ]",
+      "separator": "+",
+      "telemetry": "none",
+      "update-check": "true",
+      "watch": true
+    }
+  },
+  {
+    "test": "options set in default workspace profile and env variables passed(6)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": []
+    },
+    "expected": {
+      "autocomplete": false,
+      "header": false,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "json",
+      "query-timeout": 100,
+      "search-path": "[ ]",
+      "search-path-prefix": "[ abc ]",
+      "separator": "|",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": false
+    }
   }
 ]
