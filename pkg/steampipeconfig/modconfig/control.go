@@ -183,7 +183,7 @@ func (c *Control) GetParents() []ModTreeItem {
 	return c.parents
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements HclResource
 func (c *Control) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
 }
@@ -193,7 +193,7 @@ func (c *Control) GetDescription() string {
 	return typehelpers.SafeString(c.Description)
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements HclResource
 func (c *Control) GetTags() map[string]string {
 	if c.Tags != nil {
 		return c.Tags

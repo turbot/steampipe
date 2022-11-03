@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-func GenerateDefaultExportFileName(exporter Exporter, executionName string) string {
+func GenerateDefaultExportFileName(executionName, fileExtension string) string {
 	now := time.Now()
-	timeFormatted := fmt.Sprintf("%d%02d%02d-%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	return fmt.Sprintf("%s-%s%s", executionName, timeFormatted, exporter.FileExtension())
+	timeFormatted := fmt.Sprintf("%d%02d%02dT%02d%02d%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	return fmt.Sprintf("%s.%s%s", executionName, timeFormatted, fileExtension)
 }
 
 func Write(filePath string, exportData io.Reader) error {

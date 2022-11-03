@@ -240,6 +240,11 @@ func (r *DashboardRun) ChildrenComplete() bool {
 	return true
 }
 
+// GetTitle implements DashboardNodeRun
+func (r *DashboardRun) GetTitle() string {
+	return r.Title
+}
+
 func (r *DashboardRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 	return r.childComplete
 }

@@ -157,7 +157,7 @@ func (t *DashboardTable) GetChildren() []ModTreeItem {
 	return nil
 }
 
-// GetTitle implements ModTreeItem, DashboardLeafNode
+// GetTitle implements HclResource, DashboardLeafNode
 func (t *DashboardTable) GetTitle() string {
 	return typehelpers.SafeString(t.Title)
 }
@@ -167,9 +167,9 @@ func (t *DashboardTable) GetDescription() string {
 	return ""
 }
 
-// GetTags implements ModTreeItem
+// GetTags implements HclResource
 func (t *DashboardTable) GetTags() map[string]string {
-	return nil
+	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem

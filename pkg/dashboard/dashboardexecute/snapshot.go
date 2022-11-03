@@ -3,6 +3,7 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -16,9 +17,12 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 
 	w := initData.Workspace
 
+	parsedName, err := modconfig.ParseResourceName(target)
+	if err != nil {
+		return nil, err
+	}
 	// no session for manual execution
 	sessionId := ""
-
 	errorChannel := make(chan error)
 	resultChannel := make(chan *dashboardtypes.SteampipeSnapshot)
 	dashboardEventHandler := func(event dashboardevents.DashboardEvent) {
@@ -41,6 +45,8 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 	if err == nil {
 		err = ctx.Err()
 	}
+	// set the filename root of the snapshot
+	snapshot.FileNameRoot = parsedName.ToFullNameWithMod(w.Mod.ShortName)
 	return snapshot, err
 }
 
@@ -66,5 +72,6 @@ func ExecutionCompleteToSnapshot(event *dashboardevents.ExecutionComplete) *dash
 		SearchPath:    event.SearchPath,
 		StartTime:     event.StartTime,
 		EndTime:       event.EndTime,
+		Title:         event.Root.GetTitle(),
 	}
 }

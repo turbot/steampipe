@@ -47,6 +47,12 @@ func (p *ParsedResourceName) ToResourceName() string {
 func (p *ParsedResourceName) ToFullName() string {
 	return BuildFullResourceName(p.Mod, p.ItemType, p.Name)
 }
+func (p *ParsedResourceName) ToFullNameWithMod(mod string) string {
+	if p.Mod != "" {
+		return p.ToFullName()
+	}
+	return BuildFullResourceName(mod, p.ItemType, p.Name)
+}
 
 func BuildFullResourceName(mod, blockType, name string) string {
 	return fmt.Sprintf("%s.%s.%s", mod, blockType, name)

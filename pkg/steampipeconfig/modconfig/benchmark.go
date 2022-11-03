@@ -152,7 +152,7 @@ func (b *Benchmark) GetParents() []ModTreeItem {
 	return b.Parents
 }
 
-// GetTitle implements ModTreeItem
+// GetTitle implements HclResource
 func (b *Benchmark) GetTitle() string {
 	return typehelpers.SafeString(b.Title)
 }
@@ -162,7 +162,7 @@ func (b *Benchmark) GetDescription() string {
 	return typehelpers.SafeString(b.Description)
 }
 
-// GetTags implements ModTreeItem, DashboardLeafNode
+// GetTags implements HclResource, DashboardLeafNode
 func (b *Benchmark) GetTags() map[string]string {
 	if b.Tags != nil {
 		return b.Tags

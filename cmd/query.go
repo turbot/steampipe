@@ -86,10 +86,11 @@ Examples:
 		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
 		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.").
+		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", 0, "The query timeout").
 		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
-		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status").
-		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", 0, "The query timeout")
+		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status")
 
 	return cmd
 }
@@ -178,23 +179,26 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 	// build ordered list of queries
 	// (ordered for testing repeatability)
-	var queryNames []string = utils.SortedMapKeys(initData.Queries)
+	var queryNames = utils.SortedMapKeys(initData.Queries)
 
 	if len(queryNames) > 0 {
 		for i, name := range queryNames {
-			query := initData.Queries[name]
+			queryString := initData.Queries[name]
 			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 			// this is to allow us to use existing dashboard execution code
-
-			// build query name and title
-			targetName := ensureQueryResource(name, query, i, len(queryNames), initData.Workspace)
+			queryProvider, existingResource := ensureQueryResource(name, queryString, i, len(queryNames), initData.Workspace)
 
 			// we need to pass the embedded initData to  GenerateSnapshot
 			baseInitData := &initData.InitData
 
 			// so a dashboard name was specified - just call GenerateSnapshot
-			snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, baseInitData, nil)
+			snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
 			error_helpers.FailOnError(err)
+
+			// set the filename root for the snapshot (in case needed)
+			if !existingResource {
+				snap.FileNameRoot = "query"
+			}
 
 			// display the result
 			switch viper.GetString(constants.ArgOutput) {
@@ -209,7 +213,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 				fmt.Println(string(jsonOutput))
 			default:
 				// otherwise convert the snapshot into a query result
-				result, err := snapshotToQueryResult(snap, targetName)
+				result, err := snapshotToQueryResult(snap, queryProvider.Name())
 				error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
 				display.ShowOutput(ctx, result)
 			}
@@ -220,7 +224,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 			// export the result if necessary
 			exportArgs := viper.GetStringSlice(constants.ArgExport)
-			err = initData.ExportManager.DoExport(ctx, targetName, snap, exportArgs)
+			err = initData.ExportManager.DoExport(ctx, snap.FileNameRoot, snap, exportArgs)
 			error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
 		}
 	}
@@ -228,7 +232,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 }
 
 func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) (*queryresult.Result, error) {
-	// find chart  nde - we expect only 1
+	// find chart node - we expect only 1
 	parsedName, err := modconfig.ParseResourceName(name)
 	if err != nil {
 		return nil, err
@@ -263,27 +267,21 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	return res, nil
 }
 
-// convert the givenb command line query intos a query resource and add to workspace
+// convert the given command line query intos a query resource and add to workspace
 // this is to allow us to use existing dashboard execution code
-func ensureQueryResource(name string, query string, queryIdx, queryCount int, w *workspace.Workspace) string {
+func ensureQueryResource(name string, query string, queryIdx, queryCount int, w *workspace.Workspace) (queryProvider modconfig.HclResource, existingResource bool) {
 	// is this an existing resource?
 	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
 		if resource, found := modconfig.GetResource(w, parsedName); found {
-			return resource.Name()
+			return resource, true
 		}
 	}
 
-	// build name and title
+	// build name
 	shortName := "command_line_query"
-	title := "Command line query"
-	if queryCount > 1 {
-		shortName = fmt.Sprintf("%s_%d", shortName, queryIdx)
-		title = fmt.Sprintf("%s %d", title, queryIdx)
-	}
 
 	// create the query
 	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName).(*modconfig.Query)
-	q.Title = utils.ToStringPointer(title)
 	q.SQL = utils.ToStringPointer(query)
 	// add empty metadata
 	q.SetMetadata(&modconfig.ResourceMetadata{})
@@ -291,7 +289,7 @@ func ensureQueryResource(name string, query string, queryIdx, queryCount int, w 
 	// add to the workspace mod so the dashboard execution code can find it
 	w.Mod.AddResource(q)
 	// return the new resource name
-	return q.Name()
+	return q, false
 }
 
 func snapshotRequired() bool {

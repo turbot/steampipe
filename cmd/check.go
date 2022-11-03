@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -79,7 +80,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
 		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ")
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.")
 
 	return cmd
 }
@@ -151,8 +153,12 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
+		// add the mod name to the target name to get the export file root
+		parsedName, _ := modconfig.ParseResourceName(targetName)
+		exportName := parsedName.ToFullNameWithMod(w.Mod.ShortName)
+
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		err = initData.ExportManager.DoExport(ctx, targetName, executionTree, exportArgs)
+		err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
 		error_helpers.FailOnError(err)
 
 		// if the share args are set, create a snapshot and share it
