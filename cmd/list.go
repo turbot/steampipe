@@ -25,13 +25,14 @@ func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
 		TraverseChildren: true,
 		Args:             cobra.NoArgs,
 		Run:              getRunListSubCmd(opts),
-		Short:            "Short Description Placeholder",
-		Long:             "Long Description Placeholder",
+		Short:            fmt.Sprintf("List all resources that can be executed with the '%s' command", opts.parentCmd.Name()),
+		Long: fmt.Sprintf(`
+List all resources that can be executed with the '%s' command.
+`, opts.parentCmd.Name()),
 	}
 
 	cmdconfig.
-		OnCmd(cmd).
-		AddBoolFlag(constants.ArgAll, "", false, "allDescription")
+		OnCmd(cmd)
 
 	return cmd
 }
@@ -51,9 +52,7 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		error_helpers.FailOnError(err)
 
 		resourceTypesToDisplay := getResourceTypesToDisplay(cmd)
-		resources, err := listResourcesInMod(cmd.Context(), w.Mod, func(item modconfig.ModTreeItem) bool {
-			return resourceTypesToDisplay[item.BlockType()] && item.GetParents()[0] == w.Mod
-		})
+		resources, err := listResourcesInMod(cmd.Context(), w.Mod, resourceTypesToDisplay)
 		error_helpers.FailOnErrorWithMessage(err, "could not list resources")
 
 		sortResources(resources, w)
@@ -72,15 +71,18 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 //
 // if an error occurs, this function returns the list as has been generated till the error occured
 // with the error
-func listResourcesInMod(ctx context.Context, mod *modconfig.Mod, filter func(modconfig.ModTreeItem) bool) ([]modconfig.ModTreeItem, error) {
+func listResourcesInMod(ctx context.Context, mod *modconfig.Mod, resourceTypes map[string]bool) ([]modconfig.ModTreeItem, error) {
 	items := []modconfig.ModTreeItem{}
 	err := mod.WalkResources(func(item modconfig.HclResource) (bool, error) {
 		if ctx.Err() != nil {
 			// break
 			return false, ctx.Err()
 		}
+
+		// we need to 'cast' this since the GetParents is available only in the
+		// ModTreeItem interface
 		if cast, ok := item.(modconfig.ModTreeItem); ok {
-			if filter(cast) {
+			if resourceTypes[cast.BlockType()] && cast.GetParents()[0] == mod {
 				items = append(items, cast)
 			}
 		}
@@ -100,7 +102,7 @@ func getOutputDataTable(items []modconfig.ModTreeItem, workspace *workspace.Work
 	for idx, modItem := range items {
 		rows[idx] = []string{modItem.GetUnqualifiedName(), modItem.GetTitle()}
 	}
-	return []string{"name", "title"}, rows
+	return []string{"Name", "Title"}, rows
 }
 
 func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
@@ -110,8 +112,6 @@ func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
 		"dashboard": {"dashboard", "benchmark"},
 		"query":     {"query"},
 	}
-	xtraTypesForAll := map[string][]string{}
-
 	resourceTypesToList, found := cmdToTypeMapping[parent]
 	if !found {
 		panic(fmt.Sprintf("could not find resource type lookup list for '%s'", parent))
@@ -121,16 +121,5 @@ func getResourceTypesToDisplay(cmd *cobra.Command) map[string]bool {
 	for _, t := range resourceTypesToList {
 		res[t] = true
 	}
-
-	// if the '--all' flag is set
-	if viper.GetBool(constants.ArgAll) {
-		xtraTypesToList, found := xtraTypesForAll[parent]
-		if found {
-			for _, t := range xtraTypesToList {
-				res[t] = true
-			}
-		}
-	}
-
 	return res
 }
