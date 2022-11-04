@@ -1,5 +1,6 @@
 import Card, { CardProps, CardType } from "../../Card";
 import CheckGrouping from "../CheckGrouping";
+import ContainerTitle from "../../titles/ContainerTitle";
 import Error from "../../Error";
 import Grid from "../../layout/Grid";
 import Panel from "../../layout/Panel";
@@ -16,8 +17,9 @@ import {
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
+import { noop } from "../../../../utils/func";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Width } from "../../common";
 
 const Table = getComponent("table");
@@ -33,11 +35,13 @@ type InnerCheckProps = {
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
+  showControls: boolean;
   withTitle: boolean;
 };
 
 const Benchmark = (props: InnerCheckProps) => {
   const { dashboard, selectedDashboard } = useDashboard();
+  const [showBenchmarkControls, setShowBenchmarkControls] = useState(false);
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
@@ -145,7 +149,19 @@ const Benchmark = (props: InnerCheckProps) => {
   }
 
   return (
-    <Grid name={props.definition.name} width={props.definition.width}>
+    <Grid
+      name={props.definition.name}
+      width={props.definition.width}
+      events={{
+        onMouseEnter: props.showControls
+          ? () => setShowBenchmarkControls(true)
+          : noop,
+        onMouseLeave: () => setShowBenchmarkControls(false),
+      }}
+    >
+      {!dashboard?.artificial && (
+        <ContainerTitle title={props.benchmark.title} />
+      )}
       <Grid name={`${props.definition.name}.container.summary`}>
         {summaryCards.map((summaryCard) => {
           const props: CardProps = {
@@ -261,7 +277,7 @@ const BenchmarkTableView = ({
   );
 };
 
-const Inner = ({ withTitle }) => {
+const Inner = ({ showControls, withTitle }) => {
   const {
     benchmark,
     definition,
@@ -282,6 +298,7 @@ const Inner = ({ withTitle }) => {
         grouping={grouping}
         groupingConfig={groupingsConfig}
         firstChildSummaries={firstChildSummaries}
+        showControls={showControls}
         withTitle={withTitle}
       />
     );
@@ -307,13 +324,14 @@ const Inner = ({ withTitle }) => {
 };
 
 type BenchmarkProps = PanelDefinition & {
+  showControls: boolean;
   withTitle: boolean;
 };
 
 const BenchmarkWrapper = (props: BenchmarkProps) => {
   return (
     <CheckGroupingProvider definition={props}>
-      <Inner withTitle={props.withTitle} />
+      <Inner showControls={props.showControls} withTitle={props.withTitle} />
     </CheckGroupingProvider>
   );
 };

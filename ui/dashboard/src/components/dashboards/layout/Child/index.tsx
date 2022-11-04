@@ -24,7 +24,12 @@ const Child = ({
   switch (layoutDefinition.panel_type) {
     case "benchmark":
       const Benchmark = getComponent("benchmark");
-      return <Benchmark {...(layoutDefinition as PanelDefinition)} />;
+      return (
+        <Benchmark
+          {...(layoutDefinition as PanelDefinition)}
+          showControls={showPanelControls}
+        />
+      );
     case "card":
       const Card = getComponent("card");
       return (
