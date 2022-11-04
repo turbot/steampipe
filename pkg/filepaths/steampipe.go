@@ -2,7 +2,6 @@ package filepaths
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 
@@ -76,18 +75,16 @@ func BackupsDir() string {
 
 // WorkspaceProfileDir returns the path to the workspace profiles directory
 // if  STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set use that
-// otherwise look in the config folder for the DEFAULT install dir
-func WorkspaceProfileDir() (string, error) {
+// otherwise look in the config folder
+// NOTE: unlike other path functions this accepts the install-dir as arg
+// this is because of the slightly complex bootstrapping process required because the
+// install-dir may be set in the workspace profile
+func WorkspaceProfileDir(installDir string) (string, error) {
 	if workspaceProfileLocation, ok := os.LookupEnv(constants.EnvWorkspaceProfileLocation); ok {
 		return filehelpers.Tildefy(workspaceProfileLocation)
 	}
-	// respect install dir passed as arg but at this point we have not loaded env vars into viper
-	// so we will NOT take STEAMPIPE_INSTALL_DIR into account - this is by design
-	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(installDir, "config"), nil
+	 return filepath.Join(installDir, "config"), nil
+
 }
 
 // EnsureDatabaseDir returns the path to the db directory (creates if missing)
