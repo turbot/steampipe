@@ -88,7 +88,7 @@ Examples:
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
 		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot").
 		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", 0, "The query timeout").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to file, supported format: snapshot (sps)").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to file, supported format: sps (snapshot)").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The location to write snapshots - either a local file path or a Steampipe Cloud workspace").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status")
 

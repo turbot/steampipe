@@ -88,7 +88,7 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 
 	// 3) so we have not managed to resolve this - if it looks like a named query or control, return an error
 	if name, isResource := queryLooksLikeExecutableResource(sqlString); isResource {
-		return "", nil, fmt.Errorf("'%s' not found in workspace", name)
+		return "", nil, fmt.Errorf("'%s' not found in %s (%s)", name, w.Mod.Name(), w.Path)
 	}
 
 	// 4) just use the query string as is and assume it is valid SQL

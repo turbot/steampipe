@@ -104,7 +104,7 @@ func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapsho
 	// find snapshot path in workspace
 	snapshotPath, ok := w.GetResourceMaps().Snapshots[snapshotName]
 	if !ok {
-		return nil, fmt.Errorf("snapshot %s not found in workspace", snapshotName)
+		return nil, fmt.Errorf("snapshot %s not found in %s (%s)", snapshotName, w.Mod.Name(), w.Path)
 	}
 
 	if !filehelpers.FileExists(snapshotPath) {

@@ -14,6 +14,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
@@ -145,18 +146,15 @@ func initGlobalConfig() {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
-	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
-	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, "string")
-
-	// load workspace profile
+	// load workspace profile from the configured install dir
 	loader, err := loadWorkspaceProfile()
 	error_helpers.FailOnError(err)
 
 	// set global workspace profile
 	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
 
-	// use the default workspace profile to set-up viper with defaults
-	err = cmdconfig.BootstrapViper(loader.DefaultProfile)
+	// set-up viper with defaults from the env and default workspace profile
+	err = cmdconfig.BootstrapViper(loader)
 	error_helpers.FailOnError(err)
 
 	// set global containing the configured install dir (create directory if needed)
@@ -174,11 +172,9 @@ func initGlobalConfig() {
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
 	// if an explicit workspace profile was set, add to viper as highest precedence default
+	// NOTE: if install_dir/mod_location are set these will already have been passed to viper by BootstrapViper
 	if loader.ConfiguredProfile != nil {
 		cmdconfig.SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap())
-		// tildefy all paths in viper
-		// (this has already been done in BootstrapViper but we may have added a path from the workspace profile)
-		err = cmdconfig.TildefyPaths()
 	}
 
 	// NOTE: we need to resolve the token separately
@@ -227,8 +223,18 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 }
 
 func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
+	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
+	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, "string")
+	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
+	cmdconfig.SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, "string")
+
 	// resolve the workspace profile dir
-	workspaceProfileDir, err := filepaths.WorkspaceProfileDir()
+	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceProfileDir, err := filepaths.WorkspaceProfileDir(installDir)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +293,9 @@ func createLogger() {
 }
 
 func ensureInstallDir(installDir string) {
+	log.Printf("[TRACE] ensureInstallDir %s", installDir)
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
+		log.Printf("[TRACE] creating install dir")
 		err = os.MkdirAll(installDir, 0755)
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}

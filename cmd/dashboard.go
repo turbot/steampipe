@@ -65,7 +65,7 @@ The current mod is the working directory, or the directory specified by the --mo
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to file, supported format: snapshot (sps)").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to file, supported format: sps (snapshot)").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -307,7 +307,7 @@ func verifyNamedResource(targetName string, w *workspace.Workspace) error {
 		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
 	}
 	if _, found := modconfig.GetResource(w, parsedName); !found {
-		return fmt.Errorf("'%s' not found in workspace", targetName)
+		return fmt.Errorf("'%s' not found in %s (%s)", targetName, w.Mod.Name(), w.Path)
 	}
 	return nil
 }

@@ -3,7 +3,8 @@ package cmdconfig
 import (
 	"fmt"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"log"
 	"os"
 
 	"github.com/spf13/viper"
@@ -17,22 +18,37 @@ func Viper() *viper.Viper {
 }
 
 // BootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
-func BootstrapViper(defaultWorkspaceProfile *modconfig.WorkspaceProfile) error {
+func BootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader) error {
 	// set defaults  for keys which do not have a corresponding command flag
 	setBaseDefaults()
 
 	// set defaults from defaultWorkspaceProfile
-	SetDefaultsFromConfig(defaultWorkspaceProfile.ConfigMap())
+	SetDefaultsFromConfig(loader.DefaultProfile.ConfigMap())
 
 	// set defaults from env vars
 	setDefaultsFromEnv()
 
+	// NOTE: if an explicit workspace profile was set, default the mod location and install dir _now_
+	// All other workspace profile values are defaults _after defaulting to the connection config options
+	// to give them higher precedence, but these must be done now as subsequent operations depend on them
+	// (and they cannot be set from hcl options)
+	if loader.ConfiguredProfile != nil {
+		if loader.ConfiguredProfile.ModLocation != nil {
+			log.Printf("[TRACE] setting mod location from configured profile '%s' to '%s'", loader.ConfiguredProfile.Name(), *loader.ConfiguredProfile.ModLocation)
+			viper.SetDefault(constants.ArgModLocation, *loader.ConfiguredProfile.ModLocation)
+		}
+		if loader.ConfiguredProfile.InstallDir != nil {
+			log.Printf("[TRACE] setting install dir from configured profile '%s' to '%s'", loader.ConfiguredProfile.Name(), *loader.ConfiguredProfile.InstallDir)
+			viper.SetDefault(constants.ArgInstallDir, *loader.ConfiguredProfile.InstallDir)
+		}
+	}
+
 	// tildefy all paths in viper
-	return TildefyPaths()
+	return tildefyPaths()
 }
 
-// TildefyPaths cleans all path config values and replaces '~' with the home directory
-func TildefyPaths() error {
+// tildefyPaths cleans all path config values and replaces '~' with the home directory
+func tildefyPaths() error {
 	pathArgs := []string{
 		constants.ArgModLocation,
 		constants.ArgInstallDir,
@@ -85,6 +101,9 @@ type envMapping struct {
 
 // set default values from env vars
 func setDefaultsFromEnv() {
+	// NOTE: EnvWorkspaceProfile has already been set as a viper default as we have already loaded workspace profiles
+	// (EnvInstallDir has already been set at same time but we set it again to make sure it has the correct precedence)
+
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
 		constants.EnvInstallDir:        {constants.ArgInstallDir, "string"},
@@ -97,7 +116,6 @@ func setDefaultsFromEnv() {
 		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
 		constants.EnvSnapshotLocation:  {constants.ArgSnapshotLocation, "string"},
 		constants.EnvWorkspaceDatabase: {constants.ArgWorkspaceDatabase, "string"},
-		constants.EnvWorkspaceProfile:  {constants.ArgWorkspaceProfile, "string"},
 		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
 		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},
