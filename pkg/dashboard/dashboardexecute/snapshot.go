@@ -29,6 +29,8 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 		handleDashboardEvent(event, resultChannel, errorChannel)
 	}
 	w.RegisterDashboardEventHandler(dashboardEventHandler)
+	// clear event handlers again in case another snapshot will be generated in this run
+	defer w.UnregisterDashboardEventHandlers()
 
 	// all runtime dependencies must be resolved before execution (i.e. inputs must be passed in)
 	Executor.interactive = false
@@ -36,18 +38,13 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 
 	select {
 	case err = <-errorChannel:
+		return nil, err
 	case snapshot = <-resultChannel:
+		// set the filename root of the snapshot
+		snapshot.FileNameRoot = parsedName.ToFullNameWithMod(w.Mod.ShortName)
+		//  return the context error (if any) to ensure we respect cancellation
+		return snapshot, ctx.Err()
 	}
-	// clear event handlers again in case another snapshot will be generated in this run
-	w.UnregisterDashboardEventHandlers()
-
-	// if there is no error, return the context error (if any) to ensure we respect cancellation
-	if err == nil {
-		err = ctx.Err()
-	}
-	// set the filename root of the snapshot
-	snapshot.FileNameRoot = parsedName.ToFullNameWithMod(w.Mod.ShortName)
-	return snapshot, err
 }
 
 func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel chan *dashboardtypes.SteampipeSnapshot, errorChannel chan error) {

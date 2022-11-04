@@ -6,7 +6,7 @@ package controldisplay
 //	expected interface{}
 //}
 //
-//// TODO KAI change this test to GetFormatter and getFormatterByExtension
+//// TODO change this test to GetFormatter and getFormatterByExtension
 //
 //var resolveOutputTemplateTestCases = map[string]resolveOutputTemplateTestCase{
 //	"html": {

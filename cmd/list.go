@@ -90,9 +90,7 @@ func listResourcesInMod(ctx context.Context, mod *modconfig.Mod, cmd *cobra.Comm
 			} else {
 				depResources = append(depResources, m)
 			}
-
 		}
-
 		return true, nil
 	})
 	return modResources, depResources, err

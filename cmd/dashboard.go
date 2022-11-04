@@ -46,10 +46,10 @@ The current mod is the working directory, or the directory specified by the --mo
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for dashboard").
 		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the dashboard").
 		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
-		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Dashboard server port.").
+		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Dashboard server port").
 		AddBoolFlag(constants.ArgBrowser, "", true, "Specify whether to launch the browser after starting the dashboard server").
-		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
-		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
+		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a dashboard session (comma-separated)").
+		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a dashboard session (comma-separated)").
 		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display dashboard execution progress respected when a dashboard name argument is passed").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
@@ -57,15 +57,15 @@ The current mod is the working directory, or the directory specified by the --mo
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
 		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatNone, "Select a console output format: none, snapshot").
-		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
-		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
-		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.").
+		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility").
+		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility").
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The location to write snapshots - either a local file path or a Steampipe Cloud workspace").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot").
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgDashboardInput, "", nil, "Specify the value of a dashboard input").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to file, supported format: snapshot (sps)").
 		// hidden flags that are used internally
 		AddBoolFlag(constants.ArgServiceMode, "", false, "Hidden flag to specify whether this is starting as a service", cmdconfig.FlagOptions.Hidden())
 
@@ -203,7 +203,10 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	switch viper.GetString(constants.ArgOutput) {
 	case constants.OutputFormatNone:
-		if viper.GetBool(constants.ArgProgress) && !viper.IsSet(constants.ArgOutput) {
+		if viper.GetBool(constants.ArgProgress) &&
+			!viper.IsSet(constants.ArgOutput) &&
+			!viper.GetBool(constants.ArgShare) &&
+			!viper.GetBool(constants.ArgSnapshot) {
 			fmt.Println("Output format defaulted to 'none'. Supported formats: none, snapshot.")
 		}
 	case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
@@ -436,7 +439,7 @@ func collectInputs() (map[string]interface{}, error) {
 
 }
 
-// create the context for the check run - add a control status renderer
+// create the context for the dashboard run - add a control status renderer
 func createSnapshotContext(ctx context.Context, target string) context.Context {
 	// create context for the dashboard execution
 	snapshotCtx, cancel := context.WithCancel(ctx)

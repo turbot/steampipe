@@ -9,10 +9,9 @@ import (
 
 // Database
 type Database struct {
-	Port         *int    `hcl:"port"`
-	Listen       *string `hcl:"listen"`
-	SearchPath   *string `hcl:"search_path"`
-	QueryTimeout *int64  `hcl:"query_timeout"`
+	Port       *int    `hcl:"port"`
+	Listen     *string `hcl:"listen"`
+	SearchPath *string `hcl:"search_path"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -28,9 +27,6 @@ func (d *Database) ConfigMap() map[string]interface{} {
 	if d.SearchPath != nil {
 		// convert from string to array
 		res[constants.ArgSearchPath] = searchPathToArray(*d.SearchPath)
-	}
-	if d.QueryTimeout != nil {
-		res[constants.ArgDatabaseQueryTimeout] = d.QueryTimeout
 	}
 	return res
 }
@@ -48,9 +44,6 @@ func (d *Database) Merge(otherOptions Options) {
 		}
 		if o.SearchPath != nil {
 			d.SearchPath = o.SearchPath
-		}
-		if o.QueryTimeout != nil {
-			d.QueryTimeout = o.QueryTimeout
 		}
 	}
 }
@@ -74,11 +67,6 @@ func (d *Database) String() string {
 		str = append(str, "  SearchPath: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  SearchPath: %s", *d.SearchPath))
-	}
-	if d.QueryTimeout == nil {
-		str = append(str, "  QueryTimeout: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  QueryTimeout: %d", *d.QueryTimeout))
 	}
 	return strings.Join(str, "\n")
 }

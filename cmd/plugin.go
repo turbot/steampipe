@@ -380,7 +380,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
-		error_helpers.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server. Please try later."))
+		error_helpers.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server, please try later"))
 		exitCode = constants.ExitCodeLoadingError
 		return
 	}
