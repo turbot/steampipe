@@ -60,7 +60,7 @@ connection from any Postgres compatible database client.`,
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service start").
 		// for now default port to -1 so we fall back to the default of the deprecated arg
-		AddIntFlag(constants.ArgDatabasePort, "", constants.DatabaseDefaultPort, "Database service port.").
+		AddIntFlag(constants.ArgDatabasePort, "", constants.DatabaseDefaultPort, "Database service port").
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
 		AddStringFlag(constants.ArgListenAddress, "", string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (postgres)").
 		AddStringFlag(constants.ArgServicePassword, "", "", "Set the database password for this session").
@@ -69,7 +69,7 @@ connection from any Postgres compatible database client.`,
 		// dashboard server
 		AddBoolFlag(constants.ArgDashboard, "", false, "Run the dashboard webserver with the service").
 		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
-		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port.").
+		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port").
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
 

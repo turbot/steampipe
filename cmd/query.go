@@ -73,7 +73,7 @@ Examples:
 		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
 		AddStringFlag(constants.ArgOutput, "", "table", "Output format: line, csv, json, table or snapshot").
-		AddBoolFlag(constants.ArgTiming, "", false, "Turn on the timer which reports query time.").
+		AddBoolFlag(constants.ArgTiming, "", false, "Turn on the timer which reports query time").
 		AddBoolFlag(constants.ArgWatch, "", true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a query session (comma-separated)").
@@ -83,13 +83,13 @@ Examples:
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
-		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility.").
-		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility.").
+		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility").
+		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility").
 		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot.").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot").
 		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", 0, "The query timeout").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to a snapshot file").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The cloud workspace... ").
+		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to file, supported format: snapshot (sps)").
+		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The location to write snapshots - either a local file path or a Steampipe Cloud workspace").
 		AddBoolFlag(constants.ArgProgress, "", true, "Display snapshot upload status")
 
 	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))

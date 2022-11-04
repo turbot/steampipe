@@ -102,10 +102,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
 
-	// update the viper default based on this loaded config
-	//cmdconfig.SetViperDefaults(config.ConfigMap(), nil)
-	// TODO KAI REIMPLEMENT
-
 	// now refresh connections and search paths
 	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
