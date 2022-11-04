@@ -21,6 +21,7 @@ const Children = ({
       {children.map((child) => {
         switch (child.panel_type) {
           case "benchmark":
+          case "control":
             const Benchmark = getComponent("benchmark");
             return (
               <Benchmark
