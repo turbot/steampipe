@@ -1,17 +1,15 @@
 package controldisplay
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"strings"
+	"os"
 	"testing"
 
-	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
+	"github.com/turbot/steampipe/pkg/control/controlstatus"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -45,7 +43,7 @@ var tree = &controlexecute.ExecutionTree{
 		Title:       "Test Root Group",
 		Description: "Description for test root group",
 		Summary: &controlexecute.GroupSummary{
-			Status: controlexecute.StatusSummary{
+			Status: controlstatus.StatusSummary{
 				Alarm: 2,
 			},
 		},
@@ -113,170 +111,106 @@ var tree = &controlexecute.ExecutionTree{
 	},
 }
 
-const expectedJsonOutput = `{
-	"group_id": "DummyTest",
-	"title": "Test Root Group",
-	"description": "Description for test root group",
-	"tags": null,
-	"summary": {
-		"status": {
-			"alarm": 2,
-			"ok": 0,
-			"info": 0,
-			"skip": 0,
-			"error": 0
-		}
+type exporterTest struct {
+	shouldError bool
+	alias       string
+	extension   string
+	name        string
+}
+
+// testFormatter is an implementation of the Formatter interface
+// values in this implementation correspond to the ones we expect in the result
+type testFormatter struct {
+	name      string
+	alias     string
+	extension string
+}
+
+func (b *testFormatter) FileExtension() string { return b.extension }
+func (b *testFormatter) Name() string          { return b.name }
+func (b *testFormatter) Alias() string         { return b.alias }
+func (b *testFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+	return nil, nil
+}
+
+type testCase struct {
+	input    string
+	expected interface{}
+}
+
+var exporterTestCases = []testCase{
+	{
+		input:    "bad-format",
+		expected: "ERROR",
 	},
-	"groups": [
-		{
-			"group_id": "",
-			"title": "",
-			"description": "",
-			"tags": null,
-			"summary": {
-				"status": {
-					"alarm": 0,
-					"ok": 0,
-					"info": 0,
-					"skip": 0,
-					"error": 0
-				}
-			},
-			"groups": null,
-			"controls": [
-				{
-					"control_id": "",
-					"description": "",
-					"severity": "",
-					"tags": null,
-					"title": "",
-					"results": [
-						{
-							"reason": "is pretty insecure",
-							"resource": "some other resource",
-							"status": "alarm",
-							"dimensions": []
-						}
-					]
-				},
-				{
-					"control_id": "",
-					"description": "",
-					"severity": "",
-					"tags": null,
-					"title": "",
-					"results": [
-						{
-							"reason": "is pretty insecure",
-							"resource": "some other resource",
-							"status": "alarm",
-							"dimensions": []
-						}
-					]
-				}
-			]
+	{
+		input: "snapshot",
+		expected: testFormatter{
+			alias:     "sps",
+			extension: constants.SnapshotExtension,
+			name:      constants.OutputFormatSnapshot,
 		},
-		{
-			"group_id": "",
-			"title": "",
-			"description": "",
-			"tags": null,
-			"summary": {
-				"status": {
-					"alarm": 0,
-					"ok": 0,
-					"info": 0,
-					"skip": 0,
-					"error": 0
-				}
-			},
-			"groups": null,
-			"controls": [
-				{
-					"control_id": "",
-					"description": "",
-					"severity": "",
-					"tags": null,
-					"title": "",
-					"results": [
-						{
-							"reason": "is pretty insecure",
-							"resource": "some other resource",
-							"status": "alarm",
-							"dimensions": []
-						}
-					]
-				},
-				{
-					"control_id": "",
-					"description": "",
-					"severity": "",
-					"tags": null,
-					"title": "",
-					"results": [
-						{
-							"reason": "is pretty insecure",
-							"resource": "some other resource",
-							"status": "alarm",
-							"dimensions": []
-						}
-					]
-				}
-			]
-		}
-	],
-	"controls": null
-}`
+	},
+	{
+		input: "csv",
+		expected: testFormatter{
+			alias:     "",
+			extension: ".csv",
+			name:      "csv",
+		},
+	},
+	{
+		input: "json",
+		expected: testFormatter{
+			alias:     "",
+			extension: ".json",
+			name:      "json",
+		},
+	},
+}
 
-func TestJsonFormatter(t *testing.T) {
-	f, err := getFormatter("json")
+func TestFormatResolver(t *testing.T) {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	reader, _ := f.Format(context.Background(), tree)
-	b := bytes.NewBufferString("")
-	_, _ = io.Copy(b, reader)
-	output := b.String()
-	if !jsonpatch.Equal([]byte(expectedJsonOutput), []byte(output)) {
-		t.Log(`"expected" is not equal to "output"`)
-		t.FailNow()
-	}
-}
-
-const expectedCsvOutput = `group_id,title,description,control_id,control_title,control_description,reason,resource,status
-,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
-,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
-,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
-,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm`
-
-func TestCsvFormatter(t *testing.T) {
-	tree.DimensionColorGenerator, _ = controlexecute.NewDimensionColorGenerator(4, 27)
-	viper.Set(constants.ArgSeparator, ",")
-	viper.Set(constants.ArgHeader, true)
-	f, err := getFormatter("csv")
-	if err != nil {
+	defer os.RemoveAll(tmpDir)
+	filepaths.SteampipeDir = tmpDir
+	if err := EnsureTemplates(); err != nil {
 		t.Fatal(err)
 	}
-	reader, _ := f.Format(context.Background(), tree)
-	b := bytes.NewBufferString("")
-	_, _ = io.Copy(b, reader)
-	output := b.String()
-	spacer := strings.TrimSpace(output)
-	if spacer != expectedCsvOutput {
-		t.Log(`"expected" is not equal to "output"`)
-		t.Logf(spacer)
-		t.FailNow()
-	}
-}
-
-func getFormatter(name string) (Formatter, error) {
 	resolver, err := NewFormatResolver()
 	if err != nil {
-		return nil, fmt.Errorf("could not create 'NewFormatResolver' :> %v", err)
+		t.Fatal(err)
 	}
-	f, err := resolver.GetFormatter("csv")
-	if err != nil {
-		return nil, fmt.Errorf("could not get formatter for '%s' :> %v", "csv", err)
+	for _, testCase := range exporterTestCases {
+		f, ferr := resolver.GetFormatter(testCase.input)
+		shouldError := testCase.expected == "ERROR"
+
+		if shouldError {
+			if ferr == nil {
+				t.Logf("Request for '%s' should have errored - but did not", testCase.input)
+				t.Fail()
+			}
+			continue
+		}
+
+		expectedFormatter := testCase.expected.(testFormatter)
+
+		if f.Alias() != expectedFormatter.Alias() {
+			t.Logf("Alias mismatch for '%s'. Expected '%s', but got '%s'", testCase.input, expectedFormatter.Alias(), f.Alias())
+			t.Fail()
+			continue
+		}
+		if f.FileExtension() != expectedFormatter.FileExtension() {
+			t.Logf("Extension mismatch for '%s'. Expected '%s', but got '%s'", testCase.input, expectedFormatter.FileExtension(), f.FileExtension())
+			t.Fail()
+			continue
+		}
+		if f.Name() != expectedFormatter.Name() {
+			t.Logf("Name mismatch for '%s'. Expected '%s', but got '%s'", testCase.input, expectedFormatter.Name(), f.Name())
+			t.Fail()
+			continue
+		}
 	}
-	return f, nil
 }
