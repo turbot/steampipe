@@ -18,7 +18,7 @@ type TextFormatter struct {
 	FormatterBase
 }
 
-func (tf *TextFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+func (tf TextFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	renderer := NewTableRenderer(tree)
 	widthConstraint := NewRangeConstraint(renderer.MinimumWidth(), MaxColumns)
 	renderedText := renderer.Render(tf.getMaxCols(widthConstraint))
@@ -26,7 +26,7 @@ func (tf *TextFormatter) Format(ctx context.Context, tree *controlexecute.Execut
 	return res, nil
 }
 
-func (tf *TextFormatter) FileExtension() string {
+func (tf TextFormatter) FileExtension() string {
 	return constants.TextExtension
 }
 
@@ -34,7 +34,11 @@ func (tf TextFormatter) Name() string {
 	return constants.OutputFormatText
 }
 
-func (tf *TextFormatter) getMaxCols(constraint RangeConstraint) int {
+func (tf TextFormatter) Alias() string {
+	return constants.OutputFormatBrief
+}
+
+func (tf TextFormatter) getMaxCols(constraint RangeConstraint) int {
 	colsAvailable, _, _ := gows.GetWinSize()
 	// check if STEAMPIPE_CHECK_DISPLAY_WIDTH env variable is set
 	if viper.IsSet(constants.ArgCheckDisplayWidth) {
