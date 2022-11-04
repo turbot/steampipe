@@ -7,6 +7,7 @@ _What's new?_
 * Add `snapshot`/`sps` output and export format. ([#2473](https://github.com/turbot/steampipe/issues/2473))
 * Add `autocomplete` meta command and terminal option. ([#2560](https://github.com/turbot/steampipe/issues/2560), [#1692](https://github.com/turbot/steampipe/issues/1692))
 * Add ability to save and open snapshots from the dashboard UI. ([#2577](https://github.com/turbot/steampipe/issues/2577))
+* Add support for viewing control snapshots in the dashboard UI. ([#2688](https://github.com/turbot/steampipe/issues/2688))
 * Add a configurable query timeout. ([#666](https://github.com/turbot/steampipe/issues/666), [#2593](https://github.com/turbot/steampipe/issues/2593)) 
 * Update database code to use `pgx` interface so we can leverage the connection pool hook functions to pre-warm connections. ([#2422](https://github.com/turbot/steampipe/issues/2422))
 * Rationalise and simplify postgres configuration. ([#2471](https://github.com/turbot/steampipe/issues/2471))
