@@ -48,6 +48,4 @@ const CheckGrouping = ({ node }: CheckGroupingProps) => {
   );
 };
 
-registerComponent("check_grouping", CheckGrouping);
-
 export default CheckGrouping;

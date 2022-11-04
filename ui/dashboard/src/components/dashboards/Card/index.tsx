@@ -28,9 +28,9 @@ import { usePanel } from "../../../hooks/usePanel";
 
 const Table = getComponent("table");
 
-type CardType = "alert" | "info" | "ok" | "table" | null;
+export type CardType = "alert" | "info" | "ok" | "table" | null;
 
-export type CardProps = BasePrimitiveProps &
+export type CardProps = Omit<BasePrimitiveProps, "display_type"> &
   ExecutablePrimitiveProps & {
     display_type?: CardType;
     properties: {

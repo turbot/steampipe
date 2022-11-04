@@ -1,5 +1,7 @@
-import Container from "../../layout/Container";
+import Card, { CardProps, CardType } from "../../Card";
+import CheckGrouping from "../CheckGrouping";
 import Error from "../../Error";
+import Grid from "../../layout/Grid";
 import Panel from "../../layout/Panel";
 import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
 import {
@@ -16,7 +18,8 @@ import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo } from "react";
-const CheckGrouping = getComponent("check_grouping");
+import { Width } from "../../common";
+
 const Table = getComponent("table");
 
 interface BenchmarkTableViewProps {
@@ -46,7 +49,7 @@ const Benchmark = (props: InnerCheckProps) => {
     return props.benchmark.get_data_table();
   }, [props.benchmark, props.grouping]);
 
-  const summary_cards = useMemo(() => {
+  const summaryCards = useMemo(() => {
     if (!props.grouping) {
       return [];
     }
@@ -64,56 +67,51 @@ const Benchmark = (props: InnerCheckProps) => {
     );
     const summary_cards = [
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.ok-${totalSummary.ok}`,
         width: 2,
         display_type: totalSummary.ok > 0 ? "ok" : null,
         properties: {
           label: "OK",
-          value: totalSummary.ok,
+          value: totalSummary.ok.toString(),
           icon: "heroicons-solid:check-circle",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.alarm-${totalSummary.alarm}`,
         width: 2,
         display_type: totalSummary.alarm > 0 ? "alert" : null,
         properties: {
           label: "Alarm",
-          value: totalSummary.alarm,
+          value: totalSummary.alarm.toString(),
           icon: "heroicons-solid:bell",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.error-${totalSummary.error}`,
         width: 2,
         display_type: totalSummary.error > 0 ? "alert" : null,
         properties: {
           label: "Error",
-          value: totalSummary.error,
+          value: totalSummary.error.toString(),
           icon: "heroicons-solid:exclamation-circle",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.info-${totalSummary.info}`,
         width: 2,
         display_type: totalSummary.info > 0 ? "info" : null,
         properties: {
           label: "Info",
-          value: totalSummary.info,
+          value: totalSummary.info.toString(),
           icon: "heroicons-solid:information-circle",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.skip-${totalSummary.skip}`,
         width: 2,
         properties: {
           label: "Skipped",
-          value: totalSummary.skip,
+          value: totalSummary.skip.toString(),
           icon: "heroicons-solid:arrow-circle-right",
         },
       },
@@ -129,13 +127,12 @@ const Benchmark = (props: InnerCheckProps) => {
     if (criticalRaw !== undefined || highRaw !== undefined) {
       const total = critical + high;
       summary_cards.push({
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.severity-${total}`,
         width: 2,
         display_type: total > 0 ? "severity" : "",
         properties: {
           label: "Critical / High",
-          value: total,
+          value: total.toString(),
           icon: "heroicons-solid:exclamation",
         },
       });
@@ -148,45 +145,78 @@ const Benchmark = (props: InnerCheckProps) => {
   }
 
   return (
-    <Container
-      definition={{
-        name: props.definition.name,
-        panel_type: "container",
-        children: [
-          {
-            name: `${props.definition.name}.container.summary`,
-            panel_type: "container",
-            children: summary_cards,
-          },
-          {
-            name: `${props.definition.name}.container.tree`,
-            panel_type: "container",
-            children: [
-              {
-                name: `${props.definition.name}.container.tree.results`,
-                panel_type: "benchmark_tree",
-                properties: {
-                  grouping: props.grouping,
-                  first_child_summaries: props.firstChildSummaries,
-                },
-              },
-            ],
-          },
-        ],
-        data: benchmarkDataTable,
-        title: dashboard?.artificial ? undefined : props.benchmark.title,
-        width: props.definition.width,
-      }}
-      // @ts-ignore
-      expandDefinition={{
-        ...props.definition,
-        title: props.benchmark.title || selectedDashboard?.title,
-        data: benchmarkDataTable,
-      }}
-      showControls={true}
-      withTitle={props.withTitle}
-    />
+    <Grid name={props.definition.name} width={props.definition.width}>
+      <Grid name={`${props.definition.name}.container.summary`}>
+        {summaryCards.map((summaryCard) => {
+          const props: CardProps = {
+            name: summaryCard.name,
+            display_type: summaryCard.display_type as CardType,
+            panel_type: "card",
+            properties: summaryCard.properties,
+            status: "complete",
+            width: summaryCard.width as Width,
+          };
+          return (
+            <Panel key={summaryCard.name} definition={props}>
+              <Card {...props} />
+            </Panel>
+          );
+        })}
+      </Grid>
+      <Grid name={`${props.definition.name}.container.tree`}>
+        <BenchmarkTree
+          name={`${props.definition.name}.container.tree.results`}
+          panel_type="benchmark_tree"
+          properties={{
+            grouping: props.grouping,
+            first_child_summaries: props.firstChildSummaries,
+          }}
+          status="complete"
+        />
+      </Grid>
+    </Grid>
   );
+
+  // return (
+  //   <Container
+  //     definition={{
+  //       name: props.definition.name,
+  //       panel_type: "container",
+  //       children: [
+  //         {
+  //           name: `${props.definition.name}.container.summary`,
+  //           panel_type: "container",
+  //           children: summary_cards,
+  //         },
+  //         {
+  //           name: `${props.definition.name}.container.tree`,
+  //           panel_type: "container",
+  //           children: [
+  //             {
+  //               name: `${props.definition.name}.container.tree.results`,
+  //               panel_type: "benchmark_tree",
+  //               properties: {
+  //                 grouping: props.grouping,
+  //                 first_child_summaries: props.firstChildSummaries,
+  //               },
+  //             },
+  //           ],
+  //         },
+  //       ],
+  //       data: benchmarkDataTable,
+  //       title: dashboard?.artificial ? undefined : props.benchmark.title,
+  //       width: props.definition.width,
+  //     }}
+  //     // @ts-ignore
+  //     expandDefinition={{
+  //       ...props.definition,
+  //       title: props.benchmark.title || selectedDashboard?.title,
+  //       data: benchmarkDataTable,
+  //     }}
+  //     showControls={true}
+  //     withTitle={props.withTitle}
+  //   />
+  // );
 };
 
 const BenchmarkTree = (props: BenchmarkTreeProps) => {

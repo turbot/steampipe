@@ -25,9 +25,6 @@ const Child = ({
     case "benchmark":
       const Benchmark = getComponent("benchmark");
       return <Benchmark {...(layoutDefinition as PanelDefinition)} />;
-    case "benchmark_tree":
-      const BenchmarkTree = getComponent("benchmark_tree");
-      return <BenchmarkTree {...layoutDefinition} />;
     case "card":
       const Card = getComponent("card");
       return (
