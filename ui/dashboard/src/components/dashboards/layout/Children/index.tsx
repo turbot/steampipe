@@ -21,6 +21,7 @@ const Children = ({
         }
         return (
           <Child
+            key={definition.name}
             layoutDefinition={child}
             panelDefinition={definition}
             panelsMap={panelsMap}

@@ -24,23 +24,14 @@ const Child = ({
   switch (layoutDefinition.panel_type) {
     case "benchmark":
       const Benchmark = getComponent("benchmark");
-      return (
-        <Benchmark
-          key={panelDefinition.name}
-          {...(layoutDefinition as PanelDefinition)}
-        />
-      );
+      return <Benchmark {...(layoutDefinition as PanelDefinition)} />;
     case "benchmark_tree":
       const BenchmarkTree = getComponent("benchmark_tree");
-      return <BenchmarkTree key={panelDefinition.name} {...layoutDefinition} />;
+      return <BenchmarkTree {...layoutDefinition} />;
     case "card":
       const Card = getComponent("card");
       return (
-        <Panel
-          key={panelDefinition.name}
-          definition={panelDefinition}
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <Card {...panelDefinition} />
         </Panel>
       );
@@ -48,7 +39,6 @@ const Child = ({
       const Chart = getComponent("chart");
       return (
         <Panel
-          key={panelDefinition.name}
           definition={panelDefinition}
           ready={!!panelDefinition.data}
           showControls={showPanelControls}
@@ -60,28 +50,17 @@ const Child = ({
       const Container = getComponent("container");
       return (
         <Container
-          key={panelDefinition.name}
           definition={layoutDefinition}
           expandDefinition={layoutDefinition}
         />
       );
     case "dashboard":
       const Dashboard = getComponent("dashboard");
-      return (
-        <Dashboard
-          key={panelDefinition.name}
-          definition={panelDefinition}
-          isRoot={false}
-        />
-      );
+      return <Dashboard definition={panelDefinition} isRoot={false} />;
     case "error":
       const ErrorPanel = getComponent("error");
       return (
-        <Panel
-          key={panelDefinition.name}
-          definition={panelDefinition}
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <ErrorPanel {...panelDefinition} />
         </Panel>
       );
@@ -89,7 +68,6 @@ const Child = ({
       const Flow = getComponent("flow");
       return (
         <Panel
-          key={panelDefinition.name}
           definition={panelDefinition}
           ready={nodeAndEdgeResourceHasData(
             panelDefinition.data,
@@ -105,7 +83,6 @@ const Child = ({
       const Graph = getComponent("graph");
       return (
         <Panel
-          key={panelDefinition.name}
           definition={panelDefinition}
           ready={nodeAndEdgeResourceHasData(
             panelDefinition.data,
@@ -121,7 +98,6 @@ const Child = ({
       const Hierarchy = getComponent("hierarchy");
       return (
         <Panel
-          key={panelDefinition.name}
           definition={panelDefinition}
           ready={nodeAndEdgeResourceHasData(
             panelDefinition.data,
@@ -137,7 +113,6 @@ const Child = ({
       const Image = getComponent("image");
       return (
         <Panel
-          key={panelDefinition.name}
           definition={panelDefinition}
           ready={
             panelDefinition.sql
@@ -153,7 +128,6 @@ const Child = ({
       const Input = getComponent("input");
       return (
         <Panel
-          key={panelDefinition.name}
           definition={panelDefinition}
           showControls={
             showPanelControls &&
@@ -167,7 +141,6 @@ const Child = ({
       const Table = getComponent("table");
       return (
         <Panel
-          key={panelDefinition.name}
           definition={panelDefinition}
           ready={!!panelDefinition.data}
           showControls={showPanelControls}
@@ -178,11 +151,7 @@ const Child = ({
     case "text":
       const Text = getComponent("text");
       return (
-        <Panel
-          key={panelDefinition.name}
-          definition={panelDefinition}
-          showControls={false}
-        >
+        <Panel definition={panelDefinition} showControls={false}>
           <Text {...panelDefinition} />
         </Panel>
       );
