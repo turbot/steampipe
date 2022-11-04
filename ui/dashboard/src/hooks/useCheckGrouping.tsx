@@ -389,15 +389,6 @@ const CheckGroupingProvider = ({
       return groupings;
     } else {
       return [
-        // { type: "status" },
-        // { type: "reason" },
-        // { type: "resource" },
-        // { type: "severity" },
-        // { type: "dimension", value: "account_id" },
-        // { type: "dimension", value: "region" },
-        // { type: "tag", value: "service" },
-        // { type: "tag", value: "cis_type" },
-        // { type: "tag", value: "cis_level" },
         { type: "benchmark" },
         { type: "control" },
         { type: "result" },
@@ -420,10 +411,13 @@ const CheckGroupingProvider = ({
     const nestedBenchmarks = definition.children?.filter(
       (child) => child.panel_type === "benchmark"
     );
-    // @ts-ignore
-    const nestedControls = definition.children?.filter(
-      (child) => child.panel_type === "control"
-    );
+    const nestedControls =
+      definition.panel_type === "control"
+        ? [definition]
+        : // @ts-ignore
+          definition.children?.filter(
+            (child) => child.panel_type === "control"
+          );
 
     const rootBenchmarkPanel = panelsMap[definition.name];
     const b = new BenchmarkType(
