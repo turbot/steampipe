@@ -24,7 +24,6 @@ import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
-import { usePanel } from "../../../hooks/usePanel";
 
 const Table = getComponent("table");
 
@@ -177,14 +176,9 @@ const Card = (props: CardProps) => {
     state.href || null
   );
   const textClasses = getTextClasses(state.type);
-  const { setZoomIconClassName } = usePanel();
   const {
     themeContext: { theme },
   } = useDashboard();
-
-  useEffect(() => {
-    setZoomIconClassName(textClasses ? textClasses : "");
-  }, [setZoomIconClassName, textClasses]);
 
   useEffect(() => {
     if ((state.loading || !state.href) && (renderError || renderedHref)) {

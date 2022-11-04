@@ -1,6 +1,8 @@
 import Error from "../../Error";
+import Icon from "../../../Icon";
 import PanelProgress from "./PanelProgress";
 import Placeholder from "../../Placeholder";
+import useDownloadPanelData from "../../../../hooks/useDownloadPanelData";
 import { BaseChartProps } from "../../charts/types";
 import {
   BenchmarkDefinition,
@@ -13,7 +15,7 @@ import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs/types";
-import { memo, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { ReactNode } from "react";
 import { registerComponent } from "../../index";
@@ -21,7 +23,6 @@ import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { ZoomIcon } from "../../../../constants/icons";
 
 interface PanelProps {
   children: ReactNode;
@@ -41,6 +42,18 @@ interface PanelProps {
   ready?: boolean;
 }
 
+const PanelControl = ({ action, icon, title }) => {
+  return (
+    <div
+      className="p-1 cursor-pointer bg-black-scale-2 text-foreground last:rounded-tr-[4px]"
+      onClick={async (e) => await action(e)}
+      title={title}
+    >
+      <Icon className="w-5 h-5" icon={icon} />
+    </div>
+  );
+};
+
 const Panel = memo(
   ({
     children,
@@ -50,13 +63,56 @@ const Panel = memo(
     forceBackground = false,
     ready = true,
   }: PanelProps) => {
-    const [showZoomIcon, setShowZoomIcon] = useState(false);
-    const [zoomIconClassName, setZoomIconClassName] =
-      useState("text-black-scale-4");
     const {
       dispatch,
       themeContext: { theme },
     } = useDashboard();
+    const { download, processing } = useDownloadPanelData(
+      definition as PanelDefinition
+    );
+
+    const openPanelDetail = useCallback(
+      (e) => {
+        e.stopPropagation();
+        dispatch({
+          type: DashboardActions.SELECT_PANEL,
+          panel: definition,
+        });
+      },
+      [dispatch, definition]
+    );
+
+    const downloadPanelData = useCallback(
+      async (e) => {
+        e.stopPropagation();
+        await download();
+      },
+      [dispatch, definition]
+    );
+
+    const defaultPanelControls = [
+      {
+        action: downloadPanelData,
+        icon: "arrow-down-tray",
+        title: "Download data",
+      },
+      {
+        action: openPanelDetail,
+        icon: "arrows-pointing-out",
+        title: "View detail",
+      },
+    ];
+    const [panelControls, setPanelControls] = useState(
+      showControls ? defaultPanelControls : []
+    );
+    const [showPanelControls, setShowPanelControls] = useState(false);
+
+    useEffect(() => {
+      if (!definition || !definition.data) {
+        return;
+      }
+      setPanelControls([...defaultPanelControls]);
+    }, [definition]);
 
     const baseStyles = classNames(
       "relative col-span-12",
@@ -68,25 +124,21 @@ const Panel = memo(
     const PlaceholderComponent = Placeholder.component;
 
     return (
-      <PanelProvider
-        definition={definition}
-        setZoomIconClassName={setZoomIconClassName}
-        showControls={showControls}
-      >
+      <PanelProvider definition={definition} showControls={showControls}>
         <div
           id={definition.name}
           className={baseStyles}
           onMouseEnter={
             showControls
               ? () => {
-                  setShowZoomIcon(true);
+                  setShowPanelControls(true);
                 }
               : undefined
           }
           onMouseLeave={
             showControls
               ? () => {
-                  setShowZoomIcon(false);
+                  setShowPanelControls(false);
                 }
               : undefined
           }
@@ -109,21 +161,18 @@ const Panel = memo(
                 : null
             )}
           >
-            {showZoomIcon && (
-              <div
-                className={classNames(
-                  "absolute cursor-pointer z-50 right-1 top-1",
-                  zoomIconClassName
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dispatch({
-                    type: DashboardActions.SELECT_PANEL,
-                    panel: definition,
-                  });
-                }}
-              >
-                <ZoomIcon className="h-5 w-5" />
+            {showPanelControls && (
+              <div className={classNames("absolute z-50 right-1 top-1")}>
+                <div className="flex space-x-px">
+                  {panelControls.map((panelControl, idx) => (
+                    <PanelControl
+                      key={idx}
+                      action={panelControl.action}
+                      icon={panelControl.icon}
+                      title={panelControl.title}
+                    />
+                  ))}
+                </div>
               </div>
             )}
             {definition.title && (

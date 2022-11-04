@@ -1,5 +1,4 @@
 import Grid from "../Grid";
-import moment from "moment";
 import NeutralButton from "../../../forms/NeutralButton";
 import PanelDetailData from "./PanelDetailData";
 import PanelDetailDataDownloadButton from "./PanelDetailDataDownloadButton";
@@ -8,10 +7,8 @@ import PanelDetailPreview from "./PanelDetailPreview";
 import PanelDetailQuery from "./PanelDetailQuery";
 import { classNames } from "../../../../utils/styles";
 import { PanelDefinition } from "../../../../types";
-import { saveAs } from "file-saver";
-import { useCallback, useMemo, useState } from "react";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { usePapaParse } from "react-papaparse";
+import { useMemo, useState } from "react";
 
 export type PanelDetailProps = {
   definition: PanelDefinition;
@@ -45,9 +42,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
   const {
     breakpointContext: { minBreakpoint },
     closePanelDetail,
-    selectedDashboard,
   } = useDashboard();
-  const { jsonToCSV } = usePapaParse();
   const isTablet = minBreakpoint("md");
 
   const availableTabs = useMemo(() => {
@@ -78,44 +73,6 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     return tabs;
   }, [definition, selectedTab]);
 
-  const downloadQueryData = useCallback(() => {
-    if (!definition.data) {
-      return;
-    }
-    const data = definition.data;
-    const colNames = data.columns.map((c) => c.name);
-    let csvRows: any[] = [];
-
-    const jsonbColIndices = data.columns
-      .filter((i) => i.data_type === "jsonb")
-      .map((i) => data.columns.indexOf(i)); // would return e.g. [3,6,9]
-
-    for (const row of data.rows) {
-      // Deep copy the row or else it will update
-      // the values in query output
-      const csvRow: any[] = [];
-      colNames.forEach((col, index) => {
-        csvRow[index] = jsonbColIndices.includes(index)
-          ? JSON.stringify(row[col])
-          : row[col];
-      });
-      csvRows.push(csvRow);
-    }
-
-    const csv = jsonToCSV([colNames, ...csvRows]);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const datetime = moment().format("YYYYMMDDTHHmmss");
-
-    saveAs(
-      blob,
-      `${(
-        selectedDashboard?.full_name ||
-        definition.dashboard ||
-        ""
-      ).replaceAll(".", "_")}_${definition.panel_type}_${datetime}.csv`
-    );
-  }, [definition, jsonToCSV, selectedDashboard]);
-
   return (
     <div className="h-full overflow-y-auto p-4">
       <Grid name={definition.name}>
@@ -124,7 +81,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         </div>
         <div className="col-span-6 space-x-2 text-right">
           <PanelDetailDataDownloadButton
-            downloadQueryData={downloadQueryData}
+            panelDefinition={definition}
             size={isTablet ? "md" : "sm"}
           />
           <NeutralButton
