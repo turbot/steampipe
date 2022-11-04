@@ -1,9 +1,9 @@
 import Children from "../Children";
 import DashboardProgress from "./DashboardProgress";
+import DashboardTitle from "../../titles/DashboardTitle";
 import Grid from "../Grid";
 import PanelDetail from "../PanelDetail";
 import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
-import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive, DashboardDefinition } from "../../../../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
@@ -25,13 +25,9 @@ const Dashboard = ({
   isRoot = true,
   showPanelControls = true,
 }: DashboardProps) => {
-  const title =
-    isRoot && definition.title ? (
-      <h1 className={classNames("col-span-12")}>{definition.title}</h1>
-    ) : null;
   const grid = (
     <Grid name={definition.name} width={isRoot ? 12 : definition.width}>
-      {title}
+      {isRoot && <DashboardTitle title={definition.title} />}
       <Children
         showPanelControls={showPanelControls}
         children={definition.children}
@@ -40,7 +36,7 @@ const Dashboard = ({
   );
   return (
     <>
-      {isRoot ? <DashboardProgress /> : <></>}
+      {isRoot ? <DashboardProgress /> : null}
       {isRoot ? <div className="h-full overflow-y-auto p-4">{grid}</div> : grid}
     </>
   );

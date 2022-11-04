@@ -1,14 +1,12 @@
 import Error from "../../Error";
-import Icon from "../../../Icon";
+import PanelControls from "./PanelControls";
 import PanelProgress from "./PanelProgress";
+import PanelTitle from "../../titles/PanelTitle";
 import Placeholder from "../../Placeholder";
 import useDownloadPanelData from "../../../../hooks/useDownloadPanelData";
+import useSelectPanel from "../../../../hooks/useSelectPanel";
 import { BaseChartProps } from "../../charts/types";
-import {
-  BenchmarkDefinition,
-  DashboardActions,
-  PanelDefinition,
-} from "../../../../types";
+import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
@@ -42,18 +40,6 @@ interface PanelProps {
   ready?: boolean;
 }
 
-const PanelControl = ({ action, icon, title }) => {
-  return (
-    <div
-      className="p-1 cursor-pointer bg-black-scale-2 text-foreground first:rounded-tl-[4px] first:rounded-bl-[4px] last:rounded-tr-[4px] last:rounded-br-[4px]"
-      onClick={async (e) => await action(e)}
-      title={title}
-    >
-      <Icon className="w-5 h-5" icon={icon} />
-    </div>
-  );
-};
-
 const Panel = memo(
   ({
     children,
@@ -64,28 +50,18 @@ const Panel = memo(
     ready = true,
   }: PanelProps) => {
     const {
-      dispatch,
       themeContext: { theme },
     } = useDashboard();
     const { download } = useDownloadPanelData(definition as PanelDefinition);
-
-    const openPanelDetail = useCallback(
-      (e) => {
-        e.stopPropagation();
-        dispatch({
-          type: DashboardActions.SELECT_PANEL,
-          panel: definition,
-        });
-      },
-      [dispatch, definition]
-    );
+    const { select } = useSelectPanel(definition as PanelDefinition);
+    const [showPanelControls, setShowPanelControls] = useState(false);
 
     const downloadPanelData = useCallback(
       async (e) => {
         e.stopPropagation();
         await download();
       },
-      [dispatch, definition]
+      [download]
     );
 
     const defaultPanelControls = [
@@ -95,7 +71,7 @@ const Panel = memo(
         title: "Download data",
       },
       {
-        action: openPanelDetail,
+        action: select,
         icon: "arrows-pointing-out",
         title: "View detail",
       },
@@ -107,7 +83,6 @@ const Panel = memo(
         ? [defaultPanelControls[1]]
         : []
     );
-    const [showPanelControls, setShowPanelControls] = useState(false);
 
     useEffect(() => {
       if (!definition || !definition.data) {
@@ -169,16 +144,7 @@ const Panel = memo(
                   "absolute drop-shadow-sm z-50 right-1 top-1"
                 )}
               >
-                <div className="flex space-x-px">
-                  {panelControls.map((panelControl, idx) => (
-                    <PanelControl
-                      key={idx}
-                      action={panelControl.action}
-                      icon={panelControl.icon}
-                      title={panelControl.title}
-                    />
-                  ))}
-                </div>
+                <PanelControls controls={panelControls} />
               </div>
             )}
             {definition.title && (
@@ -190,13 +156,7 @@ const Panel = memo(
                     : "px-4 py-4"
                 )}
               >
-                <h3
-                  id={`${definition.name}-title`}
-                  className="truncate"
-                  title={definition.title}
-                >
-                  {definition.title}
-                </h3>
+                <PanelTitle name={definition.name} title={definition.title} />
               </div>
             )}
 
