@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"log"
 	"os"
 )
 
@@ -30,6 +32,8 @@ func loginCmd() *cobra.Command {
 func runLoginCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 
+	log.Printf("[TRACE] login, cloud host %s", viper.Get(constants.ArgCloudHost))
+	log.Printf("[TRACE] opening login web page")
 	// start login flow - this will open a web page prompting user to login, and will give the user a code to enter
 	var id, err = cloud.WebLogin(ctx)
 	error_helpers.FailOnError(err)
@@ -45,6 +49,8 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 }
 
 func getToken(ctx context.Context, id string) (loginToken string, err error) {
+	log.Printf("[TRACE] prompt for verification code")
+
 	fmt.Println()
 	retries := 0
 	for {
@@ -52,12 +58,14 @@ func getToken(ctx context.Context, id string) (loginToken string, err error) {
 		code, err = promptUserForString("Enter verification code: ")
 		error_helpers.FailOnError(err)
 		if code != "" {
+			log.Printf("[TRACE] get login token")
 			// use this code to get a login token and store it
 			loginToken, err = cloud.GetLoginToken(ctx, id, code)
 			if err == nil {
 				return loginToken, nil
 			}
 			// a code was entered but it failed - inc retry count
+			log.Printf("[TRACE] GetLoginToken failed with %s", err.Error())
 			retries++
 		}
 
@@ -69,6 +77,7 @@ func getToken(ctx context.Context, id string) (loginToken string, err error) {
 		if err != nil {
 			error_helpers.ShowWarning(err.Error())
 		}
+		log.Printf("[TRACE] Retrying")
 	}
 
 	return
