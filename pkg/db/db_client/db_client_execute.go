@@ -295,7 +295,7 @@ Loop:
 
 			// TACTICAL
 			// determine whether to stop the spinner as soon as we stream a row or to wait for completion
-			if isStreamingOutput(viper.GetString(constants.ArgOutput)) {
+			if isStreamingOutput() {
 				statushooks.Done(ctx)
 			}
 
@@ -379,7 +379,9 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 	return result, nil
 }
 
-func isStreamingOutput(outputFormat string) bool {
+func isStreamingOutput() bool {
+	outputFormat := viper.GetString(constants.ArgOutput)
+
 	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }
 
