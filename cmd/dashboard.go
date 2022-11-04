@@ -260,9 +260,13 @@ func dashboardExporters() []export.Exporter {
 }
 
 func runSingleDashboard(ctx context.Context, targetName string, inputs map[string]interface{}) error {
-	initData := getInitData(ctx)
 	// create context for the dashboard execution
 	ctx = createSnapshotContext(ctx, targetName)
+
+	statushooks.SetStatus(ctx, "Initializing...")
+	initData := getInitData(ctx)
+
+	statushooks.Done(ctx)
 
 	// shutdown the service on exit
 	defer initData.Cleanup(ctx)
@@ -446,7 +450,7 @@ func createSnapshotContext(ctx context.Context, target string) context.Context {
 	contexthelpers.StartCancelHandler(cancel)
 
 	// if progress is disabled, OR output is none, do not show status hooks
-	if !viper.GetBool(constants.ArgProgress) || viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
+	if !viper.GetBool(constants.ArgProgress) {
 		snapshotCtx = statushooks.DisableStatusHooks(snapshotCtx)
 	}
 
