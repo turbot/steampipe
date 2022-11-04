@@ -157,7 +157,11 @@ const Benchmark = (props: InnerCheckProps) => {
             width: summaryCard.width as Width,
           };
           return (
-            <Panel key={summaryCard.name} definition={props}>
+            <Panel
+              key={summaryCard.name}
+              definition={props}
+              showControls={false}
+            >
               <Card {...props} />
             </Panel>
           );
