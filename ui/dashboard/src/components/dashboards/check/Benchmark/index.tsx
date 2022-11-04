@@ -315,6 +315,5 @@ const BenchmarkWrapper = (props: BenchmarkProps) => {
 };
 
 registerComponent("benchmark", BenchmarkWrapper);
-registerComponent("benchmark_tree", BenchmarkTree);
 
 export default BenchmarkWrapper;

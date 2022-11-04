@@ -7,7 +7,6 @@ import {
 } from "../../../../hooks/useCheckGrouping";
 import { CheckNode } from "../common";
 import { useCallback, useEffect, useState } from "react";
-import { registerComponent } from "../../index";
 
 interface CheckGroupingProps {
   node: CheckNode;
