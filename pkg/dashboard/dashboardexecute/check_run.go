@@ -197,6 +197,12 @@ func (r *CheckRun) GetInputsDependingOn(changedInputName string) []string { retu
 
 // BuildSnapshotPanels is a custom implementation of BuildSnapshotPanels - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics
 func (r *CheckRun) BuildSnapshotPanels(leafNodeMap map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
+	// if this check run is for a control, just add the controlRUn
+	if controlRun, ok := r.Root.(*controlexecute.ControlRun); ok {
+		leafNodeMap[controlRun.Control.Name()] = controlRun
+		return leafNodeMap
+	}
+
 	leafNodeMap[r.GetName()] = r
 
 	return r.buildSnapshotPanelsUnder(r.Root, leafNodeMap)

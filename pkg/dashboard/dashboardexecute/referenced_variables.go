@@ -32,19 +32,19 @@ func GetReferencedVariables(root dashboardtypes.DashboardNodeRun, w *workspace.W
 			},
 		)
 	case *CheckRun:
-		benchmark, ok := r.DashboardNode.(*modconfig.Benchmark)
-		if !ok {
-			// not expected
-			break
+		switch n := r.DashboardNode.(type) {
+		case *modconfig.Benchmark:
+			n.WalkResources(
+				func(resource modconfig.ModTreeItem) (bool, error) {
+					if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
+						addReferencedVars(resourceWithMetadata.GetReferences())
+					}
+					return true, nil
+				},
+			)
+		case *modconfig.Control:
+			addReferencedVars(n.GetReferences())
 		}
-		benchmark.WalkResources(
-			func(resource modconfig.ModTreeItem) (bool, error) {
-				if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-					addReferencedVars(resourceWithMetadata.GetReferences())
-				}
-				return true, nil
-			},
-		)
 	}
 
 	return referencedVariables
