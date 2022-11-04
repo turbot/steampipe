@@ -67,9 +67,7 @@ const Panel = memo(
       dispatch,
       themeContext: { theme },
     } = useDashboard();
-    const { download, processing } = useDownloadPanelData(
-      definition as PanelDefinition
-    );
+    const { download } = useDownloadPanelData(definition as PanelDefinition);
 
     const openPanelDetail = useCallback(
       (e) => {
@@ -102,8 +100,12 @@ const Panel = memo(
         title: "View detail",
       },
     ];
-    const [panelControls, setPanelControls] = useState(
-      showControls ? defaultPanelControls : []
+    const [panelControls, setPanelControls] = useState(() =>
+      showControls && definition && definition.data
+        ? defaultPanelControls
+        : showControls
+        ? [defaultPanelControls[1]]
+        : []
     );
     const [showPanelControls, setShowPanelControls] = useState(false);
 
@@ -162,7 +164,11 @@ const Panel = memo(
             )}
           >
             {showPanelControls && (
-              <div className={classNames("absolute z-50 right-1 top-1")}>
+              <div
+                className={classNames(
+                  "absolute drop-shadow-sm z-50 right-1 top-1"
+                )}
+              >
                 <div className="flex space-x-px">
                   {panelControls.map((panelControl, idx) => (
                     <PanelControl
