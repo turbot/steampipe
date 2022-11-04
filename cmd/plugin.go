@@ -574,8 +574,9 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
+		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
+		return
 	}
 
 	missingPluginMap := res.Updates.MissingPlugins
@@ -583,8 +584,9 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "Plugin Listing failed")
+		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
+		return
 	}
 
 	// If there are missing plugins which have connections left over, list them

@@ -24,7 +24,7 @@ func WebLogin(ctx context.Context) (string, error) {
 
 	tempTokenReq, _, err := client.Auth.LoginTokenCreate(ctx).Execute()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create login token: %s", err)
 	}
 	id := tempTokenReq.Id
 	// add in id query string
@@ -34,7 +34,7 @@ func WebLogin(ctx context.Context) (string, error) {
 	fmt.Printf("Verify login at %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open login webpage: %s", err)
 	}
 	return id, nil
 
@@ -54,7 +54,7 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 		return "", err
 	}
 	if tokenResp.GetToken() == "" && tokenResp.GetState() == "pending" {
-		return "", fmt.Errorf("Login request has not been confirmed - select 'Verify' and enter the verification code.")
+		return "", fmt.Errorf("login request has not been confirmed - select 'Verify' and enter the verification code")
 	}
 	return tokenResp.GetToken(), nil
 }
