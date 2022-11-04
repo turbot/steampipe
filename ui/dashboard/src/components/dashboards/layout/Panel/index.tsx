@@ -45,7 +45,7 @@ interface PanelProps {
 const PanelControl = ({ action, icon, title }) => {
   return (
     <div
-      className="p-1 cursor-pointer bg-black-scale-2 text-foreground last:rounded-tr-[4px]"
+      className="p-1 cursor-pointer bg-black-scale-2 text-foreground first:rounded-tl-[4px] first:rounded-bl-[4px] last:rounded-tr-[4px] last:rounded-br-[4px]"
       onClick={async (e) => await action(e)}
       title={title}
     >
