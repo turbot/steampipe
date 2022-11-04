@@ -145,12 +145,12 @@ func (*ControlRun) IsExecutionTreeNode() {}
 func (*ControlRun) GetChildren() []ExecutionTreeNode { return nil }
 
 // GetName implements ExecutionTreeNode
-func (r *ControlRun) GetName() string { return r.ControlId }
+func (r *ControlRun) GetName() string { return r.Control.Name() }
 
 // AsTreeNode implements ExecutionTreeNode
 func (r *ControlRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	res := &dashboardtypes.SnapshotTreeNode{
-		Name:     r.ControlId,
+		Name:     r.Control.Name(),
 		NodeType: r.NodeType,
 	}
 	return res

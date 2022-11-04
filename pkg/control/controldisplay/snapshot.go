@@ -13,43 +13,28 @@ import (
 )
 
 func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.SteampipeSnapshot, error) {
-	var nodeType string
-	var sourceDefinition string
 	var dashboardNode modconfig.DashboardLeafNode
 
-	// get root benchmark/control
-	switch rootGroup := e.Root.Children[0].(type) {
-	case *controlexecute.ResultGroup:
-		sourceDefinition = rootGroup.GroupItem.(modconfig.ResourceWithMetadata).GetMetadata().SourceDefinition
-		dashboardNode = rootGroup.GroupItem.(modconfig.DashboardLeafNode)
-		nodeType = modconfig.BlockTypeBenchmark
+	var panels map[string]dashboardtypes.SnapshotPanel
 
+	var checkRun *dashboardexecute.CheckRun
+	// get root benchmark/control
+	switch root := e.Root.Children[0].(type) {
+	case *controlexecute.ResultGroup:
+		dashboardNode = root.GroupItem.(modconfig.DashboardLeafNode)
 	case *controlexecute.ControlRun:
-		sourceDefinition = rootGroup.Control.GetMetadata().SourceDefinition
-		dashboardNode = rootGroup.Control
-		nodeType = modconfig.BlockTypeControl
+		dashboardNode = root.Control
 	}
 
 	// create a check run to wrap the execution tree
-	checkRun := &dashboardexecute.CheckRun{
-		Name:             dashboardNode.Name(),
-		Title:            dashboardNode.GetTitle(),
-		Description:      dashboardNode.GetDescription(),
-		Documentation:    dashboardNode.GetDocumentation(),
-		Display:          dashboardNode.GetDisplay(),
-		Type:             dashboardNode.GetType(),
-		Tags:             dashboardNode.GetTags(),
-		DashboardName:    dashboardNode.GetUnqualifiedName(),
-		SessionId:        "steampipe check",
-		SourceDefinition: sourceDefinition,
-		NodeType:         nodeType,
-		DashboardNode:    dashboardNode,
-		Summary:          e.Root.Summary,
-		Root:             e.Root.Children[0],
+	checkRun = &dashboardexecute.CheckRun{
+		Root:          e.Root.Children[0],
+		Name:          dashboardNode.Name(),
+		DashboardNode: dashboardNode,
 	}
 
 	// populate the panels
-	var panels = checkRun.BuildSnapshotPanels(make(map[string]dashboardtypes.SnapshotPanel))
+	panels = checkRun.BuildSnapshotPanels(make(map[string]dashboardtypes.SnapshotPanel))
 
 	// create the snapshot
 	res := &dashboardtypes.SteampipeSnapshot{
