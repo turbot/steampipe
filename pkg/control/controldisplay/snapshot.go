@@ -14,16 +14,18 @@ import (
 
 func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.SteampipeSnapshot, error) {
 	var dashboardNode modconfig.DashboardLeafNode
-
 	var panels map[string]dashboardtypes.SnapshotPanel
-
 	var checkRun *dashboardexecute.CheckRun
+	var nodeType string
+
 	// get root benchmark/control
 	switch root := e.Root.Children[0].(type) {
 	case *controlexecute.ResultGroup:
 		dashboardNode = root.GroupItem.(modconfig.DashboardLeafNode)
+		nodeType = "benchmark"
 	case *controlexecute.ControlRun:
 		dashboardNode = root.Control
+		nodeType = "control"
 	}
 
 	// create a check run to wrap the execution tree
@@ -31,6 +33,10 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 		Root:          e.Root.Children[0],
 		Name:          dashboardNode.Name(),
 		DashboardNode: dashboardNode,
+		NodeType:      nodeType,
+		DashboardName: dashboardNode.Name(),
+		Title:         dashboardNode.GetTitle(),
+		Description:   dashboardNode.GetDescription(),
 	}
 
 	// populate the panels
