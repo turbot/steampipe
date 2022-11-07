@@ -31,7 +31,7 @@ type testCase struct {
 	expected interface{}
 }
 
-var exporterTestCases = []testCase{
+var formatterTestCase = []testCase{
 	{
 		input:    "bad-format",
 		expected: "ERROR",
@@ -76,12 +76,12 @@ func TestFormatResolver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, testCase := range exporterTestCases {
-		f, ferr := resolver.GetFormatter(testCase.input)
+	for _, testCase := range formatterTestCase {
+		f, err := resolver.GetFormatter(testCase.input)
 		shouldError := testCase.expected == "ERROR"
 
 		if shouldError {
-			if ferr == nil {
+			if err == nil {
 				t.Logf("Request for '%s' should have errored - but did not", testCase.input)
 				t.Fail()
 			}
