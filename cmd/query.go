@@ -251,9 +251,6 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 
 	res := queryresult.NewResult(chartRun.Data.Columns)
 
-	// TODO for now we do not support timing for snapshot query output - this need implementation
-	// close timing channel to avoid lockup
-	close(res.TimingResult)
 	// start a goroutine to stream the results as rows
 	go func() {
 		rowVals := make([]interface{}, len(chartRun.Data.Columns))
@@ -263,6 +260,7 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 			}
 			res.StreamRow(rowVals)
 		}
+		res.TimingResult <- chartRun.TimingResult
 		res.Close()
 	}()
 
