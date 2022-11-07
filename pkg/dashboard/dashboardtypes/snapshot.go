@@ -34,5 +34,6 @@ func (s *SteampipeSnapshot) AsCloudSnapshot() (*steampipecloud.WorkspaceSnapshot
 	if err := json.Unmarshal(jsonbytes, res); err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
