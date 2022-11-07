@@ -60,6 +60,22 @@ var formatterTestCase = []testCase{
 			name:      "json",
 		},
 	},
+	{
+		input: "asff.json",
+		expected: testFormatter{
+			alias:     "asff.json",
+			extension: ".asff.json",
+			name:      "asff",
+		},
+	},
+	{
+		input: "nunit3.xml",
+		expected: testFormatter{
+			alias:     "nunit3.xml",
+			extension: ".nunit3.xml",
+			name:      "nunit3",
+		},
+	},
 }
 
 func TestFormatResolver(t *testing.T) {
