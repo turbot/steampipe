@@ -21,7 +21,11 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 	// get root benchmark/control
 	switch root := e.Root.Children[0].(type) {
 	case *controlexecute.ResultGroup:
-		dashboardNode = root.GroupItem.(modconfig.DashboardLeafNode)
+		var ok bool
+		dashboardNode, ok = root.GroupItem.(modconfig.DashboardLeafNode)
+		if !ok {
+			return nil, fmt.Errorf("invalid node found in control execution tree - cannot cast '%s' to a DashboardLeafNode", root.GroupItem.Name())
+		}
 		nodeType = "benchmark"
 	case *controlexecute.ControlRun:
 		dashboardNode = root.Control
