@@ -51,8 +51,8 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 }
 
 // AddStringFlag is a helper function to add a string flag to a command
-func (c *CmdBuilder) AddStringFlag(name string, shorthand string, defaultValue string, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().StringP(name, shorthand, defaultValue, desc)
+func (c *CmdBuilder) AddStringFlag(name string, defaultValue string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().String(name, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -62,8 +62,8 @@ func (c *CmdBuilder) AddStringFlag(name string, shorthand string, defaultValue s
 }
 
 // AddIntFlag is a helper function to add an integer flag to a command
-func (c *CmdBuilder) AddIntFlag(name, shorthand string, defaultValue int, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().IntP(name, shorthand, defaultValue, desc)
+func (c *CmdBuilder) AddIntFlag(name string, defaultValue int, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().Int(name, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -72,8 +72,8 @@ func (c *CmdBuilder) AddIntFlag(name, shorthand string, defaultValue int, desc s
 }
 
 // AddBoolFlag ia s helper function to add a boolean flag to a command
-func (c *CmdBuilder) AddBoolFlag(name, shorthand string, defaultValue bool, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().BoolP(name, shorthand, defaultValue, desc)
+func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().Bool(name, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -82,8 +82,8 @@ func (c *CmdBuilder) AddBoolFlag(name, shorthand string, defaultValue bool, desc
 }
 
 // AddStringSliceFlag is a helper function to add a flag that accepts an array of strings
-func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, defaultValue []string, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().StringSliceP(name, shorthand, defaultValue, desc)
+func (c *CmdBuilder) AddStringSliceFlag(name string, defaultValue []string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().StringSlice(name, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -92,8 +92,8 @@ func (c *CmdBuilder) AddStringSliceFlag(name, shorthand string, defaultValue []s
 }
 
 // AddStringArrayFlag is a helper function to add a flag that accepts an array of strings
-func (c *CmdBuilder) AddStringArrayFlag(name, shorthand string, defaultValue []string, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().StringArrayP(name, shorthand, defaultValue, desc)
+func (c *CmdBuilder) AddStringArrayFlag(name string, defaultValue []string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().StringArray(name, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
@@ -102,8 +102,8 @@ func (c *CmdBuilder) AddStringArrayFlag(name, shorthand string, defaultValue []s
 }
 
 // AddStringMapStringFlag is a helper function to add a flag that accepts a map of strings
-func (c *CmdBuilder) AddStringMapStringFlag(name, shorthand string, defaultValue map[string]string, desc string, opts ...flagOpt) *CmdBuilder {
-	c.cmd.Flags().StringToStringP(name, shorthand, defaultValue, desc)
+func (c *CmdBuilder) AddStringMapStringFlag(name string, defaultValue map[string]string, desc string, opts ...flagOpt) *CmdBuilder {
+	c.cmd.Flags().StringToString(name, defaultValue, desc)
 	c.bindings[name] = c.cmd.Flags().Lookup(name)
 	for _, o := range opts {
 		o(c.cmd, name, name)
