@@ -1,10 +1,13 @@
-## v0.17.0 [tbd]
+## v0.17.0 [2022-11-07]
+
 _What's new?_
-* Add support for `workspace profiles`. Parse from HCL config and select using `--workspace` arg. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2574](https://github.com/turbot/steampipe/issues/2574))
+* Add support for `workspace profiles`, defined using HCL config and selected using `--workspace` arg. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2574](https://github.com/turbot/steampipe/issues/2574))
 * Update CLI to upload snapshots to Steampipe cloud using `--share` and `--snapshot` options. ([#2367](https://github.com/turbot/steampipe/issues/2367))
 * Add `steampipe login` command. ([#2583](https://github.com/turbot/steampipe/issues/2583))
 * Update `dashboard` command to support passing a dashboard name as an argument. ([#2365](https://github.com/turbot/steampipe/issues/2365))
+* Adds `list` sub command for `query`, `check` and `dashboard`. ([#2653](https://github.com/turbot/steampipe/issues/2653))
 * Add `snapshot`/`sps` output and export format. ([#2473](https://github.com/turbot/steampipe/issues/2473))
+* Add `--snapshot-title arg`. Ensure snapshots and exports are named consistently.([#2666](https://github.com/turbot/steampipe/issues/2666))
 * Add `autocomplete` meta command and terminal option. ([#2560](https://github.com/turbot/steampipe/issues/2560), [#1692](https://github.com/turbot/steampipe/issues/1692))
 * Add ability to save and open snapshots from the dashboard UI. ([#2577](https://github.com/turbot/steampipe/issues/2577))
 * Add support for viewing control snapshots in the dashboard UI. ([#2688](https://github.com/turbot/steampipe/issues/2688))
@@ -16,7 +19,8 @@ _What's new?_
 * Add better help messages for mod plugin requirements not satisfied error. ([#2361](https://github.com/turbot/steampipe/issues/2361))
 * Reduce the max frequency of connection config changed events to every 4 second. ([#2535](https://github.com/turbot/steampipe/issues/2535))
 * Add `Variables` and `Inputs` to dashboard `ExecutionStarted` event. ([#2606](https://github.com/turbot/steampipe/issues/2606))
-* Validate check output and export formats before execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
+* Validate check output and export formats _before_ execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
+* When starting a plugin process, pass a SecureConfig, to silence the `nil SecureConfig` error. ([#2567](https://github.com/turbot/steampipe/issues/2567))
 
 _Bug fixes_
 * Update `GetPathKeys` to treat key columns with `AnyOf` require property with the same precedence as `Required`. ([#254](https://github.com/turbot/steampipe-postgres-fdw/issues/254))
@@ -35,6 +39,10 @@ _Bug fixes_
 * Fix prompt failing to show when service installation runs in interactive mode. ([#2529](https://github.com/turbot/steampipe/issues/2529))
 * Validate inputs when running single dashboard. Do not upload snapshot if dashboard was cancelled. ([#2551](https://github.com/turbot/steampipe/issues/2551))
 * Fixes issue where the CLI would fail to connect to local service if there are credential files in `~/.postgresql`. ([#1417](https://github.com/turbot/steampipe/issues/1417))
+* Fixes issue where 'Alt` keyboard combinations would error in WSL. ([#2549](https://github.com/turbot/steampipe/issues/2549))
+* Fix unintuitive errors from steampipe plugin commands when a plugin (version) is missing. ([#2361](https://github.com/turbot/steampipe/issues/2361))
+* Clean up error messaging when a bad template is put in the templates dir. ([#2670](https://github.com/turbot/steampipe/issues/2670))
+* Fix crash when plugin list fails to connect to database.
 
 _Deprecations_
 * Deprecate `workspace-chdir`, replace with `mod-location`. ([#2511](https://github.com/turbot/steampipe/issues/2511))
