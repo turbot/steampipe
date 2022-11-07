@@ -32,6 +32,11 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string) (*queryresult.
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
 	}
+
+	// set setShouldShowTiming flag
+	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
+	c.setShouldShowTiming(ctx, sessionResult.Session)
+
 	defer func() {
 		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
 		// and not in call-time
@@ -81,7 +86,7 @@ func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Resu
 		return nil, sessionResult.Error
 	}
 	// re-read ArgTiming from viper (in case the .timing command has been run)
-	// (this will refetch ScanMetadataMaxId is timing has just been enabled)
+	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
 	c.setShouldShowTiming(ctx, sessionResult.Session)
 
 	// define callback to close session when the async execution is complete

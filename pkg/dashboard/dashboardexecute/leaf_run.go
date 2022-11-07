@@ -31,7 +31,7 @@ type LeafRun struct {
 	Status           dashboardtypes.DashboardRunStatus `json:"status"`
 	DashboardName    string                            `json:"dashboard"`
 	SourceDefinition string                            `json:"source_definition"`
-
+	TimingResult     *queryresult.TimingResult         `json:"-"`
 	// child runs (nodes/edges)
 	children            []dashboardtypes.DashboardNodeRun
 	executeSQL          string
@@ -401,6 +401,7 @@ func (r *LeafRun) executeQuery(ctx context.Context) {
 	log.Printf("[TRACE] LeafRun '%s' complete", r.DashboardNode.Name())
 
 	r.Data = dashboardtypes.NewLeafData(queryResult)
+	r.TimingResult = queryResult.TimingResult
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete(ctx)
 }
