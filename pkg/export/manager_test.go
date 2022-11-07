@@ -6,8 +6,11 @@ import (
 	"testing"
 
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
+	"github.com/turbot/steampipe/pkg/control/controlexecute"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 type exporterTestCase struct {
@@ -57,6 +60,12 @@ func TestDoExport(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// load a dummy workspace
+	w, err := workspace.Load(ctx, tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	m := export.NewManager()
 	ctrlExporters, err := controldisplay.GetExporters()
 	if err != nil {
@@ -66,8 +75,13 @@ func TestDoExport(t *testing.T) {
 		m.Register(e)
 	}
 
+	dummyExecutionTree, err := controlexecute.NewExecutionTree(ctx, w, &db_common.MockClient{}, "all", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	for _, testCase := range exporterTestCases {
-		err = m.DoExport(ctx, "unimportant", nil, testCase.input)
+		err = m.DoExport(ctx, "unimportant", dummyExecutionTree, testCase.input)
 		if testCase.shouldError && err == nil {
 			t.Logf("%v with %v input should have errored, but didn't", testCase.name, testCase.input)
 			t.Fail()
