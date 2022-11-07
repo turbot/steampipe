@@ -31,7 +31,7 @@ const PanelControls = ({ controls, referenceElement }) => {
           style={{ ...styles.popper }}
           {...attributes.popper}
         >
-          <div className="flex space-x-px border border-black-scale-2">
+          <div className="flex space-x-px border border-black-scale-3">
             {controls.map((control, idx) => (
               <PanelControl
                 key={idx}
