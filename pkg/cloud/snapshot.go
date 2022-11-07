@@ -90,7 +90,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 	}
 
 	// strip verbose/sensitive fields
-	stripSnapshotForUpload(cloudSnapshot)
+	dashboardtypes.StripSnapshot(cloudSnapshot)
 
 	req := steampipecloud.CreateWorkspaceSnapshotRequest{Data: *cloudSnapshot, Tags: tags, Visibility: &visibility}
 	req.SetTitle(title)
@@ -114,28 +114,6 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 		snapshotId)
 
 	return snapshotUrl, nil
-}
-
-func stripSnapshotForUpload(snapshot *steampipecloud.WorkspaceSnapshotData) {
-	propertiesToStrip := []string{
-		"sql",
-		"source_definition",
-		"documentation",
-		"search_path",
-		"search_path_prefix"}
-	for _, p := range snapshot.Panels {
-		panel := p.(map[string]any)
-		properties, _ := panel["properties"].(map[string]any)
-		for _, property := range propertiesToStrip {
-			// look both at top level and under properties
-			delete(panel, property)
-			if properties != nil {
-				delete(properties, property)
-			}
-		}
-	}
-	// clear top level search path
-	snapshot.SearchPath = []string{}
 }
 
 func resolveSnapshotTitle(snapshot *dashboardtypes.SteampipeSnapshot) string {
