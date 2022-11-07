@@ -306,6 +306,7 @@ export interface PanelDefinition {
   panel_type?: string;
   title?: string;
   description?: string;
+  documentation?: string;
   width?: Width;
   sql?: string;
   data?: LeafNodeData;
