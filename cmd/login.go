@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"log"
-	"os"
 )
 
 func loginCmd() *cobra.Command {
@@ -24,7 +25,7 @@ func loginCmd() *cobra.Command {
 		Long:             `Login to Steampipe Cloud.`,
 	}
 
-	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for dashboard")
+	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }

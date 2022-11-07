@@ -55,33 +55,33 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHeader, "", true, "Include column headers for csv and table output").
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for check").
-		AddStringFlag(constants.ArgSeparator, "", ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatText, "Output format: brief, csv, html, json, md, text, snapshot or none").
-		AddBoolFlag(constants.ArgTiming, "", false, "Turn on the timer which reports check time").
-		AddStringSliceFlag(constants.ArgSearchPath, "", nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
-		AddStringSliceFlag(constants.ArgSearchPathPrefix, "", nil, "Set a prefix to the current search path for a check session (comma-separated)").
-		AddStringFlag(constants.ArgTheme, "", "dark", "Set the output theme for 'text' output: light, dark or plain").
-		AddStringSliceFlag(constants.ArgExport, "", nil, "Export output to file, supported formats: csv, html, json, md, nunit3, sps (snapshot), asff").
-		AddBoolFlag(constants.ArgProgress, "", true, "Display control execution progress").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which controls will be run without running them").
-		AddStringSliceFlag(constants.ArgTag, "", nil, "Filter controls based on their tag values ('--tag key=value')").
-		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values").
+		AddBoolFlag(constants.ArgHeader, true, "Include column headers for csv and table output").
+		AddBoolFlag(constants.ArgHelp, false, "Help for check", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddStringFlag(constants.ArgSeparator, ",", "Separator string for csv output").
+		AddStringFlag(constants.ArgOutput, constants.OutputFormatText, "Output format: brief, csv, html, json, md, text, snapshot or none").
+		AddBoolFlag(constants.ArgTiming, false, "Turn on the timer which reports check time").
+		AddStringSliceFlag(constants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
+		AddStringSliceFlag(constants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a check session (comma-separated)").
+		AddStringFlag(constants.ArgTheme, "dark", "Set the output theme for 'text' output: light, dark or plain").
+		AddStringSliceFlag(constants.ArgExport, nil, "Export output to file, supported formats: csv, html, json, md, nunit3, sps (snapshot), asff").
+		AddBoolFlag(constants.ArgProgress, true, "Display control execution progress").
+		AddBoolFlag(constants.ArgDryRun, false, "Show which controls will be run without running them").
+		AddStringSliceFlag(constants.ArgTag, nil, "Filter controls based on their tag values ('--tag key=value')").
+		AddStringSliceFlag(constants.ArgVarFile, nil, "Specify an .spvar file containing variable values").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable").
-		AddStringFlag(constants.ArgWhere, "", "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
-		AddIntFlag(constants.ArgDatabaseQueryTimeout, "", constants.DatabaseDefaultCheckQueryTimeout, "The query timeout").
-		AddIntFlag(constants.ArgMaxParallel, "", constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
-		AddBoolFlag(constants.ArgModInstall, "", true, "Specify whether to install mod dependencies before running the check").
-		AddBoolFlag(constants.ArgInput, "", true, "Enable interactive prompts").
-		AddBoolFlag(constants.ArgSnapshot, "", false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility").
-		AddBoolFlag(constants.ArgShare, "", false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility").
-		AddStringArrayFlag(constants.ArgSnapshotTag, "", nil, "Specify tags to set on the snapshot").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "", "The location to write snapshots - either a local file path or a Steampipe Cloud workspace").
-		AddStringFlag(constants.ArgSnapshotTitle, "", "", "The title to give a snapshot")
+		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable").
+		AddStringFlag(constants.ArgWhere, "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
+		AddIntFlag(constants.ArgDatabaseQueryTimeout, constants.DatabaseDefaultCheckQueryTimeout, "The query timeout").
+		AddIntFlag(constants.ArgMaxParallel, constants.DefaultMaxConnections, "The maximum number of parallel executions", cmdconfig.FlagOptions.Hidden()).
+		AddBoolFlag(constants.ArgModInstall, true, "Specify whether to install mod dependencies before running the check").
+		AddBoolFlag(constants.ArgInput, true, "Enable interactive prompts").
+		AddBoolFlag(constants.ArgSnapshot, false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility").
+		AddBoolFlag(constants.ArgShare, false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility").
+		AddStringArrayFlag(constants.ArgSnapshotTag, nil, "Specify tags to set on the snapshot").
+		AddStringFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Steampipe Cloud workspace").
+		AddStringFlag(constants.ArgSnapshotTitle, "", "The title to give a snapshot")
 
 	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))
 	return cmd
