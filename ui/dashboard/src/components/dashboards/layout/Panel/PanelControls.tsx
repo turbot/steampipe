@@ -7,7 +7,7 @@ import { useState } from "react";
 const PanelControl = ({ action, icon, title }) => {
   return (
     <div
-      className="p-1 cursor-pointer bg-dashboard-panel text-foreground first:rounded-tl-[4px] first:rounded-bl-[4px] last:rounded-tr-[4px] last:rounded-br-[4px]"
+      className="p-1 cursor-pointer bg-dashboard-panel text-foreground first:rounded-tl-[4px] first:rounded-bl-[4px] last:rounded-tr-[4px] last:rounded-br-[4px] hover:bg-dashboard"
       onClick={async (e) => await action(e)}
       title={title}
     >
