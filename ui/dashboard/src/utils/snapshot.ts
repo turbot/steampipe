@@ -1,5 +1,21 @@
 import { PanelDefinition } from "../types";
 
+const stripObjectProperties = (obj) => {
+  if (!obj) {
+    return {};
+  }
+  const {
+    documentation,
+    search_path,
+    search_path_prefix,
+    source_definition,
+    sql,
+    ...rest
+  } = obj;
+
+  return { ...rest };
+};
+
 const stripSnapshotDataForExport = (snapshot) => {
   if (!snapshot) {
     return {};
@@ -8,18 +24,23 @@ const stripSnapshotDataForExport = (snapshot) => {
   switch (snapshot.schema_version) {
     case "20220614":
     case "20220929":
-      const { panels, search_path, search_path_prefix, ...rest } = snapshot;
+      const { panels, ...restSnapshot } = stripObjectProperties(snapshot);
       const newPanels = {};
       for (const [name, panel] of Object.entries(panels)) {
-        const { documentation, sql, source_definition, ...rest } =
-          panel as PanelDefinition;
-        newPanels[name] = {
-          ...rest,
+        const { properties, ...restPanel } = stripObjectProperties(
+          panel
+        ) as PanelDefinition;
+        const newPanel: PanelDefinition = {
+          ...restPanel,
         };
+        if (properties) {
+          newPanel.properties = stripObjectProperties(properties);
+        }
+        newPanels[name] = newPanel;
       }
 
       return {
-        ...rest,
+        ...restSnapshot,
         panels: newPanels,
       };
     default:

@@ -26,6 +26,11 @@ describe("snapshot utils", () => {
             documentation: "# Some documentation",
             sql: "select something from somewhere",
             source_definition: 'some { hcl: "values" }',
+            properties: {
+              search_path: ["some_schema"],
+              search_path_prefix: ["some_prefix"],
+              sql: "select something from somewhere",
+            },
           },
           "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
             {
@@ -33,6 +38,11 @@ describe("snapshot utils", () => {
               documentation: "# Some documentation",
               sql: "select something from somewhere",
               source_definition: 'some { hcl: "values" }',
+              properties: {
+                search_path: ["some_schema"],
+                search_path_prefix: ["some_prefix"],
+                sql: "select something from somewhere",
+              },
             },
         },
         inputs: {
@@ -54,7 +64,7 @@ describe("snapshot utils", () => {
       for (const [name, panel] of Object.entries(inputSnapshot.panels)) {
         const { documentation, sql, source_definition, ...rest } =
           panel as PanelDefinition;
-        expectedPanels[name] = { ...rest };
+        expectedPanels[name] = { ...rest, properties: {} };
       }
 
       const expectedEvent = {
@@ -91,6 +101,11 @@ describe("snapshot utils", () => {
             documentation: "# Some documentation",
             sql: "select something from somewhere",
             source_definition: 'some { hcl: "values" }',
+            properties: {
+              search_path: ["some_schema"],
+              search_path_prefix: ["some_prefix"],
+              sql: "select something from somewhere",
+            },
           },
           "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
             {
@@ -98,6 +113,11 @@ describe("snapshot utils", () => {
               documentation: "# Some documentation",
               sql: "select something from somewhere",
               source_definition: 'some { hcl: "values" }',
+              properties: {
+                search_path: ["some_schema"],
+                search_path_prefix: ["some_prefix"],
+                sql: "select something from somewhere",
+              },
             },
         },
         inputs: {
@@ -119,7 +139,7 @@ describe("snapshot utils", () => {
       for (const [name, panel] of Object.entries(inputSnapshot.panels)) {
         const { documentation, sql, source_definition, ...rest } =
           panel as PanelDefinition;
-        expectedPanels[name] = { ...rest };
+        expectedPanels[name] = { ...rest, properties: {} };
       }
 
       const expectedEvent = {
