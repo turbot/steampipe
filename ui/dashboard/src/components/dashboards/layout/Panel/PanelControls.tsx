@@ -4,6 +4,12 @@ import { ThemeProvider, ThemeWrapper } from "../../../../hooks/useTheme";
 import { usePopper } from "react-popper";
 import { useState } from "react";
 
+export type PanelControl = {
+  action: (e: any) => Promise<void>;
+  icon: string;
+  title: string;
+};
+
 const PanelControl = ({ action, icon, title }) => {
   return (
     <div

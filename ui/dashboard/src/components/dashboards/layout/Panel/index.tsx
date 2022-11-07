@@ -1,5 +1,5 @@
 import Error from "../../Error";
-import PanelControls from "./PanelControls";
+import PanelControls, { PanelControl } from "./PanelControls";
 import PanelProgress from "./PanelProgress";
 import PanelTitle from "../../titles/PanelTitle";
 import Placeholder from "../../Placeholder";
@@ -65,32 +65,29 @@ const Panel = memo(
       [download]
     );
 
-    const defaultPanelControls = [
-      {
-        action: downloadPanelData,
-        icon: "arrow-down-tray",
-        title: "Download data",
-      },
-      {
+    const getBasePanelControls = () => {
+      const controls: PanelControl[] = [];
+      if (!showControls || !definition) {
+        return controls;
+      }
+      if (definition.data) {
+        controls.push({
+          action: downloadPanelData,
+          icon: "arrow-down-tray",
+          title: "Download data",
+        });
+      }
+      controls.push({
         action: select,
         icon: "arrows-pointing-out",
         title: "View detail",
-      },
-    ];
-    const [panelControls, setPanelControls] = useState(() =>
-      showControls && definition && definition.data
-        ? defaultPanelControls
-        : showControls
-        ? [defaultPanelControls[1]]
-        : []
-    );
+      });
+      return controls;
+    };
 
-    useEffect(() => {
-      if (!definition || !definition.data) {
-        return;
-      }
-      setPanelControls([...defaultPanelControls]);
-    }, [definition]);
+    const [panelControls, setPanelControls] = useState(getBasePanelControls());
+
+    useEffect(() => setPanelControls(getBasePanelControls()), [definition]);
 
     const baseStyles = classNames(
       "relative col-span-12",

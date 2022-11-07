@@ -5,7 +5,7 @@ import { useDashboard } from "./useDashboard";
 const useSelectPanel = (definition: PanelDefinition) => {
   const { dispatch } = useDashboard();
   const openPanelDetail = useCallback(
-    (e) => {
+    async (e) => {
       e.stopPropagation();
       dispatch({
         type: DashboardActions.SELECT_PANEL,
