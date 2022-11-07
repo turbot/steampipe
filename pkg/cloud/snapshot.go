@@ -134,6 +134,8 @@ func stripSnapshotForUpload(snapshot *steampipecloud.WorkspaceSnapshotData) {
 			}
 		}
 	}
+	// clear top level search path
+	snapshot.SearchPath = []string{}
 }
 
 func resolveSnapshotTitle(snapshot *dashboardtypes.SteampipeSnapshot) string {
