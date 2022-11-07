@@ -54,6 +54,7 @@ const Panel = memo(
     } = useDashboard();
     const { download } = useDownloadPanelData(definition as PanelDefinition);
     const { select } = useSelectPanel(definition as PanelDefinition);
+    const [referenceElement, setReferenceElement] = useState(null);
     const [showPanelControls, setShowPanelControls] = useState(false);
 
     const downloadPanelData = useCallback(
@@ -103,6 +104,8 @@ const Panel = memo(
     return (
       <PanelProvider definition={definition} showControls={showControls}>
         <div
+          // @ts-ignore
+          ref={setReferenceElement}
           id={definition.name}
           className={baseStyles}
           onMouseEnter={
@@ -139,13 +142,10 @@ const Panel = memo(
             )}
           >
             {showPanelControls && (
-              <div
-                className={classNames(
-                  "absolute drop-shadow-sm z-50 right-1 top-1"
-                )}
-              >
-                <PanelControls controls={panelControls} />
-              </div>
+              <PanelControls
+                referenceElement={referenceElement}
+                controls={panelControls}
+              />
             )}
             {definition.title && (
               <div
