@@ -7,7 +7,7 @@ import { useState } from "react";
 const PanelControl = ({ action, icon, title }) => {
   return (
     <div
-      className="p-1 cursor-pointer bg-dashboard-panel text-foreground"
+      className="p-1 cursor-pointer bg-dashboard-panel text-foreground first:rounded-tl-[4px] first:rounded-bl-[4px] last:rounded-tr-[4px] last:rounded-br-[4px]"
       onClick={async (e) => await action(e)}
       title={title}
     >
@@ -31,7 +31,7 @@ const PanelControls = ({ controls, referenceElement }) => {
           style={{ ...styles.popper }}
           {...attributes.popper}
         >
-          <div className="flex space-x-px border border-black-scale-3">
+          <div className="flex space-x-px border border-black-scale-3 rounded-md">
             {controls.map((control, idx) => (
               <PanelControl
                 key={idx}
