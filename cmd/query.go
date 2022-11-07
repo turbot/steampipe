@@ -216,7 +216,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			default:
 				// otherwise convert the snapshot into a query result
 				result, err := snapshotToQueryResult(snap, queryProvider.Name())
-				error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
+				error_helpers.FailOnError(err)
 				display.ShowOutput(ctx, result)
 			}
 
@@ -247,6 +247,10 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	chartRun := tablePanel.(*dashboardexecute.LeafRun)
 	if !ok {
 		return nil, fmt.Errorf("failed to read query result from snapshot")
+	}
+	// check for error
+	if err := chartRun.GetError(); err != nil {
+		return nil, error_helpers.DecodePgError(err)
 	}
 
 	res := queryresult.NewResult(chartRun.Data.Columns)

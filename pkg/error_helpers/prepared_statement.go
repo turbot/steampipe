@@ -7,6 +7,14 @@ import (
 	"github.com/jackc/pgconn"
 )
 
+func DecodePgError(err error) error {
+	var pgError *pgconn.PgError
+	if errors.As(err, &pgError) {
+		return fmt.Errorf(pgError.Message)
+	}
+	return err
+}
+
 func IsPreparedStatementDoesNotExistError(err error) bool {
 	if err == nil {
 		return false
