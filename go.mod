@@ -28,7 +28,7 @@ require (
 	github.com/jackc/pgproto3/v2 v2.3.1
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/jedib0t/go-pretty/v6 v6.4.0
+	github.com/jedib0t/go-pretty/v6 v6.4.2
 	github.com/karrick/gows v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.16
