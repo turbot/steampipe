@@ -41,7 +41,7 @@ const GraphProvider = ({ children }) => {
       return;
     }
     fitView();
-  }, [graphEdges, graphNodes]);
+  }, [fitView, graphEdges, graphNodes]);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setLayoutId(uuid()), [theme.name]);
