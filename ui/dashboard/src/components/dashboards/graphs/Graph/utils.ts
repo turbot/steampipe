@@ -1,4 +1,4 @@
-import { Position } from "react-flow-renderer";
+import { Position } from "reactflow";
 
 export const CIRCLE_SIZE = 50;
 

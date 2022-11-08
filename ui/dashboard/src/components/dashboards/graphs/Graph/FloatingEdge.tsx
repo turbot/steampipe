@@ -3,7 +3,7 @@ import Tooltip from "./Tooltip";
 import { classNames } from "../../../../utils/styles";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
 import { useCallback } from "react";
-import { useStore } from "react-flow-renderer";
+import { useStore } from "reactflow";
 
 const FloatingEdge = ({
   id,

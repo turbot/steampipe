@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { Edge, Node } from "react-flow-renderer";
+import { Edge, Node } from "reactflow";
 import { FoldedNode, KeyValueStringPairs } from "../../common/types";
 import { noop } from "../../../../utils/func";
 import { useDashboard } from "../../../../hooks/useDashboard";

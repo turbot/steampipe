@@ -12,7 +12,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   useReactFlow,
-} from "react-flow-renderer";
+} from "reactflow";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
@@ -33,6 +33,7 @@ import {
   ZoomOutIcon,
 } from "../../../../constants/icons";
 import { useEffect, useMemo } from "react";
+import "reactflow/dist/style.css";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
