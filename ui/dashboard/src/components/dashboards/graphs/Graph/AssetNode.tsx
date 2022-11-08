@@ -156,7 +156,9 @@ const AssetNode = ({
           {!renderedHref &&
             isFolded &&
             !fold?.title &&
-            `${foldedNodes?.length} nodes...`}
+            `${foldedNodes?.length || 0} ${
+              foldedNodes?.length === 1 ? "node" : "nodes"
+            }...`}
         </div>
       </div>
     </>
