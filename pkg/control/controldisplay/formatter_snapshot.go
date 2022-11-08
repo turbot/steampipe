@@ -2,7 +2,6 @@ package controldisplay
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -15,13 +14,20 @@ type SnapshotFormatter struct {
 	FormatterBase
 }
 
-func (f *SnapshotFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+func (f *SnapshotFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	snapshot, err := executionTreeToSnapshot(tree)
 	if err != nil {
 		return nil, err
 	}
 
-	snapshotStr, err := json.MarshalIndent(snapshot, "", "  ")
+	// determine whether to indent the snapshot
+	// TACTICAL: check in the context for contextKeyFormatterUse - if this is "export" then DO NOT indent
+	var indent = true
+	if formatterPurpose, ok := ctx.Value(contextKeyFormatterPurpose).(string); ok && formatterPurpose == formatterPurposeExport {
+		indent = false
+	}
+	// strip unwanted fields from the snapshot
+	snapshotStr, err := snapshot.AsStrippedJson(indent)
 	if err != nil {
 		return nil, err
 	}
