@@ -25,6 +25,7 @@ _What's new?_
 * Add `Variables` and `Inputs` to dashboard `ExecutionStarted` event. ([#2606](https://github.com/turbot/steampipe/issues/2606))
 * Validate check output and export formats _before_ execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
 * When starting a plugin process, pass a SecureConfig, to silence the `nil SecureConfig` error. ([#2567](https://github.com/turbot/steampipe/issues/2567))
+* Optimise autocomplete by only loading completions on startup or when connection config changes, rather than every time a query is entered . ([#2561](https://github.com/turbot/steampipe/issues/2561))
 
 _Bug fixes_
 * Update `GetPathKeys` to treat key columns with `AnyOf` require property with the same precedence as `Required`. ([#254](https://github.com/turbot/steampipe-postgres-fdw/issues/254))
