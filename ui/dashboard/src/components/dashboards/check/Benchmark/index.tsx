@@ -1,7 +1,11 @@
-import Container from "../../layout/Container";
+import Card, { CardProps, CardType } from "../../Card";
+import CheckGrouping from "../CheckGrouping";
+import ContainerTitle from "../../titles/ContainerTitle";
 import Error from "../../Error";
+import Grid from "../../layout/Grid";
 import Panel from "../../layout/Panel";
-import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
+import PanelControls from "../../layout/Panel/PanelControls";
+import usePanelControls from "../../../../hooks/usePanelControls";
 import {
   BenchmarkTreeProps,
   CheckDisplayGroup,
@@ -14,27 +18,31 @@ import {
 } from "../../../../hooks/useCheckGrouping";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
+import { noop } from "../../../../utils/func";
+import { PanelDefinition } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useMemo } from "react";
-const CheckGrouping = getComponent("check_grouping");
+import { useMemo, useState } from "react";
+import { Width } from "../../common";
+
 const Table = getComponent("table");
 
 interface BenchmarkTableViewProps {
   benchmark: BenchmarkType;
-  definition: BenchmarkDefinition;
+  definition: PanelDefinition;
 }
 
 type InnerCheckProps = {
   benchmark: BenchmarkType;
-  definition: BenchmarkDefinition;
+  definition: PanelDefinition;
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
+  showControls: boolean;
   withTitle: boolean;
 };
 
 const Benchmark = (props: InnerCheckProps) => {
-  const { dashboard, selectedDashboard } = useDashboard();
+  const { dashboard } = useDashboard();
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
@@ -45,8 +53,20 @@ const Benchmark = (props: InnerCheckProps) => {
     }
     return props.benchmark.get_data_table();
   }, [props.benchmark, props.grouping]);
+  const [referenceElement, setReferenceElement] = useState(null);
+  const [showBenchmarkControls, setShowBenchmarkControls] = useState(false);
+  const definitionWithData = useMemo(() => {
+    return {
+      ...props.definition,
+      data: benchmarkDataTable,
+    };
+  }, [benchmarkDataTable, props.definition]);
+  const { panelControls: benchmarkControls } = usePanelControls(
+    definitionWithData,
+    props.showControls
+  );
 
-  const summary_cards = useMemo(() => {
+  const summaryCards = useMemo(() => {
     if (!props.grouping) {
       return [];
     }
@@ -64,56 +84,51 @@ const Benchmark = (props: InnerCheckProps) => {
     );
     const summary_cards = [
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.ok-${totalSummary.ok}`,
         width: 2,
         display_type: totalSummary.ok > 0 ? "ok" : null,
         properties: {
           label: "OK",
-          value: totalSummary.ok,
+          value: totalSummary.ok.toString(),
           icon: "heroicons-solid:check-circle",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.alarm-${totalSummary.alarm}`,
         width: 2,
         display_type: totalSummary.alarm > 0 ? "alert" : null,
         properties: {
           label: "Alarm",
-          value: totalSummary.alarm,
+          value: totalSummary.alarm.toString(),
           icon: "heroicons-solid:bell",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.error-${totalSummary.error}`,
         width: 2,
         display_type: totalSummary.error > 0 ? "alert" : null,
         properties: {
           label: "Error",
-          value: totalSummary.error,
+          value: totalSummary.error.toString(),
           icon: "heroicons-solid:exclamation-circle",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.info-${totalSummary.info}`,
         width: 2,
         display_type: totalSummary.info > 0 ? "info" : null,
         properties: {
           label: "Info",
-          value: totalSummary.info,
+          value: totalSummary.info.toString(),
           icon: "heroicons-solid:information-circle",
         },
       },
       {
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.skip-${totalSummary.skip}`,
         width: 2,
         properties: {
           label: "Skipped",
-          value: totalSummary.skip,
+          value: totalSummary.skip.toString(),
           icon: "heroicons-solid:arrow-circle-right",
         },
       },
@@ -129,13 +144,12 @@ const Benchmark = (props: InnerCheckProps) => {
     if (criticalRaw !== undefined || highRaw !== undefined) {
       const total = critical + high;
       summary_cards.push({
-        panel_type: "card",
         name: `${props.definition.name}.container.summary.severity-${total}`,
         width: 2,
         display_type: total > 0 ? "severity" : "",
         properties: {
           label: "Critical / High",
-          value: total,
+          value: total.toString(),
           icon: "heroicons-solid:exclamation",
         },
       });
@@ -148,47 +162,59 @@ const Benchmark = (props: InnerCheckProps) => {
   }
 
   return (
-    <Container
-      allowChildPanelExpand={false}
-      allowExpand={true}
-      definition={{
-        name: props.definition.name,
-        panel_type: "container",
-        children: [
-          {
-            name: `${props.definition.name}.container.summary`,
-            panel_type: "container",
-            allow_child_panel_expand: false,
-            children: summary_cards,
-          },
-          {
-            name: `${props.definition.name}.container.tree`,
-            panel_type: "container",
-            allow_child_panel_expand: false,
-            children: [
-              {
-                name: `${props.definition.name}.container.tree.results`,
-                panel_type: "benchmark_tree",
-                properties: {
-                  grouping: props.grouping,
-                  first_child_summaries: props.firstChildSummaries,
-                },
-              },
-            ],
-          },
-        ],
-        data: benchmarkDataTable,
-        title: dashboard?.artificial ? undefined : props.benchmark.title,
-        width: props.definition.width,
+    <Grid
+      name={props.definition.name}
+      width={props.definition.width}
+      events={{
+        onMouseEnter: props.showControls
+          ? () => setShowBenchmarkControls(true)
+          : noop,
+        onMouseLeave: () => setShowBenchmarkControls(false),
       }}
-      // @ts-ignore
-      expandDefinition={{
-        ...props.definition,
-        title: props.benchmark.title || selectedDashboard?.title,
-        data: benchmarkDataTable,
-      }}
-      withTitle={props.withTitle}
-    />
+      setRef={setReferenceElement}
+    >
+      {!dashboard?.artificial && (
+        <ContainerTitle title={props.benchmark.title} />
+      )}
+      {showBenchmarkControls && (
+        <PanelControls
+          referenceElement={referenceElement}
+          controls={benchmarkControls}
+        />
+      )}
+      <Grid name={`${props.definition.name}.container.summary`}>
+        {summaryCards.map((summaryCard) => {
+          const props: CardProps = {
+            name: summaryCard.name,
+            display_type: summaryCard.display_type as CardType,
+            panel_type: "card",
+            properties: summaryCard.properties,
+            status: "complete",
+            width: summaryCard.width as Width,
+          };
+          return (
+            <Panel
+              key={summaryCard.name}
+              definition={props}
+              showControls={false}
+            >
+              <Card {...props} />
+            </Panel>
+          );
+        })}
+      </Grid>
+      <Grid name={`${props.definition.name}.container.tree`}>
+        <BenchmarkTree
+          name={`${props.definition.name}.container.tree.results`}
+          panel_type="benchmark_tree"
+          properties={{
+            grouping: props.grouping,
+            first_child_summaries: props.firstChildSummaries,
+          }}
+          status="complete"
+        />
+      </Grid>
+    </Grid>
   );
 };
 
@@ -211,7 +237,7 @@ const BenchmarkTableView = ({
 
   return (
     <Panel
-      layoutDefinition={{
+      definition={{
         name: definition.name,
         panel_type: "table",
         width: definition.width,
@@ -219,20 +245,18 @@ const BenchmarkTableView = ({
         data: benchmarkDataTable,
         status: benchmarkDataTable ? "complete" : "ready",
       }}
-      ready={() => !!benchmarkDataTable}
+      ready={!!benchmarkDataTable}
     >
-      {() => (
-        <Table
-          name={`${definition.name}.table`}
-          panel_type="table"
-          data={benchmarkDataTable}
-        />
-      )}
+      <Table
+        name={`${definition.name}.table`}
+        panel_type="table"
+        data={benchmarkDataTable}
+      />
     </Panel>
   );
 };
 
-const Inner = ({ withTitle }) => {
+const Inner = ({ showControls, withTitle }) => {
   const {
     benchmark,
     definition,
@@ -253,6 +277,7 @@ const Inner = ({ withTitle }) => {
         grouping={grouping}
         groupingConfig={groupingsConfig}
         firstChildSummaries={firstChildSummaries}
+        showControls={showControls}
         withTitle={withTitle}
       />
     );
@@ -262,36 +287,34 @@ const Inner = ({ withTitle }) => {
   } else {
     return (
       <Panel
-        layoutDefinition={{
+        definition={{
           name: definition.name,
           panel_type: "benchmark",
           width: definition.width,
           status: "error",
         }}
       >
-        {() => (
-          <Error
-            error={`Unsupported benchmark type ${definition.display_type}`}
-          />
-        )}
+        <Error
+          error={`Unsupported benchmark type ${definition.display_type}`}
+        />
       </Panel>
     );
   }
 };
 
 type BenchmarkProps = PanelDefinition & {
+  showControls: boolean;
   withTitle: boolean;
 };
 
 const BenchmarkWrapper = (props: BenchmarkProps) => {
   return (
     <CheckGroupingProvider definition={props}>
-      <Inner withTitle={props.withTitle} />
+      <Inner showControls={props.showControls} withTitle={props.withTitle} />
     </CheckGroupingProvider>
   );
 };
 
 registerComponent("benchmark", BenchmarkWrapper);
-registerComponent("benchmark_tree", BenchmarkTree);
 
 export default BenchmarkWrapper;

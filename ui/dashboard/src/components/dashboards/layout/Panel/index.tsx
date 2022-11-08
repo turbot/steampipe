@@ -1,12 +1,10 @@
 import Error from "../../Error";
+import PanelControls from "./PanelControls";
 import PanelProgress from "./PanelProgress";
+import PanelTitle from "../../titles/PanelTitle";
 import Placeholder from "../../Placeholder";
+import usePanelControls from "../../../../hooks/usePanelControls";
 import { BaseChartProps } from "../../charts/types";
-import {
-  BenchmarkDefinition,
-  DashboardActions,
-  PanelDefinition,
-} from "../../../../types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
@@ -14,16 +12,18 @@ import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs/types";
 import { memo, useState } from "react";
+import { PanelDefinition } from "../../../../types";
 import { PanelProvider } from "../../../../hooks/usePanel";
+import { ReactNode } from "react";
 import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
-import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
+import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { ZoomIcon } from "../../../../constants/icons";
 
 interface PanelProps {
-  children: null | JSX.Element | JSX.Element[];
+  children: ReactNode;
+  className?: string;
   definition:
     | BaseChartProps
     | CardProps
@@ -33,60 +33,26 @@ interface PanelProps {
     | PanelDefinition
     | TableProps
     | TextProps;
-  layoutDefinition:
-    | BaseChartProps
-    | CardProps
-    | HierarchyProps
-    | ImageProps
-    | InputProps
-    | PanelDefinition
-    | BenchmarkDefinition
-    | TableProps
-    | TextProps;
-  allowExpand?: boolean;
+  showControls?: boolean;
   forceBackground?: boolean;
   ready?: boolean;
-  withOverflow?: boolean;
-  withTitle?: boolean;
-}
-
-interface PanelWrapperProps {
-  children: (definition: PanelDefinition) => null | JSX.Element | JSX.Element[];
-  layoutDefinition:
-    | BaseChartProps
-    | CardProps
-    | HierarchyProps
-    | ImageProps
-    | InputProps
-    | PanelDefinition
-    | BenchmarkDefinition
-    | TableProps
-    | TextProps;
-  allowExpand?: boolean;
-  forceBackground?: boolean;
-  ready?: (PanelDefinition) => boolean;
-  withOverflow?: boolean;
-  withTitle?: boolean;
 }
 
 const Panel = memo(
   ({
     children,
+    className,
     definition,
-    layoutDefinition,
-    allowExpand = true,
+    showControls = true,
     forceBackground = false,
     ready = true,
-    withOverflow = false,
-    withTitle = true,
   }: PanelProps) => {
-    const [showZoomIcon, setShowZoomIcon] = useState(false);
-    const [zoomIconClassName, setZoomIconClassName] =
-      useState("text-black-scale-4");
     const {
-      dispatch,
       themeContext: { theme },
     } = useDashboard();
+    const [referenceElement, setReferenceElement] = useState(null);
+    const [showPanelControls, setShowPanelControls] = useState(false);
+    const { panelControls } = usePanelControls(definition, showControls);
 
     const baseStyles = classNames(
       "relative col-span-12",
@@ -98,34 +64,30 @@ const Panel = memo(
     const PlaceholderComponent = Placeholder.component;
 
     return (
-      <PanelProvider
-        definition={definition}
-        allowExpand={allowExpand}
-        setZoomIconClassName={setZoomIconClassName}
-      >
+      <PanelProvider definition={definition} showControls={showControls}>
         <div
+          // @ts-ignore
+          ref={setReferenceElement}
           id={definition.name}
           className={baseStyles}
           onMouseEnter={
-            allowExpand
+            showControls
               ? () => {
-                  setShowZoomIcon(true);
+                  setShowPanelControls(true);
                 }
               : undefined
           }
           onMouseLeave={
-            allowExpand
+            showControls
               ? () => {
-                  setShowZoomIcon(false);
+                  setShowPanelControls(false);
                 }
               : undefined
           }
         >
           <section
             aria-labelledby={
-              withTitle && definition.title
-                ? `${definition.name}-title`
-                : undefined
+              definition.title ? `${definition.name}-title` : undefined
             }
             className={classNames(
               "col-span-12 m-0.5",
@@ -141,24 +103,13 @@ const Panel = memo(
                 : null
             )}
           >
-            {showZoomIcon && (
-              <div
-                className={classNames(
-                  "absolute cursor-pointer z-50 right-1 top-1",
-                  zoomIconClassName
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dispatch({
-                    type: DashboardActions.SELECT_PANEL,
-                    panel: { ...(layoutDefinition || {}), ...definition },
-                  });
-                }}
-              >
-                <ZoomIcon className="h-5 w-5" />
-              </div>
+            {showPanelControls && (
+              <PanelControls
+                referenceElement={referenceElement}
+                controls={panelControls}
+              />
             )}
-            {withTitle && definition.title && (
+            {definition.title && (
               <div
                 className={classNames(
                   definition.panel_type === "input" &&
@@ -167,20 +118,13 @@ const Panel = memo(
                     : "px-4 py-4"
                 )}
               >
-                <h3
-                  id={`${definition.name}-title`}
-                  className="truncate"
-                  title={definition.title}
-                >
-                  {definition.title}
-                </h3>
+                <PanelTitle name={definition.name} title={definition.title} />
               </div>
             )}
 
             <div
               className={classNames(
-                withTitle &&
-                  definition.title &&
+                definition.title &&
                   ((definition.panel_type !== "input" &&
                     definition.panel_type !== "table") ||
                     (definition.panel_type === "table" &&
@@ -192,27 +136,23 @@ const Panel = memo(
                         : "border-background"
                     )
                   : null,
-                withOverflow ||
-                  (definition.panel_type === "table" &&
-                    definition.display_type !== "line") ||
+                (definition.panel_type === "table" &&
+                  definition.display_type !== "line") ||
                   definition.display_type === "table"
                   ? "overflow-x-auto"
-                  : "overflow-x-hidden"
+                  : "overflow-x-hidden",
+                className
               )}
             >
               <PanelProgress
-                className={
-                  withTitle && definition.title ? null : "rounded-t-md"
-                }
+                className={definition.title ? null : "rounded-t-md"}
               />
               <PlaceholderComponent
                 animate={!!children}
                 ready={ready || !!definition.error}
               >
                 <ErrorComponent
-                  className={
-                    withTitle && definition.title ? "rounded-t-none" : null
-                  }
+                  className={definition.title ? "rounded-t-none" : null}
                   error={definition.error}
                 />
                 <>{!definition.error ? children : null}</>
@@ -225,32 +165,6 @@ const Panel = memo(
   }
 );
 
-const PanelWrapper = ({
-  children,
-  allowExpand = true,
-  forceBackground = false,
-  layoutDefinition,
-  ready = () => true,
-  withOverflow = false,
-  withTitle = true,
-}: PanelWrapperProps) => {
-  const { panelsMap } = useDashboard();
-  const panel = panelsMap[layoutDefinition.name];
-  return (
-    <Panel
-      allowExpand={allowExpand}
-      definition={panel || layoutDefinition}
-      layoutDefinition={layoutDefinition}
-      forceBackground={forceBackground}
-      ready={ready(panel || layoutDefinition)}
-      withOverflow={withOverflow}
-      withTitle={withTitle}
-    >
-      {children(panel || layoutDefinition)}
-    </Panel>
-  );
-};
+registerComponent("panel", Panel);
 
-registerComponent("panel", PanelWrapper);
-
-export default PanelWrapper;
+export default Panel;

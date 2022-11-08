@@ -1,20 +1,14 @@
 import NeutralButton from "../../../forms/NeutralButton";
+import useDownloadPanelData from "../../../../hooks/useDownloadPanelData";
 import { noop } from "../../../../utils/func";
-import { useState } from "react";
 
-const PanelDetailDataDownloadButton = ({ downloadQueryData, size }) => {
-  const [downloading, setDownloading] = useState(false);
-
-  const downloadData = async () => {
-    setDownloading(true);
-    downloadQueryData();
-    setDownloading(false);
-  };
+const PanelDetailDataDownloadButton = ({ panelDefinition, size }) => {
+  const { download, processing } = useDownloadPanelData(panelDefinition);
 
   return (
     <NeutralButton
-      disabled={downloading}
-      onClick={downloading ? noop : () => downloadData()}
+      disabled={processing}
+      onClick={processing ? noop : () => download()}
       size={size}
     >
       <>Download</>

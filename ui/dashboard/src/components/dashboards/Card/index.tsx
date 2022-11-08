@@ -13,24 +13,23 @@ import {
 } from "../common";
 import { classNames } from "../../../utils/styles";
 import { DashboardDataModeLive } from "../../../types";
+import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
   getTextClasses,
   getWrapperClasses,
 } from "../../../utils/card";
-import { getComponent, registerComponent } from "../index";
 import { isRelativeUrl } from "../../../utils/url";
 import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
-import { usePanel } from "../../../hooks/usePanel";
 
 const Table = getComponent("table");
 
-type CardType = "alert" | "info" | "ok" | "table" | null;
+export type CardType = "alert" | "info" | "ok" | "table" | null;
 
-export type CardProps = BasePrimitiveProps &
+export type CardProps = Omit<BasePrimitiveProps, "display_type"> &
   ExecutablePrimitiveProps & {
     display_type?: CardType;
     properties: {
@@ -177,14 +176,9 @@ const Card = (props: CardProps) => {
     state.href || null
   );
   const textClasses = getTextClasses(state.type);
-  const { setZoomIconClassName } = usePanel();
   const {
     themeContext: { theme },
   } = useDashboard();
-
-  useEffect(() => {
-    setZoomIconClassName(textClasses ? textClasses : "");
-  }, [setZoomIconClassName, textClasses]);
 
   useEffect(() => {
     if ((state.loading || !state.href) && (renderError || renderedHref)) {

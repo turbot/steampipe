@@ -37,8 +37,13 @@ import "../components/dashboards/inputs/TextInput";
 import "../components/dashboards/inputs/Input";
 
 // Check
-import "../components/dashboards/check/CheckGrouping";
 import "../components/dashboards/check/Benchmark";
+
+// Dashboard
 import "../components/dashboards/layout/Dashboard";
+
+// Image
 import "../components/dashboards/Image";
+
+// Card
 import "../components/dashboards/Card";

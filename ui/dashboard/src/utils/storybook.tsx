@@ -2,13 +2,17 @@ import "../utils/registerComponents";
 import Dashboard from "../components/dashboards/layout/Dashboard";
 import { buildComponentsMap } from "../components";
 import { DashboardContext } from "../hooks/useDashboard";
-import { DashboardDataModeLive, DashboardSearch } from "../types";
+import {
+  DashboardDataModeLive,
+  DashboardPanelType,
+  DashboardSearch,
+} from "../types";
 import { noop } from "./func";
 import { useStorybookTheme } from "../hooks/useStorybookTheme";
 
 type PanelStoryDecoratorProps = {
   definition: any;
-  panelType: "card" | "chart" | "container" | "table" | "text";
+  panelType: DashboardPanelType;
   panels?: {
     [key: string]: any;
   };
@@ -118,7 +122,7 @@ export const PanelStoryDecorator = ({
         snapshotFileName: null,
       }}
     >
-      <Dashboard allowPanelExpand={false} />
+      <Dashboard showPanelControls={false} />
     </DashboardContext.Provider>
   );
 };

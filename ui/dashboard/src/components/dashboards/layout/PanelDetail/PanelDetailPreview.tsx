@@ -1,12 +1,26 @@
-import Children from "../common/Children";
+import Child from "../Child";
 import { PanelDetailProps } from "./index";
+import { PanelDefinition } from "../../../../types";
 
-const PanelDetailPreview = ({ definition }: PanelDetailProps) => (
-  <Children
-    children={[{ ...definition, width: 12 }]}
-    allowPanelExpand={false}
-    withTitle={false}
-  />
-);
+const PanelDetailPreview = ({
+  definition: { children, name, panel_type, title, ...rest },
+}: PanelDetailProps) => {
+  const layoutDefinition = { children, name, panel_type };
+  const panelDefinition = {
+    name,
+    panel_type,
+    width: 12,
+    ...rest,
+  } as PanelDefinition;
+  const panelsMap = { [name]: panelDefinition };
+  return (
+    <Child
+      layoutDefinition={layoutDefinition}
+      panelDefinition={panelDefinition}
+      panelsMap={panelsMap}
+      showPanelControls={false}
+    />
+  );
+};
 
 export default PanelDetailPreview;

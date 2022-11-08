@@ -1,6 +1,7 @@
-import Children from "../common/Children";
+import Children from "../Children";
 import DashboardProgress from "./DashboardProgress";
-import LayoutPanel from "../common/LayoutPanel";
+import DashboardTitle from "../../titles/DashboardTitle";
+import Grid from "../Grid";
 import PanelDetail from "../PanelDetail";
 import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
 import { DashboardDataModeLive, DashboardDefinition } from "../../../../types";
@@ -8,41 +9,41 @@ import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface DashboardProps {
-  allowPanelExpand?: boolean;
   definition: DashboardDefinition;
   isRoot?: boolean;
+  showPanelControls?: boolean;
   withPadding?: boolean;
 }
 
 interface DashboardWrapperProps {
-  allowPanelExpand?: boolean;
+  showPanelControls?: boolean;
 }
 
 // TODO allow full-screen of a panel
 const Dashboard = ({
-  allowPanelExpand = true,
   definition,
   isRoot = true,
-  withPadding = false,
-}: DashboardProps) => (
-  <>
-    {isRoot ? <DashboardProgress /> : <></>}
-    <LayoutPanel
-      className={isRoot ? "h-full overflow-y-auto" : undefined}
-      definition={definition}
-      isDashboard={true}
-      withPadding={withPadding}
-    >
+  showPanelControls = true,
+}: DashboardProps) => {
+  const grid = (
+    <Grid name={definition.name} width={isRoot ? 12 : definition.width}>
+      {isRoot && <DashboardTitle title={definition.title} />}
       <Children
-        allowPanelExpand={allowPanelExpand}
+        showPanelControls={showPanelControls}
         children={definition.children}
       />
-    </LayoutPanel>
-  </>
-);
+    </Grid>
+  );
+  return (
+    <>
+      {isRoot ? <DashboardProgress /> : null}
+      {isRoot ? <div className="h-full overflow-y-auto p-4">{grid}</div> : grid}
+    </>
+  );
+};
 
 const DashboardWrapper = ({
-  allowPanelExpand = true,
+  showPanelControls = true,
 }: DashboardWrapperProps) => {
   const { dashboard, dataMode, search, selectedDashboard, selectedPanel } =
     useDashboard();
@@ -62,8 +63,8 @@ const DashboardWrapper = ({
   return (
     <>
       <Dashboard
-        allowPanelExpand={allowPanelExpand}
         definition={dashboard}
+        showPanelControls={showPanelControls}
         withPadding={true}
       />
       <SnapshotRenderComplete />

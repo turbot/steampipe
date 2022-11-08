@@ -1074,7 +1074,7 @@ const getColorOverride = (colorOverride, namedThemeColors) => {
 };
 
 const nodeAndEdgeResourceHasData = (
-  data: LeafNodeData,
+  data: LeafNodeData | undefined,
   properties: NodeAndEdgeProperties,
   panelsMap: PanelsMap
 ): boolean => {

@@ -3,7 +3,6 @@ import merge from "lodash/merge";
 import padStart from "lodash/padStart";
 import {
   AddControlResultsAction,
-  CheckBenchmarkRun,
   CheckControlRun,
   CheckDynamicColsMap,
   CheckNode,
@@ -13,12 +12,12 @@ import {
   CheckSeveritySummary,
   CheckSummary,
 } from "./index";
+import { DashboardLayoutNode, PanelsMap } from "../../../../types";
 import {
   LeafNodeData,
   LeafNodeDataColumn,
   LeafNodeDataRow,
 } from "../../common";
-import { PanelsMap } from "../../../../types";
 
 class Benchmark implements CheckNode {
   private readonly _sortIndex: string;
@@ -35,8 +34,8 @@ class Benchmark implements CheckNode {
     name: string,
     title: string | undefined,
     description: string | undefined,
-    benchmarks: CheckBenchmarkRun[] | undefined,
-    controls: CheckControlRun[] | undefined,
+    benchmarks: DashboardLayoutNode[] | undefined,
+    controls: DashboardLayoutNode[] | undefined,
     panelsMap: PanelsMap,
     trunk: Benchmark[],
     add_control_results?: AddControlResultsAction

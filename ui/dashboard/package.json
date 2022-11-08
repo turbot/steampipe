@@ -14,7 +14,7 @@
     "build-storybook": "build-storybook -s public"
   },
   "dependencies": {
-    "@headlessui/react": "1.7.3",
+    "@headlessui/react": "1.7.4",
     "@heroicons/react": "2.0.13",
     "@popperjs/core": "2.11.6",
     "@supabase/sql-formatter": "4.0.3",
