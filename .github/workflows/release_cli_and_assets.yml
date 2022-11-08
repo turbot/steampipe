@@ -3,9 +3,6 @@ name: Steampipe Release (CLI and Assets)
 on:
   workflow_dispatch:
     inputs:
-      branch:
-        description: "The branch that will be built"
-        required: true
       version:
         description: "The version to release (must be prefixed with 'v')"
         required: true
@@ -42,7 +39,7 @@ jobs:
     - name: Validate Branch
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.ref }}
 
   verify_asset_unreleased:
     name: Verify Assets Unreleased
@@ -128,7 +125,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.ref }}
 
     - name: Setup Node
       uses: actions/setup-node@v3
@@ -251,7 +248,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.ref }}
 
     - name: Unshallow
       run: git fetch
@@ -337,7 +334,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         submodules: true
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.ref }}
 
     - name: Setup BATS
       uses: mig4/setup-bats@v1
@@ -390,7 +387,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.ref }}
 
     - name: Prepare for downloads
       id: prepare-for-downloads
@@ -414,7 +411,7 @@ jobs:
 
     - name: Build steampipe docker images
       run: |
-        docker build -t spdebian tests/dockertesting/debian --build-arg TARGETBRANCH="${{ github.event.inputs.branch }}"
+        docker build -t spdebian tests/dockertesting/debian --build-arg TARGETBRANCH="${{ github.event.ref }}"
         docker images
 
     - name: Create a container and run the test suite
@@ -431,7 +428,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.ref }}
 
     - name: Prepare for downloads
       id: prepare-for-downloads
@@ -455,7 +452,7 @@ jobs:
 
     - name: Build steampipe docker images
       run: |
-        docker build -t sporacle tests/dockertesting/oraclelinux --build-arg TARGETBRANCH="${{ github.event.inputs.branch }}"
+        docker build -t sporacle tests/dockertesting/oraclelinux --build-arg TARGETBRANCH="${{ github.event.ref }}"
         docker images
 
     - name: Create a container and run the test suite
@@ -485,7 +482,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ github.event.ref }}
 
     - name: Unshallow
       run: git fetch --prune --unshallow
