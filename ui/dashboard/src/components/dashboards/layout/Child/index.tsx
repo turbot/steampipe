@@ -23,6 +23,7 @@ const Child = ({
   const Panel = getComponent("panel");
   switch (layoutDefinition.panel_type) {
     case "benchmark":
+    case "control":
       const Benchmark = getComponent("benchmark");
       return (
         <Benchmark
