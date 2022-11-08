@@ -2,7 +2,7 @@
 _What's new?_
 * Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2663](https://github.com/turbot/steampipe/issues/2663))
 
-## v0.17.0 [2022-11-07]
+## v0.17.0 [2022-11-08]
 
 _What's new?_
 * Add support for `workspace profiles`, defined using HCL config and selected using `--workspace` arg. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2574](https://github.com/turbot/steampipe/issues/2574))
@@ -26,6 +26,7 @@ _What's new?_
 * Validate check output and export formats _before_ execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
 * When starting a plugin process, pass a SecureConfig, to silence the `nil SecureConfig` error. ([#2567](https://github.com/turbot/steampipe/issues/2567))
 * Optimise autocomplete by only loading completions on startup or when connection config changes, rather than every time a query is entered . ([#2561](https://github.com/turbot/steampipe/issues/2561))
+* Remove explicit setting of open-file limit, now that Go 1.19 does it automatically. ([#2630](https://github.com/turbot/steampipe/issues/2630))
 
 _Bug fixes_
 * Update `GetPathKeys` to treat key columns with `AnyOf` require property with the same precedence as `Required`. ([#254](https://github.com/turbot/steampipe-postgres-fdw/issues/254))
