@@ -3,9 +3,10 @@ package export
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"path"
 	"strings"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
