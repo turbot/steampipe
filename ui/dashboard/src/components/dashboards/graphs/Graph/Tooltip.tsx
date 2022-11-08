@@ -16,6 +16,7 @@ interface TooltipProps {
   hideDelay?: number;
   overlay: JSX.Element;
   show?: boolean;
+  showDelay?: number;
   title: string;
 }
 
@@ -121,10 +122,10 @@ const Tooltip = ({
   hideDelay = 500,
   overlay,
   show = false,
+  showDelay = 200,
   title,
 }: TooltipProps) => {
   const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
-  // const [id] = useState(uuidv4());
   const [showOverlay, setShowOverlay] = useState(false);
   const [referenceElement, setReferenceElement] = useState(null);
   const [popperElement, setPopperElement] = useState(null);
@@ -132,17 +133,18 @@ const Tooltip = ({
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     modifiers: [{ name: "arrow", options: { element: arrowElement } }],
   });
-  // const { closeTooltips, retainTooltipId, shouldCloseTooltips } = useTooltips();
 
   const trigger = cloneElement(children, {
     ref: setReferenceElement,
     onMouseEnter: () => {
-      // closeTooltips(id);
-      setShowOverlay(true);
+      timeoutId.current = setTimeout(() => setShowOverlay(true), showDelay);
     },
     onMouseLeave: () => {
-      // closeTooltips(id);
-      timeoutId.current = setTimeout(() => setShowOverlay(false), hideDelay);
+      if (!showOverlay) {
+        clearTimeout(timeoutId.current);
+      } else {
+        timeoutId.current = setTimeout(() => setShowOverlay(false), hideDelay);
+      }
     },
     onTouchStart: () => {
       // closeTooltips(id);
