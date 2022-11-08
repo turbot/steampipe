@@ -639,9 +639,18 @@ const buildNodesAndEdges = (
   let colorIndex = 0;
 
   rawData.rows.forEach((row) => {
-    const node_id: string | null = row.id || null;
-    const from_id: string | null = row.from_id || null;
-    const to_id: string | null = row.to_id || null;
+    const node_id: string | null =
+      has(row, "id") && row.id !== null && row.id !== undefined
+        ? row.id.toString()
+        : null;
+    const from_id: string | null =
+      has(row, "from_id") && row.from_id !== null && row.from_id !== undefined
+        ? row.from_id.toString()
+        : null;
+    const to_id: string | null =
+      has(row, "to_id") && row.to_id !== null && row.to_id !== undefined
+        ? row.to_id.toString()
+        : null;
     const title: string | null = row.title || null;
     const category: string | null = row.category || null;
     const depth: number | null = row.depth || null;

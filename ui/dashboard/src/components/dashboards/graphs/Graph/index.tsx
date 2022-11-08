@@ -79,7 +79,6 @@ const buildGraphNodesAndEdges = (
   const edges: Edge[] = [];
   for (const node of nodesAndEdges.nodes) {
     const matchingNode = dagreGraph.node(node.id);
-    // console.log({ node, dagreNode: matchingNode });
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
       : null;
@@ -170,12 +169,10 @@ const useGraphOptions = (props: GraphProps) => {
   }, [nodes, edges]);
 
   useEffect(() => {
-    // console.log("nodes changes", nodesAndEdges.nodes);
     setNodes(nodesAndEdges.nodes);
   }, [nodesAndEdges.nodes, setNodes]);
 
   useEffect(() => {
-    // console.log("edges changes", nodesAndEdges.edges);
     setEdges(nodesAndEdges.edges);
   }, [nodesAndEdges.edges, setEdges]);
 
@@ -254,22 +251,11 @@ const ResetZoomControl = () => {
 
 const RecalcLayoutControl = () => {
   const { recalcLayout } = useGraph();
-  // const { fitView } = useReactFlow();
-
-  // useEffect(() => {
-  //   if (!layoutId) {
-  //     return;
-  //   }
-  //   fitView();
-  // }, [layoutId]);
-
-  // console.log("Layout", layoutId);
 
   return (
     <ControlButton
       className="bg-dashboard text-foreground border-0"
       onClick={() => {
-        // console.log("Laying out", layoutId);
         recalcLayout();
       }}
       title="Reset Layout"
