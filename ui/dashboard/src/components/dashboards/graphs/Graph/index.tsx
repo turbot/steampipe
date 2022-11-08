@@ -191,11 +191,11 @@ const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined
 ) => {
-  const { expandedNodes, layoutId } = useGraph();
+  const { expandedNodes } = useGraph();
   const themeColors = useChartThemeColors();
   const nodesAndEdges = useMemo(
     () => buildGraphNodesAndEdges(data, properties, themeColors, expandedNodes),
-    [data, expandedNodes, properties, themeColors, layoutId]
+    [data, expandedNodes, properties, themeColors]
   );
   return {
     nodesAndEdges,

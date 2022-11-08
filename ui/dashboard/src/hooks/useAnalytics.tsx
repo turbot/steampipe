@@ -111,7 +111,7 @@ const useAnalyticsProvider = () => {
 
     setEnabled(enabled);
     setInitialised(true);
-  }, [initialised, metadata]);
+  }, [initialised, metadata, setEnabled, setInitialised]);
 
   useEffect(() => {
     if (!metadata || !initialised) {
@@ -133,7 +133,15 @@ const useAnalyticsProvider = () => {
     } else if (enabled) {
       reset();
     }
-  }, [metadata, enabled, initialised]);
+  }, [
+    enabled,
+    identify,
+    initialised,
+    metadata,
+    reset,
+    setIdentity,
+    setWorkspace,
+  ]);
 
   // @ts-ignore
   const previousSelectedDashboardStates: SelectedDashboardStates = usePrevious({
@@ -175,7 +183,13 @@ const useAnalyticsProvider = () => {
         dashboard: selectedDashboard.short_name,
       });
     }
-  }, [enabled, metadata, previousSelectedDashboardStates, selectedDashboard]);
+  }, [
+    enabled,
+    metadata,
+    previousSelectedDashboardStates,
+    selectedDashboard,
+    track,
+  ]);
 
   return {
     reset,
