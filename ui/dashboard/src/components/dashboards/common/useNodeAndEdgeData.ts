@@ -1,3 +1,4 @@
+import has from "lodash/has";
 import set from "lodash/set";
 import { DashboardRunState } from "../../../types";
 import { EdgeProperties, NodeAndEdgeProperties, NodeProperties } from "./types";
@@ -98,11 +99,11 @@ const useNodeAndEdgeData = (
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
         // Ensure each row has an id
-        if (!row.id) {
+        if (row.id === null || row.id === undefined) {
           continue;
         }
         // Capture the ID of each row
-        nodeIdLookup[row.id] = row;
+        nodeIdLookup[row.id.toString()] = row;
         const updatedRow = row;
         if (!updatedRow.title && panel.title) {
           updatedRow.title = panel.title;
@@ -138,11 +139,15 @@ const useNodeAndEdgeData = (
       // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
         // Ensure the node this edge points to exists in the data set
+        // @ts-ignore
+        const from_id = has(row, "from_id") ? row.from_id.toString() : null;
+        // @ts-ignore
+        const to_id = has(row, "to_id") ? row.to_id.toString() : null;
         if (
-          !row.from_id ||
-          !row.to_id ||
-          !nodeIdLookup[row.from_id] ||
-          !nodeIdLookup[row.to_id]
+          !from_id ||
+          !to_id ||
+          !nodeIdLookup[from_id] ||
+          !nodeIdLookup[to_id]
         ) {
           continue;
         }
