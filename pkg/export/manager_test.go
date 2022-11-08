@@ -1,94 +1,97 @@
-package export_test
+package export
 
 import (
 	"context"
-	"os"
 	"testing"
 
-	"github.com/turbot/steampipe/pkg/control/controldisplay"
-	"github.com/turbot/steampipe/pkg/control/controlexecute"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/export"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/workspace"
+	"github.com/turbot/steampipe/pkg/constants"
 )
 
+type testExporter struct {
+	alias     string
+	extension string
+	name      string
+}
+
+func (t *testExporter) Export(ctx context.Context, input ExportSourceData, destPath string) error {
+	return nil
+}
+func (t *testExporter) FileExtension() string { return t.extension }
+func (t *testExporter) Name() string          { return t.name }
+func (t *testExporter) Alias() string         { return t.alias }
+
+var dummyCSVExporter = testExporter{alias: "", extension: ".csv", name: "CSV"}
+var dummyJSONExporter = testExporter{alias: "", extension: ".json", name: "JSON"}
+var dummySPSExporter = testExporter{alias: "", extension: constants.SnapshotExtension, name: constants.OutputFormatSnapshot}
+
 type exporterTestCase struct {
-	name        string
-	input       []string
-	shouldError bool
+	name   string
+	input  string
+	expect interface{}
 }
 
 var exporterTestCases = []exporterTestCase{
 	{
-		name:        "Bad Format",
-		input:       []string{"bad-format"},
-		shouldError: true,
+		name:   "Bad Format",
+		input:  "bad-format",
+		expect: "ERROR",
 	},
 	{
-		name:        "CSV",
-		input:       []string{"csv", "file.csv"},
-		shouldError: false,
+		name:   "CSV",
+		input:  "file.csv",
+		expect: &dummyCSVExporter,
+	},
+	{
+		name:   "Snapshot",
+		input:  "file.sps",
+		expect: &dummySPSExporter,
+	},
+	{
+		name:   "JSON",
+		input:  "file.json",
+		expect: &dummyJSONExporter,
 	},
 }
 
 func TestDoExport(t *testing.T) {
-	deadline, ok := t.Deadline()
-	ctx := context.Background()
-	if ok {
-		newCtx, cancel := context.WithDeadline(ctx, deadline)
-		ctx = newCtx
-		defer cancel()
+	exportersToRegister := []*testExporter{
+		&dummyJSONExporter,
+		&dummyCSVExporter,
+		&dummySPSExporter,
 	}
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
-	filepaths.SteampipeDir = tmpDir
-
-	// change the working directory, so that if files get written, they get written
-	// to the temp directory which gets removed at the end
-	err = os.Chdir(tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = controldisplay.EnsureTemplates()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// load a dummy workspace
-	w, err := workspace.Load(ctx, tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	m := export.NewManager()
-	ctrlExporters, err := controldisplay.GetExporters()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, e := range ctrlExporters {
+	m := NewManager()
+	for _, e := range exportersToRegister {
 		m.Register(e)
 	}
-
-	dummyExecutionTree, err := controlexecute.NewExecutionTree(ctx, w, &db_common.MockClient{}, "all", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	for _, testCase := range exporterTestCases {
-		err = m.DoExport(ctx, "unimportant", dummyExecutionTree, testCase.input)
-		if testCase.shouldError && err == nil {
-			t.Logf("%v with %v input should have errored, but didn't", testCase.name, testCase.input)
+		targets, err := m.resolveTargetsFromArgs([]string{testCase.input}, "dummy_execution_name")
+		shouldError := testCase.expect == "ERROR"
+		if shouldError {
+			if err == nil {
+				t.Logf("Request for '%s' should have errored - but did not", testCase.input)
+				t.Fail()
+			}
+			continue
+		}
+		if !shouldError {
+			if err != nil {
+				t.Logf("Request for '%s' should have not errored - but did: %v", testCase.input, err)
+				t.Fail()
+			}
+			continue
+		}
+
+		if len(targets) != 1 {
+			t.Logf("%v with %v input => expected one target - got %d", testCase.name, testCase.input, len(targets))
 			t.Fail()
 			continue
 		}
-		if !testCase.shouldError && err != nil {
-			t.Logf("%v with %v input should not have errored, but errored with %v", testCase.name, testCase.input, err)
+		actualTarget := targets[0]
+		expectedTargetExporter := testCase.expect.(*testExporter)
+
+		if actualTarget.exporter != expectedTargetExporter {
+			t.Logf("%v with %v input => expected %s target - got %s", testCase.name, testCase.input, testCase.expect.(*testExporter).Name(), actualTarget.exporter.Name())
 			t.Fail()
 			continue
 		}
