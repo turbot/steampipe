@@ -1,10 +1,9 @@
 import Error from "../../Error";
-import PanelControls, { PanelControl } from "./PanelControls";
+import PanelControls from "./PanelControls";
 import PanelProgress from "./PanelProgress";
 import PanelTitle from "../../titles/PanelTitle";
 import Placeholder from "../../Placeholder";
-import useDownloadPanelData from "../../../../hooks/useDownloadPanelData";
-import useSelectPanel from "../../../../hooks/useSelectPanel";
+import usePanelControls from "../../../../hooks/usePanelControls";
 import { BaseChartProps } from "../../charts/types";
 import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
 import { CardProps } from "../../Card";
@@ -13,7 +12,7 @@ import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs/types";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useState } from "react";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { ReactNode } from "react";
 import { registerComponent } from "../../index";
@@ -52,42 +51,9 @@ const Panel = memo(
     const {
       themeContext: { theme },
     } = useDashboard();
-    const { download } = useDownloadPanelData(definition as PanelDefinition);
-    const { select } = useSelectPanel(definition as PanelDefinition);
     const [referenceElement, setReferenceElement] = useState(null);
     const [showPanelControls, setShowPanelControls] = useState(false);
-
-    const downloadPanelData = useCallback(
-      async (e) => {
-        e.stopPropagation();
-        await download();
-      },
-      [download]
-    );
-
-    const getBasePanelControls = () => {
-      const controls: PanelControl[] = [];
-      if (!showControls || !definition) {
-        return controls;
-      }
-      if (definition.data) {
-        controls.push({
-          action: downloadPanelData,
-          icon: "arrow-down-tray",
-          title: "Download data",
-        });
-      }
-      controls.push({
-        action: select,
-        icon: "arrows-pointing-out",
-        title: "View detail",
-      });
-      return controls;
-    };
-
-    const [panelControls, setPanelControls] = useState(getBasePanelControls());
-
-    useEffect(() => setPanelControls(getBasePanelControls()), [definition]);
+    const { panelControls } = usePanelControls(definition, showControls);
 
     const baseStyles = classNames(
       "relative col-span-12",
