@@ -153,7 +153,7 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
 		return fmt.Errorf("cannot share snapshots in interactive mode")
 	}
-	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+	if interactiveMode && len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		return fmt.Errorf("cannot export query results in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
