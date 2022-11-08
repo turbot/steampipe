@@ -16,7 +16,7 @@ const usePanelControls = (definition, show = false) => {
     [download]
   );
 
-  const getBasePanelControls = () => {
+  const getBasePanelControls = useCallback(() => {
     const controls: PanelControl[] = [];
     if (!show || !definition) {
       return controls;
@@ -34,11 +34,14 @@ const usePanelControls = (definition, show = false) => {
       title: "View detail",
     });
     return controls;
-  };
+  }, [definition, downloadPanelData, select, show]);
 
   const [panelControls, setPanelControls] = useState(getBasePanelControls());
 
-  useEffect(() => setPanelControls(getBasePanelControls()), [definition]);
+  useEffect(
+    () => setPanelControls(getBasePanelControls()),
+    [definition, getBasePanelControls, setPanelControls]
+  );
 
   return { panelControls };
 };
