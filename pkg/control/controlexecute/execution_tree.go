@@ -196,7 +196,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 		return nil, fmt.Errorf("no resources found matching argument '%s'", arg)
 	}
 	// root item must be either a benchmark or a control
-	if !helpers.StringSliceContains([]string{modconfig.BlockTypeControl, modconfig.BlockTypeQuery}, root.BlockType()) {
+	if !helpers.StringSliceContains([]string{modconfig.BlockTypeControl, modconfig.BlockTypeBenchmark}, root.BlockType()) {
 		return nil, fmt.Errorf("cannot execute '%s' using check, only controls and benchmarks may be run", resource.Name())
 	}
 	return root, nil
