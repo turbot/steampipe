@@ -1,4 +1,4 @@
-## v0.17.0 [2022-11-07]
+## v0.17.0 [2022-11-08]
 
 _What's new?_
 * Add support for `workspace profiles`, defined using HCL config and selected using `--workspace` arg. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2574](https://github.com/turbot/steampipe/issues/2574))
