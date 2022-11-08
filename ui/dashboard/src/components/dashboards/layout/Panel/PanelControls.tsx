@@ -4,13 +4,13 @@ import { ThemeProvider, ThemeWrapper } from "../../../../hooks/useTheme";
 import { usePopper } from "react-popper";
 import { useState } from "react";
 
-export type PanelControl = {
+export type IPanelControl = {
   action: (e: any) => Promise<void>;
   icon: string;
   title: string;
 };
 
-const PanelControl = ({ action, icon, title }) => {
+const PanelControl = ({ action, icon, title }: IPanelControl) => {
   return (
     <div
       className="p-1 cursor-pointer bg-dashboard-panel text-foreground first:rounded-tl-[4px] first:rounded-bl-[4px] last:rounded-tr-[4px] last:rounded-br-[4px] hover:bg-dashboard"

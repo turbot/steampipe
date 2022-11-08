@@ -45,7 +45,7 @@ const FloatingEdge = ({
       <path
         id={id}
         // className="stroke-[1] stroke-foreground-light"
-        className="react-flow__edge-path"
+        // className="react-flow__edge-path"
         d={d}
         markerEnd={markerEnd}
         style={{

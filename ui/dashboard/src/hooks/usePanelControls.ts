@@ -1,8 +1,8 @@
-import { PanelControl } from "../components/dashboards/layout/Panel/PanelControls";
-import { useCallback, useEffect, useState } from "react";
-import useSelectPanel from "./useSelectPanel";
-import { PanelDefinition } from "../types";
 import useDownloadPanelData from "./useDownloadPanelData";
+import useSelectPanel from "./useSelectPanel";
+import { IPanelControl } from "../components/dashboards/layout/Panel/PanelControls";
+import { PanelDefinition } from "../types";
+import { useCallback, useEffect, useState } from "react";
 
 const usePanelControls = (definition, show = false) => {
   const { download } = useDownloadPanelData(definition as PanelDefinition);
@@ -17,7 +17,7 @@ const usePanelControls = (definition, show = false) => {
   );
 
   const getBasePanelControls = useCallback(() => {
-    const controls: PanelControl[] = [];
+    const controls: IPanelControl[] = [];
     if (!show || !definition) {
       return controls;
     }

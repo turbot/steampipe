@@ -166,7 +166,7 @@ const useGraphOptions = (props: GraphProps) => {
   useEffect(() => {
     setGraphEdges(edges);
     setGraphNodes(nodes);
-  }, [nodes, edges]);
+  }, [nodes, edges, setGraphNodes, setGraphEdges]);
 
   useEffect(() => {
     setNodes(nodesAndEdges.nodes);
@@ -195,7 +195,7 @@ const useGraphNodesAndEdges = (
   const themeColors = useChartThemeColors();
   const nodesAndEdges = useMemo(
     () => buildGraphNodesAndEdges(data, properties, themeColors, expandedNodes),
-    [data, properties, themeColors, layoutId]
+    [data, expandedNodes, properties, themeColors, layoutId]
   );
   return {
     nodesAndEdges,
@@ -236,7 +236,7 @@ const ResetZoomControl = () => {
   // so that we can call it when the edges or nodes change to update the layout
   useEffect(() => {
     setFitView(fitView);
-  }, [fitView]);
+  }, [fitView, setFitView]);
 
   return (
     <ControlButton
