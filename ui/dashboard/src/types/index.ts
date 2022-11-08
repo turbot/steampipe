@@ -318,13 +318,8 @@ export interface PanelDefinition {
   error?: Error;
   properties?: PanelProperties;
   dashboard: string;
+  children?: DashboardLayoutNode[];
 }
-
-export interface BenchmarkDefinition extends PanelDefinition {
-  children?: BenchmarkDefinition | ControlDefinition[];
-}
-
-export interface ControlDefinition extends PanelDefinition {}
 
 export interface DashboardDefinition {
   artificial: boolean;

@@ -5,7 +5,6 @@ import PanelTitle from "../../titles/PanelTitle";
 import Placeholder from "../../Placeholder";
 import usePanelControls from "../../../../hooks/usePanelControls";
 import { BaseChartProps } from "../../charts/types";
-import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
@@ -13,6 +12,7 @@ import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs/types";
 import { memo, useState } from "react";
+import { PanelDefinition } from "../../../../types";
 import { PanelProvider } from "../../../../hooks/usePanel";
 import { ReactNode } from "react";
 import { registerComponent } from "../../index";
@@ -26,7 +26,6 @@ interface PanelProps {
   className?: string;
   definition:
     | BaseChartProps
-    | BenchmarkDefinition
     | CardProps
     | HierarchyProps
     | ImageProps

@@ -4,7 +4,8 @@ import ContainerTitle from "../../titles/ContainerTitle";
 import Error from "../../Error";
 import Grid from "../../layout/Grid";
 import Panel from "../../layout/Panel";
-import { BenchmarkDefinition, PanelDefinition } from "../../../../types";
+import PanelControls from "../../layout/Panel/PanelControls";
+import usePanelControls from "../../../../hooks/usePanelControls";
 import {
   BenchmarkTreeProps,
   CheckDisplayGroup,
@@ -18,6 +19,7 @@ import {
 import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
 import { noop } from "../../../../utils/func";
+import { PanelDefinition } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo, useState } from "react";
 import { Width } from "../../common";
@@ -26,12 +28,12 @@ const Table = getComponent("table");
 
 interface BenchmarkTableViewProps {
   benchmark: BenchmarkType;
-  definition: BenchmarkDefinition;
+  definition: PanelDefinition;
 }
 
 type InnerCheckProps = {
   benchmark: BenchmarkType;
-  definition: BenchmarkDefinition;
+  definition: PanelDefinition;
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
@@ -40,8 +42,7 @@ type InnerCheckProps = {
 };
 
 const Benchmark = (props: InnerCheckProps) => {
-  const { dashboard, selectedDashboard } = useDashboard();
-  const [showBenchmarkControls, setShowBenchmarkControls] = useState(false);
+  const { dashboard } = useDashboard();
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
@@ -52,6 +53,18 @@ const Benchmark = (props: InnerCheckProps) => {
     }
     return props.benchmark.get_data_table();
   }, [props.benchmark, props.grouping]);
+  const [referenceElement, setReferenceElement] = useState(null);
+  const [showBenchmarkControls, setShowBenchmarkControls] = useState(false);
+  const definitionWithData = useMemo(() => {
+    return {
+      ...props.definition,
+      data: benchmarkDataTable,
+    };
+  }, [benchmarkDataTable, props.definition]);
+  const { panelControls: benchmarkControls } = usePanelControls(
+    definitionWithData,
+    props.showControls
+  );
 
   const summaryCards = useMemo(() => {
     if (!props.grouping) {
@@ -158,9 +171,16 @@ const Benchmark = (props: InnerCheckProps) => {
           : noop,
         onMouseLeave: () => setShowBenchmarkControls(false),
       }}
+      setRef={setReferenceElement}
     >
       {!dashboard?.artificial && (
         <ContainerTitle title={props.benchmark.title} />
+      )}
+      {showBenchmarkControls && (
+        <PanelControls
+          referenceElement={referenceElement}
+          controls={benchmarkControls}
+        />
       )}
       <Grid name={`${props.definition.name}.container.summary`}>
         {summaryCards.map((summaryCard) => {
@@ -196,47 +216,6 @@ const Benchmark = (props: InnerCheckProps) => {
       </Grid>
     </Grid>
   );
-
-  // return (
-  //   <Container
-  //     definition={{
-  //       name: props.definition.name,
-  //       panel_type: "container",
-  //       children: [
-  //         {
-  //           name: `${props.definition.name}.container.summary`,
-  //           panel_type: "container",
-  //           children: summary_cards,
-  //         },
-  //         {
-  //           name: `${props.definition.name}.container.tree`,
-  //           panel_type: "container",
-  //           children: [
-  //             {
-  //               name: `${props.definition.name}.container.tree.results`,
-  //               panel_type: "benchmark_tree",
-  //               properties: {
-  //                 grouping: props.grouping,
-  //                 first_child_summaries: props.firstChildSummaries,
-  //               },
-  //             },
-  //           ],
-  //         },
-  //       ],
-  //       data: benchmarkDataTable,
-  //       title: dashboard?.artificial ? undefined : props.benchmark.title,
-  //       width: props.definition.width,
-  //     }}
-  //     // @ts-ignore
-  //     expandDefinition={{
-  //       ...props.definition,
-  //       title: props.benchmark.title || selectedDashboard?.title,
-  //       data: benchmarkDataTable,
-  //     }}
-  //     showControls={true}
-  //     withTitle={props.withTitle}
-  //   />
-  // );
 };
 
 const BenchmarkTree = (props: BenchmarkTreeProps) => {

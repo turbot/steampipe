@@ -3,9 +3,9 @@ import { PanelDetailProps } from "./index";
 import { PanelDefinition } from "../../../../types";
 
 const PanelDetailPreview = ({
-  definition: { name, panel_type, title, ...rest },
+  definition: { children, name, panel_type, title, ...rest },
 }: PanelDetailProps) => {
-  const layoutDefinition = { name, panel_type };
+  const layoutDefinition = { children, name, panel_type };
   const panelDefinition = {
     name,
     panel_type,

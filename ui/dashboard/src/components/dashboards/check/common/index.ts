@@ -117,20 +117,6 @@ export interface CheckControlRun {
   error?: string;
 }
 
-export type CheckGroupType = "benchmark" | "table";
-
-export interface CheckBenchmarkRun {
-  name: string;
-  title?: string;
-  description?: string;
-  panel_type: "benchmark";
-  tags?: CheckTags;
-  type: CheckGroupType;
-  source_definition: string;
-  summary: CheckLeafNodeDataGroupSummary;
-  children?: CheckBenchmarkRun[] | CheckControlRun[];
-}
-
 export type CheckDisplayGroupType =
   | "benchmark"
   | "control"
