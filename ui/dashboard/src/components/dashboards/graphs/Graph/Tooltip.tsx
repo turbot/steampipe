@@ -122,7 +122,7 @@ const Tooltip = ({
   hideDelay = 500,
   overlay,
   show = false,
-  showDelay = 200,
+  showDelay = 250,
   title,
 }: TooltipProps) => {
   const timeoutId = useRef<NodeJS.Timeout | undefined>(undefined);
