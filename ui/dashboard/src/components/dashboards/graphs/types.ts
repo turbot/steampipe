@@ -47,15 +47,16 @@ export interface IGraph {
 export type NodeAndEdgeState = "pending" | "error" | "complete";
 
 type BaseNodeAndEdgeStatus = {
+  id: string;
   title: string;
   state: NodeAndEdgeState;
 };
 
-type NodeStatus = BaseNodeAndEdgeStatus & {
-  count?: number;
+export type NodeStatus = BaseNodeAndEdgeStatus & {
+  count: number;
 };
 
-type EdgeStatus = BaseNodeAndEdgeStatus;
+export type EdgeStatus = BaseNodeAndEdgeStatus;
 
 export type NodeAndEdgeStatus = {
   nodes: NodeStatus[];

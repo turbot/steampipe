@@ -2,6 +2,7 @@ import AssetNode from "./AssetNode";
 import dagre from "dagre";
 import ErrorPanel from "../../Error";
 import FloatingEdge from "./FloatingEdge";
+import NodeAndEdgePanelInformation from "../../common/NodeAndEdgePanelInformation";
 import ReactFlow, {
   ControlButton,
   Controls,
@@ -23,7 +24,13 @@ import {
   LeafNodeData,
 } from "../../common";
 import { getGraphComponent } from "..";
-import { GraphProperties, GraphProps } from "../types";
+import {
+  GraphProperties,
+  GraphProps,
+  NodeAndEdgeDataFormat,
+  NodeAndEdgeStatus,
+  NodeStatus,
+} from "../types";
 import { GraphProvider, useGraph } from "../common/useGraph";
 import { KeyValueStringPairs } from "../../common/types";
 import { registerComponent } from "../../index";
@@ -284,21 +291,67 @@ const CustomControls = () => {
   );
 };
 
-const Graph = ({ props }) => {
+const useNodeAndEdgePanelInformation = (
+  nodeAndEdgeStatus: NodeAndEdgeStatus,
+  dataFormat: NodeAndEdgeDataFormat
+) => {
   const { setShowPanelInformation, setPanelInformation } = usePanel();
-  const graphOptions = useGraphOptions(props);
+
+  const { pendingNodes, errorNodes, completeNodes } = useMemo(() => {
+    const pendingNodes: NodeStatus[] = [];
+    const errorNodes: NodeStatus[] = [];
+    const completeNodes: NodeStatus[] = [];
+    for (const node of nodeAndEdgeStatus.nodes) {
+      if (node.state === "pending") {
+        pendingNodes.push(node);
+      } else if (node.state === "error") {
+        errorNodes.push(node);
+      } else if (node.count > 0) {
+        completeNodes.push(node);
+      }
+    }
+    return {
+      pendingNodes,
+      errorNodes,
+      completeNodes,
+    };
+  }, [nodeAndEdgeStatus.nodes, nodeAndEdgeStatus.edges]);
 
   useEffect(() => {
-    if (!props.status) {
+    if (
+      !nodeAndEdgeStatus ||
+      dataFormat === "LEGACY" ||
+      (pendingNodes.length === 0 && errorNodes.length === 0)
+    ) {
       setShowPanelInformation(false);
       setPanelInformation(null);
       return;
     }
-    console.log(props.status);
+    console.log(nodeAndEdgeStatus);
     // @ts-ignore
-    setPanelInformation(() => <p>Hello, world!</p>);
+    setPanelInformation(() => (
+      <NodeAndEdgePanelInformation
+        pendingNodes={pendingNodes}
+        errorNodes={errorNodes}
+        completeNodes={completeNodes}
+      />
+    ));
     setShowPanelInformation(true);
-  }, [props.status, setPanelInformation, setShowPanelInformation]);
+  }, [
+    dataFormat,
+    nodeAndEdgeStatus,
+    pendingNodes,
+    errorNodes,
+    completeNodes,
+    setPanelInformation,
+    setShowPanelInformation,
+  ]);
+};
+
+const Graph = ({ props }) => {
+  const graphOptions = useGraphOptions(props);
+
+  useNodeAndEdgePanelInformation(props.status, props.dataFormat);
 
   return (
     <ReactFlowProvider>
@@ -354,6 +407,7 @@ const GraphWrapper = (props: GraphProps) => {
         props={{
           ...props,
           data: nodeAndEdgeData.data,
+          dataFormat: nodeAndEdgeData.dataFormat,
           properties: nodeAndEdgeData.properties,
           status: nodeAndEdgeData.status,
         }}

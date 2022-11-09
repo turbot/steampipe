@@ -44,9 +44,10 @@ const useNodeAndEdgeData = (
 ) => {
   const { panelsMap } = useDashboard();
   return useMemo(() => {
-    if (getNodeAndEdgeDataFormat(properties) === "LEGACY") {
+    const dataFormat = getNodeAndEdgeDataFormat(properties);
+    if (dataFormat === "LEGACY") {
       if (status === "complete") {
-        return data ? { data, properties } : null;
+        return data ? { data, dataFormat, properties } : null;
       }
       return null;
     }
@@ -68,7 +69,7 @@ const useNodeAndEdgeData = (
       }
 
       const artificialCategoryId = `node_category_${nodePanelName}`;
-      const artificialPlaceholderCategoryId = `node_category_placeholder_${nodePanelName}`;
+      // const artificialPlaceholderCategoryId = `node_category_placeholder_${nodePanelName}`;
 
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
 
@@ -82,28 +83,43 @@ const useNodeAndEdgeData = (
 
       // If we don't have any rows for this node type, add a placeholder
       const nodeProperties = (panel.properties || {}) as NodeProperties;
-      if (!typedPanelData.rows && nodeProperties.category) {
-        newProperties = set(
-          newProperties || {},
-          `categories["${artificialPlaceholderCategoryId}"]`,
-          {
-            ...nodeProperties.category,
-            fold: {
-              ...(nodeProperties.category.fold || {}),
-              threshold: 1,
-            },
-          }
-        );
-        rows.push({
-          id: nodePanelName,
-          title: nodeProperties.category.title || nodeProperties.category.name,
-          category: artificialPlaceholderCategoryId,
-        });
-        continue;
-      }
+      // if (!typedPanelData.rows && nodeProperties.category) {
+      //   newProperties = set(
+      //     newProperties || {},
+      //     `categories["${artificialPlaceholderCategoryId}"]`,
+      //     {
+      //       ...nodeProperties.category,
+      //       fold: {
+      //         ...(nodeProperties.category.fold || {}),
+      //         threshold: 1,
+      //       },
+      //     }
+      //   );
+      //   rows.push({
+      //     id: nodePanelName,
+      //     title: nodeProperties.category.title || nodeProperties.category.name,
+      //     category: artificialPlaceholderCategoryId,
+      //   });
+      //   continue;
+      // }
 
       // Ensure we have category info set for each row
-      for (const row of typedPanelData.rows || []) {
+      const nodeDataRows = typedPanelData.rows || [];
+
+      nodeAndEdgeStatus.nodes.push({
+        id: nodePanelName,
+        // @ts-ignore
+        title: nodePanelName.split(".").pop(),
+        state:
+          panel.status === "error"
+            ? "error"
+            : panel.status === "complete"
+            ? "complete"
+            : "pending",
+        count: nodeDataRows.length,
+      });
+
+      for (const row of nodeDataRows) {
         // Ensure each row has an id
         if (row.id === null || row.id === undefined) {
           continue;
@@ -129,6 +145,7 @@ const useNodeAndEdgeData = (
         rows.push(updatedRow);
       }
     }
+
     for (const edgePanelName of properties?.edges || []) {
       const panel = panelsMap[edgePanelName];
       if (!panel || !panel.data) {
@@ -187,6 +204,7 @@ const useNodeAndEdgeData = (
     }
     return {
       data: { columns, rows },
+      dataFormat,
       properties: newProperties,
       status: nodeAndEdgeStatus,
     };

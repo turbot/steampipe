@@ -8,7 +8,7 @@ const PanelInformation = () => {
   }
 
   return (
-    <div className="absolute top-1 right-1 p-2 max-w-sm border border-divide rounded-md text-sm">
+    <div className="absolute h-[97%] overflow-y-scroll z-50 top-2 right-2 p-2 max-w-sm bg-dashboard-panel border border-divide rounded-md text-sm">
       {panelInformation}
     </div>
   );
