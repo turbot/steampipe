@@ -10,7 +10,7 @@ import {
   KeyValuePairs,
 } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
-import { Handle } from "react-flow-renderer";
+import { Handle } from "reactflow";
 import { memo, useEffect, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames } from "../../../../hooks/useTheme";
@@ -156,7 +156,9 @@ const AssetNode = ({
           {!renderedHref &&
             isFolded &&
             !fold?.title &&
-            `${foldedNodes?.length} nodes...`}
+            `${foldedNodes?.length || 0} ${
+              foldedNodes?.length === 1 ? "node" : "nodes"
+            }...`}
         </div>
       </div>
     </>

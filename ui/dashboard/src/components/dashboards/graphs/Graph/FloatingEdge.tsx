@@ -2,8 +2,8 @@ import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import { classNames } from "../../../../utils/styles";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
+import { EdgeLabelRenderer, useStore } from "reactflow";
 import { useCallback } from "react";
-import { useStore } from "react-flow-renderer";
 
 const FloatingEdge = ({
   id,
@@ -40,12 +40,21 @@ const FloatingEdge = ({
     targetY: ty,
   });
 
-  const edge = (
-    <g className="relative">
+  const edgeLabel = (
+    <div>
+      <p
+        className="block p-1 bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-wrap line-clamp-2"
+        title={label}
+      >
+        {label}
+      </p>
+    </div>
+  );
+
+  return (
+    <>
       <path
         id={id}
-        // className="stroke-[1] stroke-foreground-light"
-        className="react-flow__edge-path"
         d={d}
         markerEnd={markerEnd}
         style={{
@@ -54,60 +63,32 @@ const FloatingEdge = ({
           strokeWidth: 1,
         }}
       />
-      <foreignObject
-        className="z-50"
-        height="32"
-        width="60"
-        x={mx - 30}
-        y={my - 16}
-        requiredExtensions="http://www.w3.org/1999/xhtml"
-      >
+      <EdgeLabelRenderer>
         <div
           className={classNames(
-            "h-full flex items-center align-center",
-            row_data?.properties ? "cursor-context-menu" : null
+            "absolute pointer-events-auto",
+            row_data?.properties ? "cursor-pointer" : null
           )}
+          style={{
+            transform: `translate(-50%, -50%) translate(${mx}px,${my}px)`,
+          }}
         >
-          <p
-            className="mx-auto px-1 inline-block text-center bg-dashboard-panel text-black-scale-4 italic text-sm text-wrap leading-4 line-clamp-2"
-            title={label}
-          >
-            {label}
-          </p>
+          {row_data && row_data.properties && (
+            <Tooltip
+              overlay={
+                <RowProperties
+                  fields={fields || null}
+                  properties={row_data.properties}
+                />
+              }
+              title={label}
+            >
+              {edgeLabel}
+            </Tooltip>
+          )}
+          {(!row_data || !row_data.properties) && edgeLabel}
         </div>
-      </foreignObject>
-      {/*<EdgeText*/}
-      {/*  // className="italic text-[5px] fill-foreground-light"*/}
-      {/*  // className="react-flow__edge-text"*/}
-      {/*  // className="text-alert"*/}
-      {/*  x={mx}*/}
-      {/*  y={my}*/}
-      {/*  label={label}*/}
-      {/*  labelStyle={labelStyle}*/}
-      {/*  labelShowBg={labelShowBg}*/}
-      {/*  labelBgStyle={labelBgStyle}*/}
-      {/*  labelBgPadding={labelBgPadding}*/}
-      {/*  labelBgBorderRadius={labelBgBorderRadius}*/}
-      {/*/>*/}
-    </g>
-  );
-
-  return (
-    <>
-      {row_data && row_data.properties && (
-        <Tooltip
-          overlay={
-            <RowProperties
-              fields={fields || null}
-              properties={row_data.properties}
-            />
-          }
-          title={label}
-        >
-          {edge}
-        </Tooltip>
-      )}
-      {(!row_data || !row_data.properties) && edge}
+      </EdgeLabelRenderer>
     </>
   );
 };

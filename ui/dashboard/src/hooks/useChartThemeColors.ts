@@ -1,12 +1,12 @@
 import { useDashboard } from "./useDashboard";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const useChartThemeColors = () => {
   const {
     themeContext: { theme, wrapperRef },
   } = useDashboard();
 
-  const getThemeColors = () => {
+  const getThemeColors = useCallback(() => {
     // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
     const style = wrapperRef
       ? // @ts-ignore
@@ -38,7 +38,7 @@ const useChartThemeColors = () => {
     } else {
       return {};
     }
-  };
+  }, [wrapperRef]);
 
   const [themeColors, setThemeColors] = useState(getThemeColors());
   const [random, setRandom] = useState<number | null>(null);
@@ -46,7 +46,7 @@ const useChartThemeColors = () => {
   useEffect(() => {
     setThemeColors(getThemeColors());
     // getThemeColors uses a ref that can sit outside the hook dependencies
-  }, [random, theme.name, setThemeColors]);
+  }, [getThemeColors, random, theme.name, setThemeColors]);
 
   useEffect(() => {
     setRandom(Math.random() * Math.random());

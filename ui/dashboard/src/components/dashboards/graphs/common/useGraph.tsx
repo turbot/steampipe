@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { Edge, Node } from "react-flow-renderer";
+import { Edge, Node } from "reactflow";
 import { FoldedNode, KeyValueStringPairs } from "../../common/types";
 import { noop } from "../../../../utils/func";
 import { useDashboard } from "../../../../hooks/useDashboard";
@@ -41,7 +41,7 @@ const GraphProvider = ({ children }) => {
       return;
     }
     fitView();
-  }, [graphEdges, graphNodes]);
+  }, [fitView, graphEdges, graphNodes]);
 
   // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
   useEffect(() => setLayoutId(uuid()), [theme.name]);

@@ -9,10 +9,11 @@ import ReactFlow, {
   MarkerType,
   Node,
   Position,
+  ReactFlowProvider,
   useNodesState,
   useEdgesState,
   useReactFlow,
-} from "react-flow-renderer";
+} from "reactflow";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
@@ -33,6 +34,7 @@ import {
   ZoomOutIcon,
 } from "../../../../constants/icons";
 import { useEffect, useMemo } from "react";
+import "reactflow/dist/style.css";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -166,7 +168,7 @@ const useGraphOptions = (props: GraphProps) => {
   useEffect(() => {
     setGraphEdges(edges);
     setGraphNodes(nodes);
-  }, [nodes, edges]);
+  }, [nodes, edges, setGraphNodes, setGraphEdges]);
 
   useEffect(() => {
     setNodes(nodesAndEdges.nodes);
@@ -191,11 +193,11 @@ const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined
 ) => {
-  const { expandedNodes, layoutId } = useGraph();
+  const { expandedNodes } = useGraph();
   const themeColors = useChartThemeColors();
   const nodesAndEdges = useMemo(
     () => buildGraphNodesAndEdges(data, properties, themeColors, expandedNodes),
-    [data, properties, themeColors, layoutId]
+    [data, expandedNodes, properties, themeColors]
   );
   return {
     nodesAndEdges,
@@ -236,7 +238,7 @@ const ResetZoomControl = () => {
   // so that we can call it when the edges or nodes change to update the layout
   useEffect(() => {
     setFitView(fitView);
-  }, [fitView]);
+  }, [fitView, setFitView]);
 
   return (
     <ControlButton
@@ -285,25 +287,34 @@ const Graph = ({ props }) => {
   const graphOptions = useGraphOptions(props);
 
   return (
-    <ReactFlow
-      // @ts-ignore
-      edgeTypes={edgeTypes}
-      edges={graphOptions.edges}
-      fitView
-      nodes={graphOptions.nodes}
-      nodeTypes={nodeTypes}
-      onEdgesChange={graphOptions.onEdgesChange}
-      onNodesChange={graphOptions.onNodesChange}
-      preventScrolling={false}
-      proOptions={{
-        account: "paid-pro",
-        hideAttribution: true,
-      }}
-      style={{ height: Math.min(600, graphOptions.height), minHeight: 150 }}
-      zoomOnScroll={false}
-    >
-      <CustomControls />
-    </ReactFlow>
+    <ReactFlowProvider>
+      <div
+        style={{
+          height: Math.min(600, graphOptions.height),
+          maxHeight: 600,
+          minHeight: 150,
+        }}
+      >
+        <ReactFlow
+          // @ts-ignore
+          edgeTypes={edgeTypes}
+          edges={graphOptions.edges}
+          fitView
+          nodes={graphOptions.nodes}
+          nodeTypes={nodeTypes}
+          onEdgesChange={graphOptions.onEdgesChange}
+          onNodesChange={graphOptions.onNodesChange}
+          preventScrolling={false}
+          proOptions={{
+            account: "paid-pro",
+            hideAttribution: true,
+          }}
+          zoomOnScroll={false}
+        >
+          <CustomControls />
+        </ReactFlow>
+      </div>
+    </ReactFlowProvider>
   );
 };
 
