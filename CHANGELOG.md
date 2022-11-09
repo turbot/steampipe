@@ -1,3 +1,8 @@
+## v0.17.1 [tbd]
+_Bug fixes_
+* Fix query command `--export` flag raising an error that it cannot be used in interactive mode, even when not in interactive mode. ([#2707](https://github.com/turbot/steampipe/issues/2707))
+* Fix RefreshConnections sometimes storing an unset plugin ModTime property in the connection state file. This leads to failure to refresh connections when plugin has been rebuilt or updated. ([#2721](https://github.com/turbot/steampipe/issues/2721))
+
 ## v0.17.0 [2022-11-08]
 
 _What's new?_
