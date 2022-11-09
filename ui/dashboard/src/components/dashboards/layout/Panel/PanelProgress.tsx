@@ -58,7 +58,7 @@ const PanelProgress = ({ className }) => {
     <div
       className={classNames(
         className,
-        "w-full h-[6px] bg-dashboard-panel print:hidden"
+        "w-full h-[4px] bg-dashboard-panel print:hidden"
       )}
     >
       {progress < 100 && (

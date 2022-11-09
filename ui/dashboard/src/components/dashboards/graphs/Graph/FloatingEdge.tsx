@@ -40,7 +40,7 @@ const FloatingEdge = ({
     targetY: ty,
   });
 
-  const labelComp = (
+  const edgeLabel = (
     <div>
       <p
         className="block p-1 bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-wrap line-clamp-2"
@@ -83,10 +83,10 @@ const FloatingEdge = ({
               }
               title={label}
             >
-              {labelComp}
+              {edgeLabel}
             </Tooltip>
           )}
-          {(!row_data || !row_data.properties) && labelComp}
+          {(!row_data || !row_data.properties) && edgeLabel}
         </div>
       </EdgeLabelRenderer>
     </>
