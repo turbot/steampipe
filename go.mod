@@ -35,7 +35,7 @@ require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/image-spec v1.0.2
-	github.com/otiai10/copy v1.7.1
+	github.com/otiai10/copy v1.9.0
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18
 	github.com/shirou/gopsutil v3.21.11+incompatible
