@@ -9,6 +9,7 @@ import ReactFlow, {
   MarkerType,
   Node,
   Position,
+  ReactFlowProvider,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -286,25 +287,34 @@ const Graph = ({ props }) => {
   const graphOptions = useGraphOptions(props);
 
   return (
-    <ReactFlow
-      // @ts-ignore
-      edgeTypes={edgeTypes}
-      edges={graphOptions.edges}
-      fitView
-      nodes={graphOptions.nodes}
-      nodeTypes={nodeTypes}
-      onEdgesChange={graphOptions.onEdgesChange}
-      onNodesChange={graphOptions.onNodesChange}
-      preventScrolling={false}
-      proOptions={{
-        account: "paid-pro",
-        hideAttribution: true,
-      }}
-      style={{ height: Math.min(600, graphOptions.height), minHeight: 150 }}
-      zoomOnScroll={false}
-    >
-      <CustomControls />
-    </ReactFlow>
+    <ReactFlowProvider>
+      <div
+        style={{
+          height: Math.min(600, graphOptions.height),
+          maxHeight: 600,
+          minHeight: 150,
+        }}
+      >
+        <ReactFlow
+          // @ts-ignore
+          edgeTypes={edgeTypes}
+          edges={graphOptions.edges}
+          fitView
+          nodes={graphOptions.nodes}
+          nodeTypes={nodeTypes}
+          onEdgesChange={graphOptions.onEdgesChange}
+          onNodesChange={graphOptions.onNodesChange}
+          preventScrolling={false}
+          proOptions={{
+            account: "paid-pro",
+            hideAttribution: true,
+          }}
+          zoomOnScroll={false}
+        >
+          <CustomControls />
+        </ReactFlow>
+      </div>
+    </ReactFlowProvider>
   );
 };
 
