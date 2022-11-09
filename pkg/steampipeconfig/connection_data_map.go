@@ -103,12 +103,13 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 		var modTime time.Time
 		var ok bool
 		if modTime, ok = modTimeMap[pluginPath]; !ok {
-			modTime, err := utils.FileModTime(pluginPath)
+			var err error
+			modTime, err = utils.FileModTime(pluginPath)
 			if err != nil {
 				return nil, nil, err
 			}
-			modTimeMap[pluginPath] = modTime
 		}
+		modTimeMap[pluginPath] = modTime
 
 		requiredConnections[name] = NewConnectionData(remoteSchema, connection, modTime)
 	}
