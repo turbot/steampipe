@@ -53,6 +53,7 @@ const useNodeAndEdgeData = (
     }
 
     const nodeAndEdgeStatus: NodeAndEdgeStatus = {
+      categories: {},
       nodes: [],
       edges: [],
     };
@@ -103,6 +104,27 @@ const useNodeAndEdgeData = (
       //   continue;
       // }
 
+      if (nodeProperties.category) {
+        // @ts-ignore
+        if (!nodeAndEdgeStatus.categories[nodeProperties.category.name]) {
+          // @ts-ignore
+          nodeAndEdgeStatus.categories[nodeProperties.category.name] = {
+            id: nodeProperties.category.name,
+            title: nodeProperties.category.title,
+            state:
+              panel.status === "error"
+                ? "error"
+                : panel.status === "complete"
+                ? "complete"
+                : "pending",
+          };
+        } else if (panel.status !== "complete") {
+          // @ts-ignore
+          nodeAndEdgeStatus.categories[nodeProperties.category.name].state =
+            panel.status === "error" ? "error" : "pending";
+        }
+      }
+
       // Ensure we have category info set for each row
       const nodeDataRows = typedPanelData.rows || [];
 
@@ -151,6 +173,29 @@ const useNodeAndEdgeData = (
       if (!panel || !panel.data) {
         continue;
       }
+
+      const edgeProperties = (panel.properties || {}) as EdgeProperties;
+      if (edgeProperties.category) {
+        // @ts-ignore
+        if (!nodeAndEdgeStatus.categories[edgeProperties.category.name]) {
+          // @ts-ignore
+          nodeAndEdgeStatus.categories[edgeProperties.category.name] = {
+            id: edgeProperties.category.name,
+            title: edgeProperties.category.title,
+            state:
+              panel.status === "error"
+                ? "error"
+                : panel.status === "complete"
+                ? "complete"
+                : "pending",
+          };
+        } else if (panel.status !== "complete") {
+          // @ts-ignore
+          nodeAndEdgeStatus.categories[edgeProperties.category.name].state =
+            panel.status === "error" ? "error" : "pending";
+        }
+      }
+
       const typedPanelData = panel.data as NodeAndEdgeData;
       for (const column of typedPanelData.columns) {
         if (columns.some((c) => c.name === column.name)) {

@@ -25,11 +25,11 @@ import {
 } from "../../common";
 import { getGraphComponent } from "..";
 import {
+  CategoryStatus,
   GraphProperties,
   GraphProps,
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
-  NodeStatus,
 } from "../types";
 import { GraphProvider, useGraph } from "../common/useGraph";
 import { KeyValueStringPairs } from "../../common/types";
@@ -297,31 +297,36 @@ const useNodeAndEdgePanelInformation = (
 ) => {
   const { setShowPanelInformation, setPanelInformation } = usePanel();
 
-  const { pendingNodes, errorNodes, completeNodes } = useMemo(() => {
-    const pendingNodes: NodeStatus[] = [];
-    const errorNodes: NodeStatus[] = [];
-    const completeNodes: NodeStatus[] = [];
-    for (const node of nodeAndEdgeStatus.nodes) {
-      if (node.state === "pending") {
-        pendingNodes.push(node);
-      } else if (node.state === "error") {
-        errorNodes.push(node);
-      } else if (node.count > 0) {
-        completeNodes.push(node);
+  const { pendingCategories, errorCategories, completeCategories } =
+    useMemo(() => {
+      const pendingCategories: CategoryStatus[] = [];
+      const errorCategories: CategoryStatus[] = [];
+      const completeCategories: CategoryStatus[] = [];
+      for (const category of Object.values(nodeAndEdgeStatus.categories)) {
+        if (category.state === "pending") {
+          pendingCategories.push(category);
+        } else if (category.state === "error") {
+          errorCategories.push(category);
+        } else {
+          completeCategories.push(category);
+        }
       }
-    }
-    return {
-      pendingNodes,
-      errorNodes,
-      completeNodes,
-    };
-  }, [nodeAndEdgeStatus.nodes, nodeAndEdgeStatus.edges]);
+      return {
+        pendingCategories,
+        errorCategories,
+        completeCategories,
+      };
+    }, [
+      nodeAndEdgeStatus.categories,
+      nodeAndEdgeStatus.nodes,
+      nodeAndEdgeStatus.edges,
+    ]);
 
   useEffect(() => {
     if (
       !nodeAndEdgeStatus ||
       dataFormat === "LEGACY" ||
-      (pendingNodes.length === 0 && errorNodes.length === 0)
+      (pendingCategories.length === 0 && errorCategories.length === 0)
     ) {
       setShowPanelInformation(false);
       setPanelInformation(null);
@@ -331,18 +336,18 @@ const useNodeAndEdgePanelInformation = (
     // @ts-ignore
     setPanelInformation(() => (
       <NodeAndEdgePanelInformation
-        pendingNodes={pendingNodes}
-        errorNodes={errorNodes}
-        completeNodes={completeNodes}
+        pendingCategories={pendingCategories}
+        errorCategories={errorCategories}
+        completeCategories={completeCategories}
       />
     ));
     setShowPanelInformation(true);
   }, [
     dataFormat,
     nodeAndEdgeStatus,
-    pendingNodes,
-    errorNodes,
-    completeNodes,
+    pendingCategories,
+    errorCategories,
+    completeCategories,
     setPanelInformation,
     setShowPanelInformation,
   ]);
