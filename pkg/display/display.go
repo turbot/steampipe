@@ -25,8 +25,57 @@ import (
 	"golang.org/x/text/message"
 )
 
+type ShowOutputConfiguration struct {
+	timing *bool
+}
+
+type ShowOutputOption = func(config *ShowOutputConfiguration)
+
+// ShowTimingIfEnabled enables timing only of it has been enabled from
+// terminal options or the command line
+func ShowTimingIfEnabled() ShowOutputOption {
+	return func(o *ShowOutputConfiguration) {
+		if o.timing == nil {
+			t := viper.GetBool(constants.ArgTiming)
+			o.timing = &t
+		}
+	}
+}
+
+// ShowTimingOnOutput only enables timing if the current output mode is the one provided
+func ShowTimingOnOutput(output string) ShowOutputOption {
+	return func(o *ShowOutputConfiguration) {
+		if o.timing == nil {
+			EnableTiming()(o)
+		}
+		t := *o.timing && (cmdconfig.Viper().GetString(constants.ArgOutput) == output)
+		o.timing = &t
+	}
+}
+
+// DisableTiming disables display of timing data
+func DisableTiming() ShowOutputOption {
+	return func(o *ShowOutputConfiguration) {
+		t := false
+		o.timing = &t
+	}
+}
+
+// EnableTiming enables display of timing data
+func EnableTiming() ShowOutputOption {
+	return func(o *ShowOutputConfiguration) {
+		t := true
+		o.timing = &t
+	}
+}
+
 // ShowOutput displays the output using the proper formatter as applicable
-func ShowOutput(ctx context.Context, result *queryresult.Result) {
+func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...ShowOutputOption) {
+	options := &ShowOutputConfiguration{}
+	for _, o := range opts {
+		o(options)
+	}
+
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
 	case constants.OutputFormatJSON:
 		displayJSON(ctx, result)
@@ -37,6 +86,11 @@ func ShowOutput(ctx context.Context, result *queryresult.Result) {
 	case constants.OutputFormatTable:
 		displayTable(ctx, result)
 	}
+
+	if *options.timing {
+		fmt.Println(buildTimingString(result))
+	}
+
 }
 
 type ShowWrappedTableOptions struct {
@@ -305,11 +359,6 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// page out the table
 	ShowPaged(ctx, outbuf.String())
-
-	// if timer is turned on
-	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
-		fmt.Println(buildTimingString(result))
-	}
 }
 
 func buildTimingString(result *queryresult.Result) string {
