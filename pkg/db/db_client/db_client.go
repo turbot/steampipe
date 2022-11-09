@@ -92,7 +92,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 }
 
 func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) {
-	currentShowTimingFlag := viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable
+	currentShowTimingFlag := viper.GetBool(constants.ArgTiming)
 
 	// if we are turning timing ON, fetch the ScanMetadataMaxId
 	// to ensure we only select the relevant scan metadata table entries
