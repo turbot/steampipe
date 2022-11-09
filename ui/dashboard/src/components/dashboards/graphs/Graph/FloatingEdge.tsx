@@ -43,8 +43,8 @@ const FloatingEdge = ({
   const labelComp = (
     <div>
       <p
-        className="block p-1 bg-dashboard-panel text-black-scale-4 italic text-sm text-wrap line-clamp-2"
-        // title={label}
+        className="block p-1 bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-wrap line-clamp-2"
+        title={label}
       >
         {label}
       </p>
