@@ -137,6 +137,7 @@ const Tooltip = ({
   const trigger = cloneElement(children, {
     ref: setReferenceElement,
     onMouseEnter: () => {
+      // setShowOverlay(true);
       timeoutId.current = setTimeout(() => setShowOverlay(true), showDelay);
     },
     onMouseLeave: () => {
