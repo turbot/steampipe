@@ -58,30 +58,30 @@ connection from any Postgres compatible database client.`,
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service start").
+		AddBoolFlag(constants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
 		// for now default port to -1 so we fall back to the default of the deprecated arg
-		AddIntFlag(constants.ArgDatabasePort, "", constants.DatabaseDefaultPort, "Database service port").
+		AddIntFlag(constants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
 		// for now default listen address to empty so we fall back to the default of the deprecated arg
-		AddStringFlag(constants.ArgListenAddress, "", string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (postgres)").
-		AddStringFlag(constants.ArgServicePassword, "", "", "Set the database password for this session").
+		AddStringFlag(constants.ArgListenAddress, string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (postgres)").
+		AddStringFlag(constants.ArgServicePassword, "", "Set the database password for this session").
 		// default is false and hides the database user password from service start prompt
-		AddBoolFlag(constants.ArgServiceShowPassword, "", false, "View database password for connecting from another machine").
+		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
 		// dashboard server
-		AddBoolFlag(constants.ArgDashboard, "", false, "Run the dashboard webserver with the service").
-		AddStringFlag(constants.ArgDashboardListen, "", string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
-		AddIntFlag(constants.ArgDashboardPort, "", constants.DashboardServerDefaultPort, "Report server port").
+		AddBoolFlag(constants.ArgDashboard, false, "Run the dashboard webserver with the service").
+		AddStringFlag(constants.ArgDashboardListen, string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
+		AddIntFlag(constants.ArgDashboardPort, constants.DashboardServerDefaultPort, "Report server port").
 		// foreground enables the service to run in the foreground - till exit
-		AddBoolFlag(constants.ArgForeground, "", false, "Run the service in the foreground").
+		AddBoolFlag(constants.ArgForeground, false, "Run the service in the foreground").
 
 		// flags relevant only if the --dashboard arg is used:
-		AddStringSliceFlag(constants.ArgVarFile, "", nil, "Specify an .spvar file containing variable values (only applies if '--dashboard' flag is also set)").
+		AddStringSliceFlag(constants.ArgVarFile, nil, "Specify an .spvar file containing variable values (only applies if '--dashboard' flag is also set)").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants.ArgVariable, "", nil, "Specify the value of a variable (only applies if '--dashboard' flag is also set)").
+		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable (only applies if '--dashboard' flag is also set)").
 
 		// hidden flags for internal use
-		AddStringFlag(constants.ArgInvoker, "", string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(constants.ArgInvoker, string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -99,10 +99,10 @@ Report current status of the Steampipe database service.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service status").
+		AddBoolFlag(constants.ArgHelp, false, "Help for service status", cmdconfig.FlagOptions.WithShortHand("h")).
 		// default is false and hides the database user password from service start prompt
-		AddBoolFlag(constants.ArgServiceShowPassword, "", false, "View database password for connecting from another machine").
-		AddBoolFlag(constants.ArgAll, "", false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
+		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
+		AddBoolFlag(constants.ArgAll, false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
 	return cmd
 }
@@ -119,8 +119,8 @@ func serviceStopCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service stop").
-		AddBoolFlag(constants.ArgForce, "", false, "Forces all services to shutdown, releasing all open connections and ports")
+		AddBoolFlag(constants.ArgHelp, false, "Help for service stop", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(constants.ArgForce, false, "Forces all services to shutdown, releasing all open connections and ports")
 
 	return cmd
 }
@@ -137,8 +137,8 @@ func serviceRestartCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for service restart").
-		AddBoolFlag(constants.ArgForce, "", false, "Forces the service to restart, releasing all open connections and ports")
+		AddBoolFlag(constants.ArgHelp, false, "Help for service restart", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(constants.ArgForce, false, "Forces the service to restart, releasing all open connections and ports")
 
 	return cmd
 }

@@ -68,9 +68,9 @@ func modInstallCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unused dependencies after installation is complete").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be installed/updated/uninstalled without modifying them").
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for install")
+		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after installation is complete").
+		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be installed/updated/uninstalled without modifying them").
+		AddBoolFlag(constants.ArgHelp, false, "Help for install", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }
@@ -104,9 +104,9 @@ func modUninstallCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unused dependencies after uninstallation is complete").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be uninstalled without modifying them").
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for uninstall")
+		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after uninstallation is complete").
+		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be uninstalled without modifying them").
+		AddBoolFlag(constants.ArgHelp, false, "Help for uninstall", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }
@@ -139,9 +139,9 @@ func modUpdateCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgPrune, "", true, "Remove unused dependencies after update is complete").
-		AddBoolFlag(constants.ArgDryRun, "", false, "Show which mods would be updated without modifying them").
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for update")
+		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after update is complete").
+		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be updated without modifying them").
+		AddBoolFlag(constants.ArgHelp, false, "Help for update", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }
@@ -174,7 +174,7 @@ func modListCmd() *cobra.Command {
 		Long:  `List currently installed mods.`,
 	}
 
-	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for list")
+	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for list", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
 
@@ -208,7 +208,7 @@ func modInitCmd() *cobra.Command {
 		Long:  `Initialize the current directory with a mod.sp file.`,
 	}
 
-	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, "h", false, "Help for init")
+	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for init", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
 
