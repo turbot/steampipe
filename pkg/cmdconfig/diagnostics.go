@@ -8,9 +8,11 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
+	"sort"
 	"strings"
 )
 
+// DisplayConfig prints all config set via WorkspaceProfile or HCL options
 func DisplayConfig() {
 	diagnostics, ok := os.LookupEnv(constants.EnvDiagnostics)
 	if !ok {
@@ -24,7 +26,8 @@ func DisplayConfig() {
 		return
 	}
 
-	var argNames = []string{
+	var configArgNames = []string{
+		// workspace profile
 		constants.ArgInstallDir,
 		constants.ArgModLocation,
 		constants.ArgSnapshotLocation,
@@ -32,26 +35,55 @@ func DisplayConfig() {
 		constants.ArgWorkspaceDatabase,
 		constants.ArgCloudHost,
 		constants.ArgCloudToken,
+		constants.ArgDatabaseQueryTimeout,
+
+		// database
+		constants.ArgDatabasePort,
+		constants.ArgListenAddress,
+		constants.ArgSearchPath,
+		constants.ArgDatabaseQueryTimeout,
+		// general
+		constants.ArgUpdateCheck,
+		constants.ArgMaxParallel,
+		constants.ArgTelemetry,
+		// terminal
+		constants.ArgOutput,
+		constants.ArgSeparator,
+		constants.ArgHeader,
+		constants.ArgMultiLine,
+		constants.ArgTiming,
+		// constants.ArgSearchPath,
+		constants.ArgSearchPathPrefix,
+		constants.ArgWatch,
+		constants.ArgAutoComplete,
 	}
-	res := make(map[string]interface{}, len(argNames))
+	res := make(map[string]interface{}, len(configArgNames))
 
 	maxLength := 0
-	for _, a := range argNames {
+	for _, a := range configArgNames {
 		if l := len(a); l > maxLength {
 			maxLength = l
 		}
-
 		res[a] = viper.Get(a)
 	}
 
 	switch diagnostics {
 	case "config":
+		// write config lines into array then sort them
+		lines := make([]string, len(res))
+		idx := 0
+		fmtStr := `%-` + fmt.Sprintf("%d", maxLength) + `s: %v` + "\n"
+		for k, v := range res {
+			lines[idx] = fmt.Sprintf(fmtStr, k, v)
+			idx++
+		}
+		sort.Strings(lines)
+
 		var b strings.Builder
 		b.WriteString("\n================\nSteampipe Config\n================\n\n")
-		fmtStr := `%-` + fmt.Sprintf("%d", maxLength) + `s: %v` + "\n"
 
-		for k, v := range res {
-			b.WriteString(fmt.Sprintf(fmtStr, k, v))
+		for _, line := range lines {
+			b.WriteString(line)
 		}
 		fmt.Println(b.String())
 	case "config_json":
