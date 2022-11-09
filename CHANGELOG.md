@@ -1,5 +1,6 @@
 ## v0.18.0 [tbd]
 _What's new?_
+* Add support for visualisations of your data with graphs, with easily composable data structures using nodes and edges. ([tbd])
 * Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2663](https://github.com/turbot/steampipe/issues/2663))
 
 ## v0.17.0 [2022-11-08]
