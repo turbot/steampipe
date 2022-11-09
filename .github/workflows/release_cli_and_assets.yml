@@ -64,7 +64,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
 
     - name: Get GCloud CLI
-      uses: google-github-actions/setup-gcloud@v1.0.0
+      uses: google-github-actions/setup-gcloud@v0.6.2
       with:
         service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
         project_id: ${{ env.PROJECT_ID }}
@@ -104,7 +104,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
 
     - name: Get GCloud CLI
-      uses: google-github-actions/setup-gcloud@v1.0.0
+      uses: google-github-actions/setup-gcloud@v0.6.2
       with:
         service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
         project_id: ${{ env.PROJECT_ID }}
@@ -567,7 +567,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
     # - name: Setup GCloud
-    #   uses: google-github-actions/setup-gcloud@v1.0.0
+    #   uses: google-github-actions/setup-gcloud@v0.6.2
     #   with:
     #     service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
     #     project_id: ${{ env.PROJECT_ID }}
