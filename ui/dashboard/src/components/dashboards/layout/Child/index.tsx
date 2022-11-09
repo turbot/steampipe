@@ -51,12 +51,7 @@ const Child = ({
       );
     case "container":
       const Container = getComponent("container");
-      return (
-        <Container
-          definition={layoutDefinition}
-          expandDefinition={layoutDefinition}
-        />
-      );
+      return <Container layoutDefinition={layoutDefinition} />;
     case "dashboard":
       const Dashboard = getComponent("dashboard");
       return <Dashboard definition={panelDefinition} isRoot={false} />;

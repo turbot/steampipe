@@ -8,9 +8,6 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 interface ContainerProps {
   layoutDefinition?: ContainerDefinition;
   definition?: ContainerDefinition;
-  expandDefinition: ContainerDefinition;
-  withNarrowVertical?: boolean;
-  withTitle?: boolean;
 }
 
 const Container = ({ definition, layoutDefinition }: ContainerProps) => {
