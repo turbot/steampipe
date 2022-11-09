@@ -35,6 +35,7 @@ import {
 } from "../../../../constants/icons";
 import { useEffect, useMemo } from "react";
 import "reactflow/dist/style.css";
+import { usePanel } from "../../../../hooks/usePanel";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -284,7 +285,20 @@ const CustomControls = () => {
 };
 
 const Graph = ({ props }) => {
+  const { setShowPanelInformation, setPanelInformation } = usePanel();
   const graphOptions = useGraphOptions(props);
+
+  useEffect(() => {
+    if (!props.status) {
+      setShowPanelInformation(false);
+      setPanelInformation(null);
+      return;
+    }
+    console.log(props.status);
+    // @ts-ignore
+    setPanelInformation(() => <p>Hello, world!</p>);
+    setShowPanelInformation(true);
+  }, [props.status, setPanelInformation, setShowPanelInformation]);
 
   return (
     <ReactFlowProvider>
@@ -341,6 +355,7 @@ const GraphWrapper = (props: GraphProps) => {
           ...props,
           data: nodeAndEdgeData.data,
           properties: nodeAndEdgeData.properties,
+          status: nodeAndEdgeData.status,
         }}
       />
     </GraphProvider>
