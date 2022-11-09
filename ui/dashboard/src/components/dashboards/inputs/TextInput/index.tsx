@@ -51,6 +51,8 @@ const TextInput = (props: InputProps) => {
     setIsDirty(false);
   }, [stateValue]);
 
+  const readOnly = dataMode !== DashboardDataModeLive;
+
   return (
     <div>
       {props.properties.label && (
@@ -72,10 +74,10 @@ const TextInput = (props: InputProps) => {
             submit();
           }}
           placeholder={props.properties.placeholder}
-          readOnly={dataMode !== DashboardDataModeLive}
+          readOnly={readOnly}
           value={value}
         />
-        {value && isDirty && (
+        {value && isDirty && !readOnly && (
           <div
             className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-foreground-light"
             onClick={submit}
@@ -84,7 +86,7 @@ const TextInput = (props: InputProps) => {
             <SubmitIcon className="h-4 w-4" />
           </div>
         )}
-        {value && !isDirty && (
+        {value && !isDirty && !readOnly && (
           <div
             className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-foreground-light"
             onClick={clear}
