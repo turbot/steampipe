@@ -174,4 +174,4 @@ const PanelWrapper = memo((props: PanelProps) => {
 
 registerComponent("panel", PanelWrapper);
 
-export default Panel;
+export default PanelWrapper;

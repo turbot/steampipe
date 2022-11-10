@@ -22,7 +22,6 @@ const PanelProvider = ({ children, definition, showControls }) => {
   const [panelInformation, setPanelInformation] = useState<ReactNode | null>(
     null
   );
-  console.log({ definition, showControls });
   const { panelControls } = usePanelControls(definition, showControls);
   return (
     <PanelContext.Provider
