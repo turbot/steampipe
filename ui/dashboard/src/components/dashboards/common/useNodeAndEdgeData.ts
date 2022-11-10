@@ -140,9 +140,17 @@ const useNodeAndEdgeData = (
       for (const row of typedPanelData.rows || []) {
         // Ensure the node this edge points to exists in the data set
         // @ts-ignore
-        const from_id = has(row, "from_id") ? row.from_id.toString() : null;
+        const from_id =
+          has(row, "from_id") &&
+          row.from_id !== null &&
+          row.from_id !== undefined
+            ? row.from_id.toString()
+            : null;
         // @ts-ignore
-        const to_id = has(row, "to_id") ? row.to_id.toString() : null;
+        const to_id =
+          has(row, "to_id") && row.to_id !== null && row.to_id !== undefined
+            ? row.to_id.toString()
+            : null;
         if (
           !from_id ||
           !to_id ||
