@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/version"
 )
 
 func buildDashboardMetadataPayload(workspaceResources *modconfig.ResourceMaps, cloudMetadata *steampipeconfig.CloudMetadata) ([]byte, error) {
@@ -29,6 +30,9 @@ func buildDashboardMetadataPayload(workspaceResources *modconfig.ResourceMaps, c
 	payload := DashboardMetadataPayload{
 		Action: "dashboard_metadata",
 		Metadata: DashboardMetadata{
+			CLI: DashboardCLIMetadata{
+				Version: version.VersionString,
+			},
 			InstalledMods: installedMods,
 			Telemetry:     viper.GetString(constants.ArgTelemetry),
 		},

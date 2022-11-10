@@ -108,6 +108,18 @@ const ThemeWrapper = ({ children }) => {
   );
 };
 
+const ModalThemeWrapper = ({ children }) => {
+  const { setWrapperRef, theme } = useTheme();
+  return (
+    <div
+      ref={setWrapperRef}
+      className={`theme-${theme.name} print:bg-white print:theme-steampipe-default text-foreground print:text-black`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
@@ -118,6 +130,7 @@ const useTheme = () => {
 
 export {
   FullHeightThemeWrapper,
+  ModalThemeWrapper,
   Themes,
   ThemeNames,
   ThemeProvider,

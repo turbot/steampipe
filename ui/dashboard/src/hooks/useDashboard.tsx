@@ -14,6 +14,7 @@ import sortBy from "lodash/sortBy";
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import useDashboardWebSocketEventHandler from "./useDashboardWebSocketEventHandler";
 import usePrevious from "./usePrevious";
+import VersionErrorMismatch from "../components/VersionErrorMismatch";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
@@ -190,14 +191,36 @@ const wrapDefinitionInArtificialDashboard = (
 };
 
 function reducer(state, action) {
+  if (state.ignore_events) {
+    return state;
+  }
+
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
+      const cliVersionRaw = get(action.metadata, "cli.version");
+      const uiVersionRaw = process.env.REACT_APP_VERSION;
+      const hasVersionsSet = !!cliVersionRaw && !!uiVersionRaw;
+      const cliVersion = !!cliVersionRaw
+        ? cliVersionRaw.startsWith("v")
+          ? cliVersionRaw.substring(1)
+          : cliVersionRaw
+        : null;
+      const uiVersion = !!uiVersionRaw
+        ? uiVersionRaw.startsWith("v")
+          ? uiVersionRaw.substring(1)
+          : uiVersionRaw
+        : null;
+      const mismatchedVersions = hasVersionsSet && cliVersion !== uiVersion;
       return {
         ...state,
         metadata: {
           mod: {},
           ...action.metadata,
         },
+        error: mismatchedVersions ? (
+          <VersionErrorMismatch cliVersion={cliVersion} uiVersion={uiVersion} />
+        ) : null,
+        ignore_events: mismatchedVersions,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
       const { dashboards, dashboardsMap } = buildDashboards(
@@ -483,6 +506,7 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
 
 const getInitialState = (searchParams, defaults: any = {}) => {
   return {
+    ignore_events: false,
     availableDashboardsLoaded: false,
     metadata: null,
     dashboards: [],
