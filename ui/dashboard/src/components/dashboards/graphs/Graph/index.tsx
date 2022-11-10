@@ -44,6 +44,7 @@ import {
 import { useEffect, useMemo } from "react";
 import "reactflow/dist/style.css";
 import { usePanel } from "../../../../hooks/usePanel";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -170,7 +171,12 @@ const buildGraphNodesAndEdges = (
     return node;
   });
 
-  return { nodes, edges, width: innerGraph.width, height: innerGraph.height };
+  return {
+    nodes,
+    edges,
+    width: innerGraph.width < 0 ? 0 : innerGraph.width,
+    height: innerGraph.height < 0 ? 0 : innerGraph.height,
+  };
 };
 
 const useGraphOptions = (props: GraphProps) => {
@@ -367,6 +373,7 @@ const useNodeAndEdgePanelInformation = (
 };
 
 const Graph = (props) => {
+  const { selectedPanel } = useDashboard();
   const graphOptions = useGraphOptions(props);
   useNodeAndEdgePanelInformation(props.nodeAndEdgeStatus, props.dataFormat);
 
@@ -374,8 +381,8 @@ const Graph = (props) => {
     <ReactFlowProvider>
       <div
         style={{
-          height: Math.min(600, graphOptions.height),
-          maxHeight: 600,
+          height: graphOptions.height,
+          maxHeight: selectedPanel ? undefined : 600,
           minHeight: 150,
         }}
       >
