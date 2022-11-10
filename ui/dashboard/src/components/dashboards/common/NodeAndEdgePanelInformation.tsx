@@ -24,22 +24,22 @@ const NodeAndEdgePanelInformation = ({
           running, {errorCategories.length}{" "}
           {errorCategories.length === 1 ? "error" : "errors"}
         </div>
-        {pendingCategories.map((n) => (
-          <div className="flex items-center space-x-1">
+        {pendingCategories.map((category) => (
+          <div key={category.id} className="flex items-center space-x-1">
             <LoadingIndicator className="w-3 h-3" />
-            <span key={n.id} className="block">
-              {n.title || n.id}
+            <span key={category.id} className="block">
+              {category.title || category.id}
             </span>
           </div>
         ))}
-        {errorCategories.map((n) => (
-          <div className="flex items-center space-x-1">
+        {errorCategories.map((category) => (
+          <div key={category.id} className="flex items-center space-x-1">
             <Icon
               className="w-3 h-3 text-alert"
               icon="heroicons-solid:exclamation-circle"
             />
-            <span key={n.id} className="block">
-              {n.title || n.id}
+            <span key={category.id} className="block">
+              {category.title || category.id}
             </span>
           </div>
         ))}

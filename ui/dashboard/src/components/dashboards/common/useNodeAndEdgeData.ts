@@ -37,6 +37,14 @@ const getNodeAndEdgeDataFormat = (
   return "LEGACY";
 };
 
+const panelStateToCategoryState = (status: DashboardRunState) => {
+  return status === "error"
+    ? "error"
+    : status === "complete"
+    ? "complete"
+    : "pending";
+};
+
 const useNodeAndEdgeData = (
   data: NodeAndEdgeData | undefined,
   properties: NodeAndEdgeProperties | undefined,
@@ -70,7 +78,6 @@ const useNodeAndEdgeData = (
       }
 
       const artificialCategoryId = `node_category_${nodePanelName}`;
-      // const artificialPlaceholderCategoryId = `node_category_placeholder_${nodePanelName}`;
 
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
 
@@ -84,44 +91,17 @@ const useNodeAndEdgeData = (
 
       // If we don't have any rows for this node type, add a placeholder
       const nodeProperties = (panel.properties || {}) as NodeProperties;
-      // if (!typedPanelData.rows && nodeProperties.category) {
-      //   newProperties = set(
-      //     newProperties || {},
-      //     `categories["${artificialPlaceholderCategoryId}"]`,
-      //     {
-      //       ...nodeProperties.category,
-      //       fold: {
-      //         ...(nodeProperties.category.fold || {}),
-      //         threshold: 1,
-      //       },
-      //     }
-      //   );
-      //   rows.push({
-      //     id: nodePanelName,
-      //     title: nodeProperties.category.title || nodeProperties.category.name,
-      //     category: artificialPlaceholderCategoryId,
-      //   });
-      //   continue;
-      // }
 
-      if (nodeProperties.category) {
-        // @ts-ignore
+      if (nodeProperties.category && nodeProperties.category.name) {
         if (!nodeAndEdgeStatus.categories[nodeProperties.category.name]) {
-          // @ts-ignore
           nodeAndEdgeStatus.categories[nodeProperties.category.name] = {
             id: nodeProperties.category.name,
             title: nodeProperties.category.title,
-            state:
-              panel.status === "error"
-                ? "error"
-                : panel.status === "complete"
-                ? "complete"
-                : "pending",
+            state: panelStateToCategoryState(panel.status || "ready"),
           };
         } else if (panel.status !== "complete") {
-          // @ts-ignore
           nodeAndEdgeStatus.categories[nodeProperties.category.name].state =
-            panel.status === "error" ? "error" : "pending";
+            panelStateToCategoryState(panel.status || "ready");
         }
       }
 
@@ -130,14 +110,8 @@ const useNodeAndEdgeData = (
 
       nodeAndEdgeStatus.nodes.push({
         id: nodePanelName,
-        // @ts-ignore
         title: nodePanelName.split(".").pop(),
-        state:
-          panel.status === "error"
-            ? "error"
-            : panel.status === "complete"
-            ? "complete"
-            : "pending",
+        state: panelStateToCategoryState(panel.status || "ready"),
         count: nodeDataRows.length,
       });
 
