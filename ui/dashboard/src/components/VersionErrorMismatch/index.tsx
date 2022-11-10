@@ -3,7 +3,7 @@ import semver from "semver";
 const VersionErrorMismatch = ({ cliVersion, uiVersion }) => {
   const uiOlder = semver.lt(uiVersion, cliVersion);
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 text-black">
       <p>
         {!uiOlder && (
           <>Steampipe Dashboard UI version is newer than the CLI version.</>
@@ -13,11 +13,11 @@ const VersionErrorMismatch = ({ cliVersion, uiVersion }) => {
         )}
       </p>
       <div>
-        <span className="block text-foreground-light">UI:</span>
+        <span className="block">UI:</span>
         <span className="font-semibold">{uiVersion}</span>
       </div>
       <div>
-        <span className="block text-foreground-light">CLI:</span>
+        <span className="block">CLI:</span>
         <span className="font-semibold">{cliVersion}</span>
       </div>
       <p>
