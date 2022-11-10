@@ -10,6 +10,7 @@ _Bug fixes_
 * Fix dashboard text inputs being editable in snapshot mode. ([#2717](https://github.com/turbot/steampipe/issues/2717))
 * Fix dashboard JSONB columns in CSV data downloads not serialising correctly. ([#2733](https://github.com/turbot/steampipe/issues/2733))
 * Add dashboard error modal when users are running a different UI and CLI version ([#2728](https://github.com/turbot/steampipe/issues/2728))
+* Fixes control dashboards not displaying progress. ([#2735](https://github.com/turbot/steampipe/issues/2735))
 
 ## v0.17.0 [2022-11-08]
 
