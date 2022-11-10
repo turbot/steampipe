@@ -126,7 +126,7 @@ jobs:
             echo $JSON_STRING > annotations.json
 
       - name: Get GCloud CLI
-        uses: google-github-actions/setup-gcloud@v0.6.2
+        uses: google-github-actions/setup-gcloud@v1.0.1
         with:
           service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
           project_id: ${{ env.PROJECT_ID }}
