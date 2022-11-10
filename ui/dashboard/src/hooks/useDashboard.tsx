@@ -14,6 +14,7 @@ import sortBy from "lodash/sortBy";
 import useDashboardWebSocket, { SocketActions } from "./useDashboardWebSocket";
 import useDashboardWebSocketEventHandler from "./useDashboardWebSocketEventHandler";
 import usePrevious from "./usePrevious";
+import VersionErrorMismatch from "../components/VersionErrorMismatch";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
@@ -48,7 +49,6 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import VersionErrorMismatch from "../components/VersionErrorMismatch";
 
 const buildDashboards = (
   dashboards: AvailableDashboardsDictionary,
@@ -210,13 +210,6 @@ function reducer(state, action) {
           ? uiVersionRaw.substring(1)
           : uiVersionRaw
         : null;
-      // console.log({
-      //   cliVersionRaw,
-      //   uiVersionRaw,
-      //   cliVersion,
-      //   uiVersion,
-      //   hasVersionsSet,
-      // });
       const mismatchedVersions = hasVersionsSet && cliVersion !== uiVersion;
       return {
         ...state,
