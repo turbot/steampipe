@@ -22,7 +22,9 @@ func (t *testExporter) Alias() string         { return t.alias }
 
 var dummyCSVExporter = testExporter{alias: "", extension: ".csv", name: "CSV"}
 var dummyJSONExporter = testExporter{alias: "", extension: ".json", name: "JSON"}
-var dummySPSExporter = testExporter{alias: "", extension: constants.SnapshotExtension, name: constants.OutputFormatSnapshot}
+var dummyASFFExporter = testExporter{alias: "asff.json", extension: ".json", name: "ASFF"}
+var dummyNUNITExporter = testExporter{alias: "nunit3.xml", extension: ".xml", name: "NUNIT3"}
+var dummySPSExporter = testExporter{alias: "sps", extension: constants.SnapshotExtension, name: constants.OutputFormatSnapshot}
 
 type exporterTestCase struct {
 	name   string
@@ -51,6 +53,16 @@ var exporterTestCases = []exporterTestCase{
 		input:  "file.json",
 		expect: &dummyJSONExporter,
 	},
+	{
+		name:   "ASFF JSON",
+		input:  "file.asff.json",
+		expect: &dummyASFFExporter,
+	},
+	{
+		name:   "NUNIT3",
+		input:  "file.nunit3.xml",
+		expect: &dummyNUNITExporter,
+	},
 }
 
 func TestDoExport(t *testing.T) {
@@ -58,6 +70,8 @@ func TestDoExport(t *testing.T) {
 		&dummyJSONExporter,
 		&dummyCSVExporter,
 		&dummySPSExporter,
+		&dummyASFFExporter,
+		&dummyNUNITExporter,
 	}
 
 	m := NewManager()
