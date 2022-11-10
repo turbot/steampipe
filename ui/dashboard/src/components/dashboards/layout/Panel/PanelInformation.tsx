@@ -11,7 +11,7 @@ const PanelInformation = () => {
   return (
     <div
       className={classNames(
-        "absolute h-full overflow-y-scroll z-50 top-0 right-0 p-3 max-w-sm bg-dashboard-panel border-l border-divid text-sm"
+        "absolute h-full overflow-y-scroll z-50 top-0 right-0 p-3 max-w-sm bg-dashboard-panel border-l border-divide text-sm"
       )}
     >
       {panelInformation}
