@@ -2,7 +2,9 @@
 _Bug fixes_
 * Fix query command `--export` flag raising an error that it cannot be used in interactive mode, even when not in interactive mode. ([#2707](https://github.com/turbot/steampipe/issues/2707))
 * Fix RefreshConnections sometimes storing an unset plugin ModTime property in the connection state file. This leads to failure to refresh connections when plugin has been rebuilt or updated. ([#2721](https://github.com/turbot/steampipe/issues/2721))
-* Fix dashboard UI text inputs being editable in snapshot mode. ([#2717](https://github.com/turbot/steampipe/issues/2717))
+* Fix dashboard text inputs being editable in snapshot mode. ([#2717](https://github.com/turbot/steampipe/issues/2717))
+* Fix dashboard JSONB columns in CSV data downloads not serialising correctly. ([#2733](https://github.com/turbot/steampipe/issues/2733))
+* Add dashboard error modal when users are running a different UI and CLI version ([#2728](https://github.com/turbot/steampipe/issues/2728))
 
 ## v0.17.0 [2022-11-08]
 
