@@ -34,7 +34,10 @@ const NodeAndEdgePanelInformation = ({
         ))}
         {errorCategories.map((n) => (
           <div className="flex items-center space-x-1">
-            <LoadingIndicator className="w-3 h-3" />
+            <Icon
+              className="w-3 h-3 text-alert"
+              icon="heroicons-solid:exclamation-circle"
+            />
             <span key={n.id} className="block">
               {n.title || n.id}
             </span>
