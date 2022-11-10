@@ -23,7 +23,6 @@ import {
   getColorOverride,
   LeafNodeData,
 } from "../../common";
-import { getGraphComponent } from "..";
 import {
   CategoryStatus,
   GraphProperties,
@@ -31,8 +30,10 @@ import {
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
 } from "../types";
+import { DashboardRunState } from "../../../../types";
+import { getGraphComponent } from "..";
 import { GraphProvider, useGraph } from "../common/useGraph";
-import { KeyValueStringPairs } from "../../common/types";
+import { KeyValueStringPairs, Node as NodeType } from "../../common/types";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -59,7 +60,8 @@ const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
   themeColors: any,
-  expandedNodes: KeyValueStringPairs
+  expandedNodes: KeyValueStringPairs,
+  status: DashboardRunState
 ) => {
   if (!data) {
     return {
@@ -68,6 +70,7 @@ const buildGraphNodesAndEdges = (
     };
   }
   let nodesAndEdges = buildNodesAndEdges(data, properties, themeColors, false);
+
   nodesAndEdges = foldNodesAndEdges(nodesAndEdges, expandedNodes);
   const direction = properties?.direction || "TB";
   const dagreGraph = new dagre.graphlib.Graph();
@@ -77,17 +80,24 @@ const buildGraphNodesAndEdges = (
     ranksep: direction === "LR" || direction === "RL" ? 200 : 60,
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  nodesAndEdges.nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-  });
   nodesAndEdges.edges.forEach((edge) => {
     dagreGraph.setEdge(edge.from_id, edge.to_id);
+  });
+  const finalNodes: NodeType[] = [];
+  nodesAndEdges.nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    const nodeEdges = dagreGraph.nodeEdges(node.id);
+    if (status === "complete" || (nodeEdges && nodeEdges.length > 0)) {
+      finalNodes.push(node);
+    } else {
+      dagreGraph.removeNode(node.id);
+    }
   });
   dagre.layout(dagreGraph);
   const innerGraph = dagreGraph.graph();
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  for (const node of nodesAndEdges.nodes) {
+  for (const node of finalNodes) {
     const matchingNode = dagreGraph.node(node.id);
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
@@ -164,14 +174,14 @@ const buildGraphNodesAndEdges = (
 };
 
 const useGraphOptions = (props: GraphProps) => {
-  const { nodesAndEdges } = useGraphNodesAndEdges(props.data, props.properties);
+  const { nodesAndEdges } = useGraphNodesAndEdges(
+    props.data,
+    props.properties,
+    props.status
+  );
   const { setGraphEdges, setGraphNodes } = useGraph();
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(nodesAndEdges.edges);
-  // const onConnect = useCallback(
-  //   (params) => setEdges((eds) => addEdge(params, eds)),
-  //   []
-  // );
 
   useEffect(() => {
     setGraphEdges(edges);
@@ -199,13 +209,21 @@ const useGraphOptions = (props: GraphProps) => {
 
 const useGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
-  properties: GraphProperties | undefined
+  properties: GraphProperties | undefined,
+  status: DashboardRunState
 ) => {
   const { expandedNodes } = useGraph();
   const themeColors = useChartThemeColors();
   const nodesAndEdges = useMemo(
-    () => buildGraphNodesAndEdges(data, properties, themeColors, expandedNodes),
-    [data, expandedNodes, properties, themeColors]
+    () =>
+      buildGraphNodesAndEdges(
+        data,
+        properties,
+        themeColors,
+        expandedNodes,
+        status
+      ),
+    [data, expandedNodes, properties, status, themeColors]
   );
   return {
     nodesAndEdges,
@@ -316,11 +334,7 @@ const useNodeAndEdgePanelInformation = (
         errorCategories,
         completeCategories,
       };
-    }, [
-      nodeAndEdgeStatus.categories,
-      nodeAndEdgeStatus.nodes,
-      nodeAndEdgeStatus.edges,
-    ]);
+    }, [nodeAndEdgeStatus.categories]);
 
   useEffect(() => {
     if (
@@ -352,10 +366,9 @@ const useNodeAndEdgePanelInformation = (
   ]);
 };
 
-const Graph = ({ props }) => {
+const Graph = (props) => {
   const graphOptions = useGraphOptions(props);
-
-  useNodeAndEdgePanelInformation(props.status, props.dataFormat);
+  useNodeAndEdgePanelInformation(props.nodeAndEdgeStatus, props.dataFormat);
 
   return (
     <ReactFlowProvider>
@@ -408,13 +421,11 @@ const GraphWrapper = (props: GraphProps) => {
   return (
     <GraphProvider>
       <Graph
-        props={{
-          ...props,
-          data: nodeAndEdgeData.data,
-          dataFormat: nodeAndEdgeData.dataFormat,
-          properties: nodeAndEdgeData.properties,
-          status: nodeAndEdgeData.status,
-        }}
+        {...props}
+        data={nodeAndEdgeData.data}
+        dataFormat={nodeAndEdgeData.dataFormat}
+        properties={nodeAndEdgeData.properties}
+        nodeAndEdgeStatus={nodeAndEdgeData.status}
       />
     </GraphProvider>
   );
