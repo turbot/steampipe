@@ -197,11 +197,27 @@ function reducer(state, action) {
 
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
-      const cliVersion = get(action.metadata, "cli.version");
-      const uiVersion = process.env.REACT_APP_VERSION;
-
-      const mismatchedVersions =
-        !!cliVersion && !!uiVersion && cliVersion !== uiVersion;
+      const cliVersionRaw = get(action.metadata, "cli.version");
+      const uiVersionRaw = process.env.REACT_APP_VERSION;
+      const hasVersionsSet = !!cliVersionRaw && !!uiVersionRaw;
+      const cliVersion = !!cliVersionRaw
+        ? cliVersionRaw.startsWith("v")
+          ? cliVersionRaw.substring(1)
+          : cliVersionRaw
+        : null;
+      const uiVersion = !!uiVersionRaw
+        ? uiVersionRaw.startsWith("v")
+          ? uiVersionRaw.substring(1)
+          : uiVersionRaw
+        : null;
+      // console.log({
+      //   cliVersionRaw,
+      //   uiVersionRaw,
+      //   cliVersion,
+      //   uiVersion,
+      //   hasVersionsSet,
+      // });
+      const mismatchedVersions = hasVersionsSet && cliVersion !== uiVersion;
       return {
         ...state,
         metadata: {
