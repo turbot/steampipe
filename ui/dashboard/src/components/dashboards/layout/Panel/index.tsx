@@ -18,8 +18,6 @@ import { ReactNode } from "react";
 import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
-import { ThemeNames } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface PanelProps {
   children: ReactNode;
@@ -46,9 +44,6 @@ const Panel = ({
   forceBackground = false,
   ready = true,
 }: PanelProps) => {
-  const {
-    themeContext: { theme },
-  } = useDashboard();
   const { panelControls, showPanelControls, setShowPanelControls } = usePanel();
   const [referenceElement, setReferenceElement] = useState(null);
 
@@ -127,12 +122,7 @@ const Panel = ({
                 definition.panel_type !== "table") ||
                 (definition.panel_type === "table" &&
                   definition.display_type === "line"))
-              ? classNames(
-                  "border-t",
-                  theme.name === ThemeNames.STEAMPIPE_DARK
-                    ? "border-table-divide"
-                    : "border-background"
-                )
+              ? "border-t border-divide"
               : null,
             (definition.panel_type === "table" &&
               definition.display_type !== "line") ||

@@ -30,7 +30,6 @@ import {
   RowRenderResult,
   renderInterpolatedTemplates,
 } from "../../../utils/template";
-import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
@@ -379,10 +378,7 @@ const TableView = ({
   hiddenColumns,
   hasTopBorder = false,
 }) => {
-  const {
-    dataMode,
-    themeContext: { theme },
-  } = useDashboard();
+  const { dataMode } = useDashboard();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
@@ -424,21 +420,10 @@ const TableView = ({
         {...getTableProps()}
         className={classNames(
           "min-w-full divide-y divide-table-divide overflow-hidden",
-          hasTopBorder
-            ? theme.name === ThemeNames.STEAMPIPE_DARK
-              ? "border-t border-table-divide"
-              : "border-t border-background"
-            : null
+          hasTopBorder ? "border-t border-divide" : null
         )}
       >
-        <thead
-          className={classNames(
-            "text-table-head",
-            theme.name === ThemeNames.STEAMPIPE_DARK
-              ? "border-b border-table-divide"
-              : "border-b border-background"
-          )}
-        >
+        <thead className="text-table-head border-b border-divide">
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column) => (

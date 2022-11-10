@@ -3,12 +3,6 @@ module.exports = {
   darkMode: "class",
   theme: {
     extend: {
-      divideColor: {
-        default: "var(--color-border-divide)",
-      },
-      textColor: {
-        default: "var(--color-text-default)",
-      },
       colors: {
         dashboard: "var(--color-dashboard)",
         "dashboard-panel": "var(--color-dashboard-panel)",
@@ -16,6 +10,7 @@ module.exports = {
         "foreground-light": "var(--color-foreground-light)",
         "foreground-lighter": "var(--color-foreground-lighter)",
         "foreground-lightest": "var(--color-foreground-lightest)",
+        divide: "var(--color-divide)",
         alert: "var(--color-alert)",
         "alert-light": "var(--color-alert-light)",
         "alert-inverse": "var(--color-alert-inverse)",

@@ -5,21 +5,16 @@ import SaveSnapshotButton from "../SaveSnapshotButton";
 import SteampipeLogo from "./SteampipeLogo";
 import ThemeToggle from "../ThemeToggle";
 import { classNames } from "../../utils/styles";
-import { ThemeNames } from "../../hooks/useTheme";
 import { useDashboard } from "../../hooks/useDashboard";
 
 const DashboardHeader = () => {
   const {
     components: { ExternalLink },
-    themeContext: { theme },
   } = useDashboard();
   return (
     <div
       className={classNames(
-        "flex w-screen px-4 py-3 items-center justify-between space-x-2 md:space-x-4 bg-dashboard-panel border-b print:hidden",
-        theme.name === ThemeNames.STEAMPIPE_DARK
-          ? "border-table-divide"
-          : "border-background"
+        "flex w-screen px-4 py-3 items-center justify-between space-x-2 md:space-x-4 bg-dashboard-panel border-b border-divide print:hidden"
       )}
     >
       <SteampipeLogo />

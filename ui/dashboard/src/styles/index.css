@@ -44,7 +44,7 @@
   --color-secondary: var(--color-black-scale-5);
 
   /* General colors */
-  --color-divider: theme("colors.gray.300");
+  --color-divide: theme("colors.gray.100");
   --color-nav: #fafbfc;
   --color-nav-border: #dee2e6;
 
@@ -53,7 +53,7 @@
 
   /* Borders */
   --color-table-border: theme("colors.gray.200");
-  --color-table-divide: theme("colors.gray.100");
+  --color-table-divide: var(--color-dashboard);
   --color-table-head: var(--color-black-scale-6);
   --color-table-alternating-row: #fcfcfc;
 }
@@ -100,7 +100,7 @@
   --color-secondary: var(--color-black-scale-5);
 
   /* General colors */
-  --color-divider: theme("colors.gray.300");
+  --color-divide: var(--color-black-scale-2);
   --color-nav: var(--color-dashboard);
   --color-nav-border: #333;
 
