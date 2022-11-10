@@ -332,7 +332,6 @@ const useNodeAndEdgePanelInformation = (
       setPanelInformation(null);
       return;
     }
-    console.log(nodeAndEdgeStatus);
     // @ts-ignore
     setPanelInformation(() => (
       <NodeAndEdgePanelInformation
