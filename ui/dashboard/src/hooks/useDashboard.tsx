@@ -48,6 +48,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import VersionErrorMismatch from "../components/VersionErrorMismatch";
 
 const buildDashboards = (
   dashboards: AvailableDashboardsDictionary,
@@ -190,14 +191,37 @@ const wrapDefinitionInArtificialDashboard = (
 };
 
 function reducer(state, action) {
+  if (state.ignore_events) {
+    return state;
+  }
+
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
+      const cliVersion = get(action.metadata, "cli.version");
+      const uiVersion = process.env.REACT_APP_VERSION;
+
+      const mismatchedVersions =
+        !!cliVersion && !!uiVersion && cliVersion !== uiVersion;
       return {
         ...state,
         metadata: {
           mod: {},
           ...action.metadata,
         },
+        error: mismatchedVersions ? (
+          <VersionErrorMismatch cliVersion={cliVersion} uiVersion={uiVersion} />
+        ) : null,
+        //           ? `Steampipe Dashboard UI is running a different version to the CLI.
+        //
+        // CLI: ${cliVersion}.
+        // Dashboard UI: ${uiVersion}.
+        //
+        // Please try the following:
+        //
+        // - Stop and restart all Steampipe dashboard processes.
+        // - Close and re-open your browser.`
+        //           : null,
+        ignore_events: mismatchedVersions,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
       const { dashboards, dashboardsMap } = buildDashboards(
@@ -483,6 +507,7 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
 
 const getInitialState = (searchParams, defaults: any = {}) => {
   return {
+    ignore_events: false,
     availableDashboardsLoaded: false,
     metadata: null,
     dashboards: [],

@@ -147,9 +147,14 @@ type ModDashboardMetadata struct {
 	ShortName string `json:"short_name"`
 }
 
+type DashboardCLIMetadata struct {
+	Version string `json:"version,omitempty"`
+}
+
 type DashboardMetadata struct {
 	Mod           *ModDashboardMetadata           `json:"mod,omitempty"`
 	InstalledMods map[string]ModDashboardMetadata `json:"installed_mods,omitempty"`
+	CLI           DashboardCLIMetadata            `json:"cli"`
 	Cloud         *steampipeconfig.CloudMetadata  `json:"cloud,omitempty"`
 	Telemetry     string                          `json:"telemetry"`
 }
