@@ -1,33 +1,32 @@
-import ExternalLink from "../ExternalLink";
+import semver from "semver";
 
 const VersionErrorMismatch = ({ cliVersion, uiVersion }) => {
+  const uiOlder = semver.lt(uiVersion, cliVersion);
   return (
     <div className="space-y-2">
-      <p>Steampipe Dashboard UI is running a different version to the CLI.</p>
-      <div>
-        <span className="block text-foreground-light">CLI:</span>
-        <span className="font-semibold">{cliVersion}</span>
-      </div>
+      <p>
+        {!uiOlder && (
+          <>Steampipe Dashboard UI version is newer than the CLI version.</>
+        )}
+        {uiOlder && (
+          <>Steampipe Dashboard UI version is older than the CLI version.</>
+        )}
+      </p>
       <div>
         <span className="block text-foreground-light">UI:</span>
         <span className="font-semibold">{uiVersion}</span>
       </div>
-      <p>Please try the following:</p>
-      <ul className="list-disc list-inside">
-        <li>Stop and restart all Steampipe dashboard processes.</li>
-        <li>Close and re-open your browser.</li>
-      </ul>
+      <div>
+        <span className="block text-foreground-light">CLI:</span>
+        <span className="font-semibold">{cliVersion}</span>
+      </div>
       <p>
-        If the issue persists, please let us know on our{" "}
-        <ExternalLink
-          className="link-highlight"
-          to="https://steampipe.slack.com/archives/C01UECB59A7"
-          target="_blank"
-          withReferrer={false}
-        >
-          <>#steampipe</>
-        </ExternalLink>{" "}
-        Slack channel.
+        {!uiOlder && (
+          <>Please stop and restart your Steampipe dashboard process.</>
+        )}
+        {uiOlder && (
+          <>Please hard refresh this page, or close and re-open your browser.</>
+        )}
       </p>
     </div>
   );

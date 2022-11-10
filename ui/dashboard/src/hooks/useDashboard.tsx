@@ -211,16 +211,6 @@ function reducer(state, action) {
         error: mismatchedVersions ? (
           <VersionErrorMismatch cliVersion={cliVersion} uiVersion={uiVersion} />
         ) : null,
-        //           ? `Steampipe Dashboard UI is running a different version to the CLI.
-        //
-        // CLI: ${cliVersion}.
-        // Dashboard UI: ${uiVersion}.
-        //
-        // Please try the following:
-        //
-        // - Stop and restart all Steampipe dashboard processes.
-        // - Close and re-open your browser.`
-        //           : null,
         ignore_events: mismatchedVersions,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
