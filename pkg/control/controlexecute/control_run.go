@@ -24,7 +24,8 @@ import (
 // ControlRun is a struct representing the execution of a control run. It will contain one or more result items (i.e. for one or more resources).
 type ControlRun struct {
 	// properties from control
-	ControlId     string            `json:"name"`
+	ControlId     string            `json:"-"`
+	FullName      string            `json:"name"`
 	Title         string            `json:"title,omitempty"`
 	Description   string            `json:"description,omitempty"`
 	Documentation string            `json:"documentation,omitempty"`
@@ -71,6 +72,7 @@ type ControlRun struct {
 
 func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree *ExecutionTree) *ControlRun {
 	controlId := control.Name()
+
 	// only show qualified control names for controls from dependent mods
 	if control.Mod.Name() == executionTree.Workspace.Mod.Name() {
 		controlId = control.UnqualifiedName
@@ -79,6 +81,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 	res := &ControlRun{
 		Control:       control,
 		ControlId:     controlId,
+		FullName:      control.Name(),
 		Description:   control.GetDescription(),
 		Documentation: control.GetDocumentation(),
 		Tags:          control.GetTags(),
