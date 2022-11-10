@@ -3,6 +3,7 @@ import { Ref } from "react";
 import { Theme } from "../hooks/useTheme";
 
 export interface IDashboardContext {
+  ignore_events: boolean;
   metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
 
@@ -200,6 +201,10 @@ interface InstalledModsDashboardMetadata {
   [key: string]: ModDashboardMetadata;
 }
 
+interface CliDashboardMetadata {
+  version: string;
+}
+
 export interface CloudDashboardActorMetadata {
   id: string;
   handle: string;
@@ -225,6 +230,7 @@ interface CloudDashboardMetadata {
 export interface DashboardMetadata {
   mod: ModDashboardMetadata;
   installed_mods?: InstalledModsDashboardMetadata;
+  cli?: CliDashboardMetadata;
   cloud?: CloudDashboardMetadata;
   telemetry: "info" | "none";
 }

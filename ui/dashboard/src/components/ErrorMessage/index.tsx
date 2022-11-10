@@ -1,8 +1,10 @@
+import { isValidElement } from "react";
+
 const getErrorMessage = (error: any, fallbackMessage: string) => {
   if (!error) {
     return fallbackMessage;
   }
-  if (typeof error === "string") {
+  if (isValidElement(error)) {
     return error;
   }
   if (error.message) {

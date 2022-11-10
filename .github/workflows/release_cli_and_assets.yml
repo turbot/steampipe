@@ -156,6 +156,7 @@ jobs:
         yarn build
       env:
         REACT_APP_HEAP_ID: ${{ secrets.HEAP_ANALYTICS_PRODUCTION_ID }}
+        REACT_APP_VERSION: ${{ env.VERSION }}
 
     - name: Move Build Assets
       run: |-
