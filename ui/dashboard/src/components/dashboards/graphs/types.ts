@@ -43,3 +43,29 @@ export interface IGraph {
   type: GraphType;
   component: ComponentType<any>;
 }
+
+export type NodeAndEdgeState = "pending" | "error" | "complete";
+
+type BaseNodeAndEdgeStatus = {
+  id: string;
+  title?: string;
+  state: NodeAndEdgeState;
+};
+
+export type CategoryStatus = BaseNodeAndEdgeStatus;
+
+type CategoryStatusMap = {
+  [name: string]: CategoryStatus;
+};
+
+export type NodeStatus = BaseNodeAndEdgeStatus & {
+  count: number;
+};
+
+export type EdgeStatus = BaseNodeAndEdgeStatus;
+
+export type NodeAndEdgeStatus = {
+  categories: CategoryStatusMap;
+  nodes: NodeStatus[];
+  edges: EdgeStatus[];
+};

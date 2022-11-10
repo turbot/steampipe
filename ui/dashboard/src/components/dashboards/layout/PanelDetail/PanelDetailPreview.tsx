@@ -1,10 +1,12 @@
 import Child from "../Child";
 import { PanelDetailProps } from "./index";
 import { PanelDefinition } from "../../../../types";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 const PanelDetailPreview = ({
   definition: { children, name, panel_type, title, ...rest },
 }: PanelDetailProps) => {
+  const { panelsMap } = useDashboard();
   const layoutDefinition = { children, name, panel_type };
   const panelDefinition = {
     name,
@@ -12,12 +14,11 @@ const PanelDetailPreview = ({
     width: 12,
     ...rest,
   } as PanelDefinition;
-  const panelsMap = { [name]: panelDefinition };
   return (
     <Child
       layoutDefinition={layoutDefinition}
       panelDefinition={panelDefinition}
-      panelsMap={panelsMap}
+      panelsMap={{ ...panelsMap, [name]: panelDefinition }}
       showPanelControls={false}
     />
   );

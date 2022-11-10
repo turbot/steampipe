@@ -40,7 +40,7 @@ const usePanelControls = (definition, show = false) => {
 
   useEffect(
     () => setPanelControls(getBasePanelControls()),
-    [definition, getBasePanelControls, setPanelControls]
+    [definition, getBasePanelControls, setPanelControls, show]
   );
 
   return { panelControls };

@@ -7,6 +7,7 @@ import {
   NodeAndEdgeDataColumn,
   NodeAndEdgeDataFormat,
   NodeAndEdgeDataRow,
+  NodeAndEdgeStatus,
 } from "../graphs/types";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useMemo } from "react";
@@ -36,6 +37,14 @@ const getNodeAndEdgeDataFormat = (
   return "LEGACY";
 };
 
+const panelStateToCategoryState = (status: DashboardRunState) => {
+  return status === "error"
+    ? "error"
+    : status === "complete"
+    ? "complete"
+    : "pending";
+};
+
 const useNodeAndEdgeData = (
   data: NodeAndEdgeData | undefined,
   properties: NodeAndEdgeProperties | undefined,
@@ -43,12 +52,19 @@ const useNodeAndEdgeData = (
 ) => {
   const { panelsMap } = useDashboard();
   return useMemo(() => {
-    if (getNodeAndEdgeDataFormat(properties) === "LEGACY") {
+    const dataFormat = getNodeAndEdgeDataFormat(properties);
+    if (dataFormat === "LEGACY") {
       if (status === "complete") {
-        return data ? { data, properties } : null;
+        return data ? { data, dataFormat, properties } : null;
       }
       return null;
     }
+
+    const nodeAndEdgeStatus: NodeAndEdgeStatus = {
+      categories: {},
+      nodes: [],
+      edges: [],
+    };
 
     let newProperties = properties;
     const nodeIdLookup = {};
@@ -62,7 +78,6 @@ const useNodeAndEdgeData = (
       }
 
       const artificialCategoryId = `node_category_${nodePanelName}`;
-      const artificialPlaceholderCategoryId = `node_category_placeholder_${nodePanelName}`;
 
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
 
@@ -76,28 +91,31 @@ const useNodeAndEdgeData = (
 
       // If we don't have any rows for this node type, add a placeholder
       const nodeProperties = (panel.properties || {}) as NodeProperties;
-      if (!typedPanelData.rows && nodeProperties.category) {
-        newProperties = set(
-          newProperties || {},
-          `categories["${artificialPlaceholderCategoryId}"]`,
-          {
-            ...nodeProperties.category,
-            fold: {
-              ...(nodeProperties.category.fold || {}),
-              threshold: 1,
-            },
-          }
-        );
-        rows.push({
-          id: nodePanelName,
-          title: nodeProperties.category.title || nodeProperties.category.name,
-          category: artificialPlaceholderCategoryId,
-        });
-        continue;
+
+      if (nodeProperties.category && nodeProperties.category.name) {
+        if (!nodeAndEdgeStatus.categories[nodeProperties.category.name]) {
+          nodeAndEdgeStatus.categories[nodeProperties.category.name] = {
+            id: nodeProperties.category.name,
+            title: nodeProperties.category.title,
+            state: panelStateToCategoryState(panel.status || "ready"),
+          };
+        } else if (panel.status !== "complete") {
+          nodeAndEdgeStatus.categories[nodeProperties.category.name].state =
+            panelStateToCategoryState(panel.status || "ready");
+        }
       }
 
       // Ensure we have category info set for each row
-      for (const row of typedPanelData.rows || []) {
+      const nodeDataRows = typedPanelData.rows || [];
+
+      nodeAndEdgeStatus.nodes.push({
+        id: nodePanelName,
+        title: nodePanelName.split(".").pop(),
+        state: panelStateToCategoryState(panel.status || "ready"),
+        count: nodeDataRows.length,
+      });
+
+      for (const row of nodeDataRows) {
         // Ensure each row has an id
         if (row.id === null || row.id === undefined) {
           continue;
@@ -123,11 +141,35 @@ const useNodeAndEdgeData = (
         rows.push(updatedRow);
       }
     }
+
     for (const edgePanelName of properties?.edges || []) {
       const panel = panelsMap[edgePanelName];
       if (!panel || !panel.data) {
         continue;
       }
+
+      const edgeProperties = (panel.properties || {}) as EdgeProperties;
+      if (edgeProperties.category) {
+        // @ts-ignore
+        if (!nodeAndEdgeStatus.categories[edgeProperties.category.name]) {
+          // @ts-ignore
+          nodeAndEdgeStatus.categories[edgeProperties.category.name] = {
+            id: edgeProperties.category.name,
+            title: edgeProperties.category.title,
+            state:
+              panel.status === "error"
+                ? "error"
+                : panel.status === "complete"
+                ? "complete"
+                : "pending",
+          };
+        } else if (panel.status !== "complete") {
+          // @ts-ignore
+          nodeAndEdgeStatus.categories[edgeProperties.category.name].state =
+            panel.status === "error" ? "error" : "pending";
+        }
+      }
+
       const typedPanelData = panel.data as NodeAndEdgeData;
       for (const column of typedPanelData.columns) {
         if (columns.some((c) => c.name === column.name)) {
@@ -181,7 +223,9 @@ const useNodeAndEdgeData = (
     }
     return {
       data: { columns, rows },
+      dataFormat,
       properties: newProperties,
+      status: nodeAndEdgeStatus,
     };
   }, [data, panelsMap, properties, status]);
 };
