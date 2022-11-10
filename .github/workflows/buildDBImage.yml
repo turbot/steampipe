@@ -125,10 +125,15 @@ jobs:
 
             echo $JSON_STRING > annotations.json
 
-      - name: Get GCloud CLI
-        uses: google-github-actions/setup-gcloud@v0.6.2
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
         with:
-          service_account_key: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+          service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+
+      - name: Get GCloud CLI
+        uses: google-github-actions/setup-gcloud@v1.0.0
+        with:
           project_id: ${{ env.PROJECT_ID }}
           export_default_credentials: true
 
