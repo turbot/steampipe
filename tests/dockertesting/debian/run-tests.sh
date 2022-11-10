@@ -15,7 +15,7 @@ git checkout $1
 git branch
 
 # declare the test file names
-declare -a arr=("migration" "service_and_plugin" "search_path" "chaos_and_query" "dynamic_schema" "cache" "mod_install" "mod" "check" "performance" "exit_codes")
+declare -a arr=("migration" "service_and_plugin" "search_path" "chaos_and_query" "dynamic_schema" "cache" "mod_install" "mod" "check" "workspace" "cloud" "performance" "exit_codes")
 declare -i failure_count=0
 
 # run test suite

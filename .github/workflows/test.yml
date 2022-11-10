@@ -96,6 +96,7 @@ jobs:
           - "check"
           - "performance"
           - "workspace"
+          - "cloud"
           - "exit_codes"
           - "force_stop"
         exclude:
