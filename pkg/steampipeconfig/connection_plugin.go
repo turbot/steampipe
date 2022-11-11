@@ -13,8 +13,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pluginmanager"
 	"github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
 )
 
 type ConnectionPluginData struct {

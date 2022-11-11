@@ -274,13 +274,8 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, sch
 		return res
 	}
 
-	// reload the foreign schemas, in case they have changed
-	if err := c.LoadForeignSchemaNames(ctx); err != nil {
-		return &steampipeconfig.RefreshConnectionResult{Error: err}
-	}
-
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
+	connectionMap, err := steampipeconfig.GetConnectionState(schemaNames)
 	if err != nil {
 		res.Error = err
 		return res

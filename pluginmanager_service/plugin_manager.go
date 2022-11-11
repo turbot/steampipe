@@ -15,13 +15,6 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/go-kit/helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -29,6 +22,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
@@ -540,7 +534,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 }
 
 func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ *proto.ReattachConfig, err error) {
-	log.Printf("[WARN] ************ start plugin %s ********************\n", connectionName)
+	log.Printf("[TRACE] ************ start plugin %s ********************\n", connectionName)
 
 	// get connection config
 	connectionConfig, err := m.getConnectionConfig(connectionName)
@@ -687,7 +681,7 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection string) {
 	log.Printf("[WARN] UPDATE SCHEMA FOR %s", connection)
 	// now refresh connections and search paths
-	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher)
+	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
 	if err != nil {
 		log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
 	}
