@@ -49,7 +49,8 @@ export const PanelStoryDecorator = ({
   return (
     <DashboardContext.Provider
       value={{
-        ignore_events: false,
+        versionMismatchCheck: false,
+        ignoreEvents: false,
         metadata: {
           mod: {
             title: "Storybook",

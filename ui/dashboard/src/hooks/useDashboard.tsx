@@ -191,26 +191,31 @@ const wrapDefinitionInArtificialDashboard = (
 };
 
 function reducer(state, action) {
-  if (state.ignore_events) {
+  if (state.ignoreEvents) {
     return state;
   }
 
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
-      const cliVersionRaw = get(action.metadata, "cli.version");
-      const uiVersionRaw = process.env.REACT_APP_VERSION;
-      const hasVersionsSet = !!cliVersionRaw && !!uiVersionRaw;
-      const cliVersion = !!cliVersionRaw
-        ? cliVersionRaw.startsWith("v")
-          ? cliVersionRaw.substring(1)
-          : cliVersionRaw
-        : null;
-      const uiVersion = !!uiVersionRaw
-        ? uiVersionRaw.startsWith("v")
-          ? uiVersionRaw.substring(1)
-          : uiVersionRaw
-        : null;
-      const mismatchedVersions = hasVersionsSet && cliVersion !== uiVersion;
+      let cliVersion: string | null = "";
+      let uiVersion: string | null = "";
+      let mismatchedVersions = false;
+      if (state.versionMismatchCheck) {
+        const cliVersionRaw = get(action.metadata, "cli.version");
+        const uiVersionRaw = process.env.REACT_APP_VERSION;
+        const hasVersionsSet = !!cliVersionRaw && !!uiVersionRaw;
+        cliVersion = !!cliVersionRaw
+          ? cliVersionRaw.startsWith("v")
+            ? cliVersionRaw.substring(1)
+            : cliVersionRaw
+          : null;
+        uiVersion = !!uiVersionRaw
+          ? uiVersionRaw.startsWith("v")
+            ? uiVersionRaw.substring(1)
+            : uiVersionRaw
+          : null;
+        mismatchedVersions = hasVersionsSet && cliVersion !== uiVersion;
+      }
       return {
         ...state,
         metadata: {
@@ -220,7 +225,7 @@ function reducer(state, action) {
         error: mismatchedVersions ? (
           <VersionErrorMismatch cliVersion={cliVersion} uiVersion={uiVersion} />
         ) : null,
-        ignore_events: mismatchedVersions,
+        ignoreEvents: mismatchedVersions,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
       const { dashboards, dashboardsMap } = buildDashboards(
@@ -506,7 +511,8 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
 
 const getInitialState = (searchParams, defaults: any = {}) => {
   return {
-    ignore_events: false,
+    versionMismatchCheck: defaults.versionMismatchCheck,
+    ignoreEvents: false,
     availableDashboardsLoaded: false,
     metadata: null,
     dashboards: [],
@@ -560,6 +566,7 @@ interface DashboardProviderProps {
   socketUrlFactory?: SocketURLFactory;
   stateDefaults?: {};
   themeContext: any;
+  versionMismatchCheck?: boolean;
 }
 
 const DashboardProvider = ({
@@ -577,6 +584,7 @@ const DashboardProvider = ({
   },
   socketUrlFactory,
   stateDefaults = {},
+  versionMismatchCheck = true,
   themeContext,
 }: DashboardProviderProps) => {
   const components = buildComponentsMap(componentOverrides);
@@ -588,6 +596,7 @@ const DashboardProvider = ({
       ...stateDefaults,
       ...dataOptions,
       ...renderOptions,
+      versionMismatchCheck,
     })
   );
   const dispatch = useCallback((action) => {
