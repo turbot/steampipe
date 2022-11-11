@@ -7,6 +7,9 @@ const getErrorMessage = (error: any, fallbackMessage: string) => {
   if (isValidElement(error)) {
     return error;
   }
+  if (typeof error === "string") {
+    return error;
+  }
   if (error.message) {
     return error.message;
   }
