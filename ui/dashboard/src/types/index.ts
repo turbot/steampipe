@@ -3,7 +3,8 @@ import { Ref } from "react";
 import { Theme } from "../hooks/useTheme";
 
 export interface IDashboardContext {
-  ignore_events: boolean;
+  versionMismatchCheck: boolean;
+  ignoreEvents: boolean;
   metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
 
