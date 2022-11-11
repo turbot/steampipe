@@ -506,9 +506,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 //	(re)install FDW and creates server if it doesn't
 func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 	res := rootClient.QueryRow(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
-	if res.Err() != nil {
-		return res.Err()
-	}
+
 	var serverName string
 	err := res.Scan(&serverName)
 	// if there is an error, we need to reinstall the foreign server
