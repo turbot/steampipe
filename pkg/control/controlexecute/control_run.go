@@ -440,7 +440,6 @@ func (r *ControlRun) setRunStatus(ctx context.Context, status controlstatus.Cont
 
 	if r.Finished() {
 		// close the doneChan - we don't need it anymore
-		// if we don't close it, it'll leak
 		close(r.doneChan)
 	}
 }
