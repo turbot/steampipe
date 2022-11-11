@@ -15,6 +15,7 @@ const Dashboards = ({ analyticsContext, breakpointContext, themeContext }) => (
     analyticsContext={analyticsContext}
     breakpointContext={breakpointContext}
     themeContext={themeContext}
+    versionMismatchCheck={true}
   >
     <DashboardHeader />
     <SnapshotHeader />
