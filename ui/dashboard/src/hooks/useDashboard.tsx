@@ -584,7 +584,7 @@ const DashboardProvider = ({
   },
   socketUrlFactory,
   stateDefaults = {},
-  versionMismatchCheck = true,
+  versionMismatchCheck = false,
   themeContext,
 }: DashboardProviderProps) => {
   const components = buildComponentsMap(componentOverrides);
