@@ -3,7 +3,11 @@ _What's new?_
 * Add support for visualisations of your data with graphs, with easily composable data structures using nodes and edges. ([tbd])
 * Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2663](https://github.com/turbot/steampipe/issues/2663))
 
-## v0.17.1 [tbd]
+## v0.17.2 [tbd]
+_Bug fixes_
+# Ensure workspace and panel errors are shown in dashboard panels ([#2742](https://github.com/turbot/steampipe/issues/2742))
+
+## v0.17.1 [2022-11-10]
 _Bug fixes_
 * Fix query command `--export` flag raising an error that it cannot be used in interactive mode, even when not in interactive mode. ([#2707](https://github.com/turbot/steampipe/issues/2707))
 * Fix RefreshConnections sometimes storing an unset plugin ModTime property in the connection state file. This leads to failure to refresh connections when plugin has been rebuilt or updated. ([#2721](https://github.com/turbot/steampipe/issues/2721))
@@ -13,7 +17,6 @@ _Bug fixes_
 * Fixes control dashboards not displaying progress. ([#2735](https://github.com/turbot/steampipe/issues/2735))
 
 ## v0.17.0 [2022-11-08]
-
 _What's new?_
 * Add support for `workspace profiles`, defined using HCL config and selected using `--workspace` arg. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2574](https://github.com/turbot/steampipe/issues/2574))
 * Update CLI to upload snapshots to Steampipe cloud using `--share` and `--snapshot` options. ([#2367](https://github.com/turbot/steampipe/issues/2367))
