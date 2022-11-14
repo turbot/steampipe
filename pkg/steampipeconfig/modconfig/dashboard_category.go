@@ -10,6 +10,7 @@ import (
 type DashboardCategory struct {
 	ResourceWithMetadataBase
 	HclResourceBase
+	ModTreeItemBase
 
 	Color      *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
 	Depth      *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
@@ -19,21 +20,23 @@ type DashboardCategory struct {
 	Fields     DashboardCategoryFieldList `cty:"fields" hcl:"field,block" json:"fields,omitempty"`
 	Base       *DashboardCategory         `hcl:"base" json:"-"`
 	References []*ResourceReference       `json:"-"`
-	Mod        *Mod                       `cty:"mod" json:"-"`
-	Paths      []NodePath                 `column:"path,jsonb" json:"-"`
-	Parents    []ModTreeItem              `json:"-"`
 }
 
 func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	c := &DashboardCategory{
 		HclResourceBase: HclResourceBase{
 			ShortName:       shortName,
-			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+			FullName:        fullName,
 			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 			DeclRange:       block.DefRange,
 			blockType:       block.Type,
 		},
-		Mod: mod,
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
+		},
 	}
 	c.SetAnonymous(block)
 	return c
@@ -98,17 +101,6 @@ func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsPr
 	}
 }
 
-// AddParent implements ModTreeItem
-func (c *DashboardCategory) AddParent(parent ModTreeItem) error {
-	c.Parents = append(c.Parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (c *DashboardCategory) GetParents() []ModTreeItem {
-	return c.Parents
-}
-
 // GetTitle implements HclResource
 func (c *DashboardCategory) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
@@ -137,25 +129,6 @@ func (*DashboardCategory) GetDocumentation() string {
 // GetMod implements ModTreeItem
 func (c *DashboardCategory) GetMod() *Mod {
 	return c.Mod
-}
-
-// GetPaths implements ModTreeItem
-func (c *DashboardCategory) GetPaths() []NodePath {
-	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
-	}
-
-	return c.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (c *DashboardCategory) SetPaths() {
-	for _, parent := range c.Parents {
-		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
-		}
-	}
 }
 
 func (c *DashboardCategory) Diff(other *DashboardCategory) *DashboardTreeItemDiffs {

@@ -12,12 +12,12 @@ import (
 type DashboardInput struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
-	DashboardName string `column:"dashboard,text" json:"-"`
-
-	Label       *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
-	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
-	Options     []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
+	DashboardName string                  `column:"dashboard,text" json:"-"`
+	Label         *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
+	Placeholder   *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
+	Options       []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Width      *int                 `cty:"width" hcl:"width" column:"width,text" json:"-"`
@@ -25,23 +25,25 @@ type DashboardInput struct {
 	Display    *string              `cty:"display" hcl:"display" json:"-"`
 	Base       *DashboardInput      `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
-
-	Paths     []NodePath `column:"path,jsonb" json:"-"`
-	parents   []ModTreeItem
-	dashboard *Dashboard
+	dashboard  *Dashboard
 }
 
 func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	// input cannot be anonymous
 	i := &DashboardInput{
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
-				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
 			},
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 	return i
@@ -57,8 +59,6 @@ func (i *DashboardInput) Clone() *DashboardInput {
 		Placeholder:              i.Placeholder,
 		Display:                  i.Display,
 		Options:                  i.Options,
-		Paths:                    i.Paths,
-		parents:                  i.parents,
 		dashboard:                i.dashboard,
 	}
 }
@@ -72,7 +72,7 @@ func (i *DashboardInput) Equals(other *DashboardInput) bool {
 func (*DashboardInput) IsSnapshotPanel() {}
 
 // OnDecoded implements HclResource
-func (i *DashboardInput) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (i *DashboardInput) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	i.setBaseProperties(resourceMapProvider)
 	return nil
 }
@@ -85,41 +85,6 @@ func (i *DashboardInput) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (i *DashboardInput) GetReferences() []*ResourceReference {
 	return i.References
-}
-
-// AddParent implements ModTreeItem
-func (i *DashboardInput) AddParent(parent ModTreeItem) error {
-	i.parents = append(i.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (i *DashboardInput) GetParents() []ModTreeItem {
-	return i.parents
-}
-
-// GetChildren implements ModTreeItem
-func (i *DashboardInput) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetPaths implements ModTreeItem
-func (i *DashboardInput) GetPaths() []NodePath {
-	// lazy load
-	if len(i.Paths) == 0 {
-		i.SetPaths()
-	}
-
-	return i.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (i *DashboardInput) SetPaths() {
-	for _, parent := range i.parents {
-		for _, parentPath := range parent.GetPaths() {
-			i.Paths = append(i.Paths, append(parentPath, i.Name()))
-		}
-	}
 }
 
 func (i *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
@@ -168,11 +133,6 @@ func (i *DashboardInput) GetWidth() int {
 // GetDisplay implements DashboardLeafNode
 func (i *DashboardInput) GetDisplay() string {
 	return typehelpers.SafeString(i.Display)
-}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (*DashboardInput) GetDocumentation() string {
-	return ""
 }
 
 // GetType implements DashboardLeafNode

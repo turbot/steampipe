@@ -21,8 +21,10 @@ type QueryProviderBase struct {
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
-	Mod                   *Mod        `cty:"mod" json:"-"`
+
 	withs               []*DashboardWith
+	// we need the mod name for prepared statement name
+	modNameWithVersion string
 }
 
 // GetParams implements QueryProvider
@@ -56,17 +58,12 @@ func (b *QueryProviderBase) SetParams(params []*ParamDef) {
 	b.Params = params
 }
 
-// GetMod implements QueryProvider
-func (b *QueryProviderBase) GetMod() *Mod {
-	return b.Mod
-}
-
 // GetPreparedStatementName implements QueryProvider
 func (b *QueryProviderBase) GetPreparedStatementName() string {
 	if b.PreparedStatementName != "" {
 		return b.PreparedStatementName
 	}
-	b.PreparedStatementName = b.buildPreparedStatementName(b.ShortName, b.Mod.NameWithVersion(), constants.PreparedStatementImageSuffix)
+	b.PreparedStatementName = b.buildPreparedStatementName(b.ShortName, b.modNameWithVersion, constants.PreparedStatementImageSuffix)
 	return b.PreparedStatementName
 }
 

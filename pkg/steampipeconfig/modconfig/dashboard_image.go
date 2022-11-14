@@ -12,6 +12,7 @@ import (
 type DashboardImage struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	Src *string `cty:"src" hcl:"src" column:"src,text" json:"src,omitempty"`
 	Alt *string `cty:"alt" hcl:"alt" column:"alt,text" json:"alt,omitempty"`
@@ -22,15 +23,12 @@ type DashboardImage struct {
 
 	Base       *DashboardImage      `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-
-	parents []ModTreeItem
 }
 
 func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	i := &DashboardImage{
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
@@ -63,41 +61,6 @@ func (i *DashboardImage) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (i *DashboardImage) GetReferences() []*ResourceReference {
 	return i.References
-}
-
-// AddParent implements ModTreeItem
-func (i *DashboardImage) AddParent(parent ModTreeItem) error {
-	i.parents = append(i.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (i *DashboardImage) GetParents() []ModTreeItem {
-	return i.parents
-}
-
-// GetChildren implements ModTreeItem
-func (i *DashboardImage) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetPaths implements ModTreeItem
-func (i *DashboardImage) GetPaths() []NodePath {
-	// lazy load
-	if len(i.Paths) == 0 {
-		i.SetPaths()
-	}
-
-	return i.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (i *DashboardImage) SetPaths() {
-	for _, parent := range i.parents {
-		for _, parentPath := range parent.GetPaths() {
-			i.Paths = append(i.Paths, append(parentPath, i.Name()))
-		}
-	}
 }
 
 func (i *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {

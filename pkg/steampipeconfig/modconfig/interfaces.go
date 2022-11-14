@@ -28,6 +28,7 @@ type HclResource interface {
 	GetDeclRange() *hcl.Range
 	BlockType() string
 	GetDescription() string
+	GetDocumentation() string
 	GetTags() map[string]string
 }
 
@@ -38,8 +39,6 @@ type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	GetParents() []ModTreeItem
 	GetChildren() []ModTreeItem
-	// TODO move to Hcl Resource
-	GetDocumentation() string
 	// GetPaths returns an array resource paths
 	GetPaths() []NodePath
 	SetPaths()
@@ -66,7 +65,6 @@ type QueryProvider interface {
 	GetQuery() *Query
 	SetArgs(*QueryArgs)
 	SetParams([]*ParamDef)
-	GetMod() *Mod
 	GetDescription() string
 	GetPreparedStatementName() string
 	GetResolvedQuery(*QueryArgs) (*ResolvedQuery, error)

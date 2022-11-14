@@ -676,7 +676,7 @@ func decodeBenchmark(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Be
 		res.handleDecodeDiags(diags)
 
 		// now set children and child name strings
-		benchmark.Children = children
+		benchmark.SetChildren(children)
 		benchmark.ChildNameStrings = getChildNameStringsFromModTreeItem(children)
 	}
 
@@ -688,7 +688,7 @@ func decodeBenchmark(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Be
 		// TACTICAL: we should be passing in the block for the Base resource - but this is only used for diags
 		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
 		children, _ := resolveChildrenFromNames(benchmark.Base.ChildNameStrings, block, supportedChildren, parseCtx)
-		benchmark.Base.Children = children
+		benchmark.Base.SetChildren(children)
 	}
 	diags = decodeProperty(content, "width", &benchmark.Width, parseCtx)
 	res.handleDecodeDiags(diags)

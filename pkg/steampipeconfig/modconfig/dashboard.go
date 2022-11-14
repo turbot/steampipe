@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -17,42 +16,37 @@ const runtimeDependencyDashboardScope = "self"
 type Dashboard struct {
 	ResourceWithMetadataBase
 	HclResourceBase
+	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
-	Width         *int              `cty:"width" hcl:"width"  column:"width,text"`
-	Display       *string           `cty:"display" hcl:"display" column:"display,text"`
-	Inputs        []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	UrlPath       string            `cty:"url_path"  column:"url_path,jsonb"`
-
-	Base *Dashboard `hcl:"base"`
-
-	References []*ResourceReference
-	Mod        *Mod `cty:"mod"`
-
-	Paths []NodePath `column:"path,jsonb"`
+	Width   *int              `cty:"width" hcl:"width"  column:"width,text"`
+	Display *string           `cty:"display" hcl:"display" column:"display,text"`
+	Inputs  []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
+	UrlPath string            `cty:"url_path"  column:"url_path,jsonb"`
+	Base    *Dashboard        `hcl:"base"`
 	// store children in a way which can be serialised via cty
-	ChildNames []string `cty:"children" column:"children,jsonb"`
-
-	selfInputsMap map[string]*DashboardInput
-	// the actual children
-	children []ModTreeItem
-	// TODO [reports] can a dashboard ever have multiple parents??
-	parents                []ModTreeItem
+	ChildNames             []string `cty:"children" column:"children,jsonb"`
+	References             []*ResourceReference
+	selfInputsMap          map[string]*DashboardInput
 	runtimeDependencyGraph *topsort.Graph
 }
 
 func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	c := &Dashboard{
-		Mod: mod,
 		HclResourceBase: HclResourceBase{
 			ShortName:       shortName,
-			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+			FullName:        fullName,
 			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 			DeclRange:       block.DefRange,
 			blockType:       block.Type,
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 	c.SetAnonymous(block)
@@ -74,16 +68,19 @@ func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
 		ResourceWithMetadataBase: ResourceWithMetadataBase{
 			metadata: &ResourceMetadata{},
 		},
-		Mod:           q.GetMod(),
-		Documentation: utils.ToStringPointer(q.GetDocumentation()),
 		HclResourceBase: HclResourceBase{
 			ShortName:       parsedName.Name,
 			FullName:        dashboardName,
 			UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
 			Title:           utils.ToStringPointer(q.GetTitle()),
 			Description:     utils.ToStringPointer(q.GetDescription()),
+			Documentation:   utils.ToStringPointer(q.GetDocumentation()),
 			Tags:            q.GetTags(),
 			blockType:       BlockTypeDashboard,
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      q.GetMod(),
+			fullName: dashboardName,
 		},
 	}
 
@@ -127,55 +124,6 @@ func (d *Dashboard) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (d *Dashboard) GetReferences() []*ResourceReference {
 	return d.References
-}
-
-// GetMod implements ModTreeItem
-func (d *Dashboard) GetMod() *Mod {
-	return d.Mod
-}
-
-// AddParent implements ModTreeItem
-func (d *Dashboard) AddParent(parent ModTreeItem) error {
-	d.parents = append(d.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (d *Dashboard) GetParents() []ModTreeItem {
-	return d.parents
-}
-
-// GetChildren implements ModTreeItem
-func (d *Dashboard) GetChildren() []ModTreeItem {
-	return d.children
-}
-
-// GetDescription implements ModTreeItem
-func (d *Dashboard) GetDescription() string {
-	return ""
-}
-
-// GetPaths implements ModTreeItem
-func (d *Dashboard) GetPaths() []NodePath {
-	// lazy load
-	if len(d.Paths) == 0 {
-		d.SetPaths()
-	}
-	return d.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (d *Dashboard) SetPaths() {
-	for _, parent := range d.parents {
-		for _, parentPath := range parent.GetPaths() {
-			d.Paths = append(d.Paths, append(parentPath, d.Name()))
-		}
-	}
-}
-
-// GetDocumentation implement ModTreeItem
-func (d *Dashboard) GetDocumentation() string {
-	return typehelpers.SafeString(d.Documentation)
 }
 
 func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {
@@ -224,11 +172,6 @@ func (d *Dashboard) SetChildren(children []ModTreeItem) {
 
 func (d *Dashboard) AddChild(child ModTreeItem) {
 	d.children = append(d.children, child)
-}
-
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (d *Dashboard) GetUnqualifiedName() string {
-	return d.UnqualifiedName
 }
 
 func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {

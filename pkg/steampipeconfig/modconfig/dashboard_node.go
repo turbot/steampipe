@@ -10,6 +10,7 @@ import (
 type DashboardNode struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain     hcl.Body             `hcl:",remain" json:"-"`
@@ -17,21 +18,24 @@ type DashboardNode struct {
 	Base       *DashboardNode       `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-
-	parents []ModTreeItem
 }
 
 func NewDashboardNode(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	c := &DashboardNode{
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
-				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
 				blockType:       block.Type,
 			},
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 
@@ -71,41 +75,6 @@ func (n *DashboardNode) GetReferences() []*ResourceReference {
 	return n.References
 }
 
-// AddParent implements ModTreeItem
-func (n *DashboardNode) AddParent(parent ModTreeItem) error {
-	n.parents = append(n.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (n *DashboardNode) GetParents() []ModTreeItem {
-	return n.parents
-}
-
-// GetChildren implements ModTreeItem
-func (n *DashboardNode) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetPaths implements ModTreeItem
-func (n *DashboardNode) GetPaths() []NodePath {
-	// lazy load
-	if len(n.Paths) == 0 {
-		n.SetPaths()
-	}
-
-	return n.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (n *DashboardNode) SetPaths() {
-	for _, parent := range n.parents {
-		for _, parentPath := range parent.GetPaths() {
-			n.Paths = append(n.Paths, append(parentPath, n.Name()))
-		}
-	}
-}
-
 func (n *DashboardNode) Diff(other *DashboardNode) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
 		Item: n,
@@ -130,11 +99,6 @@ func (n *DashboardNode) GetWidth() int {
 
 // GetDisplay implements DashboardLeafNode
 func (n *DashboardNode) GetDisplay() string {
-	return ""
-}
-
-// GetDocumentation implements DashboardLeafNode
-func (n *DashboardNode) GetDocumentation() string {
 	return ""
 }
 

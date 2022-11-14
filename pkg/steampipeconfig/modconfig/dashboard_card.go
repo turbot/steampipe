@@ -13,6 +13,7 @@ import (
 type DashboardCard struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	Label *string `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
 	Value *string `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
@@ -27,21 +28,25 @@ type DashboardCard struct {
 	References []*ResourceReference `json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
-	parents  []ModTreeItem
 	metadata *ResourceMetadata
 }
 
 func NewDashboardCard(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	c := &DashboardCard{
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
-				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
 				blockType:       block.Type,
 			},
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 
@@ -68,41 +73,6 @@ func (c *DashboardCard) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (c *DashboardCard) GetReferences() []*ResourceReference {
 	return c.References
-}
-
-// AddParent implements ModTreeItem
-func (c *DashboardCard) AddParent(parent ModTreeItem) error {
-	c.parents = append(c.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (c *DashboardCard) GetParents() []ModTreeItem {
-	return c.parents
-}
-
-// GetChildren implements ModTreeItem
-func (c *DashboardCard) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetPaths implements ModTreeItem
-func (c *DashboardCard) GetPaths() []NodePath {
-	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
-	}
-
-	return c.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (c *DashboardCard) SetPaths() {
-	for _, parent := range c.parents {
-		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
-		}
-	}
 }
 
 func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
