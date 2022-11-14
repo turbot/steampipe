@@ -22,7 +22,7 @@
   --color-skip-animate: rgba(156, 163, 175, 0.8); /* #b4bac3 */
   --color-skip-inverse: theme("colors.white");
 
-  /* Primary colours */
+  /* Primary colors */
   --color-success: #0070f3;
   --color-error: #e00;
   --color-warning: #f9a825;
@@ -78,7 +78,7 @@
   --color-skip-animate: rgba(156, 163, 175, 0.8); /* #b4bac3 */
   --color-skip-inverse: theme("colors.white");
 
-  /* Primary colours */
+  /* Primary colors */
   --color-success: #0070f3;
   --color-error: red;
   --color-warning: #f9a825;

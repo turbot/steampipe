@@ -1,16 +1,16 @@
 import { classNames } from "./styles";
 
 const getIconClasses = (type) => {
-  const colouredClasses = "text-3xl text-white opacity-40 print:opacity-100";
+  const coloredClasses = "text-3xl text-white opacity-40 print:opacity-100";
   switch (type) {
     case "alert":
-      return classNames(colouredClasses, "print:text-alert");
+      return classNames(coloredClasses, "print:text-alert");
     case "info":
-      return classNames(colouredClasses, "print:text-info");
+      return classNames(coloredClasses, "print:text-info");
     case "ok":
-      return classNames(colouredClasses, "print:text-ok");
+      return classNames(coloredClasses, "print:text-ok");
     case "severity":
-      return classNames(colouredClasses, "print:text-yellow");
+      return classNames(coloredClasses, "print:text-yellow");
     default:
       return "text-black-scale-4 text-3xl";
   }

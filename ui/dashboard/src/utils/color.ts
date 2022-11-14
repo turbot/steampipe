@@ -136,7 +136,7 @@ export class ColorGenerator {
 const stringColorMap = {};
 const colorGenerator = new ColorGenerator(16, 0);
 
-export const stringToColour = (str: string): string => {
+export const stringToColor = (str: string): string => {
   if (stringColorMap[str]) {
     return stringColorMap[str];
   }

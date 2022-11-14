@@ -4,7 +4,7 @@ import { components, OptionProps, SingleValueProps } from "react-select";
 const stringColorMap = {};
 const colorGenerator = new ColorGenerator(24, 4);
 
-const stringToColour = (str) => {
+const stringToColor = (str) => {
   if (stringColorMap[str]) {
     return stringColorMap[str];
   }
@@ -16,7 +16,7 @@ const stringToColour = (str) => {
 const OptionTag = ({ tagKey, tagValue }) => (
   <span
     className="rounded-md text-xs"
-    style={{ color: stringToColour(tagValue) }}
+    style={{ color: stringToColor(tagValue) }}
     title={`${tagKey} = ${tagValue}`}
   >
     {tagValue}
