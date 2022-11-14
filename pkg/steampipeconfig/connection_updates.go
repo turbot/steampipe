@@ -33,7 +33,7 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
-	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
+	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections, schemaNames)
 	if err != nil {
 		res.Error = err
 		return nil, res
