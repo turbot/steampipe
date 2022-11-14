@@ -41,21 +41,13 @@ import {
   ZoomInIcon,
   ZoomOutIcon,
 } from "../../../../constants/icons";
-import { useEffect, useMemo } from "react";
-import "reactflow/dist/style.css";
-import { usePanel } from "../../../../hooks/usePanel";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { useEffect, useMemo } from "react";
+import { usePanel } from "../../../../hooks/usePanel";
+import "reactflow/dist/style.css";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
-
-const nodeTypes = {
-  asset: AssetNode,
-};
-
-const edgeTypes = {
-  floating: FloatingEdge,
-};
 
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
@@ -123,13 +115,42 @@ const buildGraphNodesAndEdges = (
     });
   }
   for (const edge of nodesAndEdges.edges) {
+    // The color rules are:
+    // 1) If the target node of the edge specifies a category and that
+    //    category specifies a colour of "auto", refer to rule 3).
+    // 2) Else if the edge specifies a category and that category specifies a colour,
+    //    that colour is used at 100% opacity for both the edge and the label.
+    // 3) Else if the target node of the edge specifies a category and that
+    //    category specifies a colour, that colour is used at 50% opacity for the
+    //    edge and 70% opacity for the label.
+    // 4) Else use black scale 4 at 100% opacity for both the edge and the label.
+
     const matchingCategory = edge.category
       ? nodesAndEdges.categories[edge.category]
       : null;
-    const edgeColor = getColorOverride(
+    let categoryColor = getColorOverride(
       matchingCategory ? matchingCategory.color : null,
       themeColors
     );
+    if (categoryColor === "auto") {
+      categoryColor = null;
+    }
+
+    let targetNodeColor;
+    const targetNode = nodesAndEdges.nodeMap[edge.to_id];
+    if (targetNode) {
+      const targetCategory = nodesAndEdges.categories[targetNode.category];
+      if (targetCategory) {
+        targetNodeColor = targetCategory.color;
+      }
+    }
+    const color = categoryColor
+      ? categoryColor
+      : targetNodeColor
+      ? targetNodeColor
+      : themeColors.blackScale4;
+    const labelOpacity = categoryColor ? 1 : targetNodeColor ? 0.5 : 1;
+    const lineOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
     edges.push({
       type: "floating",
       id: edge.id,
@@ -138,15 +159,22 @@ const buildGraphNodesAndEdges = (
       label: edge.title,
       labelBgPadding: [11, 0],
       markerEnd: {
-        color: edgeColor ? edgeColor : themeColors.blackScale3,
+        color,
         width: 20,
         height: 20,
-        strokeWidth: 2,
+        strokeWidth: 1,
         type: MarkerType.Arrow,
       },
       data: {
-        color: matchingCategory ? matchingCategory.color : null,
+        color: categoryColor
+          ? categoryColor
+          : targetNodeColor
+          ? targetNodeColor
+          : null,
+        customColor: !!categoryColor || !!targetNodeColor,
         fields: matchingCategory ? matchingCategory.fields : null,
+        labelOpacity,
+        lineOpacity,
         row_data: edge.row_data,
         label: edge.title,
         themeColors,
@@ -377,13 +405,27 @@ const Graph = (props) => {
   const graphOptions = useGraphOptions(props);
   useNodeAndEdgePanelInformation(props.nodeAndEdgeStatus, props.dataFormat);
 
+  const nodeTypes = useMemo(
+    () => ({
+      asset: AssetNode,
+    }),
+    []
+  );
+
+  const edgeTypes = useMemo(
+    () => ({
+      floating: FloatingEdge,
+    }),
+    []
+  );
+
   return (
     <ReactFlowProvider>
       <div
         style={{
           height: graphOptions.height,
           maxHeight: selectedPanel ? undefined : 600,
-          minHeight: 150,
+          minHeight: 175,
         }}
       >
         <ReactFlow

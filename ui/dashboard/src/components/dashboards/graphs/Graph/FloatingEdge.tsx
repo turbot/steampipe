@@ -1,9 +1,11 @@
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
-import { classNames } from "../../../../utils/styles";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
+import { classNames } from "../../../../utils/styles";
 import { EdgeLabelRenderer, useStore } from "reactflow";
 import { useCallback } from "react";
+import { ThemeNames } from "../../../../hooks/useTheme";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 const FloatingEdge = ({
   id,
@@ -11,9 +13,19 @@ const FloatingEdge = ({
   target,
   markerEnd,
   style,
-  data: { color, fields, row_data, label, themeColors },
+  data: {
+    color,
+    customColor,
+    fields,
+    labelOpacity,
+    lineOpacity,
+    row_data,
+    label,
+  },
 }) => {
-  // const edgeLabelRef = useRef(null);
+  const {
+    themeContext: { theme },
+  } = useDashboard();
   const sourceNode = useStore(
     useCallback((store) => store.nodeInternals.get(source), [source])
   );
@@ -30,7 +42,6 @@ const FloatingEdge = ({
     targetNode
   );
 
-  //const d = getSimpleBezierPath({
   const d = circleGetBezierPath({
     sourceX: sx,
     sourceY: sy,
@@ -41,52 +52,75 @@ const FloatingEdge = ({
   });
 
   const edgeLabel = (
-    <div>
-      <p
-        className="block p-1 bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-center text-wrap line-clamp-2"
-        title={label}
-      >
-        {label}
-      </p>
+    <span
+      title={label}
+      className={classNames(
+        "block p-px italic max-w-[70px] text-sm text-center text-wrap leading-tight line-clamp-2",
+        row_data && row_data.properties
+          ? "-mt-1 underline decoration-dashed decoration-2 underline-offset-3 decoration-black-scale-3 cursor-pointer"
+          : null,
+        customColor && theme.name === ThemeNames.STEAMPIPE_DARK
+          ? "brightness-[1.75]"
+          : null
+      )}
+      style={{ color, opacity: labelOpacity }}
+    >
+      {label}
+    </span>
+  );
+
+  const edgeLabelWrapper = (
+    <div
+      className={classNames(
+        "bg-dashboard-panel",
+        row_data && row_data.properties
+          ? "flex space-x-0.5 items-center"
+          : undefined
+      )}
+    >
+      {row_data && row_data.properties && (
+        <Tooltip
+          overlay={
+            <RowProperties
+              fields={fields || null}
+              properties={row_data.properties}
+            />
+          }
+          title={label}
+        >
+          {edgeLabel}
+        </Tooltip>
+      )}
+      {(!row_data || !row_data.properties) && edgeLabel}
     </div>
   );
 
   return (
     <>
       <path
+        className={
+          customColor && theme.name === ThemeNames.STEAMPIPE_DARK
+            ? "brightness-[1.75]"
+            : undefined
+        }
         id={id}
         d={d}
         markerEnd={markerEnd}
         style={{
           ...(style || {}),
-          stroke: color || themeColors.blackScale3,
+          opacity: lineOpacity,
+          stroke: color,
           strokeWidth: 1,
         }}
       />
       <EdgeLabelRenderer>
         <div
-          className={classNames(
-            "absolute pointer-events-auto",
-            row_data?.properties ? "cursor-pointer" : null
-          )}
+          className="absolute pointer-events-auto cursor-grab"
           style={{
             transform: `translate(-50%, -50%) translate(${mx}px,${my}px)`,
           }}
         >
-          {row_data && row_data.properties && (
-            <Tooltip
-              overlay={
-                <RowProperties
-                  fields={fields || null}
-                  properties={row_data.properties}
-                />
-              }
-              title={label}
-            >
-              {edgeLabel}
-            </Tooltip>
-          )}
-          {(!row_data || !row_data.properties) && edgeLabel}
+          {edgeLabelWrapper}
         </div>
       </EdgeLabelRenderer>
     </>

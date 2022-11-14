@@ -1,9 +1,9 @@
-import { stringToColour } from "../../../../utils/color";
+import { stringToColor } from "../../../../utils/color";
 
 const ControlDimension = ({ dimensionKey, dimensionValue }) => (
   <span
     className="rounded-md text-xs"
-    style={{ color: stringToColour(dimensionValue) }}
+    style={{ color: stringToColor(dimensionValue) }}
     title={`${dimensionKey} = ${dimensionValue}`}
   >
     {dimensionValue}

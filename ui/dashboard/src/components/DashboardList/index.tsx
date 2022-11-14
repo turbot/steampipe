@@ -12,7 +12,7 @@ import {
 import { classNames } from "../../utils/styles";
 import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
-import { stringToColour } from "../../utils/color";
+import { stringToColor } from "../../utils/color";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
@@ -66,7 +66,7 @@ const DashboardTag = ({
           }
         : undefined
     }
-    style={{ color: stringToColour(tagValue) }}
+    style={{ color: stringToColor(tagValue) }}
     title={`${tagKey} = ${tagValue}`}
   >
     {tagValue}
