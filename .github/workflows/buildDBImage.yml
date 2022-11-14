@@ -65,9 +65,7 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      ## Authenticate with GCloud
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
+      - name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v0'
         with:
           service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
