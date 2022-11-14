@@ -45,7 +45,7 @@ const FloatingEdge = ({
       className={classNames(
         "block p-px italic max-w-[70px] text-sm text-center text-wrap leading-tight line-clamp-2",
         row_data && row_data.properties
-          ? "-mt-1 underline decoration-dashed decoration-2 underline-offset-2 decoration-black-scale-3 cursor-pointer"
+          ? "-mt-1 underline decoration-dashed decoration-2 underline-offset-3 decoration-black-scale-3 cursor-pointer"
           : null
       )}
       style={{ color, opacity: labelOpacity }}
