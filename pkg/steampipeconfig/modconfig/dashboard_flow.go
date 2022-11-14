@@ -11,6 +11,7 @@ import (
 type DashboardFlow struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -28,23 +29,26 @@ type DashboardFlow struct {
 
 	Base       *DashboardFlow       `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-
-	parents []ModTreeItem
 }
 
 func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	h := &DashboardFlow{
+		Categories: make(map[string]*DashboardCategory),
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
-				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
 			},
 		},
-		Categories: make(map[string]*DashboardCategory),
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
+		},
 	}
 	h.SetAnonymous(block)
 	return h
@@ -77,17 +81,7 @@ func (f *DashboardFlow) GetReferences() []*ResourceReference {
 	return f.References
 }
 
-// AddParent implements ModTreeItem
-func (f *DashboardFlow) AddParent(parent ModTreeItem) error {
-	f.parents = append(f.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (f *DashboardFlow) GetParents() []ModTreeItem {
-	return f.parents
-}
-
+// TODO KAI PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
 // GetChildren implements ModTreeItem
 func (f *DashboardFlow) GetChildren() []ModTreeItem {
 	// return nodes and edges (if any)
@@ -100,25 +94,6 @@ func (f *DashboardFlow) GetChildren() []ModTreeItem {
 		children[i+offset] = e
 	}
 	return children
-}
-
-// GetPaths implements ModTreeItem
-func (f *DashboardFlow) GetPaths() []NodePath {
-	// lazy load
-	if len(f.Paths) == 0 {
-		f.SetPaths()
-	}
-
-	return f.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (f *DashboardFlow) SetPaths() {
-	for _, parent := range f.parents {
-		for _, parentPath := range parent.GetPaths() {
-			f.Paths = append(f.Paths, append(parentPath, f.Name()))
-		}
-	}
 }
 
 func (f *DashboardFlow) Diff(other *DashboardFlow) *DashboardTreeItemDiffs {
@@ -159,11 +134,6 @@ func (f *DashboardFlow) GetWidth() int {
 // GetDisplay implements DashboardLeafNode
 func (f *DashboardFlow) GetDisplay() string {
 	return typehelpers.SafeString(f.Display)
-}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (f *DashboardFlow) GetDocumentation() string {
-	return ""
 }
 
 // GetType implements DashboardLeafNode

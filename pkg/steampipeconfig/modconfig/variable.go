@@ -12,15 +12,16 @@ import (
 	"github.com/zclconf/go-cty/cty/convert"
 )
 
-// TODO KAI CHECK DESCRIPTION
+// TODO check DescriptionSet - still required?
+
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	ResourceWithMetadataBase
 	HclResourceBase
+	ModTreeItemBase
 
-	Default        cty.Value `column:"default_value,jsonb" json:"-"`
-	Type           cty.Type  `column:"var_type,text" json:"-"`
-	DescriptionSet bool      ` json:"-"`
+	Default cty.Value `column:"default_value,jsonb" json:"-"`
+	Type    cty.Type  `column:"var_type,text" json:"-"`
 
 	TypeString string      `json:"type"`
 	DefaultGo  interface{} `json:"value_default"`
@@ -34,11 +35,8 @@ type Variable struct {
 	ValueSourceStartLineNumber int                            `column:"value_source_start_line_number,integer" json:"-"`
 	ValueSourceEndLineNumber   int                            `column:"value_source_end_line_number,integer" json:"-"`
 	ParsingMode                var_config.VariableParsingMode `json:"-"`
-	Mod                        *Mod                           `json:"-"`
-	Paths                      []NodePath                     `column:"path,jsonb" json:"-"`
 
 	metadata *ResourceMetadata
-	parents  []ModTreeItem
 }
 
 func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
@@ -46,20 +44,23 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	if !v.Default.IsNull() {
 		defaultGo, _ = type_conversion.CtyToGo(v.Default)
 	}
-
+	fullName := fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name)
 	return &Variable{
 		HclResourceBase: HclResourceBase{
 			ShortName:       v.Name,
 			Description:     &v.Description,
-			FullName:        fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name),
+			FullName:        fullName,
 			DeclRange:       v.DeclRange,
 			UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
 			blockType:       BlockTypeVariable,
 		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
+		},
 		Default:     v.Default,
 		Type:        v.Type,
 		ParsingMode: v.ParsingMode,
-		Mod:         mod,
 		ModName:     mod.ShortName,
 		DefaultGo:   defaultGo,
 		TypeString:  type_conversion.CtyTypeToHclType(v.Type, v.Default.Type()),
@@ -85,11 +86,6 @@ func (v *Variable) AddReference(*ResourceReference) {}
 // GetReferences implements ResourceWithMetadata
 func (v *Variable) GetReferences() []*ResourceReference {
 	return nil
-}
-
-// GetMod implements ModTreeItem
-func (v *Variable) GetMod() *Mod {
-	return v.Mod
 }
 
 // Required returns true if this variable is required to be set by the caller,
@@ -124,46 +120,6 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 		v.TypeString = type_conversion.CtyTypeToHclType(value.Type())
 	}
 	return nil
-}
-
-// AddParent implements ModTreeItem
-func (v *Variable) AddParent(parent ModTreeItem) error {
-	v.parents = append(v.parents, parent)
-
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (v *Variable) GetParents() []ModTreeItem {
-	return v.parents
-}
-
-// GetChildren implements ModTreeItem
-func (v *Variable) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetPaths implements ModTreeItem
-func (v *Variable) GetPaths() []NodePath {
-	// lazy load
-	if len(v.Paths) == 0 {
-		v.SetPaths()
-	}
-	return v.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (v *Variable) SetPaths() {
-	for _, parent := range v.parents {
-		for _, parentPath := range parent.GetPaths() {
-			v.Paths = append(v.Paths, append(parentPath, v.Name()))
-		}
-	}
-}
-
-// GetDocumentation implement ModTreeItem
-func (*Variable) GetDocumentation() string {
-	return ""
 }
 
 func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {

@@ -14,10 +14,10 @@ import (
 type Control struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain           hcl.Body          `hcl:",remain" json:"-"`
-	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text" json:"-"`
 	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text" json:"search_path,omitempty"`
 	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
 	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
@@ -39,17 +39,23 @@ type Control struct {
 }
 
 func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	control := &Control{
 		QueryProviderBase: QueryProviderBase{
-			Mod:  mod,
-			Args: NewQueryArgs(),
+			Args:               NewQueryArgs(),
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
+				FullName:        fullName,
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				ShortName:       shortName,
-				FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
-				UnqualifiedName: fmt.Sprintf("control.%s", shortName),
 				DeclRange:       block.DefRange,
 				blockType:       block.Type,
 			},
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 
@@ -163,49 +169,9 @@ func (c *Control) GetParentNames() []string {
 	return parents
 }
 
-// AddParent implements ModTreeItem
-func (c *Control) AddParent(parent ModTreeItem) error {
-	c.parents = append(c.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (c *Control) GetParents() []ModTreeItem {
-	return c.parents
-}
-
-// GetDescription implements ModTreeItem
-func (c *Control) GetDescription() string {
-	return typehelpers.SafeString(c.Description)
-}
-
-// GetChildren implements ModTreeItem
-func (c *Control) GetChildren() []ModTreeItem {
-	return nil
-}
-
 // QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
 func (c *Control) QualifiedNameWithVersion() string {
 	return fmt.Sprintf("%s.%s", c.Mod.NameWithVersion(), c.FullName)
-}
-
-// GetPaths implements ModTreeItem
-func (c *Control) GetPaths() []NodePath {
-	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
-	}
-
-	return c.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (c *Control) SetPaths() {
-	for _, parent := range c.parents {
-		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
-		}
-	}
 }
 
 // OnDecoded implements HclResource
@@ -244,11 +210,6 @@ func (c *Control) GetWidth() int {
 // GetDisplay implements DashboardLeafNode
 func (c *Control) GetDisplay() string {
 	return ""
-}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (c *Control) GetDocumentation() string {
-	return typehelpers.SafeString(c.Documentation)
 }
 
 // GetType implements DashboardLeafNode
