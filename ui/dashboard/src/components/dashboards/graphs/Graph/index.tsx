@@ -128,10 +128,13 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = edge.category
       ? nodesAndEdges.categories[edge.category]
       : null;
-    const edgeColor = getColorOverride(
+    let categoryColor = getColorOverride(
       matchingCategory ? matchingCategory.color : null,
       themeColors
     );
+    if (categoryColor === "auto") {
+      categoryColor = null;
+    }
 
     let targetNodeColor;
     const targetNode = nodesAndEdges.nodeMap[edge.to_id];
@@ -141,13 +144,13 @@ const buildGraphNodesAndEdges = (
         targetNodeColor = targetCategory.color;
       }
     }
-    const color = edgeColor
-      ? edgeColor
+    const color = categoryColor
+      ? categoryColor
       : targetNodeColor
       ? targetNodeColor
       : themeColors.blackScale4;
-    const labelOpacity = edgeColor ? 1 : targetNodeColor ? 0.5 : 1;
-    const lineOpacity = edgeColor ? 1 : targetNodeColor ? 0.7 : 1;
+    const labelOpacity = categoryColor ? 1 : targetNodeColor ? 0.5 : 1;
+    const lineOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
     edges.push({
       type: "floating",
       id: edge.id,
@@ -163,7 +166,11 @@ const buildGraphNodesAndEdges = (
         type: MarkerType.Arrow,
       },
       data: {
-        color: edgeColor ? edgeColor : targetNodeColor ? targetNodeColor : null,
+        color: categoryColor
+          ? categoryColor
+          : targetNodeColor
+          ? targetNodeColor
+          : null,
         fields: matchingCategory ? matchingCategory.fields : null,
         labelOpacity,
         lineOpacity,
