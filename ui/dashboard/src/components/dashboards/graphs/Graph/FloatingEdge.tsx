@@ -4,6 +4,7 @@ import Tooltip from "./Tooltip";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
 import { EdgeLabelRenderer, useStore } from "reactflow";
 import { useCallback } from "react";
+import { classNames } from "../../../../utils/styles";
 
 const FloatingEdge = ({
   id,
@@ -51,8 +52,8 @@ const FloatingEdge = ({
         }
         title={label}
       >
-        <div className="cursor-pointer text-black-scale-5">
-          <Icon className="w-3 h-3" icon="table-cells" />
+        <div className="cursor-pointer text-black-scale-3">
+          <Icon className="w-3 h-3 rotate-90" icon="view-columns" />
         </div>
       </Tooltip>
     ) : null;
@@ -61,17 +62,22 @@ const FloatingEdge = ({
     <div
       className={
         row_data && row_data.properties
-          ? "flex space-x-1 items-center"
+          ? "flex space-x-0.5 items-center"
           : undefined
       }
     >
       <span
-        className="block p-px bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-center text-wrap line-clamp-2"
         title={label}
+        className={classNames(
+          "block p-px bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-center text-wrap line-clamp-2",
+          row_data && row_data.properties
+            ? "-mt-1 underline decoration-dashed decoration-2 underline-offset-2 decoration-black-scale-3 cursor-pointer"
+            : null
+        )}
       >
         {label}
       </span>
-      {edgePropertiesIcon}
+      {/*{edgePropertiesIcon}*/}
     </div>
   );
 

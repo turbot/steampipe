@@ -158,6 +158,9 @@ const AssetNode = ({
           iconType === "icon" && !color ? "text-foreground-lighter" : null,
           theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
         )}
+        style={{
+          color: isFolded ? (color ? color : themeColors.blackScale3) : {},
+        }}
         icon={isFolded ? fold?.icon : icon}
       />
     </div>
@@ -188,7 +191,7 @@ const AssetNode = ({
         title={label}
       >
         <div className="cursor-pointer text-black-scale-5">
-          <Icon className="w-4 h-4" icon="table-cells" />
+          <Icon className="w-4 h-4" icon="queue-list" />
         </div>
       </Tooltip>
     ) : null;
@@ -197,7 +200,7 @@ const AssetNode = ({
     <div
       className={classNames(
         renderedHref ? "text-link cursor-pointer" : null,
-        "absolute flex space-x-1 items-center -bottom-[20px] text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px]"
+        "absolute flex space-x-1 items-center justify-center -bottom-[20px] text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
       )}
       onClick={
         isFolded && foldedNodes
@@ -205,10 +208,18 @@ const AssetNode = ({
           : undefined
       }
     >
-      {renderedHref && <ExternalLink to={renderedHref}>{label}</ExternalLink>}
+      {renderedHref && (
+        <ExternalLink className="truncate" to={renderedHref}>
+          {label}
+        </ExternalLink>
+      )}
       {!renderedHref && (
         <>
-          {!isFolded && <span>{label}</span>}
+          {!isFolded && (
+            <span className="truncate" title={label}>
+              {label}
+            </span>
+          )}
           {isFolded && (
             <FoldedNodeLabel
               category={category}
@@ -218,7 +229,7 @@ const AssetNode = ({
           )}
         </>
       )}
-      {nodeLabelIcon}
+      {/*{nodeLabelIcon}*/}
     </div>
   );
 

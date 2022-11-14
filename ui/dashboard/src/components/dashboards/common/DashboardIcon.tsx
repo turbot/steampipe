@@ -6,10 +6,12 @@ import { memo, useMemo } from "react";
 interface DashboardIconProps {
   className?: string;
   icon?: string | null;
+  style?: any;
 }
 
 interface DashboardHeroIconProps extends DashboardIconProps {
   icon: string;
+  style?: any;
 }
 
 const useDashboardIconType = (icon) =>
@@ -45,8 +47,12 @@ const DashboardImageIcon = ({ className, icon }) => (
   <img className={className} src={icon} alt="" />
 );
 
-const DashboardHeroIcon = ({ className, icon }: DashboardHeroIconProps) => (
-  <Icon className={className} icon={icon} />
+const DashboardHeroIcon = ({
+  className,
+  icon,
+  style,
+}: DashboardHeroIconProps) => (
+  <Icon className={className} icon={icon} style={style} />
 );
 
 const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => (
@@ -57,7 +63,7 @@ const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => (
   </svg>
 );
 
-const DashboardIcon = ({ className, icon }: DashboardIconProps) => {
+const DashboardIcon = ({ className, icon, style }: DashboardIconProps) => {
   // First work out the type of the provided icon
   const iconType = useDashboardIconType(icon);
 
@@ -67,7 +73,9 @@ const DashboardIcon = ({ className, icon }: DashboardIconProps) => {
 
   switch (iconType) {
     case "icon":
-      return <DashboardHeroIcon className={className} icon={icon} />;
+      return (
+        <DashboardHeroIcon className={className} icon={icon} style={style} />
+      );
     case "text":
       return <DashboardTextIcon className={className} icon={icon} />;
     case "url":
