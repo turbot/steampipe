@@ -3,12 +3,9 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/constants"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardChart is a struct representing a leaf dashboard node
@@ -19,16 +16,9 @@ type DashboardChart struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	FullName        string `cty:"name" json:"-"`
-	ShortName       string `json:"-"`
-	UnqualifiedName string `json:"-"`
-
-	// these properties are JSON serialised by the parent LeafRun
-	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
-	Display *string `cty:"display" hcl:"display" json:"-"`
-
+	Width      *int                             `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type       *string                          `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display    *string                          `cty:"display" hcl:"display" json:"-"`
 	Legend     *DashboardChartLegend            `cty:"legend" hcl:"legend,block" column:"legend,jsonb" json:"legend,omitempty"`
 	SeriesList DashboardChartSeriesList         `cty:"series_list" hcl:"series,block" column:"series,jsonb" json:"-"`
 	Axes       *DashboardChartAxes              `cty:"axes" hcl:"axes,block" column:"axes,jsonb" json:"axes,omitempty"`
@@ -36,17 +26,8 @@ type DashboardChart struct {
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
 
-	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
-
 	Base       *DashboardChart      `hcl:"base" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
 	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
@@ -54,11 +35,16 @@ type DashboardChart struct {
 
 func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &DashboardChart{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
+		QueryProviderBase: QueryProviderBase{
+			Mod: mod,
+			HclResourceBase: HclResourceBase{
+				ShortName:       shortName,
+				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+				DeclRange:       block.DefRange,
+				blockType:       block.Type,
+			},
+		},
 	}
 
 	c.SetAnonymous(block)
@@ -70,31 +56,6 @@ func (c *DashboardChart) Equals(other *DashboardChart) bool {
 	return !diff.HasChanges()
 }
 
-// CtyValue implements HclResource
-func (c *DashboardChart) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
-}
-
-// Name implements HclResource, ModTreeItem
-// return name in format: 'chart.<shortName>'
-func (c *DashboardChart) Name() string {
-	return c.FullName
-}
-
-// OnDecoded implements HclResource
-func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
-	// populate series map
-	if len(c.SeriesList) > 0 {
-		c.Series = make(map[string]*DashboardChartSeries, len(c.SeriesList))
-		for _, s := range c.SeriesList {
-			s.OnDecoded()
-			c.Series[s.Name] = s
-		}
-	}
-	return nil
-}
-
 // AddReference implements ResourceWithMetadata
 func (c *DashboardChart) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)
@@ -103,21 +64,6 @@ func (c *DashboardChart) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (c *DashboardChart) GetReferences() []*ResourceReference {
 	return c.References
-}
-
-// GetMod implements ModTreeItem
-func (c *DashboardChart) GetMod() *Mod {
-	return c.Mod
-}
-
-// GetDeclRange implements HclResource
-func (c *DashboardChart) GetDeclRange() *hcl.Range {
-	return &c.DeclRange
-}
-
-// BlockType implements HclResource
-func (*DashboardChart) BlockType() string {
-	return BlockTypeChart
 }
 
 // AddParent implements ModTreeItem
@@ -139,16 +85,6 @@ func (c *DashboardChart) GetChildren() []ModTreeItem {
 // GetTitle implements HclResource
 func (c *DashboardChart) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (c *DashboardChart) GetDescription() string {
-	return ""
-}
-
-// GetTags implements HclResource
-func (c *DashboardChart) GetTags() map[string]string {
-	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem
@@ -242,56 +178,6 @@ func (c *DashboardChart) GetDocumentation() string {
 // GetType implements DashboardLeafNode
 func (c *DashboardChart) GetType() string {
 	return typehelpers.SafeString(c.Type)
-}
-
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (c *DashboardChart) GetUnqualifiedName() string {
-	return c.UnqualifiedName
-}
-
-// GetParams implements QueryProvider
-func (c *DashboardChart) GetParams() []*ParamDef {
-	return c.Params
-}
-
-// GetArgs implements QueryProvider
-func (c *DashboardChart) GetArgs() *QueryArgs {
-	return c.Args
-}
-
-// GetSQL implements QueryProvider
-func (c *DashboardChart) GetSQL() *string {
-	return c.SQL
-}
-
-// GetQuery implements QueryProvider
-func (c *DashboardChart) GetQuery() *Query {
-	return c.Query
-}
-
-// SetArgs implements QueryProvider
-func (c *DashboardChart) SetArgs(args *QueryArgs) {
-	c.Args = args
-}
-
-// SetParams implements QueryProvider
-func (c *DashboardChart) SetParams(params []*ParamDef) {
-	c.Params = params
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (c *DashboardChart) GetPreparedStatementName() string {
-	if c.PreparedStatementName != "" {
-		return c.PreparedStatementName
-	}
-	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementChartSuffix)
-	return c.PreparedStatementName
-}
-
-// GetResolvedQuery implements QueryProvider
-func (c *DashboardChart) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return c.getResolvedQuery(c, runtimeArgs)
 }
 
 func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

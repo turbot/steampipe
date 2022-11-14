@@ -7,26 +7,19 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardText is a struct representing a leaf dashboard node
 type DashboardText struct {
 	ResourceWithMetadataBase
+	HclResourceBase
 
-	FullName        string  `cty:"name" json:"-"`
-	ShortName       string  `json:"-"`
-	UnqualifiedName string  `json:"-"`
-	Value           *string `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
-
-	// these properties are JSON serialised by the parent LeafRun
-	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Value   *string `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
 	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display *string `cty:"display" hcl:"display" json:"-"`
 
 	Base       *DashboardText       `hcl:"base" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
 	References []*ResourceReference `json:"-"`
 	Mod        *Mod                 `cty:"mod" json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
@@ -36,11 +29,14 @@ type DashboardText struct {
 
 func NewDashboardText(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	t := &DashboardText{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
+		HclResourceBase: HclResourceBase{
+			ShortName:       shortName,
+			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+			DeclRange:       block.DefRange,
+			blockType:       block.Type,
+		},
+		Mod: mod,
 	}
 	t.SetAnonymous(block)
 	return t
@@ -49,17 +45,6 @@ func NewDashboardText(block *hcl.Block, mod *Mod, shortName string) HclResource 
 func (t *DashboardText) Equals(other *DashboardText) bool {
 	diff := t.Diff(other)
 	return !diff.HasChanges()
-}
-
-// CtyValue implements HclResource
-func (t *DashboardText) CtyValue() (cty.Value, error) {
-	return getCtyValue(t)
-}
-
-// Name implements HclResource, ModTreeItem, DashboardLeafNode
-// return name in format: 'text.<shortName>'
-func (t *DashboardText) Name() string {
-	return t.FullName
 }
 
 // OnDecoded implements HclResource
@@ -83,16 +68,6 @@ func (t *DashboardText) GetMod() *Mod {
 	return t.Mod
 }
 
-// GetDeclRange implements HclResource
-func (t *DashboardText) GetDeclRange() *hcl.Range {
-	return &t.DeclRange
-}
-
-// BlockType implements HclResource
-func (*DashboardText) BlockType() string {
-	return BlockTypeText
-}
-
 // AddParent implements ModTreeItem
 func (t *DashboardText) AddParent(parent ModTreeItem) error {
 	t.parents = append(t.parents, parent)
@@ -107,21 +82,6 @@ func (t *DashboardText) GetParents() []ModTreeItem {
 // GetChildren implements ModTreeItem
 func (t *DashboardText) GetChildren() []ModTreeItem {
 	return nil
-}
-
-// GetTitle implements HclResource
-func (t *DashboardText) GetTitle() string {
-	return typehelpers.SafeString(t.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (t *DashboardText) GetDescription() string {
-	return ""
-}
-
-// GetTags implements HclResource
-func (t *DashboardText) GetTags() map[string]string {
-	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem
@@ -183,11 +143,6 @@ func (*DashboardText) GetDocumentation() string {
 // GetType implements DashboardLeafNode
 func (t *DashboardText) GetType() string {
 	return typehelpers.SafeString(t.Type)
-}
-
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (t *DashboardText) GetUnqualifiedName() string {
-	return t.UnqualifiedName
 }
 
 func (t *DashboardText) setBaseProperties() {
