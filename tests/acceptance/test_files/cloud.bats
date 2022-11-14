@@ -45,3 +45,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # check the error message
   assert_output --partial 'Error: Not authenticated for Steampipe Cloud.'
 }
+
+function setup() {
+  echo $SKIP_CLOUD_TESTS
+
+  if [[ $SKIP_CLOUD_TESTS == true ]]; then
+    skip
+  else
+    echo "Test not skipped"
+  fi
+}
