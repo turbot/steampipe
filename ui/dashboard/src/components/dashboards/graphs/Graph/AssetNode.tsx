@@ -86,7 +86,7 @@ const FoldedNodeLabel = ({
       }
       title={fold?.title || category || ""}
     >
-      <div className="items-center rounded-full bg-dashboard px-2.5 py-0.5 text-xs font-medium">
+      <div className="items-center rounded-md bg-dashboard px-1 py-0.5 text-xs font-medium">
         <IntegerDisplay num={foldedNodes?.length || null} />
       </div>
       {/*<FoldedNodeCountBadge foldedNodes={foldedNodes} />*/}
