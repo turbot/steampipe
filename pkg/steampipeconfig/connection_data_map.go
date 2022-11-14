@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -74,7 +75,7 @@ func (m ConnectionDataMap) Connections() []*modconfig.Connection {
 }
 
 // NewConnectionDataMap populates a map of connection data for all connections in connectionMap
-func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (ConnectionDataMap, map[string][]modconfig.Connection, error) {
+func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection, connectionNames []string) (ConnectionDataMap, map[string][]modconfig.Connection, error) {
 	utils.LogTime("steampipeconfig.getRequiredConnections start")
 	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
 
@@ -88,7 +89,11 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
 	// populate file mod time for each referenced plugin
-	for name, connection := range connectionMap {
+	for _, name := range connectionNames {
+		connection := connectionMap[name]
+		if connection == nil {
+			return nil, nil, fmt.Errorf("connection %s not found in connection map", name)
+		}
 		remoteSchema := connection.Plugin
 		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginShortName)
 		// ignore error if plugin is not available
