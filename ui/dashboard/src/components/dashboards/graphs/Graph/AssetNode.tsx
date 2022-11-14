@@ -1,7 +1,6 @@
 import DashboardIcon, {
   useDashboardIconType,
 } from "../../common/DashboardIcon";
-import Icon from "../../../Icon";
 import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
@@ -166,7 +165,7 @@ const AssetNode = ({
     </div>
   );
 
-  const nodeLabelIcon =
+  const nodeWithProperties =
     row_data && row_data.properties && !isFolded ? (
       <Tooltip
         overlay={
@@ -177,24 +176,18 @@ const AssetNode = ({
                 properties={row_data.properties}
               />
             )}
-            {/*{isFolded && (*/}
-            {/*  <div className="max-h-1/2-screen space-y-2">*/}
-            {/*    <div className="h-full overflow-y-auto">*/}
-            {/*      {(foldedNodes || []).map((n) => (*/}
-            {/*        <div key={n.id}>{n.title || n.id}</div>*/}
-            {/*      ))}*/}
-            {/*    </div>*/}
-            {/*  </div>*/}
-            {/*)}*/}
           </>
         }
         title={label}
       >
-        <div className="cursor-pointer text-black-scale-5">
-          <Icon className="w-4 h-4" icon="queue-list" />
-        </div>
+        {node}
+        {/*<div className="cursor-pointer text-black-scale-5">*/}
+        {/*  <Icon className="w-4 h-4" icon="queue-list" />*/}
+        {/*</div>*/}
       </Tooltip>
-    ) : null;
+    ) : (
+      node
+    );
 
   const nodeLabel = (
     <div
@@ -243,7 +236,7 @@ const AssetNode = ({
       <Handle type="source" />
       {/*<div className="max-w-[50px]">{label}</div>*/}
       <div className="relative flex flex-col items-center cursor-auto">
-        {node}
+        {nodeWithProperties}
         {nodeLabel}
         {/*{((row_data && row_data.properties) || isFolded) && (*/}
         {/*  <Tooltip*/}
