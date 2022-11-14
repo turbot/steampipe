@@ -1,6 +1,6 @@
+import Icon from "../../../Icon";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
-import { classNames } from "../../../../utils/styles";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
 import { EdgeLabelRenderer, useStore } from "reactflow";
 import { useCallback } from "react";
@@ -40,14 +40,38 @@ const FloatingEdge = ({
     targetY: ty,
   });
 
+  const edgePropertiesIcon =
+    row_data && row_data.properties ? (
+      <Tooltip
+        overlay={
+          <RowProperties
+            fields={fields || null}
+            properties={row_data.properties}
+          />
+        }
+        title={label}
+      >
+        <div className="cursor-pointer">
+          <Icon className="w-3 h-3" icon="table-cells" />
+        </div>
+      </Tooltip>
+    ) : null;
+
   const edgeLabel = (
-    <div>
-      <p
-        className="block p-1 bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-center text-wrap line-clamp-2"
+    <div
+      className={
+        row_data && row_data.properties
+          ? "flex space-x-1 items-center"
+          : undefined
+      }
+    >
+      <span
+        className="block p-px bg-dashboard-panel text-black-scale-4 italic max-w-[70px] text-sm text-center text-wrap line-clamp-2"
         title={label}
       >
         {label}
-      </p>
+      </span>
+      {edgePropertiesIcon}
     </div>
   );
 
@@ -65,28 +89,12 @@ const FloatingEdge = ({
       />
       <EdgeLabelRenderer>
         <div
-          className={classNames(
-            "absolute pointer-events-auto",
-            row_data?.properties ? "cursor-pointer" : null
-          )}
+          className="absolute pointer-events-auto cursor-grab"
           style={{
             transform: `translate(-50%, -50%) translate(${mx}px,${my}px)`,
           }}
         >
-          {row_data && row_data.properties && (
-            <Tooltip
-              overlay={
-                <RowProperties
-                  fields={fields || null}
-                  properties={row_data.properties}
-                />
-              }
-              title={label}
-            >
-              {edgeLabel}
-            </Tooltip>
-          )}
-          {(!row_data || !row_data.properties) && edgeLabel}
+          {edgeLabel}
         </div>
       </EdgeLabelRenderer>
     </>
