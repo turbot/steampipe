@@ -1,6 +1,8 @@
 import DashboardIcon, {
   useDashboardIconType,
 } from "../../common/DashboardIcon";
+import Icon from "../../../Icon";
+import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import {
@@ -16,7 +18,6 @@ import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useGraph } from "../common/useGraph";
-import Icon from "../../../Icon";
 
 interface AssetNodeProps {
   data: {
@@ -34,19 +35,63 @@ interface AssetNodeProps {
   };
 }
 
+// interface FoldedNodeCountBadgeProps {
+//   foldedNodes: FoldedNode[] | undefined;
+// }
+
 interface FoldedNodeLabelProps {
+  category: string | undefined;
   fold: CategoryFold | undefined;
   foldedNodes: FoldedNode[] | undefined;
 }
 
-const FoldedNodeLabel = ({ fold, foldedNodes }: FoldedNodeLabelProps) => (
-  <>
-    {fold?.title && <span>{fold?.title}</span>}
-    {!fold?.title &&
-      `${foldedNodes?.length || 0} ${
-        foldedNodes?.length === 1 ? "node" : "nodes"
-      }...`}
-  </>
+// const FoldedNodeCountBadge = forwardRef(
+//   ({ foldedNodes }: FoldedNodeCountBadgeProps, ref) => {
+//     if (!foldedNodes) {
+//       return null;
+//     }
+//     return (
+//       <div
+//         // @ts-ignore
+//         ref={ref}
+//         className="items-center rounded-full bg-dashboard px-2.5 py-0.5 text-xs font-medium"
+//       >
+//         {foldedNodes?.length}
+//       </div>
+//     );
+//   }
+// );
+
+const FoldedNodeLabel = ({
+  category,
+  fold,
+  foldedNodes,
+}: FoldedNodeLabelProps) => (
+  <div className="flex space-x-1 items-center">
+    {fold?.title && (
+      <span className="text-link cursor-pointer">{fold?.title}</span>
+    )}
+    {!fold?.title && (
+      <span className="text-link cursor-pointer">{category}</span>
+    )}
+    <Tooltip
+      overlay={
+        <div className="max-h-1/2-screen space-y-2">
+          <div className="h-full overflow-y-auto">
+            {(foldedNodes || []).map((n) => (
+              <div key={n.id}>{n.title || n.id}</div>
+            ))}
+          </div>
+        </div>
+      }
+      title={fold?.title || category || ""}
+    >
+      <div className="items-center rounded-full bg-dashboard px-2.5 py-0.5 text-xs font-medium">
+        <IntegerDisplay num={foldedNodes?.length || null} />
+      </div>
+      {/*<FoldedNodeCountBadge foldedNodes={foldedNodes} />*/}
+    </Tooltip>
+  </div>
 );
 
 const AssetNode = ({
@@ -119,25 +164,25 @@ const AssetNode = ({
   );
 
   const nodeLabelIcon =
-    (row_data && row_data.properties) || isFolded ? (
+    row_data && row_data.properties && !isFolded ? (
       <Tooltip
         overlay={
           <>
-            {row_data && row_data.properties && !isFolded && (
+            {row_data && row_data.properties && (
               <RowProperties
                 fields={fields || null}
                 properties={row_data.properties}
               />
             )}
-            {isFolded && (
-              <div className="max-h-1/2-screen space-y-2">
-                <div className="h-full overflow-y-auto">
-                  {(foldedNodes || []).map((n) => (
-                    <div key={n.id}>{n.title || n.id}</div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/*{isFolded && (*/}
+            {/*  <div className="max-h-1/2-screen space-y-2">*/}
+            {/*    <div className="h-full overflow-y-auto">*/}
+            {/*      {(foldedNodes || []).map((n) => (*/}
+            {/*        <div key={n.id}>{n.title || n.id}</div>*/}
+            {/*      ))}*/}
+            {/*    </div>*/}
+            {/*  </div>*/}
+            {/*)}*/}
           </>
         }
         title={label}
@@ -151,7 +196,7 @@ const AssetNode = ({
   const nodeLabel = (
     <div
       className={classNames(
-        renderedHref || isFolded ? "text-link cursor-pointer" : null,
+        renderedHref ? "text-link cursor-pointer" : null,
         "absolute flex space-x-1 items-center -bottom-[20px] text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px]"
       )}
       onClick={
@@ -165,7 +210,11 @@ const AssetNode = ({
         <>
           {!isFolded && <span>{label}</span>}
           {isFolded && (
-            <FoldedNodeLabel fold={fold} foldedNodes={foldedNodes} />
+            <FoldedNodeLabel
+              category={category}
+              fold={fold}
+              foldedNodes={foldedNodes}
+            />
           )}
         </>
       )}
