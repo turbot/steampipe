@@ -60,6 +60,11 @@ jobs:
             exit 1
           fi
 
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
       ## Authenticate with GCloud
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
@@ -80,11 +85,6 @@ jobs:
           gcloud components install beta
           gcloud components install alpha --quiet
           gcloud beta auth configure-docker us-docker.pkg.dev
-
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.branch }}
 
       - name: Pull & Extract - darwin amd64
         run: |-
