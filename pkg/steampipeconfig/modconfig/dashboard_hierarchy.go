@@ -12,6 +12,7 @@ import (
 type DashboardHierarchy struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -38,18 +39,24 @@ type DashboardHierarchy struct {
 }
 
 func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	h := &DashboardHierarchy{
+		Categories: make(map[string]*DashboardCategory),
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
-				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
 				blockType:       block.Type,
 			},
 		},
-		Categories: make(map[string]*DashboardCategory),
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
+		},
 	}
 	h.SetAnonymous(block)
 	return h
@@ -82,17 +89,7 @@ func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
 	return h.References
 }
 
-// AddParent implements ModTreeItem
-func (h *DashboardHierarchy) AddParent(parent ModTreeItem) error {
-	h.parents = append(h.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (h *DashboardHierarchy) GetParents() []ModTreeItem {
-	return h.parents
-}
-
+// TODO KAI PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
 // GetChildren implements ModTreeItem
 func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
 	// return nodes and edges (if any)
@@ -105,25 +102,6 @@ func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
 		children[i+offset] = e
 	}
 	return children
-}
-
-// GetPaths implements ModTreeItem
-func (h *DashboardHierarchy) GetPaths() []NodePath {
-	// lazy load
-	if len(h.Paths) == 0 {
-		h.SetPaths()
-	}
-
-	return h.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (h *DashboardHierarchy) SetPaths() {
-	for _, parent := range h.parents {
-		for _, parentPath := range parent.GetPaths() {
-			h.Paths = append(h.Paths, append(parentPath, h.Name()))
-		}
-	}
 }
 
 func (h *DashboardHierarchy) Diff(other *DashboardHierarchy) *DashboardTreeItemDiffs {

@@ -12,6 +12,7 @@ type HclResourceBase struct {
 	ShortName       string  `cty:"short_name" hcl:"name,label" json:"-"`
 	UnqualifiedName string  `json:"-"`
 	Description     *string `cty:"description" hcl:"description" column:"description,text" json:"-"`
+	Documentation   *string `cty:"documentation" hcl:"documentation" column:"documentation,text"`
 
 	DeclRange hcl.Range         `json:"-"`
 	Tags      map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
@@ -57,6 +58,11 @@ func (i *HclResourceBase) BlockType() string {
 // GetDescription implements HclResource
 func (i *HclResourceBase) GetDescription() string {
 	return typehelpers.SafeString(i.Description)
+}
+
+// GetDocumentation implements HclResource
+func (i *HclResourceBase) GetDocumentation() string {
+	return typehelpers.SafeString(i.Documentation)
 }
 
 // GetTags implements HclResource
