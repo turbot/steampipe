@@ -171,6 +171,7 @@ const buildGraphNodesAndEdges = (
           : targetNodeColor
           ? targetNodeColor
           : null,
+        customColor: !!categoryColor || !!targetNodeColor,
         fields: matchingCategory ? matchingCategory.fields : null,
         labelOpacity,
         lineOpacity,

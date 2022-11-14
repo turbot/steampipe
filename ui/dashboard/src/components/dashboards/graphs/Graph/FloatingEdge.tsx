@@ -4,6 +4,8 @@ import { circleGetBezierPath, getEdgeParams } from "./utils";
 import { classNames } from "../../../../utils/styles";
 import { EdgeLabelRenderer, useStore } from "reactflow";
 import { useCallback } from "react";
+import { ThemeNames } from "../../../../hooks/useTheme";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 const FloatingEdge = ({
   id,
@@ -11,9 +13,19 @@ const FloatingEdge = ({
   target,
   markerEnd,
   style,
-  data: { color, fields, labelOpacity, lineOpacity, row_data, label },
+  data: {
+    color,
+    customColor,
+    fields,
+    labelOpacity,
+    lineOpacity,
+    row_data,
+    label,
+  },
 }) => {
-  // const edgeLabelRef = useRef(null);
+  const {
+    themeContext: { theme },
+  } = useDashboard();
   const sourceNode = useStore(
     useCallback((store) => store.nodeInternals.get(source), [source])
   );
@@ -46,6 +58,9 @@ const FloatingEdge = ({
         "block p-px italic max-w-[70px] text-sm text-center text-wrap leading-tight line-clamp-2",
         row_data && row_data.properties
           ? "-mt-1 underline decoration-dashed decoration-2 underline-offset-3 decoration-black-scale-3 cursor-pointer"
+          : null,
+        customColor && theme.name === ThemeNames.STEAMPIPE_DARK
+          ? "brightness-[1.75]"
           : null
       )}
       style={{ color, opacity: labelOpacity }}
@@ -83,6 +98,11 @@ const FloatingEdge = ({
   return (
     <>
       <path
+        className={
+          customColor && theme.name === ThemeNames.STEAMPIPE_DARK
+            ? "brightness-[1.75]"
+            : undefined
+        }
         id={id}
         d={d}
         markerEnd={markerEnd}
