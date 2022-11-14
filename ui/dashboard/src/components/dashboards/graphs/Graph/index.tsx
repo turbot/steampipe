@@ -122,6 +122,22 @@ const buildGraphNodesAndEdges = (
       matchingCategory ? matchingCategory.color : null,
       themeColors
     );
+
+    let targetNodeColour;
+    const targetNode = nodesAndEdges.nodeMap[edge.to_id];
+    if (targetNode) {
+      const targetCategory = nodesAndEdges.categories[targetNode.category];
+      if (targetCategory) {
+        targetNodeColour = targetCategory.color;
+      }
+    }
+    const color = edgeColor
+      ? edgeColor
+      : targetNodeColour
+      ? targetNodeColour
+      : themeColors.blackScale4;
+    const labelOpacity = edgeColor ? 1 : targetNodeColour ? 0.5 : 1;
+    const lineOpacity = edgeColor ? 1 : targetNodeColour ? 0.7 : 1;
     edges.push({
       type: "floating",
       id: edge.id,
@@ -130,15 +146,21 @@ const buildGraphNodesAndEdges = (
       label: edge.title,
       labelBgPadding: [11, 0],
       markerEnd: {
-        color: edgeColor ? edgeColor : themeColors.blackScale4,
+        color,
         width: 20,
         height: 20,
-        strokeWidth: 2,
+        strokeWidth: 1,
         type: MarkerType.Arrow,
       },
       data: {
-        color: matchingCategory ? matchingCategory.color : null,
+        color: edgeColor
+          ? edgeColor
+          : targetNodeColour
+          ? targetNodeColour
+          : null,
         fields: matchingCategory ? matchingCategory.fields : null,
+        labelOpacity,
+        lineOpacity,
         row_data: edge.row_data,
         label: edge.title,
         themeColors,
