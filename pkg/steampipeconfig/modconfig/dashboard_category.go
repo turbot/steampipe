@@ -10,34 +10,35 @@ import (
 type DashboardCategory struct {
 	ResourceWithMetadataBase
 	HclResourceBase
+	ModTreeItemBase
 
-	Title         *string                               `cty:"title" hcl:"title" json:"title,omitempty"`
-	Color         *string                               `cty:"color" hcl:"color" json:"color,omitempty"`
-	Depth         *int                                  `cty:"depth" hcl:"depth" json:"depth,omitempty"`
-	Icon          *string                               `cty:"icon" hcl:"icon" json:"icon,omitempty"`
-	HREF          *string                               `cty:"href" hcl:"href" json:"href,omitempty"`
-	Fold          *DashboardCategoryFold                `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
+	Color      *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
+	Depth      *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
+	Icon       *string                    `cty:"icon" hcl:"icon" json:"icon,omitempty"`
+	HREF       *string                    `cty:"href" hcl:"href" json:"href,omitempty"`
+	Fold       *DashboardCategoryFold     `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
 	PropertyList  DashboardCategoryPropertyList         `cty:"property_list" hcl:"property,block" column:"properties,jsonb" json:"-"`
 	Properties    map[string]*DashboardCategoryProperty `cty:"properties" json:"properties,omitempty"`
 	PropertyOrder []string                              `cty:"property_order" hcl:"property_order,optional" json:"property_order,omitempty"`
-	Base          *DashboardCategory                    `hcl:"base" json:"-"`
-	References    []*ResourceReference                  `json:"-"`
-	Mod           *Mod                                  `cty:"mod" json:"-"`
-	DeclRange     hcl.Range                             `json:"-"`
-	Paths         []NodePath                            `column:"path,jsonb" json:"-"`
-	Parents       []ModTreeItem                         `json:"-"`
+	Base       *DashboardCategory         `hcl:"base" json:"-"`
+	References []*ResourceReference       `json:"-"`
 }
 
 func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	c := &DashboardCategory{
 		HclResourceBase: HclResourceBase{
 			ShortName:       shortName,
-			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+			FullName:        fullName,
 			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 			DeclRange:       block.DefRange,
 			blockType:       block.Type,
 		},
-		Mod: mod,
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
+		},
 	}
 	c.SetAnonymous(block)
 	return c
@@ -113,17 +114,6 @@ func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsPr
 	}
 }
 
-// AddParent implements ModTreeItem
-func (c *DashboardCategory) AddParent(parent ModTreeItem) error {
-	c.Parents = append(c.Parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (c *DashboardCategory) GetParents() []ModTreeItem {
-	return c.Parents
-}
-
 // GetTitle implements HclResource
 func (c *DashboardCategory) GetTitle() string {
 	return typehelpers.SafeString(c.Title)
@@ -152,25 +142,6 @@ func (*DashboardCategory) GetDocumentation() string {
 // GetMod implements ModTreeItem
 func (c *DashboardCategory) GetMod() *Mod {
 	return c.Mod
-}
-
-// GetPaths implements ModTreeItem
-func (c *DashboardCategory) GetPaths() []NodePath {
-	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
-	}
-
-	return c.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (c *DashboardCategory) SetPaths() {
-	for _, parent := range c.Parents {
-		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
-		}
-	}
 }
 
 func (c *DashboardCategory) Diff(other *DashboardCategory) *DashboardTreeItemDiffs {

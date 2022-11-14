@@ -13,6 +13,7 @@ import (
 type DashboardText struct {
 	ResourceWithMetadataBase
 	HclResourceBase
+	ModTreeItemBase
 
 	Value   *string `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
 	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
@@ -22,21 +23,23 @@ type DashboardText struct {
 	Base       *DashboardText       `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
 	Mod        *Mod                 `cty:"mod" json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-
-	parents []ModTreeItem
 }
 
 func NewDashboardText(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	t := &DashboardText{
 		HclResourceBase: HclResourceBase{
 			ShortName:       shortName,
-			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+			FullName:        fullName,
 			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 			DeclRange:       block.DefRange,
 			blockType:       block.Type,
 		},
-		Mod: mod,
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
+		},
 	}
 	t.SetAnonymous(block)
 	return t
@@ -66,41 +69,6 @@ func (t *DashboardText) GetReferences() []*ResourceReference {
 // GetMod implements ModTreeItem
 func (t *DashboardText) GetMod() *Mod {
 	return t.Mod
-}
-
-// AddParent implements ModTreeItem
-func (t *DashboardText) AddParent(parent ModTreeItem) error {
-	t.parents = append(t.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (t *DashboardText) GetParents() []ModTreeItem {
-	return t.parents
-}
-
-// GetChildren implements ModTreeItem
-func (t *DashboardText) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetPaths implements ModTreeItem
-func (t *DashboardText) GetPaths() []NodePath {
-	// lazy load
-	if len(t.Paths) == 0 {
-		t.SetPaths()
-	}
-
-	return t.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (t *DashboardText) SetPaths() {
-	for _, parent := range t.parents {
-		for _, parentPath := range parent.GetPaths() {
-			t.Paths = append(t.Paths, append(parentPath, t.Name()))
-		}
-	}
 }
 
 func (t *DashboardText) Diff(other *DashboardText) *DashboardTreeItemDiffs {
