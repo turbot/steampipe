@@ -20,6 +20,12 @@ const useChartThemeColors = () => {
         .getPropertyValue("--color-black-scale-4")
         .trim();
       const foreground = style.getPropertyValue("--color-foreground").trim();
+      const foregroundLight = style
+        .getPropertyValue("--color-foreground-light")
+        .trim();
+      const foregroundLighter = style
+        .getPropertyValue("--color-foreground-lighter")
+        .trim();
       const foregroundLightest = style
         .getPropertyValue("--color-foreground-lightest")
         .trim();
@@ -30,6 +36,8 @@ const useChartThemeColors = () => {
         blackScale3,
         blackScale4,
         foreground,
+        foregroundLight,
+        foregroundLighter,
         foregroundLightest,
         alert,
         info,
