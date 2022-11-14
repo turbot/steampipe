@@ -5,9 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardInput is a struct representing a leaf dashboard node
@@ -15,75 +13,54 @@ type DashboardInput struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 
-	FullName        string `cty:"name" json:"-"`
-	ShortName       string `json:"-"`
-	UnqualifiedName string `cty:"unqualified_name" json:"unqualified_name"`
-	DashboardName   string `column:"dashboard,text" json:"-"`
+	DashboardName string `column:"dashboard,text" json:"-"`
 
 	Label       *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
 	Placeholder *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
 	Options     []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
-	Display *string `cty:"display" hcl:"display" json:"-"`
-
-	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb"json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
-
+	Width      *int                 `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type       *string              `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display    *string              `cty:"display" hcl:"display" json:"-"`
 	Base       *DashboardInput      `hcl:"base" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
 	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
 
 	Paths     []NodePath `column:"path,jsonb" json:"-"`
 	parents   []ModTreeItem
 	dashboard *Dashboard
 }
 
+func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	// input cannot be anonymous
+	i := &DashboardInput{
+		QueryProviderBase: QueryProviderBase{
+			Mod: mod,
+			HclResourceBase: HclResourceBase{
+				ShortName:       shortName,
+				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+				DeclRange:       block.DefRange,
+			},
+		},
+	}
+	return i
+}
+
 func (i *DashboardInput) Clone() *DashboardInput {
 	return &DashboardInput{
 		ResourceWithMetadataBase: i.ResourceWithMetadataBase,
 		QueryProviderBase:        i.QueryProviderBase,
-		FullName:                 i.FullName,
-		ShortName:                i.ShortName,
-		UnqualifiedName:          i.UnqualifiedName,
-		Title:                    i.Title,
 		Width:                    i.Width,
 		Type:                     i.Type,
 		Label:                    i.Label,
 		Placeholder:              i.Placeholder,
 		Display:                  i.Display,
 		Options:                  i.Options,
-		SQL:                      i.SQL,
-		Query:                    i.Query,
-		PreparedStatementName:    i.PreparedStatementName,
-		Args:                     i.Args,
-		Params:                   i.Params,
-		DeclRange:                i.DeclRange,
-		Mod:                      i.Mod,
 		Paths:                    i.Paths,
 		parents:                  i.parents,
 		dashboard:                i.dashboard,
 	}
-}
-
-func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource {
-	// input cannot be anonymous
-	i := &DashboardInput{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
-	}
-	return i
 }
 
 func (i *DashboardInput) Equals(other *DashboardInput) bool {
@@ -91,19 +68,8 @@ func (i *DashboardInput) Equals(other *DashboardInput) bool {
 	return !diff.HasChanges()
 }
 
-// CtyValue implements HclResource
-func (i *DashboardInput) CtyValue() (cty.Value, error) {
-	return getCtyValue(i)
-}
-
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardInput) IsSnapshotPanel() {}
-
-// Name implements HclResource, ModTreeItem
-// return name in format: 'chart.<shortName>'
-func (i *DashboardInput) Name() string {
-	return i.FullName
-}
 
 // OnDecoded implements HclResource
 func (i *DashboardInput) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
@@ -121,21 +87,6 @@ func (i *DashboardInput) GetReferences() []*ResourceReference {
 	return i.References
 }
 
-// GetMod implements ModTreeItem
-func (i *DashboardInput) GetMod() *Mod {
-	return i.Mod
-}
-
-// GetDeclRange implements HclResource
-func (i *DashboardInput) GetDeclRange() *hcl.Range {
-	return &i.DeclRange
-}
-
-// BlockType implements HclResource
-func (*DashboardInput) BlockType() string {
-	return BlockTypeInput
-}
-
 // AddParent implements ModTreeItem
 func (i *DashboardInput) AddParent(parent ModTreeItem) error {
 	i.parents = append(i.parents, parent)
@@ -150,21 +101,6 @@ func (i *DashboardInput) GetParents() []ModTreeItem {
 // GetChildren implements ModTreeItem
 func (i *DashboardInput) GetChildren() []ModTreeItem {
 	return nil
-}
-
-// GetTitle implements HclResource
-func (i *DashboardInput) GetTitle() string {
-	return typehelpers.SafeString(i.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (i *DashboardInput) GetDescription() string {
-	return ""
-}
-
-// GetTags implements HclResource
-func (i *DashboardInput) GetTags() map[string]string {
-	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem
@@ -244,66 +180,16 @@ func (i *DashboardInput) GetType() string {
 	return typehelpers.SafeString(i.Type)
 }
 
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (i *DashboardInput) GetUnqualifiedName() string {
-	return i.UnqualifiedName
-}
-
 // SetDashboard sets the parent dashboard container
 func (i *DashboardInput) SetDashboard(dashboard *Dashboard) {
 	i.dashboard = dashboard
 	i.DashboardName = dashboard.Name()
 }
 
-// GetParams implements QueryProvider
-func (i *DashboardInput) GetParams() []*ParamDef {
-	return i.Params
-}
-
-// GetArgs implements QueryProvider
-func (i *DashboardInput) GetArgs() *QueryArgs {
-	return i.Args
-}
-
-// GetSQL implements QueryProvider
-func (i *DashboardInput) GetSQL() *string {
-	return i.SQL
-}
-
-// GetQuery implements QueryProvider
-func (i *DashboardInput) GetQuery() *Query {
-	return i.Query
-}
-
 // VerifyQuery implements QueryProvider
 func (i *DashboardInput) VerifyQuery(QueryProvider) error {
 	// query is optional - nothing to do
 	return nil
-}
-
-// SetArgs implements QueryProvider
-func (i *DashboardInput) SetArgs(args *QueryArgs) {
-	i.Args = args
-}
-
-// SetParams implements QueryProvider
-func (i *DashboardInput) SetParams(params []*ParamDef) {
-	i.Params = params
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (i *DashboardInput) GetPreparedStatementName() string {
-	if i.PreparedStatementName != "" {
-		return i.PreparedStatementName
-	}
-	i.PreparedStatementName = i.buildPreparedStatementName(i.ShortName, i.Mod.NameWithVersion(), constants.PreparedStatementInputSuffix)
-	return i.PreparedStatementName
-}
-
-// GetResolvedQuery implements QueryProvider
-func (i *DashboardInput) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return i.getResolvedQuery(i, runtimeArgs)
 }
 
 // DependsOnInput returns whether this input has a runtime dependency on the given input

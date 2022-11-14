@@ -5,17 +5,12 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 type DashboardCategory struct {
 	ResourceWithMetadataBase
+	HclResourceBase
 
-	ShortName       string `hcl:"name,label" json:"name"`
-	FullName        string `cty:"name" json:"-"`
-	UnqualifiedName string `json:"-"`
-
-	Title      *string                    `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color      *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
 	Depth      *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
 	Icon       *string                    `cty:"icon" hcl:"icon" json:"icon,omitempty"`
@@ -25,47 +20,23 @@ type DashboardCategory struct {
 	Base       *DashboardCategory         `hcl:"base" json:"-"`
 	References []*ResourceReference       `json:"-"`
 	Mod        *Mod                       `cty:"mod" json:"-"`
-	DeclRange  hcl.Range                  `json:"-"`
 	Paths      []NodePath                 `column:"path,jsonb" json:"-"`
 	Parents    []ModTreeItem              `json:"-"`
 }
 
 func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &DashboardCategory{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
+		HclResourceBase: HclResourceBase{
+			ShortName:       shortName,
+			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+			DeclRange:       block.DefRange,
+			blockType:       block.Type,
+		},
+		Mod: mod,
 	}
 	c.SetAnonymous(block)
 	return c
-}
-
-// Name implements HclResource
-// return name in format: '<modname>.control.<shortName>'
-func (c *DashboardCategory) Name() string {
-	return c.FullName
-}
-
-// GetUnqualifiedName implements HclResource
-func (c *DashboardCategory) GetUnqualifiedName() string {
-	return c.UnqualifiedName
-}
-
-// CtyValue implements HclResource
-func (c *DashboardCategory) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
-}
-
-// GetDeclRange implements HclResource
-func (c *DashboardCategory) GetDeclRange() *hcl.Range {
-	return &c.DeclRange
-}
-
-// BlockType implements HclResource
-func (*DashboardCategory) BlockType() string {
-	return BlockTypeCategory
 }
 
 // OnDecoded implements HclResource

@@ -8,7 +8,6 @@ import (
 	"github.com/stevenle/topsort"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
@@ -17,27 +16,21 @@ const runtimeDependencyDashboardScope = "self"
 // Dashboard is a struct representing the Dashboard  resource
 type Dashboard struct {
 	ResourceWithMetadataBase
+	HclResourceBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
-	ShortName       string
-	FullName        string            `cty:"name"`
-	UnqualifiedName string            `cty:"unqualified_name"`
-	Title           *string           `cty:"title" hcl:"title" column:"title,text"`
-	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
-	Display         *string           `cty:"display" hcl:"display" column:"display,text"`
-	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
-	Description     *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Tags            map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"`
-	UrlPath         string            `cty:"url_path"  column:"url_path,jsonb"`
+	Width         *int              `cty:"width" hcl:"width"  column:"width,text"`
+	Display       *string           `cty:"display" hcl:"display" column:"display,text"`
+	Inputs        []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
+	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	UrlPath       string            `cty:"url_path"  column:"url_path,jsonb"`
 
 	Base *Dashboard `hcl:"base"`
 
 	References []*ResourceReference
 	Mod        *Mod `cty:"mod"`
-	DeclRange  hcl.Range
 
 	Paths []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
@@ -53,11 +46,14 @@ type Dashboard struct {
 
 func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	c := &Dashboard{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
+		Mod: mod,
+		HclResourceBase: HclResourceBase{
+			ShortName:       shortName,
+			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+			DeclRange:       block.DefRange,
+			blockType:       block.Type,
+		},
 	}
 	c.SetAnonymous(block)
 	c.setUrlPath()
@@ -78,14 +74,17 @@ func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
 		ResourceWithMetadataBase: ResourceWithMetadataBase{
 			metadata: &ResourceMetadata{},
 		},
-		ShortName:       parsedName.Name,
-		FullName:        dashboardName,
-		UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
-		Title:           utils.ToStringPointer(q.GetTitle()),
-		Description:     utils.ToStringPointer(q.GetDescription()),
-		Documentation:   utils.ToStringPointer(q.GetDocumentation()),
-		Tags:            q.GetTags(),
-		Mod:             q.GetMod(),
+		Mod:           q.GetMod(),
+		Documentation: utils.ToStringPointer(q.GetDocumentation()),
+		HclResourceBase: HclResourceBase{
+			ShortName:       parsedName.Name,
+			FullName:        dashboardName,
+			UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
+			Title:           utils.ToStringPointer(q.GetTitle()),
+			Description:     utils.ToStringPointer(q.GetDescription()),
+			Tags:            q.GetTags(),
+			blockType:       BlockTypeDashboard,
+		},
 	}
 
 	dashboard.setUrlPath()
@@ -106,16 +105,6 @@ func (d *Dashboard) setUrlPath() {
 func (d *Dashboard) Equals(other *Dashboard) bool {
 	diff := d.Diff(other)
 	return !diff.HasChanges()
-}
-
-// CtyValue implements HclResource
-func (d *Dashboard) CtyValue() (cty.Value, error) {
-	return getCtyValue(d)
-}
-
-// Name implements HclResource, ModTreeItem
-func (d *Dashboard) Name() string {
-	return d.FullName
 }
 
 // OnDecoded implements HclResource
@@ -145,16 +134,6 @@ func (d *Dashboard) GetMod() *Mod {
 	return d.Mod
 }
 
-// GetDeclRange implements HclResource
-func (d *Dashboard) GetDeclRange() *hcl.Range {
-	return &d.DeclRange
-}
-
-// BlockType implements HclResource
-func (*Dashboard) BlockType() string {
-	return BlockTypeDashboard
-}
-
 // AddParent implements ModTreeItem
 func (d *Dashboard) AddParent(parent ModTreeItem) error {
 	d.parents = append(d.parents, parent)
@@ -171,22 +150,9 @@ func (d *Dashboard) GetChildren() []ModTreeItem {
 	return d.children
 }
 
-// GetTitle implements HclResource
-func (d *Dashboard) GetTitle() string {
-	return typehelpers.SafeString(d.Title)
-}
-
 // GetDescription implements ModTreeItem
 func (d *Dashboard) GetDescription() string {
 	return ""
-}
-
-// GetTags implements HclResource
-func (d *Dashboard) GetTags() map[string]string {
-	if d.Tags != nil {
-		return d.Tags
-	}
-	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem
@@ -496,7 +462,7 @@ func (d *Dashboard) addBaseInputs(baseInputs []*DashboardInput) {
 	d.setInputMap()
 }
 
-// ensure that depdnecneis between inputs are resolveable
+// ensure that dependencies between inputs are resolveable
 func (d *Dashboard) validateInputDependencies(inputs []*DashboardInput) error {
 	dependencyGraph := topsort.NewGraph()
 	rootDependencyNode := "dashboard"

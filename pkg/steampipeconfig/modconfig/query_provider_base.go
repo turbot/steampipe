@@ -11,11 +11,73 @@ import (
 )
 
 type QueryProviderBase struct {
+	HclResourceBase
 	runtimeDependencies map[string]*RuntimeDependency
+
+	// ONLY CONTROL HAS SQL AND QUERY JSON TAG
+	// control
+	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Query                 *Query      `hcl:"query" json:"-"`
+	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
+	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
+	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
+	Mod                   *Mod        `cty:"mod" json:"-"`
 	withs               []*DashboardWith
 }
 
-// VerifyQuery returns an error if neither sql or query are set
+// GetParams implements QueryProvider
+func (b *QueryProviderBase) GetParams() []*ParamDef {
+	return b.Params
+}
+
+// GetArgs implements QueryProvider
+func (b *QueryProviderBase) GetArgs() *QueryArgs {
+	return b.Args
+
+}
+
+// GetSQL implements QueryProvider
+func (b *QueryProviderBase) GetSQL() *string {
+	return b.SQL
+}
+
+// GetQuery implements QueryProvider
+func (b *QueryProviderBase) GetQuery() *Query {
+	return b.Query
+}
+
+// SetArgs implements QueryProvider
+func (b *QueryProviderBase) SetArgs(args *QueryArgs) {
+	b.Args = args
+}
+
+// SetParams implements QueryProvider
+func (b *QueryProviderBase) SetParams(params []*ParamDef) {
+	b.Params = params
+}
+
+// GetMod implements QueryProvider
+func (b *QueryProviderBase) GetMod() *Mod {
+	return b.Mod
+}
+
+// GetPreparedStatementName implements QueryProvider
+func (b *QueryProviderBase) GetPreparedStatementName() string {
+	if b.PreparedStatementName != "" {
+		return b.PreparedStatementName
+	}
+	b.PreparedStatementName = b.buildPreparedStatementName(b.ShortName, b.Mod.NameWithVersion(), constants.PreparedStatementImageSuffix)
+	return b.PreparedStatementName
+}
+
+// GetPreparedStatementExecuteSQL implements QueryProvider
+func (b *QueryProviderBase) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+	// defer to base
+	return b.getPreparedStatementExecuteSQL(b, runtimeArgs)
+}
+
+// VerifyQuery implements QueryProvider
+// returns an error if neither sql or query are set
 // it is overidden by resource types for which sql is optional
 func (b *QueryProviderBase) VerifyQuery(queryProvider QueryProvider) error {
 	// verify we have either SQL or a Query defined
@@ -26,6 +88,7 @@ func (b *QueryProviderBase) VerifyQuery(queryProvider QueryProvider) error {
 	return nil
 }
 
+// RequiresExecution implements QueryProvider
 func (b *QueryProviderBase) RequiresExecution(queryProvider QueryProvider) bool {
 	return queryProvider.GetQuery() != nil || queryProvider.GetSQL() != nil
 }

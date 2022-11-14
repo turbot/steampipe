@@ -23,24 +23,18 @@ const defaultModName = "local"
 // Mod is a struct representing a Mod resource
 type Mod struct {
 	ResourceWithMetadataBase
+	HclResourceBase
 
-	// ShortName is the mod name, e.g. azure_thrifty
-	ShortName string `cty:"short_name" hcl:"name,label"`
-	// FullName is the mod name prefixed with 'mod', e.g. mod.azure_thrifty
-	FullName string `cty:"name"`
 	// ModDependencyPath is the fully qualified mod name, which can be used to 'require'  the mod,
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
 	// This is only set if the mod is installed as a dependency
 	ModDependencyPath string `cty:"mod_dependency_path"`
 
 	// attributes
-	Categories    []string          `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
-	Color         *string           `cty:"color" hcl:"color" column:"color,text"`
-	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Icon          *string           `cty:"icon" hcl:"icon" column:"icon,text"`
-	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
-	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
+	Categories    []string `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
+	Color         *string  `cty:"color" hcl:"color" column:"color,text"`
+	Documentation *string  `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	Icon          *string  `cty:"icon" hcl:"icon" column:"icon,text"`
 
 	// blocks
 	Require       *Require
@@ -51,8 +45,7 @@ type Mod struct {
 	Version       *semver.Version
 
 	// ModPath is the installation location of the mod
-	ModPath   string
-	DeclRange hcl.Range
+	ModPath string
 
 	// the filepath of the mod.sp file (will be empty for default mod)
 	modFilePath string
@@ -67,11 +60,16 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	require := NewRequire()
 
 	mod := &Mod{
-		ShortName: shortName,
-		FullName:  fmt.Sprintf("mod.%s", shortName),
-		ModPath:   modPath,
-		DeclRange: defRange,
-		Require:   require,
+		HclResourceBase: HclResourceBase{
+			ShortName:       shortName,
+			FullName:        fmt.Sprintf("mod.%s", shortName),
+			UnqualifiedName: fmt.Sprintf("mod.%s", shortName),
+			DeclRange:       defRange,
+			blockType:       BlockTypeMod,
+		},
+
+		ModPath: modPath,
+		Require: require,
 	}
 	mod.ResourceMaps = NewModResources(mod)
 
@@ -177,11 +175,6 @@ func (m *Mod) GetParents() []ModTreeItem {
 	return nil
 }
 
-// Name implements ModTreeItem, HclResource
-func (m *Mod) Name() string {
-	return m.FullName
-}
-
 // GetUnqualifiedName implements ModTreeItem
 func (m *Mod) GetUnqualifiedName() string {
 	return m.Name()
@@ -193,24 +186,6 @@ func (m *Mod) GetModDependencyPath() string {
 		return m.ModDependencyPath
 	}
 	return m.NameWithVersion()
-}
-
-// GetTitle implements HclResource
-func (m *Mod) GetTitle() string {
-	return typehelpers.SafeString(m.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (m *Mod) GetDescription() string {
-	return typehelpers.SafeString(m.Description)
-}
-
-// GetTags implements HclResource
-func (m *Mod) GetTags() map[string]string {
-	if m.Tags != nil {
-		return m.Tags
-	}
-	return map[string]string{}
 }
 
 // GetChildren implements ModTreeItem
@@ -229,11 +204,6 @@ func (m *Mod) SetPaths() {}
 // GetDocumentation implements DashboardLeafNode, ModTreeItem
 func (m *Mod) GetDocumentation() string {
 	return typehelpers.SafeString(m.Documentation)
-}
-
-// CtyValue implements HclResource
-func (m *Mod) CtyValue() (cty.Value, error) {
-	return getCtyValue(m)
 }
 
 // OnDecoded implements HclResource
@@ -294,16 +264,6 @@ func (m *Mod) GetReferences() []*ResourceReference {
 // GetMod implements ModTreeItem
 func (m *Mod) GetMod() *Mod {
 	return nil
-}
-
-// GetDeclRange implements HclResource
-func (m *Mod) GetDeclRange() *hcl.Range {
-	return &m.DeclRange
-}
-
-// BlockType implements HclResource
-func (*Mod) BlockType() string {
-	return BlockTypeMod
 }
 
 // GetResourceMaps implements ResourceMapsProvider
