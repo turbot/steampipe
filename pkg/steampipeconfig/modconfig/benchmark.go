@@ -15,15 +15,12 @@ import (
 type Benchmark struct {
 	ResourceWithMetadataBase
 	HclResourceBase
+	ModTreeItemBase
 
 	// child names as NamedItem structs - used to allow setting children via the 'children' property
 	ChildNames NamedItemList `cty:"child_names" json:"-"`
 	// used for introspection tables
 	ChildNameStrings []string `cty:"child_name_strings" column:"children,jsonb" json:"-"`
-	// the actual children
-	Children      []ModTreeItem `json:"-"`
-	Description   *string       `cty:"description" hcl:"description" column:"description,text" json:"-"`
-	Documentation *string       `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
 
 	// dashboard specific properties
 	Base    *Benchmark `hcl:"base" json:"-"`
@@ -32,20 +29,21 @@ type Benchmark struct {
 	Display *string    `cty:"display" hcl:"display" json:"-"`
 
 	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-	Parents    []ModTreeItem        `json:"-"`
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	benchmark := &Benchmark{
-		Mod: mod,
 		HclResourceBase: HclResourceBase{
 			ShortName:       shortName,
-			FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
-			UnqualifiedName: fmt.Sprintf("benchmark.%s", shortName),
+			FullName:        fullName,
+			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 			DeclRange:       block.DefRange,
 			blockType:       block.Type,
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 	benchmark.SetAnonymous(block)
@@ -84,12 +82,12 @@ func (b *Benchmark) GetMod() *Mod {
 func (b *Benchmark) String() string {
 	// build list of children's names
 	var children []string
-	for _, child := range b.Children {
+	for _, child := range b.children {
 		children = append(children, child.Name())
 	}
 	// build list of parents names
 	var parents []string
-	for _, p := range b.Parents {
+	for _, p := range b.parents {
 		parents = append(parents, p.Name())
 	}
 	sort.Strings(children)
@@ -112,7 +110,7 @@ func (b *Benchmark) String() string {
 // GetChildControls return a flat list of controls underneath the benchmark in the tree
 func (b *Benchmark) GetChildControls() []*Control {
 	var res []*Control
-	for _, child := range b.Children {
+	for _, child := range b.children {
 		if control, ok := child.(*Control); ok {
 			res = append(res, control)
 		} else if benchmark, ok := child.(*Benchmark); ok {
@@ -120,41 +118,6 @@ func (b *Benchmark) GetChildControls() []*Control {
 		}
 	}
 	return res
-}
-
-// AddParent implements ModTreeItem
-func (b *Benchmark) AddParent(parent ModTreeItem) error {
-	b.Parents = append(b.Parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (b *Benchmark) GetParents() []ModTreeItem {
-	return b.Parents
-}
-
-// GetChildren implements ModTreeItem
-func (b *Benchmark) GetChildren() []ModTreeItem {
-	return b.Children
-}
-
-// GetPaths implements ModTreeItem
-func (b *Benchmark) GetPaths() []NodePath {
-	// lazy load
-	if len(b.Paths) == 0 {
-		b.SetPaths()
-	}
-
-	return b.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (b *Benchmark) SetPaths() {
-	for _, parent := range b.Parents {
-		for _, parentPath := range parent.GetPaths() {
-			b.Paths = append(b.Paths, append(parentPath, b.Name()))
-		}
-	}
 }
 
 // Name implements ModTreeItem, HclResource, ResourceWithMetadata
@@ -174,11 +137,6 @@ func (b *Benchmark) GetWidth() int {
 // GetDisplay implements DashboardLeafNode
 func (b *Benchmark) GetDisplay() string {
 	return typehelpers.SafeString(b.Display)
-}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (b *Benchmark) GetDocumentation() string {
-	return typehelpers.SafeString(b.Documentation)
 }
 
 // GetType implements DashboardLeafNode
@@ -237,7 +195,7 @@ func (b *Benchmark) Diff(other *Benchmark) *DashboardTreeItemDiffs {
 }
 
 func (b *Benchmark) WalkResources(resourceFunc func(resource ModTreeItem) (bool, error)) error {
-	for _, child := range b.Children {
+	for _, child := range b.children {
 		continueWalking, err := resourceFunc(child)
 		if err != nil {
 			return err
@@ -253,6 +211,10 @@ func (b *Benchmark) WalkResources(resourceFunc func(resource ModTreeItem) (bool,
 		}
 	}
 	return nil
+}
+
+func (b *Benchmark) SetChildren(children []ModTreeItem) {
+	b.children = children
 }
 
 func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
@@ -286,8 +248,8 @@ func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 		b.Title = b.Base.Title
 	}
 
-	if len(b.Children) == 0 {
-		b.Children = b.Base.Children
+	if len(b.children) == 0 {
+		b.children = b.Base.children
 		b.ChildNameStrings = b.Base.ChildNameStrings
 		b.ChildNames = b.Base.ChildNames
 	}

@@ -164,6 +164,10 @@ func (c *InteractiveClient) initialiseSuggestions() {
 		if !ok {
 			return
 		}
+		modTreeItem, ok := item.(modconfig.ModTreeItem)
+		if !ok {
+			return
+		}
 		if qp.GetQuery() == nil && qp.GetSQL() == nil {
 			return
 		}
@@ -171,7 +175,7 @@ func (c *InteractiveClient) initialiseSuggestions() {
 		if rm.IsAnonymous() {
 			return
 		}
-		isLocal := qp.GetMod().Name() == workspaceModName
+		isLocal := modTreeItem.GetMod().Name() == workspaceModName
 		itemType := item.BlockType()
 		// only include global inputs
 		if itemType == modconfig.BlockTypeInput {

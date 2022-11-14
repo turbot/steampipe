@@ -10,6 +10,7 @@ import (
 type DashboardEdge struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain     hcl.Body             `hcl:",remain" json:"-"`
@@ -17,20 +18,24 @@ type DashboardEdge struct {
 	Base       *DashboardEdge       `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-
-	parents []ModTreeItem
 }
 
 func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	c := &DashboardEdge{
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{ShortName: shortName,
-				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
 				blockType:       block.Type,
 			},
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 
@@ -68,41 +73,6 @@ func (e *DashboardEdge) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (e *DashboardEdge) GetReferences() []*ResourceReference {
 	return e.References
-}
-
-// AddParent implements ModTreeItem
-func (e *DashboardEdge) AddParent(parent ModTreeItem) error {
-	e.parents = append(e.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (e *DashboardEdge) GetParents() []ModTreeItem {
-	return e.parents
-}
-
-// GetChildren implements ModTreeItem
-func (e *DashboardEdge) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetPaths implements ModTreeItem
-func (e *DashboardEdge) GetPaths() []NodePath {
-	// lazy load
-	if len(e.Paths) == 0 {
-		e.SetPaths()
-	}
-
-	return e.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (e *DashboardEdge) SetPaths() {
-	for _, parent := range e.parents {
-		for _, parentPath := range parent.GetPaths() {
-			e.Paths = append(e.Paths, append(parentPath, e.Name()))
-		}
-	}
 }
 
 func (e *DashboardEdge) Diff(other *DashboardEdge) *DashboardTreeItemDiffs {

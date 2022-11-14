@@ -18,41 +18,44 @@ import (
 type Query struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	// TODO overridden from base as they have JSON tags
+	// TODO KAI overridden from base as they have JSON tags - DO A DIFFERENT WA
 	ShortName string  `cty:"short_name" json:"name"`
 	SQL       *string `cty:"sql" hcl:"sql" column:"sql,text" json:sql"`
 	Query     *Query  `hcl:"query" json:"query"`
 	// TODO wrong tag in 17?
-	Title *string `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	Title         *string `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	Documentation *string `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
 
 	Description      *string `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
-	Documentation    *string `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
 	SearchPath       *string `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"seatch_path,omitempty"`
 	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
 
 	// list of all blocks referenced by the resource
 	References []*ResourceReference ` json:"-"`
-
-	Paths   []NodePath    `column:"path,jsonb" json:"-"`
-	parents []ModTreeItem `json:"-"`
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	// queries cannot be anonymous
 	q := &Query{
 		ShortName: shortName,
 		QueryProviderBase: QueryProviderBase{
-			Mod: mod,
+			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
-				UnqualifiedName: fmt.Sprintf("query.%s", shortName),
+				FullName:        fullName,
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
-				FullName:        fmt.Sprintf("%s.query.%s", mod.ShortName, shortName),
 				blockType:       block.Type,
 			},
+		},
+		ModTreeItemBase: ModTreeItemBase{
+			Mod:      mod,
+			fullName: fullName,
 		},
 	}
 	return q
@@ -61,6 +64,9 @@ func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
 	q := &Query{
 		QueryProviderBase: QueryProviderBase{
+			modNameWithVersion: mod.NameWithVersion(),
+		},
+		ModTreeItemBase: ModTreeItemBase{
 			Mod: mod,
 		},
 	}
@@ -92,6 +98,8 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	q.ShortName = name
 	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
 	q.FullName = fmt.Sprintf("%s.query.%s", q.Mod.ShortName, name)
+	// TACTICAL set for ModTreeItemBase as well
+	q.fullName = q.FullName
 	q.SQL = &sql
 	q.DeclRange = hcl.Range{
 		Filename: filePath,
@@ -184,51 +192,6 @@ func (q *Query) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (q *Query) GetReferences() []*ResourceReference {
 	return q.References
-}
-
-// AddParent implements ModTreeItem
-func (q *Query) AddParent(parent ModTreeItem) error {
-	q.parents = append(q.parents, parent)
-
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (q *Query) GetParents() []ModTreeItem {
-	return q.parents
-}
-
-// GetChildren implements ModTreeItem
-func (q *Query) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetDescription implements ModTreeItem
-func (q *Query) GetDescription() string {
-	return ""
-}
-
-// GetPaths implements ModTreeItem
-func (q *Query) GetPaths() []NodePath {
-	// lazy load
-	if len(q.Paths) == 0 {
-		q.SetPaths()
-	}
-	return q.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (q *Query) SetPaths() {
-	for _, parent := range q.parents {
-		for _, parentPath := range parent.GetPaths() {
-			q.Paths = append(q.Paths, append(parentPath, q.Name()))
-		}
-	}
-}
-
-// GetDocumentation implement ModTreeItem
-func (q *Query) GetDocumentation() string {
-	return typehelpers.SafeString(q.Documentation)
 }
 
 func (q *Query) Diff(other *Query) *DashboardTreeItemDiffs {
