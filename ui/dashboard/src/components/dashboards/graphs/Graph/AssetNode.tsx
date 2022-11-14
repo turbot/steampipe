@@ -159,7 +159,7 @@ const AssetNode = ({
           theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
         )}
         style={{
-          color: isFolded ? (color ? color : themeColors.blackScale3) : {},
+          color: color ? color : undefined,
         }}
         icon={isFolded ? fold?.icon : icon}
       />
