@@ -111,7 +111,7 @@ func buildAvailableDashboardsPayload(workspaceResources *modconfig.ResourceMaps)
 
 			// Find any benchmarks who have a parent that is a mod - we consider these top-level
 			isTopLevel := false
-			for _, parent := range benchmark.Parents {
+			for _, parent := range benchmark.GetParents() {
 				switch parent.(type) {
 				case *modconfig.Mod:
 					isTopLevel = true
