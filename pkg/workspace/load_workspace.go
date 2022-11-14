@@ -51,7 +51,7 @@ func promptForMissingVariables(ctx context.Context, missingVariables []*modconfi
 			variableDisplayName = fmt.Sprintf("%s.var.%s", v.ModName, v.ShortName)
 			variableName = fmt.Sprintf("%s.%s", v.ModName, v.ShortName)
 		}
-		r, err := promptForVariable(ctx, variableDisplayName, v.Description)
+		r, err := promptForVariable(ctx, variableDisplayName, v.GetDescription())
 		if err != nil {
 			return err
 		}

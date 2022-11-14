@@ -38,6 +38,7 @@ type ModTreeItem interface {
 	AddParent(ModTreeItem) error
 	GetParents() []ModTreeItem
 	GetChildren() []ModTreeItem
+	// TODO move to Hcl Resource
 	GetDocumentation() string
 	// GetPaths returns an array resource paths
 	GetPaths() []NodePath
