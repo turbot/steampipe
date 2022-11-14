@@ -49,14 +49,6 @@ import "reactflow/dist/style.css";
 const nodeWidth = 100;
 const nodeHeight = 100;
 
-const nodeTypes = {
-  asset: AssetNode,
-};
-
-const edgeTypes = {
-  floating: FloatingEdge,
-};
-
 const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
@@ -377,13 +369,27 @@ const Graph = (props) => {
   const graphOptions = useGraphOptions(props);
   useNodeAndEdgePanelInformation(props.nodeAndEdgeStatus, props.dataFormat);
 
+  const nodeTypes = useMemo(
+    () => ({
+      asset: AssetNode,
+    }),
+    []
+  );
+
+  const edgeTypes = useMemo(
+    () => ({
+      floating: FloatingEdge,
+    }),
+    []
+  );
+
   return (
     <ReactFlowProvider>
       <div
         style={{
           height: graphOptions.height,
           maxHeight: selectedPanel ? undefined : 600,
-          minHeight: 150,
+          minHeight: 175,
         }}
       >
         <ReactFlow

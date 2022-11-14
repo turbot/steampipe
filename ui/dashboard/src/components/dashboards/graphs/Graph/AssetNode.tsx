@@ -16,6 +16,7 @@ import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useGraph } from "../common/useGraph";
+import Icon from "../../../Icon";
 
 interface AssetNodeProps {
   data: {
@@ -102,6 +103,61 @@ const AssetNode = ({
     </div>
   );
 
+  const nodeLabelIcon =
+    (row_data && row_data.properties) || isFolded ? (
+      <Tooltip
+        overlay={
+          <>
+            {row_data && row_data.properties && !isFolded && (
+              <RowProperties
+                fields={fields || null}
+                properties={row_data.properties}
+              />
+            )}
+            {isFolded && (
+              <div className="max-h-1/2-screen space-y-2">
+                <div className="h-full overflow-y-auto">
+                  {(foldedNodes || []).map((n) => (
+                    <div key={n.id}>{n.title || n.id}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        }
+        title={label}
+      >
+        <div className="cursor-pointer text-black-scale-5">
+          <Icon className="w-3 h-3" icon="table-cells" />
+        </div>
+      </Tooltip>
+    ) : null;
+
+  const nodeLabel = (
+    <div
+      className={classNames(
+        renderedHref || isFolded ? "text-link cursor-pointer" : null,
+        "absolute flex space-x-1 items-center -bottom-[20px] text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px]"
+      )}
+      onClick={
+        isFolded && foldedNodes
+          ? () => expandNode(foldedNodes, category as string)
+          : undefined
+      }
+    >
+      {renderedHref && <ExternalLink to={renderedHref}>{label}</ExternalLink>}
+      {!renderedHref && !isFolded && <span>{label}</span>}
+      {!renderedHref && isFolded && <span>{fold?.title}</span>}
+      {!renderedHref &&
+        isFolded &&
+        !fold?.title &&
+        `${foldedNodes?.length || 0} ${
+          foldedNodes?.length === 1 ? "node" : "nodes"
+        }...`}
+      {nodeLabelIcon}
+    </div>
+  );
+
   // Notes:
   // * The Handle elements seem to be required to allow the connectors to work.
   return (
@@ -110,56 +166,60 @@ const AssetNode = ({
       <Handle type="target" />
       {/*@ts-ignore*/}
       <Handle type="source" />
-      <div className="flex flex-col items-center cursor-auto">
-        {((row_data && row_data.properties) || isFolded) && (
-          <Tooltip
-            overlay={
-              <>
-                {row_data && row_data.properties && !isFolded && (
-                  <RowProperties
-                    fields={fields || null}
-                    properties={row_data.properties}
-                  />
-                )}
-                {isFolded && (
-                  <div className="max-h-1/2-screen space-y-2">
-                    <div className="h-full overflow-y-auto">
-                      {(foldedNodes || []).map((n) => (
-                        <div key={n.id}>{n.title || n.id}</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            }
-            title={label}
-          >
-            {node}
-          </Tooltip>
-        )}
-        <div
-          className={classNames(
-            isFolded ? "text-link cursor-pointer" : null,
-            "text-center text-sm mt-1 bg-dashboard-panel text-foreground min-w-[35px]"
-          )}
-          onClick={
-            isFolded && foldedNodes
-              ? () => expandNode(foldedNodes, category as string)
-              : undefined
-          }
-        >
-          {renderedHref && (
-            <ExternalLink to={renderedHref}>{label}</ExternalLink>
-          )}
-          {!renderedHref && !isFolded && label}
-          {!renderedHref && isFolded && fold?.title}
-          {!renderedHref &&
-            isFolded &&
-            !fold?.title &&
-            `${foldedNodes?.length || 0} ${
-              foldedNodes?.length === 1 ? "node" : "nodes"
-            }...`}
-        </div>
+      {/*<div className="max-w-[50px]">{label}</div>*/}
+      <div className="relative flex flex-col items-center cursor-auto">
+        {node}
+        {nodeLabel}
+        {/*{((row_data && row_data.properties) || isFolded) && (*/}
+        {/*  <Tooltip*/}
+        {/*    overlay={*/}
+        {/*      <>*/}
+        {/*        {row_data && row_data.properties && !isFolded && (*/}
+        {/*          <RowProperties*/}
+        {/*            fields={fields || null}*/}
+        {/*            properties={row_data.properties}*/}
+        {/*          />*/}
+        {/*        )}*/}
+        {/*        {isFolded && (*/}
+        {/*          <div className="max-h-1/2-screen space-y-2">*/}
+        {/*            <div className="h-full overflow-y-auto">*/}
+        {/*              {(foldedNodes || []).map((n) => (*/}
+        {/*                <div key={n.id}>{n.title || n.id}</div>*/}
+        {/*              ))}*/}
+        {/*            </div>*/}
+        {/*          </div>*/}
+        {/*        )}*/}
+        {/*      </>*/}
+        {/*    }*/}
+        {/*    title={label}*/}
+        {/*  >*/}
+        {/*    {node}*/}
+        {/*  </Tooltip>*/}
+        {/*)}*/}
+        {/*<div className="overflow-x-hidden">{label}</div>*/}
+        {/*<div*/}
+        {/*  className={classNames(*/}
+        {/*    isFolded ? "text-link cursor-pointer" : null,*/}
+        {/*    "relative text-center text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px]"*/}
+        {/*  )}*/}
+        {/*  onClick={*/}
+        {/*    isFolded && foldedNodes*/}
+        {/*      ? () => expandNode(foldedNodes, category as string)*/}
+        {/*      : undefined*/}
+        {/*  }*/}
+        {/*>*/}
+        {/*{renderedHref && (*/}
+        {/*  <ExternalLink to={renderedHref}>{nodeLabel}</ExternalLink>*/}
+        {/*)}*/}
+        {/*{!renderedHref && !isFolded && nodeLabel}*/}
+        {/*{!renderedHref && isFolded && fold?.title}*/}
+        {/*{!renderedHref &&*/}
+        {/*  isFolded &&*/}
+        {/*  !fold?.title &&*/}
+        {/*  `${foldedNodes?.length || 0} ${*/}
+        {/*    foldedNodes?.length === 1 ? "node" : "nodes"*/}
+        {/*  }...`}*/}
+        {/*</div>*/}
       </div>
     </>
   );

@@ -51,7 +51,7 @@ const FloatingEdge = ({
         }
         title={label}
       >
-        <div className="cursor-pointer">
+        <div className="cursor-pointer text-black-scale-5">
           <Icon className="w-3 h-3" icon="table-cells" />
         </div>
       </Tooltip>
