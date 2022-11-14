@@ -59,7 +59,7 @@ const FloatingEdge = ({
         markerEnd={markerEnd}
         style={{
           ...(style || {}),
-          stroke: color || themeColors.blackScale3,
+          stroke: color || themeColors.blackScale4,
           strokeWidth: 1,
         }}
       />

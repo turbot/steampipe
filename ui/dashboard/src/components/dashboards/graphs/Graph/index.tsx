@@ -41,10 +41,10 @@ import {
   ZoomInIcon,
   ZoomOutIcon,
 } from "../../../../constants/icons";
-import { useEffect, useMemo } from "react";
-import "reactflow/dist/style.css";
-import { usePanel } from "../../../../hooks/usePanel";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { useEffect, useMemo } from "react";
+import { usePanel } from "../../../../hooks/usePanel";
+import "reactflow/dist/style.css";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -138,7 +138,7 @@ const buildGraphNodesAndEdges = (
       label: edge.title,
       labelBgPadding: [11, 0],
       markerEnd: {
-        color: edgeColor ? edgeColor : themeColors.blackScale3,
+        color: edgeColor ? edgeColor : themeColors.blackScale4,
         width: 20,
         height: 20,
         strokeWidth: 2,
