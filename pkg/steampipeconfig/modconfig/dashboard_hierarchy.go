@@ -3,12 +3,9 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/constants"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardHierarchy is a struct representing a leaf dashboard node
@@ -29,24 +26,12 @@ type DashboardHierarchy struct {
 	EdgeNames []string          `json:"edges"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
-
-	// these properties are JSON serialised by the parent LeafRun
-	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
-	Display *string `cty:"display" hcl:"display" json:"-"`
-
-	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
+	Width      *int                          `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type       *string                       `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display    *string                       `cty:"display" hcl:"display" json:"-"`
 
 	Base       *DashboardHierarchy  `hcl:"base" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
 	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	parents []ModTreeItem
@@ -54,12 +39,17 @@ type DashboardHierarchy struct {
 
 func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	h := &DashboardHierarchy{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
-		Categories:      make(map[string]*DashboardCategory),
+		QueryProviderBase: QueryProviderBase{
+			Mod: mod,
+			HclResourceBase: HclResourceBase{
+				ShortName:       shortName,
+				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+				DeclRange:       block.DefRange,
+				blockType:       block.Type,
+			},
+		},
+		Categories: make(map[string]*DashboardCategory),
 	}
 	h.SetAnonymous(block)
 	return h
@@ -68,17 +58,6 @@ func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) HclReso
 func (h *DashboardHierarchy) Equals(other *DashboardHierarchy) bool {
 	diff := h.Diff(other)
 	return !diff.HasChanges()
-}
-
-// CtyValue implements HclResource
-func (h *DashboardHierarchy) CtyValue() (cty.Value, error) {
-	return getCtyValue(h)
-}
-
-// Name implements HclResource, ModTreeItem
-// return name in format: 'chart.<shortName>'
-func (h *DashboardHierarchy) Name() string {
-	return h.FullName
 }
 
 // OnDecoded implements HclResource
@@ -101,21 +80,6 @@ func (h *DashboardHierarchy) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
 	return h.References
-}
-
-// GetMod implements ModTreeItem
-func (h *DashboardHierarchy) GetMod() *Mod {
-	return h.Mod
-}
-
-// GetDeclRange implements HclResource
-func (h *DashboardHierarchy) GetDeclRange() *hcl.Range {
-	return &h.DeclRange
-}
-
-// BlockType implements HclResource
-func (*DashboardHierarchy) BlockType() string {
-	return BlockTypeHierarchy
 }
 
 // AddParent implements ModTreeItem
@@ -141,21 +105,6 @@ func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
 		children[i+offset] = e
 	}
 	return children
-}
-
-// GetTitle implements HclResource
-func (h *DashboardHierarchy) GetTitle() string {
-	return typehelpers.SafeString(h.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (h *DashboardHierarchy) GetDescription() string {
-	return ""
-}
-
-// GetTags implements HclResource
-func (h *DashboardHierarchy) GetTags() map[string]string {
-	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem
@@ -225,62 +174,6 @@ func (h *DashboardHierarchy) GetDocumentation() string {
 // GetType implements DashboardLeafNode
 func (h *DashboardHierarchy) GetType() string {
 	return typehelpers.SafeString(h.Type)
-}
-
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (h *DashboardHierarchy) GetUnqualifiedName() string {
-	return h.UnqualifiedName
-}
-
-// GetParams implements QueryProvider
-func (h *DashboardHierarchy) GetParams() []*ParamDef {
-	return h.Params
-}
-
-// GetArgs implements QueryProvider
-func (h *DashboardHierarchy) GetArgs() *QueryArgs {
-	return h.Args
-}
-
-// GetSQL implements QueryProvider
-func (h *DashboardHierarchy) GetSQL() *string {
-	return h.SQL
-}
-
-// GetQuery implements QueryProvider
-func (h *DashboardHierarchy) GetQuery() *Query {
-	return h.Query
-}
-
-// VerifyQuery implements QueryProvider
-func (*DashboardHierarchy) VerifyQuery(QueryProvider) error {
-	// query is optional - nothing to do
-	return nil
-}
-
-// SetArgs implements QueryProvider
-func (h *DashboardHierarchy) SetArgs(args *QueryArgs) {
-	h.Args = args
-}
-
-// SetParams implements QueryProvider
-func (h *DashboardHierarchy) SetParams(params []*ParamDef) {
-	h.Params = params
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (h *DashboardHierarchy) GetPreparedStatementName() string {
-	if h.PreparedStatementName != "" {
-		return h.PreparedStatementName
-	}
-	h.PreparedStatementName = h.buildPreparedStatementName(h.ShortName, h.Mod.NameWithVersion(), constants.PreparedStatementHierarchySuffix)
-	return h.PreparedStatementName
-}
-
-// GetResolvedQuery implements QueryProvider
-func (h *DashboardHierarchy) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return h.getResolvedQuery(h, runtimeArgs)
 }
 
 // GetEdges implements NodeAndEdgeProvider

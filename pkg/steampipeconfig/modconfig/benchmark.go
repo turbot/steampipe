@@ -9,27 +9,21 @@ import (
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
 	ResourceWithMetadataBase
-
-	ShortName       string `json:"-"`
-	FullName        string `cty:"name" json:"-"`
-	UnqualifiedName string `json:"-"`
+	HclResourceBase
 
 	// child names as NamedItem structs - used to allow setting children via the 'children' property
 	ChildNames NamedItemList `cty:"child_names" json:"-"`
 	// used for introspection tables
 	ChildNameStrings []string `cty:"child_name_strings" column:"children,jsonb" json:"-"`
 	// the actual children
-	Children      []ModTreeItem     `json:"-"`
-	Description   *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
-	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
-	Title         *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	Children      []ModTreeItem `json:"-"`
+	Description   *string       `cty:"description" hcl:"description" column:"description,text" json:"-"`
+	Documentation *string       `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
 
 	// dashboard specific properties
 	Base    *Benchmark `hcl:"base" json:"-"`
@@ -39,18 +33,20 @@ type Benchmark struct {
 
 	References []*ResourceReference `json:"-"`
 	Mod        *Mod                 `cty:"mod" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
 	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 	Parents    []ModTreeItem        `json:"-"`
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	benchmark := &Benchmark{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
-		UnqualifiedName: fmt.Sprintf("benchmark.%s", shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
+		Mod: mod,
+		HclResourceBase: HclResourceBase{
+			ShortName:       shortName,
+			FullName:        fmt.Sprintf("%s.benchmark.%s", mod.ShortName, shortName),
+			UnqualifiedName: fmt.Sprintf("benchmark.%s", shortName),
+			DeclRange:       block.DefRange,
+			blockType:       block.Type,
+		},
 	}
 	benchmark.SetAnonymous(block)
 	return benchmark
@@ -62,21 +58,6 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 	}
 
 	return !b.Diff(other).HasChanges()
-}
-
-// CtyValue implements HclResource
-func (b *Benchmark) CtyValue() (cty.Value, error) {
-	return getCtyValue(b)
-}
-
-// GetDeclRange implements HclResource
-func (b *Benchmark) GetDeclRange() *hcl.Range {
-	return &b.DeclRange
-}
-
-// BlockType implements HclResource
-func (*Benchmark) BlockType() string {
-	return BlockTypeBenchmark
 }
 
 // OnDecoded implements HclResource
@@ -150,24 +131,6 @@ func (b *Benchmark) AddParent(parent ModTreeItem) error {
 // GetParents implements ModTreeItem
 func (b *Benchmark) GetParents() []ModTreeItem {
 	return b.Parents
-}
-
-// GetTitle implements HclResource
-func (b *Benchmark) GetTitle() string {
-	return typehelpers.SafeString(b.Title)
-}
-
-// GetDescription implements ModTreeItem, DashboardLeafNode
-func (b *Benchmark) GetDescription() string {
-	return typehelpers.SafeString(b.Description)
-}
-
-// GetTags implements HclResource, DashboardLeafNode
-func (b *Benchmark) GetTags() map[string]string {
-	if b.Tags != nil {
-		return b.Tags
-	}
-	return map[string]string{}
 }
 
 // GetChildren implements ModTreeItem
