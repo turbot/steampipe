@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
 	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -13,14 +12,12 @@ import (
 	"github.com/zclconf/go-cty/cty/convert"
 )
 
+// TODO KAI CHECK DESCRIPTION
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	ResourceWithMetadataBase
+	HclResourceBase
 
-	ShortName string `json:"name"`
-	FullName  string `column:"name,text" json:"-"`
-
-	Description    string    `column:"description,text" json:"description"`
 	Default        cty.Value `column:"default_value,jsonb" json:"-"`
 	Type           cty.Type  `column:"var_type,text" json:"-"`
 	DescriptionSet bool      ` json:"-"`
@@ -36,10 +33,8 @@ type Variable struct {
 	ValueSourceFileName        string                         `column:"value_source_file_name,text" json:"-"`
 	ValueSourceStartLineNumber int                            `column:"value_source_start_line_number,integer" json:"-"`
 	ValueSourceEndLineNumber   int                            `column:"value_source_end_line_number,integer" json:"-"`
-	DeclRange                  hcl.Range                      `json:"-"`
 	ParsingMode                var_config.VariableParsingMode `json:"-"`
 	Mod                        *Mod                           `json:"-"`
-	UnqualifiedName            string                         `json:"-"`
 	Paths                      []NodePath                     `column:"path,jsonb" json:"-"`
 
 	metadata *ResourceMetadata
@@ -53,18 +48,21 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	}
 
 	return &Variable{
-		ShortName:       v.Name,
-		Description:     v.Description,
-		FullName:        fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name),
-		UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
-		Default:         v.Default,
-		Type:            v.Type,
-		ParsingMode:     v.ParsingMode,
-		Mod:             mod,
-		DeclRange:       v.DeclRange,
-		ModName:         mod.ShortName,
-		DefaultGo:       defaultGo,
-		TypeString:      type_conversion.CtyTypeToHclType(v.Type, v.Default.Type()),
+		HclResourceBase: HclResourceBase{
+			ShortName:       v.Name,
+			Description:     &v.Description,
+			FullName:        fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name),
+			DeclRange:       v.DeclRange,
+			UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
+			blockType:       BlockTypeVariable,
+		},
+		Default:     v.Default,
+		Type:        v.Type,
+		ParsingMode: v.ParsingMode,
+		Mod:         mod,
+		ModName:     mod.ShortName,
+		DefaultGo:   defaultGo,
+		TypeString:  type_conversion.CtyTypeToHclType(v.Type, v.Default.Type()),
 	}
 }
 
@@ -74,16 +72,6 @@ func (v *Variable) Equals(other *Variable) bool {
 		v.Description == other.Description &&
 		v.Default.RawEquals(other.Default) &&
 		v.Value.RawEquals(other.Value)
-}
-
-// Name implements HclResource, ResourceWithMetadata
-func (v *Variable) Name() string {
-	return v.FullName
-}
-
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (v *Variable) GetUnqualifiedName() string {
-	return v.UnqualifiedName
 }
 
 // OnDecoded implements HclResource
@@ -102,21 +90,6 @@ func (v *Variable) GetReferences() []*ResourceReference {
 // GetMod implements ModTreeItem
 func (v *Variable) GetMod() *Mod {
 	return v.Mod
-}
-
-// CtyValue implements HclResource
-func (v *Variable) CtyValue() (cty.Value, error) {
-	return v.Default, nil
-}
-
-// GetDeclRange implements HclResource
-func (v *Variable) GetDeclRange() *hcl.Range {
-	return &v.DeclRange
-}
-
-// BlockType implements HclResource
-func (*Variable) BlockType() string {
-	return BlockTypeVariable
 }
 
 // Required returns true if this variable is required to be set by the caller,
@@ -168,21 +141,6 @@ func (v *Variable) GetParents() []ModTreeItem {
 // GetChildren implements ModTreeItem
 func (v *Variable) GetChildren() []ModTreeItem {
 	return nil
-}
-
-// GetDescription implements ModTreeItem
-func (v *Variable) GetDescription() string {
-	return ""
-}
-
-// GetTitle implements HclResource
-func (v *Variable) GetTitle() string {
-	return typehelpers.SafeString(v.ShortName)
-}
-
-// GetTags implements HclResource
-func (v *Variable) GetTags() map[string]string {
-	return map[string]string{}
 }
 
 // GetPaths implements ModTreeItem
