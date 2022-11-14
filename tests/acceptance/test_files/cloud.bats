@@ -3,8 +3,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "connect to cloud workspace - passing the postgres connection string to workspace-database arg" {
   # run steampipe query and fetch an account from the cloud workspace
-  echo $SPIPETOOLS_PG_CONN_STRING
-  echo $SPIPETOOLS_TOKEN
   run steampipe query "select account_aliases from all_aws.aws_account where account_id='632902152528'" --workspace-database $SPIPETOOLS_PG_CONN_STRING --output json
 
   # fetch the value of account_alias to compare
@@ -45,5 +43,5 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
 
   # check the error message
-  assert_output --partial 'Error: failed to connect'
+  assert_output --partial 'Error: Not authenticated for Steampipe Cloud.'
 }
