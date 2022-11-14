@@ -24,6 +24,7 @@ const defaultModName = "local"
 type Mod struct {
 	ResourceWithMetadataBase
 	HclResourceBase
+	ModTreeItemBase
 
 	// ModDependencyPath is the fully qualified mod name, which can be used to 'require'  the mod,
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
@@ -31,10 +32,9 @@ type Mod struct {
 	ModDependencyPath string `cty:"mod_dependency_path"`
 
 	// attributes
-	Categories    []string `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
-	Color         *string  `cty:"color" hcl:"color" column:"color,text"`
-	Documentation *string  `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Icon          *string  `cty:"icon" hcl:"icon" column:"icon,text"`
+	Categories []string `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
+	Color      *string  `cty:"color" hcl:"color" column:"color,text"`
+	Icon       *string  `cty:"icon" hcl:"icon" column:"icon,text"`
 
 	// blocks
 	Require       *Require
@@ -49,8 +49,6 @@ type Mod struct {
 
 	// the filepath of the mod.sp file (will be empty for default mod)
 	modFilePath string
-	// array of direct mod children - excludes resources which are children of other resources
-	children []ModTreeItem
 	// convenient aggregation of all resources
 	// NOTE: this resource map object references the same set of resources
 	ResourceMaps *ResourceMaps
@@ -58,16 +56,18 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	require := NewRequire()
-
+	name := fmt.Sprintf("mod.%s", shortName)
 	mod := &Mod{
 		HclResourceBase: HclResourceBase{
 			ShortName:       shortName,
-			FullName:        fmt.Sprintf("mod.%s", shortName),
-			UnqualifiedName: fmt.Sprintf("mod.%s", shortName),
+			FullName:        name,
+			UnqualifiedName: name,
 			DeclRange:       defRange,
 			blockType:       BlockTypeMod,
 		},
-
+		ModTreeItemBase: ModTreeItemBase{
+			fullName: name,
+		},
 		ModPath: modPath,
 		Require: require,
 	}
@@ -170,11 +170,6 @@ func (m *Mod) AddParent(ModTreeItem) error {
 	return errors.New("cannot set a parent on a mod")
 }
 
-// GetParents implements ModTreeItem
-func (m *Mod) GetParents() []ModTreeItem {
-	return nil
-}
-
 // GetUnqualifiedName implements ModTreeItem
 func (m *Mod) GetUnqualifiedName() string {
 	return m.Name()
@@ -188,23 +183,13 @@ func (m *Mod) GetModDependencyPath() string {
 	return m.NameWithVersion()
 }
 
-// GetChildren implements ModTreeItem
-func (m *Mod) GetChildren() []ModTreeItem {
-	return m.children
-}
-
-// GetPaths implements ModTreeItem
+// GetPaths implements ModTreeItem (override base functionality)
 func (m *Mod) GetPaths() []NodePath {
 	return []NodePath{{m.Name()}}
 }
 
-// SetPaths implements ModTreeItem
+// SetPaths implements ModTreeItem (override base functionality)
 func (m *Mod) SetPaths() {}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (m *Mod) GetDocumentation() string {
-	return typehelpers.SafeString(m.Documentation)
-}
 
 // OnDecoded implements HclResource
 func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
