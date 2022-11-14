@@ -34,6 +34,21 @@ interface AssetNodeProps {
   };
 }
 
+interface FoldedNodeLabelProps {
+  fold: CategoryFold | undefined;
+  foldedNodes: FoldedNode[] | undefined;
+}
+
+const FoldedNodeLabel = ({ fold, foldedNodes }: FoldedNodeLabelProps) => (
+  <>
+    {fold?.title && <span>{fold?.title}</span>}
+    {!fold?.title &&
+      `${foldedNodes?.length || 0} ${
+        foldedNodes?.length === 1 ? "node" : "nodes"
+      }...`}
+  </>
+);
+
 const AssetNode = ({
   data: {
     category,
@@ -146,14 +161,14 @@ const AssetNode = ({
       }
     >
       {renderedHref && <ExternalLink to={renderedHref}>{label}</ExternalLink>}
-      {!renderedHref && !isFolded && <span>{label}</span>}
-      {!renderedHref && isFolded && <span>{fold?.title}</span>}
-      {!renderedHref &&
-        isFolded &&
-        !fold?.title &&
-        `${foldedNodes?.length || 0} ${
-          foldedNodes?.length === 1 ? "node" : "nodes"
-        }...`}
+      {!renderedHref && (
+        <>
+          {!isFolded && <span>{label}</span>}
+          {isFolded && (
+            <FoldedNodeLabel fold={fold} foldedNodes={foldedNodes} />
+          )}
+        </>
+      )}
       {nodeLabelIcon}
     </div>
   );
