@@ -188,7 +188,7 @@ const AssetNode = ({
         title={label}
       >
         <div className="cursor-pointer text-black-scale-5">
-          <Icon className="w-3 h-3" icon="table-cells" />
+          <Icon className="w-4 h-4" icon="table-cells" />
         </div>
       </Tooltip>
     ) : null;
