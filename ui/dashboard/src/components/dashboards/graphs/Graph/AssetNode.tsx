@@ -34,45 +34,24 @@ interface AssetNodeProps {
   };
 }
 
-// interface FoldedNodeCountBadgeProps {
-//   foldedNodes: FoldedNode[] | undefined;
-// }
+interface FoldedNodeCountBadgeProps {
+  color: string | undefined;
+  foldedNodes: FoldedNode[] | undefined;
+}
 
 interface FoldedNodeLabelProps {
   category: string | undefined;
   fold: CategoryFold | undefined;
-  foldedNodes: FoldedNode[] | undefined;
 }
 
-// const FoldedNodeCountBadge = forwardRef(
-//   ({ foldedNodes }: FoldedNodeCountBadgeProps, ref) => {
-//     if (!foldedNodes) {
-//       return null;
-//     }
-//     return (
-//       <div
-//         // @ts-ignore
-//         ref={ref}
-//         className="items-center rounded-full bg-dashboard px-2.5 py-0.5 text-xs font-medium"
-//       >
-//         {foldedNodes?.length}
-//       </div>
-//     );
-//   }
-// );
-
-const FoldedNodeLabel = ({
-  category,
-  fold,
+const FoldedNodeCountBadge = ({
+  color,
   foldedNodes,
-}: FoldedNodeLabelProps) => (
-  <div className="flex space-x-1 items-center">
-    {fold?.title && (
-      <span className="text-link cursor-pointer">{fold?.title}</span>
-    )}
-    {!fold?.title && (
-      <span className="text-link cursor-pointer">{category}</span>
-    )}
+}: FoldedNodeCountBadgeProps) => {
+  if (!foldedNodes) {
+    return null;
+  }
+  return (
     <Tooltip
       overlay={
         <div className="max-h-1/2-screen space-y-2">
@@ -83,13 +62,46 @@ const FoldedNodeLabel = ({
           </div>
         </div>
       }
-      title={fold?.title || category || ""}
+      title={`${foldedNodes.length} nodes`}
     >
-      <div className="items-center rounded-md bg-dashboard px-1 py-0.5 text-xs font-medium">
+      <div
+        className="absolute right-0 top-[24%] items-center rounded-full px-1 text-sm font-medium cursor-pointer"
+        style={{
+          backgroundColor: color ? color : "bg-dashboard",
+          color: color ? "white" : "text-foreground",
+        }}
+      >
         <IntegerDisplay num={foldedNodes?.length || null} />
       </div>
-      {/*<FoldedNodeCountBadge foldedNodes={foldedNodes} />*/}
     </Tooltip>
+  );
+};
+
+const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
+  <div className="flex space-x-1 items-center">
+    {fold?.title && (
+      <span className="text-link cursor-pointer">{fold?.title}</span>
+    )}
+    {!fold?.title && (
+      <span className="text-link cursor-pointer">{category}</span>
+    )}
+    {/*<Tooltip*/}
+    {/*  overlay={*/}
+    {/*    <div className="max-h-1/2-screen space-y-2">*/}
+    {/*      <div className="h-full overflow-y-auto">*/}
+    {/*        {(foldedNodes || []).map((n) => (*/}
+    {/*          <div key={n.id}>{n.title || n.id}</div>*/}
+    {/*        ))}*/}
+    {/*      </div>*/}
+    {/*    </div>*/}
+    {/*  }*/}
+    {/*  title={fold?.title || category || ""}*/}
+    {/*>*/}
+    {/*  <div className="items-center rounded-md bg-dashboard px-1 py-0.5 text-xs font-medium">*/}
+    {/*    <IntegerDisplay num={foldedNodes?.length || null} />*/}
+    {/*  </div>*/}
+    {/*  /!*<FoldedNodeCountBadge foldedNodes={foldedNodes} />*!/*/}
+    {/*</Tooltip>*/}
   </div>
 );
 
@@ -142,8 +154,7 @@ const AssetNode = ({
   const node = (
     <div
       className={classNames(
-        "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border cursor-grab"
-        // color ? "opacity-10" : null
+        "relative p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border cursor-grab"
       )}
       style={{
         // backgroundColor: color,
@@ -162,6 +173,9 @@ const AssetNode = ({
         }}
         icon={isFolded ? fold?.icon : icon}
       />
+      {isFolded && (
+        <FoldedNodeCountBadge color={color} foldedNodes={foldedNodes} />
+      )}
     </div>
   );
 
@@ -213,16 +227,9 @@ const AssetNode = ({
               {label}
             </span>
           )}
-          {isFolded && (
-            <FoldedNodeLabel
-              category={category}
-              fold={fold}
-              foldedNodes={foldedNodes}
-            />
-          )}
+          {isFolded && <FoldedNodeLabel category={category} fold={fold} />}
         </>
       )}
-      {/*{nodeLabelIcon}*/}
     </div>
   );
 
@@ -238,56 +245,6 @@ const AssetNode = ({
       <div className="relative flex flex-col items-center cursor-auto">
         {nodeWithProperties}
         {nodeLabel}
-        {/*{((row_data && row_data.properties) || isFolded) && (*/}
-        {/*  <Tooltip*/}
-        {/*    overlay={*/}
-        {/*      <>*/}
-        {/*        {row_data && row_data.properties && !isFolded && (*/}
-        {/*          <RowProperties*/}
-        {/*            fields={fields || null}*/}
-        {/*            properties={row_data.properties}*/}
-        {/*          />*/}
-        {/*        )}*/}
-        {/*        {isFolded && (*/}
-        {/*          <div className="max-h-1/2-screen space-y-2">*/}
-        {/*            <div className="h-full overflow-y-auto">*/}
-        {/*              {(foldedNodes || []).map((n) => (*/}
-        {/*                <div key={n.id}>{n.title || n.id}</div>*/}
-        {/*              ))}*/}
-        {/*            </div>*/}
-        {/*          </div>*/}
-        {/*        )}*/}
-        {/*      </>*/}
-        {/*    }*/}
-        {/*    title={label}*/}
-        {/*  >*/}
-        {/*    {node}*/}
-        {/*  </Tooltip>*/}
-        {/*)}*/}
-        {/*<div className="overflow-x-hidden">{label}</div>*/}
-        {/*<div*/}
-        {/*  className={classNames(*/}
-        {/*    isFolded ? "text-link cursor-pointer" : null,*/}
-        {/*    "relative text-center text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px]"*/}
-        {/*  )}*/}
-        {/*  onClick={*/}
-        {/*    isFolded && foldedNodes*/}
-        {/*      ? () => expandNode(foldedNodes, category as string)*/}
-        {/*      : undefined*/}
-        {/*  }*/}
-        {/*>*/}
-        {/*{renderedHref && (*/}
-        {/*  <ExternalLink to={renderedHref}>{nodeLabel}</ExternalLink>*/}
-        {/*)}*/}
-        {/*{!renderedHref && !isFolded && nodeLabel}*/}
-        {/*{!renderedHref && isFolded && fold?.title}*/}
-        {/*{!renderedHref &&*/}
-        {/*  isFolded &&*/}
-        {/*  !fold?.title &&*/}
-        {/*  `${foldedNodes?.length || 0} ${*/}
-        {/*    foldedNodes?.length === 1 ? "node" : "nodes"*/}
-        {/*  }...`}*/}
-        {/*</div>*/}
       </div>
     </>
   );
