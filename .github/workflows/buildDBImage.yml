@@ -66,6 +66,7 @@ jobs:
         uses: 'google-github-actions/auth@v0'
         with:
           service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
+          credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
 
       - name: Get GCloud CLI
         uses: google-github-actions/setup-gcloud@v1.0.0
