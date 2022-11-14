@@ -7,6 +7,8 @@ on:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
+  SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
+  SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
 
 jobs:
   goreleaser:
