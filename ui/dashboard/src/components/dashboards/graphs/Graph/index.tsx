@@ -115,6 +115,16 @@ const buildGraphNodesAndEdges = (
     });
   }
   for (const edge of nodesAndEdges.edges) {
+    // The color rules are:
+    // 1) If the target node of the edge specifies a category and that
+    //    category specifies a colour of "auto", refer to rule 3).
+    // 2) Else if the edge specifies a category and that category specifies a colour,
+    //    that colour is used at 100% opacity for both the edge and the label.
+    // 3) Else if the target node of the edge specifies a category and that
+    //    category specifies a colour, that colour is used at 50% opacity for the
+    //    edge and 70% opacity for the label.
+    // 4) Else use black scale 4 at 100% opacity for both the edge and the label.
+
     const matchingCategory = edge.category
       ? nodesAndEdges.categories[edge.category]
       : null;
