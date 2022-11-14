@@ -65,7 +65,7 @@ const FoldedNodeCountBadge = ({
       title={`${foldedNodes.length} nodes`}
     >
       <div
-        className="absolute right-0 top-[24%] items-center rounded-full px-1 text-sm font-medium cursor-pointer"
+        className="absolute right-0 top-[16%] items-center rounded-full px-1.5 text-sm font-medium cursor-pointer"
         style={{
           backgroundColor: color ? color : "bg-dashboard",
           color: color ? "white" : "text-foreground",
