@@ -17,6 +17,9 @@ type Benchmark struct {
 	HclResourceBase
 	ModTreeItemBase
 
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	// child names as NamedItem structs - used to allow setting children via the 'children' property
 	ChildNames NamedItemList `cty:"child_names" json:"-"`
 	// used for introspection tables

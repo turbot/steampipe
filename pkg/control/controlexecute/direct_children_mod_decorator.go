@@ -3,21 +3,15 @@ package controlexecute
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // DirectChildrenModDecorator is a struct used to wrap a Mod but modify the results of GetChildren to only return
 // immediate mod children (as opposed to all resources in dependency mods as well)
 // This is needed when running 'check all' for a mod which has dependency mopds'
 type DirectChildrenModDecorator struct {
+	modconfig.ModTreeItemBase
+	modconfig.HclResourceBase
 	Mod *modconfig.Mod
-}
-
-func (r DirectChildrenModDecorator) AddParent(item modconfig.ModTreeItem) error {
-	return nil
-}
-func (r DirectChildrenModDecorator) GetParents() []modconfig.ModTreeItem {
-	return nil
 }
 
 func (r DirectChildrenModDecorator) GetChildren() []modconfig.ModTreeItem {
@@ -28,64 +22,6 @@ func (r DirectChildrenModDecorator) GetChildren() []modconfig.ModTreeItem {
 		}
 	}
 	return res
-}
-
-func (r DirectChildrenModDecorator) Name() string {
-	return r.Mod.Name()
-}
-
-func (r DirectChildrenModDecorator) GetUnqualifiedName() string {
-	return r.Mod.GetUnqualifiedName()
-}
-
-func (r DirectChildrenModDecorator) GetTitle() string {
-	return r.Mod.GetTitle()
-}
-
-func (r DirectChildrenModDecorator) GetDescription() string {
-	return r.Mod.GetDescription()
-}
-
-func (r DirectChildrenModDecorator) GetTags() map[string]string {
-	return r.Mod.GetTags()
-}
-
-func (r DirectChildrenModDecorator) GetPaths() []modconfig.NodePath {
-	return r.Mod.GetPaths()
-}
-
-func (r DirectChildrenModDecorator) SetPaths() {
-	r.Mod.SetPaths()
-}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (r DirectChildrenModDecorator) GetDocumentation() string {
-	return r.Mod.GetDocumentation()
-}
-
-func (r DirectChildrenModDecorator) GetMod() *modconfig.Mod {
-	return r.Mod
-}
-
-// BlockType implements HclResource
-func (r DirectChildrenModDecorator) BlockType() string {
-	return r.Mod.BlockType()
-
-}
-
-// CtyValue implements HclResource
-func (r DirectChildrenModDecorator) CtyValue() (cty.Value, error) {
-	return r.Mod.CtyValue()
-}
-
-// GetDeclRange implements HclResource
-func (r DirectChildrenModDecorator) GetDeclRange() *hcl.Range {
-	return &r.Mod.DeclRange
-}
-
-// OnDecoded implements HclResource
-func (r DirectChildrenModDecorator) OnDecoded(block *hcl.Block, resourceMapProvider modconfig.ResourceMapsProvider) hcl.Diagnostics {
-	return nil
 }
 
 // GetMetadata implements ResourceWithMetadata
