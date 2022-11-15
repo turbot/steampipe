@@ -111,7 +111,10 @@ const buildGraphNodesAndEdges = (
       id: node.id,
       position: { x: matchingNode.x, y: matchingNode.y },
       data: {
-        category: node.category,
+        category:
+          node.category && categories[node.category]
+            ? categories[node.category]
+            : null,
         color: matchingCategory ? matchingCategory.color : null,
         fields: matchingCategory ? matchingCategory.fields : null,
         href: matchingCategory ? matchingCategory.href : null,

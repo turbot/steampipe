@@ -5,6 +5,7 @@ import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import {
+  Category,
   CategoryFields,
   CategoryFold,
   FoldedNode,
@@ -20,7 +21,7 @@ import { useGraph } from "../common/useGraph";
 
 interface AssetNodeProps {
   data: {
-    category?: string;
+    category?: Category;
     color?: string;
     fields?: CategoryFields;
     fold?: CategoryFold;
@@ -39,7 +40,7 @@ interface FoldedNodeCountBadgeProps {
 }
 
 interface FoldedNodeLabelProps {
-  category: string | undefined;
+  category: Category | undefined;
   fold: CategoryFold | undefined;
 }
 
@@ -70,10 +71,17 @@ const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   <div className="flex space-x-1 items-center">
     {fold?.title && (
-      <span className="text-link cursor-pointer">{fold?.title}</span>
+      <span className="text-link cursor-pointer truncate" title={fold?.title}>
+        {fold?.title}
+      </span>
     )}
     {!fold?.title && (
-      <span className="text-link cursor-pointer">{category}</span>
+      <span
+        className="text-link cursor-pointer truncate"
+        title={category?.name}
+      >
+        {category?.name}
+      </span>
     )}
   </div>
 );
@@ -197,7 +205,7 @@ const AssetNode = ({
       )}
       onClick={
         isFolded && foldedNodes
-          ? () => expandNode(foldedNodes, category as string)
+          ? () => expandNode(foldedNodes, category?.name as string)
           : undefined
       }
     >
