@@ -75,7 +75,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1.0.0
         with:
           project_id: ${{ env.PROJECT_ID }}
-          export_default_credentials: true
 
       - name: Setup GCloud CLI
         run: |-
