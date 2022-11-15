@@ -108,6 +108,11 @@ jobs:
         fi
         echo "VERSION=${trim}" >> $GITHUB_ENV
 
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.ref }}
+
     - name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0'
       with:
@@ -132,11 +137,6 @@ jobs:
         gcloud beta auth configure-docker us-docker.pkg.dev
         oras version
       
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        ref: ${{ github.event.ref }}
-
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
