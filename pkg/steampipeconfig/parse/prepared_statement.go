@@ -140,8 +140,8 @@ func parseArg(v string) (any, error) {
 	return utils.CtyToGo(val)
 }
 
-func parseNamedArgs(argsList []string) (map[string]any, error) {
-	var res = make(map[string]any)
+func parseNamedArgs(argsList []string) (map[string]string, error) {
+	var res = make(map[string]string)
 	for _, p := range argsList {
 		argTuple := strings.Split(strings.TrimSpace(p), "=>")
 		if len(argTuple) != 2 {

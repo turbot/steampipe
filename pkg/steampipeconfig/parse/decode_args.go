@@ -55,12 +55,12 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	return args, runtimeDependencies, diags
 }
 
-func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]any, []*modconfig.RuntimeDependency, error) {
+func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modconfig.RuntimeDependency, error) {
 	// convert the attribute to a slice
 	values := val.AsValueSlice()
 
 	// build output array
-	res := make([]any, len(values))
+	res := make([]*string, len(values))
 	var runtimeDependencies []*modconfig.RuntimeDependency
 
 	for idx, v := range values {
@@ -80,14 +80,16 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]any, []*modconfig
 				return nil, nil, err
 			}
 
-			res[idx] = val
+			// TODO VERIFY
+			valStr := fmt.Sprintf("%v", val)
+			res[idx] = &valStr
 		}
 	}
 	return res, runtimeDependencies, nil
 }
 
-func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]any, []*modconfig.RuntimeDependency, error) {
-	res := make(map[string]any)
+func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
+	res := make(map[string]string)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	it := val.ElementIterator()
 	for it.Next() {
@@ -114,7 +116,8 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 				return nil, nil, err
 			}
 
-			res[key] = val
+			// TODO KAI verify
+			res[key] = fmt.Sprintf("%v", val)
 		}
 	}
 	return res, runtimeDependencies, nil

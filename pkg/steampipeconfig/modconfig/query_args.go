@@ -12,10 +12,10 @@ import (
 // these may either be passed by name, in a map, or as a list of positional args
 // NOTE: if both are present the named parameters are used
 type QueryArgs struct {
-	ArgMap map[string]any `cty:"args" json:"args,omitempty"`
+	ArgMap map[string]string `cty:"args" json:"args,omitempty"`
 	// args list may be sparsely populated (in case of runtime dependencies)
 	// so use *string
-	ArgList    []any                `cty:"args_list" json:"args_list"`
+	ArgList    []*string            `cty:"args_list" json:"args_list"`
 	References []*ResourceReference `cty:"refs" json:"refs"`
 }
 
@@ -48,9 +48,18 @@ func (q *QueryArgs) ArgsStringList() []string {
 	return argsStringList
 }
 
+// SafeArgsList convert ArgLists into list of strings but return as an interface slice
+func (q *QueryArgs) SafeArgsList() []any {
+	var argsStringList = make([]any, len(q.ArgList))
+	for i, a := range q.ArgList {
+		argsStringList[i] = typehelpers.SafeString(a)
+	}
+	return argsStringList
+}
+
 func NewQueryArgs() *QueryArgs {
 	return &QueryArgs{
-		ArgMap: make(map[string]any),
+		ArgMap: make(map[string]string),
 	}
 }
 
@@ -128,7 +137,7 @@ func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, e
 		if otherLen := len(other.ArgList); otherLen > listLength {
 			listLength = otherLen
 		}
-		result.ArgList = make([]any, listLength)
+		result.ArgList = make([]*string, listLength)
 
 		// first set values from other
 		copy(result.ArgList, other.ArgList)

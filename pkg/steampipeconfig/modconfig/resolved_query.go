@@ -9,6 +9,14 @@ type ResolvedQuery struct {
 
 func (r ResolvedQuery) QueryArgs() *QueryArgs {
 	res := NewQueryArgs()
-	res.ArgList = r.Args
+
+	// TODO KAI this assumes string args
+	res.ArgList = make([]*string, len(r.Args))
+
+	for i, a := range r.Args {
+		if argStr, ok := a.(string); ok {
+			res.ArgList[i] = &argStr
+		}
+	}
 	return res
 }

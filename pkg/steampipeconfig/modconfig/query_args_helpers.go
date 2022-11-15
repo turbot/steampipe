@@ -116,7 +116,7 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argVa
 	return argVals, missingParams, nil
 }
 
-func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (argStrs []any, missingParams []string, err error) {
+func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (argValues []any, missingParams []string, err error) {
 	// if query params contains both positional and named params, error out
 
 	// if there are param defs - we must be able to resolve all params
@@ -127,28 +127,28 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 	if len(params) == 0 {
 		// no params defined, so we return as many args as are provided
 		// (convert from *string to string)
-		argStrs = args.ArgList
-		return argStrs, nil, nil
+		argValues = args.SafeArgsList()
+		return argValues, nil, nil
 	}
 
 	// so there are param defintions - use these to populate argStrs
-	argStrs = make([]any, len(params))
+	argValues = make([]any, len(params))
 
 	for i, param := range params {
 		// first set default
 		defaultValue := typehelpers.SafeString(param.Default)
 
 		if i < len(args.ArgList) && args.ArgList[i] != nil {
-			argStrs[i] = typehelpers.SafeString(args.ArgList[i])
+			argValues[i] = typehelpers.SafeString(args.ArgList[i])
 		} else if defaultValue != "" {
 			// so we have run out of provided params - is there a default?
-			argStrs[i] = defaultValue
+			argValues[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
 			missingParams = append(missingParams, param.Name)
 		}
 	}
-	return argStrs, missingParams, nil
+	return argValues, missingParams, nil
 }
 
 // QueryProviderIsParameterised returns whether the query provider has a parameterised query

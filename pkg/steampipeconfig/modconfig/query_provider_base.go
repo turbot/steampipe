@@ -2,9 +2,9 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/hashicorp/hcl/v2"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
