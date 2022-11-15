@@ -127,13 +127,18 @@ const migratedV2IconNames = {
   "zoom-out": "magnifying-glass-minus",
 };
 
+const kebabCaseExceptions = {
+  Square3Stack3D: "square-3-stack-3d",
+  Squares2X2: "squares-2x2",
+};
+
 const convertIconName = (name) => {
   let condensedName = name;
   const iconOccurrence = name.lastIndexOf("Icon");
   if (iconOccurrence >= 0) {
     condensedName = condensedName.substring(0, iconOccurrence);
   }
-  return kebabCase(condensedName);
+  return kebabCaseExceptions[condensedName] || kebabCase(condensedName);
 };
 
 const getDashboardIconName = (name?: string | null) => {
