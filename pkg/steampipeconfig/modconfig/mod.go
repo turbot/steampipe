@@ -26,6 +26,8 @@ type Mod struct {
 	HclResourceBase
 	ModTreeItemBase
 
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	// ModDependencyPath is the fully qualified mod name, which can be used to 'require'  the mod,
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
 	// This is only set if the mod is installed as a dependency

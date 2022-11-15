@@ -1,6 +1,10 @@
 package modconfig
 
+import "github.com/hashicorp/hcl/v2"
+
 type ModTreeItemBase struct {
+	ModTreeItemRemain hcl.Body `hcl:",remain" json:"-"`
+
 	Mod   *Mod       `cty:"mod" json:"-"`
 	Paths []NodePath `column:"path,jsonb" json:"-"`
 

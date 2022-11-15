@@ -13,7 +13,7 @@ import (
 type QueryProviderBase struct {
 	HclResourceBase
 	RuntimeDependencyProviderBase
-	runtimeDependencies map[string]*RuntimeDependency
+	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
 	// ONLY CONTROL HAS SQL AND QUERY JSON TAG
 	// control
@@ -24,6 +24,7 @@ type QueryProviderBase struct {
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	withs               []*DashboardWith
+	runtimeDependencies map[string]*RuntimeDependency
 	// we need the mod name for prepared statement name
 	modNameWithVersion string
 }
@@ -87,6 +88,10 @@ func (b *QueryProviderBase) VerifyQuery(queryProvider QueryProvider) error {
 // RequiresExecution implements QueryProvider
 func (b *QueryProviderBase) RequiresExecution(queryProvider QueryProvider) bool {
 	return queryProvider.GetQuery() != nil || queryProvider.GetSQL() != nil
+}
+
+func (b *QueryProviderBase) GetQueryProviderBase() *QueryProviderBase {
+	return b
 }
 
 func (b *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
