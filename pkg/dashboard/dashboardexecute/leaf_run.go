@@ -21,8 +21,8 @@ type LeafRun struct {
 	Width            int                               `json:"width,omitempty"`
 	Type             string                            `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
 	Display          string                            `cty:"display" hcl:"display" json:"display,omitempty"`
-	RawSQL           string                            `json:"sql,omitempty"`
-	Args             []string                          `json:"args,omitempty"`
+	Sql              string                            `json:"sql,omitempty"`
+	Args             []any                             `json:"args,omitempty"`
 	Params           []*modconfig.ParamDef             `json:"params,omitempty"`
 	Data             *dashboardtypes.LeafData          `json:"data,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
@@ -33,8 +33,8 @@ type LeafRun struct {
 	SourceDefinition string                            `json:"source_definition"`
 	TimingResult     *queryresult.TimingResult         `json:"-"`
 	// child runs (nodes/edges)
-	children            []dashboardtypes.DashboardNodeRun
-	executeSQL          string
+	children []dashboardtypes.DashboardNodeRun
+
 	error               error
 	parent              dashboardtypes.DashboardNodeParent
 	executionTree       *DashboardExecutionTree
@@ -182,7 +182,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	if len(r.children) > 0 {
 		r.executeChildren(ctx)
 	} else {
-		if r.executeSQL == "" {
+		if r.Sql == "" {
 			r.SetError(ctx, fmt.Errorf("%s does not define query, SQL or nodes/edges", r.DashboardNode.Name()))
 			return
 		}
@@ -334,10 +334,10 @@ func (r *LeafRun) resolveSQL() error {
 	if err != nil {
 		return err
 	}
-	r.RawSQL = resolvedQuery.RawSQL
-	r.executeSQL = resolvedQuery.ExecuteSQL
+
+	r.Sql = resolvedQuery.SQL
 	r.Args = resolvedQuery.Args
-	r.Params = resolvedQuery.Params
+	//r.Params = resolvedQuery.Params
 	return nil
 }
 
@@ -354,7 +354,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 		}
 	}
 	if maxArgIndex != -1 {
-		res.ArgList = make([]*string, maxArgIndex+1)
+		res.ArgList = make([]any, maxArgIndex+1)
 	}
 
 	// build map of default params
@@ -379,7 +379,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 func (r *LeafRun) executeQuery(ctx context.Context) {
 	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
 
-	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
+	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.Sql, r.Args)
 	if err != nil {
 		query := r.DashboardNode.(modconfig.QueryProvider).GetQuery()
 		if query != nil {

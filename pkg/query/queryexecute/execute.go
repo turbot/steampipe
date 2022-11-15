@@ -3,6 +3,7 @@ package queryexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"time"
 
 	"github.com/spf13/viper"
@@ -69,7 +70,7 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 
 	for i, name := range queryNames {
 		q := initData.Queries[name]
-		if err := executeQuery(ctx, q, initData.Client); err != nil {
+		if err := executeQuery(ctx, initData.Client, q); err != nil {
 			failures++
 			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queryNames), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
@@ -87,12 +88,12 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	return failures
 }
 
-func executeQuery(ctx context.Context, queryString string, client db_common.Client) error {
+func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *modconfig.ResolvedQuery) error {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db_common.ExecuteQuery(ctx, queryString, client)
+	resultsStreamer, err := db_common.ExecuteQuery(ctx, client, resolvedQuery.SQL, resolvedQuery.Args...)
 	if err != nil {
 		return err
 	}

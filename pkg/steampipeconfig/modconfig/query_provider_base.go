@@ -3,10 +3,7 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	"log"
 	"strings"
-
-	typehelpers "github.com/turbot/go-kit/types"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -64,17 +61,14 @@ func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string 
 
 // return the SQLs to run the query as a prepared statement
 func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	argsString, argsArray, err := ResolveArgsAsString(queryProvider, runtimeArgs)
+	argsArray, err := ResolveArgs(queryProvider, runtimeArgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
 	}
-	executeString := fmt.Sprintf("execute %s%s", queryProvider.GetPreparedStatementName(), argsString)
-	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", queryProvider.Name(), executeString, runtimeArgs)
 	return &ResolvedQuery{
-		ExecuteSQL: executeString,
-		RawSQL:     typehelpers.SafeString(queryProvider.GetSQL()),
-		Args:       argsArray,
-		Params:     queryProvider.GetParams(),
+		SQL:    queryProvider.GetPreparedStatementName(),
+		Args:   argsArray,
+		Params: queryProvider.GetParams(),
 	}, nil
 }
 

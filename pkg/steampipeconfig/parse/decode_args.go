@@ -55,12 +55,12 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	return args, runtimeDependencies, diags
 }
 
-func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modconfig.RuntimeDependency, error) {
+func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]any, []*modconfig.RuntimeDependency, error) {
 	// convert the attribute to a slice
 	values := val.AsValueSlice()
 
 	// build output array
-	res := make([]*string, len(values))
+	res := make([]any, len(values))
 	var runtimeDependencies []*modconfig.RuntimeDependency
 
 	for idx, v := range values {
@@ -74,20 +74,20 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modco
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a postgres compatible
-			valStr, err := utils.CtyToPostgresString(v)
+			val, err := utils.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
 				return nil, nil, err
 			}
 
-			res[idx] = &valStr
+			res[idx] = val
 		}
 	}
 	return res, runtimeDependencies, nil
 }
 
-func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
-	res := make(map[string]string)
+func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]any, []*modconfig.RuntimeDependency, error) {
+	res := make(map[string]any)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	it := val.ElementIterator()
 	for it.Next() {
@@ -108,13 +108,13 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a postgres compatible
-			valStr, err := utils.CtyToPostgresString(v)
+			val, err := utils.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 				return nil, nil, err
 			}
 
-			res[key] = valStr
+			res[key] = val
 		}
 	}
 	return res, runtimeDependencies, nil

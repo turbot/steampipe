@@ -18,26 +18,26 @@ import (
 // GetQueriesFromArgs retrieves queries from args
 //
 // For each arg check if it is a named query or a file, before falling back to treating it as sql
-func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]string, *modconfig.ResourceMaps, error) {
+func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]*modconfig.ResolvedQuery, *modconfig.ResourceMaps, error) {
 	utils.LogTime("execute.GetQueriesFromArgs start")
 	defer utils.LogTime("execute.GetQueriesFromArgs end")
 
-	var queries = make(map[string]string)
+	var queries = make(map[string]*modconfig.ResolvedQuery)
 	var queryProviders []modconfig.QueryProvider
 	// build map of just the required prepared statement providers
 	for _, arg := range args {
-		query, queryProvider, err := w.ResolveQueryAndArgsFromSQLString(arg)
+		resolvedQuery, queryProvider, err := w.ResolveQueryAndArgsFromSQLString(arg)
 		if err != nil {
 			return nil, nil, err
 		}
-		if len(query) > 0 {
+		if len(resolvedQuery.SQL) > 0 {
 			// default name to the query text
-			queryName := query
+			queryName := resolvedQuery.SQL
 			if queryProvider != nil {
 				queryName = queryProvider.Name()
 				queryProviders = append(queryProviders, queryProvider)
 			}
-			queries[queryName] = query
+			queries[queryName] = resolvedQuery
 
 		}
 	}
@@ -49,7 +49,7 @@ func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]string, *modco
 }
 
 // ResolveQueryAndArgsFromSQLString attempts to resolve 'arg' to a query and query args
-func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, modconfig.QueryProvider, error) {
+func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (*modconfig.ResolvedQuery, modconfig.QueryProvider, error) {
 	var args = &modconfig.QueryArgs{}
 
 	var err error
@@ -58,7 +58,7 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 	// if this looks like a named query provider invocation, parse the sql string for arguments
 	resource, args, err := w.extractQueryProviderFromQueryString(sqlString)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
 	if resource != nil {
@@ -67,32 +67,32 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (string, 
 		// resolve the query for the query provider and return it
 		resolvedQuery, err := w.ResolveQueryFromQueryProvider(resource, args)
 		if err != nil {
-			return "", nil, err
+			return nil, nil, err
 		}
 		log.Printf("[TRACE] resolved query: %s", sqlString)
-		return resolvedQuery.ExecuteSQL, resource, nil
+		return resolvedQuery, resource, nil
 	}
 
 	// 2) is this a file
 	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
 	if fileExists {
 		if err != nil {
-			return "", nil, fmt.Errorf("ResolveQueryAndArgsFromSQLString failed: error opening file '%s': %v", sqlString, err)
+			return nil, nil, fmt.Errorf("ResolveQueryAndArgsFromSQLString failed: error opening file '%s': %v", sqlString, err)
 		}
-		if len(fileQuery) == 0 {
+		if fileQuery == nil {
 			error_helpers.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
-			// (just return the empty string - it will be filtered above)
+			// (just return the empty query - it will be filtered above)
 		}
 		return fileQuery, nil, nil
 	}
 
 	// 3) so we have not managed to resolve this - if it looks like a named query or control, return an error
 	if name, isResource := queryLooksLikeExecutableResource(sqlString); isResource {
-		return "", nil, fmt.Errorf("'%s' not found in %s (%s)", name, w.Mod.Name(), w.Path)
+		return nil, nil, fmt.Errorf("'%s' not found in %s (%s)", name, w.Mod.Name(), w.Path)
 	}
 
 	// 4) just use the query string as is and assume it is valid SQL
-	return sqlString, nil, nil
+	return &modconfig.ResolvedQuery{SQL: sqlString}, nil, nil
 }
 
 // ResolveQueryFromQueryProvider resolves the query for the given QueryProvider
@@ -147,7 +147,7 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 		// determine whether there are any params - there may either be param defs, OR positional args
 		// if there are NO params OR list args, use the control SQL as is
 		if !modconfig.QueryProviderIsParameterised(queryProvider) {
-			return &modconfig.ResolvedQuery{ExecuteSQL: queryProviderSQL, RawSQL: queryProviderSQL}, nil
+			return &modconfig.ResolvedQuery{SQL: queryProviderSQL}, nil
 		}
 	}
 
@@ -157,25 +157,28 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 }
 
 // try to treat the input string as a file name and if it exists, return its contents
-func (w *Workspace) getQueryFromFile(input string) (string, bool, error) {
+func (w *Workspace) getQueryFromFile(input string) (*modconfig.ResolvedQuery, bool, error) {
 	// get absolute filename
 	path, err := filepath.Abs(input)
 	if err != nil {
-		return "", false, nil
+		return nil, false, nil
 	}
 	// does it exist?
 	if _, err := os.Stat(path); err != nil {
 		// if this gives any error, return not exist. we may get a not found or a path too long for example
-		return "", false, nil
+		return nil, false, nil
 	}
 
 	// read file
 	fileBytes, err := os.ReadFile(path)
 	if err != nil {
-		return "", true, err
+		return nil, true, err
 	}
 
-	return string(fileBytes), true, nil
+	res := &modconfig.ResolvedQuery{
+		SQL: string(fileBytes),
+	}
+	return res, true, nil
 }
 
 // does the input look like a resource which can be executed as a query

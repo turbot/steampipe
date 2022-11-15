@@ -388,8 +388,8 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	line = strings.TrimSpace(line)
 
-	query := c.getQuery(ctx, line)
-	if query == "" {
+	resolvedQuery := c.getQuery(ctx, line)
+	if resolvedQuery.SQL == "" {
 		// we failed to resolve a query, or are in the middle of a multi-line entry
 		// restart the prompt, DO NOT clear the interactive buffer
 		c.restartInteractiveSession()
@@ -401,8 +401,8 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	// create a  context for the execution of the query
 	queryCtx := c.createQueryContext(ctx)
 
-	if metaquery.IsMetaQuery(query) {
-		if err := c.executeMetaquery(queryCtx, query); err != nil {
+	if metaquery.IsMetaQuery(resolvedQuery.SQL) {
+		if err := c.executeMetaquery(queryCtx, resolvedQuery.SQL); err != nil {
 			error_helpers.ShowError(ctx, err)
 		}
 		// cancel the context
@@ -411,7 +411,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		// otherwise execute query
 		t := time.Now()
-		result, err := c.client().Execute(queryCtx, query)
+		result, err := c.client().Execute(queryCtx, resolvedQuery.SQL, resolvedQuery.Args...)
 		if err != nil {
 			error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
 			// if timing flag is enabled, show the time taken for the query to fail
@@ -427,10 +427,10 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	c.restartInteractiveSession()
 }
 
-func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
+func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfig.ResolvedQuery {
 	// if it's an empty line, then we don't need to do anything
 	if line == "" {
-		return ""
+		return nil
 	}
 
 	// store the history (the raw line which was entered)
@@ -463,7 +463,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 			// clear the interactive buffer
 			c.interactiveBuffer = nil
 			// error will have been handled elsewhere
-			return ""
+			return nil
 		}
 	}
 
@@ -474,7 +474,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 	queryString := strings.Join(c.interactiveBuffer, "\n")
 
 	// in case of a named query call with params, parse the where clause
-	query, queryProvider, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
+	resolvedQuery, queryProvider, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
 	if err != nil {
 		// if we fail to resolve:
 		// - show error but do not return it so we  stay in the prompt
@@ -482,7 +482,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 		// - clear interactive buffer
 		c.interactiveBuffer = nil
 		error_helpers.ShowError(ctx, err)
-		return ""
+		return nil
 	}
 	isNamedQuery := queryProvider != nil
 
@@ -493,7 +493,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 		// is we are not executing, do not store history
 		historyEntry = ""
 		// do not clear interactive buffer
-		return ""
+		return nil
 	}
 
 	// so we need to execute
@@ -503,18 +503,18 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) string {
 	// what are we executing?
 
 	// if the line is ONLY a semicolon, do nothing and restart interactive session
-	if strings.TrimSpace(query) == ";" {
+	if strings.TrimSpace(resolvedQuery.SQL) == ";" {
 		// do not store in history
 		historyEntry = ""
 		c.restartInteractiveSession()
-		return ""
+		return nil
 	}
 	// if this is a multiline query, update history entry
-	if !isNamedQuery && len(strings.Split(query, "\n")) > 1 {
-		historyEntry = query
+	if !isNamedQuery && len(strings.Split(resolvedQuery.SQL, "\n")) > 1 {
+		historyEntry = resolvedQuery.SQL
 	}
 
-	return query
+	return resolvedQuery
 }
 
 func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) error {

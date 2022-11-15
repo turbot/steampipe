@@ -128,7 +128,7 @@ func splitArgString(argsString string) ([]string, error) {
 	return argsList, nil
 }
 
-func parseArg(v string) (string, error) {
+func parseArg(v string) (any, error) {
 	b, diags := hclsyntax.ParseExpression([]byte(v), "", hcl.Pos{})
 	if diags.HasErrors() {
 		return "", plugin.DiagsToError("bad arg syntax", diags)
@@ -137,11 +137,11 @@ func parseArg(v string) (string, error) {
 	if diags.HasErrors() {
 		return "", plugin.DiagsToError("bad arg syntax", diags)
 	}
-	return utils.CtyToPostgresString(val)
+	return utils.CtyToGo(val)
 }
 
-func parseNamedArgs(argsList []string) (map[string]string, error) {
-	var res = make(map[string]string)
+func parseNamedArgs(argsList []string) (map[string]any, error) {
+	var res = make(map[string]any)
 	for _, p := range argsList {
 		argTuple := strings.Split(strings.TrimSpace(p), "=>")
 		if len(argTuple) != 2 {
@@ -149,18 +149,18 @@ func parseNamedArgs(argsList []string) (map[string]string, error) {
 			return nil, nil
 		}
 		k := strings.TrimSpace(argTuple[0])
-		valStr, err := parseArg(argTuple[1])
+		val, err := parseArg(argTuple[1])
 		if err != nil {
 			return nil, err
 		}
-		res[k] = valStr
+		res[k] = val
 	}
 	return res, nil
 }
 
-func parsePositionalArgs(argsList []string) ([]*string, error) {
+func parsePositionalArgs(argsList []string) ([]any, error) {
 	// convert to pointer array
-	res := make([]*string, len(argsList))
+	res := make([]any, len(argsList))
 	// just treat args as positional args
 	// strip spaces
 	for i, v := range argsList {
@@ -168,7 +168,7 @@ func parsePositionalArgs(argsList []string) ([]*string, error) {
 		if err != nil {
 			return nil, err
 		}
-		res[i] = &valStr
+		res[i] = valStr
 	}
 
 	return res, nil
