@@ -2,6 +2,8 @@ package parse
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -140,8 +142,8 @@ func parseArg(v string) (any, error) {
 	return utils.CtyToGo(val)
 }
 
-func parseNamedArgs(argsList []string) (map[string]string, error) {
-	var res = make(map[string]string)
+func parseNamedArgs(argsList []string) (map[string]cty.Value, error) {
+	var res = make(map[string]cty.Value)
 	for _, p := range argsList {
 		argTuple := strings.Split(strings.TrimSpace(p), "=>")
 		if len(argTuple) != 2 {
@@ -153,22 +155,35 @@ func parseNamedArgs(argsList []string) (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		res[k] = val
+
+		// TODO KAI only support string for now
+		if _, ok := val.(string); ok {
+			ctyVal, err := gocty.ToCtyValue(val, cty.String)
+			if err != nil {
+				res[k] = ctyVal
+			}
+		}
 	}
 	return res, nil
 }
 
-func parsePositionalArgs(argsList []string) ([]any, error) {
+func parsePositionalArgs(argsList []string) ([]cty.Value, error) {
 	// convert to pointer array
-	res := make([]any, len(argsList))
+	res := make([]cty.Value, len(argsList))
 	// just treat args as positional args
 	// strip spaces
 	for i, v := range argsList {
-		valStr, err := parseArg(v)
+		val, err := parseArg(v)
 		if err != nil {
 			return nil, err
 		}
-		res[i] = valStr
+		// TODO KAI only support string for now
+		if _, ok := val.(string); ok {
+			ctyVal, err := gocty.ToCtyValue(val, cty.String)
+			if err != nil {
+				res[i] = ctyVal
+			}
+		}
 	}
 
 	return res, nil

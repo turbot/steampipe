@@ -2,6 +2,8 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -94,7 +96,12 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argVa
 
 		// can we resolve a value for this param?
 		if val, ok := args.ArgMap[param.Name]; ok {
-			argVals[i] = val
+			// convert from cty to go
+			goVal, err := utils.CtyToGo(val)
+			if err != nil {
+				return nil, nil, err
+			}
+			argVals[i] = goVal
 			argsWithParamDef[param.Name] = true
 
 		} else if defaultValue != "" {
@@ -138,8 +145,14 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 		// first set default
 		defaultValue := typehelpers.SafeString(param.Default)
 
-		if i < len(args.ArgList) && args.ArgList[i] != nil {
-			argValues[i] = typehelpers.SafeString(args.ArgList[i])
+		if i < len(args.ArgList) && args.ArgList[i] != cty.Zero {
+			// convert from cty to go
+			goVal, err := utils.CtyToGo(args.ArgList[i])
+			if err != nil {
+				return nil, nil, err
+			}
+
+			argValues[i] = goVal
 		} else if defaultValue != "" {
 			// so we have run out of provided params - is there a default?
 			argValues[i] = defaultValue

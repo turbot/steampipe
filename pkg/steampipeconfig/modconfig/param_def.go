@@ -12,7 +12,9 @@ type ParamDef struct {
 	FullName    string      `cty:"full_name" json:"-"`
 	Description *string     `cty:"description" json:"description"`
 	RawDefault  interface{} `json:"-"`
-	Default     *string     `cty:"default" json:"default"`
+	// TODO KAI what if default is array
+	// (make this cty?)
+	Default *string `cty:"default" json:"default"`
 
 	// list of all blocks referenced by the resource
 	References []*ResourceReference `json:"-"`

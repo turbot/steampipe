@@ -128,7 +128,7 @@ func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryP
 		return w.ResolveQueryFromQueryProvider(query, runtimeArgs)
 	}
 
-	// if the control has SQL set, use that
+	// if the query provider has SQL, use that
 	if sql != nil {
 		queryProviderSQL := typehelpers.SafeString(sql)
 		log.Printf("[TRACE] control defines inline SQL")

@@ -3,7 +3,6 @@ package db_common
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 
@@ -37,30 +36,42 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 	// map of prepared statement failures, keyed by query name
 	failureMap := NewPrepareStatementFailures()
 
-	if combineSql {
-		sql := strings.Join(maps.Values(sqlMap), ";\n")
-		if _, err := conn.Exec(ctx, sql); err != nil {
-			failureMap.Error = err
-		}
-	} else {
-		for name, sql := range sqlMap {
-			if _, err := conn.Exec(ctx, sql); err != nil {
-				failureMap.Failures[name] = err
-			}
+	for name, sql := range sqlMap {
+		if _, err := conn.Prepare(ctx, name, sql); err != nil {
+			failureMap.Failures[name] = err
 		}
 	}
+	//
+	//if combineSql {
+	//	sql := strings.Join(maps.Values(sqlMap), ";\n")
+	//	if _, err := conn.Exec(ctx, sql); err != nil {
+	//		failureMap.Error = err
+	//	}
+	//} else {
+	//	for name, sql := range sqlMap {
+	//		if _, err := conn.Exec(ctx, sql); err != nil {
+	//			failureMap.Failures[name] = err
+	//		}
+	//	}
+	//}
 
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err(), failureMap
 }
 
 func GetPreparedStatementsSQL(resourceMaps *modconfig.ResourceMaps) map[string]string {
+	// TODO key by query name and have object with prepared statement name and sql
 	// make map of resource name to create SQL
 	sqlMap := make(map[string]string)
 	for _, queryProvider := range resourceMaps.QueryProviders() {
-		if createSQL := getPreparedStatementCreateSql(queryProvider); createSQL != nil {
-			sqlMap[queryProvider.Name()] = *createSQL
+		if !modconfig.QueryProviderIsParameterised(queryProvider) {
+			continue
 		}
+		rawSql := cleanPreparedStatementCreateSQL(typehelpers.SafeString(queryProvider.GetSQL()))
+		preparedStatementName := queryProvider.GetPreparedStatementName()
+
+		sqlMap[preparedStatementName] = rawSql
+
 	}
 	return sqlMap
 }

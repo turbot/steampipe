@@ -1,5 +1,10 @@
 package modconfig
 
+import (
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
+)
+
 // ResolvedQuery contains the execute SQL, raw SQL and args string used to execute a query
 type ResolvedQuery struct {
 	SQL    string
@@ -10,12 +15,15 @@ type ResolvedQuery struct {
 func (r ResolvedQuery) QueryArgs() *QueryArgs {
 	res := NewQueryArgs()
 
-	// TODO KAI this assumes string args
-	res.ArgList = make([]*string, len(r.Args))
+	res.ArgList = make([]cty.Value, len(r.Args))
 
 	for i, a := range r.Args {
-		if argStr, ok := a.(string); ok {
-			res.ArgList[i] = &argStr
+		// TODO KAI assume string - also support array
+		if _, ok := a.(string); ok {
+			ctyVal, err := gocty.ToCtyValue(a, cty.String)
+			if err != nil {
+				res.ArgList[i] = ctyVal
+			}
 		}
 	}
 	return res

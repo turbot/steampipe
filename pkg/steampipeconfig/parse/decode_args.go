@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -55,12 +54,12 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	return args, runtimeDependencies, diags
 }
 
-func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modconfig.RuntimeDependency, error) {
+func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]cty.Value, []*modconfig.RuntimeDependency, error) {
 	// convert the attribute to a slice
 	values := val.AsValueSlice()
 
 	// build output array
-	res := make([]*string, len(values))
+	res := make([]cty.Value, len(values))
 	var runtimeDependencies []*modconfig.RuntimeDependency
 
 	for idx, v := range values {
@@ -73,23 +72,14 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modco
 
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a postgres compatible
-			val, err := utils.CtyToGo(v)
-			if err != nil {
-				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
-				return nil, nil, err
-			}
-
-			// TODO VERIFY
-			valStr := fmt.Sprintf("%v", val)
-			res[idx] = &valStr
+			res[idx] = v
 		}
 	}
 	return res, runtimeDependencies, nil
 }
 
-func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
-	res := make(map[string]string)
+func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]cty.Value, []*modconfig.RuntimeDependency, error) {
+	res := make(map[string]cty.Value)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	it := val.ElementIterator()
 	for it.Next() {
@@ -109,15 +99,7 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a postgres compatible
-			val, err := utils.CtyToGo(v)
-			if err != nil {
-				err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
-				return nil, nil, err
-			}
-
-			// TODO KAI verify
-			res[key] = fmt.Sprintf("%v", val)
+			res[key] = v
 		}
 	}
 	return res, runtimeDependencies, nil

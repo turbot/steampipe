@@ -3,6 +3,8 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 	"log"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -354,22 +356,26 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 		}
 	}
 	if maxArgIndex != -1 {
-		res.ArgList = make([]any, maxArgIndex+1)
+		res.ArgList = make([]cty.Value, maxArgIndex+1)
 	}
 
 	// build map of default params
 	for _, dep := range r.runtimeDependencies {
 		// format the arg value as a postgres string (this will also work for numbers)
-		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", dep.value))
-		if dep.dependency.ArgName != nil {
-			res.ArgMap[*dep.dependency.ArgName] = formattedVal
-		} else {
-			if dep.dependency.ArgIndex == nil {
-				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
+		// TODO KAI only support string for now
+		// TODO BETTER error handling
+		if _, ok := dep.value.(string); ok {
+			if ctyVal, err := gocty.ToCtyValue(dep.value, cty.String); err == nil {
+				if dep.dependency.ArgName != nil {
+					res.ArgMap[*dep.dependency.ArgName] = ctyVal
+				} else {
+					if dep.dependency.ArgIndex == nil {
+						return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
+					}
+					// now add at correct index
+					res.ArgList[*dep.dependency.ArgIndex] = ctyVal
+				}
 			}
-
-			// now add at correct index
-			res.ArgList[*dep.dependency.ArgIndex] = &formattedVal
 		}
 	}
 	return res, nil
@@ -379,7 +385,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 func (r *LeafRun) executeQuery(ctx context.Context) {
 	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
 
-	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.Sql, r.Args)
+	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.Sql, r.Args...)
 	if err != nil {
 		query := r.DashboardNode.(modconfig.QueryProvider).GetQuery()
 		if query != nil {
