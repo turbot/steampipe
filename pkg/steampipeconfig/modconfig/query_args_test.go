@@ -14,6 +14,7 @@ type resolveParamsTest struct {
 	expected    interface{}
 }
 
+// TODO FIX THESE
 var testCasesResolveParams = map[string]resolveParamsTest{
 
 	"named params no defs (expect error)": {

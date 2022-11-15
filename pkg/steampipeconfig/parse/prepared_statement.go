@@ -2,8 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -11,6 +9,8 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 // ParsePreparedStatementInvocation parses a query invocation and extracts the args (if any)

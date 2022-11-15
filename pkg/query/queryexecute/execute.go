@@ -3,7 +3,6 @@ package queryexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"time"
 
 	"github.com/spf13/viper"
@@ -15,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -66,7 +66,7 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	t := time.Now()
 	// build ordered list of queries
 	// (ordered for testing repeatability)
-	var queryNames []string = utils.SortedMapKeys(initData.Queries)
+	var queryNames = utils.SortedMapKeys(initData.Queries)
 
 	for i, name := range queryNames {
 		q := initData.Queries[name]

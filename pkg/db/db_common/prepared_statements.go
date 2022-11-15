@@ -36,6 +36,7 @@ func CreatePreparedStatements(ctx context.Context, resourceMaps *modconfig.Resou
 	// map of prepared statement failures, keyed by query name
 	failureMap := NewPrepareStatementFailures()
 
+	// TODO KAI TEST TIMING FOR CLOUD
 	for name, sql := range sqlMap {
 		if _, err := conn.Prepare(ctx, name, sql); err != nil {
 			failureMap.Failures[name] = err

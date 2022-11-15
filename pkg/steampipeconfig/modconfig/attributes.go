@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 
@@ -32,9 +31,6 @@ func GetCtyTypes(item interface{}) map[string]cty.Type {
 		structField := t.Field(i)
 		attribute, ok := structField.Tag.Lookup("cty")
 		if ok && attribute != "-" {
-			if attribute == "args" {
-				fmt.Println(attribute)
-			}
 			valField := val.Field(i)
 			// get cty type
 			ctyType, err := gocty.ImpliedType(valField.Interface())

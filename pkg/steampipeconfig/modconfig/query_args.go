@@ -2,11 +2,11 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // QueryArgs is a struct which contains the arguments used to invoke a prepared statement
@@ -40,6 +40,7 @@ func (q *QueryArgs) String() string {
 	return "<empty>"
 }
 
+// TODO NEEDED?
 // ArgsStringList convert ArgLists into list of strings
 func (q *QueryArgs) ArgsStringList() []string {
 	var argsStringList = make([]string, len(q.ArgList))
@@ -49,6 +50,7 @@ func (q *QueryArgs) ArgsStringList() []string {
 	return argsStringList
 }
 
+// TODO RENAME
 // SafeArgsList convert ArgLists into list of strings but return as an interface slice
 func (q *QueryArgs) SafeArgsList() []any {
 	var argsStringList = make([]any, len(q.ArgList))
