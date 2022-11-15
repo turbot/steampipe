@@ -30,6 +30,7 @@ type HclResource interface {
 	GetDescription() string
 	GetDocumentation() string
 	GetTags() map[string]string
+	GetHclResourceBase() *HclResourceBase
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
@@ -80,6 +81,7 @@ type QueryProvider interface {
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
+	GetQueryProviderBase() *QueryProviderBase
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
