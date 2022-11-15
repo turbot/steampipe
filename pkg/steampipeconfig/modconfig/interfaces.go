@@ -30,6 +30,7 @@ type HclResource interface {
 	GetDescription() string
 	GetDocumentation() string
 	GetTags() map[string]string
+	GetHclResourceBase() *HclResourceBase
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
@@ -68,7 +69,6 @@ type QueryProvider interface {
 	GetDescription() string
 	GetPreparedStatementName() string
 	GetResolvedQuery(*QueryArgs) (*ResolvedQuery, error)
-	// implemented by QueryProviderBase
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 	RequiresExecution(QueryProvider) bool
@@ -77,6 +77,7 @@ type QueryProvider interface {
 	AddWith(with *DashboardWith)
 	GetWith(name string) (*DashboardWith, bool)
 	GetWiths() []*DashboardWith
+	GetQueryProviderBase() *QueryProviderBase
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree

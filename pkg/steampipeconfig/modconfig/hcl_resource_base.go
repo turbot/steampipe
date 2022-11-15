@@ -7,16 +7,17 @@ import (
 )
 
 type HclResourceBase struct {
-	FullName        string  `cty:"name" json:"-"`
-	Title           *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	ShortName       string  `cty:"short_name" hcl:"name,label" json:"-"`
-	UnqualifiedName string  `json:"-"`
-	Description     *string `cty:"description" hcl:"description" column:"description,text" json:"-"`
-	Documentation   *string `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	HclResourceRemain hcl.Body `hcl:",remain" json:"-"`
 
-	DeclRange hcl.Range         `json:"-"`
-	Tags      map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
-	blockType string
+	FullName        string            `cty:"name" json:"-"`
+	Title           *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	ShortName       string            `cty:"short_name" hcl:"name,label" json:"-"`
+	UnqualifiedName string            `json:"-"`
+	Description     *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
+	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	DeclRange       hcl.Range         `json:"-"`
+	Tags            map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
+	blockType       string
 }
 
 // Name implements HclResource
@@ -68,4 +69,9 @@ func (i *HclResourceBase) GetDocumentation() string {
 // GetTags implements HclResource
 func (i *HclResourceBase) GetTags() map[string]string {
 	return map[string]string{}
+}
+
+// GetHclResourceBase implements HclResource
+func (i *HclResourceBase) GetHclResourceBase() *HclResourceBase {
+	return i
 }

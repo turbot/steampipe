@@ -120,6 +120,7 @@ func decodeLocalsBlock(block *hcl.Block, parseCtx *ModParseContext) ([]modconfig
 
 	return resources, res
 }
+
 func decodeBlock(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
 	var resource modconfig.HclResource
 	var res = newDecodeResult()
@@ -186,7 +187,7 @@ func decodeResource(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclR
 		return nil, res
 	}
 
-	diags = gohcl.DecodeBody(block.Body, parseCtx.EvalCtx, resource)
+	diags = decodeHclBody(block.Body, parseCtx.EvalCtx, resource)
 	if len(diags) > 0 {
 		res.handleDecodeDiags(diags)
 	}
@@ -338,8 +339,7 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), QueryProviderBlockSchema, resource))
 
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(remain, parseCtx.EvalCtx, resource)
-	// handle any resulting diags, which may specify dependencies
+	diags = decodeHclBody(remain, parseCtx.EvalCtx, resource)
 	res.handleDecodeDiags(diags)
 
 	// decode 'with',args and params blocks
