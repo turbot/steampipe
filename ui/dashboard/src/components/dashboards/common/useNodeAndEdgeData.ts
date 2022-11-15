@@ -101,7 +101,7 @@ const useNodeAndEdgeData = (
     const dataFormat = getNodeAndEdgeDataFormat(properties);
     if (dataFormat === "LEGACY") {
       if (status === "complete") {
-        return data ? { data, dataFormat, properties } : null;
+        return data ? { categories: {}, data, dataFormat, properties } : null;
       }
       return null;
     }
@@ -224,7 +224,6 @@ const useNodeAndEdgeData = (
       if (edgeProperties.category) {
         edgeCategory = populateCategoryWithDefaults(edgeProperties.category);
         edgeCategoryId = `edge.${edgePanelName}.${edgeCategory.name}`;
-        console.log(edgeCategoryId, edgeCategory);
         categories[edgeCategoryId] = edgeCategory;
       }
 
@@ -294,13 +293,6 @@ const useNodeAndEdgeData = (
       }
     }
 
-    console.log({
-      categories,
-      data: { columns, rows },
-      dataFormat,
-      properties,
-      status: nodeAndEdgeStatus,
-    });
     return {
       categories,
       data: { columns, rows },

@@ -33,7 +33,11 @@ import {
 import { DashboardRunState } from "../../../../types";
 import { getGraphComponent } from "..";
 import { GraphProvider, useGraph } from "../common/useGraph";
-import { KeyValueStringPairs, Node as NodeType } from "../../common/types";
+import {
+  CategoryMap,
+  KeyValueStringPairs,
+  Node as NodeType,
+} from "../../common/types";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -50,6 +54,7 @@ const nodeWidth = 100;
 const nodeHeight = 100;
 
 const buildGraphNodesAndEdges = (
+  categories: CategoryMap,
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
   themeColors: any,
@@ -62,7 +67,13 @@ const buildGraphNodesAndEdges = (
       edges: [],
     };
   }
-  let nodesAndEdges = buildNodesAndEdges(data, properties, themeColors, false);
+  let nodesAndEdges = buildNodesAndEdges(
+    categories,
+    data,
+    properties,
+    themeColors,
+    false
+  );
 
   nodesAndEdges = foldNodesAndEdges(nodesAndEdges, expandedNodes);
   const direction = properties?.direction || "TB";
@@ -205,6 +216,7 @@ const buildGraphNodesAndEdges = (
 
 const useGraphOptions = (props: GraphProps) => {
   const { nodesAndEdges } = useGraphNodesAndEdges(
+    props.categories,
     props.data,
     props.properties,
     props.status
@@ -238,6 +250,7 @@ const useGraphOptions = (props: GraphProps) => {
 };
 
 const useGraphNodesAndEdges = (
+  categories: CategoryMap,
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
   status: DashboardRunState
@@ -247,6 +260,7 @@ const useGraphNodesAndEdges = (
   const nodesAndEdges = useMemo(
     () =>
       buildGraphNodesAndEdges(
+        categories,
         data,
         properties,
         themeColors,
@@ -455,10 +469,10 @@ const GraphWrapper = (props: GraphProps) => {
   );
 
   if (
-    !nodeAndEdgeData ||
-    !nodeAndEdgeData.data ||
-    !nodeAndEdgeData.data.rows ||
-    nodeAndEdgeData.data.rows.length === 0
+    !nodeAndEdgeData
+    // !nodeAndEdgeData.data ||
+    // !nodeAndEdgeData.data.rows ||
+    // nodeAndEdgeData.data.rows.length === 0
   ) {
     return null;
   }
@@ -467,6 +481,7 @@ const GraphWrapper = (props: GraphProps) => {
     <GraphProvider>
       <Graph
         {...props}
+        categories={nodeAndEdgeData.categories}
         data={nodeAndEdgeData.data}
         dataFormat={nodeAndEdgeData.dataFormat}
         properties={nodeAndEdgeData.properties}

@@ -583,6 +583,7 @@ const foldNodesAndEdges = (
 };
 
 const buildNodesAndEdges = (
+  categories: CategoryMap = {},
   rawData: NodeAndEdgeData | undefined,
   properties: FlowProperties | GraphProperties | HierarchyProperties = {},
   namedThemeColors = {},
@@ -633,7 +634,6 @@ const buildNodesAndEdges = (
   const edge_lookup: EdgeMap = {};
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  const categories: CategoryMap = {};
 
   let contains_duplicate_edges = false;
   let colorIndex = 0;
