@@ -14,6 +14,7 @@ import (
 
 type QueryProviderBase struct {
 	runtimeDependencies map[string]*RuntimeDependency
+	With                []*DashboardWith
 }
 
 // VerifyQuery returns an error if neither sql or query are set
@@ -125,4 +126,8 @@ func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent 
 
 func (*QueryProviderBase) GetDescription() string {
 	return ""
+}
+
+func (b *QueryProviderBase) AddWith(with *DashboardWith) {
+	b.With = append(b.With, with)
 }

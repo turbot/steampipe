@@ -286,6 +286,10 @@ var QueryProviderBlockSchema = &hcl.BodySchema{
 			Type:       "param",
 			LabelNames: []string{"name"},
 		},
+		{
+			Type:       "with",
+			LabelNames: []string{"name"},
+		},
 	},
 }
 

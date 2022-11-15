@@ -27,6 +27,7 @@ const (
 	BlockTypeEdge           = "edge"
 	BlockTypeLegacyRequires = "requires"
 	BlockTypeCategory       = "category"
+	BlockTypeWith           = "with"
 
 	// config blocks
 	BlockTypeConnection       = "connection"
@@ -50,9 +51,10 @@ var QueryProviderBlocks = []string{
 	BlockTypeQuery,
 	BlockTypeNode,
 	BlockTypeTable,
+	BlockTypeWith,
 }
 
-// EdgeAndNodeProvider is a list of block types which implement EdgeAndNodeProvider
+// EdgeAndNodeProviderBlocks is a list of block types which implement EdgeAndNodeProvider
 var EdgeAndNodeProviderBlocks = []string{
 	BlockTypeHierarchy,
 	BlockTypeFlow,
@@ -78,6 +80,7 @@ var ReferenceBlocks = []string{
 	BlockTypeText,
 	BlockTypeParam,
 	BlockTypeCategory,
+	BlockTypeWith, // TODO KAI check
 }
 
 var ValidResourceItemTypes = []string{
@@ -107,6 +110,7 @@ var ValidResourceItemTypes = []string{
 	BlockTypeConnection,
 	BlockTypeOptions,
 	BlockTypeWorkspaceProfile,
+	BlockTypeWith,
 	// local is not an actual block name but is a resource type
 	"local",
 	// references

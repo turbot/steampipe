@@ -219,7 +219,9 @@ func resourceForBlock(block *hcl.Block, parseCtx *ModParseContext) (modconfig.Hc
 		modconfig.BlockTypeText:      modconfig.NewDashboardText,
 		modconfig.BlockTypeNode:      modconfig.NewDashboardNode,
 		modconfig.BlockTypeEdge:      modconfig.NewDashboardEdge,
-		modconfig.BlockTypeCategory:  modconfig.NewDashboardCategory}
+		modconfig.BlockTypeCategory:  modconfig.NewDashboardCategory,
+		modconfig.BlockTypeWith:      modconfig.NewDashboardWith,
+	}
 
 	factoryFunc, ok := factoryFuncs[block.Type]
 	if !ok {
@@ -339,13 +341,13 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
-	// decode sql args and params
-	res.Merge(decodeQueryProviderParams(block, content, resource, parseCtx))
+	// decode 'with',args and params blocks
+	res.Merge(decodeQueryProviderBlocks(block, content, resource, parseCtx))
 
 	return resource, res
 }
 
-func decodeQueryProviderParams(block *hcl.Block, content *hcl.BodyContent, resource modconfig.HclResource, parseCtx *ModParseContext) *decodeResult {
+func decodeQueryProviderBlocks(block *hcl.Block, content *hcl.BodyContent, resource modconfig.HclResource, parseCtx *ModParseContext) *decodeResult {
 	var diags hcl.Diagnostics
 	res := newDecodeResult()
 	queryProvider, ok := resource.(modconfig.QueryProvider)
@@ -357,6 +359,7 @@ func decodeQueryProviderParams(block *hcl.Block, content *hcl.BodyContent, resou
 	sqlAttr, sqlPropertySet := content.Attributes["sql"]
 	_, queryPropertySet := content.Attributes["query"]
 
+	// TODO KAI move to validation function
 	if sqlPropertySet && queryPropertySet {
 		// either Query or SQL property may be set -  if Query property already set, error
 		diags = append(diags, &hcl.Diagnostic{
@@ -381,22 +384,24 @@ func decodeQueryProviderParams(block *hcl.Block, content *hcl.BodyContent, resou
 
 	var params []*modconfig.ParamDef
 	for _, block := range content.Blocks {
-		// we only care about param blocks here
-		if block.Type != modconfig.BlockTypeParam {
-			continue
+		switch block.Type {
+		case modconfig.BlockTypeParam:
+			// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
+			if queryPropertySet {
+				diags = append(diags, invalidParamDiags(resource, block))
+			}
+			paramDef, moreDiags := decodeParam(block, parseCtx, resource.Name())
+			if !moreDiags.HasErrors() {
+				params = append(params, paramDef)
+				// add and references contained in the param block to the control refs
+				moreDiags = AddReferences(resource, block, parseCtx)
+			}
+			diags = append(diags, moreDiags...)
+		case modconfig.BlockTypeWith:
+			with, withRes := decodeQueryProvider(block, parseCtx)
+			res.Merge(withRes)
+			queryProvider.AddWith(with.(*modconfig.DashboardWith))
 		}
-
-		// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
-		if queryPropertySet {
-			diags = append(diags, invalidParamDiags(resource, block))
-		}
-		paramDef, moreDiags := decodeParam(block, parseCtx, resource.Name())
-		if !moreDiags.HasErrors() {
-			params = append(params, paramDef)
-			// add and references contained in the param block to the control refs
-			moreDiags = AddReferences(resource, block, parseCtx)
-		}
-		diags = append(diags, moreDiags...)
 	}
 
 	queryProvider.SetParams(params)
@@ -421,14 +426,12 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 	}
 
 	// do a partial decode using an EdgeAndNodeProviderSchema - we use this to extract content to
-	// decode using decodeQueryProviderParams
+	// decode using decodeQueryProviderBlocks
 	content, remain, diags := block.Body.PartialContent(EdgeAndNodeProviderSchema)
 	res.handleDecodeDiags(diags)
 	if !res.Success() {
 		return nil, res
 	}
-	// decode sql args and params
-	res.Merge(decodeQueryProviderParams(block, content, resource, parseCtx))
 
 	// handle invalid block types
 	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), EdgeAndNodeProviderBlockSchema, resource))
@@ -437,6 +440,9 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 	diags = gohcl.DecodeBody(remain, parseCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
+
+	// decode sql args and params
+	res.Merge(decodeQueryProviderBlocks(block, content, resource, parseCtx))
 
 	// now decode child category blocks
 
@@ -448,6 +454,7 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 	return resource, res
 }
 
+// TODO KAI combine with decodeQueryProviderBlocks
 func decodeEdgeAndNodeProviderCategoryBlocks(content *hcl.BodyContent, edgeAndNodeProvider modconfig.EdgeAndNodeProvider, parseCtx *ModParseContext) *decodeResult {
 	var res = newDecodeResult()
 
