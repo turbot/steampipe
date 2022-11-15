@@ -166,11 +166,7 @@ const buildGraphNodesAndEdges = (
         type: MarkerType.Arrow,
       },
       data: {
-        color: categoryColor
-          ? categoryColor
-          : targetNodeColor
-          ? targetNodeColor
-          : null,
+        color,
         customColor: !!categoryColor || !!targetNodeColor,
         fields: matchingCategory ? matchingCategory.fields : null,
         labelOpacity,
