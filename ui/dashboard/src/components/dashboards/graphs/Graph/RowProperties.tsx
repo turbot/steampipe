@@ -32,13 +32,16 @@ interface RowPropertyItemProps {
 
 const RowPropertiesTitle = ({ category, title }: RowPropertiesTitleProps) => {
   return (
-    <div className="flex flex-col space-y-2">
+    <div className="flex flex-col space-y-1">
       {category && (
-        <span className="block text-foreground-lighter text-xs">
+        <span
+          className="block text-foreground-lighter text-xs"
+          style={{ color: category.color }}
+        >
           {category.title || category.name}
         </span>
       )}
-      <span className="block">{title}</span>
+      <strong className="block">{title}</strong>
     </div>
   );
 };
@@ -153,6 +156,7 @@ const RowPropertyItem = ({
           "block text-sm text-foreground-lighter truncate",
           wrap ? "whitespace-normal" : "truncate"
         )}
+        title={name}
       >
         {name}
       </span>

@@ -212,7 +212,7 @@ const Tooltip = ({
 };
 
 const Title = ({ title }) => {
-  return <strong className="block break-all">{title}</strong>;
+  return <div className="block break-all">{title}</div>;
 };
 
 export default Tooltip;
