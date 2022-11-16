@@ -12,6 +12,11 @@ import {
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
+interface RowPropertiesTitleProps {
+  category: Category | undefined;
+  title: string;
+}
+
 interface RowPropertiesProps {
   category: Category | undefined;
   fields: CategoryFields | null;
@@ -24,6 +29,19 @@ interface RowPropertyItemProps {
   value: any;
   wrap: boolean;
 }
+
+const RowPropertiesTitle = ({ category, title }: RowPropertiesTitleProps) => {
+  return (
+    <div className="flex flex-col space-y-2">
+      {category && (
+        <span className="block text-foreground-lighter text-xs">
+          {category.title || category.name}
+        </span>
+      )}
+      <span className="block">{title}</span>
+    </div>
+  );
+};
 
 const RowPropertyItemValue = ({
   name,
@@ -221,3 +239,5 @@ const RowProperties = ({
 };
 
 export default RowProperties;
+
+export { RowPropertiesTitle };

@@ -2,7 +2,7 @@ import DashboardIcon, {
   useDashboardIconType,
 } from "../../common/DashboardIcon";
 import IntegerDisplay from "../../../IntegerDisplay";
-import RowProperties from "./RowProperties";
+import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
 import {
   Category,
@@ -88,10 +88,6 @@ const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
       </span>
     )}
   </div>
-);
-
-const AssetNodePropertiesTitle = ({ title }: AssetNodePropertiesTitleProps) => (
-  <>{title}</>
 );
 
 const AssetNode = ({
@@ -195,7 +191,7 @@ const AssetNode = ({
             )}
           </>
         }
-        title={<AssetNodePropertiesTitle title={label} />}
+        title={<RowPropertiesTitle category={category} title={label} />}
       >
         {node}
         {/*<div className="cursor-pointer text-black-scale-5">*/}
