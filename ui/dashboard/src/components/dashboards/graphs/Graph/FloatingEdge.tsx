@@ -83,7 +83,6 @@ const FloatingEdge = ({
         <Tooltip
           overlay={
             <RowProperties
-              category={category}
               fields={fields || null}
               properties={row_data.properties}
             />

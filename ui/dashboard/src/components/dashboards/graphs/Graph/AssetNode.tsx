@@ -35,10 +35,6 @@ type AssetNodeProps = {
   };
 };
 
-type AssetNodePropertiesTitleProps = {
-  title: string;
-};
-
 type FoldedNodeCountBadgeProps = {
   foldedNodes: FoldedNode[] | undefined;
 };
@@ -184,7 +180,6 @@ const AssetNode = ({
           <>
             {row_data && row_data.properties && (
               <RowProperties
-                category={category}
                 fields={fields || null}
                 properties={row_data.properties}
               />

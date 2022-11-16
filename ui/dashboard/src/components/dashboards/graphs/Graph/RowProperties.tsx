@@ -1,9 +1,11 @@
 import isEmpty from "lodash/isEmpty";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import { Category, CategoryFields, KeyValuePairs } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive } from "../../../../types";
 import { ErrorIcon } from "../../../../constants/icons";
+import { getColorOverride } from "../../common";
 import { isRelativeUrl } from "../../../../utils/url";
 import {
   renderInterpolatedTemplates,
@@ -18,7 +20,6 @@ interface RowPropertiesTitleProps {
 }
 
 interface RowPropertiesProps {
-  category: Category | undefined;
   fields: CategoryFields | null;
   properties: KeyValuePairs | null;
 }
@@ -31,12 +32,13 @@ interface RowPropertyItemProps {
 }
 
 const RowPropertiesTitle = ({ category, title }: RowPropertiesTitleProps) => {
+  const themeColors = useChartThemeColors();
   return (
     <div className="flex flex-col space-y-1">
       {category && (
         <span
           className="block text-foreground-lighter text-xs"
-          style={{ color: category.color }}
+          style={{ color: getColorOverride(category.color, themeColors) }}
         >
           {category.title || category.name}
         </span>
@@ -175,11 +177,7 @@ const RowPropertyItem = ({
   );
 };
 
-const RowProperties = ({
-  category,
-  properties = {},
-  fields,
-}: RowPropertiesProps) => {
+const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
   const [rowTemplateData, setRowTemplateData] =
     useState<RowRenderResult | null>(null);
 
@@ -216,13 +214,6 @@ const RowProperties = ({
 
   return (
     <div className="space-y-2">
-      {category && (
-        <RowPropertyItem
-          name="Category"
-          value={category.title || category.name}
-          wrap={true}
-        />
-      )}
       {Object.entries(properties || {}).map(([key, value]) => {
         const fieldDefinition = fields?.[key];
         if (fieldDefinition && fieldDefinition.display === "none") {

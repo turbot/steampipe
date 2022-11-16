@@ -106,6 +106,13 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
       : null;
+    let categoryColor = getColorOverride(
+      matchingCategory ? matchingCategory.color : null,
+      themeColors
+    );
+    if (categoryColor === "auto") {
+      categoryColor = null;
+    }
     nodes.push({
       type: "asset",
       id: node.id,
@@ -115,7 +122,7 @@ const buildGraphNodesAndEdges = (
           node.category && categories[node.category]
             ? categories[node.category]
             : null,
-        color: matchingCategory ? matchingCategory.color : null,
+        color: categoryColor,
         fields: matchingCategory ? matchingCategory.fields : null,
         href: matchingCategory ? matchingCategory.href : null,
         icon: matchingCategory ? matchingCategory.icon : null,
@@ -159,9 +166,9 @@ const buildGraphNodesAndEdges = (
       }
     }
     const color = categoryColor
-      ? categoryColor
+      ? getColorOverride(categoryColor, themeColors)
       : targetNodeColor
-      ? targetNodeColor
+      ? getColorOverride(targetNodeColor, themeColors)
       : themeColors.blackScale4;
     const labelOpacity = categoryColor ? 1 : targetNodeColor ? 0.5 : 1;
     const lineOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
