@@ -6,10 +6,9 @@ import (
 	"path"
 	"strings"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 type Manager struct {

@@ -39,7 +39,7 @@ var exporterTestCases = []exporterTestCase{
 		expect: "ERROR",
 	},
 	{
-		name:   "CSV",
+		name:   "csv",
 		input:  "file.csv",
 		expect: &dummyCSVExporter,
 	},
@@ -49,17 +49,17 @@ var exporterTestCases = []exporterTestCase{
 		expect: &dummySPSExporter,
 	},
 	{
-		name:   "JSON",
+		name:   "json",
 		input:  "file.json",
 		expect: &dummyJSONExporter,
 	},
 	{
-		name:   "ASFF JSON",
+		name:   "asff json",
 		input:  "file.asff.json",
 		expect: &dummyASFFExporter,
 	},
 	{
-		name:   "NUNIT3",
+		name:   "nunit3",
 		input:  "file.nunit3.xml",
 		expect: &dummyNUNITExporter,
 	},
