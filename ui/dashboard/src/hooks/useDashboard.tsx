@@ -624,12 +624,12 @@ const DashboardProvider = ({
 
   // Keep track of the previous selected dashboard and inputs
   const previousSelectedDashboardStates: SelectedDashboardStates | undefined =
-    usePrevious({
-      searchParams,
+    usePrevious<SelectedDashboardStates>({
       dashboard_name,
       dataMode: state.dataMode,
       refetchDashboard: state.refetchDashboard,
       search: state.search,
+      searchParams,
       selectedDashboard: state.selectedDashboard,
       selectedDashboardInputs: state.selectedDashboardInputs,
     });
@@ -671,10 +671,8 @@ const DashboardProvider = ({
     // If we've just popped or pushed from one dashboard to another, then we don't want to add the search to the URL
     // as that will show the dashboard list, but we want to see the dashboard that we came from / went to previously.
     const goneFromDashboardToDashboard =
-      // @ts-ignore
       previousSelectedDashboardStates?.dashboard_name &&
       dashboard_name &&
-      // @ts-ignore
       previousSelectedDashboardStates.dashboard_name !== dashboard_name;
 
     const search = searchParams.get("search") || "";
@@ -696,7 +694,6 @@ const DashboardProvider = ({
     });
     if (
       JSON.stringify(
-        // @ts-ignore
         previousSelectedDashboardStates?.selectedDashboardInputs
       ) !== JSON.stringify(inputs)
     ) {
@@ -724,19 +721,13 @@ const DashboardProvider = ({
       state.dataMode === DashboardDataModeCloudSnapshot ||
       state.dataMode === DashboardDataModeCLISnapshot ||
       (previousSelectedDashboardStates &&
-        // @ts-ignore
         previousSelectedDashboardStates?.dashboard_name === dashboard_name &&
-        // @ts-ignore
         previousSelectedDashboardStates.dataMode === state.dataMode &&
-        // @ts-ignore
         previousSelectedDashboardStates.search.value === state.search.value &&
-        // @ts-ignore
         previousSelectedDashboardStates.search.groupBy.value ===
           state.search.groupBy.value &&
-        // @ts-ignore
         previousSelectedDashboardStates.search.groupBy.tag ===
           state.search.groupBy.tag &&
-        // @ts-ignore
         previousSelectedDashboardStates.searchParams.toString() ===
           searchParams.toString())
     ) {
@@ -882,12 +873,9 @@ const DashboardProvider = ({
       (state.dataMode === DashboardDataModeLive ||
         state.dataMode === DashboardDataModeCLISnapshot) &&
       (!previousSelectedDashboardStates ||
-        // @ts-ignore
         !previousSelectedDashboardStates.selectedDashboard ||
         state.selectedDashboard.full_name !==
-          // @ts-ignore
           previousSelectedDashboardStates.selectedDashboard.full_name ||
-        // @ts-ignore
         (!previousSelectedDashboardStates.refetchDashboard &&
           state.refetchDashboard))
     ) {
@@ -913,10 +901,8 @@ const DashboardProvider = ({
     if (
       state.dataMode === DashboardDataModeLive &&
       previousSelectedDashboardStates &&
-      // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard &&
       !isEqual(
-        // @ts-ignore
         previousSelectedDashboardStates.selectedDashboardInputs,
         state.selectedDashboardInputs
       )
@@ -952,7 +938,6 @@ const DashboardProvider = ({
     // If we've gone from having a report selected, to having nothing selected, clear the dashboard state
     if (
       previousSelectedDashboardStates &&
-      // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard
     ) {
       sendSocketMessage({
@@ -979,7 +964,6 @@ const DashboardProvider = ({
     if (
       isEqual(
         state.selectedDashboardInputs,
-        // @ts-ignore
         previousSelectedDashboardStates.selectedDashboardInputs
       )
     ) {
@@ -989,10 +973,8 @@ const DashboardProvider = ({
     // Only record history when it's the same report before and after and the inputs have changed
     const shouldRecordHistory =
       state.recordInputsHistory &&
-      // @ts-ignore
       !!previousSelectedDashboardStates.selectedDashboard &&
       !!state.selectedDashboard &&
-      // @ts-ignore
       previousSelectedDashboardStates.selectedDashboard.full_name ===
         state.selectedDashboard.full_name;
 
