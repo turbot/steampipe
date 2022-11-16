@@ -1,9 +1,6 @@
 import jq from "jq-web";
 import { KeyValuePairs } from "../components/dashboards/common/types";
 
-const interpolatedStringSplitter = /({{.*?}})/gs;
-const interpolatedMatcher = /{{(.*?)}}/gs;
-
 interface TemplatesMap {
   [key: string]: string;
 }
@@ -27,14 +24,12 @@ export const buildJQFilter = (template) => {
     return template;
   }
 
-  const templateParts = template
-    .split(interpolatedStringSplitter)
-    .filter((p) => p);
+  const templateParts = template.split(/({{.*?}})/gs).filter((p) => p);
   const newTemplateParts: string[] = [];
   // Iterate over each template part - we want to distinguish between regular strings and
   // interpolated strings - we'll treat them differently.
   for (const templatePart of templateParts) {
-    const interpolatedMatch = interpolatedMatcher.exec(templatePart);
+    const interpolatedMatch = /{{(.*?)}}/gs.exec(templatePart);
     // If it's a plain string, quote it
     if (!interpolatedMatch) {
       newTemplateParts.push(JSON.stringify(templatePart));

@@ -1,6 +1,7 @@
 ## v0.17.2 [tbd]
 _Bug fixes_
-# Ensure workspace and panel errors are shown in dashboard panels ([#2742](https://github.com/turbot/steampipe/issues/2742))
+* Fix dashboard interpolated string expressions with adjacent expressions not separated by spaces not rendering the second expression ([#2752](https://github.com/turbot/steampipe/issues/2752))
+* Ensure workspace and panel errors are shown in dashboard panels ([#2742](https://github.com/turbot/steampipe/issues/2742))
 
 ## v0.17.1 [2022-11-10]
 _Bug fixes_
