@@ -14,6 +14,7 @@ const FloatingEdge = ({
   markerEnd,
   style,
   data: {
+    category,
     color,
     customColor,
     fields,
@@ -82,6 +83,7 @@ const FloatingEdge = ({
         <Tooltip
           overlay={
             <RowProperties
+              category={category}
               fields={fields || null}
               properties={row_data.properties}
             />

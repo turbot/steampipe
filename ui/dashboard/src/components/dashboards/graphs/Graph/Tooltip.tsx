@@ -1,6 +1,7 @@
 import {
   cloneElement,
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useRef,
@@ -17,7 +18,7 @@ interface TooltipProps {
   overlay: JSX.Element;
   show?: boolean;
   showDelay?: number;
-  title: string;
+  title: ReactNode;
 }
 
 // Start: adapted from https://github.com/streamich/react-use

@@ -180,6 +180,10 @@ const buildGraphNodesAndEdges = (
         type: MarkerType.Arrow,
       },
       data: {
+        category:
+          edge.category && categories[edge.category]
+            ? categories[edge.category]
+            : null,
         color,
         customColor: !!categoryColor || !!targetNodeColor,
         fields: matchingCategory ? matchingCategory.fields : null,

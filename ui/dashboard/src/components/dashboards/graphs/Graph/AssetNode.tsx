@@ -19,7 +19,7 @@ import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useGraph } from "../common/useGraph";
 
-interface AssetNodeProps {
+type AssetNodeProps = {
   data: {
     category?: Category;
     color?: string;
@@ -33,16 +33,20 @@ interface AssetNodeProps {
     row_data?: KeyValuePairs;
     themeColors;
   };
-}
+};
 
-interface FoldedNodeCountBadgeProps {
+type AssetNodePropertiesTitleProps = {
+  title: string;
+};
+
+type FoldedNodeCountBadgeProps = {
   foldedNodes: FoldedNode[] | undefined;
-}
+};
 
-interface FoldedNodeLabelProps {
+type FoldedNodeLabelProps = {
   category: Category | undefined;
   fold: CategoryFold | undefined;
-}
+};
 
 const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
   if (!foldedNodes) {
@@ -84,6 +88,10 @@ const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
       </span>
     )}
   </div>
+);
+
+const AssetNodePropertiesTitle = ({ title }: AssetNodePropertiesTitleProps) => (
+  <>{title}</>
 );
 
 const AssetNode = ({
@@ -180,13 +188,14 @@ const AssetNode = ({
           <>
             {row_data && row_data.properties && (
               <RowProperties
+                category={category}
                 fields={fields || null}
                 properties={row_data.properties}
               />
             )}
           </>
         }
-        title={label}
+        title={<AssetNodePropertiesTitle title={label} />}
       >
         {node}
         {/*<div className="cursor-pointer text-black-scale-5">*/}

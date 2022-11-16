@@ -1,6 +1,6 @@
 import isEmpty from "lodash/isEmpty";
 import useDeepCompareEffect from "use-deep-compare-effect";
-import { CategoryFields, KeyValuePairs } from "../../common/types";
+import { Category, CategoryFields, KeyValuePairs } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive } from "../../../../types";
 import { ErrorIcon } from "../../../../constants/icons";
@@ -13,13 +13,14 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
 interface RowPropertiesProps {
+  category: Category | undefined;
   fields: CategoryFields | null;
   properties: KeyValuePairs | null;
 }
 
 interface RowPropertyItemProps {
   name: string;
-  rowTemplateData: RowRenderResult | null;
+  rowTemplateData?: RowRenderResult | null;
   value: any;
   wrap: boolean;
 }
@@ -81,7 +82,7 @@ const RowPropertyItemValue = ({
       </span>
     );
   } else {
-    let renderValue: string = "";
+    let renderValue: string;
     switch (typeof value) {
       case "object":
         renderValue = JSON.stringify(value, null, 2);
@@ -152,7 +153,11 @@ const RowPropertyItem = ({
   );
 };
 
-const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
+const RowProperties = ({
+  category,
+  properties = {},
+  fields,
+}: RowPropertiesProps) => {
   const [rowTemplateData, setRowTemplateData] =
     useState<RowRenderResult | null>(null);
 
@@ -189,6 +194,13 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
 
   return (
     <div className="space-y-2">
+      {category && (
+        <RowPropertyItem
+          name="Category"
+          value={category.title || category.name}
+          wrap={true}
+        />
+      )}
       {Object.entries(properties || {}).map(([key, value]) => {
         const fieldDefinition = fields?.[key];
         if (fieldDefinition && fieldDefinition.display === "none") {
