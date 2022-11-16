@@ -25,16 +25,16 @@ import (
 	"golang.org/x/text/message"
 )
 
-type ShowOutputConfiguration struct {
+type DisplayConfiguration struct {
 	timing *bool
 }
 
-type ShowOutputOption = func(config *ShowOutputConfiguration)
+type DisplayOption = func(config *DisplayConfiguration)
 
 // ShowTimingIfEnabled enables timing only of it has been enabled from
 // terminal options or the command line
-func ShowTimingIfEnabled() ShowOutputOption {
-	return func(o *ShowOutputConfiguration) {
+func ShowTimingIfEnabled() DisplayOption {
+	return func(o *DisplayConfiguration) {
 		if o.timing == nil {
 			t := viper.GetBool(constants.ArgTiming)
 			o.timing = &t
@@ -43,8 +43,8 @@ func ShowTimingIfEnabled() ShowOutputOption {
 }
 
 // ShowTimingOnOutput only enables timing if the current output mode is the one provided
-func ShowTimingOnOutput(output string) ShowOutputOption {
-	return func(o *ShowOutputConfiguration) {
+func ShowTimingOnOutput(output string) DisplayOption {
+	return func(o *DisplayConfiguration) {
 		if o.timing == nil {
 			EnableTiming()(o)
 		}
@@ -54,24 +54,24 @@ func ShowTimingOnOutput(output string) ShowOutputOption {
 }
 
 // DisableTiming disables display of timing data
-func DisableTiming() ShowOutputOption {
-	return func(o *ShowOutputConfiguration) {
+func DisableTiming() DisplayOption {
+	return func(o *DisplayConfiguration) {
 		t := false
 		o.timing = &t
 	}
 }
 
 // EnableTiming enables display of timing data
-func EnableTiming() ShowOutputOption {
-	return func(o *ShowOutputConfiguration) {
+func EnableTiming() DisplayOption {
+	return func(o *DisplayConfiguration) {
 		t := true
 		o.timing = &t
 	}
 }
 
 // ShowOutput displays the output using the proper formatter as applicable
-func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...ShowOutputOption) {
-	options := &ShowOutputConfiguration{}
+func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) {
+	options := &DisplayConfiguration{}
 	for _, o := range opts {
 		o(options)
 	}
