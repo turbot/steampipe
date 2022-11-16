@@ -628,6 +628,8 @@ jobs:
     name: Update PR
     needs: [create_pr_in_homebrew]
     runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
     steps:
       - name: Parse semver string
         id: semver_parser
@@ -641,7 +643,7 @@ jobs:
         with:
           repository: turbot/homebrew-tap
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          ref: $VERSION
+          ref: ${{ github.event.inputs.version }}
 
       - name: Update live version
         if: steps.semver_parser.outputs.prerelease == ''
