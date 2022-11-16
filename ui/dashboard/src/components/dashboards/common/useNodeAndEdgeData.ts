@@ -1,5 +1,4 @@
 import has from "lodash/has";
-import set from "lodash/set";
 import {
   Category,
   CategoryMap,
@@ -139,18 +138,16 @@ const useNodeAndEdgeData = (
         continue;
       }
 
+      // Capture the status of this node resource
+      nodeAndEdgeStatus.nodes.push({
+        id: nodePanelName,
+        state: panelStateToCategoryState(panel.status || "ready"),
+      });
+
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
       columns = addColumnsForResource(columns, typedPanelData);
       const nodeProperties = (panel.properties || {}) as NodeProperties;
       const nodeDataRows = typedPanelData.rows || [];
-
-      // Capture the status of this node resource
-      nodeAndEdgeStatus.nodes.push({
-        id: nodePanelName,
-        title: nodePanelName.split(".").pop(),
-        state: panelStateToCategoryState(panel.status || "ready"),
-        count: nodeDataRows.length,
-      });
 
       let nodeCategory: Category | null = null;
       let nodeCategoryId: string = "";
@@ -214,6 +211,12 @@ const useNodeAndEdgeData = (
         missingEdges[edgePanelName] = true;
         continue;
       }
+
+      // Capture the status of this edge resource
+      nodeAndEdgeStatus.edges.push({
+        id: edgePanelName,
+        state: panelStateToCategoryState(panel.status || "ready"),
+      });
 
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
       columns = addColumnsForResource(columns, typedPanelData);

@@ -24,6 +24,11 @@ import {
   LeafNodeData,
 } from "../../common";
 import {
+  CategoryMap,
+  KeyValueStringPairs,
+  Node as NodeType,
+} from "../../common/types";
+import {
   CategoryStatus,
   GraphProperties,
   GraphProps,
@@ -33,11 +38,6 @@ import {
 import { DashboardRunState } from "../../../../types";
 import { getGraphComponent } from "..";
 import { GraphProvider, useGraph } from "../common/useGraph";
-import {
-  CategoryMap,
-  KeyValueStringPairs,
-  Node as NodeType,
-} from "../../common/types";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
