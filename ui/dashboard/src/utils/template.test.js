@@ -29,6 +29,26 @@ describe("buildJQFilter", () => {
     );
   });
 
+  test("two interpolated expressions with no spacing", () => {
+    expect(
+      buildJQFilter(
+        "simple string with two {{ .embedded }}{{ .adjacent }} expressions"
+      )
+    ).toEqual(
+      '(["simple string with two ", ( .embedded ), ( .adjacent ), " expressions"] | join(""))'
+    );
+  });
+
+  test("three interpolated expressions with no spacing", () => {
+    expect(
+      buildJQFilter(
+        "simple string with three {{ .embedded }}{{ .compact }}{{ .adjacent }} expressions"
+      )
+    ).toEqual(
+      '(["simple string with three ", ( .embedded ), ( .compact ), ( .adjacent ), " expressions"] | join(""))'
+    );
+  });
+
   test("replace single quotes with double quotes", () => {
     expect(
       buildJQFilter(
