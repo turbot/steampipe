@@ -6,6 +6,7 @@ import {
   foldNodesAndEdges,
   themeColors,
 } from "./index";
+import { Edge, Node } from "./types";
 import { Graph } from "graphlib";
 
 describe("common.adjustMinValue", () => {
@@ -164,7 +165,7 @@ describe("common.buildNodesAndEdges", () => {
       symbol: null,
       isFolded: false,
     };
-    const nodesAndEdges = buildNodesAndEdges(rawData);
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
     expect(nodesAndEdges).toEqual({
       categories: {},
@@ -199,7 +200,7 @@ describe("common.buildNodesAndEdges", () => {
       symbol: null,
       isFolded: false,
     };
-    const nodesAndEdges = buildNodesAndEdges(rawData);
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
     expect(nodesAndEdges).toEqual({
       categories: {
@@ -228,7 +229,7 @@ describe("common.buildNodesAndEdges", () => {
       ],
       rows: [{ id: "node", from_id: "from_node" }],
     };
-    const nodesAndEdges = buildNodesAndEdges(rawData);
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
     const sourceNode = {
       id: "from_node",
@@ -309,7 +310,7 @@ describe("common.buildNodesAndEdges", () => {
       category: null,
       row_data: null,
     };
-    const nodesAndEdges = buildNodesAndEdges(rawData);
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
     expect(nodesAndEdges).toEqual({
       categories: {},
@@ -373,7 +374,7 @@ describe("common.buildNodesAndEdges", () => {
       symbol: null,
       isFolded: false,
     };
-    const nodesAndEdges = buildNodesAndEdges(rawData);
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
     expect(nodesAndEdges).toEqual({
       categories: {},
@@ -436,7 +437,7 @@ describe("common.buildNodesAndEdges", () => {
       symbol: null,
       isFolded: false,
     };
-    const nodesAndEdges = buildNodesAndEdges(rawData);
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
     expect(nodesAndEdges).toEqual({
       categories: {},
@@ -514,7 +515,7 @@ describe("common.buildNodesAndEdges", () => {
       symbol: null,
       isFolded: false,
     };
-    const nodesAndEdges = buildNodesAndEdges(rawData);
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
     expect(nodesAndEdges).toEqual({
       categories: {},
@@ -586,6 +587,30 @@ describe("common.buildNodesAndEdges", () => {
   // });
 });
 
+const createNode = ({ id, category }): Node => {
+  return {
+    id,
+    category,
+    depth: null,
+    href: null,
+    isFolded: false,
+    row_data: null,
+    symbol: null,
+    title: null,
+  };
+};
+
+const createEdge = ({ id, from_id, to_id }): Edge => {
+  return {
+    id,
+    from_id,
+    to_id,
+    category: null,
+    row_data: null,
+    title: null,
+  };
+};
+
 describe("common.foldNodesAndEdges", () => {
   test("Basic fold", () => {
     const graph = new Graph({ directed: true });
@@ -596,37 +621,37 @@ describe("common.foldNodesAndEdges", () => {
     graph.setEdge("c1-1", "c2-1");
     graph.setEdge("c1-1", "c2-2");
     graph.setEdge("c1-1", "c2-3");
-    const node_c1_1 = {
+    const node_c1_1 = createNode({
       id: "c1-1",
       category: "c1",
-    };
-    const node_c2_1 = {
+    });
+    const node_c2_1 = createNode({
       id: "c2-1",
       category: "c2",
-    };
-    const node_c2_2 = {
+    });
+    const node_c2_2 = createNode({
       id: "c2-2",
       category: "c2",
-    };
-    const node_c2_3 = {
+    });
+    const node_c2_3 = createNode({
       id: "c2-3",
       category: "c2",
-    };
-    const edge_c1_1_c2_1 = {
+    });
+    const edge_c1_1_c2_1 = createEdge({
       id: "c1-1_c2-1",
       from_id: "c1-1",
       to_id: "c2-1",
-    };
-    const edge_c1_1_c2_2 = {
+    });
+    const edge_c1_1_c2_2 = createEdge({
       id: "c1-1_c2-2",
       from_id: "c1-1",
       to_id: "c2-2",
-    };
-    const edge_c1_1_c2_3 = {
+    });
+    const edge_c1_1_c2_3 = createEdge({
       id: "c1-1_c2-3",
       from_id: "c1-1",
       to_id: "c2-3",
-    };
+    });
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
     const nodesAndEdgesInput = {
@@ -657,6 +682,7 @@ describe("common.foldNodesAndEdges", () => {
       root_nodes: { [node_c1_1.id]: node_c1_1 },
       categories: { [category_1.id]: category_1, [category_2.id]: category_2 },
     };
+    // @ts-ignore
     const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
     delete nodesAndEdges.graph;
     const foldedNode = {
@@ -725,56 +751,56 @@ describe("common.foldNodesAndEdges", () => {
     graph.setEdge("c3-1", "c2-1");
     graph.setEdge("c3-1", "c2-2");
     graph.setEdge("c3-1", "c2-3");
-    const node_c1_1 = {
+    const node_c1_1 = createNode({
       id: "c1-1",
       category: "c1",
-    };
-    const node_c2_1 = {
+    });
+    const node_c2_1 = createNode({
       id: "c2-1",
       category: "c2",
-    };
-    const node_c2_2 = {
+    });
+    const node_c2_2 = createNode({
       id: "c2-2",
       category: "c2",
-    };
-    const node_c2_3 = {
+    });
+    const node_c2_3 = createNode({
       id: "c2-3",
       category: "c2",
-    };
-    const node_c3_1 = {
+    });
+    const node_c3_1 = createNode({
       id: "c3-1",
       category: "c3",
-    };
-    const edge_c1_1_c2_1 = {
+    });
+    const edge_c1_1_c2_1 = createEdge({
       id: "c1-1_c2-1",
       from_id: "c1-1",
       to_id: "c2-1",
-    };
-    const edge_c1_1_c2_2 = {
+    });
+    const edge_c1_1_c2_2 = createEdge({
       id: "c1-1_c2-2",
       from_id: "c1-1",
       to_id: "c2-2",
-    };
-    const edge_c1_1_c2_3 = {
+    });
+    const edge_c1_1_c2_3 = createEdge({
       id: "c1-1_c2-3",
       from_id: "c1-1",
       to_id: "c2-3",
-    };
-    const edge_c3_1_c2_1 = {
+    });
+    const edge_c3_1_c2_1 = createEdge({
       id: "c3-1_c2-1",
       from_id: "c3-1",
       to_id: "c2-1",
-    };
-    const edge_c3_1_c2_2 = {
+    });
+    const edge_c3_1_c2_2 = createEdge({
       id: "c3-1_c2-2",
       from_id: "c3-1",
       to_id: "c2-2",
-    };
-    const edge_c3_1_c2_3 = {
+    });
+    const edge_c3_1_c2_3 = createEdge({
       id: "c3-1_c2-3",
       from_id: "c3-1",
       to_id: "c2-3",
-    };
+    });
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
     const category_3 = { id: "c3" };
@@ -824,6 +850,7 @@ describe("common.foldNodesAndEdges", () => {
         [category_3.id]: category_3,
       },
     };
+    // @ts-ignore
     const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
     delete nodesAndEdges.graph;
     const foldedNode = {
@@ -918,75 +945,75 @@ describe("common.foldNodesAndEdges", () => {
     graph.setEdge("c4-1", "c2-1");
     graph.setEdge("c4-1", "c2-2");
     graph.setEdge("c4-1", "c2-3");
-    const node_c1_1 = {
+    const node_c1_1 = createNode({
       id: "c1-1",
       category: "c1",
-    };
-    const node_c2_1 = {
+    });
+    const node_c2_1 = createNode({
       id: "c2-1",
       category: "c2",
-    };
-    const node_c2_2 = {
+    });
+    const node_c2_2 = createNode({
       id: "c2-2",
       category: "c2",
-    };
-    const node_c2_3 = {
+    });
+    const node_c2_3 = createNode({
       id: "c2-3",
       category: "c2",
-    };
-    const node_c3_1 = {
+    });
+    const node_c3_1 = createNode({
       id: "c3-1",
       category: "c3",
-    };
-    const node_c4_1 = {
+    });
+    const node_c4_1 = createNode({
       id: "c4-1",
       category: "c4",
-    };
-    const edge_c1_1_c2_1 = {
+    });
+    const edge_c1_1_c2_1 = createEdge({
       id: "c1-1_c2-1",
       from_id: "c1-1",
       to_id: "c2-1",
-    };
-    const edge_c1_1_c2_2 = {
+    });
+    const edge_c1_1_c2_2 = createEdge({
       id: "c1-1_c2-2",
       from_id: "c1-1",
       to_id: "c2-2",
-    };
-    const edge_c1_1_c2_3 = {
+    });
+    const edge_c1_1_c2_3 = createEdge({
       id: "c1-1_c2-3",
       from_id: "c1-1",
       to_id: "c2-3",
-    };
-    const edge_c3_1_c2_1 = {
+    });
+    const edge_c3_1_c2_1 = createEdge({
       id: "c3-1_c2-1",
       from_id: "c3-1",
       to_id: "c2-1",
-    };
-    const edge_c3_1_c2_2 = {
+    });
+    const edge_c3_1_c2_2 = createEdge({
       id: "c3-1_c2-2",
       from_id: "c3-1",
       to_id: "c2-2",
-    };
-    const edge_c3_1_c2_3 = {
+    });
+    const edge_c3_1_c2_3 = createEdge({
       id: "c3-1_c2-3",
       from_id: "c3-1",
       to_id: "c2-3",
-    };
-    const edge_c4_1_c2_1 = {
+    });
+    const edge_c4_1_c2_1 = createEdge({
       id: "c4-1_c2-1",
       from_id: "c4-1",
       to_id: "c2-1",
-    };
-    const edge_c4_1_c2_2 = {
+    });
+    const edge_c4_1_c2_2 = createEdge({
       id: "c4-1_c2-2",
       from_id: "c4-1",
       to_id: "c2-2",
-    };
-    const edge_c4_1_c2_3 = {
+    });
+    const edge_c4_1_c2_3 = createEdge({
       id: "c4-1_c2-3",
       from_id: "c4-1",
       to_id: "c2-3",
-    };
+    });
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
     const category_3 = { id: "c3" };
@@ -1052,6 +1079,7 @@ describe("common.foldNodesAndEdges", () => {
         [category_4.id]: category_4,
       },
     };
+    // @ts-ignore
     const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
     delete nodesAndEdges.graph;
     const foldedNode = {
@@ -1163,46 +1191,46 @@ describe("common.foldNodesAndEdges", () => {
     graph.setEdge("c1-1", "c2-2");
     graph.setEdge("c1-1", "c2-3");
     graph.setEdge("c3-1", "c2-3");
-    const node_c1_1 = {
+    const node_c1_1 = createNode({
       id: "c1-1",
       category: "c1",
-    };
-    const node_c2_1 = {
+    });
+    const node_c2_1 = createNode({
       id: "c2-1",
       category: "c2",
-    };
-    const node_c2_2 = {
+    });
+    const node_c2_2 = createNode({
       id: "c2-2",
       category: "c2",
-    };
-    const node_c2_3 = {
+    });
+    const node_c2_3 = createNode({
       id: "c2-3",
       category: "c2",
-    };
-    const node_c3_1 = {
+    });
+    const node_c3_1 = createNode({
       id: "c3-1",
       category: "c3",
-    };
-    const edge_c1_1_c2_1 = {
+    });
+    const edge_c1_1_c2_1 = createEdge({
       id: "c1-1_c2-1",
       from_id: "c1-1",
       to_id: "c2-1",
-    };
-    const edge_c1_1_c2_2 = {
+    });
+    const edge_c1_1_c2_2 = createEdge({
       id: "c1-1_c2-2",
       from_id: "c1-1",
       to_id: "c2-2",
-    };
-    const edge_c1_1_c2_3 = {
+    });
+    const edge_c1_1_c2_3 = createEdge({
       id: "c1-1_c2-3",
       from_id: "c1-1",
       to_id: "c2-3",
-    };
-    const edge_c3_1_c2_3 = {
+    });
+    const edge_c3_1_c2_3 = createEdge({
       id: "c3-1_c2-3",
       from_id: "c3-1",
       to_id: "c2-3",
-    };
+    });
     const category_1 = {};
     const category_2 = { fold: { threshold: 2 } };
     const category_3 = {};
@@ -1239,6 +1267,7 @@ describe("common.foldNodesAndEdges", () => {
       root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
       categories: { c1: category_1, c2: category_2, c3: category_3 },
     };
+    // @ts-ignore
     const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
     delete nodesAndEdges.graph;
     const foldedNode = {
@@ -1313,42 +1342,42 @@ describe("common.foldNodesAndEdges", () => {
     graph.setEdge("c1-1", "c2-2");
     graph.setEdge("c3-1", "c2-1");
     graph.setEdge("c2-2", "c3-1");
-    const node_c1_1 = {
+    const node_c1_1 = createNode({
       id: "c1-1",
       category: "c1",
-    };
-    const node_c2_1 = {
+    });
+    const node_c2_1 = createNode({
       id: "c2-1",
       category: "c2",
-    };
-    const node_c2_2 = {
+    });
+    const node_c2_2 = createNode({
       id: "c2-2",
       category: "c2",
-    };
-    const node_c3_1 = {
+    });
+    const node_c3_1 = createNode({
       id: "c3-1",
       category: "c3",
-    };
-    const edge_c1_1_c2_1 = {
+    });
+    const edge_c1_1_c2_1 = createEdge({
       id: "c1-1_c2-1",
       from_id: "c1-1",
       to_id: "c2-1",
-    };
-    const edge_c1_1_c2_2 = {
+    });
+    const edge_c1_1_c2_2 = createEdge({
       id: "c1-1_c2-2",
       from_id: "c1-1",
       to_id: "c2-2",
-    };
-    const edge_c3_1_c2_1 = {
+    });
+    const edge_c3_1_c2_1 = createEdge({
       id: "c3-1_c2-1",
       from_id: "c3-1",
       to_id: "c2-1",
-    };
-    const edge_c2_2_c3_1 = {
+    });
+    const edge_c2_2_c3_1 = createEdge({
       id: "c2-2_c3-1",
       from_id: "c2-2",
       to_id: "c3-1",
-    };
+    });
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
     const category_3 = { id: "c3" };
@@ -1387,6 +1416,7 @@ describe("common.foldNodesAndEdges", () => {
         [category_3.id]: category_3,
       },
     };
+    // @ts-ignore
     const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
     delete nodesAndEdges.graph;
     delete nodesAndEdgesInput.graph;
@@ -1408,65 +1438,65 @@ describe("common.foldNodesAndEdges", () => {
     graph.setEdge("c3-1", "c2-2");
     graph.setEdge("c3-1", "c2-3");
     graph.setEdge("c4-1", "c2-3");
-    const node_c1_1 = {
+    const node_c1_1 = createNode({
       id: "c1-1",
       category: "c1",
-    };
-    const node_c2_1 = {
+    });
+    const node_c2_1 = createNode({
       id: "c2-1",
       category: "c2",
-    };
-    const node_c2_2 = {
+    });
+    const node_c2_2 = createNode({
       id: "c2-2",
       category: "c2",
-    };
-    const node_c2_3 = {
+    });
+    const node_c2_3 = createNode({
       id: "c2-3",
       category: "c2",
-    };
-    const node_c3_1 = {
+    });
+    const node_c3_1 = createNode({
       id: "c3-1",
       category: "c3",
-    };
-    const node_c4_1 = {
+    });
+    const node_c4_1 = createNode({
       id: "c4-1",
       category: "c4",
-    };
-    const edge_c1_1_c2_1 = {
+    });
+    const edge_c1_1_c2_1 = createEdge({
       id: "c1-1_c2-1",
       from_id: "c1-1",
       to_id: "c2-1",
-    };
-    const edge_c1_1_c2_2 = {
+    });
+    const edge_c1_1_c2_2 = createEdge({
       id: "c1-1_c2-2",
       from_id: "c1-1",
       to_id: "c2-2",
-    };
-    const edge_c1_1_c2_3 = {
+    });
+    const edge_c1_1_c2_3 = createEdge({
       id: "c1-1_c2-3",
       from_id: "c1-1",
       to_id: "c2-3",
-    };
-    const edge_c3_1_c2_1 = {
+    });
+    const edge_c3_1_c2_1 = createEdge({
       id: "c3-1_c2-1",
       from_id: "c3-1",
       to_id: "c2-1",
-    };
-    const edge_c3_1_c2_2 = {
+    });
+    const edge_c3_1_c2_2 = createEdge({
       id: "c3-1_c2-2",
       from_id: "c3-1",
       to_id: "c2-2",
-    };
-    const edge_c3_1_c2_3 = {
+    });
+    const edge_c3_1_c2_3 = createEdge({
       id: "c3-1_c2-3",
       from_id: "c3-1",
       to_id: "c2-3",
-    };
-    const edge_c4_1_c2_3 = {
+    });
+    const edge_c4_1_c2_3 = createEdge({
       id: "c4-1_c2-3",
       from_id: "c4-1",
       to_id: "c2-3",
-    };
+    });
     const category_1 = { id: "c1" };
     const category_2 = { id: "c2", fold: { threshold: 2 } };
     const category_3 = { id: "c3" };
@@ -1528,6 +1558,7 @@ describe("common.foldNodesAndEdges", () => {
         [category_4.id]: category_4,
       },
     };
+    // @ts-ignore
     const nodesAndEdges = foldNodesAndEdges(nodesAndEdgesInput);
     delete nodesAndEdges.graph;
     const foldedNode = {

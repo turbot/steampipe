@@ -89,6 +89,7 @@ const getOptionOverridesForFlowType = (
 
 const buildFlowOptions = (props: FlowProps, themeColors) => {
   const nodesAndEdges = buildNodesAndEdges(
+    props.categories,
     props.data,
     props.properties,
     themeColors
@@ -137,6 +138,7 @@ const FlowWrapper = (props: FlowProps) => {
       options={buildFlowOptions(
         {
           ...props,
+          categories: nodeAndEdgeData.categories,
           data: nodeAndEdgeData.data,
           properties: nodeAndEdgeData.properties,
         },

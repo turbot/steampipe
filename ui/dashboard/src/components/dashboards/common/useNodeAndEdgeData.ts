@@ -1,7 +1,14 @@
 import has from "lodash/has";
 import set from "lodash/set";
+import {
+  Category,
+  CategoryMap,
+  EdgeProperties,
+  NodeAndEdgeProperties,
+  NodeProperties,
+} from "./types";
 import { DashboardRunState } from "../../../types";
-import { EdgeProperties, NodeAndEdgeProperties, NodeProperties } from "./types";
+import { isNumber } from "lodash";
 import {
   NodeAndEdgeData,
   NodeAndEdgeDataColumn,
@@ -45,6 +52,45 @@ const panelStateToCategoryState = (status: DashboardRunState) => {
     : "pending";
 };
 
+const addColumnsForResource = (
+  columns: NodeAndEdgeDataColumn[],
+  data: NodeAndEdgeData
+): NodeAndEdgeDataColumn[] => {
+  // Get a union of all the columns across all nodes
+  const newColumns = [...columns];
+  for (const column of data.columns || []) {
+    if (newColumns.some((c) => c.name === column.name)) {
+      continue;
+    }
+    newColumns.push(column);
+  }
+  return newColumns;
+};
+
+const populateCategoryWithDefaults = (category: Category): Category => {
+  return {
+    name: category.name,
+    color: category.color,
+    depth: category.depth,
+    fields: category.fields,
+    fold: {
+      threshold:
+        category.fold && isNumber(category.fold.threshold)
+          ? category.fold.threshold
+          : 3,
+      title: category.fold?.title || category.title,
+      icon: category.fold?.icon || category.icon,
+    },
+    href: category.href,
+    icon: category.icon,
+    title: category.title,
+  };
+};
+
+// This function will normalise both the legacy and node/edge data formats into a data table.
+// In the node/edge approach, the data will be spread out across the node and edge resources
+// until the flow/graph/hierarchy has completed, at which point we'll have a populated data
+// table in the parent resource.
 const useNodeAndEdgeData = (
   data: NodeAndEdgeData | undefined,
   properties: NodeAndEdgeProperties | undefined,
@@ -55,42 +101,64 @@ const useNodeAndEdgeData = (
     const dataFormat = getNodeAndEdgeDataFormat(properties);
     if (dataFormat === "LEGACY") {
       if (status === "complete") {
-        return data ? { data, dataFormat, properties } : null;
+        return data ? { categories: {}, data, dataFormat, properties } : null;
       }
       return null;
     }
 
+    // We've now established that it's a NODE_AND_EDGE format data set, so let's build
+    // what we need from the component parts
+
+    let columns: NodeAndEdgeDataColumn[] = [];
+    let rows: NodeAndEdgeDataRow[] = [];
+    const categories: CategoryMap = {};
+
+    // Add flow/graph/hierarchy level categories
+    for (const [name, category] of Object.entries(
+      properties?.categories || {}
+    )) {
+      categories[name] = populateCategoryWithDefaults(category);
+    }
+
+    const missingNodes = {};
+    const missingEdges = {};
     const nodeAndEdgeStatus: NodeAndEdgeStatus = {
       categories: {},
       nodes: [],
       edges: [],
     };
-
-    let newProperties = properties;
     const nodeIdLookup = {};
-    const columns: NodeAndEdgeDataColumn[] = [];
-    const rows: NodeAndEdgeDataRow[] = [];
+
+    // Loop over all the node names and check out their respective panel in the panels map
     for (const nodePanelName of properties?.nodes || []) {
       const panel = panelsMap[nodePanelName];
-      // If we can't find the panel, just continue? Not ideal...
+
+      // Capture missing panels - we'll deal with that after
       if (!panel) {
+        missingNodes[nodePanelName] = true;
         continue;
       }
 
-      const artificialCategoryId = `node_category_${nodePanelName}`;
-
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
-
-      // Get a union of all the columns across all nodes
-      for (const column of typedPanelData.columns || []) {
-        if (columns.some((c) => c.name === column.name)) {
-          continue;
-        }
-        columns.push(column);
-      }
-
-      // If we don't have any rows for this node type, add a placeholder
+      columns = addColumnsForResource(columns, typedPanelData);
       const nodeProperties = (panel.properties || {}) as NodeProperties;
+      const nodeDataRows = typedPanelData.rows || [];
+
+      // Capture the status of this node resource
+      nodeAndEdgeStatus.nodes.push({
+        id: nodePanelName,
+        title: nodePanelName.split(".").pop(),
+        state: panelStateToCategoryState(panel.status || "ready"),
+        count: nodeDataRows.length,
+      });
+
+      let nodeCategory: Category | null = null;
+      let nodeCategoryId: string = "";
+      if (nodeProperties.category) {
+        nodeCategory = populateCategoryWithDefaults(nodeProperties.category);
+        nodeCategoryId = `node.${nodePanelName}.${nodeCategory.name}`;
+        categories[nodeCategoryId] = nodeCategory;
+      }
 
       if (nodeProperties.category && nodeProperties.category.name) {
         if (!nodeAndEdgeStatus.categories[nodeProperties.category.name]) {
@@ -105,50 +173,60 @@ const useNodeAndEdgeData = (
         }
       }
 
-      // Ensure we have category info set for each row
-      const nodeDataRows = typedPanelData.rows || [];
-
-      nodeAndEdgeStatus.nodes.push({
-        id: nodePanelName,
-        title: nodePanelName.split(".").pop(),
-        state: panelStateToCategoryState(panel.status || "ready"),
-        count: nodeDataRows.length,
-      });
-
+      // Loop over each row and ensure we have the correct category information set for it
       for (const row of nodeDataRows) {
         // Ensure each row has an id
         if (row.id === null || row.id === undefined) {
           continue;
         }
-        // Capture the ID of each row
-        nodeIdLookup[row.id.toString()] = row;
-        const updatedRow = row;
+
+        const updatedRow = { ...row };
+
+        // Ensure the row has a title and populate from the node if not set
         if (!updatedRow.title && panel.title) {
           updatedRow.title = panel.title;
         }
-        // If a row defines a category, then it is assumed to be present in the categories map
-        // If there's a category defined on the node, we need to capture it
-        if (!updatedRow.category) {
-          if (nodeProperties.category) {
-            newProperties = set(
-              newProperties || {},
-              `categories["${artificialCategoryId}"]`,
-              nodeProperties.category
-            );
-          }
-          updatedRow.category = artificialCategoryId;
+
+        // Capture the ID of each row
+        nodeIdLookup[row.id.toString()] = row;
+
+        // If the row specifies a category and it's the same now as the node specified,
+        // then update the category to the artificial node category ID
+        if (updatedRow.category && nodeCategory?.name === updatedRow.category) {
+          updatedRow.category = nodeCategoryId;
+        }
+        // Else if the row has a category, but we don't know about it, clear it
+        else if (updatedRow.category && !categories[updatedRow.category]) {
+          updatedRow.category = undefined;
+        } else if (!updatedRow.category && nodeCategoryId) {
+          updatedRow.category = nodeCategoryId;
         }
         rows.push(updatedRow);
       }
     }
 
+    // Loop over all the edge names and check out their respective panel in the panels map
     for (const edgePanelName of properties?.edges || []) {
       const panel = panelsMap[edgePanelName];
-      if (!panel || !panel.data) {
+
+      // Capture missing panels - we'll deal with that after
+      if (!panel) {
+        missingEdges[edgePanelName] = true;
         continue;
       }
 
+      const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
+      columns = addColumnsForResource(columns, typedPanelData);
       const edgeProperties = (panel.properties || {}) as EdgeProperties;
+
+      let edgeCategory: Category | null = null;
+      let edgeCategoryId: string = "";
+      if (edgeProperties.category) {
+        edgeCategory = populateCategoryWithDefaults(edgeProperties.category);
+        edgeCategoryId = `edge.${edgePanelName}.${edgeCategory.name}`;
+        categories[edgeCategoryId] = edgeCategory;
+      }
+
       if (edgeProperties.category) {
         // @ts-ignore
         if (!nodeAndEdgeStatus.categories[edgeProperties.category.name]) {
@@ -170,15 +248,6 @@ const useNodeAndEdgeData = (
         }
       }
 
-      const typedPanelData = panel.data as NodeAndEdgeData;
-      for (const column of typedPanelData.columns) {
-        if (columns.some((c) => c.name === column.name)) {
-          continue;
-        }
-        columns.push(column);
-      }
-      const artificialCategoryId = `node_category_${edgePanelName}`;
-      // Ensure we have category info set for each row
       for (const row of typedPanelData.rows || []) {
         // Ensure the node this edge points to exists in the data set
         // @ts-ignore
@@ -201,30 +270,33 @@ const useNodeAndEdgeData = (
         ) {
           continue;
         }
-        const updatedRow = row;
+
+        const updatedRow = { ...row };
+
+        // Ensure the row has a title and populate from the edge if not set
         if (!updatedRow.title && panel.title) {
           updatedRow.title = panel.title;
         }
-        // If a row defines a category, then it is assumed to be present in the categories map
-        // If there's a category defined on the node, we need to capture it
-        if (!updatedRow.category) {
-          const edgeProperties = panel.properties as EdgeProperties;
-          if (edgeProperties.category) {
-            newProperties = set(
-              newProperties || {},
-              `categories["${artificialCategoryId}"]`,
-              edgeProperties.category
-            );
-          }
-          updatedRow.category = artificialCategoryId;
+
+        // If the row specifies a category and it's the same now as the edge specified,
+        // then update the category to the artificial edge category ID
+        if (updatedRow.category && edgeCategory?.name === updatedRow.category) {
+          updatedRow.category = edgeCategoryId;
+        }
+        // Else if the row has a category, but we don't know about it, clear it
+        else if (updatedRow.category && !categories[updatedRow.category]) {
+          updatedRow.category = undefined;
+        } else if (!updatedRow.category && edgeCategoryId) {
+          updatedRow.category = edgeCategoryId;
         }
         rows.push(updatedRow);
       }
     }
+
     return {
+      categories,
       data: { columns, rows },
       dataFormat,
-      properties: newProperties,
       status: nodeAndEdgeStatus,
     };
   }, [data, panelsMap, properties, status]);

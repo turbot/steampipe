@@ -93,6 +93,7 @@ const getOptionOverridesForHierarchyType = (
 
 const buildHierarchyOptions = (props: HierarchyProps, themeColors) => {
   const nodesAndEdges = buildNodesAndEdges(
+    props.categories,
     props.data,
     props.properties,
     themeColors
@@ -142,6 +143,7 @@ const HierarchyWrapper = (props: HierarchyProps) => {
       options={buildHierarchyOptions(
         {
           ...props,
+          categories: nodeAndEdgeData.categories,
           data: nodeAndEdgeData.data,
           properties: nodeAndEdgeData.properties,
         },

@@ -4,7 +4,11 @@ import {
   LeafNodeDataColumn,
 } from "../common";
 import { ComponentType } from "react";
-import { KeyValuePairs, NodeAndEdgeProperties } from "../common/types";
+import {
+  CategoryMap,
+  KeyValuePairs,
+  NodeAndEdgeProperties,
+} from "../common/types";
 
 export type NodeAndEdgeDataFormat = "LEGACY" | "NODE_AND_EDGE";
 
@@ -32,6 +36,7 @@ export type GraphProperties = NodeAndEdgeProperties & {
 };
 
 export interface GraphProps extends BaseGraphProps {
+  categories: CategoryMap;
   data?: NodeAndEdgeData;
   display_type?: GraphType;
   properties?: GraphProperties;

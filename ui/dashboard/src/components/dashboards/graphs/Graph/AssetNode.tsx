@@ -5,6 +5,7 @@ import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties from "./RowProperties";
 import Tooltip from "./Tooltip";
 import {
+  Category,
   CategoryFields,
   CategoryFold,
   FoldedNode,
@@ -20,7 +21,7 @@ import { useGraph } from "../common/useGraph";
 
 interface AssetNodeProps {
   data: {
-    category?: string;
+    category?: Category;
     color?: string;
     fields?: CategoryFields;
     fold?: CategoryFold;
@@ -35,19 +36,15 @@ interface AssetNodeProps {
 }
 
 interface FoldedNodeCountBadgeProps {
-  color: string | undefined;
   foldedNodes: FoldedNode[] | undefined;
 }
 
 interface FoldedNodeLabelProps {
-  category: string | undefined;
+  category: Category | undefined;
   fold: CategoryFold | undefined;
 }
 
-const FoldedNodeCountBadge = ({
-  color,
-  foldedNodes,
-}: FoldedNodeCountBadgeProps) => {
+const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
   if (!foldedNodes) {
     return null;
   }
@@ -64,13 +61,7 @@ const FoldedNodeCountBadge = ({
       }
       title={`${foldedNodes.length} nodes`}
     >
-      <div
-        className="absolute right-0 top-[16%] items-center rounded-full px-1.5 text-sm font-medium cursor-pointer"
-        style={{
-          backgroundColor: color ? color : "bg-dashboard",
-          color: color ? "white" : "text-foreground",
-        }}
-      >
+      <div className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer">
         <IntegerDisplay num={foldedNodes?.length || null} />
       </div>
     </Tooltip>
@@ -80,28 +71,18 @@ const FoldedNodeCountBadge = ({
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   <div className="flex space-x-1 items-center">
     {fold?.title && (
-      <span className="text-link cursor-pointer">{fold?.title}</span>
+      <span className="text-link cursor-pointer truncate" title={fold?.title}>
+        {fold?.title}
+      </span>
     )}
     {!fold?.title && (
-      <span className="text-link cursor-pointer">{category}</span>
+      <span
+        className="text-link cursor-pointer truncate"
+        title={category?.name}
+      >
+        {category?.name}
+      </span>
     )}
-    {/*<Tooltip*/}
-    {/*  overlay={*/}
-    {/*    <div className="max-h-1/2-screen space-y-2">*/}
-    {/*      <div className="h-full overflow-y-auto">*/}
-    {/*        {(foldedNodes || []).map((n) => (*/}
-    {/*          <div key={n.id}>{n.title || n.id}</div>*/}
-    {/*        ))}*/}
-    {/*      </div>*/}
-    {/*    </div>*/}
-    {/*  }*/}
-    {/*  title={fold?.title || category || ""}*/}
-    {/*>*/}
-    {/*  <div className="items-center rounded-md bg-dashboard px-1 py-0.5 text-xs font-medium">*/}
-    {/*    <IntegerDisplay num={foldedNodes?.length || null} />*/}
-    {/*  </div>*/}
-    {/*  /!*<FoldedNodeCountBadge foldedNodes={foldedNodes} />*!/*/}
-    {/*</Tooltip>*/}
   </div>
 );
 
@@ -159,6 +140,7 @@ const AssetNode = ({
       style={{
         // backgroundColor: color,
         borderColor: color ? color : themeColors.blackScale3,
+        // borderWidth: row_data && row_data.id === "i-0aa50f7044a950942" ? 3 : 1,
         color: isFolded ? (color ? color : themeColors.blackScale3) : undefined,
       }}
     >
@@ -173,11 +155,23 @@ const AssetNode = ({
         }}
         icon={isFolded ? fold?.icon : icon}
       />
-      {isFolded && (
-        <FoldedNodeCountBadge color={color} foldedNodes={foldedNodes} />
-      )}
+      {isFolded && <FoldedNodeCountBadge foldedNodes={foldedNodes} />}
     </div>
   );
+
+  // const primaryNode =
+  //   row_data && row_data.id === "i-0aa50f7044a950942" ? (
+  //     <div
+  //       className="relative p-0.5 rounded-full border"
+  //       style={{
+  //         borderColor: color ? color : themeColors.blackScale3,
+  //       }}
+  //     >
+  //       {node}
+  //     </div>
+  //   ) : (
+  //     node
+  //   );
 
   const nodeWithProperties =
     row_data && row_data.properties && !isFolded ? (
@@ -207,11 +201,11 @@ const AssetNode = ({
     <div
       className={classNames(
         renderedHref ? "text-link cursor-pointer" : null,
-        "absolute flex space-x-1 items-center justify-center -bottom-[20px] text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        "absolute flex space-x-1 items-center justify-center -bottom-[20px] px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
       )}
       onClick={
         isFolded && foldedNodes
-          ? () => expandNode(foldedNodes, category as string)
+          ? () => expandNode(foldedNodes, category?.name as string)
           : undefined
       }
     >

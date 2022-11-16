@@ -1,6 +1,6 @@
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import { ComponentType } from "react";
-import { NodeAndEdgeProperties } from "../common/types";
+import { CategoryMap, NodeAndEdgeProperties } from "../common/types";
 import { NodeAndEdgeData } from "../graphs/types";
 
 export type BaseHierarchyProps = BasePrimitiveProps & ExecutablePrimitiveProps;
@@ -8,6 +8,7 @@ export type BaseHierarchyProps = BasePrimitiveProps & ExecutablePrimitiveProps;
 export type HierarchyProperties = NodeAndEdgeProperties;
 
 export interface HierarchyProps extends BaseHierarchyProps {
+  categories: CategoryMap;
   data?: NodeAndEdgeData;
   display_type?: HierarchyType;
   properties?: NodeAndEdgeProperties;
