@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { Edge, Node } from "reactflow";
+import { Edge, Node, useReactFlow } from "reactflow";
 import { FoldedNode, KeyValueStringPairs } from "../../common/types";
 import { noop } from "../../../../utils/func";
 import { useDashboard } from "../../../../hooks/useDashboard";
@@ -10,7 +10,6 @@ interface IGraphContext {
   expandedNodes: KeyValueStringPairs;
   layoutId: string;
   recalcLayout: () => void;
-  setFitView: (fitView: typeof noop) => void;
   setGraphEdges: (edges: Edge[]) => void;
   setGraphNodes: (nodes: Node[]) => void;
 }
@@ -20,7 +19,6 @@ const GraphContext = createContext<IGraphContext>({
   expandedNodes: {},
   layoutId: "",
   recalcLayout: noop,
-  setFitView: noop,
   setGraphEdges: noop,
   setGraphNodes: noop,
 });
@@ -29,8 +27,8 @@ const GraphProvider = ({ children }) => {
   const {
     themeContext: { theme },
   } = useDashboard();
+  const { fitView } = useReactFlow();
   const [layoutId, setLayoutId] = useState(uuid());
-  const [fitView, setFitView] = useState<typeof noop>(noop);
   const [graphEdges, setGraphEdges] = useState<Edge[]>([]);
   const [graphNodes, setGraphNodes] = useState<Node[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<KeyValueStringPairs>({});
@@ -69,7 +67,6 @@ const GraphProvider = ({ children }) => {
         expandedNodes,
         layoutId,
         recalcLayout,
-        setFitView: (newFitView) => setFitView(() => newFitView),
         setGraphEdges,
         setGraphNodes,
       }}

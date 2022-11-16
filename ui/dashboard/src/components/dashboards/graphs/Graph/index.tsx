@@ -304,14 +304,7 @@ const ZoomOutControl = () => {
 };
 
 const ResetZoomControl = () => {
-  const { setFitView } = useGraph();
   const { fitView } = useReactFlow();
-
-  // We need to capture this fit view function and pass it into our graph provider,
-  // so that we can call it when the edges or nodes change to update the layout
-  useEffect(() => {
-    setFitView(fitView);
-  }, [fitView, setFitView]);
 
   return (
     <ControlButton
@@ -433,34 +426,32 @@ const Graph = (props) => {
   );
 
   return (
-    <ReactFlowProvider>
-      <div
-        style={{
-          height: graphOptions.height,
-          maxHeight: selectedPanel ? undefined : 600,
-          minHeight: 175,
+    <div
+      style={{
+        height: graphOptions.height,
+        maxHeight: selectedPanel ? undefined : 600,
+        minHeight: 175,
+      }}
+    >
+      <ReactFlow
+        // @ts-ignore
+        edgeTypes={edgeTypes}
+        edges={graphOptions.edges}
+        fitView
+        nodes={graphOptions.nodes}
+        nodeTypes={nodeTypes}
+        onEdgesChange={graphOptions.onEdgesChange}
+        onNodesChange={graphOptions.onNodesChange}
+        preventScrolling={false}
+        proOptions={{
+          account: "paid-pro",
+          hideAttribution: true,
         }}
+        zoomOnScroll={false}
       >
-        <ReactFlow
-          // @ts-ignore
-          edgeTypes={edgeTypes}
-          edges={graphOptions.edges}
-          fitView
-          nodes={graphOptions.nodes}
-          nodeTypes={nodeTypes}
-          onEdgesChange={graphOptions.onEdgesChange}
-          onNodesChange={graphOptions.onNodesChange}
-          preventScrolling={false}
-          proOptions={{
-            account: "paid-pro",
-            hideAttribution: true,
-          }}
-          zoomOnScroll={false}
-        >
-          <CustomControls />
-        </ReactFlow>
-      </div>
-    </ReactFlowProvider>
+        <CustomControls />
+      </ReactFlow>
+    </div>
   );
 };
 
@@ -481,16 +472,18 @@ const GraphWrapper = (props: GraphProps) => {
   }
 
   return (
-    <GraphProvider>
-      <Graph
-        {...props}
-        categories={nodeAndEdgeData.categories}
-        data={nodeAndEdgeData.data}
-        dataFormat={nodeAndEdgeData.dataFormat}
-        properties={nodeAndEdgeData.properties}
-        nodeAndEdgeStatus={nodeAndEdgeData.status}
-      />
-    </GraphProvider>
+    <ReactFlowProvider>
+      <GraphProvider>
+        <Graph
+          {...props}
+          categories={nodeAndEdgeData.categories}
+          data={nodeAndEdgeData.data}
+          dataFormat={nodeAndEdgeData.dataFormat}
+          properties={nodeAndEdgeData.properties}
+          nodeAndEdgeStatus={nodeAndEdgeData.status}
+        />
+      </GraphProvider>
+    </ReactFlowProvider>
   );
 };
 
