@@ -649,6 +649,8 @@ jobs:
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
           scripts/formula_versioning.sh
+          git config --global user.email "puskar@turbot.com"
+          git config --global user.name "Puskar Basu"
           git add .
           git commit -m "Versioning brew formulas"
           git push origin $VERSION
