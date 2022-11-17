@@ -2,14 +2,24 @@ import difference from "lodash/difference";
 import usePrevious from "../../../../hooks/usePrevious";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Edge, Node, useReactFlow } from "reactflow";
-import { FoldedNode, KeyValueStringPairs } from "../../common/types";
+import { FoldedNode } from "../../common/types";
 import { noop } from "../../../../utils/func";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { v4 as uuid } from "uuid";
 
+export type ExpandedNodeInfo = {
+  category: string;
+  foldedNodes: FoldedNode[];
+};
+
+export type ExpandedNodes = {
+  [nodeId: string]: ExpandedNodeInfo;
+};
+
 interface IGraphContext {
+  collapseNodes: (foldedNodes: FoldedNode[]) => void;
   expandNode: (foldedNodes: FoldedNode[], category: string) => void;
-  expandedNodes: KeyValueStringPairs;
+  expandedNodes: ExpandedNodes;
   layoutId: string;
   recalcLayout: () => void;
   setGraphEdges: (edges: Edge[]) => void;
@@ -17,6 +27,7 @@ interface IGraphContext {
 }
 
 const GraphContext = createContext<IGraphContext>({
+  collapseNodes: noop,
   expandNode: noop,
   expandedNodes: {},
   layoutId: "",
@@ -38,7 +49,7 @@ const GraphProvider = ({ children }) => {
   const [layoutId, setLayoutId] = useState(uuid());
   const [graphEdges, setGraphEdges] = useState<Edge[]>([]);
   const [graphNodes, setGraphNodes] = useState<Node[]>([]);
-  const [expandedNodes, setExpandedNodes] = useState<KeyValueStringPairs>({});
+  const [expandedNodes, setExpandedNodes] = useState<ExpandedNodes>({});
 
   const previousNodesAndEdges = usePrevious<PreviousNodesAndEdges>({
     nodes: graphNodes,
@@ -66,6 +77,9 @@ const GraphProvider = ({ children }) => {
       currentNodeIds,
       previousNodeIds
     );
+    const differentNodeIdsNewToOldAllFoldNodes =
+      differentNodeIdsNewToOld.length > 0 &&
+      differentNodeIdsNewToOld.every((n) => n.startsWith("fold-node."));
     const differentNodeIdsNewToOldWithoutExpanded = difference(
       differentNodeIdsNewToOld,
       expandedNodesKeys
@@ -80,6 +94,7 @@ const GraphProvider = ({ children }) => {
     );
     if (
       !differentNodeIdsOldToNewAllFoldNodes &&
+      !differentNodeIdsNewToOldAllFoldNodes &&
       (differentNodeIdsOldToNew.length > 0 ||
         differentNodeIdsNewToOldWithoutExpanded.length > 0 ||
         differentEdgeIdsOldToNew.length > 0 ||
@@ -97,11 +112,26 @@ const GraphProvider = ({ children }) => {
     setLayoutId(uuid());
   };
 
+  const collapseNodes = (foldedNodes: FoldedNode[] = []) => {
+    setExpandedNodes((current) => {
+      const newExpandedNodes = { ...current };
+      console.log({ current, foldedNodes });
+      for (const foldedNode of foldedNodes) {
+        delete newExpandedNodes[foldedNode.id];
+      }
+      return newExpandedNodes;
+    });
+    setLayoutId(uuid());
+  };
+
   const expandNode = (foldedNodes: FoldedNode[] = [], category: string) => {
     setExpandedNodes((current) => {
       const newExpandedNodes = { ...current };
       for (const foldedNode of foldedNodes) {
-        newExpandedNodes[foldedNode.id] = category;
+        newExpandedNodes[foldedNode.id] = {
+          category,
+          foldedNodes,
+        };
       }
       return newExpandedNodes;
     });
@@ -111,6 +141,7 @@ const GraphProvider = ({ children }) => {
   return (
     <GraphContext.Provider
       value={{
+        collapseNodes,
         expandNode,
         expandedNodes,
         layoutId,

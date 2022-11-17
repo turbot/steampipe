@@ -1,9 +1,11 @@
 import DashboardIcon, {
   useDashboardIconType,
 } from "../../common/DashboardIcon";
+import Icon from "../../../Icon";
 import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import {
   Category,
   CategoryFields,
@@ -12,14 +14,17 @@ import {
   KeyValuePairs,
 } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
+import { ExpandedNodeInfo, useGraph } from "../common/useGraph";
+import { getColorOverride } from "../../common";
 import { Handle } from "reactflow";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useGraph } from "../common/useGraph";
+import usePaginatedList from "../../../../hooks/usePaginatedList";
 
 type AssetNodeProps = {
+  id: string;
   data: {
     category?: Category;
     color?: string;
@@ -36,7 +41,13 @@ type AssetNodeProps = {
 };
 
 type FoldedNodeCountBadgeProps = {
+  category: Category | undefined;
   foldedNodes: FoldedNode[] | undefined;
+};
+
+type FoldNodeIconProps = {
+  collapseNodes: (foldedNodes: FoldedNode[]) => void;
+  expandedNodeInfo: ExpandedNodeInfo | undefined;
 };
 
 type FoldedNodeLabelProps = {
@@ -44,27 +55,101 @@ type FoldedNodeLabelProps = {
   fold: CategoryFold | undefined;
 };
 
-const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
+type FoldedNodeTooltipTitleProps = {
+  category: Category | undefined;
+  foldedNodesCount: number;
+};
+
+type FolderNodeTooltipNodesProps = {
+  foldedNodes: FoldedNode[] | undefined;
+};
+
+const FoldedNodeTooltipTitle = ({
+  category,
+  foldedNodesCount,
+}: FoldedNodeTooltipTitleProps) => {
+  const themeColors = useChartThemeColors();
+  return (
+    <div className="flex flex-col space-y-1">
+      {category && (
+        <span
+          className="block text-foreground-lighter text-xs"
+          style={{ color: getColorOverride(category.color, themeColors) }}
+        >
+          {category.title || category.name}
+        </span>
+      )}
+      <strong className="block">
+        <IntegerDisplay num={foldedNodesCount} /> nodes
+      </strong>
+    </div>
+  );
+};
+
+const FolderNodeTooltipNodes = ({
+  foldedNodes,
+}: FolderNodeTooltipNodesProps) => {
+  const { visibleItems, hasMore, loadMore } = usePaginatedList(foldedNodes, 5);
+
+  return (
+    <div className="max-h-1/2-screen space-y-2">
+      <div className="h-full overflow-y-auto">
+        {(visibleItems || []).map((n) => (
+          <div key={n.id}>{n.title || n.id}</div>
+        ))}
+        {hasMore && (
+          <div
+            className="flex items-center text-sm cursor-pointer space-x-1 text-link"
+            onClick={loadMore}
+          >
+            <span>More</span>
+            <Icon className="w-4 h-4" icon="arrow-long-down" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FoldedNodeCountBadge = ({
+  category,
+  foldedNodes,
+}: FoldedNodeCountBadgeProps) => {
   if (!foldedNodes) {
     return null;
   }
   return (
     <Tooltip
-      overlay={
-        <div className="max-h-1/2-screen space-y-2">
-          <div className="h-full overflow-y-auto">
-            {(foldedNodes || []).map((n) => (
-              <div key={n.id}>{n.title || n.id}</div>
-            ))}
-          </div>
-        </div>
+      overlay={<FolderNodeTooltipNodes foldedNodes={foldedNodes} />}
+      title={
+        <FoldedNodeTooltipTitle
+          category={category}
+          foldedNodesCount={foldedNodes.length}
+        />
       }
-      title={`${foldedNodes.length} nodes`}
     >
       <div className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer">
         <IntegerDisplay num={foldedNodes?.length || null} />
       </div>
     </Tooltip>
+  );
+};
+
+const FoldNodeIcon = ({
+  collapseNodes,
+  expandedNodeInfo,
+}: FoldNodeIconProps) => {
+  if (!expandedNodeInfo) {
+    return null;
+  }
+  return (
+    <div
+      className="absolute -right-[4%] -top-[4%] items-center bg-foreground-lightest text-foreground-light rounded-full p-0.5 text-sm font-medium cursor-pointer"
+      title="Collapse"
+      onClick={() => collapseNodes(expandedNodeInfo.foldedNodes)}
+    >
+      <Icon className="w-4 h-4" icon="arrows-pointing-in" />
+    </div>
   );
 };
 
@@ -87,6 +172,7 @@ const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
 );
 
 const AssetNode = ({
+  id,
   data: {
     category,
     color,
@@ -101,7 +187,7 @@ const AssetNode = ({
     themeColors,
   },
 }: AssetNodeProps) => {
-  const { expandNode } = useGraph();
+  const { collapseNodes, expandNode, expandedNodes } = useGraph();
   const {
     themeContext: { theme },
   } = useDashboard();
@@ -111,6 +197,11 @@ const AssetNode = ({
   const iconType = useDashboardIconType(icon);
 
   const [renderedHref, setRenderedHref] = useState<string | null>(null);
+
+  const isExpandedNode = useMemo(
+    () => !!expandedNodes[id],
+    [id, expandedNodes]
+  );
 
   useEffect(() => {
     if (isFolded || !href) {
@@ -155,7 +246,15 @@ const AssetNode = ({
         }}
         icon={isFolded ? fold?.icon : icon}
       />
-      {isFolded && <FoldedNodeCountBadge foldedNodes={foldedNodes} />}
+      {isFolded && (
+        <FoldedNodeCountBadge category={category} foldedNodes={foldedNodes} />
+      )}
+      {isExpandedNode && (
+        <FoldNodeIcon
+          collapseNodes={collapseNodes}
+          expandedNodeInfo={expandedNodes[id]}
+        />
+      )}
     </div>
   );
 

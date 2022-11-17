@@ -23,11 +23,7 @@ import {
   getColorOverride,
   LeafNodeData,
 } from "../../common";
-import {
-  CategoryMap,
-  KeyValueStringPairs,
-  Node as NodeType,
-} from "../../common/types";
+import { CategoryMap, Node as NodeType } from "../../common/types";
 import {
   CategoryStatus,
   GraphProperties,
@@ -36,8 +32,8 @@ import {
   NodeAndEdgeStatus,
 } from "../types";
 import { DashboardRunState } from "../../../../types";
+import { ExpandedNodes, GraphProvider, useGraph } from "../common/useGraph";
 import { getGraphComponent } from "..";
-import { GraphProvider, useGraph } from "../common/useGraph";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -58,7 +54,7 @@ const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
   themeColors: any,
-  expandedNodes: KeyValueStringPairs,
+  expandedNodes: ExpandedNodes,
   status: DashboardRunState
 ) => {
   if (!data) {

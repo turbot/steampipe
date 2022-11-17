@@ -6,7 +6,6 @@ import {
   Edge,
   EdgeMap,
   KeyValuePairs,
-  KeyValueStringPairs,
   Node,
   NodeAndEdgeProperties,
   NodeCategoryMap,
@@ -15,6 +14,7 @@ import {
 } from "./types";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
 import { DashboardRunState, PanelsMap } from "../../../types";
+import { ExpandedNodes } from "../graphs/common/useGraph";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
 import { getNodeAndEdgeDataFormat } from "./useNodeAndEdgeData";
@@ -341,7 +341,7 @@ const getCategoriesWithFold = (categories: CategoryMap): CategoryMap => {
 
 const foldNodesAndEdges = (
   nodesAndEdges: NodesAndEdges,
-  expandedNodes: KeyValueStringPairs = {}
+  expandedNodes: ExpandedNodes = {}
 ): NodesAndEdges => {
   const categoriesWithFold = getCategoriesWithFold(nodesAndEdges.categories);
 
