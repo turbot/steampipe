@@ -38,6 +38,7 @@ func NewInitData(ctx context.Context) *InitData {
 		}
 	}
 
+	// create InitData, but do not initialize yet, since 'viper' is not completely setup
 	i := &InitData{
 		InitData: *initialisation.NewInitData(w),
 	}
@@ -85,7 +86,9 @@ func NewInitData(ctx context.Context) *InitData {
 
 	i.setControlFilterClause()
 
+	// initialize
 	i.InitData.Init(ctx, constants.InvokerCheck)
+
 	return i
 }
 
