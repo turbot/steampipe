@@ -1,9 +1,11 @@
 import isEmpty from "lodash/isEmpty";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useDeepCompareEffect from "use-deep-compare-effect";
-import { CategoryFields, KeyValuePairs } from "../../common/types";
+import { Category, CategoryFields, KeyValuePairs } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive } from "../../../../types";
 import { ErrorIcon } from "../../../../constants/icons";
+import { getColorOverride } from "../../common";
 import { isRelativeUrl } from "../../../../utils/url";
 import {
   renderInterpolatedTemplates,
@@ -12,6 +14,11 @@ import {
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
+interface RowPropertiesTitleProps {
+  category: Category | undefined;
+  title: string;
+}
+
 interface RowPropertiesProps {
   fields: CategoryFields | null;
   properties: KeyValuePairs | null;
@@ -19,10 +26,27 @@ interface RowPropertiesProps {
 
 interface RowPropertyItemProps {
   name: string;
-  rowTemplateData: RowRenderResult | null;
+  rowTemplateData?: RowRenderResult | null;
   value: any;
   wrap: boolean;
 }
+
+const RowPropertiesTitle = ({ category, title }: RowPropertiesTitleProps) => {
+  const themeColors = useChartThemeColors();
+  return (
+    <div className="flex flex-col space-y-1">
+      {category && (
+        <span
+          className="block text-foreground-lighter text-xs"
+          style={{ color: getColorOverride(category.color, themeColors) }}
+        >
+          {category.title || category.name}
+        </span>
+      )}
+      <strong className="block">{title}</strong>
+    </div>
+  );
+};
 
 const RowPropertyItemValue = ({
   name,
@@ -81,7 +105,7 @@ const RowPropertyItemValue = ({
       </span>
     );
   } else {
-    let renderValue: string = "";
+    let renderValue: string;
     switch (typeof value) {
       case "object":
         renderValue = JSON.stringify(value, null, 2);
@@ -134,6 +158,7 @@ const RowPropertyItem = ({
           "block text-sm text-foreground-lighter truncate",
           wrap ? "whitespace-normal" : "truncate"
         )}
+        title={name}
       >
         {name}
       </span>
@@ -209,3 +234,5 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
 };
 
 export default RowProperties;
+
+export { RowPropertiesTitle };

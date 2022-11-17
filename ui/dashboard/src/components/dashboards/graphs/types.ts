@@ -53,20 +53,18 @@ export type NodeAndEdgeState = "pending" | "error" | "complete";
 
 type BaseNodeAndEdgeStatus = {
   id: string;
-  title?: string;
   state: NodeAndEdgeState;
 };
 
-export type CategoryStatus = BaseNodeAndEdgeStatus;
+export type CategoryStatus = BaseNodeAndEdgeStatus & {
+  title?: string;
+};
 
 type CategoryStatusMap = {
   [name: string]: CategoryStatus;
 };
 
-export type NodeStatus = BaseNodeAndEdgeStatus & {
-  count: number;
-};
-
+export type NodeStatus = BaseNodeAndEdgeStatus;
 export type EdgeStatus = BaseNodeAndEdgeStatus;
 
 export type NodeAndEdgeStatus = {

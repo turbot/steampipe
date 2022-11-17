@@ -1,4 +1,4 @@
-import RowProperties from "./RowProperties";
+import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
 import { circleGetBezierPath, getEdgeParams } from "./utils";
 import { classNames } from "../../../../utils/styles";
@@ -14,6 +14,7 @@ const FloatingEdge = ({
   markerEnd,
   style,
   data: {
+    category,
     color,
     customColor,
     fields,
@@ -86,7 +87,7 @@ const FloatingEdge = ({
               properties={row_data.properties}
             />
           }
-          title={label}
+          title={<RowPropertiesTitle category={category} title={label} />}
         >
           {edgeLabel}
         </Tooltip>

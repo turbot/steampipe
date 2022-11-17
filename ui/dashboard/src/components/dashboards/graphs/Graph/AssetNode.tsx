@@ -2,7 +2,7 @@ import DashboardIcon, {
   useDashboardIconType,
 } from "../../common/DashboardIcon";
 import IntegerDisplay from "../../../IntegerDisplay";
-import RowProperties from "./RowProperties";
+import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
 import {
   Category,
@@ -19,7 +19,7 @@ import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useGraph } from "../common/useGraph";
 
-interface AssetNodeProps {
+type AssetNodeProps = {
   data: {
     category?: Category;
     color?: string;
@@ -33,16 +33,16 @@ interface AssetNodeProps {
     row_data?: KeyValuePairs;
     themeColors;
   };
-}
+};
 
-interface FoldedNodeCountBadgeProps {
+type FoldedNodeCountBadgeProps = {
   foldedNodes: FoldedNode[] | undefined;
-}
+};
 
-interface FoldedNodeLabelProps {
+type FoldedNodeLabelProps = {
   category: Category | undefined;
   fold: CategoryFold | undefined;
-}
+};
 
 const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
   if (!foldedNodes) {
@@ -186,7 +186,7 @@ const AssetNode = ({
             )}
           </>
         }
-        title={label}
+        title={<RowPropertiesTitle category={category} title={label} />}
       >
         {node}
         {/*<div className="cursor-pointer text-black-scale-5">*/}
@@ -201,7 +201,7 @@ const AssetNode = ({
     <div
       className={classNames(
         renderedHref ? "text-link cursor-pointer" : null,
-        "absolute flex space-x-1 items-center justify-center -bottom-[20px] px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        "absolute flex space-x-1 items-center justify-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
       )}
       onClick={
         isFolded && foldedNodes
@@ -236,7 +236,7 @@ const AssetNode = ({
       {/*@ts-ignore*/}
       <Handle type="source" />
       {/*<div className="max-w-[50px]">{label}</div>*/}
-      <div className="relative flex flex-col items-center cursor-auto">
+      <div className="relative flex flex-col items-center cursor-auto h-[72px]">
         {nodeWithProperties}
         {nodeLabel}
       </div>

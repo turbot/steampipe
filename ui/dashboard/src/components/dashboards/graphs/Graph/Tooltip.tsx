@@ -1,6 +1,7 @@
 import {
   cloneElement,
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useRef,
@@ -17,7 +18,7 @@ interface TooltipProps {
   overlay: JSX.Element;
   show?: boolean;
   showDelay?: number;
-  title: string;
+  title: ReactNode;
 }
 
 // Start: adapted from https://github.com/streamich/react-use
@@ -211,7 +212,7 @@ const Tooltip = ({
 };
 
 const Title = ({ title }) => {
-  return <strong className="block break-all">{title}</strong>;
+  return <div className="block break-all">{title}</div>;
 };
 
 export default Tooltip;

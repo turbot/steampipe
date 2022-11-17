@@ -176,13 +176,13 @@ export interface DashboardTags {
 }
 
 export interface SelectedDashboardStates {
-  dashboard_name: string | null;
+  dashboard_name: string | undefined;
   dataMode: DashboardDataMode;
   refetchDashboard: boolean;
   search: DashboardSearch;
+  searchParams: URLSearchParams;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
-  selectedSnapshot: DashboardSnapshot;
 }
 
 interface DashboardInputs {

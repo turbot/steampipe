@@ -14,6 +14,11 @@ interface DashboardHeroIconProps extends DashboardIconProps {
   style?: any;
 }
 
+interface DashboardImageIconProps extends DashboardIconProps {
+  icon: string;
+  style?: any;
+}
+
 const useDashboardIconType = (icon) =>
   useMemo(() => {
     if (!icon) {
@@ -43,8 +48,12 @@ const useDashboardIconType = (icon) =>
     return "icon";
   }, [icon]);
 
-const DashboardImageIcon = ({ className, icon }) => (
-  <img className={className} src={icon} alt="" />
+const DashboardImageIcon = ({
+  className,
+  icon,
+  style,
+}: DashboardImageIconProps) => (
+  <img className={className} src={icon} alt="" style={style} />
 );
 
 const DashboardHeroIcon = ({
@@ -79,7 +88,9 @@ const DashboardIcon = ({ className, icon, style }: DashboardIconProps) => {
     case "text":
       return <DashboardTextIcon className={className} icon={icon} />;
     case "url":
-      return <DashboardImageIcon className={className} icon={icon} />;
+      return (
+        <DashboardImageIcon className={className} icon={icon} style={style} />
+      );
     default:
       return null;
   }

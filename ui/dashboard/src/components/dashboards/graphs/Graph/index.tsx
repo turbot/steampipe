@@ -24,6 +24,11 @@ import {
   LeafNodeData,
 } from "../../common";
 import {
+  CategoryMap,
+  KeyValueStringPairs,
+  Node as NodeType,
+} from "../../common/types";
+import {
   CategoryStatus,
   GraphProperties,
   GraphProps,
@@ -33,11 +38,6 @@ import {
 import { DashboardRunState } from "../../../../types";
 import { getGraphComponent } from "..";
 import { GraphProvider, useGraph } from "../common/useGraph";
-import {
-  CategoryMap,
-  KeyValueStringPairs,
-  Node as NodeType,
-} from "../../common/types";
 import { registerComponent } from "../../index";
 import {
   ResetLayoutIcon,
@@ -106,16 +106,24 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
       : null;
+    let categoryColor = getColorOverride(
+      matchingCategory ? matchingCategory.color : null,
+      themeColors
+    );
+    if (categoryColor === "auto") {
+      categoryColor = null;
+    }
     nodes.push({
       type: "asset",
       id: node.id,
       position: { x: matchingNode.x, y: matchingNode.y },
+      // height: 70,
       data: {
         category:
           node.category && categories[node.category]
             ? categories[node.category]
             : null,
-        color: matchingCategory ? matchingCategory.color : null,
+        color: categoryColor,
         fields: matchingCategory ? matchingCategory.fields : null,
         href: matchingCategory ? matchingCategory.href : null,
         icon: matchingCategory ? matchingCategory.icon : null,
@@ -159,9 +167,9 @@ const buildGraphNodesAndEdges = (
       }
     }
     const color = categoryColor
-      ? categoryColor
+      ? getColorOverride(categoryColor, themeColors)
       : targetNodeColor
-      ? targetNodeColor
+      ? getColorOverride(targetNodeColor, themeColors)
       : themeColors.blackScale4;
     const labelOpacity = categoryColor ? 1 : targetNodeColor ? 0.5 : 1;
     const lineOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
@@ -180,6 +188,10 @@ const buildGraphNodesAndEdges = (
         type: MarkerType.Arrow,
       },
       data: {
+        category:
+          edge.category && categories[edge.category]
+            ? categories[edge.category]
+            : null,
         color,
         customColor: !!categoryColor || !!targetNodeColor,
         fields: matchingCategory ? matchingCategory.fields : null,
@@ -304,14 +316,7 @@ const ZoomOutControl = () => {
 };
 
 const ResetZoomControl = () => {
-  const { setFitView } = useGraph();
   const { fitView } = useReactFlow();
-
-  // We need to capture this fit view function and pass it into our graph provider,
-  // so that we can call it when the edges or nodes change to update the layout
-  useEffect(() => {
-    setFitView(fitView);
-  }, [fitView, setFitView]);
 
   return (
     <ControlButton
@@ -433,34 +438,32 @@ const Graph = (props) => {
   );
 
   return (
-    <ReactFlowProvider>
-      <div
-        style={{
-          height: graphOptions.height,
-          maxHeight: selectedPanel ? undefined : 600,
-          minHeight: 175,
+    <div
+      style={{
+        height: graphOptions.height,
+        maxHeight: selectedPanel ? undefined : 600,
+        minHeight: 175,
+      }}
+    >
+      <ReactFlow
+        // @ts-ignore
+        edgeTypes={edgeTypes}
+        edges={graphOptions.edges}
+        fitView
+        nodes={graphOptions.nodes}
+        nodeTypes={nodeTypes}
+        onEdgesChange={graphOptions.onEdgesChange}
+        onNodesChange={graphOptions.onNodesChange}
+        preventScrolling={false}
+        proOptions={{
+          account: "paid-pro",
+          hideAttribution: true,
         }}
+        zoomOnScroll={false}
       >
-        <ReactFlow
-          // @ts-ignore
-          edgeTypes={edgeTypes}
-          edges={graphOptions.edges}
-          fitView
-          nodes={graphOptions.nodes}
-          nodeTypes={nodeTypes}
-          onEdgesChange={graphOptions.onEdgesChange}
-          onNodesChange={graphOptions.onNodesChange}
-          preventScrolling={false}
-          proOptions={{
-            account: "paid-pro",
-            hideAttribution: true,
-          }}
-          zoomOnScroll={false}
-        >
-          <CustomControls />
-        </ReactFlow>
-      </div>
-    </ReactFlowProvider>
+        <CustomControls />
+      </ReactFlow>
+    </div>
   );
 };
 
@@ -481,16 +484,18 @@ const GraphWrapper = (props: GraphProps) => {
   }
 
   return (
-    <GraphProvider>
-      <Graph
-        {...props}
-        categories={nodeAndEdgeData.categories}
-        data={nodeAndEdgeData.data}
-        dataFormat={nodeAndEdgeData.dataFormat}
-        properties={nodeAndEdgeData.properties}
-        nodeAndEdgeStatus={nodeAndEdgeData.status}
-      />
-    </GraphProvider>
+    <ReactFlowProvider>
+      <GraphProvider>
+        <Graph
+          {...props}
+          categories={nodeAndEdgeData.categories}
+          data={nodeAndEdgeData.data}
+          dataFormat={nodeAndEdgeData.dataFormat}
+          properties={nodeAndEdgeData.properties}
+          nodeAndEdgeStatus={nodeAndEdgeData.status}
+        />
+      </GraphProvider>
+    </ReactFlowProvider>
   );
 };
 
