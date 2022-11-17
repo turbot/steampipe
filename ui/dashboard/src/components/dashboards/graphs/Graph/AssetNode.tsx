@@ -6,6 +6,7 @@ import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import usePaginatedList from "../../../../hooks/usePaginatedList";
 import {
   Category,
   CategoryFields,
@@ -21,7 +22,6 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import usePaginatedList from "../../../../hooks/usePaginatedList";
 
 type AssetNodeProps = {
   id: string;
@@ -115,6 +115,7 @@ const FoldedNodeCountBadge = ({
   category,
   foldedNodes,
 }: FoldedNodeCountBadgeProps) => {
+  const { expandNode } = useGraph();
   if (!foldedNodes) {
     return null;
   }
@@ -128,7 +129,10 @@ const FoldedNodeCountBadge = ({
         />
       }
     >
-      <div className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer">
+      <div
+        className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer"
+        onClick={() => expandNode(foldedNodes, category?.name as string)}
+      >
         <IntegerDisplay num={foldedNodes?.length || null} />
       </div>
     </Tooltip>
@@ -153,23 +157,33 @@ const FoldNodeIcon = ({
   );
 };
 
-const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
-  <div className="flex space-x-1 items-center">
-    {fold?.title && (
-      <span className="text-link cursor-pointer truncate" title={fold?.title}>
-        {fold?.title}
-      </span>
-    )}
-    {!fold?.title && (
-      <span
-        className="text-link cursor-pointer truncate"
-        title={category?.name}
-      >
-        {category?.name}
-      </span>
-    )}
-  </div>
-);
+const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => {
+  const themeColors = useChartThemeColors();
+  return (
+    <div
+      className="flex space-x-1 items-center"
+      style={{
+        color: category?.color
+          ? getColorOverride(category.color, themeColors)
+          : null,
+      }}
+    >
+      {fold?.title && (
+        <span className="cursor-pointer truncate" title={fold?.title}>
+          {fold?.title}
+        </span>
+      )}
+      {!fold?.title && (
+        <span
+          className="text-link cursor-pointer truncate"
+          title={category?.name}
+        >
+          {category?.name}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const AssetNode = ({
   id,
