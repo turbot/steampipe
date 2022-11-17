@@ -41,9 +41,6 @@ func NewInitData(ctx context.Context) *InitData {
 	i := &InitData{
 		InitData: *initialisation.NewInitData(w),
 	}
-	if i.Result.Error != nil {
-		return i
-	}
 
 	if !w.ModfileExists() {
 		i.Result.Error = workspace.ErrorNoModDefinition
@@ -87,6 +84,7 @@ func NewInitData(ctx context.Context) *InitData {
 	i.OutputFormatter = formatter
 
 	i.setControlFilterClause()
+
 	i.InitData.Init(ctx, constants.InvokerCheck)
 	return i
 }
