@@ -86,6 +86,8 @@ const populateCategoryWithDefaults = (category: Category): Category => {
   };
 };
 
+const emptyPanels = {};
+
 // This function will normalise both the legacy and node/edge data formats into a data table.
 // In the node/edge approach, the data will be spread out across the node and edge resources
 // until the flow/graph/hierarchy has completed, at which point we'll have a populated data
@@ -96,11 +98,27 @@ const useNodeAndEdgeData = (
   status: DashboardRunState
 ) => {
   const { panelsMap } = useDashboard();
+  const dataFormat = getNodeAndEdgeDataFormat(properties);
+  const panels = useMemo(() => {
+    if (dataFormat === "LEGACY") {
+      return emptyPanels;
+    }
+    return panelsMap;
+  }, [panelsMap, dataFormat]);
+
   return useMemo(() => {
-    const dataFormat = getNodeAndEdgeDataFormat(properties);
     if (dataFormat === "LEGACY") {
       if (status === "complete") {
-        return data ? { categories: {}, data, dataFormat, properties } : null;
+        const categories: CategoryMap = {};
+
+        // Set defaults on categories
+        for (const [name, category] of Object.entries(
+          properties?.categories || {}
+        )) {
+          categories[name] = populateCategoryWithDefaults(category);
+        }
+
+        return data ? { categories, data, dataFormat, properties } : null;
       }
       return null;
     }
@@ -130,7 +148,7 @@ const useNodeAndEdgeData = (
 
     // Loop over all the node names and check out their respective panel in the panels map
     for (const nodePanelName of properties?.nodes || []) {
-      const panel = panelsMap[nodePanelName];
+      const panel = panels[nodePanelName];
 
       // Capture missing panels - we'll deal with that after
       if (!panel) {
@@ -204,7 +222,7 @@ const useNodeAndEdgeData = (
 
     // Loop over all the edge names and check out their respective panel in the panels map
     for (const edgePanelName of properties?.edges || []) {
-      const panel = panelsMap[edgePanelName];
+      const panel = panels[edgePanelName];
 
       // Capture missing panels - we'll deal with that after
       if (!panel) {
@@ -302,7 +320,7 @@ const useNodeAndEdgeData = (
       dataFormat,
       status: nodeAndEdgeStatus,
     };
-  }, [data, panelsMap, properties, status]);
+  }, [data, panels, properties, status]);
 };
 
 export default useNodeAndEdgeData;

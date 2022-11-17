@@ -152,7 +152,7 @@ describe("common.adjustMaxValue", () => {
 describe("common.buildNodesAndEdges", () => {
   test("single node", () => {
     const rawData = {
-      columns: [{ name: "id", data_type: "text" }],
+      columns: [{ name: "id", data_type: "TEXT" }],
       rows: [{ id: "node" }],
     };
     const node = {
@@ -182,11 +182,46 @@ describe("common.buildNodesAndEdges", () => {
     });
   });
 
+  test("single node with depth", () => {
+    const rawData = {
+      columns: [
+        { name: "id", data_type: "TEXT" },
+        { name: "depth", data_type: "INT4" },
+      ],
+      rows: [{ id: "node", depth: 0 }],
+    };
+    const node = {
+      id: "node",
+      title: null,
+      category: null,
+      depth: 0,
+      row_data: { id: "node", depth: 0 },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
+    delete nodesAndEdges.graph;
+    expect(nodesAndEdges).toEqual({
+      categories: {},
+      edgeMap: {},
+      edges: [],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+      next_color_index: 0,
+      nodeCategoryMap: {},
+      nodeMap: { [node.id]: node },
+      nodes: [node],
+      root_nodes: {
+        node,
+      },
+    });
+  });
+
   test("single node with category", () => {
     const rawData = {
       columns: [
-        { name: "id", data_type: "text" },
-        { name: "category", data_type: "text" },
+        { name: "id", data_type: "TEXT" },
+        { name: "category", data_type: "TEXT" },
       ],
       rows: [{ id: "node", category: "c1" }],
     };
@@ -224,8 +259,8 @@ describe("common.buildNodesAndEdges", () => {
   test("single node with from_id", () => {
     const rawData = {
       columns: [
-        { name: "id", data_type: "text" },
-        { name: "from_id", data_type: "text" },
+        { name: "id", data_type: "TEXT" },
+        { name: "from_id", data_type: "TEXT" },
       ],
       rows: [{ id: "node", from_id: "from_node" }],
     };
@@ -277,8 +312,8 @@ describe("common.buildNodesAndEdges", () => {
   test("single node with to_id", () => {
     const rawData = {
       columns: [
-        { name: "id", data_type: "text" },
-        { name: "to_id", data_type: "text" },
+        { name: "id", data_type: "TEXT" },
+        { name: "to_id", data_type: "TEXT" },
       ],
       rows: [{ id: "node", to_id: "to_node" }],
     };
@@ -330,9 +365,9 @@ describe("common.buildNodesAndEdges", () => {
   test("single node with from_id and to_id", () => {
     const rawData = {
       columns: [
-        { name: "id", data_type: "text" },
-        { name: "from_id", data_type: "text" },
-        { name: "to_id", data_type: "text" },
+        { name: "id", data_type: "TEXT" },
+        { name: "from_id", data_type: "TEXT" },
+        { name: "to_id", data_type: "TEXT" },
       ],
       rows: [{ id: "node", from_id: "from_node", to_id: "to_node" }],
     };
@@ -399,13 +434,14 @@ describe("common.buildNodesAndEdges", () => {
   test("two nodes with separate edge declaration", () => {
     const rawData = {
       columns: [
-        { name: "id", data_type: "text" },
-        { name: "from_id", data_type: "text" },
-        { name: "to_id", data_type: "text" },
+        { name: "id", data_type: "TEXT" },
+        { name: "from_id", data_type: "TEXT" },
+        { name: "to_id", data_type: "TEXT" },
+        { name: "depth", data_type: "INT4" },
       ],
       rows: [
-        { id: "from_node" },
-        { id: "to_node" },
+        { id: "from_node", depth: 0 },
+        { id: "to_node", depth: 1 },
         { from_id: "from_node", to_id: "to_node" },
       ],
     };
@@ -421,8 +457,8 @@ describe("common.buildNodesAndEdges", () => {
       id: "from_node",
       title: null,
       category: null,
-      depth: null,
-      row_data: { id: "from_node" },
+      depth: 0,
+      row_data: { id: "from_node", depth: 0 },
       href: null,
       symbol: null,
       isFolded: false,
@@ -431,8 +467,67 @@ describe("common.buildNodesAndEdges", () => {
       id: "to_node",
       title: null,
       category: null,
-      depth: null,
-      row_data: { id: "to_node" },
+      depth: 1,
+      row_data: { id: "to_node", depth: 1 },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const nodesAndEdges = buildNodesAndEdges({}, rawData);
+    delete nodesAndEdges.graph;
+    expect(nodesAndEdges).toEqual({
+      categories: {},
+      edgeMap: { [edge.id]: edge },
+      edges: [edge],
+      metadata: { contains_duplicate_edges: false, has_multiple_roots: false },
+      next_color_index: 0,
+      nodeCategoryMap: {},
+      nodeMap: { [sourceNode.id]: sourceNode, [targetNode.id]: targetNode },
+      nodes: [sourceNode, targetNode],
+      root_nodes: {
+        from_node: sourceNode,
+      },
+    });
+  });
+
+  test("two nodes with separate edge declaration and title set on explicit node rows", () => {
+    const rawData = {
+      columns: [
+        { name: "id", data_type: "TEXT" },
+        { name: "from_id", data_type: "TEXT" },
+        { name: "to_id", data_type: "TEXT" },
+        { name: "depth", data_type: "INT4" },
+      ],
+      rows: [
+        { from_id: "from_node", to_id: "to_node" },
+        { id: "from_node", depth: 0, title: "from_node" },
+        { id: "to_node", depth: 1, title: "to_node" },
+      ],
+    };
+    const edge = {
+      id: "from_node_to_node",
+      from_id: "from_node",
+      to_id: "to_node",
+      title: null,
+      category: null,
+      row_data: { from_id: "from_node", to_id: "to_node" },
+    };
+    const sourceNode = {
+      id: "from_node",
+      title: "from_node",
+      category: null,
+      depth: 0,
+      row_data: { id: "from_node", depth: 0, title: "from_node" },
+      href: null,
+      symbol: null,
+      isFolded: false,
+    };
+    const targetNode = {
+      id: "to_node",
+      title: "to_node",
+      category: null,
+      depth: 1,
+      row_data: { id: "to_node", depth: 1, title: "to_node" },
       href: null,
       symbol: null,
       isFolded: false,
@@ -457,10 +552,10 @@ describe("common.buildNodesAndEdges", () => {
   test("two nodes with separate edge declaration including properties", () => {
     const rawData = {
       columns: [
-        { name: "id", data_type: "text" },
-        { name: "from_id", data_type: "text" },
-        { name: "to_id", data_type: "text" },
-        { name: "title", data_type: "text" },
+        { name: "id", data_type: "TEXT" },
+        { name: "from_id", data_type: "TEXT" },
+        { name: "to_id", data_type: "TEXT" },
+        { name: "title", data_type: "TEXT" },
         { name: "properties", data_type: "jsonb" },
       ],
       rows: [
@@ -535,8 +630,8 @@ describe("common.buildNodesAndEdges", () => {
   // test("single node with title", () => {
   //   const rawData = {
   //     columns: [
-  //       { name: "id", data_type: "text" },
-  //       { name: "title", data_type: "text" },
+  //       { name: "id", data_type: "TEXT" },
+  //       { name: "title", data_type: "TEXT" },
   //     ],
   //     rows: [{ id: "a_node", title: "A Node Title" }],
   //   };
@@ -562,8 +657,8 @@ describe("common.buildNodesAndEdges", () => {
   // test("single node with category", () => {
   //   const rawData = {
   //     columns: [
-  //       { name: "id", data_type: "text" },
-  //       { name: "category", data_type: "text" },
+  //       { name: "id", data_type: "TEXT" },
+  //       { name: "category", data_type: "TEXT" },
   //     ],
   //     rows: [{ id: "a_node", category: "a_category" }],
   //   };

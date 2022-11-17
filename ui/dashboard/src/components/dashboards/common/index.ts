@@ -653,7 +653,8 @@ const buildNodesAndEdges = (
         : null;
     const title: string | null = row.title || null;
     const category: string | null = row.category || null;
-    const depth: number | null = row.depth || null;
+    const depth: number | null =
+      typeof row.depth === "number" ? row.depth : null;
 
     if (category && !categories[category]) {
       const overrides = categoryProperties[category];
@@ -717,6 +718,7 @@ const buildNodesAndEdges = (
     // If this row is a node
     if (!!node_id) {
       const existingNode = node_lookup[node_id];
+
       // Even if the node already existed, it will only have minimal info, as it
       // could only have been created implicitly through an edge definition, so
       // build a full node and update it
@@ -731,7 +733,16 @@ const buildNodesAndEdges = (
         categories
       );
 
-      if (!existingNode) {
+      // Ensure that any existing references to this node are also updated
+      if (existingNode) {
+        const nodeIndex = nodes.findIndex((n) => n.id === node.id);
+        if (nodeIndex >= 0) {
+          nodes[nodeIndex] = node;
+        }
+        if (root_node_lookup[node.id]) {
+          root_node_lookup[node.id] = node;
+        }
+      } else {
         graph.setNode(node_id);
         nodes.push(node);
 
