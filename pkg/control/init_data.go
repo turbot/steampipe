@@ -3,11 +3,12 @@ package control
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"net/url"
-	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -38,7 +39,7 @@ func NewInitData(ctx context.Context) *InitData {
 	}
 
 	i := &InitData{
-		InitData: *initialisation.NewInitData(w).Init(ctx, constants.InvokerCheck),
+		InitData: *initialisation.NewInitData(w),
 	}
 	if i.Result.Error != nil {
 		return i
@@ -86,6 +87,7 @@ func NewInitData(ctx context.Context) *InitData {
 	i.OutputFormatter = formatter
 
 	i.setControlFilterClause()
+	i.InitData.Init(ctx, constants.InvokerCheck)
 	return i
 }
 
