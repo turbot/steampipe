@@ -20,7 +20,8 @@ group_id,title,description,control_id,control_title,control_description,reason,r
 {{ end }}{{ end }}{{ end }}
 
 {{ define "control_error_template" -}}
-  {{ toCsvCell .Group.GroupId }},{{ toCsvCell .Group.Title }},{{ toCsvCell .Group.Description -}},{{ toCsvCell .ControlId }},{{ toCsvCell .Title }},{{ toCsvCell .Description -}},{{ toCsvCell .RunErrorString -}},,{{ toCsvCell "error" -}},{{ range .Tree.Root.DimensionKeys }},{{ end }}{{ range .Tree.Root.AllTagKeys }},{{ end }}
+  {{- $run := . -}}
+  {{ toCsvCell .Group.GroupId }},{{ toCsvCell .Group.Title }},{{ toCsvCell .Group.Description -}},{{ toCsvCell .ControlId }},{{ toCsvCell .Title }},{{ toCsvCell .Description -}},{{ toCsvCell .RunErrorString -}},,{{ toCsvCell "error" -}},{{ range .Tree.Root.DimensionKeys }},{{ end }}{{ range .Tree.Root.AllTagKeys }},{{ toCsvCell (index $run.Tags .) }}{{ end }}
 {{- end }}
 
 {{ define "control_row_template" -}}
