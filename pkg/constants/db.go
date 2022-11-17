@@ -26,7 +26,7 @@ const (
 	DatabaseUser                     = "steampipe"
 	DatabaseName                     = "steampipe"
 	DatabaseUsersRole                = "steampipe_users"
-	DefaultMaxConnections            = 5
+	DefaultMaxConnections            = 10
 )
 
 // constants for installing db and fdw images
