@@ -117,6 +117,7 @@ const buildGraphNodesAndEdges = (
       type: "asset",
       id: node.id,
       position: { x: matchingNode.x, y: matchingNode.y },
+      // height: 70,
       data: {
         category:
           node.category && categories[node.category]

@@ -201,7 +201,7 @@ const AssetNode = ({
     <div
       className={classNames(
         renderedHref ? "text-link cursor-pointer" : null,
-        "absolute flex space-x-1 items-center justify-center -bottom-[20px] px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        "absolute flex space-x-1 items-center justify-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
       )}
       onClick={
         isFolded && foldedNodes
@@ -236,7 +236,7 @@ const AssetNode = ({
       {/*@ts-ignore*/}
       <Handle type="source" />
       {/*<div className="max-w-[50px]">{label}</div>*/}
-      <div className="relative flex flex-col items-center cursor-auto">
+      <div className="relative flex flex-col items-center cursor-auto h-[72px]">
         {nodeWithProperties}
         {nodeLabel}
       </div>
