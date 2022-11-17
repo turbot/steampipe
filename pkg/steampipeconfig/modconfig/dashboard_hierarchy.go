@@ -274,9 +274,9 @@ func (h *DashboardHierarchy) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (h *DashboardHierarchy) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (h *DashboardHierarchy) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return h.getPreparedStatementExecuteSQL(h, runtimeArgs)
+	return h.getResolvedQuery(h, runtimeArgs)
 }
 
 // GetEdges implements EdgeAndNodeProvider

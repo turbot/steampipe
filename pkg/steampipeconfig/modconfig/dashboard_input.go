@@ -301,9 +301,9 @@ func (i *DashboardInput) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (i *DashboardInput) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (i *DashboardInput) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return i.getPreparedStatementExecuteSQL(i, runtimeArgs)
+	return i.getResolvedQuery(i, runtimeArgs)
 }
 
 // DependsOnInput returns whether this input has a runtime dependency on the given input

@@ -248,9 +248,9 @@ func (i *DashboardImage) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (i *DashboardImage) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (i *DashboardImage) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return i.getPreparedStatementExecuteSQL(i, runtimeArgs)
+	return i.getResolvedQuery(i, runtimeArgs)
 }
 
 func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

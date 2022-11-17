@@ -29,10 +29,10 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx
 	}
 	var preparedStatementFailures *db_common.PrepareStatementFailures
 	if count == 0 {
-		err, preparedStatementFailures = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), conn, combineSql)
-		if err != nil {
-			return err, preparedStatementFailures
-		}
+		//err, preparedStatementFailures = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), conn, combineSql)
+		//if err != nil {
+		//	return err, preparedStatementFailures
+		//}
 
 		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource(), conn)
 		if err != nil {

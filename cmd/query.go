@@ -187,11 +187,11 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	var queryNames = utils.SortedMapKeys(initData.Queries)
 
 	if len(queryNames) > 0 {
-		for i, name := range queryNames {
-			queryString := initData.Queries[name]
+		for _, name := range queryNames {
+			resolvedQuery := initData.Queries[name]
 			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 			// this is to allow us to use existing dashboard execution code
-			queryProvider, existingResource := ensureQueryResource(name, queryString, i, len(queryNames), initData.Workspace)
+			queryProvider, existingResource := ensureQueryResource(name, resolvedQuery, initData.Workspace)
 
 			// we need to pass the embedded initData to  GenerateSnapshot
 			baseInitData := &initData.InitData
@@ -274,9 +274,9 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	return res, nil
 }
 
-// convert the given command line query intos a query resource and add to workspace
+// convert the given command line query into a query resource and add to workspace
 // this is to allow us to use existing dashboard execution code
-func ensureQueryResource(name string, query string, queryIdx, queryCount int, w *workspace.Workspace) (queryProvider modconfig.HclResource, existingResource bool) {
+func ensureQueryResource(name string, resolvedQuery *modconfig.ResolvedQuery, w *workspace.Workspace) (queryProvider modconfig.HclResource, existingResource bool) {
 	// is this an existing resource?
 	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
 		if resource, found := modconfig.GetResource(w, parsedName); found {
@@ -287,9 +287,10 @@ func ensureQueryResource(name string, query string, queryIdx, queryCount int, w 
 	// build name
 	shortName := "command_line_query"
 
-	// create the query
+	// this is NOT a named query - create the query using RawSql
 	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName).(*modconfig.Query)
-	q.SQL = utils.ToStringPointer(query)
+	q.SQL = utils.ToStringPointer(resolvedQuery.RawSQL)
+	q.SetArgs(resolvedQuery.QueryArgs())
 	// add empty metadata
 	q.SetMetadata(&modconfig.ResourceMetadata{})
 

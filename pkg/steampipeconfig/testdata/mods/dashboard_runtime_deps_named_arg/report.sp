@@ -25,11 +25,8 @@ dashboard "dashboard_named_args" {
   table {
     sql = "select $1"
     with "w1" {
-        sql = "select $1"
-        args = {
-            foo = "bar"
-       }
-       param foo {}
+        sql = "select * from aws_account"
+
     }
     args  = {
       "with_val" = with.w1.rows[*].arn

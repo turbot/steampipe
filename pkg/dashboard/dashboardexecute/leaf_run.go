@@ -2,8 +2,8 @@ package dashboardexecute
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"log"
 	"strconv"
 	"sync"
@@ -25,7 +25,7 @@ type LeafRun struct {
 	Type             string                            `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
 	Display          string                            `cty:"display" hcl:"display" json:"display,omitempty"`
 	RawSQL           string                            `json:"sql,omitempty"`
-	Args             []string                          `json:"args,omitempty"`
+	Args             []any                             `json:"args,omitempty"`
 	Params           []*modconfig.ParamDef             `json:"params,omitempty"`
 	Data             *dashboardtypes.LeafData          `json:"data,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
@@ -45,7 +45,7 @@ type LeafRun struct {
 	childComplete       chan dashboardtypes.DashboardNodeRun
 	withValues          map[string]*dashboardtypes.LeafData
 	withValueMutex      sync.Mutex
-	withRuns            map[string]*WithRun
+	withRuns            []*LeafRun
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -76,16 +76,8 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		executionTree:       executionTree,
 		parent:              parent,
 		runtimeDependencies: make(map[string]*ResolvedRuntimeDependency),
-		withRuns:            make(map[string]*WithRun),
-		withValues:          make(map[string]*dashboardtypes.LeafData),
-	}
 
-	for _, w := range r.DashboardNode.(modconfig.QueryProvider).GetWiths() {
-		withRun, err := NewWithRun(w, r, executionTree)
-		if err != nil {
-			return nil, err
-		}
-		r.withRuns[w.UnqualifiedName] = withRun
+		withValues: make(map[string]*dashboardtypes.LeafData),
 	}
 
 	parsedName, err := modconfig.ParseResourceName(resource.Name())
@@ -108,10 +100,29 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	executionTree.runs[r.Name] = r
 
 	// if we have children (nodes/edges), create runs for them
-	if children := resource.GetChildren(); len(children) > 0 {
+	children := resource.GetChildren()
+	if len(children) > 0 {
 		// create the child runs
-		return r.createChildRuns(children, executionTree)
+		err := r.createChildRuns(children, executionTree)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	// if we have with blocks, create runs for them
+	withBlocks := r.DashboardNode.(modconfig.QueryProvider).GetWiths()
+	if len(withBlocks) > 0 {
+		// create the child runs
+		err := r.createWithRuns(withBlocks, executionTree)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// create buffered child complete chan
+	if childCount := len(children) + len(withBlocks); childCount > 0 {
+		r.childComplete = make(chan dashboardtypes.DashboardNodeRun, childCount)
+	}
+
 	return r, nil
 }
 
@@ -137,18 +148,19 @@ func (r *LeafRun) addRuntimeDependencies() {
 		r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, getValueFunc)
 	}
 	// if the parent is a leaf run, we must be a node or an edge, inherit our parent runtime dependencies
-	if parentLeafRun, ok := r.parent.(*LeafRun); ok {
-		for name, dep := range parentLeafRun.runtimeDependencies {
-			if _, ok := r.runtimeDependencies[name]; !ok {
-				r.runtimeDependencies[name] = dep
+	// NOTE: UNLESS we are a 'with' run
+	if _, isWith := r.DashboardNode.(*modconfig.DashboardWith); !isWith {
+		if parentLeafRun, ok := r.parent.(*LeafRun); ok {
+			for name, dep := range parentLeafRun.runtimeDependencies {
+				if _, ok := r.runtimeDependencies[name]; !ok {
+					r.runtimeDependencies[name] = dep
+				}
 			}
 		}
 	}
 }
 
-func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) (*LeafRun, error) {
-	// create buffered child complete chan
-	r.childComplete = make(chan dashboardtypes.DashboardNodeRun, len(children))
+func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) error {
 
 	r.children = make([]dashboardtypes.DashboardNodeRun, len(children))
 	var errors []error
@@ -162,7 +174,20 @@ func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTre
 		}
 		r.children[i] = childRun
 	}
-	return r, error_helpers.CombineErrors(errors...)
+	return error_helpers.CombineErrors(errors...)
+}
+
+func (r *LeafRun) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
+	r.withRuns = make([]*LeafRun, len(withs))
+
+	for i, w := range withs {
+		withRun, err := NewLeafRun(w, r, executionTree)
+		if err != nil {
+			return err
+		}
+		r.withRuns[i] = withRun
+	}
+	return nil
 }
 
 // if we have a query provider which requires execution OR we have children, set status to ready
@@ -190,21 +215,11 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	// to get here, we must be a query provider
 
 	// start all `with` blocks
-	// execute all children asynchronously
-	for _, w := range r.withRuns {
-		go w.Execute(ctx)
+	if len(r.withRuns) > 0 {
+		r.executeWithRuns(ctx)
 	}
 
-	//for _, w := range r.withRuns {
-	//	w.Execute(ctx)
-	//	if w.Status == dashboardtypes.DashboardRunError {
-	//		r.SetError(ctx, w.error)
-	//		return
-	//	}
-	//
-	//	//withResult := dashboardtypes.NewLeafData(queryResult)
-	//	//r.setWithValue(w.UnqualifiedName, withResult)
-	//}
+	// TODO KAI handle error in with block
 
 	// if there are any unresolved runtime dependencies, wait for them
 	if len(r.runtimeDependencies) > 0 {
@@ -296,6 +311,15 @@ func (r *LeafRun) GetChildren() []dashboardtypes.DashboardNodeRun {
 func (r *LeafRun) ChildrenComplete() bool {
 	for _, child := range r.children {
 		if !child.RunComplete() {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *LeafRun) withComplete() bool {
+	for _, w := range r.withRuns {
+		if !w.RunComplete() {
 			return false
 		}
 	}
@@ -414,21 +438,22 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 
 	// build map of default params
 	for _, dep := range r.runtimeDependencies {
-		// format the arg value as a postgres string
-		formattedVal, err := type_conversion.GoToPostgresString(dep.value)
+		// TACTICAL
+		// format the arg value as a JSON string
+		jsonBytes, err := json.Marshal(dep.value)
+		valStr := string(jsonBytes)
 		if err != nil {
 			return nil, err
 		}
-
 		if dep.dependency.ArgName != nil {
-			res.ArgMap[*dep.dependency.ArgName] = formattedVal
+			res.ArgMap[*dep.dependency.ArgName] = valStr
 		} else {
 			if dep.dependency.ArgIndex == nil {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
 
 			// now add at correct index
-			res.ArgList[*dep.dependency.ArgIndex] = &formattedVal
+			res.ArgList[*dep.dependency.ArgIndex] = &valStr
 		}
 	}
 	return res, nil
@@ -438,7 +463,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 func (r *LeafRun) executeQuery(ctx context.Context) {
 	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
 
-	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL)
+	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL, r.Args...)
 	if err != nil {
 		query := r.DashboardNode.(modconfig.QueryProvider).GetQuery()
 		if query != nil {
@@ -463,6 +488,40 @@ func (r *LeafRun) executeQuery(ctx context.Context) {
 	r.TimingResult = queryResult.TimingResult
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete(ctx)
+}
+
+// if this leaf run has with runs), execute them
+func (r *LeafRun) executeWithRuns(ctx context.Context) {
+	for _, w := range r.withRuns {
+		go w.Execute(ctx)
+	}
+	// wait for children to complete
+	var errors []error
+
+	for !r.withComplete() {
+		log.Printf("[TRACE] run %s waiting for with runs", r.Name)
+		completeChild := <-r.childComplete
+		log.Printf("[TRACE] run %s got with complete", r.Name)
+		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
+			errors = append(errors, completeChild.GetError())
+		}
+		// fall through to recheck ChildrenComplete
+	}
+
+	log.Printf("[TRACE] run %s ALL children complete", r.Name)
+	// so all children have completed - check for errors
+	err := error_helpers.CombineErrors(errors...)
+	if err == nil {
+		r.setWithData()
+	} else {
+		r.SetError(ctx, err)
+	}
+}
+
+func (r *LeafRun) setWithData() {
+	for _, w := range r.withRuns {
+		r.setWithValue(w.DashboardNode.GetUnqualifiedName(), w.Data)
+	}
 }
 
 // if this leaf run has children (nodes/edges), execute them
@@ -600,7 +659,6 @@ func columnValuesFromRows(column string, rows []map[string]interface{}) (any, er
 	}
 	return res, nil
 }
-
 func (r *LeafRun) setWithValue(name string, result *dashboardtypes.LeafData) {
 	r.withValueMutex.Lock()
 	defer r.withValueMutex.Unlock()

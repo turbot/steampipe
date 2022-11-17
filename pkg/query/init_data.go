@@ -7,6 +7,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -14,8 +15,8 @@ type InitData struct {
 	initialisation.InitData
 	cancelInitialisation context.CancelFunc
 	Loaded               chan struct{}
-	// map of query name to query (key is the query text for command line queries)
-	Queries map[string]string
+	// map of query name to resolved query (key is the query text for command line queries)
+	Queries map[string]*modconfig.ResolvedQuery
 }
 
 // NewInitData returns a new InitData object
@@ -90,7 +91,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	queries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
+	resolvedQueries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
 	if err != nil {
 		i.Result.Error = err
 		return
@@ -99,7 +100,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	ctx, cancel := context.WithCancel(ctx)
 	// and store it
 	i.cancelInitialisation = cancel
-	i.Queries = queries
+	i.Queries = resolvedQueries
 	i.PreparedStatementSource = preparedStatementSource
 
 	// and call base init

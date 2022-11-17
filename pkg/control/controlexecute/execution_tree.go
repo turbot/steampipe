@@ -206,19 +206,19 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 // This is used to implement the 'where' control filtering
 func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereClause string) (map[string]bool, error) {
 	// query may either be a 'where' clause, or a named query
-	query, _, err := e.Workspace.ResolveQueryAndArgsFromSQLString(whereClause)
+	resolvedQuery, _, err := e.Workspace.ResolveQueryAndArgsFromSQLString(whereClause)
 	if err != nil {
 		return nil, err
 	}
 	// did we in fact resolve a named query, or just return the 'name' as the query
-	isNamedQuery := query != whereClause
+	isNamedQuery := resolvedQuery.ExecuteSQL != whereClause
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
-		query = fmt.Sprintf("select resource_name from %s where %s", constants.IntrospectionTableControl, whereClause)
+		resolvedQuery.ExecuteSQL = fmt.Sprintf("select resource_name from %s where %s", constants.IntrospectionTableControl, whereClause)
 	}
 
-	res, err := e.client.ExecuteSync(ctx, query)
+	res, err := e.client.ExecuteSync(ctx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	if err != nil {
 		return nil, err
 	}

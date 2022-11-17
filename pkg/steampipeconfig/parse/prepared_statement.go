@@ -137,7 +137,7 @@ func parseArg(v string) (string, error) {
 	if diags.HasErrors() {
 		return "", plugin.DiagsToError("bad arg syntax", diags)
 	}
-	return type_conversion.CtyToPostgresString(val)
+	return type_conversion.CtyToJSON(val)
 }
 
 func parseNamedArgs(argsList []string) (map[string]string, error) {

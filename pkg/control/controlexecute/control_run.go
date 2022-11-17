@@ -265,7 +265,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	// resolve the control query
-	query, err := r.resolveControlQuery(control)
+	resolvedQuery, err := r.resolveControlQuery(control)
 	if err != nil {
 		r.setError(ctx, err)
 		return
@@ -282,7 +282,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// execute the control query
 	// NOTE no need to pass an OnComplete callback - we are already closing our session after waiting for results
 	log.Printf("[TRACE] execute start for, %s\n", control.Name())
-	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, query, nil)
+	queryResult, err := client.ExecuteInSession(controlExecutionCtx, dbSession, nil, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	log.Printf("[TRACE] execute finish for, %s\n", control.Name())
 
 	if err != nil {
@@ -334,15 +334,12 @@ func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context
 	return newCtx
 }
 
-func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (string, error) {
+func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (*modconfig.ResolvedQuery, error) {
 	resolvedQuery, err := r.Tree.Workspace.ResolveQueryFromQueryProvider(control, nil)
 	if err != nil {
-		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error())
+		return nil, fmt.Errorf(`cannot run %s - failed to resolve query "%s": %s`, control.Name(), typehelpers.SafeString(control.SQL), err.Error())
 	}
-	if resolvedQuery.ExecuteSQL == "" {
-		return "", fmt.Errorf(`cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL))
-	}
-	return resolvedQuery.ExecuteSQL, nil
+	return resolvedQuery, nil
 }
 
 func (r *ControlRun) waitForResults(ctx context.Context) {
