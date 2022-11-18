@@ -6,12 +6,7 @@ const Table = getComponent("table");
 
 const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
   return (
-    <Panel
-      className={"overflow-x-auto"}
-      definition={definition}
-      showControls={false}
-      forceBackground={true}
-    >
+    <Panel definition={definition} showControls={false} forceBackground={true}>
       <Table
         name={`${definition}.table.detail`}
         panel_type="table"

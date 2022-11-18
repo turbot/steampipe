@@ -18,6 +18,7 @@ import { ReactNode } from "react";
 import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 interface PanelProps {
   children: ReactNode;
@@ -44,6 +45,7 @@ const Panel = ({
   forceBackground = false,
   ready = true,
 }: PanelProps) => {
+  const { selectedPanel } = useDashboard();
   const { panelControls, showPanelControls, setShowPanelControls } = usePanel();
   const [referenceElement, setReferenceElement] = useState(null);
 
@@ -124,8 +126,9 @@ const Panel = ({
                   definition.display_type === "line"))
               ? "border-t border-divide"
               : null,
-            (definition.panel_type === "table" &&
-              definition.display_type !== "line") ||
+            selectedPanel ||
+              (definition.panel_type === "table" &&
+                definition.display_type !== "line") ||
               definition.display_type === "table"
               ? "overflow-x-auto"
               : "overflow-x-hidden",
