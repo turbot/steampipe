@@ -1,7 +1,10 @@
-## v0.17.2 [tbd]
+## v0.17.2 [2022-11-18]
 _Bug fixes_
 * Fix dashboard interpolated string expressions with adjacent expressions not separated by spaces not rendering the second expression ([#2752](https://github.com/turbot/steampipe/issues/2752))
 * Ensure workspace and panel errors are shown in dashboard panels ([#2742](https://github.com/turbot/steampipe/issues/2742))
+* Fix issue where control execution errors were not shown in CSV rendering. ([#2674](https://github.com/turbot/steampipe/issues/2674))
+* Escape query arguments when resolving prepared statement execution SQL. ([#2676](https://github.com/turbot/steampipe/issues/2676))
+* Fixes issue where a '--where' or '--tag' flag were not creating the introspection tables. ([#2670](https://github.com/turbot/steampipe/issues/2670))
 
 ## v0.17.1 [2022-11-10]
 _Bug fixes_
