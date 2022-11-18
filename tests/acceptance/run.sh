@@ -30,6 +30,10 @@ export STEAMPIPE_CONNECTION_WATCHER=false
 export STEAMPIPE_INTROSPECTION=info
 export DEFAULT_WORKSPACE_PROFILE_LOCATION=$MY_PATH/test_data/source_files/workspace_profile_default
 
+# from GH action env variables
+export SPIPETOOLS_PG_CONN_STRING=$SPIPETOOLS_PG_CONN_STRING
+export SPIPETOOLS_TOKEN=$SPIPETOOLS_TOKEN
+
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")
 
