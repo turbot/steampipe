@@ -31,17 +31,6 @@ type DisplayConfiguration struct {
 
 type DisplayOption = func(config *DisplayConfiguration)
 
-// ShowTimingIfEnabled enables timing only of it has been enabled from
-// terminal options or the command line
-func ShowTimingIfEnabled() DisplayOption {
-	return func(o *DisplayConfiguration) {
-		if o.timing == nil {
-			t := viper.GetBool(constants.ArgTiming)
-			o.timing = &t
-		}
-	}
-}
-
 // ShowTimingOnOutput only enables timing if the current output mode is the one provided
 func ShowTimingOnOutput(output string) DisplayOption {
 	return func(o *DisplayConfiguration) {
@@ -71,7 +60,10 @@ func EnableTiming() DisplayOption {
 
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) {
-	options := &DisplayConfiguration{}
+	t := viper.GetBool(constants.ArgTiming)
+	options := &DisplayConfiguration{
+		timing: &t,
+	}
 	for _, o := range opts {
 		o(options)
 	}

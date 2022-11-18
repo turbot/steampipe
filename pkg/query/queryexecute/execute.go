@@ -28,7 +28,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(ctx, r, display.ShowTimingIfEnabled())
+		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this chunk of the stream
 		resultsStreamer.AllResultsRead()
 	}
