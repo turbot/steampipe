@@ -64,7 +64,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
 
     - name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
         credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
@@ -113,7 +113,7 @@ jobs:
         ref: ${{ github.event.ref }}
 
     - name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
+      uses: 'google-github-actions/auth@v1'
       with:
         service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
         credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
@@ -576,7 +576,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
     # - name: 'Authenticate to Google Cloud'
-    #   uses: 'google-github-actions/auth@v0'
+    #   uses: 'google-github-actions/auth@v1'
     #   with:
     #     service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
     #     credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
