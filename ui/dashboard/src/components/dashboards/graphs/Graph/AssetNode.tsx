@@ -157,31 +157,27 @@ const FoldNodeIcon = ({
   );
 };
 
-const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => {
-  const themeColors = useChartThemeColors();
+const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
+  <div className="flex space-x-1 items-center">
+    {fold?.title && (
+      <span className="cursor-pointer truncate" title={fold?.title}>
+        {fold?.title}
+      </span>
+    )}
+    {!fold?.title && (
+      <span
+        className="text-link cursor-pointer truncate"
+        title={category?.name}
+      >
+        {category?.name}
+      </span>
+    )}
+  </div>
+);
+
+const NodeControls = () => {
   return (
-    <div
-      className="flex space-x-1 items-center"
-      style={{
-        color: category?.color
-          ? getColorOverride(category.color, themeColors)
-          : null,
-      }}
-    >
-      {fold?.title && (
-        <span className="cursor-pointer truncate" title={fold?.title}>
-          {fold?.title}
-        </span>
-      )}
-      {!fold?.title && (
-        <span
-          className="text-link cursor-pointer truncate"
-          title={category?.name}
-        >
-          {category?.name}
-        </span>
-      )}
-    </div>
+    <div className="invisible peer-hover:visible absolute -left-[4%] -bottom-[4%] items-center bg-black-scale-2 p-1 rounded-full cursor-grab"></div>
   );
 };
 
@@ -237,10 +233,16 @@ const AssetNode = ({
     doRender();
   }, [isFolded, href, row_data, setRenderedHref]);
 
+  const nodeGrabHandle = (
+    <div className="custom-drag-handle absolute -left-[4%] -bottom-[4%] items-center bg-black-scale-2 p-1 rounded-full cursor-grab">
+      <Icon className="w-4 h-4" icon="cursor-arrow-ripple" />
+    </div>
+  );
+
   const node = (
     <div
       className={classNames(
-        "relative p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border cursor-grab"
+        "relative p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border"
       )}
       style={{
         // backgroundColor: color,
@@ -269,6 +271,7 @@ const AssetNode = ({
           expandedNodeInfo={expandedNodes[id]}
         />
       )}
+      {/*{nodeGrabHandle}*/}
     </div>
   );
 
@@ -322,7 +325,7 @@ const AssetNode = ({
           : undefined
       }
     >
-      {renderedHref && (
+      {!isFolded && renderedHref && (
         <ExternalLink className="truncate" to={renderedHref}>
           {label}
         </ExternalLink>
@@ -349,9 +352,12 @@ const AssetNode = ({
       {/*@ts-ignore*/}
       <Handle type="source" />
       {/*<div className="max-w-[50px]">{label}</div>*/}
-      <div className="relative flex flex-col items-center cursor-auto h-[72px]">
-        {nodeWithProperties}
-        {nodeLabel}
+      <div className="relative cursor-auto h-[72px]">
+        <div className="peer flex flex-col group items-center">
+          {nodeWithProperties}
+          {nodeLabel}
+        </div>
+        <NodeControls />
       </div>
     </>
   );
