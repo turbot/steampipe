@@ -57,9 +57,8 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 	case cty.String:
 		var target string
 		if err := gocty.FromCtyValue(v, &target); err == nil {
-			valStr = fmt.Sprintf("'%s'", target)
+			valStr = quoteString(target)
 		}
-
 	default:
 		var json string
 		// wrap as postgres string
@@ -69,6 +68,11 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 	}
 
 	return valStr, err
+}
+
+// taken from github.com/jackc/pgx/v4@v4.17.2/internal/sanitize/sanitize.go
+func quoteString(str string) string {
+	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
 }
 
 func ctyListToPostgresString(v cty.Value, ty cty.Type) (string, error) {
