@@ -204,7 +204,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 
 	// if both '--where' and '--tag' have been used, then it's an error
 	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
-		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of '--%s' and '--%s' may be set", constants.ArgWhere, constants.ArgWhere))
+		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of '--%s' and '--%s' may be set", constants.ArgWhere, constants.ArgTag))
 		return false
 	}
 

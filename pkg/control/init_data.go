@@ -3,15 +3,15 @@ package control
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/control/controldisplay"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"net/url"
 	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/control/controldisplay"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -37,11 +37,9 @@ func NewInitData(ctx context.Context) *InitData {
 		}
 	}
 
+	// create InitData, but do not initialize yet, since 'viper' is not completely setup
 	i := &InitData{
-		InitData: *initialisation.NewInitData(w).Init(ctx, constants.InvokerCheck),
-	}
-	if i.Result.Error != nil {
-		return i
+		InitData: *initialisation.NewInitData(w),
 	}
 
 	if !w.ModfileExists() {
@@ -86,6 +84,10 @@ func NewInitData(ctx context.Context) *InitData {
 	i.OutputFormatter = formatter
 
 	i.setControlFilterClause()
+
+	// initialize
+	i.InitData.Init(ctx, constants.InvokerCheck)
+
 	return i
 }
 
