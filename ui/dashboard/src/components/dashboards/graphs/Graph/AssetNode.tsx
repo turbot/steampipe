@@ -158,21 +158,18 @@ const FoldNodeIcon = ({
 };
 
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
-  <div className="flex space-x-1 items-center">
+  <>
     {fold?.title && (
-      <span className="cursor-pointer truncate" title={fold?.title}>
+      <span className="truncate" title={fold?.title}>
         {fold?.title}
       </span>
     )}
     {!fold?.title && (
-      <span
-        className="text-link cursor-pointer truncate"
-        title={category?.name}
-      >
+      <span className="text-link truncate" title={category?.name}>
         {category?.name}
       </span>
     )}
-  </div>
+  </>
 );
 
 const NodeControls = () => {
@@ -239,7 +236,7 @@ const AssetNode = ({
     </div>
   );
 
-  const node = (
+  const nodeIcon = (
     <div
       className={classNames(
         "relative p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border"
@@ -265,12 +262,12 @@ const AssetNode = ({
       {isFolded && (
         <FoldedNodeCountBadge category={category} foldedNodes={foldedNodes} />
       )}
-      {isExpandedNode && (
-        <FoldNodeIcon
-          collapseNodes={collapseNodes}
-          expandedNodeInfo={expandedNodes[id]}
-        />
-      )}
+      {/*{isExpandedNode && (*/}
+      {/*  <FoldNodeIcon*/}
+      {/*    collapseNodes={collapseNodes}*/}
+      {/*    expandedNodeInfo={expandedNodes[id]}*/}
+      {/*  />*/}
+      {/*)}*/}
       {/*{nodeGrabHandle}*/}
     </div>
   );
@@ -289,35 +286,35 @@ const AssetNode = ({
   //     node
   //   );
 
-  const nodeWithProperties =
-    row_data && row_data.properties && !isFolded ? (
-      <Tooltip
-        overlay={
-          <>
-            {row_data && row_data.properties && (
-              <RowProperties
-                fields={fields || null}
-                properties={row_data.properties}
-              />
-            )}
-          </>
-        }
-        title={<RowPropertiesTitle category={category} title={label} />}
-      >
-        {node}
-        {/*<div className="cursor-pointer text-black-scale-5">*/}
-        {/*  <Icon className="w-4 h-4" icon="queue-list" />*/}
-        {/*</div>*/}
-      </Tooltip>
-    ) : (
-      node
-    );
+  // const nodeWithProperties =
+  //   row_data && row_data.properties && !isFolded ? (
+  //     <Tooltip
+  //       overlay={
+  //         <>
+  //           {row_data && row_data.properties && (
+  //             <RowProperties
+  //               fields={fields || null}
+  //               properties={row_data.properties}
+  //             />
+  //           )}
+  //         </>
+  //       }
+  //       title={<RowPropertiesTitle category={category} title={label} />}
+  //     >
+  //       {icon}
+  //       {/*<div className="cursor-pointer text-black-scale-5">*/}
+  //       {/*  <Icon className="w-4 h-4" icon="queue-list" />*/}
+  //       {/*</div>*/}
+  //     </Tooltip>
+  //   ) : (
+  //     icon
+  //   );
 
   const nodeLabel = (
     <div
       className={classNames(
         renderedHref ? "text-link cursor-pointer" : null,
-        "absolute flex space-x-1 items-center justify-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        "absolute flex space-x-1 truncate items-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
       )}
       onClick={
         isFolded && foldedNodes
@@ -325,21 +322,27 @@ const AssetNode = ({
           : undefined
       }
     >
-      {!isFolded && renderedHref && (
-        <ExternalLink className="truncate" to={renderedHref}>
+      {isFolded && (
+        <span className="truncate" title={label}>
           {label}
-        </ExternalLink>
+        </span>
       )}
-      {!renderedHref && (
-        <>
-          {!isFolded && (
-            <span className="truncate" title={label}>
-              {label}
-            </span>
-          )}
-          {isFolded && <FoldedNodeLabel category={category} fold={fold} />}
-        </>
-      )}
+      {!isFolded && <FoldedNodeLabel category={category} fold={fold} />}
+      {/*{!isFolded && renderedHref && (*/}
+      {/*  <ExternalLink className="truncate" to={renderedHref}>*/}
+      {/*    {label}*/}
+      {/*  </ExternalLink>*/}
+      {/*)}*/}
+      {/*{!renderedHref && (*/}
+      {/*  <>*/}
+      {/*    {!isFolded && (*/}
+      {/*      <span className="truncate" title={label}>*/}
+      {/*        {label}*/}
+      {/*      </span>*/}
+      {/*    )}*/}
+      {/*    {isFolded && <FoldedNodeLabel category={category} fold={fold} />}*/}
+      {/*  </>*/}
+      {/*)}*/}
     </div>
   );
 
@@ -353,10 +356,21 @@ const AssetNode = ({
       <Handle type="source" />
       {/*<div className="max-w-[50px]">{label}</div>*/}
       <div className="relative cursor-auto h-[72px]">
-        <div className="peer flex flex-col group items-center">
-          {nodeWithProperties}
-          {nodeLabel}
-        </div>
+        {renderedHref && (
+          <ExternalLink
+            className="block flex flex-col items-center"
+            to={renderedHref}
+          >
+            {nodeIcon}
+            {nodeLabel}
+          </ExternalLink>
+        )}
+        {!renderedHref && (
+          <div className="flex flex-col items-center">
+            {nodeIcon}
+            {nodeLabel}
+          </div>
+        )}
         <NodeControls />
       </div>
     </>
