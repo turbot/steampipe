@@ -15,7 +15,7 @@ function usePaginatedList<T>(
     setAllItems(items);
     setVisibleItems(items.slice(0, pageSize));
     setNextPageSize(doubleOnExpand ? pageSize * 2 : pageSize);
-  }, [items]);
+  }, [doubleOnExpand, items, pageSize]);
 
   const hasMore = visibleItems.length < allItems.length;
 
