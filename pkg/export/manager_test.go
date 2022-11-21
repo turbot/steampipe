@@ -83,30 +83,26 @@ func TestDoExport(t *testing.T) {
 		shouldError := testCase.expect == "ERROR"
 		if shouldError {
 			if err == nil {
-				t.Logf("Request for '%s' should have errored - but did not", testCase.input)
-				t.Fail()
+				t.Errorf("Request for '%s' should have errored - but did not", testCase.input)
 			}
 			continue
 		}
 		if !shouldError {
 			if err != nil {
-				t.Logf("Request for '%s' should have not errored - but did: %v", testCase.input, err)
-				t.Fail()
+				t.Errorf("Request for '%s' should not have errored - but did: %v", testCase.input, err)
 			}
 			continue
 		}
 
 		if len(targets) != 1 {
-			t.Logf("%v with %v input => expected one target - got %d", testCase.name, testCase.input, len(targets))
-			t.Fail()
+			t.Errorf("%v with %v input => expected one target - got %d", testCase.name, testCase.input, len(targets))
 			continue
 		}
 		actualTarget := targets[0]
 		expectedTargetExporter := testCase.expect.(*testExporter)
 
 		if actualTarget.exporter != expectedTargetExporter {
-			t.Logf("%v with %v input => expected %s target - got %s", testCase.name, testCase.input, testCase.expect.(*testExporter).Name(), actualTarget.exporter.Name())
-			t.Fail()
+			t.Errorf("%v with %v input => expected %s target - got %s", testCase.name, testCase.input, testCase.expect.(*testExporter).Name(), actualTarget.exporter.Name())
 			continue
 		}
 	}
