@@ -27,7 +27,7 @@ dashboard "dashboard_named_args" {
         sql = "select * from aws_account"
     }
     args  = {
-      "with_val" = with.w1.rows[*].arn
+      "with_val" = flatten(with.w1.rows[*].account_aliases)
     }
     param "with_val" {}
 
