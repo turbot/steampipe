@@ -83,10 +83,10 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 		return err
 	}
 
-	// notificationLines needs to be read from the notification file
 	notificationLines := append(notifications.CLINotificationsLines, notifications.PluginNotificationLines...)
 
 	// convert notificationLines into an array of arrays
+	// since that's what our table renderer expects
 	var notificationTable = make([][]string, len(notificationLines))
 	for i, line := range notificationLines {
 		notificationTable[i] = []string{line}
@@ -96,7 +96,7 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 	table.SetHeader([]string{})                // no headers please
 	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
 	table.SetAutoWrapText(false)               // let's not wrap the text
-	table.SetBorder(true)                      // there needs to be a border to give the dialog feel
+	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
 	table.AppendBulk(notificationTable)        // Add Bulk Data
 
 	fmt.Println()

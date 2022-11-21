@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -47,9 +48,9 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 }
 
 // SendRequest makes a http call to the given URL
-func SendRequest(ctx context.Context, signature string, method string, sendRequestTo url.URL, payload *bytes.Buffer) (*http.Response, error) {
+func SendRequest(ctx context.Context, signature string, method string, sendRequestTo url.URL, payload io.Reader) (*http.Response, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	req, err := http.NewRequest(method, sendRequestTo.String(), payload)
+	req, err := http.NewRequestWithContext(ctx, method, sendRequestTo.String(), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -58,5 +59,5 @@ func SendRequest(ctx context.Context, signature string, method string, sendReque
 
 	client := cleanhttp.DefaultClient()
 
-	return client.Do(req.WithContext(ctx))
+	return client.Do(req)
 }
