@@ -20,10 +20,10 @@ func (t *testExporter) FileExtension() string { return t.extension }
 func (t *testExporter) Name() string          { return t.name }
 func (t *testExporter) Alias() string         { return t.alias }
 
-var dummyCSVExporter = testExporter{alias: "", extension: ".csv", name: "CSV"}
-var dummyJSONExporter = testExporter{alias: "", extension: ".json", name: "JSON"}
-var dummyASFFExporter = testExporter{alias: "asff.json", extension: ".json", name: "ASFF"}
-var dummyNUNITExporter = testExporter{alias: "nunit3.xml", extension: ".xml", name: "NUNIT3"}
+var dummyCSVExporter = testExporter{alias: "", extension: ".csv", name: "csv"}
+var dummyJSONExporter = testExporter{alias: "", extension: ".json", name: "json"}
+var dummyASFFExporter = testExporter{alias: "asff.json", extension: ".json", name: "asff"}
+var dummyNUNITExporter = testExporter{alias: "nunit3.xml", extension: ".xml", name: "nunit3"}
 var dummySPSExporter = testExporter{alias: "sps", extension: constants.SnapshotExtension, name: constants.OutputFormatSnapshot}
 
 type exporterTestCase struct {
@@ -39,28 +39,53 @@ var exporterTestCases = []exporterTestCase{
 		expect: "ERROR",
 	},
 	{
-		name:   "csv",
+		name:   "csv file name",
 		input:  "file.csv",
 		expect: &dummyCSVExporter,
 	},
 	{
-		name:   "Snapshot",
+		name:   "csv format name",
+		input:  "csv",
+		expect: &dummyCSVExporter,
+	},
+	{
+		name:   "Snapshot file name",
 		input:  "file.sps",
 		expect: &dummySPSExporter,
 	},
 	{
-		name:   "json",
+		name:   "Snapshot format name",
+		input:  "sps",
+		expect: &dummySPSExporter,
+	},
+	{
+		name:   "json file name",
 		input:  "file.json",
 		expect: &dummyJSONExporter,
 	},
 	{
-		name:   "asff json",
+		name:   "json format name",
+		input:  "json",
+		expect: &dummyJSONExporter,
+	},
+	{
+		name:   "asff json file name",
 		input:  "file.asff.json",
 		expect: &dummyASFFExporter,
 	},
 	{
-		name:   "nunit3",
+		name:   "asff json format name",
+		input:  "asff.json",
+		expect: &dummyASFFExporter,
+	},
+	{
+		name:   "nunit3 file name",
 		input:  "file.nunit3.xml",
+		expect: &dummyNUNITExporter,
+	},
+	{
+		name:   "nunit3 format name",
+		input:  "nunit3.xml",
 		expect: &dummyNUNITExporter,
 	},
 }
