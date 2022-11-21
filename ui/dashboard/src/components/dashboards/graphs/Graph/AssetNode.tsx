@@ -251,6 +251,7 @@ const AssetNode = ({
       <DashboardIcon
         className={classNames(
           "max-w-full",
+          isFolded ? "group-hover:hidden" : null,
           iconType === "icon" && !color ? "text-foreground-lighter" : null,
           theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
         )}
@@ -259,6 +260,22 @@ const AssetNode = ({
         }}
         icon={isFolded ? fold?.icon : icon}
       />
+      {isFolded && (
+        <DashboardIcon
+          className={classNames(
+            "hidden group-hover:block max-w-full",
+            iconType === "icon" && !color ? "text-foreground-lighter" : null
+            // theme.name === ThemeNames.STEAMPIPE_DARK
+            //   ? "brightness-[1.75]"
+            //   : null
+          )}
+          style={{
+            color: color ? color : undefined,
+          }}
+          icon="plus"
+          title="Expand nodes"
+        />
+      )}
       {isFolded && (
         <FoldedNodeCountBadge category={category} foldedNodes={foldedNodes} />
       )}
@@ -313,14 +330,9 @@ const AssetNode = ({
   const nodeLabel = (
     <div
       className={classNames(
-        renderedHref ? "text-link cursor-pointer" : null,
+        renderedHref ? "text-link" : null,
         "absolute flex space-x-1 truncate items-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
       )}
-      onClick={
-        isFolded && foldedNodes
-          ? () => expandNode(foldedNodes, category?.name as string)
-          : undefined
-      }
     >
       {!isFolded && (
         <span className="truncate" title={label}>
@@ -342,7 +354,17 @@ const AssetNode = ({
   // true  |  false   |  true        |  true
 
   const wrappedNode = (
-    <div className="relative cursor-auto h-[72px]">
+    <div
+      className={classNames(
+        "group relative h-[72px]",
+        renderedHref || isFolded ? "cursor-pointer" : "cursor-auto"
+      )}
+      onClick={
+        isFolded && foldedNodes
+          ? () => expandNode(foldedNodes, category?.name as string)
+          : undefined
+      }
+    >
       {renderedHref && (
         <ExternalLink
           className="block flex flex-col items-center"
