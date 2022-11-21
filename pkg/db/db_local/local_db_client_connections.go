@@ -19,38 +19,34 @@ import (
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalDbClient) refreshConnections(ctx context.Context, schemaNames ...string) *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
-	// if no schema names were passed, retrieve all connection names
-	if len(schemaNames) == 0 {
-		schemaNames = c.ForeignSchemaNames()
-	}
 	// determine any necessary connection updates
-	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(schemaNames)
+	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames(), forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 
 	if res.Error != nil {
 		return res
 	}
 
-	var conn_names, plugin_names []string
+	var connectionNames, pluginNames []string
 	// add warning if there are connections left over, from missing plugins
 	if len(connectionUpdates.MissingPlugins) > 0 {
 		// warning
 		for a, conns := range connectionUpdates.MissingPlugins {
 			for _, con := range conns {
-				conn_names = append(conn_names, con.Name)
+				connectionNames = append(connectionNames, con.Name)
 			}
-			plugin_names = append(plugin_names, utils.GetPluginName(a))
+			pluginNames = append(pluginNames, utils.GetPluginName(a))
 		}
 		res.AddWarning(fmt.Sprintf("%d %s required by %s %s missing. To install, please run %s",
-			len(plugin_names),
-			utils.Pluralize("plugin", len(plugin_names)),
-			utils.Pluralize("connection", len(conn_names)),
-			utils.Pluralize("is", len(plugin_names)),
-			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(plugin_names, " ")))))
+			len(pluginNames),
+			utils.Pluralize("plugin", len(pluginNames)),
+			utils.Pluralize("connection", len(connectionNames)),
+			utils.Pluralize("is", len(pluginNames)),
+			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
 	}
 
 	if !connectionUpdates.HasUpdates() {
