@@ -44,11 +44,6 @@ type FoldedNodeCountBadgeProps = {
   foldedNodes: FoldedNode[] | undefined;
 };
 
-type FoldNodeIconProps = {
-  collapseNodes: (foldedNodes: FoldedNode[]) => void;
-  expandedNodeInfo: ExpandedNodeInfo | undefined;
-};
-
 type FoldedNodeLabelProps = {
   category: Category | undefined;
   fold: CategoryFold | undefined;
@@ -67,10 +62,16 @@ type NodeControlProps = {
   action?: () => void;
   className?: string;
   icon: string;
+  title?: string;
 };
 
 type NodeControlsProps = {
   children: ReactNode | ReactNode[];
+};
+
+type RefoldNodeControlProps = {
+  collapseNodes: (foldedNodes: FoldedNode[]) => void;
+  expandedNodeInfo: ExpandedNodeInfo | undefined;
 };
 
 const FoldedNodeTooltipTitle = ({
@@ -131,24 +132,6 @@ const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
   );
 };
 
-const FoldNodeIcon = ({
-  collapseNodes,
-  expandedNodeInfo,
-}: FoldNodeIconProps) => {
-  if (!expandedNodeInfo) {
-    return null;
-  }
-  return (
-    <div
-      className="absolute -right-[4%] -top-[4%] items-center bg-foreground-lightest text-foreground-light rounded-full p-0.5 text-sm font-medium cursor-pointer"
-      title="Collapse"
-      onClick={() => collapseNodes(expandedNodeInfo.foldedNodes)}
-    >
-      <Icon className="w-4 h-4" icon="arrows-pointing-in" />
-    </div>
-  );
-};
-
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   <>
     {fold?.title && (
@@ -164,7 +147,7 @@ const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   </>
 );
 
-const NodeControl = ({ action, className, icon }: NodeControlProps) => {
+const NodeControl = ({ action, className, icon, title }: NodeControlProps) => {
   return (
     <div
       onClick={(e) => {
@@ -172,6 +155,7 @@ const NodeControl = ({ action, className, icon }: NodeControlProps) => {
         action && action();
       }}
       className={classNames(className, "p-1")}
+      title={title}
     >
       <Icon className="w-4 h-4" icon={icon} />
     </div>
@@ -186,12 +170,30 @@ const NodeControls = ({ children }: NodeControlsProps) => {
   );
 };
 
-const NodeGrabHandle = () => (
+const NodeGrabHandleControl = () => (
   <NodeControl
     className="custom-drag-handle cursor-grab"
     icon="cursor-arrow-ripple"
+    title="Move node"
   />
 );
+
+const RefoldNodeControl = ({
+  collapseNodes,
+  expandedNodeInfo,
+}: RefoldNodeControlProps) => {
+  if (!expandedNodeInfo) {
+    return null;
+  }
+  return (
+    <NodeControl
+      action={() => collapseNodes(expandedNodeInfo.foldedNodes)}
+      className="cursor-pointer"
+      icon="arrows-pointing-in"
+      title="Collapse node"
+    />
+  );
+};
 
 // <div className="custom-drag-handle absolute -left-[4%] -bottom-[4%] items-center bg-black-scale-2 p-1 rounded-full cursor-grab">
 //   <Icon className="w-4 h-4" icon="cursor-arrow-ripple" />
@@ -286,19 +288,17 @@ const AssetNode = ({
             color: color ? color : undefined,
           }}
           icon="plus"
-          title="Expand nodes"
         />
       )}
       {isFolded && <FoldedNodeCountBadge foldedNodes={foldedNodes} />}
-      {/*{isExpandedNode && (*/}
-      {/*  <FoldNodeIcon*/}
-      {/*    collapseNodes={collapseNodes}*/}
-      {/*    expandedNodeInfo={expandedNodes[id]}*/}
-      {/*  />*/}
-      {/*)}*/}
-      {/*{nodeGrabHandle}*/}
       <NodeControls>
-        <NodeGrabHandle />
+        {isExpandedNode && (
+          <RefoldNodeControl
+            collapseNodes={collapseNodes}
+            expandedNodeInfo={expandedNodes[id]}
+          />
+        )}
+        <NodeGrabHandleControl />
       </NodeControls>
     </div>
   );
@@ -354,6 +354,7 @@ const AssetNode = ({
           ? () => expandNode(foldedNodes, category?.name as string)
           : undefined
       }
+      title={isFolded ? "Expand nodes" : undefined}
     >
       {renderedHref && (
         <ExternalLink
