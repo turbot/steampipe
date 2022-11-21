@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
-const usePaginatedList = (
-  items: any[] = [],
+function usePaginatedList<T>(
+  items: T[] = [],
   pageSize = 10,
   doubleOnExpand = true
-) => {
+) {
   const [allItems, setAllItems] = useState(items);
   const [visibleItems, setVisibleItems] = useState(items.slice(0, pageSize));
   const [nextPageSize, setNextPageSize] = useState(
@@ -15,7 +15,7 @@ const usePaginatedList = (
     setAllItems(items);
     setVisibleItems(items.slice(0, pageSize));
     setNextPageSize(doubleOnExpand ? pageSize * 2 : pageSize);
-  }, [items]);
+  }, [doubleOnExpand, items, pageSize]);
 
   const hasMore = visibleItems.length < allItems.length;
 
@@ -32,6 +32,6 @@ const usePaginatedList = (
   };
 
   return { visibleItems, hasMore, loadMore };
-};
+}
 
 export default usePaginatedList;

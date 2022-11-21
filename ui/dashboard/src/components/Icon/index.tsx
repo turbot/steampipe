@@ -179,14 +179,15 @@ interface IconProps {
   className?: string;
   icon: string;
   style?: any;
+  title?: string;
 }
 
-const Icon = ({ className = "h-6 w-6", icon, style }: IconProps) => {
+const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
   const MatchingIcon = icons[getDashboardIconName(icon)];
   if (!MatchingIcon) {
     return null;
   }
-  return <MatchingIcon className={className} style={style} />;
+  return <MatchingIcon className={className} style={style} title={title} />;
 };
 
 export default Icon;

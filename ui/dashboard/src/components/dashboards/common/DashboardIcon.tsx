@@ -7,6 +7,7 @@ interface DashboardIconProps {
   className?: string;
   icon?: string | null;
   style?: any;
+  title?: string;
 }
 
 interface DashboardHeroIconProps extends DashboardIconProps {
@@ -52,16 +53,18 @@ const DashboardImageIcon = ({
   className,
   icon,
   style,
+  title,
 }: DashboardImageIconProps) => (
-  <img className={className} src={icon} alt="" style={style} />
+  <img className={className} src={icon} alt="" style={style} title={title} />
 );
 
 const DashboardHeroIcon = ({
   className,
   icon,
   style,
+  title,
 }: DashboardHeroIconProps) => (
-  <Icon className={className} icon={icon} style={style} />
+  <Icon className={className} icon={icon} style={style} title={title} />
 );
 
 const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => (
@@ -72,7 +75,12 @@ const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => (
   </svg>
 );
 
-const DashboardIcon = ({ className, icon, style }: DashboardIconProps) => {
+const DashboardIcon = ({
+  className,
+  icon,
+  style,
+  title,
+}: DashboardIconProps) => {
   // First work out the type of the provided icon
   const iconType = useDashboardIconType(icon);
 
@@ -83,13 +91,25 @@ const DashboardIcon = ({ className, icon, style }: DashboardIconProps) => {
   switch (iconType) {
     case "icon":
       return (
-        <DashboardHeroIcon className={className} icon={icon} style={style} />
+        <DashboardHeroIcon
+          className={className}
+          icon={icon}
+          style={style}
+          title={title}
+        />
       );
     case "text":
-      return <DashboardTextIcon className={className} icon={icon} />;
+      return (
+        <DashboardTextIcon className={className} icon={icon} title={title} />
+      );
     case "url":
       return (
-        <DashboardImageIcon className={className} icon={icon} style={style} />
+        <DashboardImageIcon
+          className={className}
+          icon={icon}
+          style={style}
+          title={title}
+        />
       );
     default:
       return null;

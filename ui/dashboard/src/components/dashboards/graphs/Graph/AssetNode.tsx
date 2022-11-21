@@ -1,9 +1,12 @@
 import DashboardIcon, {
   useDashboardIconType,
 } from "../../common/DashboardIcon";
+import Icon from "../../../Icon";
 import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import usePaginatedList from "../../../../hooks/usePaginatedList";
 import {
   Category,
   CategoryFields,
@@ -12,14 +15,16 @@ import {
   KeyValuePairs,
 } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
+import { ExpandedNodeInfo, useGraph } from "../common/useGraph";
+import { getColorOverride } from "../../common";
 import { Handle } from "reactflow";
-import { memo, useEffect, useState } from "react";
+import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useGraph } from "../common/useGraph";
 
 type AssetNodeProps = {
+  id: string;
   data: {
     category?: Category;
     color?: string;
@@ -44,49 +49,162 @@ type FoldedNodeLabelProps = {
   fold: CategoryFold | undefined;
 };
 
+type FoldedNodeTooltipTitleProps = {
+  category: Category | undefined;
+  foldedNodesCount: number;
+};
+
+type FolderNodeTooltipNodesProps = {
+  foldedNodes: FoldedNode[] | undefined;
+};
+
+type NodeControlProps = {
+  action?: () => void;
+  className?: string;
+  icon: string;
+  iconClassName?: string;
+  title?: string;
+};
+
+type NodeControlsProps = {
+  children: ReactNode | ReactNode[];
+};
+
+type RefoldNodeControlProps = {
+  collapseNodes: (foldedNodes: FoldedNode[]) => void;
+  expandedNodeInfo: ExpandedNodeInfo | undefined;
+};
+
+const FoldedNodeTooltipTitle = ({
+  category,
+  foldedNodesCount,
+}: FoldedNodeTooltipTitleProps) => {
+  const themeColors = useChartThemeColors();
+  return (
+    <div className="flex flex-col space-y-1">
+      {category && (
+        <span
+          className="block text-foreground-lighter text-xs"
+          style={{ color: getColorOverride(category.color, themeColors) }}
+        >
+          {category.title || category.name}
+        </span>
+      )}
+      <strong className="block">
+        <IntegerDisplay num={foldedNodesCount} /> nodes
+      </strong>
+    </div>
+  );
+};
+
+const FolderNodeTooltipNodes = ({
+  foldedNodes,
+}: FolderNodeTooltipNodesProps) => {
+  const { visibleItems, hasMore, loadMore } = usePaginatedList(foldedNodes, 5);
+
+  return (
+    <div className="max-h-1/2-screen space-y-2">
+      <div className="h-full overflow-y-auto">
+        {(visibleItems || []).map((n) => (
+          <div key={n.id}>{n.title || n.id}</div>
+        ))}
+        {hasMore && (
+          <div
+            className="flex items-center text-sm cursor-pointer space-x-1 text-link"
+            onClick={loadMore}
+          >
+            <span>More</span>
+            <Icon className="w-4 h-4" icon="arrow-long-down" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
   if (!foldedNodes) {
     return null;
   }
   return (
-    <Tooltip
-      overlay={
-        <div className="max-h-1/2-screen space-y-2">
-          <div className="h-full overflow-y-auto">
-            {(foldedNodes || []).map((n) => (
-              <div key={n.id}>{n.title || n.id}</div>
-            ))}
-          </div>
-        </div>
-      }
-      title={`${foldedNodes.length} nodes`}
-    >
-      <div className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer">
-        <IntegerDisplay num={foldedNodes?.length || null} />
-      </div>
-    </Tooltip>
+    <div className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer">
+      <IntegerDisplay num={foldedNodes?.length || null} />
+    </div>
   );
 };
 
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
-  <div className="flex space-x-1 items-center">
+  <>
     {fold?.title && (
-      <span className="text-link cursor-pointer truncate" title={fold?.title}>
+      <span className="truncate" title={fold?.title}>
         {fold?.title}
       </span>
     )}
     {!fold?.title && (
-      <span
-        className="text-link cursor-pointer truncate"
-        title={category?.name}
-      >
+      <span className="text-link truncate" title={category?.name}>
         {category?.name}
       </span>
     )}
-  </div>
+  </>
 );
 
+const NodeControl = ({
+  action,
+  className,
+  icon,
+  iconClassName,
+  title,
+}: NodeControlProps) => {
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        action && action();
+      }}
+      className={classNames(className, "p-1")}
+      title={title}
+    >
+      <Icon className={classNames(iconClassName, "w-3 h-3")} icon={icon} />
+    </div>
+  );
+};
+
+const NodeControls = ({ children }: NodeControlsProps) => {
+  return (
+    <div className="invisible group-hover:visible absolute -left-[17%] -bottom-[4%] flex flex-col space-y-px bg-dashboard text-foreground">
+      {children}
+    </div>
+  );
+};
+
+const NodeGrabHandleControl = () => (
+  <NodeControl
+    className="custom-drag-handle cursor-grab"
+    icon="arrows-pointing-out"
+    iconClassName="rotate-45"
+    title="Move node"
+  />
+);
+
+const RefoldNodeControl = ({
+  collapseNodes,
+  expandedNodeInfo,
+}: RefoldNodeControlProps) => {
+  if (!expandedNodeInfo) {
+    return null;
+  }
+  return (
+    <NodeControl
+      action={() => collapseNodes(expandedNodeInfo.foldedNodes)}
+      className="cursor-pointer"
+      icon="arrows-pointing-in"
+      title="Collapse node"
+    />
+  );
+};
+
 const AssetNode = ({
+  id,
   data: {
     category,
     color,
@@ -101,7 +219,7 @@ const AssetNode = ({
     themeColors,
   },
 }: AssetNodeProps) => {
-  const { expandNode } = useGraph();
+  const { collapseNodes, expandNode, expandedNodes } = useGraph();
   const {
     themeContext: { theme },
   } = useDashboard();
@@ -111,6 +229,11 @@ const AssetNode = ({
   const iconType = useDashboardIconType(icon);
 
   const [renderedHref, setRenderedHref] = useState<string | null>(null);
+
+  const isExpandedNode = useMemo(
+    () => !!expandedNodes[id],
+    [id, expandedNodes]
+  );
 
   useEffect(() => {
     if (isFolded || !href) {
@@ -132,10 +255,10 @@ const AssetNode = ({
     doRender();
   }, [isFolded, href, row_data, setRenderedHref]);
 
-  const node = (
+  const innerIcon = (
     <div
       className={classNames(
-        "relative p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border cursor-grab"
+        "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border"
       )}
       style={{
         // backgroundColor: color,
@@ -159,6 +282,29 @@ const AssetNode = ({
     </div>
   );
 
+  const nodeIcon = (
+    <div className="relative">
+      {!renderedHref && innerIcon}
+      {renderedHref && (
+        <ExternalLink
+          className="block flex flex-col items-center"
+          to={renderedHref}
+        >
+          {innerIcon}
+        </ExternalLink>
+      )}
+      <NodeControls>
+        {isExpandedNode && (
+          <RefoldNodeControl
+            collapseNodes={collapseNodes}
+            expandedNodeInfo={expandedNodes[id]}
+          />
+        )}
+        <NodeGrabHandleControl />
+      </NodeControls>
+    </div>
+  );
+
   // const primaryNode =
   //   row_data && row_data.id === "i-0aa50f7044a950942" ? (
   //     <div
@@ -173,59 +319,63 @@ const AssetNode = ({
   //     node
   //   );
 
-  const nodeWithProperties =
-    row_data && row_data.properties && !isFolded ? (
-      <Tooltip
-        overlay={
-          <>
-            {row_data && row_data.properties && (
-              <RowProperties
-                fields={fields || null}
-                properties={row_data.properties}
-              />
-            )}
-          </>
-        }
-        title={<RowPropertiesTitle category={category} title={label} />}
-      >
-        {node}
-        {/*<div className="cursor-pointer text-black-scale-5">*/}
-        {/*  <Icon className="w-4 h-4" icon="queue-list" />*/}
-        {/*</div>*/}
-      </Tooltip>
-    ) : (
-      node
-    );
-
-  const nodeLabel = (
+  const innerNodeLabel = (
     <div
       className={classNames(
-        renderedHref ? "text-link cursor-pointer" : null,
-        "absolute flex space-x-1 items-center justify-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        renderedHref ? "text-link" : null,
+        "absolute flex space-x-1 truncate items-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+      )}
+    >
+      {!isFolded && (
+        <span className="truncate" title={label}>
+          {label}
+        </span>
+      )}
+      {isFolded && <FoldedNodeLabel category={category} fold={fold} />}
+    </div>
+  );
+
+  const nodeLabel = (
+    <>
+      {!renderedHref && innerNodeLabel}
+      {renderedHref && (
+        <ExternalLink
+          className="block flex flex-col items-center"
+          to={renderedHref}
+        >
+          {innerNodeLabel}
+        </ExternalLink>
+      )}
+    </>
+  );
+
+  const hasProperties = row_data && row_data.properties;
+
+  const wrappedNode = (
+    <div
+      className={classNames(
+        "group relative h-[72px] flex flex-col items-center",
+        renderedHref || isFolded ? "cursor-pointer" : "cursor-auto"
       )}
       onClick={
         isFolded && foldedNodes
           ? () => expandNode(foldedNodes, category?.name as string)
           : undefined
       }
+      title={isFolded ? "Expand nodes" : undefined}
     >
-      {renderedHref && (
-        <ExternalLink className="truncate" to={renderedHref}>
-          {label}
-        </ExternalLink>
-      )}
-      {!renderedHref && (
-        <>
-          {!isFolded && (
-            <span className="truncate" title={label}>
-              {label}
-            </span>
-          )}
-          {isFolded && <FoldedNodeLabel category={category} fold={fold} />}
-        </>
-      )}
+      {nodeIcon}
+      {nodeLabel}
     </div>
   );
+
+  // 4 possible node states
+  // HREF  |  Folded  |  Properties  |  Controls
+  // ----------------------------------------
+  // false |  false   |  false       |  true
+  // false |  true    |  true        |  true
+  // true  |  false   |  false       |  true
+  // true  |  false   |  true        |  true
 
   // Notes:
   // * The Handle elements seem to be required to allow the connectors to work.
@@ -235,11 +385,34 @@ const AssetNode = ({
       <Handle type="target" />
       {/*@ts-ignore*/}
       <Handle type="source" />
-      {/*<div className="max-w-[50px]">{label}</div>*/}
-      <div className="relative flex flex-col items-center cursor-auto h-[72px]">
-        {nodeWithProperties}
-        {nodeLabel}
-      </div>
+      {!hasProperties && !isFolded && wrappedNode}
+      {hasProperties && !isFolded && (
+        <Tooltip
+          overlay={
+            <RowProperties
+              fields={fields || null}
+              properties={row_data.properties}
+            />
+          }
+          title={<RowPropertiesTitle category={category} title={label} />}
+        >
+          {wrappedNode}
+        </Tooltip>
+      )}
+      {isFolded && (
+        <Tooltip
+          overlay={<FolderNodeTooltipNodes foldedNodes={foldedNodes} />}
+          title={
+            <FoldedNodeTooltipTitle
+              category={category}
+              // @ts-ignore
+              foldedNodesCount={foldedNodes.length}
+            />
+          }
+        >
+          {wrappedNode}
+        </Tooltip>
+      )}
     </>
   );
 };
