@@ -3,12 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/cloud"
 	"log"
 	"os"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/turbot/steampipe/pkg/cloud"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
@@ -52,7 +53,10 @@ var rootCmd = &cobra.Command{
 
 		initGlobalConfig()
 
-		task.RunTasks()
+		if err := task.RunTasks(cmd.Context()); err != nil {
+			log.Printf("[TRACE] ran into an error running daily tasks: %v", err)
+			log.Printf("[TRACE] stack: %s", string(debug.Stack()))
+		}
 
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())

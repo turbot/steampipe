@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"time"
@@ -11,14 +12,17 @@ import (
 )
 
 // check if there is a new version
-func checkPluginVersions(installationID string) []string {
+func checkPluginVersions(ctx context.Context, installationID string) []string {
 	var notificationLines []string
 	if !viper.GetBool(constants.ArgUpdateCheck) {
 		return notificationLines
 	}
 
 	timeout := 5 * time.Second
-	updateReport := plugin.GetAllUpdateReport(installationID, timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	updateReport := plugin.GetAllUpdateReport(ctx, installationID)
 
 	var pluginsToUpdate []plugin.VersionCheckReport
 

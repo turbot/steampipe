@@ -1,17 +1,16 @@
 package task
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/url"
-	"os"
 	"time"
 
 	SemVer "github.com/Masterminds/semver"
 	"github.com/fatih/color"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -36,7 +35,7 @@ type versionChecker struct {
 }
 
 // check if there is a new version
-func checkSteampipeVersion(id string) []string {
+func checkSteampipeVersion(ctx context.Context, id string) []string {
 	var notificationLines []string
 
 	if !viper.GetBool(constants.ArgUpdateCheck) {
@@ -45,7 +44,7 @@ func checkSteampipeVersion(id string) []string {
 
 	v := new(versionChecker)
 	v.signature = id
-	v.doCheckRequest()
+	v.doCheckRequest(ctx)
 	notificationLines, _ = v.notificationMessage()
 	return notificationLines
 }
@@ -105,11 +104,15 @@ func displayUpdateNotification(notificationLines []string) {
 }
 
 // contact the Turbot Artifacts Server and retrieve the latest released version
-func (c *versionChecker) doCheckRequest() {
+func (c *versionChecker) doCheckRequest(ctx context.Context) {
 	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
 	sendRequestTo := c.versionCheckURL()
 	timeout := 5 * time.Second
-	resp, err := utils.SendRequest(c.signature, "POST", sendRequestTo, payload, timeout)
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	resp, err := utils.SendRequest(ctx, c.signature, "POST", sendRequestTo, payload)
 	if err != nil {
 		return
 	}

@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -20,23 +21,32 @@ type Runner struct {
 	currentState statefile.State
 }
 
-func RunTasks() {
+func RunTasks(ctx context.Context) error {
 	utils.LogTime("task.RunTasks start")
 	defer utils.LogTime("task.RunTasks end")
 
-	NewRunner().Run()
+	runner, err := NewRunner()
+	if err != nil {
+		return err
+	}
+	runner.Run(ctx)
+	return nil
 }
 
-func NewRunner() *Runner {
+func NewRunner() (*Runner, error) {
 	utils.LogTime("task.NewRunner start")
 	defer utils.LogTime("task.NewRunner end")
 
 	r := new(Runner)
-	r.currentState, _ = statefile.LoadState()
-	return r
+	state, err := statefile.LoadState()
+	if err != nil {
+		return nil, err
+	}
+	r.currentState = state
+	return r, nil
 }
 
-func (r *Runner) Run() {
+func (r *Runner) Run(ctx context.Context) {
 	utils.LogTime("task.Runner.Run start")
 	defer utils.LogTime("task.Runner.Run end")
 
@@ -46,20 +56,20 @@ func (r *Runner) Run() {
 		waitGroup := sync.WaitGroup{}
 
 		// check whether an updated version is available
-		runJobAsync(func() {
-			versionNotificationLines = checkSteampipeVersion(r.currentState.InstallationID)
+		runJobAsync(ctx, func(c context.Context) {
+			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// check whether an updated version is available
-		runJobAsync(func() {
-			pluginNotificationLines = checkPluginVersions(r.currentState.InstallationID)
+		runJobAsync(ctx, func(c context.Context) {
+			pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// remove log files older than 7 days
-		runJobAsync(func() { db_local.TrimLogs() }, &waitGroup)
+		runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
 
 		// validate and regenerate service SSL certificates
-		runJobAsync(func() { validateServiceCertificates() }, &waitGroup)
+		runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
 
 		// wait for all jobs to complete
 		waitGroup.Wait()
@@ -77,11 +87,12 @@ func (r *Runner) Run() {
 	}
 }
 
-func runJobAsync(job func(), wg *sync.WaitGroup) {
+func runJobAsync(ctx context.Context, job func(context.Context), wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
-		job()
-		wg.Done()
+		// do this as defer, so that it always fires - even if there's a panic
+		defer wg.Done()
+		job(ctx)
 	}()
 }
 

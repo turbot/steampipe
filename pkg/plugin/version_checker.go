@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,7 +33,7 @@ type VersionChecker struct {
 }
 
 // GetUpdateReport looks up and reports the updated version of selective turbot plugins which are listed in versions.json
-func GetUpdateReport(installationID string, check []*versionfile.InstalledVersion, timeout time.Duration) map[string]VersionCheckReport {
+func GetUpdateReport(ctx context.Context, installationID string, check []*versionfile.InstalledVersion) map[string]VersionCheckReport {
 	versionChecker := new(VersionChecker)
 	versionChecker.signature = installationID
 
@@ -42,11 +43,11 @@ func GetUpdateReport(installationID string, check []*versionfile.InstalledVersio
 		}
 	}
 
-	return versionChecker.reportPluginUpdates(timeout)
+	return versionChecker.reportPluginUpdates(ctx)
 }
 
 // GetAllUpdateReport looks up and reports the updated version of all turbot plugins which are listed in versions.json
-func GetAllUpdateReport(installationID string, timeout time.Duration) map[string]VersionCheckReport {
+func GetAllUpdateReport(ctx context.Context, installationID string) map[string]VersionCheckReport {
 	versionChecker := new(VersionChecker)
 	versionChecker.signature = installationID
 	versionChecker.pluginsToCheck = []*versionfile.InstalledVersion{}
@@ -63,10 +64,10 @@ func GetAllUpdateReport(installationID string, timeout time.Duration) map[string
 		}
 	}
 
-	return versionChecker.reportPluginUpdates(timeout)
+	return versionChecker.reportPluginUpdates(ctx)
 }
 
-func (v *VersionChecker) reportPluginUpdates(timeout time.Duration) map[string]VersionCheckReport {
+func (v *VersionChecker) reportPluginUpdates(ctx context.Context) map[string]VersionCheckReport {
 	versionFileData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
@@ -77,7 +78,7 @@ func (v *VersionChecker) reportPluginUpdates(timeout time.Duration) map[string]V
 		// there's no plugin installed. no point continuing
 		return nil
 	}
-	reports := v.getLatestVersionsForPlugins(v.pluginsToCheck, timeout)
+	reports := v.getLatestVersionsForPlugins(ctx, v.pluginsToCheck)
 
 	// remove elements from `reports` which have empty strings in CheckResponse
 	// this happens if we have sent a plugin to the API which doesn't exist
@@ -102,7 +103,7 @@ func (v *VersionChecker) reportPluginUpdates(timeout time.Duration) map[string]V
 	return reports
 }
 
-func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.InstalledVersion, timeout time.Duration) map[string]VersionCheckReport {
+func (v *VersionChecker) getLatestVersionsForPlugins(ctx context.Context, plugins []*versionfile.InstalledVersion) map[string]VersionCheckReport {
 
 	getMapKey := func(thisPayload versionCheckRequestPayload) string {
 		return fmt.Sprintf("%s/%s/%s", thisPayload.Org, thisPayload.Name, thisPayload.Stream)
@@ -122,7 +123,7 @@ func (v *VersionChecker) getLatestVersionsForPlugins(plugins []*versionfile.Inst
 		}
 	}
 
-	serverResponse, err := v.requestServerForLatest(requestPayload, timeout)
+	serverResponse, err := v.requestServerForLatest(ctx, requestPayload)
 	if err != nil {
 		log.Printf("[TRACE] PluginVersionChecker getLatestVersionsForPlugins returned error: %s", err.Error())
 		// return a blank map
@@ -167,14 +168,14 @@ func (v *VersionChecker) getVersionCheckURL() url.URL {
 	return u
 }
 
-func (v *VersionChecker) requestServerForLatest(payload []versionCheckRequestPayload, timeout time.Duration) ([]versionCheckResponsePayload, error) {
+func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []versionCheckRequestPayload) ([]versionCheckResponsePayload, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	sendRequestTo := v.getVersionCheckURL()
 	requestBody := utils.BuildRequestPayload(v.signature, map[string]interface{}{
 		"plugins": payload,
 	})
 
-	resp, err := utils.SendRequest(v.signature, "POST", sendRequestTo, requestBody, timeout)
+	resp, err := utils.SendRequest(ctx, v.signature, "POST", sendRequestTo, requestBody)
 	if err != nil {
 		log.Printf("[TRACE] Could not send request")
 		return nil, err
