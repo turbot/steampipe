@@ -62,6 +62,7 @@ type NodeControlProps = {
   action?: () => void;
   className?: string;
   icon: string;
+  iconClassName?: string;
   title?: string;
 };
 
@@ -147,7 +148,13 @@ const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   </>
 );
 
-const NodeControl = ({ action, className, icon, title }: NodeControlProps) => {
+const NodeControl = ({
+  action,
+  className,
+  icon,
+  iconClassName,
+  title,
+}: NodeControlProps) => {
   return (
     <div
       onClick={(e) => {
@@ -157,14 +164,14 @@ const NodeControl = ({ action, className, icon, title }: NodeControlProps) => {
       className={classNames(className, "p-1")}
       title={title}
     >
-      <Icon className="w-4 h-4" icon={icon} />
+      <Icon className={classNames(iconClassName, "w-3 h-3")} icon={icon} />
     </div>
   );
 };
 
 const NodeControls = ({ children }: NodeControlsProps) => {
   return (
-    <div className="invisible group-hover:visible absolute -left-[10%] -bottom-[10%] flex flex-col space-y-px bg-dashboard text-foreground">
+    <div className="invisible group-hover:visible absolute -left-[17%] -bottom-[4%] flex flex-col space-y-px bg-dashboard text-foreground">
       {children}
     </div>
   );
@@ -173,7 +180,8 @@ const NodeControls = ({ children }: NodeControlsProps) => {
 const NodeGrabHandleControl = () => (
   <NodeControl
     className="custom-drag-handle cursor-grab"
-    icon="cursor-arrow-ripple"
+    icon="arrows-pointing-out"
+    iconClassName="rotate-45"
     title="Move node"
   />
 );
@@ -266,7 +274,6 @@ const AssetNode = ({
       <DashboardIcon
         className={classNames(
           "max-w-full",
-          isFolded ? "group-hover:hidden" : null,
           iconType === "icon" && !color ? "text-foreground-lighter" : null,
           theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
         )}
@@ -275,21 +282,6 @@ const AssetNode = ({
         }}
         icon={isFolded ? fold?.icon : icon}
       />
-      {isFolded && (
-        <DashboardIcon
-          className={classNames(
-            "hidden group-hover:block max-w-full",
-            iconType === "icon" && !color ? "text-foreground-lighter" : null
-            // theme.name === ThemeNames.STEAMPIPE_DARK
-            //   ? "brightness-[1.75]"
-            //   : null
-          )}
-          style={{
-            color: color ? color : undefined,
-          }}
-          icon="plus"
-        />
-      )}
       {isFolded && <FoldedNodeCountBadge foldedNodes={foldedNodes} />}
       <NodeControls>
         {isExpandedNode && (
