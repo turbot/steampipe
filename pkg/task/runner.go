@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -29,6 +30,9 @@ func RunTasks(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err := runner.displayNotifications(); err != nil {
+		log.Println("[TRACE] faced error displaying notifications:", err)
+	}
 	runner.Run(ctx)
 	return nil
 }
@@ -38,6 +42,7 @@ func NewRunner() (*Runner, error) {
 	defer utils.LogTime("task.NewRunner end")
 
 	r := new(Runner)
+
 	state, err := statefile.LoadState()
 	if err != nil {
 		return nil, err
@@ -74,10 +79,9 @@ func (r *Runner) Run(ctx context.Context) {
 		// wait for all jobs to complete
 		waitGroup.Wait()
 
-		// display notifications, if any
-		notificationLines := append(versionNotificationLines, pluginNotificationLines...)
-		if len(notificationLines) > 0 {
-			displayUpdateNotification(notificationLines)
+		// save the notifications, if any
+		if err := r.saveNotifications(versionNotificationLines, pluginNotificationLines); err != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save pending notifications: %s", err))
 		}
 
 		// save the state - this updates the last checked time

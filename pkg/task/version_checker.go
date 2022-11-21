@@ -84,25 +84,6 @@ func (c *versionChecker) notificationMessage() ([]string, error) {
 	return nil, nil
 }
 
-func displayUpdateNotification(notificationLines []string) {
-	// convert notificationLines into an array of arrays
-	var notificationTable = make([][]string, len(notificationLines))
-	for i, line := range notificationLines {
-		notificationTable[i] = []string{line}
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{})                // no headers please
-	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
-	table.SetAutoWrapText(false)               // let's not wrap the text
-	table.SetBorder(true)                      // there needs to be a border to give the dialog feel
-	table.AppendBulk(notificationTable)        // Add Bulk Data
-
-	fmt.Println()
-	table.Render()
-	fmt.Println()
-}
-
 // contact the Turbot Artifacts Server and retrieve the latest released version
 func (c *versionChecker) doCheckRequest(ctx context.Context) {
 	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
