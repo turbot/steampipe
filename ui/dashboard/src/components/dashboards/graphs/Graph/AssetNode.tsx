@@ -120,22 +120,22 @@ const FoldedNodeCountBadge = ({
     return null;
   }
   return (
-    <Tooltip
-      overlay={<FolderNodeTooltipNodes foldedNodes={foldedNodes} />}
-      title={
-        <FoldedNodeTooltipTitle
-          category={category}
-          foldedNodesCount={foldedNodes.length}
-        />
-      }
+    // <Tooltip
+    //   overlay={<FolderNodeTooltipNodes foldedNodes={foldedNodes} />}
+    //   title={
+    //     <FoldedNodeTooltipTitle
+    //       category={category}
+    //       foldedNodesCount={foldedNodes.length}
+    //     />
+    //   }
+    // >
+    <div
+      className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer"
+      onClick={() => expandNode(foldedNodes, category?.name as string)}
     >
-      <div
-        className="absolute -right-[4%] -top-[4%] items-center bg-info text-white rounded-full px-1.5 text-sm font-medium cursor-pointer"
-        onClick={() => expandNode(foldedNodes, category?.name as string)}
-      >
-        <IntegerDisplay num={foldedNodes?.length || null} />
-      </div>
-    </Tooltip>
+      <IntegerDisplay num={foldedNodes?.length || null} />
+    </div>
+    // </Tooltip>
   );
 };
 
@@ -322,27 +322,43 @@ const AssetNode = ({
           : undefined
       }
     >
-      {isFolded && (
+      {!isFolded && (
         <span className="truncate" title={label}>
           {label}
         </span>
       )}
-      {!isFolded && <FoldedNodeLabel category={category} fold={fold} />}
-      {/*{!isFolded && renderedHref && (*/}
-      {/*  <ExternalLink className="truncate" to={renderedHref}>*/}
-      {/*    {label}*/}
-      {/*  </ExternalLink>*/}
-      {/*)}*/}
-      {/*{!renderedHref && (*/}
-      {/*  <>*/}
-      {/*    {!isFolded && (*/}
-      {/*      <span className="truncate" title={label}>*/}
-      {/*        {label}*/}
-      {/*      </span>*/}
-      {/*    )}*/}
-      {/*    {isFolded && <FoldedNodeLabel category={category} fold={fold} />}*/}
-      {/*  </>*/}
-      {/*)}*/}
+      {isFolded && <FoldedNodeLabel category={category} fold={fold} />}
+    </div>
+  );
+
+  const hasProperties = row_data && row_data.properties;
+
+  // 4 possible node states
+  // HREF  |  Folded  |  Properties  |  Controls
+  // ----------------------------------------
+  // false |  false   |  false       |  true
+  // false |  true    |  true        |  true
+  // true  |  false   |  false       |  true
+  // true  |  false   |  true        |  true
+
+  const wrappedNode = (
+    <div className="relative cursor-auto h-[72px]">
+      {renderedHref && (
+        <ExternalLink
+          className="block flex flex-col items-center"
+          to={renderedHref}
+        >
+          {nodeIcon}
+          {nodeLabel}
+        </ExternalLink>
+      )}
+      {!renderedHref && (
+        <div className="flex flex-col items-center">
+          {nodeIcon}
+          {nodeLabel}
+        </div>
+      )}
+      <NodeControls />
     </div>
   );
 
@@ -355,24 +371,34 @@ const AssetNode = ({
       {/*@ts-ignore*/}
       <Handle type="source" />
       {/*<div className="max-w-[50px]">{label}</div>*/}
-      <div className="relative cursor-auto h-[72px]">
-        {renderedHref && (
-          <ExternalLink
-            className="block flex flex-col items-center"
-            to={renderedHref}
-          >
-            {nodeIcon}
-            {nodeLabel}
-          </ExternalLink>
-        )}
-        {!renderedHref && (
-          <div className="flex flex-col items-center">
-            {nodeIcon}
-            {nodeLabel}
-          </div>
-        )}
-        <NodeControls />
-      </div>
+      {!hasProperties && !isFolded && wrappedNode}
+      {hasProperties && !isFolded && (
+        <Tooltip
+          overlay={
+            <RowProperties
+              fields={fields || null}
+              properties={row_data.properties}
+            />
+          }
+          title={<RowPropertiesTitle category={category} title={label} />}
+        >
+          {wrappedNode}
+        </Tooltip>
+      )}
+      {isFolded && (
+        <Tooltip
+          overlay={<FolderNodeTooltipNodes foldedNodes={foldedNodes} />}
+          title={
+            <FoldedNodeTooltipTitle
+              category={category}
+              // @ts-ignore
+              foldedNodesCount={foldedNodes.length}
+            />
+          }
+        >
+          {wrappedNode}
+        </Tooltip>
+      )}
     </>
   );
 };
