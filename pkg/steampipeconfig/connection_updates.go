@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
 	"log"
 	"sort"
 	"strings"
@@ -24,7 +25,7 @@ type ConnectionUpdates struct {
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(schemaNames []string, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 
@@ -65,9 +66,11 @@ func NewConnectionUpdates(schemaNames []string) (*ConnectionUpdates, *RefreshCon
 	// connections to create/update
 	for name, requiredConnectionData := range requiredConnectionState {
 		// check whether this connection exists in the state
-		currentConnectionData, ok := currentConnectionState[name]
+		currentConnectionData, schemaExistsInState := currentConnectionState[name]
 		// if it does not exist, or is not equal, add to updates
-		if !ok || !currentConnectionData.Equals(requiredConnectionData) {
+		if helpers.StringSliceContains(forceUpdateConnectionNames, name) ||
+			!schemaExistsInState ||
+			!currentConnectionData.Equals(requiredConnectionData) {
 			log.Printf("[TRACE] connection %s is out of date or missing\n", name)
 			updates.Update[name] = requiredConnectionData
 		}
