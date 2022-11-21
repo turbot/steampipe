@@ -385,7 +385,6 @@ const AssetNode = ({
       <Handle type="target" />
       {/*@ts-ignore*/}
       <Handle type="source" />
-      {/*<div className="max-w-[50px]">{label}</div>*/}
       {!hasProperties && !isFolded && wrappedNode}
       {hasProperties && !isFolded && (
         <Tooltip
