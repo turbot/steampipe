@@ -290,7 +290,7 @@ const ZoomInControl = () => {
   const { zoomIn } = useReactFlow();
   return (
     <ControlButton
-      className="bg-dashboard text-foreground border-0"
+      className="bg-dashboard hover:bg-black-scale-2 text-foreground border-0"
       onClick={() => zoomIn()}
       title="Zoom In"
     >
@@ -303,7 +303,7 @@ const ZoomOutControl = () => {
   const { zoomOut } = useReactFlow();
   return (
     <ControlButton
-      className="bg-dashboard text-foreground border-0"
+      className="bg-dashboard hover:bg-black-scale-2 text-foreground border-0"
       onClick={() => zoomOut()}
       title="Zoom Out"
     >
@@ -317,7 +317,7 @@ const ResetZoomControl = () => {
 
   return (
     <ControlButton
-      className="bg-dashboard text-foreground border-0"
+      className="bg-dashboard hover:bg-black-scale-2 text-foreground border-0"
       onClick={() => fitView()}
       title="Fit View"
     >
@@ -331,7 +331,7 @@ const RecalcLayoutControl = () => {
 
   return (
     <ControlButton
-      className="bg-dashboard text-foreground border-0"
+      className="bg-dashboard hover:bg-black-scale-2 text-foreground border-0"
       onClick={() => {
         recalcLayout();
       }}
