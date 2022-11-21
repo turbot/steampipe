@@ -5,10 +5,13 @@ import (
 )
 
 type RuntimeDependency struct {
-	PropertyPath   *ParsedPropertyPath
+	PropertyPath *ParsedPropertyPath
+	// the resolved resource which we depend on
 	SourceResource HclResource
 	ArgName        *string
 	ArgIndex       *int
+	// the resource which has he runtime dependency
+	ParentResource QueryProvider
 }
 
 func (d *RuntimeDependency) String() string {
@@ -23,10 +26,15 @@ func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace Resour
 	resourceName := d.PropertyPath.ToResourceName()
 	var found bool
 	var sourceResource HclResource
+	switch {
+	// if this is a 'with' resolve from the parent resource
+	case d.PropertyPath.ItemType == BlockTypeWith:
+		sourceResource, found = d.ParentResource.GetWith(resourceName)
 	// if this dependency has a 'self' prefix, resolve from the current dashboard container
-	if d.PropertyPath.Scope == runtimeDependencyDashboardScope {
+	case d.PropertyPath.Scope == runtimeDependencyDashboardScope:
 		sourceResource, found = dashboard.GetInput(resourceName)
-	} else {
+
+	default:
 		// otherwise, resolve from the global inputs
 		sourceResource, found = workspace.GetResourceMaps().GlobalDashboardInputs[resourceName]
 	}
@@ -66,4 +74,8 @@ func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
 	}
 
 	return true
+}
+
+func (d *RuntimeDependency) SetParentResource(resource QueryProvider) {
+	d.ParentResource = resource
 }

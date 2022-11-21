@@ -14,7 +14,7 @@ import (
 
 type QueryProviderBase struct {
 	runtimeDependencies map[string]*RuntimeDependency
-	With                []*DashboardWith
+	Withs               []*DashboardWith
 }
 
 // VerifyQuery returns an error if neither sql or query are set
@@ -129,5 +129,17 @@ func (*QueryProviderBase) GetDescription() string {
 }
 
 func (b *QueryProviderBase) AddWith(with *DashboardWith) {
-	b.With = append(b.With, with)
+	b.Withs = append(b.Withs, with)
+}
+
+func (b *QueryProviderBase) GetWith(name string) (*DashboardWith, bool) {
+	for _, w := range b.Withs {
+		if w.UnqualifiedName == name {
+			return w, true
+		}
+	}
+	return nil, false
+}
+func (b *QueryProviderBase) GetWiths() []*DashboardWith {
+	return b.Withs
 }

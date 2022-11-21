@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -300,7 +301,7 @@ func decodeParam(block *hcl.Block, parseCtx *ModParseContext, parentName string)
 
 		if !moreDiags.HasErrors() {
 			// convert the raw default into a postgres representation
-			if valStr, err := utils.CtyToPostgresString(v); err == nil {
+			if valStr, err := type_conversion.CtyToPostgresString(v); err == nil {
 				def.Default = utils.ToStringPointer(valStr)
 			} else {
 				diags = append(diags, &hcl.Diagnostic{
@@ -680,7 +681,7 @@ func decodeBenchmark(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Be
 	res.handleDecodeDiags(diags)
 	if benchmark.Base != nil && len(benchmark.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
-		// TODO: we should be passing in the block for the Base resource - but this is only used for diags
+		// TACTICAL: we should be passing in the block for the Base resource - but this is only used for diags
 		// and we do not expect to get any (as this function has already succeeded when the base was originally parsed)
 		children, _ := resolveChildrenFromNames(benchmark.Base.ChildNameStrings, block, supportedChildren, parseCtx)
 		benchmark.Base.Children = children

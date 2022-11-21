@@ -36,7 +36,7 @@ func newDashboardExecutor() *DashboardExecutor {
 
 var Executor = newDashboardExecutor()
 
-func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]interface{}, workspace *workspace.Workspace, client db_common.Client) (err error) {
+func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, dashboardName string, inputs map[string]any, workspace *workspace.Workspace, client db_common.Client) (err error) {
 	var executionTree *DashboardExecutionTree
 	defer func() {
 		if err != nil && ctx.Err() != nil {
@@ -82,15 +82,15 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 
 // if inputs must be provided before execution (i.e. this is a batch dashboard execution),
 // verify all required inputs are provided
-func (e *DashboardExecutor) validateInputs(executionTree *DashboardExecutionTree, inputs map[string]interface{}) error {
+func (e *DashboardExecutor) validateInputs(executionTree *DashboardExecutionTree, inputs map[string]any) error {
 	if e.interactive {
 		// interactive dashboard execution - no need to validate
 		return nil
 	}
 	var missingInputs []string
-	for _, dep := range executionTree.RuntimeDependencies() {
-		if _, ok := inputs[dep]; !ok {
-			missingInputs = append(missingInputs, dep)
+	for _, inputName := range executionTree.InputRuntimeDependencies() {
+		if _, ok := inputs[inputName]; !ok {
+			missingInputs = append(missingInputs, inputName)
 		}
 	}
 	if missingCount := len(missingInputs); missingCount > 0 {
@@ -129,7 +129,7 @@ func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapsho
 	return snap, nil
 }
 
-func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string, inputs map[string]interface{}, changedInput string) error {
+func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string, inputs map[string]any, changedInput string) error {
 	// find the execution
 	executionTree, found := e.executions[sessionId]
 	if !found {
@@ -166,7 +166,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	return nil
 }
 
-func (e *DashboardExecutor) clearDependentInputs(root dashboardtypes.DashboardNodeRun, changedInput string, inputs map[string]interface{}) []string {
+func (e *DashboardExecutor) clearDependentInputs(root dashboardtypes.DashboardNodeRun, changedInput string, inputs map[string]any) []string {
 	dependentInputs := root.GetInputsDependingOn(changedInput)
 	clearedInputs := dependentInputs
 	if len(dependentInputs) > 0 {
