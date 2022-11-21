@@ -1,5 +1,4 @@
 import Icon from "../../Icon";
-import Text from "react-svg-text";
 import { classNames } from "../../../utils/styles";
 import { memo, useMemo } from "react";
 
@@ -67,13 +66,15 @@ const DashboardHeroIcon = ({
   <Icon className={className} icon={icon} style={style} title={title} />
 );
 
-const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => (
-  <svg className={classNames("h-full w-full font-sans text-center", className)}>
-    <Text scaleToFit textAnchor="start" verticalAnchor="start">
-      {icon.substring(5)}
-    </Text>
-  </svg>
-);
+const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => {
+  return (
+    <div className={classNames(className, "flex items-center justify-center")}>
+      <span className={"truncate"} title={icon.substring(5)}>
+        {icon.substring(5)}
+      </span>
+    </div>
+  );
+};
 
 const DashboardIcon = ({
   className,
