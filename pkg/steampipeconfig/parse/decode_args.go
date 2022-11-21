@@ -156,7 +156,7 @@ func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, eval
 					suffix := hclhelpers.TraversalAsString(each.Traversal)
 					propertyPathStr = fmt.Sprintf("%s.*.%s", root, suffix)
 				} else {
-					return nil, fmt.Errorf("unexpected runtime depdency expression type")
+					return nil, fmt.Errorf("unexpected runtime dependency expression type")
 				}
 			}
 

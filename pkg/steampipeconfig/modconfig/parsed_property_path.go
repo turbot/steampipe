@@ -59,19 +59,16 @@ func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error)
 		parts = append([]string{""}, parts...)
 	}
 	switch len(parts) {
-	case 2:
-		// no property path specified
-		res.ItemType = parts[0]
-		res.Name = parts[1]
 	case 3:
-		res.ItemType = parts[0]
-		res.Name = parts[1]
-		res.PropertyPath = parts[2:]
+		// no property path specified
+		res.Mod = parts[0]
+		res.ItemType = parts[1]
+		res.Name = parts[2]
 	default:
 		res.Mod = parts[0]
 		res.ItemType = parts[1]
 		res.Name = parts[2]
-		res.PropertyPath = parts[2:]
+		res.PropertyPath = parts[3:]
 	}
 
 	if !IsValidResourceItemType(res.ItemType) {
