@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 )
 
 func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
@@ -50,7 +50,7 @@ func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, var
 			inputValue.SourceRange)
 
 		// set variable value string in our workspace map
-		variableMap.VariableValues[name], err = utils.CtyToString(inputValue.Value)
+		variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
 		if err != nil {
 			return nil, err
 		}

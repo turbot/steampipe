@@ -12,7 +12,7 @@ order by
 EOQ
 }
 
-dashboard dashboard_named_args {
+dashboard "dashboard_named_args" {
   title = "dashboard with named arguments"
 
   input "user" {
@@ -22,10 +22,15 @@ dashboard dashboard_named_args {
   }
 
   table {
-    sql = "select 1"
-    args  = {
-      "iam_user_arn" = self.input.user.value
+    sql = "select $1"
+    with "w1" {
+        sql = "select * from aws_account"
     }
+    args  = {
+      "with_val" = flatten(with.w1.rows[*].account_aliases)
+    }
+    param "with_val" {}
+
 
     column "depth" {
       display = "none"

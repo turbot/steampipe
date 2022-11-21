@@ -12,7 +12,7 @@ type ParsedPropertyPath struct {
 	PropertyPath []string
 	// optional scope of this property path ("root or parent")
 	Scope    string
-	original string
+	Original string
 }
 
 func (p *ParsedPropertyPath) PropertyPathString() string {
@@ -32,11 +32,11 @@ func (p *ParsedPropertyPath) ToResourceName() string {
 }
 
 func (p *ParsedPropertyPath) String() string {
-	return p.original
+	return p.Original
 }
 
-func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, err error) {
-	res = &ParsedPropertyPath{original: propertyPath}
+func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error) {
+	res := &ParsedPropertyPath{Original: propertyPath}
 
 	// valid property paths:
 	// <mod>.<resource>.<name>.<property path...>
@@ -54,21 +54,26 @@ func ParseResourcePropertyPath(propertyPath string) (res *ParsedPropertyPath, er
 		parts = parts[1:]
 	}
 
+	if IsValidResourceItemType(parts[0]) {
+		// put empty mod as first part
+		parts = append([]string{""}, parts...)
+	}
 	switch len(parts) {
-	case 2:
-		// no property path specified
-		res.ItemType = parts[0]
-		res.Name = parts[1]
 	case 3:
-		res.ItemType = parts[0]
-		res.Name = parts[1]
-		res.PropertyPath = parts[2:]
+		// no property path specified
+		res.Mod = parts[0]
+		res.ItemType = parts[1]
+		res.Name = parts[2]
 	default:
 		res.Mod = parts[0]
 		res.ItemType = parts[1]
 		res.Name = parts[2]
-		res.PropertyPath = parts[2:]
+		res.PropertyPath = parts[3:]
 	}
 
-	return
+	if !IsValidResourceItemType(res.ItemType) {
+		return nil, fmt.Errorf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath)
+	}
+
+	return res, nil
 }

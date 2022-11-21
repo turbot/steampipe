@@ -75,6 +75,9 @@ type QueryProvider interface {
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
 	MergeParentArgs(QueryProvider, QueryProvider) (diags hcl.Diagnostics)
+	AddWith(with *DashboardWith)
+	GetWith(name string) (*DashboardWith, bool)
+	GetWiths() []*DashboardWith
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree

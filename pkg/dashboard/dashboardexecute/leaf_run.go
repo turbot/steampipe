@@ -3,7 +3,11 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"log"
+	"strconv"
+	"sync"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
@@ -40,6 +44,8 @@ type LeafRun struct {
 	executionTree       *DashboardExecutionTree
 	runtimeDependencies map[string]*ResolvedRuntimeDependency
 	childComplete       chan dashboardtypes.DashboardNodeRun
+	withValues          map[string]*dashboardtypes.LeafData
+	withValueMutex      sync.Mutex
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -56,20 +62,21 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	name := resource.Name()
 
 	r := &LeafRun{
-		Name:                name,
-		Title:               resource.GetTitle(),
-		Width:               resource.GetWidth(),
-		Type:                resource.GetType(),
-		Display:             resource.GetDisplay(),
-		DashboardNode:       resource,
-		DashboardName:       executionTree.dashboardName,
-		SourceDefinition:    resource.GetMetadata().SourceDefinition,
+		Name:             name,
+		Title:            resource.GetTitle(),
+		Width:            resource.GetWidth(),
+		Type:             resource.GetType(),
+		Display:          resource.GetDisplay(),
+		DashboardNode:    resource,
+		DashboardName:    executionTree.dashboardName,
+		SourceDefinition: resource.GetMetadata().SourceDefinition,
+		// set to complete, optimistically
+		// if any children have SQL we will set this to DashboardRunReady instead
+		Status:              dashboardtypes.DashboardRunComplete,
 		executionTree:       executionTree,
 		parent:              parent,
 		runtimeDependencies: make(map[string]*ResolvedRuntimeDependency),
-		// set to complete, optimistically
-		// if any children have SQL we will set this to DashboardRunReady instead
-		Status: dashboardtypes.DashboardRunComplete,
+		withValues:          make(map[string]*dashboardtypes.LeafData),
 	}
 
 	parsedName, err := modconfig.ParseResourceName(resource.Name())
@@ -108,7 +115,17 @@ func (r *LeafRun) addRuntimeDependencies() {
 	}
 	runtimeDependencies := queryProvider.GetRuntimeDependencies()
 	for name, dep := range runtimeDependencies {
-		r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, r.executionTree)
+		// determine the function to use to retrieve the runtime dependency value
+		var getValueFunc func(string) (any, error)
+		switch dep.PropertyPath.ItemType {
+		case modconfig.BlockTypeWith:
+			getValueFunc = func(name string) (any, error) {
+				return r.getWithValue(name, dep.PropertyPath)
+			}
+		case modconfig.BlockTypeInput:
+			getValueFunc = r.executionTree.GetInputValue
+		}
+		r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, getValueFunc)
 	}
 	// if the parent is a leaf run, we must be a node or an edge, inherit our parent runtime dependencies
 	if parentLeafRun, ok := r.parent.(*LeafRun); ok {
@@ -162,6 +179,17 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	log.Printf("[TRACE] LeafRun '%s' Execute()", r.DashboardNode.Name())
 
 	// to get here, we must be a query provider
+
+	// start all `with` blocks
+	for _, w := range r.DashboardNode.(modconfig.QueryProvider).GetWiths() {
+		queryResult, err := r.executionTree.client.ExecuteSync(ctx, typehelpers.SafeString(w.SQL))
+		if err != nil {
+			r.SetError(ctx, err)
+			return
+		}
+		withResult := dashboardtypes.NewLeafData(queryResult)
+		r.setWithValue(w.UnqualifiedName, withResult)
+	}
 
 	// if there are any unresolved runtime dependencies, wait for them
 	if len(r.runtimeDependencies) > 0 {
@@ -279,17 +307,29 @@ func (r *LeafRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.DashboardNode.Name())
 	for _, resolvedDependency := range r.runtimeDependencies {
-		// check with the top level dashboard whether the dependency is available
-		if !resolvedDependency.Resolve() {
-			log.Printf("[TRACE] waitForRuntimeDependency %s", resolvedDependency.dependency.String())
-			if err := r.executionTree.waitForRuntimeDependency(ctx, resolvedDependency.dependency); err != nil {
-				return err
-			}
+		// check whether the dependency is available
+		isResolved, err := resolvedDependency.Resolve()
+		if err != nil {
+			return err
+		}
+
+		if isResolved {
+			// this one is available
+			continue
+		}
+		log.Printf("[TRACE] waitForRuntimeDependency %s", resolvedDependency.dependency.String())
+		if err := r.executionTree.waitForRuntimeDependency(ctx, resolvedDependency.dependency); err != nil {
+			return err
 		}
 
 		log.Printf("[TRACE] dependency %s should be available", resolvedDependency.dependency.String())
+
 		// now again resolve the dependency value - this sets the arg to have the runtime dependency value
-		if !resolvedDependency.Resolve() {
+		isResolved, err = resolvedDependency.Resolve()
+		if err != nil {
+			return err
+		}
+		if !isResolved {
 			log.Printf("[TRACE] dependency %s not resolved after waitForRuntimeDependency returned", resolvedDependency.dependency.String())
 			// should now be resolved`
 			return fmt.Errorf("dependency %s not resolved after waitForRuntimeDependency returned", resolvedDependency.dependency.String())
@@ -359,8 +399,12 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 
 	// build map of default params
 	for _, dep := range r.runtimeDependencies {
-		// format the arg value as a postgres string (this will also work for numbers)
-		formattedVal := pgEscapeParamString(fmt.Sprintf("%v", dep.value))
+		// format the arg value as a postgres string
+		formattedVal, err := type_conversion.GoToPostgresString(dep.value)
+		if err != nil {
+			return nil, err
+		}
+
 		if dep.dependency.ArgName != nil {
 			res.ArgMap[*dep.dependency.ArgName] = formattedVal
 		} else {
@@ -453,7 +497,98 @@ func (r *LeafRun) combineChildData() {
 	r.Data.Columns = maps.Values(schemaMap)
 }
 
-// format a string for use as a postgres string param
-func pgEscapeParamString(val string) string {
-	return fmt.Sprintf("'%s'", val)
+func (r *LeafRun) getWithValue(name string, path *modconfig.ParsedPropertyPath) (any, error) {
+	r.withValueMutex.Lock()
+	defer r.withValueMutex.Unlock()
+	val, ok := r.withValues[name]
+	if !ok {
+		return nil, nil
+	}
+
+	//  get the set of rows which will be used ot generate the return value
+	rows := val.Rows
+	/*
+		You can reference the whole table with:
+			with.stuff1
+		this is equivalent to:
+			with.stuff1.rows
+		and
+			with.stuff1.rows[*]
+
+		Rows is a list, and you can index it to get a single row:
+			with.stuff1.rows[0]
+		or splat it to get all rows:
+			with.stuff1.rows[*]
+		Each row, in turn, contains all the columns, so you can get a single column of a single row:
+			with.stuff1.rows[0].a
+		if you splat the row, then you can get an array of a single column from all rows. This would be passed to sql as an array:
+			with.stuff1.rows[*].a
+	*/
+
+	// with.stuff1 -> PropertyPath will be "stuff1"
+	// with.stuff1.rows -> PropertyPath will be "stuff1.rows"
+	// with.stuff1.rows[*] -> PropertyPath will be "stuff1.rows.*"
+	// with.stuff1.rows[0] -> PropertyPath will be "stuff1.rows.0"
+	// with.stuff1.rows[0].a -> PropertyPath will be "stuff1.rows.0.a"
+	const rowsSegment = 1
+	const rowsIdxSegment = 2
+	const columnSegment = 3
+
+	// second path section MUST  be "rows"
+	if len(path.PropertyPath) > rowsSegment && path.PropertyPath[rowsSegment] != "rows" || len(path.PropertyPath) > (columnSegment+1) {
+		return nil, fmt.Errorf("with '%s' has invalid property path '%s'", name, path.Original)
+	}
+
+	// if no row is specified assume all
+	rowIdxStr := "*"
+	if len(path.PropertyPath) > rowsIdxSegment {
+		// so there is 3rd part - this will be the row idx (or '*')
+		rowIdxStr = path.PropertyPath[rowsIdxSegment]
+	}
+	var column string
+
+	// is a column specified?
+	if len(path.PropertyPath) > columnSegment {
+		column = path.PropertyPath[columnSegment]
+	} else {
+		if len(val.Columns) > 1 {
+			// we do not support returning all columns (yet
+			return nil, fmt.Errorf("with '%s' is returning more than one column - not supported", name)
+		}
+		column = val.Columns[0].Name
+	}
+
+	if rowIdxStr == "*" {
+		return columnValuesFromRows(column, rows)
+	}
+
+	rowIdx, err := strconv.Atoi(rowIdxStr)
+	if err != nil {
+		return nil, fmt.Errorf("with '%s' has invalid property path '%s' - cannot parse row idx '%s'", name, path.Original, rowIdxStr)
+	}
+
+	// so we are returning a single row
+	row := rows[rowIdx]
+	return row[column], nil
+
+}
+
+func columnValuesFromRows(column string, rows []map[string]interface{}) (any, error) {
+
+	var res = make([]any, len(rows))
+	for i, row := range rows {
+		var ok bool
+		res[i], ok = row[column]
+		if !ok {
+			return nil, fmt.Errorf("column %s does not exist", column)
+		}
+	}
+	return res, nil
+}
+
+func (r *LeafRun) setWithValue(name string, result *dashboardtypes.LeafData) {
+	r.withValueMutex.Lock()
+	defer r.withValueMutex.Unlock()
+
+	r.withValues[name] = result
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform/tfdiags"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
@@ -48,7 +49,7 @@ type Variable struct {
 func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	var defaultGo interface{} = nil
 	if !v.Default.IsNull() {
-		defaultGo, _ = utils.CtyToGo(v.Default)
+		defaultGo, _ = type_conversion.CtyToGo(v.Default)
 	}
 
 	return &Variable{
@@ -63,7 +64,7 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 		DeclRange:       v.DeclRange,
 		ModName:         mod.ShortName,
 		DefaultGo:       defaultGo,
-		TypeString:      utils.CtyTypeToHclType(v.Type, v.Default.Type()),
+		TypeString:      type_conversion.CtyTypeToHclType(v.Type, v.Default.Type()),
 	}
 }
 
@@ -144,10 +145,10 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	v.ValueSourceFileName = sourceRange.Filename
 	v.ValueSourceStartLineNumber = sourceRange.Start.Line
 	v.ValueSourceEndLineNumber = sourceRange.End.Line
-	v.ValueGo, _ = utils.CtyToGo(value)
+	v.ValueGo, _ = type_conversion.CtyToGo(value)
 	// if type string is not set, derive from the type of value
 	if v.TypeString == "" {
-		v.TypeString = utils.CtyTypeToHclType(value.Type())
+		v.TypeString = type_conversion.CtyTypeToHclType(value.Type())
 	}
 	return nil
 }

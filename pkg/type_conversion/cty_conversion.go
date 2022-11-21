@@ -1,4 +1,4 @@
-package utils
+package type_conversion
 
 import (
 	"fmt"
@@ -27,77 +27,6 @@ func CtyToJSON(val cty.Value) (string, error) {
 
 	return string(buf), nil
 
-}
-
-// CtyToPostgresString convert a cty value into a postgres representation of the value
-func CtyToPostgresString(v cty.Value) (valStr string, err error) {
-	ty := v.Type()
-
-	if ty.IsTupleType() || ty.IsListType() {
-		return ctyListToPostgresString(v, ty)
-	}
-
-	switch ty {
-	case cty.Bool:
-		var target bool
-		if err = gocty.FromCtyValue(v, &target); err == nil {
-			valStr = fmt.Sprintf("%v", target)
-		}
-	case cty.Number:
-		var target int
-		if err = gocty.FromCtyValue(v, &target); err == nil {
-			valStr = fmt.Sprintf("%d", target)
-			return
-		} else {
-			var targetf float64
-			if err = gocty.FromCtyValue(v, &targetf); err == nil {
-				valStr = fmt.Sprintf("%f", targetf)
-			}
-		}
-	case cty.String:
-		var target string
-		if err := gocty.FromCtyValue(v, &target); err == nil {
-			valStr = quoteString(target)
-		}
-	default:
-		var json string
-		// wrap as postgres string
-		if json, err = CtyToJSON(v); err == nil {
-			valStr = fmt.Sprintf("'%s'::jsonb", json)
-		}
-	}
-
-	return valStr, err
-}
-
-// taken from github.com/jackc/pgx/v4@v4.17.2/internal/sanitize/sanitize.go
-func quoteString(str string) string {
-	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
-}
-
-func ctyListToPostgresString(v cty.Value, ty cty.Type) (string, error) {
-	var valStr string
-	array, err := ctyTupleToArrayOfPgStrings(v)
-	if err != nil {
-		return "", err
-	}
-
-	suffix := ""
-	if len(array) == 0 {
-		t := ty.ElementType()
-		// cast the empty array to the appropriate type
-		switch t.FriendlyName() {
-		case "string":
-			suffix = "::text[]"
-		case "bool":
-			suffix = "::bool[]"
-		case "number":
-			suffix = "::numeric[]"
-		}
-	}
-	valStr = fmt.Sprintf("array[%s]%s", strings.Join(array, ","), suffix)
-
-	return valStr, nil
 }
 
 // CtyToString convert a cty value into a string representation of the value

@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
-func GenerateSnapshot(ctx context.Context, target string, initData *initialisation.InitData, inputs map[string]interface{}) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
+func GenerateSnapshot(ctx context.Context, target string, initData *initialisation.InitData, inputs map[string]any) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
 	defer statushooks.Done(ctx)
 
 	w := initData.Workspace

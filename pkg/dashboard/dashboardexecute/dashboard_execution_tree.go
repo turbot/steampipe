@@ -31,7 +31,7 @@ type DashboardExecutionTree struct {
 	// store subscribers as a map of maps for simple unsubscription
 	inputDataSubscriptions map[string]map[*chan bool]struct{}
 	cancel                 context.CancelFunc
-	inputValues            map[string]interface{}
+	inputValues            map[string]any
 	id                     string
 }
 
@@ -45,7 +45,7 @@ func NewDashboardExecutionTree(rootName string, sessionId string, client db_comm
 		workspace:              workspace,
 		runComplete:            make(chan dashboardtypes.DashboardNodeRun, 1),
 		inputDataSubscriptions: make(map[string]map[*chan bool]struct{}),
-		inputValues:            make(map[string]interface{}),
+		inputValues:            make(map[string]any),
 	}
 	executionTree.id = fmt.Sprintf("%p", executionTree)
 
@@ -187,7 +187,7 @@ func (e *DashboardExecutionTree) GetName() string {
 	return e.workspace.Mod.ShortName
 }
 
-func (e *DashboardExecutionTree) SetInputs(inputValues map[string]interface{}) {
+func (e *DashboardExecutionTree) SetInputs(inputValues map[string]any) {
 	for name, value := range inputValues {
 		e.inputValues[name] = value
 		// now see if anyone needs to be notified about this input
@@ -213,8 +213,8 @@ func (e *DashboardExecutionTree) Cancel() {
 	}
 }
 
-func (e *DashboardExecutionTree) GetInputValue(name string) interface{} {
-	return e.inputValues[name]
+func (e *DashboardExecutionTree) GetInputValue(name string) (any, error) {
+	return e.inputValues[name], nil
 }
 
 func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
@@ -226,13 +226,15 @@ func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes
 	return e.buildSnapshotPanelsUnder(e.Root, res)
 }
 
-// RuntimeDependencies returns the runtime dependencies for all leaf nodes
-func (e *DashboardExecutionTree) RuntimeDependencies() []string {
+// InputRuntimeDependencies returns the names of all inputs which are runtime dependencies
+func (e *DashboardExecutionTree) InputRuntimeDependencies() []string {
 	var deps = map[string]struct{}{}
 	for _, r := range e.runs {
 		if leafRun, ok := r.(*LeafRun); ok {
-			for _, v := range leafRun.runtimeDependencies {
-				deps[v.dependency.SourceResource.GetUnqualifiedName()] = struct{}{}
+			for _, r := range leafRun.runtimeDependencies {
+				if r.dependency.PropertyPath.ItemType == modconfig.BlockTypeInput {
+					deps[r.dependency.SourceResource.GetUnqualifiedName()] = struct{}{}
+				}
 			}
 		}
 	}

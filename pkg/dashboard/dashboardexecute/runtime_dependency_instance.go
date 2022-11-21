@@ -10,33 +10,37 @@ import (
 // ResolvedRuntimeDependency is a wrapper for RuntimeDependency which contains the resolved value
 // we must wrap it so that we do not mutate the underlying workspace data when resolving dependency values
 type ResolvedRuntimeDependency struct {
-	dependency    *modconfig.RuntimeDependency
-	valueLock     sync.Mutex
-	value         interface{}
-	executionTree *DashboardExecutionTree
+	dependency   *modconfig.RuntimeDependency
+	valueLock    sync.Mutex
+	value        any
+	getValueFunc func(string) (any, error)
 }
 
-func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, executionTree *DashboardExecutionTree) *ResolvedRuntimeDependency {
+func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, getValueFunc func(string) (any, error)) *ResolvedRuntimeDependency {
 	return &ResolvedRuntimeDependency{
-		dependency:    dep,
-		executionTree: executionTree,
+		dependency:   dep,
+		getValueFunc: getValueFunc,
 	}
 }
 
-func (d *ResolvedRuntimeDependency) Resolve() bool {
+func (d *ResolvedRuntimeDependency) Resolve() (bool, error) {
 	d.valueLock.Lock()
 	defer d.valueLock.Unlock()
 
 	// if we are already resolved, do nothing
 	if d.hasValue() {
-		return true
+		return true, nil
 	}
 
 	// otherwise, try to read the value from the source
-	d.value = d.executionTree.GetInputValue(d.dependency.SourceResource.GetUnqualifiedName())
+	val, err := d.getValueFunc(d.dependency.SourceResource.GetUnqualifiedName())
+	if err != nil {
+		return false, err
+	}
+	d.value = val
 
 	// did we succeed
-	return d.hasValue()
+	return d.hasValue(), nil
 }
 
 func (d *ResolvedRuntimeDependency) hasValue() bool {
