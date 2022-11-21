@@ -525,14 +525,14 @@ func (r *LeafRun) getWithValue(name string, path *modconfig.ParsedPropertyPath) 
 			with.stuff1.rows[*].a
 	*/
 
-	// with.stuff1 -> PropertyPath will be "stuff1"
-	// with.stuff1.rows -> PropertyPath will be "stuff1.rows"
-	// with.stuff1.rows[*] -> PropertyPath will be "stuff1.rows.*"
-	// with.stuff1.rows[0] -> PropertyPath will be "stuff1.rows.0"
-	// with.stuff1.rows[0].a -> PropertyPath will be "stuff1.rows.0.a"
-	const rowsSegment = 1
-	const rowsIdxSegment = 2
-	const columnSegment = 3
+	// with.stuff1 -> PropertyPath will be ""
+	// with.stuff1.rows -> PropertyPath will be "rows"
+	// with.stuff1.rows[*] -> PropertyPath will be "rows.*"
+	// with.stuff1.rows[0] -> PropertyPath will be "rows.0"
+	// with.stuff1.rows[0].a -> PropertyPath will be "rows.0.a"
+	const rowsSegment = 0
+	const rowsIdxSegment = 1
+	const columnSegment = 2
 
 	// second path section MUST  be "rows"
 	if len(path.PropertyPath) > rowsSegment && path.PropertyPath[rowsSegment] != "rows" || len(path.PropertyPath) > (columnSegment+1) {
