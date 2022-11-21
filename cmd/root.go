@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/steampipe/pkg/cloud"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -19,6 +17,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"

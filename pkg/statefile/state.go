@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/migrate"
-
 	"github.com/google/uuid"
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/migrate"
 )
 
 const StateStructVersion = 20220411
