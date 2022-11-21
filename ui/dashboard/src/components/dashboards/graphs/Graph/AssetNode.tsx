@@ -327,14 +327,6 @@ const AssetNode = ({
 
   const hasProperties = row_data && row_data.properties;
 
-  // 4 possible node states
-  // HREF  |  Folded  |  Properties  |  Controls
-  // ----------------------------------------
-  // false |  false   |  false       |  true
-  // false |  true    |  true        |  true
-  // true  |  false   |  false       |  true
-  // true  |  false   |  true        |  true
-
   const wrappedNode = (
     <div
       className={classNames(
@@ -365,6 +357,14 @@ const AssetNode = ({
       )}
     </div>
   );
+
+  // 4 possible node states
+  // HREF  |  Folded  |  Properties  |  Controls
+  // ----------------------------------------
+  // false |  false   |  false       |  true
+  // false |  true    |  true        |  true
+  // true  |  false   |  false       |  true
+  // true  |  false   |  true        |  true
 
   // Notes:
   // * The Handle elements seem to be required to allow the connectors to work.
