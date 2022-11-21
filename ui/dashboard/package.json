@@ -43,7 +43,7 @@
     "react-syntax-highlighter": "15.5.0",
     "react-table": "7.8.0",
     "react-use-websocket": "4.2.0",
-    "reactflow": "11.2.0",
+    "reactflow": "11.3.0",
     "remark-gfm": "3.0.1",
     "semver": "7.3.8",
     "use-deep-compare-effect": "1.8.1",
