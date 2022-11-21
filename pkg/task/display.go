@@ -6,8 +6,10 @@ import (
 	"os"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const (
@@ -21,6 +23,9 @@ type Notifications struct {
 }
 
 func (r *Runner) saveNotifications(cliNotificationsLines, pluginNotificationLines []string) error {
+	utils.LogTime("Runner.saveNotifications start")
+	defer utils.LogTime("Runner.saveNotifications end")
+
 	if len(cliNotificationsLines)+len(pluginNotificationLines) == 0 {
 		// nothing to save
 		return nil
@@ -43,10 +48,20 @@ func (r *Runner) saveNotifications(cliNotificationsLines, pluginNotificationLine
 }
 
 func (r *Runner) hasNotifications() bool {
+	utils.LogTime("Runner.hasNotifications start")
+	defer utils.LogTime("Runner.hasNotifications end")
 	return files.FileExists(filepaths.NotificationsFilePath())
 }
 
-func (r *Runner) displayNotifications() error {
+func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) error {
+	utils.LogTime("Runner.displayNotifications start")
+	defer utils.LogTime("Runner.displayNotifications end")
+
+	if isSilentCmd(cmd, cmdArgs) {
+		// do not do anything
+		// just return
+		return nil
+	}
 	if !r.hasNotifications() {
 		// nothing to display
 		return nil

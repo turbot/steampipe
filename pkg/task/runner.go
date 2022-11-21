@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statefile"
@@ -22,22 +20,29 @@ type Runner struct {
 	currentState statefile.State
 }
 
-func RunTasks(ctx context.Context) error {
+func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) (chan struct{}, error) {
 	utils.LogTime("task.RunTasks start")
 	defer utils.LogTime("task.RunTasks end")
 
-	runner, err := NewRunner()
-	if err != nil {
-		return err
-	}
-	if err := runner.displayNotifications(); err != nil {
+	doneChannel := make(chan struct{}, 1)
+	runner := NewRunner()
+
+	if err := runner.displayNotifications(cmd, args); err != nil {
 		log.Println("[TRACE] faced error displaying notifications:", err)
 	}
-	runner.Run(ctx)
-	return nil
+
+	// asynchronously start the update checker
+	go func(c context.Context) {
+		defer close(doneChannel)
+		if runner.shouldRun() {
+			runner.run(c)
+		}
+	}(ctx)
+
+	return doneChannel, nil
 }
 
-func NewRunner() (*Runner, error) {
+func NewRunner() *Runner {
 	utils.LogTime("task.NewRunner start")
 	defer utils.LogTime("task.NewRunner end")
 
@@ -45,49 +50,49 @@ func NewRunner() (*Runner, error) {
 
 	state, err := statefile.LoadState()
 	if err != nil {
-		return nil, err
+		// this error should never happen
+		// log this and carry on
+		log.Println("[TRACE] error loading state,", err)
 	}
 	r.currentState = state
-	return r, nil
+	return r
 }
 
-func (r *Runner) Run(ctx context.Context) {
+func (r *Runner) run(ctx context.Context) {
 	utils.LogTime("task.Runner.Run start")
 	defer utils.LogTime("task.Runner.Run end")
 
 	var versionNotificationLines []string
 	var pluginNotificationLines []string
-	if r.shouldRun() {
-		waitGroup := sync.WaitGroup{}
+	waitGroup := sync.WaitGroup{}
 
-		// check whether an updated version is available
-		runJobAsync(ctx, func(c context.Context) {
-			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
-		}, &waitGroup)
+	// check whether an updated version is available
+	runJobAsync(ctx, func(c context.Context) {
+		versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
+	}, &waitGroup)
 
-		// check whether an updated version is available
-		runJobAsync(ctx, func(c context.Context) {
-			pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
-		}, &waitGroup)
+	// check whether an updated version is available
+	runJobAsync(ctx, func(c context.Context) {
+		pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
+	}, &waitGroup)
 
-		// remove log files older than 7 days
-		runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
+	// remove log files older than 7 days
+	runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
 
-		// validate and regenerate service SSL certificates
-		runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
+	// validate and regenerate service SSL certificates
+	runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
 
-		// wait for all jobs to complete
-		waitGroup.Wait()
+	// wait for all jobs to complete
+	waitGroup.Wait()
 
-		// save the notifications, if any
-		if err := r.saveNotifications(versionNotificationLines, pluginNotificationLines); err != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save pending notifications: %s", err))
-		}
+	// save the notifications, if any
+	if err := r.saveNotifications(versionNotificationLines, pluginNotificationLines); err != nil {
+		error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save pending notifications: %s", err))
+	}
 
-		// save the state - this updates the last checked time
-		if err := r.currentState.Save(); err != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save state file: %s", err))
-		}
+	// save the state - this updates the last checked time
+	if err := r.currentState.Save(); err != nil {
+		error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save state file: %s", err))
 	}
 }
 
@@ -102,16 +107,9 @@ func runJobAsync(ctx context.Context, job func(context.Context), wg *sync.WaitGr
 
 // determines whether the task runner should run at all
 // tasks are to be run at most once every 24 hours
-// also, this is not to run in batch query mode
 func (r *Runner) shouldRun() bool {
 	utils.LogTime("task.Runner.shouldRun start")
 	defer utils.LogTime("task.Runner.shouldRun end")
-
-	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-	if isIgnoredCmd(cmd, cmdArgs) {
-		return false
-	}
 
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
@@ -126,7 +124,7 @@ func (r *Runner) shouldRun() bool {
 	return durationElapsedSinceLastCheck > minimumDurationBetweenChecks
 }
 
-func isIgnoredCmd(cmd *cobra.Command, cmdArgs []string) bool {
+func isSilentCmd(cmd *cobra.Command, cmdArgs []string) bool {
 	return (isPluginUpdateCmd(cmd) ||
 		isPluginManagerCmd(cmd) ||
 		isServiceStopCmd(cmd) ||

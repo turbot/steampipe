@@ -119,7 +119,7 @@ func StateFilePath() string {
 
 // NotificationsFilePath returns the path of the update_check.json state file
 func NotificationsFilePath() string {
-	return filepath.Join(EnsureInternalDir(), stateFileName)
+	return filepath.Join(EnsureInternalDir(), notificationsFileName)
 }
 
 // ConnectionStatePath returns the path of the connections state file

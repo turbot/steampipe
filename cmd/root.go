@@ -34,11 +34,21 @@ import (
 )
 
 var exitCode int
+var waitForTasks chan struct{}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.SteampipeVersion.String(),
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		utils.LogTime("cmd.PersistentPostRun start")
+		defer utils.LogTime("cmd.PersistentPostRun end")
+
+		if waitForTasks != nil {
+			// wait for the async tasks to finish
+			<-waitForTasks
+		}
+	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")
@@ -53,10 +63,13 @@ var rootCmd = &cobra.Command{
 
 		initGlobalConfig()
 
-		if err := task.RunTasks(cmd.Context()); err != nil {
+		t, err := task.RunTasks(cmd.Context(), cmd, args)
+		if err != nil {
 			log.Printf("[TRACE] ran into an error running daily tasks: %v", err)
 			log.Printf("[TRACE] stack: %s", string(debug.Stack()))
 		}
+		// save the channel so that we can wait on it when exiting
+		waitForTasks = t
 
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
