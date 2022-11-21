@@ -203,10 +203,6 @@ const RefoldNodeControl = ({
   );
 };
 
-// <div className="custom-drag-handle absolute -left-[4%] -bottom-[4%] items-center bg-black-scale-2 p-1 rounded-full cursor-grab">
-//   <Icon className="w-4 h-4" icon="cursor-arrow-ripple" />
-// </div>
-
 const AssetNode = ({
   id,
   data: {
@@ -259,10 +255,10 @@ const AssetNode = ({
     doRender();
   }, [isFolded, href, row_data, setRenderedHref]);
 
-  const nodeIcon = (
+  const innerIcon = (
     <div
       className={classNames(
-        "relative p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border"
+        "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border"
       )}
       style={{
         // backgroundColor: color,
@@ -283,6 +279,20 @@ const AssetNode = ({
         icon={isFolded ? fold?.icon : icon}
       />
       {isFolded && <FoldedNodeCountBadge foldedNodes={foldedNodes} />}
+    </div>
+  );
+
+  const nodeIcon = (
+    <div className="relative">
+      {!renderedHref && innerIcon}
+      {renderedHref && (
+        <ExternalLink
+          className="block flex flex-col items-center"
+          to={renderedHref}
+        >
+          {innerIcon}
+        </ExternalLink>
+      )}
       <NodeControls>
         {isExpandedNode && (
           <RefoldNodeControl
@@ -309,7 +319,7 @@ const AssetNode = ({
   //     node
   //   );
 
-  const nodeLabel = (
+  const innerNodeLabel = (
     <div
       className={classNames(
         renderedHref ? "text-link" : null,
@@ -325,12 +335,26 @@ const AssetNode = ({
     </div>
   );
 
+  const nodeLabel = (
+    <>
+      {!renderedHref && innerNodeLabel}
+      {renderedHref && (
+        <ExternalLink
+          className="block flex flex-col items-center"
+          to={renderedHref}
+        >
+          {innerNodeLabel}
+        </ExternalLink>
+      )}
+    </>
+  );
+
   const hasProperties = row_data && row_data.properties;
 
   const wrappedNode = (
     <div
       className={classNames(
-        "group relative h-[72px]",
+        "group relative h-[72px] flex flex-col items-center",
         renderedHref || isFolded ? "cursor-pointer" : "cursor-auto"
       )}
       onClick={
@@ -340,21 +364,8 @@ const AssetNode = ({
       }
       title={isFolded ? "Expand nodes" : undefined}
     >
-      {renderedHref && (
-        <ExternalLink
-          className="block flex flex-col items-center"
-          to={renderedHref}
-        >
-          {nodeIcon}
-          {nodeLabel}
-        </ExternalLink>
-      )}
-      {!renderedHref && (
-        <div className="flex flex-col items-center">
-          {nodeIcon}
-          {nodeLabel}
-        </div>
-      )}
+      {nodeIcon}
+      {nodeLabel}
     </div>
   );
 
