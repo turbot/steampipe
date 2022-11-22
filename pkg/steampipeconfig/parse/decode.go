@@ -435,7 +435,7 @@ func decodeEdgeAndNodeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 	}
 
 	// handle invalid block types
-	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), EdgeAndNodeProviderBlockSchema, resource))
+	res.addDiags(validateBlocks(remain.(*hclsyntax.Body), EdgeAndNodeProviderSchema, resource))
 
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
 	diags = gohcl.DecodeBody(remain, parseCtx.EvalCtx, resource)

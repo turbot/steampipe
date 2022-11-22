@@ -308,17 +308,9 @@ var EdgeAndNodeProviderSchema = &hcl.BodySchema{
 			Type:       "category",
 			LabelNames: []string{"name"},
 		},
-	},
-}
-
-// EdgeAndNodeProviderBlockSchema is used to validate child blocks
-var EdgeAndNodeProviderBlockSchema = &hcl.BodySchema{
-	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type: "param",
-		},
-		{
-			Type: "category",
+			Type:       "with",
+			LabelNames: []string{"name"},
 		},
 	},
 }
