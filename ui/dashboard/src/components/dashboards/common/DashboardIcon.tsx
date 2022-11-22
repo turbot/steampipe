@@ -88,12 +88,14 @@ const DashboardTextIcon = ({
     >
       <span
         className={classNames(
-          "truncate",
+          "overflow-hidden",
           text.length <= 2
-            ? "text-3xl"
+            ? "text-2xl"
             : text.length <= 4
-            ? "text-xl"
-            : "text-lg"
+            ? "text-lg"
+            : text.length <= 5
+            ? "text-sm"
+            : "text-xs"
         )}
         style={style}
         title={title || text}
