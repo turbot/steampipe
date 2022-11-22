@@ -197,6 +197,7 @@ func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkpr
 	var errors []error
 	for plugin, req := range requestMap {
 		runningPlugin, pluginAlreadyRunning := m.pluginMultiConnectionMap[plugin]
+		// TODO what if the plugin crashed - should we restart here?
 		// if the plugin is not running (or is not multi connection, so is not in this map), return
 		if !pluginAlreadyRunning {
 			continue
