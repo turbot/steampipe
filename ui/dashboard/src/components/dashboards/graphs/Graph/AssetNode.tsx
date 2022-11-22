@@ -321,7 +321,7 @@ const AssetNode = ({
     <div
       className={classNames(
         renderedHref ? "text-link" : null,
-        "absolute flex space-x-1 truncate items-center bottom-0 px-1 text-sm mt-1 text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        "absolute truncate bottom-0 px-1 text-sm mt-1 text-foreground whitespace-nowrap max-w-[150px]"
       )}
     >
       {!isFolded && (
