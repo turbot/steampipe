@@ -80,24 +80,8 @@ const DashboardTextIcon = ({
     }
   }, [icon]);
   return (
-    <div
-      className={classNames(
-        className,
-        "-mt-0.5 flex items-center justify-center"
-      )}
-    >
-      <span
-        className={classNames(
-          "truncate",
-          text.length <= 2
-            ? "text-3xl"
-            : text.length <= 4
-            ? "text-xl"
-            : "text-lg"
-        )}
-        style={style}
-        title={title || text}
-      >
+    <div className={classNames(className, "flex items-center justify-center")}>
+      <span style={style} title={title || text}>
         {text}
       </span>
     </div>

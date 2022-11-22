@@ -7,6 +7,7 @@ import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import usePaginatedList from "../../../../hooks/usePaginatedList";
+import { buildLabelTextShadow } from "./utils";
 import {
   Category,
   CategoryFields,
@@ -20,7 +21,6 @@ import { getColorOverride } from "../../common";
 import { Handle } from "reactflow";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
-import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 type AssetNodeProps = {
@@ -135,13 +135,9 @@ const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
 
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   <>
-    {fold?.title && (
-      <span className="truncate" title={fold?.title}>
-        {fold?.title}
-      </span>
-    )}
+    {fold?.title && <span title={fold?.title}>{fold?.title}</span>}
     {!fold?.title && (
-      <span className="text-link truncate" title={category?.name}>
+      <span className="text-link" title={category?.name}>
         {category?.name}
       </span>
     )}
@@ -221,9 +217,6 @@ const AssetNode = ({
 }: AssetNodeProps) => {
   const { collapseNodes, expandNode, expandedNodes } = useGraph();
   const {
-    themeContext: { theme },
-  } = useDashboard();
-  const {
     components: { ExternalLink },
   } = useDashboard();
   const iconType = useDashboardIconType(icon);
@@ -255,6 +248,9 @@ const AssetNode = ({
     doRender();
   }, [isFolded, href, row_data, setRenderedHref]);
 
+  const textIconStringLength =
+    iconType === "text" ? icon?.substring(5)?.length || 0 : null;
+
   const innerIcon = (
     <div
       className={classNames(
@@ -271,9 +267,22 @@ const AssetNode = ({
       <DashboardIcon
         className={classNames(
           "max-w-full",
-          iconType === "text" ? "w-[48px] h-[48px]" : "max-w-full",
-          iconType === "icon" && !color ? "text-foreground-lighter" : null,
-          theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
+          iconType === "text"
+            ? "w-[48px] h-[48px] overflow-hidden -mt-0.5"
+            : "max-w-full",
+          // @ts-ignore
+          iconType === "text" && textIconStringLength >= 6 ? "text-xs" : null,
+          iconType === "text" && textIconStringLength === 5 ? "text-sm" : null,
+          iconType === "text" &&
+            // @ts-ignore
+            textIconStringLength >= 3 &&
+            // @ts-ignore
+            textIconStringLength <= 4
+            ? "text-lg"
+            : null,
+          // @ts-ignore
+          iconType === "text" && textIconStringLength <= 2 ? "text-2xl" : null,
+          iconType === "icon" && !color ? "text-foreground-lighter" : null
         )}
         style={{
           color: color ? color : undefined,
@@ -308,7 +317,7 @@ const AssetNode = ({
   );
 
   // const primaryNode =
-  //   row_data && row_data.id === "i-0aa50f7044a950942" ? (
+  //   isPrimary ? (
   //     <div
   //       className="relative p-0.5 rounded-full border"
   //       style={{
@@ -325,11 +334,16 @@ const AssetNode = ({
     <div
       className={classNames(
         renderedHref ? "text-link" : null,
-        "absolute flex space-x-1 truncate items-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        "absolute truncate bottom-0 px-1 text-sm mt-1 text-foreground whitespace-nowrap max-w-[150px]"
       )}
     >
       {!isFolded && (
-        <span className="truncate" title={label}>
+        <span
+          title={label}
+          style={{
+            textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
+          }}
+        >
           {label}
         </span>
       )}

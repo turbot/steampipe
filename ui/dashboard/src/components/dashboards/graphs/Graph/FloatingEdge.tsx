@@ -1,11 +1,14 @@
 import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
-import { circleGetBezierPath, getEdgeParams } from "./utils";
+import {
+  buildLabelTextShadow,
+  circleGetBezierPath,
+  getEdgeParams,
+} from "./utils";
 import { classNames } from "../../../../utils/styles";
+import { colorToRgb } from "../../../../utils/color";
 import { EdgeLabelRenderer, useStore } from "reactflow";
 import { useCallback } from "react";
-import { ThemeNames } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
 
 const FloatingEdge = ({
   id,
@@ -16,17 +19,14 @@ const FloatingEdge = ({
   data: {
     category,
     color,
-    customColor,
     fields,
     labelOpacity,
     lineOpacity,
     row_data,
     label,
+    themeColors,
   },
 }) => {
-  const {
-    themeContext: { theme },
-  } = useDashboard();
   const sourceNode = useStore(
     useCallback((store) => store.nodeInternals.get(source), [source])
   );
@@ -52,33 +52,28 @@ const FloatingEdge = ({
     targetY: ty,
   });
 
+  const colorRgb = colorToRgb(color, themeColors);
+
   const edgeLabel = (
     <span
       title={label}
       className={classNames(
-        "block p-px italic max-w-[70px] text-sm text-center text-wrap leading-tight line-clamp-2",
-        row_data && row_data.properties
-          ? "-mt-1 underline decoration-dashed decoration-2 underline-offset-3 decoration-black-scale-3"
-          : null,
-        customColor && theme.name === ThemeNames.STEAMPIPE_DARK
-          ? "brightness-[1.75]"
-          : null
+        "block italic max-w-[70px] text-sm text-center text-wrap leading-tight line-clamp-2",
+        row_data && row_data.properties ? "border-b border-dashed" : null
       )}
-      style={{ color, opacity: labelOpacity }}
+      style={{
+        borderColor: `rgba(${colorRgb[0]},${colorRgb[1]},${colorRgb[2]},${labelOpacity})`,
+        color: `rgba(${colorRgb[0]},${colorRgb[1]},${colorRgb[2]},${labelOpacity})`,
+        textDecorationColor: `rgba(${colorRgb[0]},${colorRgb[1]},${colorRgb[2]},${labelOpacity})`,
+        textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
+      }}
     >
       {label}
     </span>
   );
 
   const edgeLabelWrapper = (
-    <div
-      className={classNames(
-        "bg-dashboard-panel",
-        row_data && row_data.properties
-          ? "flex space-x-0.5 items-center"
-          : undefined
-      )}
-    >
+    <>
       {row_data && row_data.properties && (
         <Tooltip
           overlay={
@@ -93,17 +88,12 @@ const FloatingEdge = ({
         </Tooltip>
       )}
       {(!row_data || !row_data.properties) && edgeLabel}
-    </div>
+    </>
   );
 
   return (
     <>
       <path
-        className={
-          customColor && theme.name === ThemeNames.STEAMPIPE_DARK
-            ? "brightness-[1.75]"
-            : undefined
-        }
         id={id}
         d={d}
         markerEnd={markerEnd}
