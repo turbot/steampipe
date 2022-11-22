@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/go-kit/helpers"
 )
 
 // IsMetaQuery :: returns true if the query is a metaquery, false otherwise
@@ -23,7 +23,7 @@ func IsMetaQuery(query string) bool {
 
 func getCmdAndArgs(query string) (string, []string) {
 	query = strings.TrimSuffix(query, ";")
-	split := utils.SplitByWhitespace(query)
+	split := helpers.SplitByWhitespace(query)
 	cmd := split[0]
 	args := []string{}
 	if len(split) > 1 {

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -262,5 +263,5 @@ func pluginSchemaHash(s *proto.Schema) string {
 		}
 	}
 	str := sb.String()
-	return utils.GetMD5Hash(str)
+	return helpers.GetMD5Hash(str)
 }

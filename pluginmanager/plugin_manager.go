@@ -544,7 +544,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	}
 
 	utils.LogTime("getting plugin exec hash")
-	pluginChecksum, err := utils.FileMD5Hash(pluginPath)
+	pluginChecksum, err := helpers.FileMD5Hash(pluginPath)
 	if err != nil {
 		return nil, nil, err
 	}

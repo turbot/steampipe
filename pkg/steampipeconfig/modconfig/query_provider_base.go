@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
+
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type QueryProviderBase struct {
@@ -36,7 +37,7 @@ func (b *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffi
 
 	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
 	str := fmt.Sprintf("%s%s%s", prefix, queryName, suffix)
-	hash := utils.GetMD5Hash(str)[:4]
+	hash := helpers.GetMD5Hash(str)[:4]
 	// add hash to suffix
 	suffix += hash
 

@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -53,15 +52,9 @@ func (w *Workspace) handleDashboardEvent() {
 	}
 }
 
-func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, _ []fsnotify.Event) {
-	// ignore the first event - this is raised as soon as we start the watcher
-	w.changeEventCount++
-	if w.changeEventCount == 1 {
-		log.Printf("[TRACE] Workspace handleFileWatcherEvent ignoring first event")
-		return
-	}
-
+func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
+	fmt.Println(ev)
 	if err != nil {
 		// publish error event
 		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})

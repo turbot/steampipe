@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // GetTableAutoCompleteSuggestions derives and returns tables for typeahead
@@ -92,7 +91,7 @@ func stripVersionFromPluginName(pluginName string) string {
 }
 
 func sanitiseTableName(strToEscape string) string {
-	tokens := utils.SplitByRune(strToEscape, '.')
+	tokens := helpers.SplitByRune(strToEscape, '.')
 	escaped := []string{}
 	for _, token := range tokens {
 		if strings.ContainsAny(token, " -") {

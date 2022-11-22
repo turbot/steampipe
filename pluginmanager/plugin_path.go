@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const maxSchemaNameLength = 63
@@ -56,7 +56,7 @@ func PluginFQNToSchemaName(pluginFQN string) string {
 		return pluginFQN
 	}
 
-	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", utils.StringHash(pluginFQN))
+	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", helpers.StringFnvHash(pluginFQN))
 	return schemaName
 }
 

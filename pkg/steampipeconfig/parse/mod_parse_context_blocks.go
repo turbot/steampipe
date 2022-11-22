@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (r *ModParseContext) DetermineBlockName(block *hcl.Block) string {
@@ -67,7 +67,7 @@ func (r *ModParseContext) cacheBlockName(block *hcl.Block, shortName string) {
 }
 
 func (r *ModParseContext) blockHash(block *hcl.Block) string {
-	return utils.GetMD5Hash(block.DefRange.String())
+	return helpers.GetMD5Hash(block.DefRange.String())
 }
 
 // getUniqueName returns a name unique within the scope of this execution tree

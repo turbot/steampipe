@@ -2,6 +2,8 @@ package connectionwatcher
 
 import (
 	"context"
+	"log"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
@@ -11,14 +13,12 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"log"
 )
 
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
 	onConnectionConfigChanged func(configMap map[string]*sdkproto.ConnectionConfig)
-	count                     int
 }
 
 func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkproto.ConnectionConfig)) (*ConnectionWatcher, error) {
@@ -30,6 +30,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 		Directories: []string{filepaths.EnsureConfigDir()},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
+		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename,
 		OnChange: func(events []fsnotify.Event) {
 			w.handleFileWatcherEvent(events)
 		},
@@ -61,14 +62,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
 
 	// this is a file system event handler and not bound to any context
 	ctx := context.Background()
-
-	// ignore the first event - this is raised as soon as we start the watcher
-	// (this is to avoid conflicting calls to refreshConnections between Steampipe and the watcher)
-	w.count++
-	if w.count == 1 {
-		log.Printf("[TRACE] handleFileWatcherEvent ignoring first event")
-		return
-	}
 
 	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
 	config, err := steampipeconfig.LoadConnectionConfig()
