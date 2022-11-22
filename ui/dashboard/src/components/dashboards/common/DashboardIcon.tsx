@@ -66,7 +66,12 @@ const DashboardHeroIcon = ({
   <Icon className={className} icon={icon} style={style} title={title} />
 );
 
-const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => {
+const DashboardTextIcon = ({
+  className,
+  icon,
+  style,
+  title,
+}: DashboardHeroIconProps) => {
   const text = useMemo(() => {
     if (!icon) {
       return "";
@@ -75,7 +80,12 @@ const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => {
     }
   }, [icon]);
   return (
-    <div className={classNames(className, "flex items-center justify-center")}>
+    <div
+      className={classNames(
+        className,
+        "-mt-0.5 flex items-center justify-center"
+      )}
+    >
       <span
         className={classNames(
           "truncate",
@@ -85,7 +95,8 @@ const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => {
             ? "text-xl"
             : "text-lg"
         )}
-        title={text}
+        style={style}
+        title={title || text}
       >
         {text}
       </span>
@@ -118,7 +129,12 @@ const DashboardIcon = ({
       );
     case "text":
       return (
-        <DashboardTextIcon className={className} icon={icon} title={title} />
+        <DashboardTextIcon
+          className={className}
+          icon={icon}
+          style={style}
+          title={title}
+        />
       );
     case "url":
       return (
