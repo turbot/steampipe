@@ -248,6 +248,9 @@ const AssetNode = ({
     doRender();
   }, [isFolded, href, row_data, setRenderedHref]);
 
+  const textIconStringLength =
+    iconType === "text" ? icon?.substring(5)?.length || 0 : null;
+
   const innerIcon = (
     <div
       className={classNames(
@@ -264,7 +267,21 @@ const AssetNode = ({
       <DashboardIcon
         className={classNames(
           "max-w-full",
-          iconType === "text" ? "w-[48px] h-[48px]" : "max-w-full",
+          iconType === "text"
+            ? "w-[48px] h-[48px] overflow-hidden -mt-0.5"
+            : "max-w-full",
+          // @ts-ignore
+          iconType === "text" && textIconStringLength >= 6 ? "text-xs" : null,
+          iconType === "text" && textIconStringLength === 5 ? "text-sm" : null,
+          iconType === "text" &&
+            // @ts-ignore
+            textIconStringLength >= 3 &&
+            // @ts-ignore
+            textIconStringLength <= 4
+            ? "text-lg"
+            : null,
+          // @ts-ignore
+          iconType === "text" && textIconStringLength <= 2 ? "text-2xl" : null,
           iconType === "icon" && !color ? "text-foreground-lighter" : null
         )}
         style={{

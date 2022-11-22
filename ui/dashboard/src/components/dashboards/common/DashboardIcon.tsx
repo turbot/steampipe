@@ -80,26 +80,8 @@ const DashboardTextIcon = ({
     }
   }, [icon]);
   return (
-    <div
-      className={classNames(
-        className,
-        "-mt-0.5 flex items-center justify-center"
-      )}
-    >
-      <span
-        className={classNames(
-          "overflow-hidden",
-          text.length <= 2
-            ? "text-2xl"
-            : text.length <= 4
-            ? "text-lg"
-            : text.length <= 5
-            ? "text-sm"
-            : "text-xs"
-        )}
-        style={style}
-        title={title || text}
-      >
+    <div className={classNames(className, "flex items-center justify-center")}>
+      <span style={style} title={title || text}>
         {text}
       </span>
     </div>
