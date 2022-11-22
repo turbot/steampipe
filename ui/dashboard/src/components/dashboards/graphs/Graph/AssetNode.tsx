@@ -258,8 +258,8 @@ const AssetNode = ({
   const innerIcon = (
     <div
       className={classNames(
-        iconType === "text" ? "p-px" : "p-3",
-        "rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border"
+        iconType === "text" ? "pt-px p-0.5" : "p-3 leading-[50px]",
+        "rounded-full w-[50px] h-[50px] my-0 mx-auto border"
       )}
       style={{
         // backgroundColor: color,

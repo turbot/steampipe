@@ -67,10 +67,27 @@ const DashboardHeroIcon = ({
 );
 
 const DashboardTextIcon = ({ className, icon }: DashboardHeroIconProps) => {
+  const text = useMemo(() => {
+    if (!icon) {
+      return "";
+    } else {
+      return icon.substring(5);
+    }
+  }, [icon]);
   return (
     <div className={classNames(className, "flex items-center justify-center")}>
-      <span className={"truncate"} title={icon.substring(5)}>
-        {icon.substring(5)}
+      <span
+        className={classNames(
+          "truncate",
+          text.length <= 2
+            ? "text-3xl"
+            : text.length <= 4
+            ? "text-xl"
+            : "text-lg"
+        )}
+        title={text}
+      >
+        {text}
       </span>
     </div>
   );
