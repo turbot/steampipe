@@ -1,9 +1,9 @@
 import Icon from "../Icon";
-import moment from "moment/moment";
 import NeutralButton from "../forms/NeutralButton";
 import { DashboardDataModeCLISnapshot } from "../../types";
 import { saveAs } from "file-saver";
 import { stripSnapshotDataForExport } from "../../utils/snapshot";
+import { timestampForFilename } from "../../utils/date";
 import { useDashboard } from "../../hooks/useDashboard";
 
 const SaveSnapshotButton = () => {
@@ -17,7 +17,7 @@ const SaveSnapshotButton = () => {
     const blob = new Blob([JSON.stringify(streamlinedSnapshot)], {
       type: "application/json",
     });
-    saveAs(blob, `${dashboard.name}.${moment().format("YYYYMMDDTHHmmss")}.sps`);
+    saveAs(blob, `${dashboard.name}.${timestampForFilename(Date.now())}.sps`);
   };
 
   if (

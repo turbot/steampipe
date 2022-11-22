@@ -1,6 +1,6 @@
-import moment from "moment/moment";
 import { PanelDefinition } from "../types";
 import { saveAs } from "file-saver";
+import { timestampForFilename } from "../utils/date";
 import { useCallback, useState } from "react";
 import { useDashboard } from "./useDashboard";
 import { usePapaParse } from "react-papaparse";
@@ -37,7 +37,6 @@ const useDownloadPanelData = (definition: PanelDefinition) => {
 
     const csv = jsonToCSV([colNames, ...csvRows]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const datetime = moment().format("YYYYMMDDTHHmmss");
 
     saveAs(
       blob,
@@ -45,7 +44,9 @@ const useDownloadPanelData = (definition: PanelDefinition) => {
         selectedDashboard?.full_name ||
         definition.dashboard ||
         ""
-      ).replaceAll(".", "_")}_${definition.panel_type}_${datetime}.csv`
+      ).replaceAll(".", "_")}_${definition.panel_type}_${timestampForFilename(
+        Date.now()
+      )}.csv`
     );
     setProcessing(false);
   }, [definition, jsonToCSV, selectedDashboard]);
