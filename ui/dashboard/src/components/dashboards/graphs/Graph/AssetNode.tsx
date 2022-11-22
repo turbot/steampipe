@@ -7,6 +7,7 @@ import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import usePaginatedList from "../../../../hooks/usePaginatedList";
+import { buildLabelTextShadow } from "./utils";
 import {
   Category,
   CategoryFields,
@@ -20,7 +21,6 @@ import { getColorOverride } from "../../common";
 import { Handle } from "reactflow";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
-import { ThemeNames } from "../../../../hooks/useTheme";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 type AssetNodeProps = {
@@ -221,9 +221,6 @@ const AssetNode = ({
 }: AssetNodeProps) => {
   const { collapseNodes, expandNode, expandedNodes } = useGraph();
   const {
-    themeContext: { theme },
-  } = useDashboard();
-  const {
     components: { ExternalLink },
   } = useDashboard();
   const iconType = useDashboardIconType(icon);
@@ -272,8 +269,7 @@ const AssetNode = ({
         className={classNames(
           "max-w-full",
           iconType === "text" ? "w-[48px] h-[48px]" : "max-w-full",
-          iconType === "icon" && !color ? "text-foreground-lighter" : null,
-          theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
+          iconType === "icon" && !color ? "text-foreground-lighter" : null
         )}
         style={{
           color: color ? color : undefined,
@@ -325,11 +321,17 @@ const AssetNode = ({
     <div
       className={classNames(
         renderedHref ? "text-link" : null,
-        "absolute flex space-x-1 truncate items-center bottom-0 px-1 text-sm mt-1 bg-dashboard-panel text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
+        "absolute flex space-x-1 truncate items-center bottom-0 px-1 text-sm mt-1 text-foreground whitespace-nowrap min-w-[35px] max-w-[150px]"
       )}
     >
       {!isFolded && (
-        <span className="truncate" title={label}>
+        <span
+          className="truncate"
+          title={label}
+          style={{
+            textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
+          }}
+        >
           {label}
         </span>
       )}

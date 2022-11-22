@@ -168,7 +168,7 @@ const buildGraphNodesAndEdges = (
       : targetNodeColor
       ? getColorOverride(targetNodeColor, themeColors)
       : themeColors.blackScale4;
-    const labelOpacity = categoryColor ? 1 : targetNodeColor ? 0.5 : 1;
+    const labelOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
     const lineOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
     edges.push({
       type: "floating",
@@ -190,7 +190,6 @@ const buildGraphNodesAndEdges = (
             ? categories[edge.category]
             : null,
         color,
-        customColor: !!categoryColor || !!targetNodeColor,
         fields: matchingCategory ? matchingCategory.fields : null,
         labelOpacity,
         lineOpacity,
@@ -471,12 +470,7 @@ const GraphWrapper = (props: GraphProps) => {
     props.status
   );
 
-  if (
-    !nodeAndEdgeData
-    // !nodeAndEdgeData.data ||
-    // !nodeAndEdgeData.data.rows ||
-    // nodeAndEdgeData.data.rows.length === 0
-  ) {
+  if (!nodeAndEdgeData) {
     return null;
   }
 

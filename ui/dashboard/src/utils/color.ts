@@ -1,4 +1,5 @@
 import colorConvert from "color-convert";
+import { getColorOverride } from "../components/dashboards/common";
 
 const minColumn = 16;
 const maxColumn = 51;
@@ -143,4 +144,16 @@ export const stringToColor = (str: string): string => {
   const color = colorGenerator.nextColor().hex;
   stringColorMap[str] = color;
   return color;
+};
+
+export const hexToRgb = (hex: string) => {
+  return colorConvert.hex.rgb(hex);
+};
+
+export const colorToRgb = (input: string, themeColors: any) => {
+  const convertedColor = getColorOverride(input, themeColors);
+  if (convertedColor.startsWith("#")) {
+    return colorConvert.hex.rgb(convertedColor);
+  }
+  return colorConvert.keyword.rgb(convertedColor);
 };

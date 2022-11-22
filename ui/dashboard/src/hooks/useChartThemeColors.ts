@@ -13,6 +13,10 @@ const useChartThemeColors = () => {
         window.getComputedStyle(wrapperRef)
       : null;
     if (style) {
+      const dashboard = style.getPropertyValue("--color-dashboard").trim();
+      const dashboardPanel = style
+        .getPropertyValue("--color-dashboard-panel")
+        .trim();
       const blackScale3 = style
         .getPropertyValue("--color-black-scale-3")
         .trim();
@@ -33,6 +37,8 @@ const useChartThemeColors = () => {
       const info = style.getPropertyValue("--color-info").trim();
       const ok = style.getPropertyValue("--color-ok").trim();
       return {
+        dashboard,
+        dashboardPanel,
         blackScale3,
         blackScale4,
         foreground,
