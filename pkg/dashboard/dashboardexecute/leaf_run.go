@@ -3,7 +3,6 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/type_conversion"
 	"log"
 	"strconv"
@@ -46,6 +45,7 @@ type LeafRun struct {
 	childComplete       chan dashboardtypes.DashboardNodeRun
 	withValues          map[string]*dashboardtypes.LeafData
 	withValueMutex      sync.Mutex
+	withRuns            map[string]*WithRun
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -76,7 +76,16 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		executionTree:       executionTree,
 		parent:              parent,
 		runtimeDependencies: make(map[string]*ResolvedRuntimeDependency),
+		withRuns:            make(map[string]*WithRun),
 		withValues:          make(map[string]*dashboardtypes.LeafData),
+	}
+
+	for _, w := range r.DashboardNode.(modconfig.QueryProvider).GetWiths() {
+		withRun, err := NewWithRun(w, r, executionTree)
+		if err != nil {
+			return nil, err
+		}
+		r.withRuns[w.UnqualifiedName] = withRun
 	}
 
 	parsedName, err := modconfig.ParseResourceName(resource.Name())
@@ -181,15 +190,21 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	// to get here, we must be a query provider
 
 	// start all `with` blocks
-	for _, w := range r.DashboardNode.(modconfig.QueryProvider).GetWiths() {
-		queryResult, err := r.executionTree.client.ExecuteSync(ctx, typehelpers.SafeString(w.SQL))
-		if err != nil {
-			r.SetError(ctx, err)
-			return
-		}
-		withResult := dashboardtypes.NewLeafData(queryResult)
-		r.setWithValue(w.UnqualifiedName, withResult)
+	// execute all children asynchronously
+	for _, w := range r.withRuns {
+		go w.Execute(ctx)
 	}
+
+	//for _, w := range r.withRuns {
+	//	w.Execute(ctx)
+	//	if w.Status == dashboardtypes.DashboardRunError {
+	//		r.SetError(ctx, w.error)
+	//		return
+	//	}
+	//
+	//	//withResult := dashboardtypes.NewLeafData(queryResult)
+	//	//r.setWithValue(w.UnqualifiedName, withResult)
+	//}
 
 	// if there are any unresolved runtime dependencies, wait for them
 	if len(r.runtimeDependencies) > 0 {

@@ -12,6 +12,7 @@ order by
 EOQ
 }
 
+
 dashboard "dashboard_named_args" {
   title = "dashboard with named arguments"
 
@@ -24,7 +25,11 @@ dashboard "dashboard_named_args" {
   table {
     sql = "select $1"
     with "w1" {
-        sql = "select * from aws_account"
+        sql = "select $1"
+        args = {
+            foo = "bar"
+       }
+       param foo {}
     }
     args  = {
       "with_val" = with.w1.rows[*].arn

@@ -220,6 +220,21 @@ func (e *DashboardWith) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardWith) IsSnapshotPanel() {}
 
+// GetWidth implements DashboardLeafNode
+func (*DashboardWith) GetWidth() int {
+	return 0
+}
+
+// GetDisplay implements DashboardLeafNode
+func (*DashboardWith) GetDisplay() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (*DashboardWith) GetType() string {
+	return ""
+}
+
 func (e *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
