@@ -58,12 +58,11 @@ const FloatingEdge = ({
     <span
       title={label}
       className={classNames(
-        "block p-px italic max-w-[70px] text-sm text-center text-wrap leading-tight line-clamp-2",
-        row_data && row_data.properties
-          ? "-mt-1 underline decoration-dashed decoration-2 underline-offset-2"
-          : null
+        "block italic max-w-[70px] text-sm text-center text-wrap leading-tight line-clamp-2",
+        row_data && row_data.properties ? "border-b border-dashed" : null
       )}
       style={{
+        borderColor: `rgba(${colorRgb[0]},${colorRgb[1]},${colorRgb[2]},${labelOpacity})`,
         color: `rgba(${colorRgb[0]},${colorRgb[1]},${colorRgb[2]},${labelOpacity})`,
         textDecorationColor: `rgba(${colorRgb[0]},${colorRgb[1]},${colorRgb[2]},${labelOpacity})`,
         textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
