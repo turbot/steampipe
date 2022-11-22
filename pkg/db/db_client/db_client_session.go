@@ -3,9 +3,10 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {

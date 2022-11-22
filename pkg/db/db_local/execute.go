@@ -2,8 +2,8 @@ package db_local
 
 import (
 	"context"
-	"github.com/jackc/pgconn"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 

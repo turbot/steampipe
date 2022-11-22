@@ -4,13 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
 	"log"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 // GoToPostgresString convert a go value into a postgres representation of the value
@@ -152,12 +153,12 @@ func CtyToPostgresString(v cty.Value) (valStr string, err error) {
 	return valStr, err
 }
 
-// QuotePostgresString taken from github.com/jackc/pgx/v4@v4.17.2/internal/sanitize/sanitize.go
+// QuotePostgresString taken from github.com/jackc/pgx/v5@v4.17.2/internal/sanitize/sanitize.go
 func QuotePostgresString(str string) string {
 	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
 }
 
-// QuotePostgresBytes taken from github.com/jackc/pgx/v4@v4.17.2/internal/sanitize/sanitize.go
+// QuotePostgresBytes taken from github.com/jackc/pgx/v5@v4.17.2/internal/sanitize/sanitize.go
 func QuotePostgresBytes(buf []byte) string {
 	return `'\x` + hex.EncodeToString(buf) + "'"
 }

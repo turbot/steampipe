@@ -1,9 +1,10 @@
 package db_common
 
 import (
-	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // DatabaseSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation

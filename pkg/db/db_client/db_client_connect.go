@@ -2,14 +2,15 @@ package db_client
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
-	"time"
 )
 
 type DbConnectionCallback func(context.Context, *pgx.Conn) error
@@ -45,7 +46,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	}
 
 	// this returns connection pool
-	dbPool, err := pgxpool.ConnectConfig(context.Background(), config)
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return err
 	}

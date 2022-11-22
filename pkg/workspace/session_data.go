@@ -3,7 +3,8 @@ package workspace
 import (
 	"context"
 	"errors"
-	"github.com/jackc/pgx/v4"
+
+	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
 )
