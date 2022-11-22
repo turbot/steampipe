@@ -20,12 +20,14 @@ type Runner struct {
 	currentState statefile.State
 }
 
-func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) (chan struct{}, error) {
+// RunTasks runs all tasks asynchronously
+// returns a channel which is closed once all tasks are finished or the provided context is cancelled
+func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) chan struct{} {
 	utils.LogTime("task.RunTasks start")
 	defer utils.LogTime("task.RunTasks end")
 
 	doneChannel := make(chan struct{}, 1)
-	runner := NewRunner()
+	runner := newRunner()
 
 	if err := runner.displayNotifications(cmd, args); err != nil {
 		log.Println("[TRACE] faced error displaying notifications:", err)
@@ -39,10 +41,10 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) (chan stru
 		}
 	}(ctx)
 
-	return doneChannel, nil
+	return doneChannel
 }
 
-func NewRunner() *Runner {
+func newRunner() *Runner {
 	utils.LogTime("task.NewRunner start")
 	defer utils.LogTime("task.NewRunner end")
 
@@ -67,23 +69,29 @@ func (r *Runner) run(ctx context.Context) {
 	waitGroup := sync.WaitGroup{}
 
 	// check whether an updated version is available
-	runJobAsync(ctx, func(c context.Context) {
+	r.runJobAsync(ctx, func(c context.Context) {
 		versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
 	}, &waitGroup)
 
 	// check whether an updated version is available
-	runJobAsync(ctx, func(c context.Context) {
+	r.runJobAsync(ctx, func(c context.Context) {
 		pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
 	}, &waitGroup)
 
 	// remove log files older than 7 days
-	runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
+	r.runJobAsync(ctx, func(context.Context) { db_local.TrimLogs() }, &waitGroup)
 
 	// validate and regenerate service SSL certificates
-	runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
+	r.runJobAsync(ctx, func(context.Context) { validateServiceCertificates() }, &waitGroup)
 
 	// wait for all jobs to complete
 	waitGroup.Wait()
+
+	// check if the context was cancelled before starting any FileIO
+	if utils.IsContextCancelled(ctx) {
+		// if the context was cancelled, we don't want to do anything
+		return
+	}
 
 	// save the notifications, if any
 	if err := r.saveNotifications(versionNotificationLines, pluginNotificationLines); err != nil {
@@ -96,7 +104,7 @@ func (r *Runner) run(ctx context.Context) {
 	}
 }
 
-func runJobAsync(ctx context.Context, job func(context.Context), wg *sync.WaitGroup) {
+func (r *Runner) runJobAsync(ctx context.Context, job func(context.Context), wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		// do this as defer, so that it always fires - even if there's a panic
@@ -124,7 +132,7 @@ func (r *Runner) shouldRun() bool {
 	return durationElapsedSinceLastCheck > minimumDurationBetweenChecks
 }
 
-func isSilentCmd(cmd *cobra.Command, cmdArgs []string) bool {
+func isNoNotificationCmd(cmd *cobra.Command, cmdArgs []string) bool {
 	return (isPluginUpdateCmd(cmd) ||
 		isPluginManagerCmd(cmd) ||
 		isServiceStopCmd(cmd) ||

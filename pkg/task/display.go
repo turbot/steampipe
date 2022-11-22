@@ -8,6 +8,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -53,11 +54,29 @@ func (r *Runner) hasNotifications() bool {
 	return files.FileExists(filepaths.NotificationsFilePath())
 }
 
+func (r *Runner) getNotifications() (*Notifications, error) {
+	utils.LogTime("Runner.getNotifications start")
+	defer utils.LogTime("Runner.getNotifications end")
+	f, err := os.Open(filepaths.NotificationsFilePath())
+	if err != nil {
+		return nil, err
+	}
+	notifications := &Notifications{}
+	decoder := json.NewDecoder(f)
+	if err := decoder.Decode(notifications); err != nil {
+		return nil, err
+	}
+	return notifications, error_helpers.CombineErrors(f.Close(), os.Remove(filepaths.NotificationsFilePath()))
+}
+
+// displayNotifications checks if there are any pending notifications to display
+// and if so, displays them
+// does nothing if the given command is a command where notifications are not displayed
 func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) error {
 	utils.LogTime("Runner.displayNotifications start")
 	defer utils.LogTime("Runner.displayNotifications end")
 
-	if isSilentCmd(cmd, cmdArgs) {
+	if isNoNotificationCmd(cmd, cmdArgs) {
 		// do not do anything
 		// just return
 		return nil
@@ -66,20 +85,9 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 		// nothing to display
 		return nil
 	}
-	f, err := os.Open(filepaths.NotificationsFilePath())
-	if err != nil {
-		return err
-	}
-	defer func() {
-		// close the open file reader
-		f.Close()
-		// remove the file
-		os.Remove(filepaths.NotificationsFilePath())
-	}()
 
-	notifications := &Notifications{}
-	decoder := json.NewDecoder(f)
-	if err := decoder.Decode(notifications); err != nil {
+	notifications, err := r.getNotifications()
+	if err != nil {
 		return err
 	}
 

@@ -33,7 +33,8 @@ import (
 )
 
 var exitCode int
-var waitForTasks chan struct{}
+var waitForTasksChannel chan struct{}
+var tasksCancel context.CancelFunc
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -43,9 +44,15 @@ var rootCmd = &cobra.Command{
 		utils.LogTime("cmd.PersistentPostRun start")
 		defer utils.LogTime("cmd.PersistentPostRun end")
 
-		if waitForTasks != nil {
+		if waitForTasksChannel != nil {
+			defer tasksCancel()
 			// wait for the async tasks to finish
-			<-waitForTasks
+			select {
+			case <-time.After(100 * time.Millisecond):
+				return
+			case <-waitForTasksChannel:
+				return
+			}
 		}
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -62,13 +69,10 @@ var rootCmd = &cobra.Command{
 
 		initGlobalConfig()
 
-		t, err := task.RunTasks(cmd.Context(), cmd, args)
-		if err != nil {
-			log.Printf("[TRACE] ran into an error running daily tasks: %v", err)
-			log.Printf("[TRACE] stack: %s", string(debug.Stack()))
-		}
-		// save the channel so that we can wait on it when exiting
-		waitForTasks = t
+		var taskUpdateCtx context.Context
+		taskUpdateCtx, tasksCancel = context.WithCancel(cmd.Context())
+
+		waitForTasksChannel = task.RunTasks(taskUpdateCtx, cmd, args)
 
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
