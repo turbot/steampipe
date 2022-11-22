@@ -320,7 +320,7 @@ const useNodeAndEdgeData = (
       dataFormat,
       status: nodeAndEdgeStatus,
     };
-  }, [data, panels, properties, status]);
+  }, [data, dataFormat, panels, properties, status]);
 };
 
 export default useNodeAndEdgeData;

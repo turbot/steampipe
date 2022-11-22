@@ -258,7 +258,8 @@ const AssetNode = ({
   const innerIcon = (
     <div
       className={classNames(
-        "p-3 rounded-full w-[50px] h-[50px] leading-[50px] my-0 mx-auto border"
+        iconType === "text" ? "pt-px p-0.5" : "p-3 leading-[50px]",
+        "rounded-full w-[50px] h-[50px] my-0 mx-auto border"
       )}
       style={{
         // backgroundColor: color,
@@ -270,6 +271,7 @@ const AssetNode = ({
       <DashboardIcon
         className={classNames(
           "max-w-full",
+          iconType === "text" ? "w-[48px] h-[48px]" : "max-w-full",
           iconType === "icon" && !color ? "text-foreground-lighter" : null,
           theme.name === ThemeNames.STEAMPIPE_DARK ? "brightness-[1.75]" : null
         )}
