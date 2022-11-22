@@ -135,13 +135,9 @@ const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
 
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   <>
-    {fold?.title && (
-      <span className="truncate" title={fold?.title}>
-        {fold?.title}
-      </span>
-    )}
+    {fold?.title && <span title={fold?.title}>{fold?.title}</span>}
     {!fold?.title && (
-      <span className="text-link truncate" title={category?.name}>
+      <span className="text-link" title={category?.name}>
         {category?.name}
       </span>
     )}
@@ -304,7 +300,7 @@ const AssetNode = ({
   );
 
   // const primaryNode =
-  //   row_data && row_data.id === "i-0aa50f7044a950942" ? (
+  //   isPrimary ? (
   //     <div
   //       className="relative p-0.5 rounded-full border"
   //       style={{
@@ -326,7 +322,6 @@ const AssetNode = ({
     >
       {!isFolded && (
         <span
-          className="truncate"
           title={label}
           style={{
             textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
