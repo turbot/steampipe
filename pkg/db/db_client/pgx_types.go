@@ -3,6 +3,7 @@ package db_client
 import (
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -11,9 +12,9 @@ import (
 
 // ColumnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.
 func columnTypeDatabaseTypeName(field pgconn.FieldDescription, connection *pgx.Conn) (typeName string, scanType reflect.Type) {
-	// if dt, ok := connection.ConnInfo().DataTypeForOID(field.DataTypeOID); ok {
-	// 	return strings.ToUpper(dt.Name), reflect.TypeOf(dt.Value)
-	// }
+	if dt, ok := connection.TypeMap().TypeForOID(field.DataTypeOID); ok {
+		return strings.ToUpper(dt.Name), reflect.TypeOf(dt.Value)
+	}
 
 	return strconv.FormatInt(int64(field.DataTypeOID), 10), nil
 }
