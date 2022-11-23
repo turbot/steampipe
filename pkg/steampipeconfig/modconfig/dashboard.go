@@ -266,8 +266,6 @@ func (d *Dashboard) GetUnqualifiedName() string {
 }
 
 func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
-
-	// TODO kai shoulds this also walk into NodeAndEdgeProviders which have children
 	for _, child := range d.children {
 		continueWalking, err := resourceFunc(child.(HclResource))
 		if err != nil {
@@ -277,8 +275,8 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 			break
 		}
 
-		if walker, ok := child.(HclResourceWalker); ok {
-			if err := walker.WalkResources(resourceFunc); err != nil {
+		if container, ok := child.(*DashboardContainer); ok {
+			if err := container.WalkResources(resourceFunc); err != nil {
 				return err
 			}
 		}
