@@ -2,7 +2,6 @@ package controlexecute
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -70,12 +69,11 @@ func (r *ResultRow) GetDimensionValue(key string) string {
 
 // AddDimension checks whether a column value is a scalar type, and if so adds it to the Dimensions map
 func (r *ResultRow) AddDimension(c *queryresult.ColumnDef, val interface{}) {
-	switch c.ScanType.Kind() {
-	case reflect.Array, reflect.Map, reflect.Slice, reflect.Struct:
-		return
-	default:
-		r.Dimensions = append(r.Dimensions, Dimension{Key: c.Name, Value: typehelpers.ToString(val), SqlType: c.DataType})
-	}
+	r.Dimensions = append(r.Dimensions, Dimension{
+		Key:     c.Name,
+		Value:   typehelpers.ToString(val),
+		SqlType: c.DataType,
+	})
 }
 
 func NewResultRow(run *ControlRun, row *queryresult.RowResult, cols []*queryresult.ColumnDef) (*ResultRow, error) {
@@ -108,7 +106,11 @@ func NewResultRow(run *ControlRun, row *queryresult.RowResult, cols []*queryresu
 			res.Status = status
 		default:
 			// if this is a scalar type, add to dimensions
-			res.AddDimension(c, row.Data[i])
+			val := row.Data[i]
+			// isScalar may mutate the ColumnDef struct by lazily populating the internal isScalar property
+			if c.IsScalar(val) {
+				res.AddDimension(c, val)
+			}
 		}
 	}
 	return res, nil
