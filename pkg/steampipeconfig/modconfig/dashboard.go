@@ -314,7 +314,6 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 			}
 		}
 
-		// TODO kai handle Nodes/Edges
 		// continue walking
 		return true, nil
 	}
@@ -331,7 +330,6 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 
 func (d *Dashboard) addRuntimeDependenciesForResource(resource HclResource, runtimeDependencies map[string]*RuntimeDependency, workspace ResourceMapsProvider) error {
 	if len(runtimeDependencies) == 0 {
-		// continue walking
 		return nil
 	}
 	name := resource.Name()
