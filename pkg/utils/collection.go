@@ -6,9 +6,8 @@ package utils
 //
 // The predicate is invoked with each element
 func Partition[V any](elements []V, predicate func(V) bool) ([]V, []V) {
-	leftPartition := []V{}
-	rightPartition := []V{}
-
+	leftPartition := make([]V, 0, len(elements))
+	rightPartition := make([]V, 0, len(elements))
 	for _, v := range elements {
 		if predicate(v) {
 			leftPartition = append(leftPartition, v)
@@ -16,7 +15,6 @@ func Partition[V any](elements []V, predicate func(V) bool) ([]V, []V) {
 			rightPartition = append(rightPartition, v)
 		}
 	}
-
 	return leftPartition, rightPartition
 }
 
@@ -25,14 +23,12 @@ func Partition[V any](elements []V, predicate func(V) bool) ([]V, []V) {
 //
 // The predicate is invoked with each element
 func Filter[V any](elements []V, predicate func(V) bool) []V {
-	filtered := []V{}
-
+	filtered := make([]V, 0, len(elements))
 	for _, v := range elements {
 		if predicate(v) {
 			filtered = append(filtered, v)
 		}
 	}
-
 	return filtered
 }
 
@@ -40,7 +36,7 @@ func Filter[V any](elements []V, predicate func(V) bool) []V {
 //
 // The mapper is invoked with each element
 func Map[V any, M any](elements []V, mapper func(V) M) []M {
-	mapped := []M{}
+	mapped := make([]M, 0, len(elements))
 	for _, v := range elements {
 		mapped = append(mapped, mapper(v))
 	}

@@ -327,14 +327,14 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
 			result[i] = columnValue
-
 			switch cols[i].DataType {
 			case "_TEXT":
-				if arr, ok := columnValue.(pgtype.Array[[]string]); ok {
-					result[i] = strings.Join(arr.Elements[0], ",")
+				if arr, ok := columnValue.([]interface{}); ok {
+					elements := utils.Map(arr, func(e interface{}) string { return e.(string) })
+					result[i] = strings.Join(elements, ",")
 				}
 			case "INET":
-				if inet, ok := columnValue.(*netip.Addr); ok {
+				if inet, ok := columnValue.(netip.Prefix); ok {
 					result[i] = strings.TrimSuffix(inet.String(), "/32")
 				}
 			case "UUID":
