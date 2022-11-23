@@ -136,7 +136,7 @@ const Panel = ({
           )}
         >
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
-          <PanelInformation />
+          {!definition.error && <PanelInformation />}
           <PlaceholderComponent
             animate={!!children}
             ready={ready || !!definition.error}
