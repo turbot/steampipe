@@ -58,4 +58,18 @@ log_disconnections=on
 # Logging of slow queries (> 5 secs) is helpful when reviewing environments or
 # troubleshooting with users.
 log_min_duration_statement=5000
+
+# Increasing the memory settings helps PostgreSQL to not
+# run out of available memory when working with large plugins
+# or aggregators with a large number of sub connections (or both)
+effective_cache_size=64kB
+full_page_writes=off
+maintenance_work_mem=1024kB
+random_page_cost=0.01
+seq_page_cost=0.01
+temp_buffers=800kB
+wal_buffers=32kB
+work_mem=64kB
+max_locks_per_transaction = 2048 
+
 `
