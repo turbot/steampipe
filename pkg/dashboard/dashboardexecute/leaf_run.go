@@ -8,14 +8,12 @@ import (
 	"strconv"
 	"sync"
 
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"golang.org/x/exp/maps"
 )
 
