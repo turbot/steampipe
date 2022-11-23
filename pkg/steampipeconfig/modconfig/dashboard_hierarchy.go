@@ -376,19 +376,3 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 
 	h.MergeRuntimeDependencies(h.Base)
 }
-
-// TODO nodes and edges are not hcl resources??
-//// WalkResources implements HclResourceWalker
-//func (c *DashboardHierarchy) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
-//	for _, child := range c.Nodes {
-//		continueWalking, err := resourceFunc(child.(HclResource))
-//		if err != nil {
-//			return err
-//		}
-//		if !continueWalking {
-//			break
-//		}
-//
-//	}
-//	return nil
-//}
