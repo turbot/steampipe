@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/pkg/constants"
