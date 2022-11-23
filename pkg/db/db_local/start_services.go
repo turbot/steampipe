@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"

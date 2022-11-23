@@ -1,11 +1,10 @@
 package db_common
 
 import (
-	"github.com/jackc/pgx/v4"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	typeHelpers "github.com/turbot/go-kit/types"
-
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/utils"
 )

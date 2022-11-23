@@ -3,11 +3,11 @@ package display
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"time"
 
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
 // ColumnNames :: extract names from columns
