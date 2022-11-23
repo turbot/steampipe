@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -74,14 +75,6 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argSt
 	// if query params contains both positional and named params, error out
 	params := queryProvider.GetParams()
 
-	// so params contain named params - if this query has no param defs, error out
-	if len(params) < len(args.ArgMap) {
-		err = fmt.Errorf("resolveNamedParameters failed for '%s' - %d named arguments were provided but there are %d parameter definitions",
-			queryProvider.Name(), len(args.ArgMap), len(queryProvider.GetParams()))
-		return
-	}
-
-	// to get here, we must have param defs for all provided named params
 	argStrs = make([]string, len(params))
 
 	// iterate through each param def and resolve the value
@@ -108,7 +101,7 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argSt
 	// verify we have param defs for all provided args
 	for arg := range args.ArgMap {
 		if _, ok := argsWithParamDef[arg]; !ok {
-			return nil, nil, fmt.Errorf("no parameter definition found for argument '%s'", arg)
+			log.Printf("[TRACE] no parameter definition found for argument '%s'", arg)
 		}
 	}
 
