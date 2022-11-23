@@ -38,16 +38,11 @@ const FloatingEdge = ({
     return null;
   }
 
-  const { sx, sy, mx, my, tx, ty, sourcePos, targetPos } = getEdgeParams(
-    sourceNode,
-    targetNode
-  );
+  const { sx, sy, mx, my, tx, ty } = getEdgeParams(sourceNode, targetNode);
 
   const d = circleGetBezierPath({
     sourceX: sx,
     sourceY: sy,
-    sourcePosition: sourcePos,
-    targetPosition: targetPos,
     targetX: tx,
     targetY: ty,
   });

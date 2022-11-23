@@ -151,9 +151,9 @@ export function createNodesAndEdges() {
 }
 */
 
-function circleGetControlWithCurvature({ pos, x1, y1, x2, y2, c }) {
-  let ctX = x1;
-  let ctY = y1;
+function circleGetControlWithCurvature({ x1, y1, x2, y2, c }) {
+  let ctX;
+  let ctY;
 
   if (x1 > x2) {
     ctX = x1 - calculateControlOffset(x2 - x1, c);
@@ -181,14 +181,11 @@ function calculateControlOffset(distance, curvature) {
 export function circleGetBezierPath({
   sourceX,
   sourceY,
-  sourcePosition = Position.Bottom,
   targetX,
   targetY,
-  targetPosition = Position.Top,
   curvature = 0,
 }) {
   const [sourceControlX, sourceControlY] = circleGetControlWithCurvature({
-    pos: sourcePosition,
     x1: sourceX,
     y1: sourceY,
     x2: targetX,
@@ -196,7 +193,6 @@ export function circleGetBezierPath({
     c: curvature,
   });
   const [targetControlX, targetControlY] = circleGetControlWithCurvature({
-    pos: targetPosition,
     x1: targetX,
     y1: targetY,
     x2: sourceX,
@@ -205,28 +201,6 @@ export function circleGetBezierPath({
   });
   return `M${sourceX},${sourceY} C${sourceControlX},${sourceControlY} ${targetControlX},${targetControlY} ${targetX},${targetY}`;
 }
-
-export const generateLabelTextShadow = (color: string, width: number = 3) => {
-  // const color = "#FFF" /* white outline */
-  // const r = 10; /* width of outline in pixels */
-  const n = Math.ceil(2 * Math.PI * width); /* number of shadows */
-  let str = "";
-  for (
-    let i = 0;
-    i < n;
-    i++ /* append shadows in n evenly distributed directions */
-  ) {
-    const theta = (2 * Math.PI * i) / n;
-    str +=
-      width * Math.cos(theta) +
-      "px " +
-      width * Math.sin(theta) +
-      "px 0 " +
-      color +
-      (i == n - 1 ? "" : ",");
-  }
-  return str;
-};
 
 export const buildLabelTextShadow = (color: string) =>
   `3px 0px 0 ${color},2.837451725101904px 0.9740984076140504px 0 ${color},2.3674215281891806px 1.8426381380690033px 0 ${color},1.6408444743672808px 2.5114994347875856px 0 ${color},0.7364564614223977px 2.908200797817991px 0 ${color},-0.24773803641699682px 2.9897534790200098px 0 ${color},-1.2050862739589083px 2.747319979965172px 0 ${color},-2.0318447148772227px 2.207171732019395px 0 ${color},-2.638421253619467px 1.427842179111221px 0 ${color},-2.959083910208167px 0.4937837708422021px 0 ${color},-2.959083910208167px -0.4937837708422014px 0 ${color},-2.6384212536194678px -1.4278421791112192px 0 ${color},-2.031844714877223px -2.2071717320193946px 0 ${color},-1.2050862739589072px -2.747319979965173px 0 ${color},-0.2477380364169982px -2.9897534790200098px 0 ${color},0.7364564614223964px -2.9082007978179916px 0 ${color},1.6408444743672796px -2.511499434787586px 0 ${color},2.3674215281891815px -1.842638138069002px 0 ${color},2.837451725101904px -0.9740984076140512px 0 ${color}`;

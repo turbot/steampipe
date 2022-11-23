@@ -254,22 +254,17 @@ const AssetNode = ({
   const innerIcon = (
     <div
       className={classNames(
-        iconType === "text" ? "pt-px p-0.5" : "p-3 leading-[50px]",
-        "rounded-full w-[50px] h-[50px] my-0 mx-auto border"
+        iconType === "text" ? "p-1" : "p-3 leading-[50px]",
+        "flex items-center justify-center rounded-full w-[50px] h-[50px] my-0 mx-auto border"
       )}
       style={{
-        // backgroundColor: color,
         borderColor: color ? color : themeColors.blackScale3,
-        // borderWidth: row_data && row_data.id === "i-0aa50f7044a950942" ? 3 : 1,
         color: isFolded ? (color ? color : themeColors.blackScale3) : undefined,
       }}
     >
       <DashboardIcon
         className={classNames(
-          "max-w-full",
-          iconType === "text"
-            ? "w-[48px] h-[48px] overflow-hidden -mt-0.5"
-            : "max-w-full",
+          iconType === "text" ? "p-px overflow-hidden" : "max-w-full",
           // @ts-ignore
           iconType === "text" && textIconStringLength >= 6 ? "text-xs" : null,
           iconType === "text" && textIconStringLength === 5 ? "text-sm" : null,
