@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 type InitResult struct {
@@ -52,11 +51,5 @@ func (r *InitResult) DisplayMessages() {
 	}
 	for _, m := range r.Messages {
 		r.DisplayMessage(context.Background(), m)
-	}
-}
-
-func (r *InitResult) AddPreparedStatementFailures(preparedStatementFailures map[string]*steampipeconfig.PreparedStatementFailure) {
-	for _, failure := range preparedStatementFailures {
-		r.AddWarnings(failure.String())
 	}
 }

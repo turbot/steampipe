@@ -465,17 +465,6 @@ func (r *LeafRun) executeQuery(ctx context.Context) {
 
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL, r.Args...)
 	if err != nil {
-		query := r.DashboardNode.(modconfig.QueryProvider).GetQuery()
-		if query != nil {
-			queryName := query.Name()
-			// get the query and any prepared statement error from the workspace
-			preparedStatementFailure := r.executionTree.workspace.GetPreparedStatementCreationFailure(queryName)
-			if preparedStatementFailure != nil {
-				declRange := preparedStatementFailure.Query.GetDeclRange()
-				preparedStatementError := preparedStatementFailure.Error
-				err = error_helpers.EnrichPreparedStatementError(err, queryName, preparedStatementError, declRange)
-			}
-		}
 		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(ctx, err)
