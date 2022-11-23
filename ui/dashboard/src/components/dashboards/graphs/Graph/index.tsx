@@ -26,6 +26,8 @@ import {
 import { CategoryMap, Node as NodeType } from "../../common/types";
 import {
   CategoryStatus,
+  DagreRankDir,
+  GraphDirection,
   GraphProperties,
   GraphProps,
   NodeAndEdgeDataFormat,
@@ -48,6 +50,23 @@ import "reactflow/dist/style.css";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
+
+const getGraphDirection = (direction?: GraphDirection | null): DagreRankDir => {
+  if (!direction) {
+    return "TB";
+  }
+
+  switch (direction) {
+    case "left_right":
+    case "LR":
+      return "LR";
+    case "top_down":
+    case "TB":
+      return "TB";
+    default:
+      return "TB";
+  }
+};
 
 const buildGraphNodesAndEdges = (
   categories: CategoryMap,
@@ -72,12 +91,12 @@ const buildGraphNodesAndEdges = (
   );
 
   nodesAndEdges = foldNodesAndEdges(nodesAndEdges, expandedNodes);
-  const direction = properties?.direction || "TB";
+  const direction = getGraphDirection(properties?.direction);
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setGraph({
     rankdir: direction,
-    nodesep: direction === "LR" || direction === "RL" ? 15 : 110,
-    ranksep: direction === "LR" || direction === "RL" ? 200 : 60,
+    nodesep: direction === "LR" ? 15 : 110,
+    ranksep: direction === "LR" ? 200 : 60,
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   nodesAndEdges.edges.forEach((edge) => {

@@ -31,8 +31,12 @@ export interface NodeAndEdgeData {
   rows: NodeAndEdgeDataRow[];
 }
 
+export type DagreRankDir = "LR" | "TB";
+
+export type GraphDirection = "left_right" | "top_down" | "LR" | "TB";
+
 export type GraphProperties = NodeAndEdgeProperties & {
-  direction: "LR" | "RL" | "TB" | "BT";
+  direction?: GraphDirection | null;
 };
 
 export interface GraphProps extends BaseGraphProps {

@@ -318,6 +318,7 @@ const useNodeAndEdgeData = (
       categories,
       data: { columns, rows },
       dataFormat,
+      properties,
       status: nodeAndEdgeStatus,
     };
   }, [data, dataFormat, panels, properties, status]);
