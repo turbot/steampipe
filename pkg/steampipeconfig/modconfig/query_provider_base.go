@@ -2,8 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/type_conversion"
-	"reflect"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -74,16 +72,7 @@ func (b *QueryProviderBase) getResolvedQuery(queryProvider QueryProvider, runtim
 	if sql == "" {
 		return nil, fmt.Errorf("getResolvedQuery faiuled - no sql set for '%s'", queryProvider.Name())
 	}
-	// if an arg is a slice, convert to a string
-	for i, a := range argsArray {
-		if reflect.ValueOf(a).Kind() == reflect.Slice {
-			strVal, err := type_conversion.GoToPostgresString(a)
-			if err != nil {
-				return nil, err
-			}
-			argsArray[i] = strVal
-		}
-	}
+
 	return &ResolvedQuery{
 		ExecuteSQL: sql,
 		RawSQL:     sql,
