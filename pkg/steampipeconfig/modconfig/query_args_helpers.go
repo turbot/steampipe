@@ -78,7 +78,7 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argVa
 	// if query params contains both positional and named params, error out
 	params := queryProvider.GetParams()
 
-	argStrs = make([]string, len(params))
+	argVals = make([]any, len(params))
 
 	// iterate through each param def and resolve the value
 	// build a map of which args have been matched (used to validate all args have param defs)
