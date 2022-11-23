@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -330,11 +330,11 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 
 			switch cols[i].DataType {
 			case "_TEXT":
-				if arr, ok := columnValue.(pgtype.Array[string]); ok {
-					result[i] = strings.Join(arr.Elements, ",")
+				if arr, ok := columnValue.(pgtype.Array[[]string]); ok {
+					result[i] = strings.Join(arr.Elements[0], ",")
 				}
 			case "INET":
-				if inet, ok := columnValue.(*net.IPNet); ok {
+				if inet, ok := columnValue.(*netip.Addr); ok {
 					result[i] = strings.TrimSuffix(inet.String(), "/32")
 				}
 			case "UUID":
