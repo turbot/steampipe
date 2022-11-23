@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -330,12 +330,8 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 
 			switch cols[i].DataType {
 			case "_TEXT":
-				if arr, ok := columnValue.(pgtype.TextArray); ok {
-					strs := make([]string, len(arr.Elements))
-					for i, s := range arr.Elements {
-						strs[i] = s.String
-					}
-					result[i] = strings.Join(strs, ",")
+				if arr, ok := columnValue.(pgtype.Array[string]); ok {
+					result[i] = strings.Join(arr.Elements, ",")
 				}
 			case "INET":
 				if inet, ok := columnValue.(*net.IPNet); ok {
@@ -348,7 +344,9 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 					}
 				}
 			case "TIME":
-				result[i] = ((columnValue.(pgtype.Time)).Get().(time.Time)).UTC().Format("15:04:05")
+				if t, ok := columnValue.(pgtype.Time); ok {
+					result[i] = time.UnixMicro(t.Microseconds).UTC().Format("15:04:05")
+				}
 			case "INTERVAL":
 				if interval, ok := columnValue.(pgtype.Interval); ok {
 					var sb strings.Builder
@@ -373,9 +371,8 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 
 			case "NUMERIC":
 				if numeric, ok := columnValue.(pgtype.Numeric); ok {
-					var f float64
-					if err := numeric.AssignTo(&f); err == nil {
-						result[i] = f
+					if f, err := numeric.Float64Value(); err == nil {
+						result[i] = f.Float64
 					}
 				}
 			}
