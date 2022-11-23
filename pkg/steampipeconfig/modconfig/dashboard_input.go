@@ -300,7 +300,7 @@ func (i *DashboardInput) GetPreparedStatementName() string {
 	return i.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
+// GetResolvedQuery implements QueryProvider
 func (i *DashboardInput) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return i.getResolvedQuery(i, runtimeArgs)

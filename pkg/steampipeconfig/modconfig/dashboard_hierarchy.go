@@ -273,7 +273,7 @@ func (h *DashboardHierarchy) GetPreparedStatementName() string {
 	return h.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
+// GetResolvedQuery implements QueryProvider
 func (h *DashboardHierarchy) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return h.getResolvedQuery(h, runtimeArgs)
@@ -376,3 +376,19 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 
 	h.MergeRuntimeDependencies(h.Base)
 }
+
+// TODO nodes and edges are not hcl resources??
+//// WalkResources implements HclResourceWalker
+//func (c *DashboardHierarchy) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
+//	for _, child := range c.Nodes {
+//		continueWalking, err := resourceFunc(child.(HclResource))
+//		if err != nil {
+//			return err
+//		}
+//		if !continueWalking {
+//			break
+//		}
+//
+//	}
+//	return nil
+//}

@@ -265,7 +265,7 @@ func (c *DashboardCard) GetPreparedStatementName() string {
 	return c.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
+// GetResolvedQuery implements QueryProvider
 func (c *DashboardCard) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return c.getResolvedQuery(c, runtimeArgs)

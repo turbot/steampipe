@@ -1,6 +1,7 @@
 package dashboardexecute
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
@@ -30,6 +31,11 @@ func (d *ResolvedRuntimeDependency) Resolve() (bool, error) {
 	// if we are already resolved, do nothing
 	if d.hasValue() {
 		return true, nil
+	}
+
+	// dependency must have a source resource - if not this is a bug
+	if d.dependency.SourceResource == nil {
+		return false, fmt.Errorf("runtime dependency '%s' Resolve() called but it does not have a source resource", d.dependency.String())
 	}
 
 	// otherwise, try to read the value from the source

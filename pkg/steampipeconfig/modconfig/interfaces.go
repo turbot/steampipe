@@ -108,3 +108,7 @@ type EdgeAndNodeProvider interface {
 	SetNodes(DashboardNodeList)
 	AddCategory(category *DashboardCategory) hcl.Diagnostics
 }
+
+type HclResourceWalker interface {
+	WalkResources(resourceFunc func(resource HclResource) (bool, error)) error
+}
