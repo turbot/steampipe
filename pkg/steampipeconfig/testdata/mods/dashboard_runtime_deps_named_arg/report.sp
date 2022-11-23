@@ -23,7 +23,7 @@ dashboard "dashboard_named_args" {
   }
 
   table {
-    sql = "select $1"
+    sql = "select * from aws_account where arn in ($1)"
     with "w1" {
         sql = "select * from aws_account"
 

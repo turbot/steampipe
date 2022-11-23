@@ -509,7 +509,7 @@ func (r *LeafRun) executeWithRuns(ctx context.Context) {
 	}
 
 	log.Printf("[TRACE] run %s ALL children complete", r.Name)
-	// so all children have completed - check for errors
+	// so all with runs have completed - check for errors
 	err := error_helpers.CombineErrors(errors...)
 	if err == nil {
 		r.setWithData()
