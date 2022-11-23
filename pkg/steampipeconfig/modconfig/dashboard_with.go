@@ -211,14 +211,29 @@ func (e *DashboardWith) GetPreparedStatementName() string {
 	return e.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
-func (e *DashboardWith) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+// GetResolvedQuery implements QueryProvider
+func (e *DashboardWith) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return e.getPreparedStatementExecuteSQL(e, runtimeArgs)
+	return e.getResolvedQuery(e, runtimeArgs)
 }
 
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardWith) IsSnapshotPanel() {}
+
+// GetWidth implements DashboardLeafNode
+func (*DashboardWith) GetWidth() int {
+	return 0
+}
+
+// GetDisplay implements DashboardLeafNode
+func (*DashboardWith) GetDisplay() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (*DashboardWith) GetType() string {
+	return ""
+}
 
 func (e *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext

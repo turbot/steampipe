@@ -254,9 +254,9 @@ func (q *Query) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (q *Query) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (q *Query) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return q.getPreparedStatementExecuteSQL(q, runtimeArgs)
+	return q.getResolvedQuery(q, runtimeArgs)
 }
 
 // AddParent implements ModTreeItem

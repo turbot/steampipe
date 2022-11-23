@@ -10,12 +10,12 @@ import (
 
 // EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
 // exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx.Conn, combineSql bool) (error, *db_common.PrepareStatementFailures) {
+func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx.Conn) (error) {
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
 	if conn == nil {
-		return errors.New("nil conn passed to EnsureSessionData"), nil
+		return errors.New("nil conn passed to EnsureSessionData")
 	}
 
 	// check for introspection tables
@@ -25,19 +25,14 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx
 	var count int
 	err := row.Scan(&count)
 	if err != nil {
-		return err, nil
+		return err
 	}
-	var preparedStatementFailures *db_common.PrepareStatementFailures
 	if count == 0 {
-		err, preparedStatementFailures = db_common.CreatePreparedStatements(ctx, source.PreparedStatementSource(), conn, combineSql)
-		if err != nil {
-			return err, preparedStatementFailures
-		}
 
 		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource(), conn)
 		if err != nil {
-			return err, preparedStatementFailures
+			return err
 		}
 	}
-	return nil, preparedStatementFailures
+	return nil
 }

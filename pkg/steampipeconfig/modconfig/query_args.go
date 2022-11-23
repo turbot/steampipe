@@ -48,6 +48,16 @@ func (q *QueryArgs) ArgsStringList() []string {
 	return argsStringList
 }
 
+// TODO RENAME
+// SafeArgsList convert ArgLists into list of strings but return as an interface slice
+func (q *QueryArgs) SafeArgsList() []any {
+	var argsStringList = make([]any, len(q.ArgList))
+	for i, a := range q.ArgList {
+		argsStringList[i] = typehelpers.SafeString(a)
+	}
+	return argsStringList
+}
+
 func NewQueryArgs() *QueryArgs {
 	return &QueryArgs{
 		ArgMap: make(map[string]string),

@@ -78,8 +78,8 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modco
 
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a postgres compatible
-			valStr, err := type_conversion.CtyToPostgresString(v)
+			// decode the value into a json representation
+			valStr, err := type_conversion.CtyToJSON(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
 				return nil, nil, err
@@ -112,8 +112,8 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a postgres compatible
-			valStr, err := type_conversion.CtyToPostgresString(v)
+			// decode the value into a json representation
+			valStr, err := type_conversion.CtyToJSON(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 				return nil, nil, err

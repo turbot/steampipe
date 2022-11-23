@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -65,11 +66,11 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	t := time.Now()
 	// build ordered list of queries
 	// (ordered for testing repeatability)
-	var queryNames []string = utils.SortedMapKeys(initData.Queries)
+	var queryNames = utils.SortedMapKeys(initData.Queries)
 
 	for i, name := range queryNames {
 		q := initData.Queries[name]
-		if err := executeQuery(ctx, q, initData.Client); err != nil {
+		if err := executeQuery(ctx, initData.Client, q); err != nil {
 			failures++
 			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queryNames), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
@@ -87,12 +88,12 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	return failures
 }
 
-func executeQuery(ctx context.Context, queryString string, client db_common.Client) error {
+func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *modconfig.ResolvedQuery) error {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db_common.ExecuteQuery(ctx, queryString, client)
+	resultsStreamer, err := db_common.ExecuteQuery(ctx, client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	if err != nil {
 		return err
 	}

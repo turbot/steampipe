@@ -320,10 +320,10 @@ func (c *Control) GetPreparedStatementName() string {
 	return c.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
-func (c *Control) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+// GetResolvedQuery implements QueryProvider
+func (c *Control) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return c.getPreparedStatementExecuteSQL(c, runtimeArgs)
+	return c.getResolvedQuery(c, runtimeArgs)
 }
 
 // GetWidth implements DashboardLeafNode

@@ -24,11 +24,11 @@ type Client interface {
 
 	AcquireSession(context.Context) *AcquireSessionResult
 
-	ExecuteSync(context.Context, string) (*queryresult.SyncQueryResult, error)
-	Execute(context.Context, string) (*queryresult.Result, error)
+	ExecuteSync(context.Context, string, ...any) (*queryresult.SyncQueryResult, error)
+	Execute(context.Context, string, ...any) (*queryresult.Result, error)
 
-	ExecuteSyncInSession(context.Context, *DatabaseSession, string) (*queryresult.SyncQueryResult, error)
-	ExecuteInSession(context.Context, *DatabaseSession, string, func()) (*queryresult.Result, error)
+	ExecuteSyncInSession(context.Context, *DatabaseSession, string, ...any) (*queryresult.SyncQueryResult, error)
+	ExecuteInSession(context.Context, *DatabaseSession, func(), string, ...any) (*queryresult.Result, error)
 
 	CacheOn(context.Context) error
 	CacheOff(context.Context) error

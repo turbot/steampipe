@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"reflect"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -300,8 +300,8 @@ func decodeParam(block *hcl.Block, parseCtx *ModParseContext, parentName string)
 		diags = append(diags, moreDiags...)
 
 		if !moreDiags.HasErrors() {
-			// convert the raw default into a postgres representation
-			if valStr, err := type_conversion.CtyToPostgresString(v); err == nil {
+			// convert the raw default into a string representation
+			if valStr, err := type_conversion.CtyToJSON(v); err == nil {
 				def.Default = utils.ToStringPointer(valStr)
 			} else {
 				diags = append(diags, &hcl.Diagnostic{
@@ -402,6 +402,10 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hcl.BodyContent, resou
 			with, withRes := decodeQueryProvider(block, parseCtx)
 			res.Merge(withRes)
 			queryProvider.AddWith(with.(*modconfig.DashboardWith))
+			// TACTICAL
+			// populate metadata for with block
+			handleModDecodeResult(with, withRes, block, parseCtx)
+
 		}
 	}
 

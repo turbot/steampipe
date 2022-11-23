@@ -106,23 +106,23 @@ func (c *LocalDbClient) AcquireSession(ctx context.Context) *db_common.AcquireSe
 }
 
 // ExecuteSync implements Client
-func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
-	return c.client.ExecuteSync(ctx, query)
+func (c *LocalDbClient) ExecuteSync(ctx context.Context, query string, args ...any) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSync(ctx, query, args...)
 }
 
 // ExecuteSyncInSession implements Client
-func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string) (*queryresult.SyncQueryResult, error) {
-	return c.client.ExecuteSyncInSession(ctx, session, query)
+func (c *LocalDbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (*queryresult.SyncQueryResult, error) {
+	return c.client.ExecuteSyncInSession(ctx, session, query, args...)
 }
 
 // ExecuteInSession implements Client
-func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
-	return c.client.ExecuteInSession(ctx, session, query, onComplete)
+func (c *LocalDbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, onComplete func(), query string, args ...any) (res *queryresult.Result, err error) {
+	return c.client.ExecuteInSession(ctx, session, onComplete, query, args...)
 }
 
 // Execute implements Client
-func (c *LocalDbClient) Execute(ctx context.Context, query string) (res *queryresult.Result, err error) {
-	return c.client.Execute(ctx, query)
+func (c *LocalDbClient) Execute(ctx context.Context, query string, args ...any) (res *queryresult.Result, err error) {
+	return c.client.Execute(ctx, query, args...)
 }
 
 // CacheOn implements Client

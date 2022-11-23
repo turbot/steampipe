@@ -2,19 +2,17 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/hashicorp/hcl/v2"
-	"log"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
-
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type QueryProviderBase struct {
 	runtimeDependencies map[string]*RuntimeDependency
-	Withs               []*DashboardWith
+	withs               []*DashboardWith
 }
 
 // VerifyQuery returns an error if neither sql or query are set
@@ -64,16 +62,20 @@ func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string 
 }
 
 // return the SQLs to run the query as a prepared statement
-func (b *QueryProviderBase) getPreparedStatementExecuteSQL(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	argsString, argsArray, err := ResolveArgsAsString(queryProvider, runtimeArgs)
+func (b *QueryProviderBase) getResolvedQuery(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+	argsArray, err := ResolveArgs(queryProvider, runtimeArgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
 	}
-	executeString := fmt.Sprintf("execute %s%s", queryProvider.GetPreparedStatementName(), argsString)
-	log.Printf("[TRACE] GetPreparedStatementExecuteSQL source: %s, sql: %s, args: %s", queryProvider.Name(), executeString, runtimeArgs)
+	sql := typehelpers.SafeString(queryProvider.GetSQL())
+	// we expect there to be sql on the query provider, NOT a Query
+	if sql == "" {
+		return nil, fmt.Errorf("getResolvedQuery faiuled - no sql set for '%s'", queryProvider.Name())
+	}
+
 	return &ResolvedQuery{
-		ExecuteSQL: executeString,
-		RawSQL:     typehelpers.SafeString(queryProvider.GetSQL()),
+		ExecuteSQL: sql,
+		RawSQL:     sql,
 		Args:       argsArray,
 		Params:     queryProvider.GetParams(),
 	}, nil
@@ -129,11 +131,11 @@ func (*QueryProviderBase) GetDescription() string {
 }
 
 func (b *QueryProviderBase) AddWith(with *DashboardWith) {
-	b.Withs = append(b.Withs, with)
+	b.withs = append(b.withs, with)
 }
 
 func (b *QueryProviderBase) GetWith(name string) (*DashboardWith, bool) {
-	for _, w := range b.Withs {
+	for _, w := range b.withs {
 		if w.UnqualifiedName == name {
 			return w, true
 		}
@@ -141,5 +143,5 @@ func (b *QueryProviderBase) GetWith(name string) (*DashboardWith, bool) {
 	return nil, false
 }
 func (b *QueryProviderBase) GetWiths() []*DashboardWith {
-	return b.Withs
+	return b.withs
 }

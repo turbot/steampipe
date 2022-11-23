@@ -114,14 +114,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	sessionDataSource := workspace.NewSessionDataSource(i.Workspace, i.PreparedStatementSource)
 	// define db connection callback function
 	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
-		// if we are connecting to Steampipecloud, combine prepared statement sql when creating prepared statements
-		// to optimise performance
-		combineSql := cloudMetadata != nil
-		err, preparedStatementFailures := workspace.EnsureSessionData(ctx, sessionDataSource, conn, combineSql)
-
-		i.Workspace.HandlePreparedStatementFailures(preparedStatementFailures)
-
-		return err
+		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
 	}
 
 	// get a client
@@ -155,8 +148,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	}
 	// add refresh connection warnings
 	i.Result.AddWarnings(refreshResult.Warnings...)
-	// add warnings from prepared statement creation
-	i.Result.AddPreparedStatementFailures(i.Workspace.GetPreparedStatementFailures())
 
 	return
 }

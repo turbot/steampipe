@@ -26,7 +26,7 @@ import (
 
 // ExecuteSync implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSync(ctx context.Context, query string) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (*queryresult.SyncQueryResult, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -42,17 +42,17 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string) (*queryresult.
 		// and not in call-time
 		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
 	}()
-	return c.ExecuteSyncInSession(ctx, sessionResult.Session, query)
+	return c.ExecuteSyncInSession(ctx, sessionResult.Session, query, args...)
 }
 
 // ExecuteSyncInSession implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (*queryresult.SyncQueryResult, error) {
 	if query == "" {
 		return &queryresult.SyncQueryResult{}, nil
 	}
 
-	result, err := c.ExecuteInSession(ctx, session, query, nil)
+	result, err := c.ExecuteInSession(ctx, session, nil, query, args...)
 	if err != nil {
 		return nil, error_helpers.WrapError(err)
 	}
@@ -79,7 +79,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 // Execute implements Client
 // execute the query in the given Context
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
-func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Result, error) {
+func (c *DbClient) Execute(ctx context.Context, query string, args ...any) (*queryresult.Result, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -91,14 +91,14 @@ func (c *DbClient) Execute(ctx context.Context, query string) (*queryresult.Resu
 
 	// define callback to close session when the async execution is complete
 	closeSessionCallback := func() { sessionResult.Session.Close(utils.IsContextCancelled(ctx)) }
-	return c.ExecuteInSession(ctx, sessionResult.Session, query, closeSessionCallback)
+	return c.ExecuteInSession(ctx, sessionResult.Session, closeSessionCallback, query, args...)
 }
 
 // ExecuteInSession implements Client
 // execute the query in the given Context using the provided DatabaseSession
 // ExecuteInSession assumes no responsibility over the lifecycle of the DatabaseSession - that is the responsibility of the caller
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
-func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, query string, onComplete func()) (res *queryresult.Result, err error) {
+func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, onComplete func(), query string, args ...any) (res *queryresult.Result, err error) {
 	if query == "" {
 		return queryresult.NewResult(nil), nil
 	}
@@ -138,7 +138,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	// start query
 	var rows pgx.Rows
-	rows, err = c.startQuery(ctxExecute, query, session.Connection)
+	rows, err = c.startQuery(ctxExecute, session.Connection, query, args...)
 	if err != nil {
 		return
 	}
@@ -250,12 +250,12 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *DbClient) startQuery(ctx context.Context, query string, conn *pgxpool.Conn) (rows pgx.Rows, err error) {
+func (c *DbClient) startQuery(ctx context.Context, conn *pgxpool.Conn, query string, args ...any) (rows pgx.Rows, err error) {
 	doneChan := make(chan bool)
 
 	go func() {
 		// start asynchronous query
-		rows, err = conn.Query(ctx, query)
+		rows, err = conn.Query(ctx, query, args...)
 		close(doneChan)
 	}()
 

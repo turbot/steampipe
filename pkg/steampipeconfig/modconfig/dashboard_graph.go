@@ -278,9 +278,9 @@ func (g *DashboardGraph) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (g *DashboardGraph) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (g *DashboardGraph) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return g.getPreparedStatementExecuteSQL(g, runtimeArgs)
+	return g.getResolvedQuery(g, runtimeArgs)
 }
 
 // GetEdges implements EdgeAndNodeProvider

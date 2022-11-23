@@ -274,9 +274,9 @@ func (f *DashboardFlow) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (f *DashboardFlow) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (f *DashboardFlow) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return f.getPreparedStatementExecuteSQL(f, runtimeArgs)
+	return f.getResolvedQuery(f, runtimeArgs)
 }
 
 // GetEdges implements EdgeAndNodeProvider

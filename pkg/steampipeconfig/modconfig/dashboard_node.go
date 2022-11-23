@@ -244,9 +244,9 @@ func (n *DashboardNode) GetPreparedStatementName() string {
 }
 
 // GetPreparedStatementExecuteSQL implements QueryProvider
-func (n *DashboardNode) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+func (n *DashboardNode) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
-	return n.getPreparedStatementExecuteSQL(n, runtimeArgs)
+	return n.getResolvedQuery(n, runtimeArgs)
 }
 
 // IsSnapshotPanel implements SnapshotPanel

@@ -68,7 +68,7 @@ type QueryProvider interface {
 	GetMod() *Mod
 	GetDescription() string
 	GetPreparedStatementName() string
-	GetPreparedStatementExecuteSQL(*QueryArgs) (*ResolvedQuery, error)
+	GetResolvedQuery(*QueryArgs) (*ResolvedQuery, error)
 	// implemented by QueryProviderBase
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
