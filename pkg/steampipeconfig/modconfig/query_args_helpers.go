@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // MergeArgs ensures base and runtime args are non nil and merges them into single args
@@ -123,7 +124,20 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 		return argStrs, nil, nil
 	}
 
-	// so there are param defintions - use these to populate argStrs
+	// so there are param definitions - use these to populate argStrs
+
+	if len(params) < len(args.ArgList) {
+		err = fmt.Errorf("resolvePositionalParameters failed for '%s' - %d %s were provided but there %s %d parameter %s",
+			queryProvider.Name(),
+			len(args.ArgList),
+			utils.Pluralize("argument", len(args.ArgList)),
+			utils.Pluralize("is", len(params)),
+			len(params),
+			utils.Pluralize("definition", len(params)),
+		)
+		return
+	}
+
 	argStrs = make([]string, len(params))
 
 	for i, param := range params {
