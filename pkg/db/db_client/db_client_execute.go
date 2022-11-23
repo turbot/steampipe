@@ -348,7 +348,7 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 					}
 				}
 			case "TIME":
-				result[i] = time.UnixMilli(columnValue.(int64)).UTC().Format("15:04:05")
+				result[i] = ((columnValue.(pgtype.Time)).Get().(time.Time)).UTC().Format("15:04:05")
 			case "INTERVAL":
 				if interval, ok := columnValue.(pgtype.Interval); ok {
 					var sb strings.Builder
