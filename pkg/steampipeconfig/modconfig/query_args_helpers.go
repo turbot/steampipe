@@ -6,7 +6,6 @@ import (
 	"log"
 	"strings"
 
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -85,13 +84,15 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argVa
 	argsWithParamDef := make(map[string]bool)
 	for i, param := range params {
 		// first set default
-		var defaultValue any
+		var defaultValue any = nil
 		if param.Default == nil {
 			defaultValue = ""
 		} else {
-			err := json.Unmarshal([]byte(typehelpers.SafeString(param.Default)), &defaultValue)
-			if err != nil {
-				return nil, nil, err
+			if param.Default != nil {
+				err := json.Unmarshal([]byte(*param.Default), &defaultValue)
+				if err != nil {
+					return nil, nil, err
+				}
 			}
 		}
 		// can we resolve a value for this param?
@@ -105,7 +106,7 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argVa
 			argVals[i] = argVal
 			argsWithParamDef[param.Name] = true
 
-		} else if defaultValue != "" {
+		} else if defaultValue != nil {
 			// is there a default
 			argVals[i] = defaultValue
 		} else {
@@ -157,10 +158,12 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 
 	for i, param := range params {
 		// first set default
-		var defaultValue any
-		err := json.Unmarshal([]byte(typehelpers.SafeString(param.Default)), &defaultValue)
-		if err != nil {
-			return nil, nil, err
+		var defaultValue any = nil
+		if param.Default != nil {
+			err := json.Unmarshal([]byte(*param.Default), &defaultValue)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 
 		if i < len(args.ArgList) && args.ArgList[i] != nil {
@@ -172,7 +175,7 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 			}
 
 			argValues[i] = argVal
-		} else if defaultValue != "" {
+		} else if defaultValue != nil {
 			// so we have run out of provided params - is there a default?
 			argValues[i] = defaultValue
 		} else {
