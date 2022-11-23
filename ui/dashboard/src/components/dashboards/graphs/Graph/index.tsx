@@ -23,7 +23,12 @@ import {
   getColorOverride,
   LeafNodeData,
 } from "../../common";
-import { CategoryMap, Node as NodeType } from "../../common/types";
+import {
+  Category,
+  CategoryMap,
+  Edge as EdgeType,
+  Node as NodeType,
+} from "../../common/types";
 import {
   CategoryStatus,
   DagreRankDir,
@@ -65,6 +70,31 @@ const getGraphDirection = (direction?: GraphDirection | null): DagreRankDir => {
       return "TB";
     default:
       return "TB";
+  }
+};
+
+const getNodeOrEdgeLabel = (
+  item: NodeType | EdgeType,
+  category: Category | null
+) => {
+  if (item.isFolded) {
+    if (item.title) {
+      return item.title;
+    } else if (category?.fold?.title) {
+      return category.fold.title;
+    } else if (category?.title) {
+      return category.title;
+    } else {
+      return category?.name;
+    }
+  } else {
+    if (item.title) {
+      return item.title;
+    } else if (category?.title) {
+      return category.title;
+    } else {
+      return category?.name;
+    }
   }
 };
 
@@ -146,7 +176,7 @@ const buildGraphNodesAndEdges = (
         fold: matchingCategory ? matchingCategory.fold : null,
         isFolded: node.isFolded,
         foldedNodes: node.foldedNodes,
-        label: node.title,
+        label: getNodeOrEdgeLabel(node, matchingCategory),
         row_data: node.row_data,
         themeColors,
       },
@@ -213,7 +243,7 @@ const buildGraphNodesAndEdges = (
         labelOpacity,
         lineOpacity,
         row_data: edge.row_data,
-        label: edge.title,
+        label: getNodeOrEdgeLabel(edge, matchingCategory),
         themeColors,
       },
     });

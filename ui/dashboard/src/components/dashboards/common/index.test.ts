@@ -293,6 +293,7 @@ describe("common.buildNodesAndEdges", () => {
       title: null,
       category: null,
       row_data: null,
+      isFolded: false,
     };
     expect(nodesAndEdges).toEqual({
       categories: {},
@@ -344,6 +345,7 @@ describe("common.buildNodesAndEdges", () => {
       title: null,
       category: null,
       row_data: null,
+      isFolded: false,
     };
     const nodesAndEdges = buildNodesAndEdges({}, rawData);
     delete nodesAndEdges.graph;
@@ -378,6 +380,7 @@ describe("common.buildNodesAndEdges", () => {
       title: null,
       category: null,
       row_data: null,
+      isFolded: false,
     };
     const node = {
       id: "node",
@@ -452,6 +455,7 @@ describe("common.buildNodesAndEdges", () => {
       title: null,
       category: null,
       row_data: { from_id: "from_node", to_id: "to_node" },
+      isFolded: false,
     };
     const sourceNode = {
       id: "from_node",
@@ -511,6 +515,7 @@ describe("common.buildNodesAndEdges", () => {
       title: null,
       category: null,
       row_data: { from_id: "from_node", to_id: "to_node" },
+      isFolded: false,
     };
     const sourceNode = {
       id: "from_node",
@@ -581,6 +586,7 @@ describe("common.buildNodesAndEdges", () => {
         title: "The Edge",
         properties: { foobar: "barfoo" },
       },
+      isFolded: false,
     };
     const sourceNode = {
       id: "from_node",
@@ -703,6 +709,7 @@ const createEdge = ({ id, from_id, to_id }): Edge => {
     category: null,
     row_data: null,
     title: null,
+    isFolded: false,
   };
 };
 
@@ -817,6 +824,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       },
       edges: [
@@ -826,6 +835,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1 },
@@ -989,6 +1000,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         "c3-1_fold-c2-1": {
           id: "c3-1_fold-c2-1",
@@ -996,6 +1009,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       },
       edges: [
@@ -1005,6 +1020,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         {
           id: "c3-1_fold-c2-1",
@@ -1012,6 +1029,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
@@ -1222,6 +1241,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         "c3-1_fold-c2-1": {
           id: "c3-1_fold-c2-1",
@@ -1229,6 +1250,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         "c4-1_fold-c2-1": {
           id: "c4-1_fold-c2-1",
@@ -1236,6 +1259,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       },
       edges: [
@@ -1245,6 +1270,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         {
           id: "c3-1_fold-c2-1",
@@ -1252,6 +1279,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         {
           id: "c4-1_fold-c2-1",
@@ -1259,6 +1288,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       ],
       root_nodes: {
@@ -1409,6 +1440,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       },
       edges: [
@@ -1420,6 +1453,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       ],
       root_nodes: { [node_c1_1.id]: node_c1_1, [node_c3_1.id]: node_c3_1 },
@@ -1705,6 +1740,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         "c3-1_fold-c2-1": {
           id: "c3-1_fold-c2-1",
@@ -1712,6 +1749,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       },
       edges: [
@@ -1724,6 +1763,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
         {
           id: "c3-1_fold-c2-1",
@@ -1731,6 +1772,8 @@ describe("common.foldNodesAndEdges", () => {
           to_id: "fold-c2-1",
           category: null,
           title: null,
+          isFolded: true,
+          row_data: null,
         },
       ],
       root_nodes: {

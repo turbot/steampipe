@@ -271,6 +271,7 @@ const recordEdge = (
     title,
     category,
     row_data,
+    isFolded: false,
   };
 
   if (existingNode) {
@@ -529,12 +530,14 @@ const foldNodesAndEdges = (
         // Add the source edges back to the folded node
         for (const sourceNode of groupingInfo.source) {
           graph.setEdge(sourceNode, foldedNode.id);
-          const edge = {
+          const edge: Edge = {
             id: `${sourceNode}_${foldedNode.id}`,
             from_id: sourceNode,
             to_id: foldedNode.id,
             category: sourceEdgeCategory,
             title: sourceEdgeTitle,
+            isFolded: true,
+            row_data: null,
           };
           newNodesAndEdges.edgeMap[edge.id] = edge;
         }
@@ -694,7 +697,7 @@ const buildNodesAndEdges = (
       categories[category] = categorySettings;
     }
 
-    // 4 types of row:
+    // 5 types of row:
     //
     // id                  = node         1      1
     // from_id & id        = node & edge  1 2    3

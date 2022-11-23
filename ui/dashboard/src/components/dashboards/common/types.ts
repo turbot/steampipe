@@ -80,6 +80,7 @@ export interface Edge {
   title: string | null;
   category: string | null;
   row_data: LeafNodeDataRow | null;
+  isFolded: boolean;
 }
 
 export interface NodeMap {

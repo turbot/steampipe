@@ -136,10 +136,11 @@ const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
 const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
   <>
     {fold?.title && <span title={fold?.title}>{fold?.title}</span>}
-    {!fold?.title && (
-      <span className="text-link" title={category?.name}>
-        {category?.name}
-      </span>
+    {!fold?.title && category?.title && (
+      <span title={category?.title}>{category?.title}</span>
+    )}
+    {!fold?.title && !category?.title && (
+      <span title={category?.name}>{category?.name}</span>
     )}
   </>
 );
@@ -339,7 +340,9 @@ const AssetNode = ({
             textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
           }}
         >
-          {label}
+          {label && label}
+          {!label && category?.title && category.title}
+          {!label && category?.name && category.name}
         </span>
       )}
       {isFolded && <FoldedNodeLabel category={category} fold={fold} />}
