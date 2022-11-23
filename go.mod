@@ -25,7 +25,6 @@ require (
 	github.com/hashicorp/hcl/v2 v2.15.0
 	github.com/hashicorp/terraform v0.15.1
 	github.com/jackc/pgconn v1.13.0
-	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v5 v5.1.1
 	github.com/jedib0t/go-pretty/v6 v6.4.2
 	github.com/karrick/gows v0.3.0
@@ -102,6 +101,7 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
