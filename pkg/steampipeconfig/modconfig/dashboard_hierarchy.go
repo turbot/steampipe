@@ -273,7 +273,7 @@ func (h *DashboardHierarchy) GetPreparedStatementName() string {
 	return h.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
+// GetResolvedQuery implements QueryProvider
 func (h *DashboardHierarchy) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return h.getResolvedQuery(h, runtimeArgs)

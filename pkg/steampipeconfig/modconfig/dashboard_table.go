@@ -285,7 +285,7 @@ func (t *DashboardTable) GetPreparedStatementName() string {
 	return t.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
+// GetResolvedQuery implements QueryProvider
 func (t *DashboardTable) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return t.getResolvedQuery(t, runtimeArgs)

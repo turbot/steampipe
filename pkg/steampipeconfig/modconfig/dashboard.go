@@ -275,8 +275,8 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 			break
 		}
 
-		if childContainer, ok := child.(*DashboardContainer); ok {
-			if err := childContainer.WalkResources(resourceFunc); err != nil {
+		if container, ok := child.(*DashboardContainer); ok {
+			if err := container.WalkResources(resourceFunc); err != nil {
 				return err
 			}
 		}
@@ -289,7 +289,7 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 	// add root node - this will depend on all other nodes
 	d.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
 
-	// define a walk function which determins whether the resource has runtime dependencies and if so,
+	// define a walk function which determines whether the resource has runtime dependencies and if so,
 	// add to the graph
 	resourceFunc := func(resource HclResource) (bool, error) {
 		// currently only QueryProvider resources support runtime dependencies
@@ -300,28 +300,16 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 		}
 
 		runtimeDependencies := queryProvider.GetRuntimeDependencies()
-		if len(runtimeDependencies) == 0 {
-			// continue walking
-			return true, nil
-		}
-		name := resource.Name()
-		if !d.runtimeDependencyGraph.ContainsNode(name) {
-			d.runtimeDependencyGraph.AddNode(name)
+		err := d.addRuntimeDependenciesForResource(resource, runtimeDependencies, workspace)
+		if err != nil {
+			return false, err
 		}
 
-		for _, dependency := range runtimeDependencies {
-			// try to resolve the dependency source resource
-			if err := dependency.ResolveSource(d, workspace); err != nil {
-				return false, err
-			}
-			if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
-				return false, err
-			}
-			depString := dependency.String()
-			if !d.runtimeDependencyGraph.ContainsNode(depString) {
-				d.runtimeDependencyGraph.AddNode(depString)
-			}
-			if err := d.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
+		// if the query provider has any 'with' blocks, add these dependencies as well
+		for _, with := range queryProvider.GetWiths() {
+			runtimeDependencies = with.GetRuntimeDependencies()
+			err := d.addRuntimeDependenciesForResource(with, runtimeDependencies, workspace)
+			if err != nil {
 				return false, err
 			}
 		}
@@ -336,6 +324,34 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 	// ensure that dependencies can be resolved
 	if _, err := d.runtimeDependencyGraph.TopSort(rootRuntimeDependencyNode); err != nil {
 		return fmt.Errorf("runtime depedencies cannot be resolved: %s", err.Error())
+	}
+	return nil
+}
+
+func (d *Dashboard) addRuntimeDependenciesForResource(resource HclResource, runtimeDependencies map[string]*RuntimeDependency, workspace ResourceMapsProvider) error {
+	if len(runtimeDependencies) == 0 {
+		return nil
+	}
+	name := resource.Name()
+	if !d.runtimeDependencyGraph.ContainsNode(name) {
+		d.runtimeDependencyGraph.AddNode(name)
+	}
+
+	for _, dependency := range runtimeDependencies {
+		// try to resolve the dependency source resource
+		if err := dependency.ResolveSource(d, workspace); err != nil {
+			return err
+		}
+		if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
+			return err
+		}
+		depString := dependency.String()
+		if !d.runtimeDependencyGraph.ContainsNode(depString) {
+			d.runtimeDependencyGraph.AddNode(depString)
+		}
+		if err := d.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -108,3 +108,4 @@ type EdgeAndNodeProvider interface {
 	SetNodes(DashboardNodeList)
 	AddCategory(category *DashboardCategory) hcl.Diagnostics
 }
+

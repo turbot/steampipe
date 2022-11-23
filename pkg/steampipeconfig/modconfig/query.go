@@ -253,7 +253,7 @@ func (q *Query) GetPreparedStatementName() string {
 	return q.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
+// GetResolvedQuery implements QueryProvider
 func (q *Query) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	// defer to base
 	return q.getResolvedQuery(q, runtimeArgs)
