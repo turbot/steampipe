@@ -48,6 +48,11 @@ jobs:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
 
+      - name: Run CLI Unit Tests
+        run: |
+          go clean -testcache
+          go test -timeout 30s ./...
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
