@@ -58,4 +58,10 @@ log_disconnections=on
 # Logging of slow queries (> 5 secs) is helpful when reviewing environments or
 # troubleshooting with users.
 log_min_duration_statement=5000
+
+# Increasing the locks per transaction helps PostgreSQL to not
+# run out of available memory when working with large plugins
+# or aggregators with a large number of sub connections (or both)
+max_locks_per_transaction = 2048 
+
 `
