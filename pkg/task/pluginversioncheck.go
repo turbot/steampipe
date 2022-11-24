@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/plugin"
 )
@@ -14,9 +13,6 @@ import (
 // check if there is a new version
 func checkPluginVersions(ctx context.Context, installationID string) []string {
 	var notificationLines []string
-	if !viper.GetBool(constants.ArgUpdateCheck) {
-		return notificationLines
-	}
 
 	timeout := 5 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)

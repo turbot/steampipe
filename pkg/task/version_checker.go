@@ -11,7 +11,6 @@ import (
 
 	SemVer "github.com/Masterminds/semver"
 	"github.com/fatih/color"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -37,10 +36,6 @@ type versionChecker struct {
 // check if there is a new version
 func checkSteampipeVersion(ctx context.Context, id string) []string {
 	var notificationLines []string
-
-	if !viper.GetBool(constants.ArgUpdateCheck) {
-		return notificationLines
-	}
 
 	v := new(versionChecker)
 	v.signature = id

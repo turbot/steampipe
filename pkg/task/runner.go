@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statefile"
@@ -66,17 +68,20 @@ func (r *Runner) run(ctx context.Context) {
 
 	var versionNotificationLines []string
 	var pluginNotificationLines []string
+
 	waitGroup := sync.WaitGroup{}
 
-	// check whether an updated version is available
-	r.runJobAsync(ctx, func(c context.Context) {
-		versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
-	}, &waitGroup)
+	if viper.GetBool(constants.ArgUpdateCheck) {
+		// check whether an updated version is available
+		r.runJobAsync(ctx, func(c context.Context) {
+			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
+		}, &waitGroup)
 
-	// check whether an updated version is available
-	r.runJobAsync(ctx, func(c context.Context) {
-		pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
-	}, &waitGroup)
+		// check whether an updated version is available
+		r.runJobAsync(ctx, func(c context.Context) {
+			pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
+		}, &waitGroup)
+	}
 
 	// remove log files older than 7 days
 	r.runJobAsync(ctx, func(context.Context) { db_local.TrimLogs() }, &waitGroup)
