@@ -3,6 +3,7 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
@@ -37,9 +38,7 @@ func (r *Runner) saveNotifications(cliNotificationsLines, pluginNotificationLine
 		CLINotificationsLines:   cliNotificationsLines,
 		PluginNotificationLines: pluginNotificationLines,
 	}
-	if files.FileExists(filepaths.NotificationsFilePath()) {
-		os.Remove(filepaths.NotificationsFilePath())
-	}
+	// create the file - if it exists, it will be truncated by os.Create
 	f, err := os.Create(filepaths.NotificationsFilePath())
 	if err != nil {
 		return err
@@ -66,7 +65,13 @@ func (r *Runner) getNotifications() (*Notifications, error) {
 	if err := decoder.Decode(notifications); err != nil {
 		return nil, err
 	}
-	return notifications, error_helpers.CombineErrors(f.Close(), os.Remove(filepaths.NotificationsFilePath()))
+	if err := error_helpers.CombineErrors(f.Close(), os.Remove(filepaths.NotificationsFilePath())); err != nil {
+		// if Go couldn't close the file handle, no matter - this was just good practise
+		// if Go couldn't remove the notification file, it'll get truncated next time we try to write to it
+		// worst case is that the notification gets shown more than once
+		log.Println("[TRACE] could not close/delete notification file", err)
+	}
+	return notifications, nil
 }
 
 // displayNotifications checks if there are any pending notifications to display
@@ -76,9 +81,8 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 	utils.LogTime("Runner.displayNotifications start")
 	defer utils.LogTime("Runner.displayNotifications end")
 
-	if isNoNotificationCmd(cmd, cmdArgs) {
-		// do not do anything
-		// just return
+	if !showNotificationsForCommand(cmd, cmdArgs) {
+		// do not do anything - just return
 		return nil
 	}
 	if !r.hasNotifications() {

@@ -43,12 +43,11 @@ var rootCmd = &cobra.Command{
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.PersistentPostRun start")
 		defer utils.LogTime("cmd.PersistentPostRun end")
-
 		if waitForTasksChannel != nil {
-			defer tasksCancel()
 			// wait for the async tasks to finish
 			select {
 			case <-time.After(100 * time.Millisecond):
+				tasksCancel()
 				return
 			case <-waitForTasksChannel:
 				return

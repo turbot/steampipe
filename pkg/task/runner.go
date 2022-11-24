@@ -132,8 +132,8 @@ func (r *Runner) shouldRun() bool {
 	return durationElapsedSinceLastCheck > minimumDurationBetweenChecks
 }
 
-func isNoNotificationCmd(cmd *cobra.Command, cmdArgs []string) bool {
-	return (isPluginUpdateCmd(cmd) ||
+func showNotificationsForCommand(cmd *cobra.Command, cmdArgs []string) bool {
+	return !(isPluginUpdateCmd(cmd) ||
 		isPluginManagerCmd(cmd) ||
 		isServiceStopCmd(cmd) ||
 		isBatchQueryCmd(cmd, cmdArgs) ||
