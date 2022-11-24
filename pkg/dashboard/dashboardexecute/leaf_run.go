@@ -134,7 +134,10 @@ func (r *LeafRun) addRuntimeDependencies() {
 		return
 	}
 	runtimeDependencies := queryProvider.GetRuntimeDependencies()
-	for name, dep := range runtimeDependencies {
+	for n, d := range runtimeDependencies {
+		// read name and dep into local loop vars to ensure correct value used when getValueFunc is invoked
+		name := n
+		dep := d
 		// determine the function to use to retrieve the runtime dependency value
 		var getValueFunc func(string) (any, error)
 		switch dep.PropertyPath.ItemType {
@@ -563,6 +566,7 @@ func (r *LeafRun) combineChildData() {
 func (r *LeafRun) getWithValue(name string, path *modconfig.ParsedPropertyPath) (any, error) {
 	r.withValueMutex.Lock()
 	defer r.withValueMutex.Unlock()
+
 	val, ok := r.withValues[name]
 	if !ok {
 		return nil, nil
@@ -637,7 +641,6 @@ func (r *LeafRun) getWithValue(name string, path *modconfig.ParsedPropertyPath) 
 }
 
 func columnValuesFromRows(column string, rows []map[string]interface{}) (any, error) {
-
 	var res = make([]any, len(rows))
 	for i, row := range rows {
 		var ok bool
