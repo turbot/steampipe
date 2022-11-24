@@ -1,4 +1,9 @@
+## v0.17.3 [2022-11-24]
+_Bug fixes_
+* Fix shared memory errors for high connection count - update postgres config to reverts `max_locks_per_transaction` to the pre v0.17.0 value of 2048. ([#2756](https://github.com/turbot/steampipe/issues/2756))
+
 ## v0.17.2 [2022-11-18]
+
 _Bug fixes_
 * Fix dashboard interpolated string expressions with adjacent expressions not separated by spaces not rendering the second expression ([#2752](https://github.com/turbot/steampipe/issues/2752))
 * Ensure workspace and panel errors are shown in dashboard panels ([#2742](https://github.com/turbot/steampipe/issues/2742))
