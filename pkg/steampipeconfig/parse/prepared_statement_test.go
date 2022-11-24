@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+// NOTE: all query arg values must be JSON representations
 type parsePreparedStatementInvocationTest struct {
 	input    string
 	expected parsePreparedStatementInvocationResult
@@ -48,70 +49,70 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 		input: `query.q1("foo")`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'")}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer(`"foo"`)}},
 		},
 	},
 	"single positional param extra spaces": {
 		input: `query.q1("foo"   )   `,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'")}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer(`"foo"`)}},
 		},
 	},
 	"multiple positional params": {
 		input: `query.q1("foo", "bar", "foo-bar")`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'"), utils.ToStringPointer("'bar'"), utils.ToStringPointer("'foo-bar'")}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer(`"foo"`), utils.ToStringPointer(`"bar"`), utils.ToStringPointer(`"foo-bar"`)}},
 		},
 	},
 	"multiple positional params extra spaces": {
 		input: `query.q1("foo",   "bar",    "foo-bar"   )`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("'foo'"), utils.ToStringPointer("'bar'"), utils.ToStringPointer("'foo-bar'")}},
+			params:    &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer(`"foo"`), utils.ToStringPointer(`"bar"`), utils.ToStringPointer(`"foo-bar"`)}},
 		},
 	},
 	"single named param": {
 		input: `query.q1(p1 => "foo")`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "'foo'"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": `"foo"`}},
 		},
 	},
 	"single named param extra spaces": {
 		input: `query.q1(  p1  =>  "foo"  ) `,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "'foo'"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": `"foo"`}},
 		},
 	},
 	"multiple named params": {
 		input: `query.q1(p1 => "foo", p2 => "bar")`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "'foo'", "p2": "'bar'"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": `"foo"`, "p2": `"bar"`}},
 		},
 	},
 	"multiple named params extra spaces": {
 		input: ` query.q1 ( p1 => "foo" ,  p2  => "bar"     ) `,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "'foo'", "p2": "'bar'"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": `"foo"`, "p2": `"bar"`}},
 		},
 	},
 	"named param with dot in value": {
 		input: `query.q1(p1 => "foo.bar")`,
 		expected: parsePreparedStatementInvocationResult{
 			queryName: `query.q1`,
-			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "'foo.bar'"}},
+			params:    &modconfig.QueryArgs{ArgMap: map[string]string{"p1": `"foo.bar"`}},
 		},
 	},
 }
 
-func TestParsePreparedStatementInvocation(t *testing.T) {
+func TestParseQueryInvocation(t *testing.T) {
 	for name, test := range testCasesParsePreparedStatementInvocation {
-		queryName, params, _ := ParsePreparedStatementInvocation(test.input)
+		queryName, params, _ := ParseQueryInvocation(test.input)
 
 		if queryName != test.expected.queryName || !test.expected.params.Equals(params) {
 			fmt.Printf("")

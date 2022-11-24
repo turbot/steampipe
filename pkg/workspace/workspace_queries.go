@@ -193,7 +193,7 @@ func (w *Workspace) extractQueryProviderFromQueryString(input string) (modconfig
 		return nil, nil, fmt.Errorf("%s cannot be executed as a query", queryProvider.Name())
 	}
 
-	_, args, err := parse.ParsePreparedStatementInvocation(input)
+	_, args, err := parse.ParseQueryInvocation(input)
 	if err != nil {
 		return nil, nil, err
 	}

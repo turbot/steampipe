@@ -19,7 +19,7 @@ import (
 //
 // 2) named args
 // query.my_prepared_statement(my_arg1 => 'test', my_arg2 => 'test2')
-func ParsePreparedStatementInvocation(arg string) (string, *modconfig.QueryArgs, error) {
+func ParseQueryInvocation(arg string) (string, *modconfig.QueryArgs, error) {
 	// TODO strip non printing chars
 	args := &modconfig.QueryArgs{}
 

@@ -128,9 +128,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Cache:    &trueVal,
 				CacheTTL: &ttlVal,
 			},
-			DatabaseOptions: &options.Database{
-				QueryTimeout: &databaseQueryTimeout,
-			}},
+		},
 	},
 	"single_connection": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection",
@@ -179,9 +177,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Cache:    &trueVal,
 				CacheTTL: &ttlVal,
 			},
-			DatabaseOptions: &options.Database{
-				QueryTimeout: &databaseQueryTimeout,
-			}},
+		},
 	},
 	"single_connection_with_default_options": { // fixed
 		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
@@ -231,10 +227,9 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
-				Port:         &databasePort,
-				Listen:       &databaseListen,
-				SearchPath:   &databaseSearchPath,
-				QueryTimeout: &databaseQueryTimeout,
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
 				Output:       &terminalOutput,
@@ -304,10 +299,9 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
-				Port:         &databasePort,
-				Listen:       &databaseListen,
-				SearchPath:   &databaseSearchPath,
-				QueryTimeout: &databaseQueryTimeout,
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
 				Output:           &terminalOutput,
@@ -373,10 +367,9 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
-				Port:         &databasePort,
-				Listen:       &databaseListen,
-				SearchPath:   &databaseSearchPath,
-				QueryTimeout: &databaseQueryTimeout,
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
 				Output:           &workspaceOutput,
@@ -444,10 +437,9 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
-				Port:         &databasePort,
-				Listen:       &databaseListen,
-				SearchPath:   &databaseSearchPath,
-				QueryTimeout: &databaseQueryTimeout,
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
 				Output:       &terminalOutput,
@@ -472,10 +464,9 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				CacheTTL: &ttlVal,
 			},
 			DatabaseOptions: &options.Database{
-				Port:         &databasePort,
-				Listen:       &databaseListen,
-				SearchPath:   &databaseSearchPath,
-				QueryTimeout: &databaseQueryTimeout,
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
 			},
 			TerminalOptions: &options.Terminal{
 				Output:       &terminalOutput,

@@ -49,7 +49,7 @@ func (q *QueryArgs) ArgsStringList() []string {
 	return argsStringList
 }
 
-// ConvertArgsList convert ArgList into list of interface{} by unmarshalling
+// ConvertArgsList convert ArgList into list of interface{} by unmarshalkling
 func (q *QueryArgs) ConvertArgsList() ([]any, error) {
 	var argList = make([]any, len(q.ArgList))
 
@@ -60,6 +60,7 @@ func (q *QueryArgs) ConvertArgsList() ([]any, error) {
 				return nil, err
 			}
 		}
+
 	}
 	return argList, nil
 }
@@ -111,11 +112,12 @@ func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, e
 		return q, nil
 	}
 
-	// ensure valid (i.e. cannot define both arg list and arg map)
+	// ensure we valid before trying to merge (i.e. cannot define both arg list and arg map)
 	if err := q.Validate(); err != nil {
 		return nil, fmt.Errorf("argument validation failed for '%s': %s", source.Name(), err.Error())
 	}
 
+	// ensure the other args are valid
 	if err := other.Validate(); err != nil {
 		return nil, fmt.Errorf("runtime argument validation failed for '%s': %s", source.Name(), err.Error())
 	}
@@ -123,27 +125,25 @@ func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, e
 	// create a new query args to store the merged result
 	result := NewQueryArgs()
 
-	// runtime args must specify args in same way as base args (i.e. both must define either map or list)
-	if len(q.ArgMap)+len(other.ArgMap) > 0 {
-		if len(other.ArgList) > 0 {
-			return nil, fmt.Errorf("runtime argument validation failed for '%s': runtime args must be provided in same format (map or list) as base args", source.Name())
-		}
-		// first set values from other
-		for k, v := range other.ArgMap {
+	// named args
+	// first set values from other
+	for k, v := range other.ArgMap {
+		result.ArgMap[k] = v
+	}
+	// now set any unset values from our map
+	for k, v := range q.ArgMap {
+		if _, ok := result.ArgMap[k]; !ok {
 			result.ArgMap[k] = v
 		}
-		// now set any unset values from our map
-		for k, v := range q.ArgMap {
-			if _, ok := result.ArgMap[k]; !ok {
-				result.ArgMap[k] = v
-			}
-		}
-	} else {
-		// so we must have an args list - figure out how long
-		listLength := len(q.ArgList)
-		if otherLen := len(other.ArgList); otherLen > listLength {
-			listLength = otherLen
-		}
+	}
+
+	// positional args
+	// so we must have an args list - figure out how long
+	listLength := len(q.ArgList)
+	if otherLen := len(other.ArgList); otherLen > listLength {
+		listLength = otherLen
+	}
+	if listLength > 0 {
 		result.ArgList = make([]*string, listLength)
 
 		// first set values from other
@@ -155,6 +155,12 @@ func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, e
 				result.ArgList[i] = a
 			}
 		}
+	}
+
+	// validate the merged result
+	// runtime args must specify args in same way as base args (i.e. both must define either map or list)
+	if err := result.Validate(); err != nil {
+		return nil, fmt.Errorf("runtime argument validation failed when merging runtime args into '%s': %s", source.Name(), err.Error())
 	}
 
 	return result, nil
