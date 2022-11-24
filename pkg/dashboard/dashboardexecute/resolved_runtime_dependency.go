@@ -2,6 +2,7 @@ package dashboardexecute
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
@@ -42,6 +43,10 @@ func (d *ResolvedRuntimeDependency) Resolve() (bool, error) {
 	val, err := d.getValueFunc(d.dependency.SourceResource.GetUnqualifiedName())
 	if err != nil {
 		return false, err
+	}
+	// if this is an array, wrap in an array
+	if d.dependency.IsArray {
+		val = type_conversion.AnySliceToTypedSlice([]any{val})
 	}
 	d.value = val
 
