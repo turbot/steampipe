@@ -10,8 +10,9 @@ type RuntimeDependency struct {
 	SourceResource HclResource
 	ArgName        *string
 	ArgIndex       *int
-	// the resource which has he runtime dependency
+	// the resource which has the runtime dependency
 	ParentResource QueryProvider
+	IsArray        bool
 }
 
 func (d *RuntimeDependency) String() string {
