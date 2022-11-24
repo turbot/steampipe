@@ -1,6 +1,7 @@
 package modconfig
 
 import (
+	"github.com/turbot/go-kit/helpers"
 	"reflect"
 	"testing"
 )
@@ -47,13 +48,13 @@ var parsePropertyPathTestCases = map[string]parsePropertyPathTest{
 			Original:     "m1.query.q1.foo.bar",
 		},
 	},
-	"local input": {
-		input: "local.input.foo",
+	"self input": {
+		input: "self.input.foo",
 		expected: &ParsedPropertyPath{
-			ItemType: "query",
-			Name:     "q1",
-			Scope:    "local",
-			Original: "local.input.foo",
+			ItemType: "input",
+			Name:     "foo",
+			Scope:    "self",
+			Original: "self.input.foo",
 		},
 	},
 	"with": {
@@ -76,7 +77,13 @@ var parsePropertyPathTestCases = map[string]parsePropertyPathTest{
 }
 
 func TestParsePropertyPath(t *testing.T) {
+	testsToRun := []string{"self input"}
+
 	for name, test := range parsePropertyPathTestCases {
+		if len(testsToRun) > 0 && !helpers.StringSliceContains(testsToRun, name) {
+			continue
+		}
+
 		res, err := ParseResourcePropertyPath(test.input)
 		if err != nil {
 			if test.expected != "ERROR" {

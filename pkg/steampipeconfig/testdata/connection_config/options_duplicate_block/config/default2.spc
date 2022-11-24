@@ -16,6 +16,7 @@ options "terminal" {
   separator = ","     # any single char
   timing    = false   # true, false
   search_path    = "aws,gcp"
+  autocomplete = "true"
 }
 
 options "general" {

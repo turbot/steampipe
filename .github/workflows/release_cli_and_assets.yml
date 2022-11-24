@@ -267,6 +267,11 @@ jobs:
       with:
         go-version: 1.19
 
+    - name: Run CLI Unit Tests
+      run: |
+        go clean -testcache
+        go test -timeout 30s ./...
+
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v3
       with:

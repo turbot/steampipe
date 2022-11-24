@@ -6,7 +6,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -47,9 +46,14 @@ func ResolveArgs(source QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(mergedArgs.ArgMap) > 0 {
-		// do params contain named params?
-		paramVals, missingParams, err = resolveNamedParameters(source, mergedArgs)
+	if namedArgCount := len(mergedArgs.ArgMap); namedArgCount > 0 {
+		// if named args are provided and the query does not define params, we cannot resolve the args
+		if len(source.GetParams()) == 0 {
+			log.Printf("[TRACE] %s defines %d named %s but has no parameters definitions", source.Name(), namedArgCount, utils.Pluralize("arg", namedArgCount))
+		} else {
+			// do params contain named params?
+			paramVals, missingParams, err = resolveNamedParameters(source, mergedArgs)
+		}
 	} else {
 		// resolve as positional parameters
 		// (or fall back to defaults if no positional params are present)
@@ -70,11 +74,6 @@ func ResolveArgs(source QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 		return nil, nil
 	}
 
-	// convert any array args into a strongly typed array
-	for i, v := range paramVals {
-		paramVals[i] = type_conversion.AnySliceToTypedSlice(v)
-	}
-
 	// success!
 	return paramVals, nil
 }
@@ -91,14 +90,10 @@ func resolveNamedParameters(queryProvider QueryProvider, args *QueryArgs) (argVa
 	for i, param := range params {
 		// first set default
 		var defaultValue any = nil
-		if param.Default == nil {
-			defaultValue = ""
-		} else {
-			if param.Default != nil {
-				err := json.Unmarshal([]byte(*param.Default), &defaultValue)
-				if err != nil {
-					return nil, nil, err
-				}
+		if param.Default != nil {
+			err := json.Unmarshal([]byte(*param.Default), &defaultValue)
+			if err != nil {
+				return nil, nil, err
 			}
 		}
 		// can we resolve a value for this param?
@@ -140,7 +135,7 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 	// if no param defs are defined, just use the given values, using runtime dependencies where available
 	if len(params) == 0 {
 		// no params defined, so we return as many args as are provided
-		// (convert from *string to string)
+		// (convert arg vals from json)
 		argValues, err = args.ConvertArgsList()
 		if err != nil {
 			return nil, nil, err
@@ -148,8 +143,7 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 		return argValues, nil, nil
 	}
 
-	// so there are param definitions - use these to populate argStrs
-
+	// verify we have enough args
 	if len(params) < len(args.ArgList) {
 		err = fmt.Errorf("resolvePositionalParameters failed for '%s' - %d %s were provided but there %s %d parameter %s",
 			queryProvider.Name(),
@@ -162,7 +156,7 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 		return
 	}
 
-	// so there are param definitions - use these to populate argStrs
+	// so there are param definitions - use these to populate argValues
 	argValues = make([]any, len(params))
 
 	for i, param := range params {
@@ -182,6 +176,7 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 			if err != nil {
 				return nil, nil, err
 			}
+
 			argValues[i] = argVal
 		} else if defaultValue != nil {
 			// so we have run out of provided params - is there a default?

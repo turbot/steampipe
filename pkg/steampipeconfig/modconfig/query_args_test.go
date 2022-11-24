@@ -1,9 +1,10 @@
 package modconfig
 
 import (
-	"testing"
-
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/utils"
+	"reflect"
+	"testing"
 )
 
 type resolveParamsTest struct {
@@ -13,106 +14,107 @@ type resolveParamsTest struct {
 	expected    interface{}
 }
 
+// NOTE: all QueryArgs vcalkues must be Json representations of the arg value
 var testCasesResolveParams = map[string]resolveParamsTest{
 
-	"named params no defs (expect error)": {
+	"named argsno defs": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'val1'",
-				"p2": "'val2'",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		paramDefs: nil,
-		expected:  "ERROR",
+		expected:  []any(nil),
 	},
-	"named params with defs": {
+	"named args with defs": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'val1'",
-				"p2": "'val2'",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1"},
 			{Name: "p2"},
 		},
-		expected: "('val1','val2')",
+		expected: []any{"val1", "val2"},
 	},
-	"named params with defs and partial runtime overrides": {
+	"named args with defs and partial runtime overrides": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'val1'",
-				"p2": "'val2'",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p2": "'runtime val2'",
+				"p2": `"runtime val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1"},
 			{Name: "p2"},
 		},
-		expected: "('val1','runtime val2')",
+		expected: []any{"val1", "runtime val2"},
 	},
 
-	"named params with defs and full runtime overrides": {
+	"named args with defs and full runtime overrides": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'val1'",
-				"p2": "'val2'",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'runtime val1'",
-				"p2": "'runtime val2'",
+				"p1": `"runtime val1"`,
+				"p2": `"runtime val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1"},
 			{Name: "p2"},
 		},
-		expected: "('runtime val1','runtime val2')",
+		expected: []any{"runtime val1", "runtime val2"},
 	},
-	"named params with defs and invalid runtime override": {
+	"named args with defs and runtime overrides with additional undefined arg": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'val1'",
-				"p2": "'val2'",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p2": "'runtime val2'",
-				"p3": "'runtime val2'",
+				"p2": `"runtime val2"`,
+				"p3": `"runtime val3"`,
 			},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1"},
 			{Name: "p2"},
 		},
-		expected: "ERROR",
+		expected: []any{"val1", "runtime val2"},
 	},
 
-	"named params overrides only with defs": {
+	"named arg overrides only with defs": {
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'override val1'",
-				"p2": "'override val2'",
+				"p1": `"override val1"`,
+				"p2": `"override val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
 			{Name: "p1"},
 			{Name: "p2"},
 		},
-		expected: "('override val1','override val2')",
+		expected: []any{"override val1", "override val2"},
 	},
 	"named param defs with incomplete overrides": {
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p2": "'override val2'",
+				"p2": `"override val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
@@ -124,7 +126,7 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"named param defs with incomplete invalid overrides": {
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p3": "'override val2'",
+				"p3": `"override val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
@@ -136,67 +138,68 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"named param defs with defaults with incomplete overrides": {
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p2": "'override val2'",
+				"p2": `"override val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("'val1'")},
-			{Name: "p2", Default: utils.ToStringPointer("'val2'")},
+			{Name: "p1", Default: utils.ToStringPointer(`"val1"`)},
+			{Name: "p2", Default: utils.ToStringPointer(`"val2"`)},
 		},
-		expected: "('val1','override val2')",
+		expected: []any{"val1", "override val2"},
 	},
-	"named param defs with defaults with incomplete invalid overrides": {
+	"named param defs with defaults with undefined override": {
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p3": "'override val2'",
+				"p3": `"override val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("'val1'")},
-			{Name: "p2", Default: utils.ToStringPointer("'val2'")},
+			{Name: "p1", Default: utils.ToStringPointer(`"val1"`)},
+			{Name: "p2", Default: utils.ToStringPointer(`"val2"`)},
 		},
-		expected: "ERROR",
+		expected: []any{"val1", "val2"},
 	},
 
-	"partial named params with defs and defaults": {
+	"partial named args with defs and defaults": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'val1'",
+				"p1": `"val1"`,
 			},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("'def_val1'")},
-			{Name: "p2", Default: utils.ToStringPointer("'def_val2'")},
+			{Name: "p1", Default: utils.ToStringPointer(`"def_val1"`)},
+			{Name: "p2", Default: utils.ToStringPointer(`"def_val2"`)},
 		},
-		expected: "('val1','def_val2')",
+		expected: []any{"val1", "def_val2"},
 	},
-	"partial named params with defs defaults and partial override": {
+	"partial named args with defs defaults and partial override": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "'val1'",
+				"p1": `"val1"`,
 			},
 		},
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p2": "'override val2'",
+				"p2": `"override val2"`,
 			},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("'def_val1'")},
-			{Name: "p2", Default: utils.ToStringPointer("'def_val2'")},
-			{Name: "p3", Default: utils.ToStringPointer("'def_val3'")},
+			{Name: "p1", Default: utils.ToStringPointer(`"def_val1"`)},
+			{Name: "p2", Default: utils.ToStringPointer(`"def_val2"`)},
+			{Name: "p3", Default: utils.ToStringPointer(`"def_val3"`)},
 		},
-		expected: "('val1','override val2','def_val3')",
+
+		expected: []any{"val1", "override val2", "def_val3"},
 	},
-	"partial named params with defs and unmatched defaults": {
+	"partial named args with defs and unmatched defaults": {
 		// only a default for first param, which is populated from the provided positional param
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "val1",
+				"p1": `"val1"`,
 			},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
+			{Name: "p1", Default: utils.ToStringPointer(`"def_val1"`)},
 			{Name: "p2"},
 		},
 		expected: "ERROR",
@@ -204,86 +207,87 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 
 	"positional params no defs": {
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("'val1'"), utils.ToStringPointer("'val2'")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`), utils.ToStringPointer(`"val2"`)},
 		},
 		paramDefs: nil,
-		expected:  "('val1','val2')",
+
+		expected: []any{"val1", "val2"},
 	},
 	"positional params with partial runtime override no defs": {
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("'val1'"), utils.ToStringPointer("'val2'")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`), utils.ToStringPointer(`"val2"`)},
 		},
 		runtimeArgs: &QueryArgs{
-			ArgList: []*string{nil, utils.ToStringPointer("'override val2'")},
+			ArgList: []*string{nil, utils.ToStringPointer(`"override val2"`)},
 		},
 		paramDefs: nil,
-		expected:  "('val1','override val2')",
+		expected:  []any{"val1", "override val2"},
 	},
 	"positional params with full runtime override no defs": {
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("'val1'"), utils.ToStringPointer("'val2'")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`), utils.ToStringPointer(`"val2"`)},
 		},
 		runtimeArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("'override val1'"), utils.ToStringPointer("'override val2'")},
+			ArgList: []*string{utils.ToStringPointer(`"override val1"`), utils.ToStringPointer(`"override val2"`)},
 		},
 		paramDefs: nil,
-		expected:  "('override val1','override val2')",
+		expected:  []any{"override val1", "override val2"},
 	},
-	"partial positional params with defs and defaults": {
+	"partial positional args with defs and defaults": {
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("'val1'")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`)},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("'def_val1'")},
-			{Name: "p2", Default: utils.ToStringPointer("'def_val2'")},
+			{Name: "p1", Default: utils.ToStringPointer(`"def_val1"`)},
+			{Name: "p2", Default: utils.ToStringPointer(`"def_val2"`)},
 		},
-		expected: "('val1','def_val2')",
+		expected: []any{"val1", "def_val2"},
 	},
-	"partial positional params with defs, overrides and defaults": {
+	"partial positional args with defs, overrides and defaults": {
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("'val1'")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`)},
 		},
 		runtimeArgs: &QueryArgs{
-			ArgList: []*string{nil, utils.ToStringPointer("'override val2'")},
+			ArgList: []*string{nil, utils.ToStringPointer(`"override val2"`)},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("'def_val1'")},
-			{Name: "p2", Default: utils.ToStringPointer("'def_val2'")},
-			{Name: "p3", Default: utils.ToStringPointer("'def_val3'")},
+			{Name: "p1", Default: utils.ToStringPointer(`"def_val1"`)},
+			{Name: "p2", Default: utils.ToStringPointer(`"def_val2"`)},
+			{Name: "p3", Default: utils.ToStringPointer(`"def_val3"`)},
 		},
-		expected: "('val1','override val2','def_val3')",
+		expected: []any{"val1", "override val2", "def_val3"},
 	},
-	"partial positional params with defs and unmatched defaults": {
+	"partial positional args with defs and unmatched defaults": {
 		// only a default for first param, which is populated from the provided positional param
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("val1")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`)},
 		},
 		paramDefs: []*ParamDef{
-			{Name: "p1", Default: utils.ToStringPointer("def_val1")},
+			{Name: "p1", Default: utils.ToStringPointer(`"def_val1"`)},
 			{Name: "p2"},
 		},
 		expected: "ERROR",
 	},
 
-	"positional and named params (expect error)": {
+	"positional and named args(expect error)": {
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("val1"), utils.ToStringPointer("val2")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`), utils.ToStringPointer(`"val2"`)},
 			ArgMap: map[string]string{
-				"p1": "val1",
-				"p2": "val2",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		paramDefs: nil,
 		expected:  "ERROR",
 	},
-	"positional and override named params (expect error)": {
+	"positional and override named args (expect error)": {
 		baseArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("val1"), utils.ToStringPointer("val2")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`), utils.ToStringPointer(`"val2"`)},
 		},
 		runtimeArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "val1",
-				"p2": "val2",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		paramDefs: nil,
@@ -292,12 +296,12 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 	"named and override params (expect error)": {
 		baseArgs: &QueryArgs{
 			ArgMap: map[string]string{
-				"p1": "val1",
-				"p2": "val2",
+				"p1": `"val1"`,
+				"p2": `"val2"`,
 			},
 		},
 		runtimeArgs: &QueryArgs{
-			ArgList: []*string{utils.ToStringPointer("val1"), utils.ToStringPointer("val2")},
+			ArgList: []*string{utils.ToStringPointer(`"val1"`), utils.ToStringPointer(`"val2"`)},
 		},
 		paramDefs: nil,
 		expected:  "ERROR",
@@ -305,9 +309,14 @@ var testCasesResolveParams = map[string]resolveParamsTest{
 }
 
 func TestResolveAsString(t *testing.T) {
+	testsToRun := []string{}
+
 	for name, test := range testCasesResolveParams {
+		if len(testsToRun) > 0 && !helpers.StringSliceContains(testsToRun, name) {
+			continue
+		}
 		query := &Control{FullName: "control.test_control", Params: test.paramDefs, Args: test.baseArgs}
-		res, _, err := ResolveArgsAsString(query, test.runtimeArgs)
+		res, err := ResolveArgs(query, test.runtimeArgs)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED : \nunexpected error %v", name, err)
@@ -318,7 +327,8 @@ func TestResolveAsString(t *testing.T) {
 			t.Errorf("Test: '%s'' FAILED - expected error", name)
 			continue
 		}
-		if test.expected != res {
+		expected := test.expected.([]any)
+		if !reflect.DeepEqual(expected, res) {
 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n %v, \ngot:\n %v\n", name, test.expected, res)
 		}
 	}
