@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"reflect"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -38,9 +38,17 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 
 	switch {
 	case ty.IsObjectType():
-		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, evalCtx)
+		var argMap map[string]any
+		argMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, evalCtx)
+		if err == nil {
+			err = args.SetArgMap(argMap)
+		}
 	case ty.IsTupleType():
-		args.ArgList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
+		var argList []any
+		argList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
+		if err == nil {
+			err = args.SetArgList(argList)
+		}
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
@@ -60,12 +68,12 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	return args, runtimeDependencies, diags
 }
 
-func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modconfig.RuntimeDependency, error) {
+func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]any, []*modconfig.RuntimeDependency, error) {
 	// convert the attribute to a slice
 	values := val.AsValueSlice()
 
 	// build output array
-	res := make([]*string, len(values))
+	res := make([]any, len(values))
 	var runtimeDependencies []*modconfig.RuntimeDependency
 
 	for idx, v := range values {
@@ -78,21 +86,21 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modco
 
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a json representation
-			valStr, err := type_conversion.CtyToJSON(v)
+			// decode the value into a go type
+			val, err := type_conversion.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
 				return nil, nil, err
 			}
 
-			res[idx] = &valStr
+			res[idx] = val
 		}
 	}
 	return res, runtimeDependencies, nil
 }
 
-func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
-	res := make(map[string]string)
+func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]any, []*modconfig.RuntimeDependency, error) {
+	res := make(map[string]any)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	it := val.ElementIterator()
 	for it.Next() {
@@ -112,14 +120,13 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a json representation
-			valStr, err := type_conversion.CtyToJSON(v)
+			// decode the value into a go type
+			val, err := type_conversion.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 				return nil, nil, err
 			}
-
-			res[key] = valStr
+			res[key] = val
 		}
 	}
 	return res, runtimeDependencies, nil

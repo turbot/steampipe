@@ -38,7 +38,6 @@ func CtyToString(v cty.Value) (valStr string, err error) {
 	switch {
 	case ty.IsTupleType(), ty.IsListType():
 		{
-
 			var array []string
 			if array, err = ctyTupleToArrayOfPgStrings(v); err == nil {
 				valStr = fmt.Sprintf("[%s]", strings.Join(array, ","))

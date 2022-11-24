@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
@@ -300,9 +299,10 @@ func decodeParam(block *hcl.Block, parseCtx *ModParseContext, parentName string)
 		diags = append(diags, moreDiags...)
 
 		if !moreDiags.HasErrors() {
+
 			// convert the raw default into a string representation
-			if valStr, err := type_conversion.CtyToJSON(v); err == nil {
-				def.Default = utils.ToStringPointer(valStr)
+			if val, err := type_conversion.CtyToGo(v); err == nil {
+				def.SetDefault(val)
 			} else {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,

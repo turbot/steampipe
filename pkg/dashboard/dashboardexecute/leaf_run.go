@@ -2,7 +2,6 @@ package dashboardexecute
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -441,22 +440,14 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 
 	// build map of default params
 	for _, dep := range r.runtimeDependencies {
-		// TACTICAL
-		// format the arg value as a JSON string
-		jsonBytes, err := json.Marshal(dep.value)
-		valStr := string(jsonBytes)
-		if err != nil {
-			return nil, err
-		}
 		if dep.dependency.ArgName != nil {
-			res.ArgMap[*dep.dependency.ArgName] = valStr
+			res.SetNamedArgVal(dep.value, *dep.dependency.ArgName)
+
 		} else {
 			if dep.dependency.ArgIndex == nil {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
-
-			// now add at correct index
-			res.ArgList[*dep.dependency.ArgIndex] = &valStr
+			res.SetPositionalArgVal(dep.value, *dep.dependency.ArgIndex)
 		}
 	}
 	return res, nil
