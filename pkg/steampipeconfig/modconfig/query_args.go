@@ -1,6 +1,7 @@
 package modconfig
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -48,14 +49,19 @@ func (q *QueryArgs) ArgsStringList() []string {
 	return argsStringList
 }
 
-// TODO RENAME
-// SafeArgsList convert ArgLists into list of strings but return as an interface slice
-func (q *QueryArgs) SafeArgsList() []any {
-	var argsStringList = make([]any, len(q.ArgList))
+// ConvertArgsList convert ArgList into list of interface{} by unmarshalling
+func (q *QueryArgs) ConvertArgsList() ([]any, error) {
+	var argList = make([]any, len(q.ArgList))
+
 	for i, a := range q.ArgList {
-		argsStringList[i] = typehelpers.SafeString(a)
+		if a != nil {
+			err := json.Unmarshal([]byte(*a), &argList[i])
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
-	return argsStringList
+	return argList, nil
 }
 
 func NewQueryArgs() *QueryArgs {

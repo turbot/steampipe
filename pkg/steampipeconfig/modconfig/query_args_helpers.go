@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -67,6 +68,11 @@ func ResolveArgs(source QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 	// are there any params?
 	if len(paramVals) == 0 {
 		return nil, nil
+	}
+
+	// convert any array args into a strongly typed array
+	for i, v := range paramVals {
+		paramVals[i] = type_conversion.AnySliceToTypedSlice(v)
 	}
 
 	// success!
@@ -135,7 +141,10 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 	if len(params) == 0 {
 		// no params defined, so we return as many args as are provided
 		// (convert from *string to string)
-		argValues = args.SafeArgsList()
+		argValues, err = args.ConvertArgsList()
+		if err != nil {
+			return nil, nil, err
+		}
 		return argValues, nil, nil
 	}
 
@@ -173,7 +182,6 @@ func resolvePositionalParameters(queryProvider QueryProvider, args *QueryArgs) (
 			if err != nil {
 				return nil, nil, err
 			}
-
 			argValues[i] = argVal
 		} else if defaultValue != nil {
 			// so we have run out of provided params - is there a default?
