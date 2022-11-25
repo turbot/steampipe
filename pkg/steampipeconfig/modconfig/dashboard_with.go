@@ -211,12 +211,6 @@ func (e *DashboardWith) GetPreparedStatementName() string {
 	return e.PreparedStatementName
 }
 
-// GetResolvedQuery implements QueryProvider
-func (e *DashboardWith) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return e.getResolvedQuery(e, runtimeArgs)
-}
-
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardWith) IsSnapshotPanel() {}
 
