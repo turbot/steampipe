@@ -60,12 +60,17 @@ func (q *QueryArgs) ConvertArgsList() ([]any, error) {
 
 	for i, a := range q.ArgList {
 		if a != nil {
-			err := json.Unmarshal([]byte(*a), &argList[i])
-			if err != nil {
-				return nil, err
+			// do we need to unmarshal?
+			if _, stringArg := q.stringPositionalArgs[i]; stringArg {
+				argList[i] = *a
+			} else {
+				// so this arg is stored as json - we need to deserialize
+				err := json.Unmarshal([]byte(*a), &argList[i])
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
-
 	}
 	return argList, nil
 }
