@@ -10,8 +10,12 @@ type RuntimeDependency struct {
 	SourceResource HclResource
 	ArgName        *string
 	ArgIndex       *int
-	// the resource which has he runtime dependency
+	// the resource which has the runtime dependency
 	ParentResource QueryProvider
+	// TACTICAL - if set, wrap the dependency value in an array
+	// this provides support for args which convert a runtime depdency to an array, like:
+	// arns = [input.arn]
+	IsArray bool
 }
 
 func (d *RuntimeDependency) String() string {

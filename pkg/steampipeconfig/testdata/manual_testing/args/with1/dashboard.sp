@@ -77,7 +77,7 @@ dashboard "bug_column_does_not_exist" {
         // this causes  cannot serialize unknown values
         //policy_arns  = [self.input.policy_arn.value]
 
-        user_arns   = with.attached_users.rows[*].user_arn
+        user_arns   = [with.attached_users.rows[0].user_arn]
         role_arns   = with.attached_roles.rows[*].role_arn
 
       }

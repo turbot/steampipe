@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"reflect"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -38,9 +38,17 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 
 	switch {
 	case ty.IsObjectType():
-		args.ArgMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, evalCtx)
+		var argMap map[string]any
+		argMap, runtimeDependencies, err = ctyObjectToArgMap(attr, v, evalCtx)
+		if err == nil {
+			err = args.SetArgMap(argMap)
+		}
 	case ty.IsTupleType():
-		args.ArgList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
+		var argList []any
+		argList, runtimeDependencies, err = ctyTupleToArgArray(attr, v)
+		if err == nil {
+			err = args.SetArgList(argList)
+		}
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
@@ -60,12 +68,12 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	return args, runtimeDependencies, diags
 }
 
-func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modconfig.RuntimeDependency, error) {
+func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]any, []*modconfig.RuntimeDependency, error) {
 	// convert the attribute to a slice
 	values := val.AsValueSlice()
 
 	// build output array
-	res := make([]*string, len(values))
+	res := make([]any, len(values))
 	var runtimeDependencies []*modconfig.RuntimeDependency
 
 	for idx, v := range values {
@@ -78,21 +86,21 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]*string, []*modco
 
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a json representation
-			valStr, err := type_conversion.CtyToJSON(v)
+			// decode the value into a go type
+			val, err := type_conversion.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
 				return nil, nil, err
 			}
 
-			res[idx] = &valStr
+			res[idx] = val
 		}
 	}
 	return res, runtimeDependencies, nil
 }
 
-func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]string, []*modconfig.RuntimeDependency, error) {
-	res := make(map[string]string)
+func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalContext) (map[string]any, []*modconfig.RuntimeDependency, error) {
+	res := make(map[string]any)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	it := val.ElementIterator()
 	for it.Next() {
@@ -111,18 +119,39 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 				return nil, nil, err
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
+		} else if getWrappedUnknownVal(v) {
+			runtimeDependency, err := identifyRuntimeDependenciesFromObject(attr, key, evalCtx)
+			if err != nil {
+				return nil, nil, err
+			}
+			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
-			// decode the value into a json representation
-			valStr, err := type_conversion.CtyToJSON(v)
+			// decode the value into a go type
+			val, err := type_conversion.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 				return nil, nil, err
 			}
-
-			res[key] = valStr
+			res[key] = val
 		}
 	}
+
 	return res, runtimeDependencies, nil
+}
+
+// TACTICAL - is the cty value an array with a single unknown value
+func getWrappedUnknownVal(v cty.Value) bool {
+	ty := v.Type()
+
+	switch {
+
+	case ty.IsTupleType():
+		values := v.AsValueSlice()
+		if len(values) == 1 && !values[0].IsKnown() {
+			return true
+		}
+	}
+	return false
 }
 
 func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, evalCtx *hcl.EvalContext) (*modconfig.RuntimeDependency, error) {
@@ -141,39 +170,65 @@ func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, eval
 			return nil, err
 		}
 		if argName == key {
-			var propertyPathStr string
-			traversalExpr, ok := item.ValueExpr.(*hclsyntax.ScopeTraversalExpr)
-			if ok {
-				propertyPathStr = hclhelpers.TraversalAsString(traversalExpr.Traversal)
-			} else {
-				splatExp, ok := item.ValueExpr.(*hclsyntax.SplatExpr)
-				if ok {
-					root := hclhelpers.TraversalAsString(splatExp.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
-					each, ok := splatExp.Each.(*hclsyntax.RelativeTraversalExpr)
-					if !ok {
-						return nil, fmt.Errorf("unexpected traversal type %s", reflect.TypeOf(splatExp.Each).Name())
-					}
-					suffix := hclhelpers.TraversalAsString(each.Traversal)
-					propertyPathStr = fmt.Sprintf("%s.*.%s", root, suffix)
-				} else {
-					return nil, fmt.Errorf("unexpected runtime dependency expression type")
-				}
-			}
-
-			propertyPath, err := modconfig.ParseResourcePropertyPath(propertyPathStr)
-
+			dep, err := getRuntimeDepFromExpression(item.ValueExpr, argName)
 			if err != nil {
 				return nil, err
 			}
 
-			ret := &modconfig.RuntimeDependency{
-				PropertyPath: propertyPath,
-				ArgName:      &key,
-			}
-			return ret, nil
+			return dep, nil
 		}
 	}
 	return nil, fmt.Errorf("could not extract runtime dependency for arg %s - not found in attribute map", key)
+}
+
+func getRuntimeDepFromExpression(expr hclsyntax.Expression, argName string) (*modconfig.RuntimeDependency, error) {
+	var propertyPathStr string
+	var isArray bool
+
+dep_loop:
+	for {
+		switch e := expr.(type) {
+		case *hclsyntax.ScopeTraversalExpr:
+			propertyPathStr = hclhelpers.TraversalAsString(e.Traversal)
+			break dep_loop
+		case *hclsyntax.SplatExpr:
+			root := hclhelpers.TraversalAsString(e.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
+			each, ok := e.Each.(*hclsyntax.RelativeTraversalExpr)
+			if !ok {
+				return nil, fmt.Errorf("unexpected traversal type %s", reflect.TypeOf(e.Each).Name())
+			}
+			suffix := hclhelpers.TraversalAsString(each.Traversal)
+			propertyPathStr = fmt.Sprintf("%s.*.%s", root, suffix)
+			break dep_loop
+		case *hclsyntax.TupleConsExpr:
+			// TACTICAL
+			// handle the case where an arg value is given as a runtime depdency inside an array, for example
+			// arns = [input.arn]
+			// this is a common pattern where a runtime depdency gives a scalar value, but an array is needed for the arg
+			// NOTE: this code only supports a SINGLE item in the array
+			if len(e.Exprs) != 1 {
+				return nil, fmt.Errorf("unsupported runtime dependency expression - only a single runtime depdency item may be wrapped in an array")
+			}
+			isArray = true
+			expr = e.Exprs[0]
+			// fall through to rerun loop with updated expr
+		default:
+			// unhandled expression type
+			return nil, fmt.Errorf("unexpected runtime dependency expression type")
+		}
+	}
+
+	propertyPath, err := modconfig.ParseResourcePropertyPath(propertyPathStr)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &modconfig.RuntimeDependency{
+		PropertyPath: propertyPath,
+		ArgName:      &argName,
+		IsArray:      isArray,
+	}
+	return ret, nil
 }
 
 func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modconfig.RuntimeDependency, error) {

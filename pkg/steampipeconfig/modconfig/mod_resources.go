@@ -320,17 +320,17 @@ func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 		}
 	}
 
-	for name, tables := range m.DashboardTables {
+	for name, table := range m.DashboardTables {
 		if otherTable, ok := other.DashboardTables[name]; !ok {
 			return false
-		} else if !tables.Equals(otherTable) {
+		} else if !table.Equals(otherTable) {
 			return false
 		}
 	}
-	for name, Categorys := range m.DashboardCategories {
+	for name, category := range m.DashboardCategories {
 		if otherCategory, ok := other.DashboardCategories[name]; !ok {
 			return false
-		} else if !Categorys.Equals(otherCategory) {
+		} else if !category.Equals(otherCategory) {
 			return false
 		}
 	}
@@ -340,10 +340,10 @@ func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 		}
 	}
 
-	for name, texts := range m.DashboardTexts {
+	for name, text := range m.DashboardTexts {
 		if otherText, ok := other.DashboardTexts[name]; !ok {
 			return false
-		} else if !texts.Equals(otherText) {
+		} else if !text.Equals(otherText) {
 			return false
 		}
 	}

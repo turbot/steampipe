@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/type_conversion"
 )
 
-// ParsePreparedStatementInvocation parses a query invocation and extracts the args (if any)
+// ParseQueryInvocation parses a query invocation and extracts the args (if any)
 // supported formats are:
 //
 // 1) positional args
@@ -44,27 +44,37 @@ func ParseQueryInvocation(arg string) (string, *modconfig.QueryArgs, error) {
 //
 // 2) named args
 // my_arg1 => 'val1', my_arg2 => 'val2'
-func parseArgs(argssString string) (*modconfig.QueryArgs, error) {
+func parseArgs(argsString string) (*modconfig.QueryArgs, error) {
 	res := modconfig.NewQueryArgs()
-	if len(argssString) == 0 {
+	if len(argsString) == 0 {
 		return res, nil
 	}
 
 	// split on comma to get each arg string (taking quotes and brackets into account)
-	argsList, err := splitArgString(argssString)
+	splitArgs, err := splitArgString(argsString)
 	if err != nil {
 		// return empty result, even if we have an error
 		return res, err
 	}
 
 	// first check for named args
-	res.ArgMap, err = parseNamedArgs(argsList)
+	argMap, err := parseNamedArgs(splitArgs)
 	if err != nil {
-		return nil, err
+		return res, err
 	}
+	if err := res.SetArgMap(argMap); err != nil {
+		return res, err
+	}
+
 	if res.Empty() {
 		// no named args - fall back on positional
-		res.ArgList, err = parsePositionalArgs(argsList)
+		argList, err := parsePositionalArgs(splitArgs)
+		if err != nil {
+			return res, err
+		}
+		if err := res.SetArgList(argList); err != nil {
+			return res, err
+		}
 	}
 	// return empty result, even if we have an error
 	return res, err
@@ -128,7 +138,7 @@ func splitArgString(argsString string) ([]string, error) {
 	return argsList, nil
 }
 
-func parseArg(v string) (string, error) {
+func parseArg(v string) (any, error) {
 	b, diags := hclsyntax.ParseExpression([]byte(v), "", hcl.Pos{})
 	if diags.HasErrors() {
 		return "", plugin.DiagsToError("bad arg syntax", diags)
@@ -137,11 +147,11 @@ func parseArg(v string) (string, error) {
 	if diags.HasErrors() {
 		return "", plugin.DiagsToError("bad arg syntax", diags)
 	}
-	return type_conversion.CtyToJSON(val)
+	return type_conversion.CtyToGo(val)
 }
 
-func parseNamedArgs(argsList []string) (map[string]string, error) {
-	var res = make(map[string]string)
+func parseNamedArgs(argsList []string) (map[string]any, error) {
+	var res = make(map[string]any)
 	for _, p := range argsList {
 		argTuple := strings.Split(strings.TrimSpace(p), "=>")
 		if len(argTuple) != 2 {
@@ -149,18 +159,18 @@ func parseNamedArgs(argsList []string) (map[string]string, error) {
 			return nil, nil
 		}
 		k := strings.TrimSpace(argTuple[0])
-		valStr, err := parseArg(argTuple[1])
+		val, err := parseArg(argTuple[1])
 		if err != nil {
 			return nil, err
 		}
-		res[k] = valStr
+		res[k] = val
 	}
 	return res, nil
 }
 
-func parsePositionalArgs(argsList []string) ([]*string, error) {
+func parsePositionalArgs(argsList []string) ([]any, error) {
 	// convert to pointer array
-	res := make([]*string, len(argsList))
+	res := make([]any, len(argsList))
 	// just treat args as positional args
 	// strip spaces
 	for i, v := range argsList {
@@ -168,7 +178,7 @@ func parsePositionalArgs(argsList []string) ([]*string, error) {
 		if err != nil {
 			return nil, err
 		}
-		res[i] = &valStr
+		res[i] = valStr
 	}
 
 	return res, nil

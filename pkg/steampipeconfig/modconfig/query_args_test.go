@@ -14,7 +14,11 @@ type resolveParamsTest struct {
 	expected    interface{}
 }
 
-// NOTE: all QueryArgs vcalkues must be Json representations of the arg value
+// NOTE: all QueryArgs values are Json representations of the arg value
+// TODO really we should update the trest to set stringNamedArgs and stringPositionalArgs for each args object
+// then we can store the string args as normal strings, not json strings
+// TODO add other args types - arrays, json etc.
+
 var testCasesResolveParams = map[string]resolveParamsTest{
 
 	"named argsno defs": {

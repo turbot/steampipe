@@ -441,22 +441,14 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 
 	// build map of default params
 	for _, dep := range r.runtimeDependencies {
-		// TACTICAL
-		// format the arg value as a JSON string
-		jsonBytes, err := json.Marshal(dep.value)
-		valStr := string(jsonBytes)
-		if err != nil {
-			return nil, err
-		}
 		if dep.dependency.ArgName != nil {
-			res.ArgMap[*dep.dependency.ArgName] = valStr
+			res.SetNamedArgVal(dep.value, *dep.dependency.ArgName)
+
 		} else {
 			if dep.dependency.ArgIndex == nil {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
-
-			// now add at correct index
-			res.ArgList[*dep.dependency.ArgIndex] = &valStr
+			res.SetPositionalArgVal(dep.value, *dep.dependency.ArgIndex)
 		}
 	}
 	return res, nil
@@ -504,16 +496,21 @@ func (r *LeafRun) executeWithRuns(ctx context.Context) {
 	// so all with runs have completed - check for errors
 	err := error_helpers.CombineErrors(errors...)
 	if err == nil {
-		r.setWithData()
+		if err := r.setWithData(); err != nil {
+			r.SetError(ctx, err)
+		}
 	} else {
 		r.SetError(ctx, err)
 	}
 }
 
-func (r *LeafRun) setWithData() {
+func (r *LeafRun) setWithData() error {
 	for _, w := range r.withRuns {
-		r.setWithValue(w.DashboardNode.GetUnqualifiedName(), w.Data)
+		if err := r.setWithValue(w.DashboardNode.GetUnqualifiedName(), w.Data); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // if this leaf run has children (nodes/edges), execute them
@@ -651,9 +648,27 @@ func columnValuesFromRows(column string, rows []map[string]interface{}) (any, er
 	}
 	return res, nil
 }
-func (r *LeafRun) setWithValue(name string, result *dashboardtypes.LeafData) {
+func (r *LeafRun) setWithValue(name string, result *dashboardtypes.LeafData) error {
 	r.withValueMutex.Lock()
 	defer r.withValueMutex.Unlock()
 
+	// TACTICAL - is there are any JSON columns convert them back to a JSON string
+	var jsonColumns []string
+	for _, c := range result.Columns {
+		if c.DataType == "JSONB" || c.DataType == "JSON" {
+			jsonColumns = append(jsonColumns, c.Name)
+		}
+	}
+	// now convert any json values into a json string
+	for _, c := range jsonColumns {
+		for _, row := range result.Rows {
+			jsonBytes, err := json.Marshal(row[c])
+			if err != nil {
+				return err
+			}
+			row[c] = string(jsonBytes)
+		}
+	}
 	r.withValues[name] = result
+	return nil
 }
