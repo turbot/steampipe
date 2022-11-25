@@ -201,8 +201,13 @@ dep_loop:
 			propertyPathStr = fmt.Sprintf("%s.*.%s", root, suffix)
 			break dep_loop
 		case *hclsyntax.TupleConsExpr:
+			// TACTICAL
+			// handle the case where an arg value is given as a runtime depdency inside an array, for example
+			// arns = [input.arn]
+			// this is a common pattern where a runtime depdency gives a scalar value, but an array is needed for the arg
+			// NOTE: this code only supports a SINGLE item in the array
 			if len(e.Exprs) != 1 {
-				return nil, fmt.Errorf("unexpected runtime dependency expression type")
+				return nil, fmt.Errorf("unsupported runtime dependency expression - only a single runtime depdency item may be wrapped in an array")
 			}
 			isArray = true
 			expr = e.Exprs[0]

@@ -12,7 +12,10 @@ type RuntimeDependency struct {
 	ArgIndex       *int
 	// the resource which has the runtime dependency
 	ParentResource QueryProvider
-	IsArray        bool
+	// TACTICAL - if set, wrap the dependency value in an array
+	// this provides support for args which convert a runtime depdency to an array, like:
+	// arns = [input.arn]
+	IsArray bool
 }
 
 func (d *RuntimeDependency) String() string {

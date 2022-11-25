@@ -44,7 +44,7 @@ func (d *ResolvedRuntimeDependency) Resolve() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// if this is an array, wrap in an array
+	// TACTICAL - if IsArray flag is set, wrap the dependency value in an array
 	if d.dependency.IsArray {
 		val = type_conversion.AnySliceToTypedSlice([]any{val})
 	}
