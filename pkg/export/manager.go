@@ -3,12 +3,12 @@ package export
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"path"
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 type Manager struct {

@@ -1,263 +1,125 @@
 package controldisplay
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"io"
-// 	"strings"
-// 	"testing"
+import (
+	"context"
+	"io"
+	"os"
+	"testing"
 
-// 	jsonpatch "github.com/evanphx/json-patch"
-// 	"github.com/spf13/viper"
-// 	"github.com/turbot/steampipe/pkg/constants"
-// 	"github.com/turbot/steampipe/pkg/control/controlexecute"
-// 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-// )
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/control/controlexecute"
+	"github.com/turbot/steampipe/pkg/filepaths"
+)
 
-// var rootBenchmark = modconfig.Benchmark{}
-// var childBenchmark1 = modconfig.Benchmark{}
-// var childBenchmark2 = modconfig.Benchmark{}
+// testFormatter is an implementation of the Formatter interface
+// values in this implementation correspond to the ones we expect in the result
+type testFormatter struct {
+	name      string
+	alias     string
+	extension string
+}
 
-// var desc = "Dummy control for unit testing"
-// var title = "DummyControl"
-// var c11 = modconfig.Control{
-// 	Title:       &title,
-// 	Description: &desc,
-// }
-// var c12 = modconfig.Control{
-// 	Title:       &title,
-// 	Description: &desc,
-// }
-// var c21 = modconfig.Control{
-// 	Title:       &title,
-// 	Description: &desc,
-// }
-// var c22 = modconfig.Control{
-// 	Title:       &title,
-// 	Description: &desc,
-// }
+func (b *testFormatter) FileExtension() string { return b.extension }
+func (b *testFormatter) Name() string          { return b.name }
+func (b *testFormatter) Alias() string         { return b.alias }
+func (b *testFormatter) Format(ctx context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
+	return nil, nil
+}
 
-// var tree = &controlexecute.ExecutionTree{
-// 	Root: &controlexecute.ResultGroup{
-// 		GroupId:     "DummyTest",
-// 		Parent:      nil,
-// 		Title:       "Test Root Group",
-// 		Description: "Description for test root group",
-// 		Summary: &controlexecute.GroupSummary{
-// 			Status: controlexecute.StatusSummary{
-// 				Alarm: 2,
-// 			},
-// 		},
-// 		GroupItem: &rootBenchmark,
-// 		Groups: []*controlexecute.ResultGroup{
-// 			{
-// 				GroupItem: &childBenchmark1,
-// 				ControlRuns: []*controlexecute.ControlRun{
-// 					{
-// 						Control: &c11,
-// 						Rows: []*controlexecute.ResultRow{
-// 							{
-// 								Status:     constants.ControlAlarm,
-// 								Reason:     "is pretty insecure",
-// 								Resource:   "some other resource",
-// 								Dimensions: []controlexecute.Dimension{},
-// 								Run:        &controlexecute.ControlRun{Control: &c11},
-// 							},
-// 						},
-// 					},
-// 					{
-// 						Control: &c12,
-// 						Rows: []*controlexecute.ResultRow{
-// 							{
-// 								Status:     constants.ControlAlarm,
-// 								Reason:     "is pretty insecure",
-// 								Resource:   "some other resource",
-// 								Dimensions: []controlexecute.Dimension{},
-// 								Run:        &controlexecute.ControlRun{Control: &c12},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			{
-// 				GroupItem: &childBenchmark2,
-// 				ControlRuns: []*controlexecute.ControlRun{
-// 					{
-// 						Control: &c21,
-// 						Rows: []*controlexecute.ResultRow{
-// 							{
-// 								Status:     constants.ControlAlarm,
-// 								Reason:     "is pretty insecure",
-// 								Resource:   "some other resource",
-// 								Dimensions: []controlexecute.Dimension{},
-// 								Run:        &controlexecute.ControlRun{Control: &c21},
-// 							},
-// 						},
-// 					},
-// 					{
-// 						Control: &c22,
-// 						Rows: []*controlexecute.ResultRow{
-// 							{
-// 								Status:     constants.ControlAlarm,
-// 								Reason:     "is pretty insecure",
-// 								Resource:   "some other resource",
-// 								Dimensions: []controlexecute.Dimension{},
-// 								Run:        &controlexecute.ControlRun{Control: &c22},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 	},
-// }
+type testCase struct {
+	input    string
+	expected interface{}
+}
 
-// const expectedJsonOutput = `{
-// 	"group_id": "DummyTest",
-// 	"title": "Test Root Group",
-// 	"description": "Description for test root group",
-// 	"tags": null,
-// 	"summary": {
-// 		"status": {
-// 			"alarm": 2,
-// 			"ok": 0,
-// 			"info": 0,
-// 			"skip": 0,
-// 			"error": 0
-// 		}
-// 	},
-// 	"groups": [
-// 		{
-// 			"group_id": "",
-// 			"title": "",
-// 			"description": "",
-// 			"tags": null,
-// 			"summary": {
-// 				"status": {
-// 					"alarm": 0,
-// 					"ok": 0,
-// 					"info": 0,
-// 					"skip": 0,
-// 					"error": 0
-// 				}
-// 			},
-// 			"groups": null,
-// 			"controls": [
-// 				{
-// 					"control_id": "",
-// 					"description": "",
-// 					"severity": "",
-// 					"tags": null,
-// 					"title": "",
-// 					"results": [
-// 						{
-// 							"reason": "is pretty insecure",
-// 							"resource": "some other resource",
-// 							"status": "alarm",
-// 							"dimensions": []
-// 						}
-// 					]
-// 				},
-// 				{
-// 					"control_id": "",
-// 					"description": "",
-// 					"severity": "",
-// 					"tags": null,
-// 					"title": "",
-// 					"results": [
-// 						{
-// 							"reason": "is pretty insecure",
-// 							"resource": "some other resource",
-// 							"status": "alarm",
-// 							"dimensions": []
-// 						}
-// 					]
-// 				}
-// 			]
-// 		},
-// 		{
-// 			"group_id": "",
-// 			"title": "",
-// 			"description": "",
-// 			"tags": null,
-// 			"summary": {
-// 				"status": {
-// 					"alarm": 0,
-// 					"ok": 0,
-// 					"info": 0,
-// 					"skip": 0,
-// 					"error": 0
-// 				}
-// 			},
-// 			"groups": null,
-// 			"controls": [
-// 				{
-// 					"control_id": "",
-// 					"description": "",
-// 					"severity": "",
-// 					"tags": null,
-// 					"title": "",
-// 					"results": [
-// 						{
-// 							"reason": "is pretty insecure",
-// 							"resource": "some other resource",
-// 							"status": "alarm",
-// 							"dimensions": []
-// 						}
-// 					]
-// 				},
-// 				{
-// 					"control_id": "",
-// 					"description": "",
-// 					"severity": "",
-// 					"tags": null,
-// 					"title": "",
-// 					"results": [
-// 						{
-// 							"reason": "is pretty insecure",
-// 							"resource": "some other resource",
-// 							"status": "alarm",
-// 							"dimensions": []
-// 						}
-// 					]
-// 				}
-// 			]
-// 		}
-// 	],
-// 	"controls": null
-// }`
+var formatterTestCase = []testCase{
+	{
+		input:    "bad-format",
+		expected: "ERROR",
+	},
+	{
+		input: "snapshot",
+		expected: testFormatter{
+			alias:     "sps",
+			extension: constants.SnapshotExtension,
+			name:      constants.OutputFormatSnapshot,
+		},
+	},
+	{
+		input: "csv",
+		expected: testFormatter{
+			alias:     "",
+			extension: ".csv",
+			name:      "csv",
+		},
+	},
+	{
+		input: "json",
+		expected: testFormatter{
+			alias:     "",
+			extension: ".json",
+			name:      "json",
+		},
+	},
+	{
+		input: "asff.json",
+		expected: testFormatter{
+			alias:     "asff.json",
+			extension: ".asff.json",
+			name:      "asff",
+		},
+	},
+	{
+		input: "nunit3.xml",
+		expected: testFormatter{
+			alias:     "nunit3.xml",
+			extension: ".nunit3.xml",
+			name:      "nunit3",
+		},
+	},
+}
 
-// func TestJsonFormatter(t *testing.T) {
-// 	f := new(JSONFormatter)
-// 	reader, _ := f.Format(context.Background(), tree)
-// 	b := bytes.NewBufferString("")
-// 	_, _ = io.Copy(b, reader)
-// 	output := b.String()
-// 	if !jsonpatch.Equal([]byte(expectedJsonOutput), []byte(output)) {
-// 		t.Log(`"expected" is not equal to "output"`)
-// 		t.FailNow()
-// 	}
-// }
+func TestFormatResolver(t *testing.T) {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+	filepaths.SteampipeDir = tmpDir
+	if err := EnsureTemplates(); err != nil {
+		t.Fatal(err)
+	}
+	resolver, err := NewFormatResolver()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, testCase := range formatterTestCase {
+		f, err := resolver.GetFormatter(testCase.input)
+		shouldError := testCase.expected == "ERROR"
 
-// const expectedCsvOutput = `group_id,title,description,control_id,control_title,control_description,reason,resource,status
-// ,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
-// ,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
-// ,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm
-// ,,,,DummyControl,Dummy control for unit testing,is pretty insecure,some other resource,alarm`
+		if shouldError {
+			if err == nil {
+				t.Logf("Request for '%s' should have errored - but did not", testCase.input)
+				t.Fail()
+			}
+			continue
+		}
 
-// func TestCsvFormatter(t *testing.T) {
-// 	tree.DimensionColorGenerator, _ = controlexecute.NewDimensionColorGenerator(4, 27)
-// 	viper.Set(constants.ArgSeparator, ",")
-// 	viper.Set(constants.ArgHeader, true)
-// 	f := new(CSVFormatter)
-// 	reader, _ := f.Format(context.Background(), tree)
-// 	b := bytes.NewBufferString("")
-// 	_, _ = io.Copy(b, reader)
-// 	output := b.String()
-// 	spacer := strings.TrimSpace(output)
-// 	if spacer != expectedCsvOutput {
-// 		t.Log(`"expected" is not equal to "output"`)
-// 		t.Logf(spacer)
-// 		t.FailNow()
-// 	}
-// }
+		expectedFormatter := testCase.expected.(testFormatter)
+
+		if f.Alias() != expectedFormatter.Alias() {
+			t.Logf("Alias mismatch for '%s'. Expected '%s', but got '%s'", testCase.input, expectedFormatter.Alias(), f.Alias())
+			t.Fail()
+			continue
+		}
+		if f.FileExtension() != expectedFormatter.FileExtension() {
+			t.Logf("Extension mismatch for '%s'. Expected '%s', but got '%s'", testCase.input, expectedFormatter.FileExtension(), f.FileExtension())
+			t.Fail()
+			continue
+		}
+		if f.Name() != expectedFormatter.Name() {
+			t.Logf("Name mismatch for '%s'. Expected '%s', but got '%s'", testCase.input, expectedFormatter.Name(), f.Name())
+			t.Fail()
+			continue
+		}
+	}
+}

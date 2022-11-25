@@ -3,9 +3,10 @@ package export
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"strings"
 )
 
 type SnapshotExporter struct {
@@ -15,7 +16,7 @@ type SnapshotExporter struct {
 func (e *SnapshotExporter) Export(_ context.Context, input ExportSourceData, filePath string) error {
 	snapshot, ok := input.(*dashboardtypes.SteampipeSnapshot)
 	if !ok {
-		return fmt.Errorf("SnapshotExporter inp-ut must be *dashboardtypes.SteampipeSnapshot")
+		return fmt.Errorf("SnapshotExporter input must be *dashboardtypes.SteampipeSnapshot")
 	}
 	snapshotBytes, err := snapshot.AsStrippedJson(false)
 	if err != nil {
