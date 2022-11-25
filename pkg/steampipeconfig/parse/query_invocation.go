@@ -60,20 +60,20 @@ func parseArgs(argsString string) (*modconfig.QueryArgs, error) {
 	// first check for named args
 	argMap, err := parseNamedArgs(splitArgs)
 	if err != nil {
-		return nil, err
+		return res, err
 	}
 	if err := res.SetArgMap(argMap); err != nil {
-		return nil, err
+		return res, err
 	}
 
 	if res.Empty() {
 		// no named args - fall back on positional
 		argList, err := parsePositionalArgs(splitArgs)
 		if err != nil {
-			return nil, err
+			return res, err
 		}
 		if err := res.SetArgList(argList); err != nil {
-			return nil, err
+			return res, err
 		}
 	}
 	// return empty result, even if we have an error
@@ -178,7 +178,7 @@ func parsePositionalArgs(argsList []string) ([]any, error) {
 		if err != nil {
 			return nil, err
 		}
-		res[i] = &valStr
+		res[i] = valStr
 	}
 
 	return res, nil
