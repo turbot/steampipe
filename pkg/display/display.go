@@ -34,10 +34,7 @@ type DisplayOption = func(config *DisplayConfiguration)
 // ShowTimingOnOutput only enables timing if the current output mode is the one provided
 func ShowTimingOnOutput(output string) DisplayOption {
 	return func(o *DisplayConfiguration) {
-		if o.timing == nil {
-			EnableTiming()(o)
-		}
-		t := *o.timing && (cmdconfig.Viper().GetString(constants.ArgOutput) == output)
+		t := (cmdconfig.Viper().GetString(constants.ArgOutput) == output)
 		o.timing = &t
 	}
 }
