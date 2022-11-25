@@ -129,7 +129,7 @@ jobs:
               --arg title "$IMAGE_NAME" \
               --arg desc "$ORG" \
               --arg version "$VERSION" \
-              --arg timestamp "$(date +%FT%T%z)" \
+              --arg timestamp "$(date +%FT%TZ)" \
               --arg vendor "Turbot HQ, Inc." \
             '{ 
                 "$manifest": { 
