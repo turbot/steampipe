@@ -226,54 +226,6 @@ dep_loop:
 	return ret, nil
 }
 
-//func getRuntimeDepFromExpression(expr hclsyntax.Expression, argName string) (*modconfig.RuntimeDependency, error) {
-//	var propertyPathStr string
-//	var isArray bool
-//	for {
-//
-//			if traversalExpr, ok := expr.(*hclsyntax.ScopeTraversalExpr); ok {
-//				propertyPathStr = hclhelpers.TraversalAsString(traversalExpr.Traversal)
-//				break
-//			}
-//			if splatExp, ok := expr.(*hclsyntax.SplatExpr); ok {
-//				root := hclhelpers.TraversalAsString(splatExp.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
-//				each, ok := splatExp.Each.(*hclsyntax.RelativeTraversalExpr)
-//				if !ok {
-//					return nil, fmt.Errorf("unexpected traversal type %s", reflect.TypeOf(splatExp.Each).Name())
-//				}
-//				suffix := hclhelpers.TraversalAsString(each.Traversal)
-//				propertyPathStr = fmt.Sprintf("%s.*.%s", root, suffix)
-//				break
-//			}
-//			if tuple, ok := expr.(*hclsyntax.TupleConsExpr); ok {
-//				if len(tuple.Exprs) != 1 {
-//					return nil, fmt.Errorf("unexpected runtime dependency expression type")
-//				}
-//				isArray = true
-//				expr = tuple.Exprs[0]
-//				// fall through to rerun loop with updated expr
-//
-//			} else {
-//				// ungandled expressiontype
-//				return nil, fmt.Errorf("unexpected runtime dependency expression type")
-//			}
-//		}
-//	}
-//
-//	propertyPath, err := modconfig.ParseResourcePropertyPath(propertyPathStr)
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	ret := &modconfig.RuntimeDependency{
-//		PropertyPath: propertyPath,
-//		ArgName:      &argName,
-//		IsArray:      isArray,
-//	}
-//	return ret, nil
-//}
-
 func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modconfig.RuntimeDependency, error) {
 	// find the expression for this key
 	argsExpr, ok := attr.Expr.(*hclsyntax.TupleConsExpr)
