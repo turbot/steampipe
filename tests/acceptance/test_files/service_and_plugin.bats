@@ -88,23 +88,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $target_install_directory
 }
 
-@test "steampipe service stop should not trigger daily checks and tasks" {
-    run steampipe service start
-
-    # set the `lastChecked` date in the update-check.json file to a past date
-    echo $(cat $STEAMPIPE_INSTALL_DIR/internal/update_check.json | jq '.last_checked="2021-04-10T17:53:40+05:30"') > $STEAMPIPE_INSTALL_DIR/internal/update_check.json
-
-    # get the content of the current update-check.json file
-    checkFileContent=$(cat $STEAMPIPE_INSTALL_DIR/internal/update_check.json)
-
-    run steampipe service stop
-
-    # get the content of the new update-check.json file
-    newCheckFileContent=$(cat $STEAMPIPE_INSTALL_DIR/internal/update_check.json)
-
-    assert_equal "$(echo $newCheckFileContent | jq '.last_checked')" '"2021-04-10T17:53:40+05:30"'
-}
-
 @test "start service, install plugin and query" {
   # start service
   steampipe service start

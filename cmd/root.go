@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/cloud"
 	"log"
 	"os"
 	"runtime/debug"
@@ -18,6 +17,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -33,11 +33,27 @@ import (
 )
 
 var exitCode int
+var waitForTasksChannel chan struct{}
+var tasksCancel context.CancelFunc
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.SteampipeVersion.String(),
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		utils.LogTime("cmd.PersistentPostRun start")
+		defer utils.LogTime("cmd.PersistentPostRun end")
+		if waitForTasksChannel != nil {
+			// wait for the async tasks to finish
+			select {
+			case <-time.After(100 * time.Millisecond):
+				tasksCancel()
+				return
+			case <-waitForTasksChannel:
+				return
+			}
+		}
+	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")
@@ -52,7 +68,10 @@ var rootCmd = &cobra.Command{
 
 		initGlobalConfig()
 
-		task.RunTasks()
+		var taskUpdateCtx context.Context
+		taskUpdateCtx, tasksCancel = context.WithCancel(cmd.Context())
+
+		waitForTasksChannel = task.RunTasks(taskUpdateCtx, cmd, args)
 
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())

@@ -372,9 +372,11 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
-	// long timeout - we are happy to wait
-	timeout := 30 * time.Second
-	reports := plugin.GetUpdateReport(state.InstallationID, runUpdatesFor, timeout)
+
+	timeoutCtx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+	defer cancel()
+
+	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
 	statusSpinner.Done()
 
 	if len(reports) == 0 {

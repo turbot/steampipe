@@ -21,6 +21,7 @@ const (
 	dashboardServerStateFileName = "dashboard_service.json"
 	stateFileName                = "update_check.json"
 	legacyStateFileName          = "update-check.json"
+	notificationsFileName        = "notifications.json"
 )
 
 var SteampipeDir string
@@ -83,7 +84,7 @@ func WorkspaceProfileDir(installDir string) (string, error) {
 	if workspaceProfileLocation, ok := os.LookupEnv(constants.EnvWorkspaceProfileLocation); ok {
 		return filehelpers.Tildefy(workspaceProfileLocation)
 	}
-	 return filepath.Join(installDir, "config"), nil
+	return filepath.Join(installDir, "config"), nil
 
 }
 
@@ -114,6 +115,11 @@ func LegacyStateFilePath() string {
 // StateFilePath returns the path of the update_check.json state file
 func StateFilePath() string {
 	return filepath.Join(EnsureInternalDir(), stateFileName)
+}
+
+// NotificationsFilePath returns the path of the notifications.json file used to store update notifications
+func NotificationsFilePath() string {
+	return filepath.Join(EnsureInternalDir(), notificationsFileName)
 }
 
 // ConnectionStatePath returns the path of the connections state file

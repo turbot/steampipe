@@ -2,12 +2,13 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"runtime"
-	"time"
 
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/turbot/steampipe/pkg/version"
@@ -47,9 +48,9 @@ func BuildRequestPayload(signature string, payload map[string]interface{}) *byte
 }
 
 // SendRequest makes a http call to the given URL
-func SendRequest(signature string, method string, sendRequestTo url.URL, payload *bytes.Buffer, timeout time.Duration) (*http.Response, error) {
+func SendRequest(ctx context.Context, signature string, method string, sendRequestTo url.URL, payload io.Reader) (*http.Response, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
-	req, err := http.NewRequest(method, sendRequestTo.String(), payload)
+	req, err := http.NewRequestWithContext(ctx, method, sendRequestTo.String(), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +58,6 @@ func SendRequest(signature string, method string, sendRequestTo url.URL, payload
 	req.Header.Set("User-Agent", getUserAgent())
 
 	client := cleanhttp.DefaultClient()
-
-	// Use a short timeout since checking for new versions is not critical
-	// enough to block on if the update server is broken/slow.
-	client.Timeout = timeout
 
 	return client.Do(req)
 }

@@ -1,7 +1,9 @@
 package task
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -20,83 +22,108 @@ type Runner struct {
 	currentState statefile.State
 }
 
-func RunTasks() {
+// RunTasks runs all tasks asynchronously
+// returns a channel which is closed once all tasks are finished or the provided context is cancelled
+func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) chan struct{} {
 	utils.LogTime("task.RunTasks start")
 	defer utils.LogTime("task.RunTasks end")
 
-	NewRunner().Run()
+	doneChannel := make(chan struct{}, 1)
+	runner := newRunner()
+
+	// if there are any notifications from the previous run - display them
+	if err := runner.displayNotifications(cmd, args); err != nil {
+		log.Println("[TRACE] faced error displaying notifications:", err)
+	}
+
+	// asynchronously run the task runner
+	go func(c context.Context) {
+		defer close(doneChannel)
+		if runner.shouldRun() {
+			runner.run(c)
+		}
+	}(ctx)
+
+	return doneChannel
 }
 
-func NewRunner() *Runner {
+func newRunner() *Runner {
 	utils.LogTime("task.NewRunner start")
 	defer utils.LogTime("task.NewRunner end")
 
 	r := new(Runner)
-	r.currentState, _ = statefile.LoadState()
+
+	state, err := statefile.LoadState()
+	if err != nil {
+		// this error should never happen
+		// log this and carry on
+		log.Println("[TRACE] error loading state,", err)
+	}
+	r.currentState = state
 	return r
 }
 
-func (r *Runner) Run() {
+func (r *Runner) run(ctx context.Context) {
 	utils.LogTime("task.Runner.Run start")
 	defer utils.LogTime("task.Runner.Run end")
 
 	var versionNotificationLines []string
 	var pluginNotificationLines []string
-	if r.shouldRun() {
-		waitGroup := sync.WaitGroup{}
 
+	waitGroup := sync.WaitGroup{}
+
+	if viper.GetBool(constants.ArgUpdateCheck) {
 		// check whether an updated version is available
-		runJobAsync(func() {
-			versionNotificationLines = checkSteampipeVersion(r.currentState.InstallationID)
+		r.runJobAsync(ctx, func(c context.Context) {
+			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// check whether an updated version is available
-		runJobAsync(func() {
-			pluginNotificationLines = checkPluginVersions(r.currentState.InstallationID)
+		r.runJobAsync(ctx, func(c context.Context) {
+			pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
 		}, &waitGroup)
+	}
 
-		// remove log files older than 7 days
-		runJobAsync(func() { db_local.TrimLogs() }, &waitGroup)
+	// remove log files older than 7 days
+	r.runJobAsync(ctx, func(context.Context) { db_local.TrimLogs() }, &waitGroup)
 
-		// validate and regenerate service SSL certificates
-		runJobAsync(func() { validateServiceCertificates() }, &waitGroup)
+	// validate and regenerate service SSL certificates
+	r.runJobAsync(ctx, func(context.Context) { validateServiceCertificates() }, &waitGroup)
 
-		// wait for all jobs to complete
-		waitGroup.Wait()
+	// wait for all jobs to complete
+	waitGroup.Wait()
 
-		// display notifications, if any
-		notificationLines := append(versionNotificationLines, pluginNotificationLines...)
-		if len(notificationLines) > 0 {
-			displayUpdateNotification(notificationLines)
-		}
+	// check if the context was cancelled before starting any FileIO
+	if utils.IsContextCancelled(ctx) {
+		// if the context was cancelled, we don't want to do anything
+		return
+	}
 
-		// save the state - this updates the last checked time
-		if err := r.currentState.Save(); err != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save state file: %s", err))
-		}
+	// save the notifications, if any
+	if err := r.saveNotifications(versionNotificationLines, pluginNotificationLines); err != nil {
+		error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save pending notifications: %s", err))
+	}
+
+	// save the state - this updates the last checked time
+	if err := r.currentState.Save(); err != nil {
+		error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save state file: %s", err))
 	}
 }
 
-func runJobAsync(job func(), wg *sync.WaitGroup) {
+func (r *Runner) runJobAsync(ctx context.Context, job func(context.Context), wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
-		job()
-		wg.Done()
+		// do this as defer, so that it always fires - even if there's a panic
+		defer wg.Done()
+		job(ctx)
 	}()
 }
 
 // determines whether the task runner should run at all
 // tasks are to be run at most once every 24 hours
-// also, this is not to run in batch query mode
 func (r *Runner) shouldRun() bool {
 	utils.LogTime("task.Runner.shouldRun start")
 	defer utils.LogTime("task.Runner.shouldRun end")
-
-	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-	cmdArgs := viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)
-	if isIgnoredCmd(cmd, cmdArgs) {
-		return false
-	}
 
 	now := time.Now()
 	if r.currentState.LastCheck == "" {
@@ -111,8 +138,8 @@ func (r *Runner) shouldRun() bool {
 	return durationElapsedSinceLastCheck > minimumDurationBetweenChecks
 }
 
-func isIgnoredCmd(cmd *cobra.Command, cmdArgs []string) bool {
-	return (isPluginUpdateCmd(cmd) ||
+func showNotificationsForCommand(cmd *cobra.Command, cmdArgs []string) bool {
+	return !(isPluginUpdateCmd(cmd) ||
 		isPluginManagerCmd(cmd) ||
 		isServiceStopCmd(cmd) ||
 		isBatchQueryCmd(cmd, cmdArgs) ||

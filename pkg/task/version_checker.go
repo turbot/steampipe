@@ -1,18 +1,16 @@
 package task
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/url"
-	"os"
 	"time"
 
 	SemVer "github.com/Masterminds/semver"
 	"github.com/fatih/color"
-	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -36,16 +34,12 @@ type versionChecker struct {
 }
 
 // check if there is a new version
-func checkSteampipeVersion(id string) []string {
+func checkSteampipeVersion(ctx context.Context, id string) []string {
 	var notificationLines []string
-
-	if !viper.GetBool(constants.ArgUpdateCheck) {
-		return notificationLines
-	}
 
 	v := new(versionChecker)
 	v.signature = id
-	v.doCheckRequest()
+	v.doCheckRequest(ctx)
 	notificationLines, _ = v.notificationMessage()
 	return notificationLines
 }
@@ -85,31 +79,16 @@ func (c *versionChecker) notificationMessage() ([]string, error) {
 	return nil, nil
 }
 
-func displayUpdateNotification(notificationLines []string) {
-	// convert notificationLines into an array of arrays
-	var notificationTable = make([][]string, len(notificationLines))
-	for i, line := range notificationLines {
-		notificationTable[i] = []string{line}
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{})                // no headers please
-	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
-	table.SetAutoWrapText(false)               // let's not wrap the text
-	table.SetBorder(true)                      // there needs to be a border to give the dialog feel
-	table.AppendBulk(notificationTable)        // Add Bulk Data
-
-	fmt.Println()
-	table.Render()
-	fmt.Println()
-}
-
 // contact the Turbot Artifacts Server and retrieve the latest released version
-func (c *versionChecker) doCheckRequest() {
+func (c *versionChecker) doCheckRequest(ctx context.Context) {
 	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
 	sendRequestTo := c.versionCheckURL()
 	timeout := 5 * time.Second
-	resp, err := utils.SendRequest(c.signature, "POST", sendRequestTo, payload, timeout)
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	resp, err := utils.SendRequest(ctx, c.signature, "POST", sendRequestTo, payload)
 	if err != nil {
 		return
 	}

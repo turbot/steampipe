@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/turbot/steampipe/pkg/migrate"
-
 	"github.com/google/uuid"
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/migrate"
 )
 
 const StateStructVersion = 20220411
@@ -35,15 +35,11 @@ func newState() State {
 
 func LoadState() (State, error) {
 	currentState := newState()
-
-	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
-	// get the state file
-	_, err := os.Stat(stateFilePath)
-	if err != nil {
-		return currentState, err
+	if !files.FileExists(filepaths.StateFilePath()) {
+		return currentState, nil
 	}
 
-	stateFileContent, err := os.ReadFile(stateFilePath)
+	stateFileContent, err := os.ReadFile(filepaths.StateFilePath())
 	if err != nil {
 		fmt.Println("Could not read update state file")
 		return currentState, err

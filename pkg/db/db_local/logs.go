@@ -13,11 +13,12 @@ func TrimLogs() {
 	fileLocation := getDatabaseLogDirectory()
 	files, err := os.ReadDir(fileLocation)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("[TRACE] error listing db log directory", err)
 	}
 	for _, file := range files {
 		fi, err := file.Info()
 		if err != nil {
+			log.Printf("[TRACE] error reading file info of %s. continuing\n", file.Name())
 			continue
 		}
 
