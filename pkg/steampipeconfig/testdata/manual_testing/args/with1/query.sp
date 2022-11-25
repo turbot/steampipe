@@ -1,4 +1,4 @@
-query "q1" {
+query "array_arg" {
   description = "test array argument"
   sql = <<-EOQ
       select
@@ -15,5 +15,14 @@ query "q1" {
       "arn:aws:iam::876515858155:user/lalit",
       "arn:aws:iam::876515858155:user/mike"
     ]
+  }
+}
+
+query "single_arg" {
+  description = "single arg"
+  sql = "select $1"
+
+  param p1{
+    default = "foo"
   }
 }

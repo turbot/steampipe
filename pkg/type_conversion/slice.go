@@ -12,7 +12,12 @@ func AnySliceToTypedSlice(input any) any {
 	case []any:
 		val := reflect.ValueOf(result)
 		if val.Kind() == reflect.Slice {
-			if val.Len() > 0 {
+			if val.Len() == 0 {
+				// if array is empty we cannot know the underlying type
+				// just return empty string array
+				result = []string{}
+			} else {
+				// convert into an array of the appropriate type
 				elem := val.Index(0).Interface()
 				switch elem.(type) {
 				case int16:
