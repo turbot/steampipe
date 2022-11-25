@@ -516,7 +516,7 @@ func executeWorkspaceLoadTest(t *testing.T, name string, test loadWorkspaceTest,
 	if !actualWorkspace.Mod.Equals(expectedWorkspace.Mod) {
 		fmt.Printf("")
 
-		t.Errorf("Test: '%s'' FAILED", name)
+		t.Errorf("Test: '%s'' FAILED. Expected: %v - Actual %v", name, actualWorkspace.Mod, expectedWorkspace.Mod)
 	}
 }
 
