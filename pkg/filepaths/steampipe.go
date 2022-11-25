@@ -117,7 +117,7 @@ func StateFilePath() string {
 	return filepath.Join(EnsureInternalDir(), stateFileName)
 }
 
-// NotificationsFilePath returns the path of the update_check.json state file
+// NotificationsFilePath returns the path of the notifications.json file used to store update notifications
 func NotificationsFilePath() string {
 	return filepath.Join(EnsureInternalDir(), notificationsFileName)
 }
