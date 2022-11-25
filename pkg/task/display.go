@@ -24,6 +24,10 @@ type Notifications struct {
 	PluginNotification []string `json:"plugin_notifications"`
 }
 
+func (n *Notifications) GetAll() []string {
+	return append(n.CliNotifications, n.PluginNotification...)
+}
+
 func (r *Runner) saveNotifications(cliNotificationsLines, pluginNotificationLines []string) error {
 	utils.LogTime("Runner.saveNotifications start")
 	defer utils.LogTime("Runner.saveNotifications end")
@@ -53,7 +57,7 @@ func (r *Runner) hasNotifications() bool {
 	return files.FileExists(filepaths.NotificationsFilePath())
 }
 
-func (r *Runner) getNotifications() ([]string, error) {
+func (r *Runner) getNotifications() (*Notifications, error) {
 	utils.LogTime("Runner.getNotifications start")
 	defer utils.LogTime("Runner.getNotifications end")
 	f, err := os.Open(filepaths.NotificationsFilePath())
@@ -71,7 +75,7 @@ func (r *Runner) getNotifications() ([]string, error) {
 		// worst case is that the notification gets shown more than once
 		log.Println("[TRACE] could not close/delete notification file", err)
 	}
-	return append(notifications.CliNotifications, notifications.PluginNotification...), nil
+	return notifications, nil
 }
 
 // displayNotifications checks if there are any pending notifications to display
@@ -90,14 +94,14 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 		return nil
 	}
 
-	notificationLines, err := r.getNotifications()
+	notifications, err := r.getNotifications()
 	if err != nil {
 		return err
 	}
 
 	// convert notificationLines into an array of arrays
 	// since that's what our table renderer expects
-	var notificationTable = utils.Map(notificationLines, func(line string) []string {
+	var notificationTable = utils.Map(notifications.GetAll(), func(line string) []string {
 		return []string{line}
 	})
 
