@@ -68,12 +68,6 @@ func (b *QueryProviderBase) GetPreparedStatementName() string {
 	return b.PreparedStatementName
 }
 
-// GetPreparedStatementExecuteSQL implements QueryProvider
-func (b *QueryProviderBase) GetPreparedStatementExecuteSQL(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return b.getPreparedStatementExecuteSQL(b, runtimeArgs)
-}
-
 // VerifyQuery implements QueryProvider
 // returns an error if neither sql or query are set
 // it is overidden by resource types for which sql is optional
@@ -126,23 +120,23 @@ func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string 
 	return prefix
 }
 
-// return the SQLs to run the query as a prepared statement
-func (b *QueryProviderBase) getResolvedQuery(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	argsArray, err := ResolveArgs(queryProvider, runtimeArgs)
+// GetResolvedQuery return the SQL and args to run the query
+func (b *QueryProviderBase) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+	argsArray, err := ResolveArgs(b, runtimeArgs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve args for %s: %s", queryProvider.Name(), err.Error())
+		return nil, fmt.Errorf("failed to resolve args for %s: %s", b.Name(), err.Error())
 	}
-	sql := typehelpers.SafeString(queryProvider.GetSQL())
+	sql := typehelpers.SafeString(b.GetSQL())
 	// we expect there to be sql on the query provider, NOT a Query
 	if sql == "" {
-		return nil, fmt.Errorf("getResolvedQuery faiuled - no sql set for '%s'", queryProvider.Name())
+		return nil, fmt.Errorf("getResolvedQuery faiuled - no sql set for '%s'", b.Name())
 	}
 
 	return &ResolvedQuery{
 		ExecuteSQL: sql,
 		RawSQL:     sql,
 		Args:       argsArray,
-		Params:     queryProvider.GetParams(),
+		Params:     b.GetParams(),
 	}, nil
 }
 
