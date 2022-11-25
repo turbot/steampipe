@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
-
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
