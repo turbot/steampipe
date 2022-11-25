@@ -19,9 +19,9 @@ const (
 )
 
 type Notifications struct {
-	StructVersion           uint32   `json:"struct_version"`
-	CLINotificationsLines   []string `json:"cli_notifications"`
-	PluginNotificationLines []string `json:"plugin_notifications"`
+	StructVersion      uint32   `json:"struct_version"`
+	CliNotifications   []string `json:"cli_notifications"`
+	PluginNotification []string `json:"plugin_notifications"`
 }
 
 func (r *Runner) saveNotifications(cliNotificationsLines, pluginNotificationLines []string) error {
@@ -34,9 +34,9 @@ func (r *Runner) saveNotifications(cliNotificationsLines, pluginNotificationLine
 	}
 
 	notifs := &Notifications{
-		StructVersion:           NotificationsStructVersion,
-		CLINotificationsLines:   cliNotificationsLines,
-		PluginNotificationLines: pluginNotificationLines,
+		StructVersion:      NotificationsStructVersion,
+		CliNotifications:   cliNotificationsLines,
+		PluginNotification: pluginNotificationLines,
 	}
 	// create the file - if it exists, it will be truncated by os.Create
 	f, err := os.Create(filepaths.NotificationsFilePath())
@@ -53,7 +53,7 @@ func (r *Runner) hasNotifications() bool {
 	return files.FileExists(filepaths.NotificationsFilePath())
 }
 
-func (r *Runner) getNotifications() (*Notifications, error) {
+func (r *Runner) getNotifications() ([]string, error) {
 	utils.LogTime("Runner.getNotifications start")
 	defer utils.LogTime("Runner.getNotifications end")
 	f, err := os.Open(filepaths.NotificationsFilePath())
@@ -71,7 +71,7 @@ func (r *Runner) getNotifications() (*Notifications, error) {
 		// worst case is that the notification gets shown more than once
 		log.Println("[TRACE] could not close/delete notification file", err)
 	}
-	return notifications, nil
+	return append(notifications.CliNotifications, notifications.PluginNotification...), nil
 }
 
 // displayNotifications checks if there are any pending notifications to display
@@ -90,19 +90,16 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 		return nil
 	}
 
-	notifications, err := r.getNotifications()
+	notificationLines, err := r.getNotifications()
 	if err != nil {
 		return err
 	}
 
-	notificationLines := append(notifications.CLINotificationsLines, notifications.PluginNotificationLines...)
-
 	// convert notificationLines into an array of arrays
 	// since that's what our table renderer expects
-	var notificationTable = make([][]string, len(notificationLines))
-	for i, line := range notificationLines {
-		notificationTable[i] = []string{line}
-	}
+	var notificationTable = utils.Map(notificationLines, func(line string) []string {
+		return []string{line}
+	})
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{})                // no headers please

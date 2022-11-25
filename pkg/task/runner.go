@@ -31,11 +31,12 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) chan struc
 	doneChannel := make(chan struct{}, 1)
 	runner := newRunner()
 
+	// if there are any notifications from the previous run - display them
 	if err := runner.displayNotifications(cmd, args); err != nil {
 		log.Println("[TRACE] faced error displaying notifications:", err)
 	}
 
-	// asynchronously start the update checker
+	// asynchronously run the task runner
 	go func(c context.Context) {
 		defer close(doneChannel)
 		if runner.shouldRun() {
