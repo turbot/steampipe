@@ -132,7 +132,7 @@ func SetDefaultFromEnv(k string, configVar string, varType string) {
 	if val, ok := os.LookupEnv(k); ok {
 		switch varType {
 		case "string":
-			log.Printf("[WARN] SetDefaultFromEnv env: %s, arg: %s, val: %s", k, configVar, val)
+			log.Printf("[TRACE] SetDefaultFromEnv env: %s, arg: %s, val: %s", k, configVar, val)
 			viper.SetDefault(configVar, val)
 		case "bool":
 			if boolVal, err := types.ToBool(val); err == nil {
