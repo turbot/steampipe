@@ -13,6 +13,8 @@ type DashboardImage struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	Src *string `cty:"src" hcl:"src" column:"src,text" json:"src,omitempty"`
 	Alt *string `cty:"alt" hcl:"alt" column:"alt,text" json:"alt,omitempty"`

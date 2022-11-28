@@ -185,10 +185,6 @@ func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent 
 	return nil
 }
 
-func (*QueryProviderBase) GetDescription() string {
-	return ""
-}
-
 func (b *QueryProviderBase) AddWith(with *DashboardWith) {
 	b.withs = append(b.withs, with)
 }

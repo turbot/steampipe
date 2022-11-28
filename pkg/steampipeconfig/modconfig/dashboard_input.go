@@ -13,6 +13,8 @@ type DashboardInput struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	DashboardName string                  `column:"dashboard,text" json:"-"`
 	Label         *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`

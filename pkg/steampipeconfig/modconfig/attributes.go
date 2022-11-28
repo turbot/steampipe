@@ -45,7 +45,7 @@ func GetCtyTypes(item interface{}) map[string]cty.Type {
 }
 
 // convert the item into a cty value
-func getCtyValue(item interface{}) (cty.Value, error) {
+func GetCtyValue(item interface{}) (cty.Value, error) {
 	// build the block schema
 	var block = configschema.Block{Attributes: make(map[string]*configschema.Attribute)}
 

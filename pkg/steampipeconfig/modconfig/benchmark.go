@@ -15,10 +15,8 @@ import (
 type Benchmark struct {
 	ResourceWithMetadataBase
 	HclResourceBase
-	ModTreeItemBase
-
-	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain" json:"-"`
+	ModTreeItemBase          // required to allow partial decoding
+	Remain          hcl.Body `hcl:",remain" json:"-"`
 
 	// child names as NamedItem structs - used to allow setting children via the 'children' property
 	ChildNames NamedItemList `cty:"child_names" json:"-"`

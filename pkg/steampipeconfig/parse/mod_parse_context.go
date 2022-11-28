@@ -301,14 +301,9 @@ func (r *ModParseContext) buildEvalContext() {
 // update the cached cty value for the given resource, as long as itr does not already exist
 func (r *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.Diagnostics {
 	// add resource to variable map
-	ctyValue, err := resource.CtyValue()
-	if err != nil {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("failed to convert resource '%s' to its cty value", resource.Name()),
-			Detail:   err.Error(),
-			Subject:  resource.GetDeclRange(),
-		}}
+	ctyValue, diags := r.getResourceCtyValue(resource)
+	if diags.HasErrors() {
+		return diags
 	}
 
 	// add into the reference value map
@@ -320,6 +315,50 @@ func (r *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) 
 	delete(r.UnresolvedBlocks, resource.Name())
 
 	return nil
+}
+
+func (r *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (cty.Value, hcl.Diagnostics) {
+	var valueMap = make(map[string]cty.Value)
+	if err := r.mergeResourceCtyValue(resource, valueMap); err != nil {
+		return cty.Zero, r.errToCtyValueDiags(resource, err)
+	}
+
+	if qp, ok := resource.(modconfig.QueryProvider); ok {
+		if err := r.mergeResourceCtyValue(qp.GetQueryProviderBase(), valueMap); err != nil {
+			return cty.Zero, r.errToCtyValueDiags(resource, err)
+		}
+	}
+
+	if treeItem, ok := resource.(modconfig.ModTreeItem); ok {
+		if err := r.mergeResourceCtyValue(treeItem.GetModTreeItemBase(), valueMap); err != nil {
+			return cty.Zero, r.errToCtyValueDiags(resource, err)
+		}
+	}
+	return cty.ObjectVal(valueMap), nil
+}
+
+// merge the cty value of the given interface into valueMap
+// (note: this mutates valueMap)
+func (r *ModParseContext) mergeResourceCtyValue(resource any, valueMap map[string]cty.Value) error {
+	ctyValue, err := modconfig.GetCtyValue(resource)
+	if err != nil {
+		return err
+	}
+
+	// merge results
+	for k, v := range ctyValue.AsValueMap() {
+		valueMap[k] = v
+	}
+	return nil
+}
+
+func (r *ModParseContext) errToCtyValueDiags(resource modconfig.HclResource, err error) hcl.Diagnostics {
+	return hcl.Diagnostics{&hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("failed to convert resource '%s' to its cty value", resource.Name()),
+		Detail:   err.Error(),
+		Subject:  resource.GetDeclRange(),
+	}}
 }
 
 func (r *ModParseContext) addReferenceValue(resource modconfig.HclResource, value cty.Value) hcl.Diagnostics {
