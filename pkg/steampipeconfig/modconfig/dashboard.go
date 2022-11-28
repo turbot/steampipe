@@ -19,7 +19,6 @@ type Dashboard struct {
 	RuntimeDependencyProviderBase
 	HclResourceBase
 	ModTreeItemBase
-
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 

@@ -3,14 +3,14 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type DashboardCategory struct {
 	ResourceWithMetadataBase
 	HclResourceBase
-	ModTreeItemBase
+	ModTreeItemBase          // required to allow partial decoding
+	Remain          hcl.Body `hcl:",remain" json:"-"`
 
 	Color      *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
 	Depth      *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
@@ -112,36 +112,6 @@ func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsPr
 	if c.PropertyOrder == nil {
 		c.PropertyOrder = c.Base.PropertyOrder
 	}
-}
-
-// GetTitle implements HclResource
-func (c *DashboardCategory) GetTitle() string {
-	return typehelpers.SafeString(c.Title)
-}
-
-// GetDescription implements ModTreeItem, DashboardLeafNode
-func (c *DashboardCategory) GetDescription() string {
-	return ""
-}
-
-// GetTags implements HclResource
-func (c *DashboardCategory) GetTags() map[string]string {
-	return map[string]string{}
-}
-
-// GetChildren implements ModTreeItem
-func (c *DashboardCategory) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (*DashboardCategory) GetDocumentation() string {
-	return ""
-}
-
-// GetMod implements ModTreeItem
-func (c *DashboardCategory) GetMod() *Mod {
-	return c.Mod
 }
 
 func (c *DashboardCategory) Diff(other *DashboardCategory) *DashboardTreeItemDiffs {
