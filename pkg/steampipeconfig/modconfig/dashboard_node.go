@@ -11,9 +11,9 @@ type DashboardNode struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
-
 	// required to allow partial decoding
-	Remain     hcl.Body             `hcl:",remain" json:"-"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	Category   *DashboardCategory   `cty:"category" hcl:"category" column:"category,jsonb" json:"category,omitempty"`
 	Base       *DashboardNode       `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
