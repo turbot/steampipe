@@ -57,9 +57,6 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send dashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
-	// avoid concurrent map access when multiple db connections may try to access preparedStatementFailures
-	preparedStatementFailureLock sync.Mutex
-	preparedStatementFailures    map[string]*steampipeconfig.PreparedStatementFailure
 }
 
 // Load creates a Workspace and loads the workspace mod
