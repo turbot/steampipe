@@ -12,16 +12,16 @@ import (
 )
 
 // GetConnectionState loads the connection state file, and remove any connections which do not exist in the db
-func GetConnectionState(schemaNames []string) (ConnectionDataMap, error) {
+func GetConnectionState(schemaNames []string) (state ConnectionDataMap, stateModified bool, err error) {
 	utils.LogTime("steampipeconfig.GetConnectionState start")
 	defer utils.LogTime("steampipeconfig.GetConnectionState end")
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	connectionState, err := loadConnectionStateFile()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return pruneConnectionState(connectionState, schemaNames), nil
+	return pruneConnectionState(connectionState, schemaNames)
 }
 
 // load and parse the connection config
@@ -58,13 +58,15 @@ func loadConnectionStateFile() (ConnectionDataMap, error) {
 }
 
 // update connection map to remove any connections which do not exist in the list of given schemas
-func pruneConnectionState(connections ConnectionDataMap, schemaNames []string) ConnectionDataMap {
-	var actualConnectionState = make(ConnectionDataMap)
+// if this function removes connections, set stateModified to true
+func pruneConnectionState(connectionState ConnectionDataMap, schemaNames []string) (prunedState ConnectionDataMap, stateModified bool, err error) {
+	prunedState = make(ConnectionDataMap)
 	for _, connectionName := range schemaNames {
-		if connection, ok := connections[connectionName]; ok {
-			actualConnectionState[connectionName] = connection
+		if connection, ok := connectionState[connectionName]; ok {
+			prunedState[connectionName] = connection
 		}
-	}
 
-	return actualConnectionState
+	}
+	stateModified = len(connectionState) != len(prunedState)
+	return
 }

@@ -21,8 +21,9 @@ type ConnectionUpdates struct {
 	// the connections which will exist after the update
 	RequiredConnectionState ConnectionDataMap
 	// connection plugins required to perform the updates
-	ConnectionPlugins      map[string]*ConnectionPlugin
-	currentConnectionState ConnectionDataMap
+	ConnectionPlugins       map[string]*ConnectionPlugin
+	ConnectionStateModified bool
+	currentConnectionState  ConnectionDataMap
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
@@ -49,12 +50,13 @@ func NewConnectionUpdates(schemaNames []string, forceUpdateConnectionNames ...st
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
-	currentConnectionState, err := GetConnectionState(schemaNames)
+	currentConnectionState, stateModified, err := GetConnectionState(schemaNames)
 	if err != nil {
 		res.Error = err
 		return nil, res
 	}
 	updates.currentConnectionState = currentConnectionState
+	updates.ConnectionStateModified = stateModified
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema

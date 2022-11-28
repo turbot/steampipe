@@ -680,17 +680,17 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 }
 
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection string) {
-	log.Printf("[WARN] UPDATE SCHEMA FOR %s", connection)
+	log.Printf("[TRACE] updateConnectionSchema connection %s", connection)
 	// now refresh connections and search paths
 	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
 	if err != nil {
-		log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
+		log.Printf("[TRACE] error creating client to handle updated connection config: %s", err.Error())
 	}
 	defer client.Close(ctx)
 
 	refreshResult := client.RefreshConnectionAndSearchPaths(ctx, connection)
 	if refreshResult.Error != nil {
-		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
+		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
 }

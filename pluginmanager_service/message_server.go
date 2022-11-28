@@ -20,7 +20,7 @@ func NewPluginMessageServer(pluginManager *PluginManager) (*PluginMessageServer,
 }
 
 func (m *PluginMessageServer) AddConnection(pluginClient *sdkgrpc.PluginClient, pluginName string, connectionNames ...string) error {
-	log.Printf("[WARN] PluginMessageServer AddConnection for connections %v", connectionNames)
+	log.Printf("[TRACE] PluginMessageServer AddConnection for connections %v", connectionNames)
 
 	for _, connection := range connectionNames {
 		cacheStream, err := m.openMessageStream(pluginClient, pluginName, connection)
@@ -37,7 +37,7 @@ func (m *PluginMessageServer) AddConnection(pluginClient *sdkgrpc.PluginClient, 
 }
 
 func (m *PluginMessageServer) openMessageStream(pluginClient *sdkgrpc.PluginClient, pluginName, connection string) (sdkproto.WrapperPlugin_EstablishMessageStreamClient, error) {
-	log.Printf("[WARN] openMessageStream for connection '%s'", connection)
+	log.Printf("[TRACE] openMessageStream for connection '%s'", connection)
 
 	// does this plugin support streaming cache
 	supportedOperations, err := pluginClient.GetSupportedOperations()
@@ -49,7 +49,7 @@ func (m *PluginMessageServer) openMessageStream(pluginClient *sdkgrpc.PluginClie
 		return nil, nil
 	}
 
-	log.Printf("[WARN] calling EstablishMessageStream")
+	log.Printf("[TRACE] calling EstablishMessageStream")
 
 	stream, err := pluginClient.EstablishMessageStream()
 	log.Printf("[WARN] EstablishMessageStream returned %v %v", stream, err)
@@ -94,7 +94,7 @@ func (m *PluginMessageServer) handleMessage(stream sdkproto.WrapperPlugin_Establ
 
 	switch message.MessageType {
 	case sdkproto.PluginMessageType_SCHEMA_UPDATED:
-		log.Printf("[WARN] PluginMessageServer.handleMessage: PluginMessageType_SCHEMA_UPDATED for connection: %s", message.Connection)
+		log.Printf("[TRACE] PluginMessageServer.handleMessage: PluginMessageType_SCHEMA_UPDATED for connection: %s", message.Connection)
 		m.pluginManager.updateConnectionSchema(ctx, message.Connection)
 	}
 }

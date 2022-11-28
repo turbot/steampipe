@@ -3,7 +3,6 @@ package steampipeconfig
 import (
 	"fmt"
 	"log"
-	"runtime/debug"
 
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
@@ -183,16 +182,15 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 	// build map of the static schemas, keyed by plugin
 	staticSchemas := make(map[string]*sdkproto.Schema)
 
-	log.Printf("[WARN] populateConnectionPluginSchemas")
+	log.Printf("[TRACE] populateConnectionPluginSchemas")
 
 	for connectionName, connectionPlugin := range connectionPluginMap {
 		log.Printf("[TRACE] populateConnectionPluginSchemas: connectionName: %s", connectionName)
 		// does this plugin  exist in the static schema map?
 		schema, ok := staticSchemas[connectionPlugin.PluginName]
 		if !ok {
-			log.Printf("[WARN] schema does not exist in list of static schemas, fetching")
-			log.Printf("[WARN] GetSchema %s", connectionName)
-			log.Printf("[WARN]  %s", debug.Stack())
+			log.Printf("[TRACE] schema does not exist in list of static schemas, fetching")
+			log.Printf("[TRACE] GetSchema %s", connectionName)
 
 			// if not, fetch the schema
 			var err error
@@ -210,10 +208,7 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 			}
 		}
 
-		log.Printf("[WARN] add schema to connection map for connection name %s, len %d", connectionName, len(schema.Schema))
-		for table := range schema.Schema {
-			log.Printf("[WARN] table: %s", table)
-		}
+		log.Printf("[TRACE] add schema to connection map for connection name %s, len %d", connectionName, len(schema.Schema))
 
 		// set the schema on the connection plugin
 		connectionPlugin.ConnectionMap[connectionName].Schema = schema

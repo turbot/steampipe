@@ -281,7 +281,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, for
 	}
 
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
+	connectionMap, _, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
 	if err != nil {
 		res.Error = err
 		return res

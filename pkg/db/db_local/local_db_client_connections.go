@@ -19,17 +19,30 @@ import (
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
 	// determine any necessary connection updates
-	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames(), forceUpdateConnectionNames...)
+	var connectionUpdates *steampipeconfig.ConnectionUpdates
+	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames(), forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
-
 	if res.Error != nil {
 		return res
 	}
+
+	// before finishing - be sure to save connection state if
+	// 	- it was modified in the loading process (indicating it contained non-existent connections)
+	//  - connections have been updated
+	defer func() {
+		if res.Error == nil && connectionUpdates.ConnectionStateModified || res.UpdatedConnections {
+			// now serialise the connection state
+			// update required connections with the schema mode from the connection state and schema hash from the hash map
+			if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
+				res.Error = err
+			}
+		}
+	}()
 
 	var connectionNames, pluginNames []string
 	// add warning if there are connections left over, from missing plugins
@@ -59,13 +72,6 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConne
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
-		return res
-	}
-
-	// now serialise the connection state
-	// update required connections with the schema mode from the connection state and schema hash from the hash map
-	if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
-		res.Error = err
 		return res
 	}
 
