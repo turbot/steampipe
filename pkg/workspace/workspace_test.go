@@ -246,224 +246,224 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 	//		},
 	//	},
 	//},
-	"dependent_mod": {
-		source: "test_data/dependent_mod",
-		expected: &Workspace{
-			Mod: &modconfig.Mod{
-				ShortName: "local",
-				FullName:  "mod.local",
-				Title:     toStringPointer("dependent_mod"),
-				Require:   &modconfig.Require{},
-				ResourceMaps: &modconfig.ResourceMaps{
-					Queries: map[string]*modconfig.Query{
-						"m1.query.m1_q1": {
-							ShortName:       "m1_q1",
-							FullName:        "m1.query.m1_q1",
-							SQL:             toStringPointer("select 1 as query"),
-							UnqualifiedName: "query.m1_q1",
-						},
-					},
-					Dashboards: map[string]*modconfig.Dashboard{
-						"m1.dashboard.m1_d1": {
-							ShortName:       "m1_d1",
-							FullName:        "m1.dashboard.m1_d1",
-							UnqualifiedName: "dashboard.m1_d1",
-							Title:           toStringPointer("dashboard d1"),
-							ChildNames:      []string{"m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
-							//HclType:         "dashboard",
-						},
-						"local.dashboard.local_d1": {
-							ShortName:       "local_d1",
-							FullName:        "local.dashboard.local_d1",
-							UnqualifiedName: "dashboard.local_d1",
-							Title:           toStringPointer("dashboard d1"),
-							ChildNames:      []string{"local.chart.dashboard_local_d1_anonymous_chart_0", "local.input.i1"},
-						},
-					},
-					DashboardCharts: map[string]*modconfig.DashboardChart{
-						"m1.chart.global_chart": {
-							FullName:        "m1.chart.global_chart",
-							ShortName:       "global_chart",
-							UnqualifiedName: "chart.global_chart",
-							Title:           toStringPointer("chart global m1_c1"),
-							SQL:             toStringPointer("select 'm1_global_c1' as chart"),
-						},
-						"m1.chart.dashboard_m1_d1_anonymous_chart_0": {
-							FullName:        "m1.chart.dashboard_m1_d1_anonymous_chart_0",
-							ShortName:       "dashboard_m1_d1_anonymous_chart_0",
-							UnqualifiedName: "chart.dashboard_m1_d1_anonymous_chart_0",
-							Title:           toStringPointer("chart c1"),
-							SQL:             toStringPointer("select 'm1_d1_c1' as chart"),
-						},
-						"local.chart.chart1": {
-							FullName:        "local.chart.chart1",
-							ShortName:       "chart1",
-							UnqualifiedName: "chart.chart1",
-							Title:           toStringPointer("chart 1"),
-							Query: &modconfig.Query{
-								FullName:  "m1.query.m1_q1",
-								ShortName: "m1_q1",
-								SQL:       toStringPointer("select 1 as query"),
-							},
-						},
-						"local.chart.dashboard_local_d1_anonymous_chart_0": {
-							FullName:        "local.chart.dashboard_local_d1_anonymous_chart_0",
-							ShortName:       "dashboard_local_d1_anonymous_chart_0",
-							UnqualifiedName: "chart.dashboard_local_d1_anonymous_chart_0",
-							Title:           toStringPointer("chart global m1_c1"),
-							SQL:             toStringPointer("select 'm1_global_c1' as chart"),
-						},
-					},
-					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
-						"m1.dashboard.m1_d1": {
-							"m1.input.i1": {
-								FullName:        "m1.input.i1",
-								ShortName:       "i1",
-								UnqualifiedName: "input.i1",
-								DashboardName:   "m1.dashboard.m1_d1",
-								Title:           toStringPointer("input i1"),
-							},
-						},
-						"local.dashboard.local_d1": {
-							"local.input.i1": {
-								FullName:        "local.input.i1",
-								ShortName:       "i1",
-								UnqualifiedName: "input.i1",
-								DashboardName:   "local.dashboard.local_d1",
-								Title:           toStringPointer("global input m1_i1"),
-							},
-						},
-					},
-					GlobalDashboardInputs: map[string]*modconfig.DashboardInput{
-						"m1.input.global_input": {
-							FullName:        "m1.input.global_input",
-							ShortName:       "global_input",
-							UnqualifiedName: "input.global_input",
-							DashboardName:   "",
-							Title:           toStringPointer("global input m1_i1"),
-						},
-					},
-					References: map[string]*modconfig.ResourceReference{
-						"To: m1.query.m1_q1\nFrom: chart.chart1\nBlockType: chart\nBlockName: chart1\nAttribute: query": {
-							To:        "m1.query.m1_q1",
-							From:      "chart.chart1",
-							BlockType: "chart",
-							BlockName: "chart1",
-							Attribute: "query",
-						},
-						"To: m1.chart.global_chart\nFrom: chart.dashboard_local_d1_anonymous_chart_0\nBlockType: chart\nBlockName: \nAttribute: base": {
-							To:        "m1.chart.global_chart",
-							From:      "chart.dashboard_local_d1_anonymous_chart_0",
-							BlockType: "chart",
-							BlockName: "",
-							Attribute: "base",
-						},
-						"To: m1.input.global_input\nFrom: input.i1\nBlockType: input\nBlockName: i1\nAttribute: base": {
-							To:        "m1.input.global_input",
-							From:      "input.i1",
-							BlockType: "input",
-							BlockName: "i1",
-							Attribute: "base",
-						},
-					},
-				},
-			},
-		},
-		expectedRuntimeDependencies: map[string]map[string]*modconfig.RuntimeDependency{},
-	},
-	"dependent_mod_2": {
-		source: "test_data/dependent_mod_2",
-		expected: &Workspace{
-			Mod: &modconfig.Mod{
-				ShortName: "local",
-				FullName:  "mod.local",
-				Title:     toStringPointer("dependent_mod"),
-				Require:   &modconfig.Require{},
-				ResourceMaps: &modconfig.ResourceMaps{
-					Queries: map[string]*modconfig.Query{
-						"m1.query.m1_q1": {
-							ShortName:       "m1_q1",
-							FullName:        "m1.query.m1_q1",
-							SQL:             toStringPointer("select 1 as query"),
-							UnqualifiedName: "query.m1_q1",
-						},
-					},
-					Dashboards: map[string]*modconfig.Dashboard{
-						"m1.dashboard.m1_d1": {
-							ShortName:       "m1_d1",
-							FullName:        "m1.dashboard.m1_d1",
-							UnqualifiedName: "dashboard.m1_d1",
-							Title:           toStringPointer("dashboard d1"),
-							ChildNames:      []string{"m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
-							//HclType:         "dashboard",
-						},
-						"local.dashboard.local_d1": {
-							ShortName:       "local_d1",
-							FullName:        "local.dashboard.local_d1",
-							UnqualifiedName: "dashboard.local_d1",
-							Title:           toStringPointer("dashboard d1"),
-							ChildNames:      []string{"m1.input.i1", "m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
-						},
-					},
-					DashboardCharts: map[string]*modconfig.DashboardChart{
-						"m1.chart.global_chart": {
-							FullName:        "m1.chart.global_chart",
-							ShortName:       "global_chart",
-							UnqualifiedName: "chart.global_chart",
-							Title:           toStringPointer("chart global m1_c1"),
-							SQL:             toStringPointer("select 'm1_global_c1' as chart"),
-						},
-						"m1.chart.dashboard_m1_d1_anonymous_chart_0": {
-							FullName:        "m1.chart.dashboard_m1_d1_anonymous_chart_0",
-							ShortName:       "dashboard_m1_d1_anonymous_chart_0",
-							UnqualifiedName: "chart.dashboard_m1_d1_anonymous_chart_0",
-							Title:           toStringPointer("chart c1"),
-							SQL:             toStringPointer("select 'm1_d1_c1' as chart"),
-						},
-					},
-					DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
-						"m1.dashboard.m1_d1": {
-							"m1.input.i1": {
-								FullName:        "m1.input.i1",
-								ShortName:       "i1",
-								UnqualifiedName: "input.i1",
-								DashboardName:   "m1.dashboard.m1_d1",
-								Title:           toStringPointer("input i1"),
-							},
-						},
-						"local.dashboard.local_d1": {
-							"m1.input.i1": {
-								FullName:        "m1.input.i1",
-								ShortName:       "i1",
-								UnqualifiedName: "input.i1",
-								DashboardName:   "local.dashboard.local_d1",
-								Title:           toStringPointer("input i1"),
-							},
-						},
-					},
-					GlobalDashboardInputs: map[string]*modconfig.DashboardInput{
-						"m1.input.global_input": {
-							FullName:        "m1.input.global_input",
-							ShortName:       "global_input",
-							UnqualifiedName: "input.global_input",
-							DashboardName:   "",
-							Title:           toStringPointer("global input m1_i1"),
-						},
-					},
-					References: map[string]*modconfig.ResourceReference{
-						"To: m1.dashboard.m1_d1\nFrom: dashboard.local_d1\nBlockType: dashboard\nBlockName: local_d1\nAttribute: base": {
-							To:        "m1.dashboard.m1_d1",
-							From:      "dashboard.local_d1",
-							BlockType: "dashboard",
-							BlockName: "local_d1",
-							Attribute: "base",
-						},
-					},
-				},
-			},
-		},
-		expectedRuntimeDependencies: map[string]map[string]*modconfig.RuntimeDependency{},
-	},
+	// "dependent_mod": {
+	// 	source: "test_data/dependent_mod",
+	// 	expected: &Workspace{
+	// 		Mod: &modconfig.Mod{
+	// 			ShortName: "local",
+	// 			FullName:  "mod.local",
+	// 			Title:     toStringPointer("dependent_mod"),
+	// 			Require:   &modconfig.Require{},
+	// 			ResourceMaps: &modconfig.ResourceMaps{
+	// 				Queries: map[string]*modconfig.Query{
+	// 					"m1.query.m1_q1": {
+	// 						ShortName:       "m1_q1",
+	// 						FullName:        "m1.query.m1_q1",
+	// 						SQL:             toStringPointer("select 1 as query"),
+	// 						UnqualifiedName: "query.m1_q1",
+	// 					},
+	// 				},
+	// 				Dashboards: map[string]*modconfig.Dashboard{
+	// 					"m1.dashboard.m1_d1": {
+	// 						ShortName:       "m1_d1",
+	// 						FullName:        "m1.dashboard.m1_d1",
+	// 						UnqualifiedName: "dashboard.m1_d1",
+	// 						Title:           toStringPointer("dashboard d1"),
+	// 						ChildNames:      []string{"m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
+	// 						//HclType:         "dashboard",
+	// 					},
+	// 					"local.dashboard.local_d1": {
+	// 						ShortName:       "local_d1",
+	// 						FullName:        "local.dashboard.local_d1",
+	// 						UnqualifiedName: "dashboard.local_d1",
+	// 						Title:           toStringPointer("dashboard d1"),
+	// 						ChildNames:      []string{"local.chart.dashboard_local_d1_anonymous_chart_0", "local.input.i1"},
+	// 					},
+	// 				},
+	// 				DashboardCharts: map[string]*modconfig.DashboardChart{
+	// 					"m1.chart.global_chart": {
+	// 						FullName:        "m1.chart.global_chart",
+	// 						ShortName:       "global_chart",
+	// 						UnqualifiedName: "chart.global_chart",
+	// 						Title:           toStringPointer("chart global m1_c1"),
+	// 						SQL:             toStringPointer("select 'm1_global_c1' as chart"),
+	// 					},
+	// 					"m1.chart.dashboard_m1_d1_anonymous_chart_0": {
+	// 						FullName:        "m1.chart.dashboard_m1_d1_anonymous_chart_0",
+	// 						ShortName:       "dashboard_m1_d1_anonymous_chart_0",
+	// 						UnqualifiedName: "chart.dashboard_m1_d1_anonymous_chart_0",
+	// 						Title:           toStringPointer("chart c1"),
+	// 						SQL:             toStringPointer("select 'm1_d1_c1' as chart"),
+	// 					},
+	// 					"local.chart.chart1": {
+	// 						FullName:        "local.chart.chart1",
+	// 						ShortName:       "chart1",
+	// 						UnqualifiedName: "chart.chart1",
+	// 						Title:           toStringPointer("chart 1"),
+	// 						Query: &modconfig.Query{
+	// 							FullName:  "m1.query.m1_q1",
+	// 							ShortName: "m1_q1",
+	// 							SQL:       toStringPointer("select 1 as query"),
+	// 						},
+	// 					},
+	// 					"local.chart.dashboard_local_d1_anonymous_chart_0": {
+	// 						FullName:        "local.chart.dashboard_local_d1_anonymous_chart_0",
+	// 						ShortName:       "dashboard_local_d1_anonymous_chart_0",
+	// 						UnqualifiedName: "chart.dashboard_local_d1_anonymous_chart_0",
+	// 						Title:           toStringPointer("chart global m1_c1"),
+	// 						SQL:             toStringPointer("select 'm1_global_c1' as chart"),
+	// 					},
+	// 				},
+	// 				DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
+	// 					"m1.dashboard.m1_d1": {
+	// 						"m1.input.i1": {
+	// 							FullName:        "m1.input.i1",
+	// 							ShortName:       "i1",
+	// 							UnqualifiedName: "input.i1",
+	// 							DashboardName:   "m1.dashboard.m1_d1",
+	// 							Title:           toStringPointer("input i1"),
+	// 						},
+	// 					},
+	// 					"local.dashboard.local_d1": {
+	// 						"local.input.i1": {
+	// 							FullName:        "local.input.i1",
+	// 							ShortName:       "i1",
+	// 							UnqualifiedName: "input.i1",
+	// 							DashboardName:   "local.dashboard.local_d1",
+	// 							Title:           toStringPointer("global input m1_i1"),
+	// 						},
+	// 					},
+	// 				},
+	// 				GlobalDashboardInputs: map[string]*modconfig.DashboardInput{
+	// 					"m1.input.global_input": {
+	// 						FullName:        "m1.input.global_input",
+	// 						ShortName:       "global_input",
+	// 						UnqualifiedName: "input.global_input",
+	// 						DashboardName:   "",
+	// 						Title:           toStringPointer("global input m1_i1"),
+	// 					},
+	// 				},
+	// 				References: map[string]*modconfig.ResourceReference{
+	// 					"To: m1.query.m1_q1\nFrom: chart.chart1\nBlockType: chart\nBlockName: chart1\nAttribute: query": {
+	// 						To:        "m1.query.m1_q1",
+	// 						From:      "chart.chart1",
+	// 						BlockType: "chart",
+	// 						BlockName: "chart1",
+	// 						Attribute: "query",
+	// 					},
+	// 					"To: m1.chart.global_chart\nFrom: chart.dashboard_local_d1_anonymous_chart_0\nBlockType: chart\nBlockName: \nAttribute: base": {
+	// 						To:        "m1.chart.global_chart",
+	// 						From:      "chart.dashboard_local_d1_anonymous_chart_0",
+	// 						BlockType: "chart",
+	// 						BlockName: "",
+	// 						Attribute: "base",
+	// 					},
+	// 					"To: m1.input.global_input\nFrom: input.i1\nBlockType: input\nBlockName: i1\nAttribute: base": {
+	// 						To:        "m1.input.global_input",
+	// 						From:      "input.i1",
+	// 						BlockType: "input",
+	// 						BlockName: "i1",
+	// 						Attribute: "base",
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 	},
+	// 	expectedRuntimeDependencies: map[string]map[string]*modconfig.RuntimeDependency{},
+	// },
+	// "dependent_mod_2": {
+	// 	source: "test_data/dependent_mod_2",
+	// 	expected: &Workspace{
+	// 		Mod: &modconfig.Mod{
+	// 			ShortName: "local",
+	// 			FullName:  "mod.local",
+	// 			Title:     toStringPointer("dependent_mod"),
+	// 			Require:   &modconfig.Require{},
+	// 			ResourceMaps: &modconfig.ResourceMaps{
+	// 				Queries: map[string]*modconfig.Query{
+	// 					"m1.query.m1_q1": {
+	// 						ShortName:       "m1_q1",
+	// 						FullName:        "m1.query.m1_q1",
+	// 						SQL:             toStringPointer("select 1 as query"),
+	// 						UnqualifiedName: "query.m1_q1",
+	// 					},
+	// 				},
+	// 				Dashboards: map[string]*modconfig.Dashboard{
+	// 					"m1.dashboard.m1_d1": {
+	// 						ShortName:       "m1_d1",
+	// 						FullName:        "m1.dashboard.m1_d1",
+	// 						UnqualifiedName: "dashboard.m1_d1",
+	// 						Title:           toStringPointer("dashboard d1"),
+	// 						ChildNames:      []string{"m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
+	// 						//HclType:         "dashboard",
+	// 					},
+	// 					"local.dashboard.local_d1": {
+	// 						ShortName:       "local_d1",
+	// 						FullName:        "local.dashboard.local_d1",
+	// 						UnqualifiedName: "dashboard.local_d1",
+	// 						Title:           toStringPointer("dashboard d1"),
+	// 						ChildNames:      []string{"m1.input.i1", "m1.chart.dashboard_m1_d1_anonymous_chart_0", "m1.input.i1"},
+	// 					},
+	// 				},
+	// 				DashboardCharts: map[string]*modconfig.DashboardChart{
+	// 					"m1.chart.global_chart": {
+	// 						FullName:        "m1.chart.global_chart",
+	// 						ShortName:       "global_chart",
+	// 						UnqualifiedName: "chart.global_chart",
+	// 						Title:           toStringPointer("chart global m1_c1"),
+	// 						SQL:             toStringPointer("select 'm1_global_c1' as chart"),
+	// 					},
+	// 					"m1.chart.dashboard_m1_d1_anonymous_chart_0": {
+	// 						FullName:        "m1.chart.dashboard_m1_d1_anonymous_chart_0",
+	// 						ShortName:       "dashboard_m1_d1_anonymous_chart_0",
+	// 						UnqualifiedName: "chart.dashboard_m1_d1_anonymous_chart_0",
+	// 						Title:           toStringPointer("chart c1"),
+	// 						SQL:             toStringPointer("select 'm1_d1_c1' as chart"),
+	// 					},
+	// 				},
+	// 				DashboardInputs: map[string]map[string]*modconfig.DashboardInput{
+	// 					"m1.dashboard.m1_d1": {
+	// 						"m1.input.i1": {
+	// 							FullName:        "m1.input.i1",
+	// 							ShortName:       "i1",
+	// 							UnqualifiedName: "input.i1",
+	// 							DashboardName:   "m1.dashboard.m1_d1",
+	// 							Title:           toStringPointer("input i1"),
+	// 						},
+	// 					},
+	// 					"local.dashboard.local_d1": {
+	// 						"m1.input.i1": {
+	// 							FullName:        "m1.input.i1",
+	// 							ShortName:       "i1",
+	// 							UnqualifiedName: "input.i1",
+	// 							DashboardName:   "local.dashboard.local_d1",
+	// 							Title:           toStringPointer("input i1"),
+	// 						},
+	// 					},
+	// 				},
+	// 				GlobalDashboardInputs: map[string]*modconfig.DashboardInput{
+	// 					"m1.input.global_input": {
+	// 						FullName:        "m1.input.global_input",
+	// 						ShortName:       "global_input",
+	// 						UnqualifiedName: "input.global_input",
+	// 						DashboardName:   "",
+	// 						Title:           toStringPointer("global input m1_i1"),
+	// 					},
+	// 				},
+	// 				References: map[string]*modconfig.ResourceReference{
+	// 					"To: m1.dashboard.m1_d1\nFrom: dashboard.local_d1\nBlockType: dashboard\nBlockName: local_d1\nAttribute: base": {
+	// 						To:        "m1.dashboard.m1_d1",
+	// 						From:      "dashboard.local_d1",
+	// 						BlockType: "dashboard",
+	// 						BlockName: "local_d1",
+	// 						Attribute: "base",
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 	},
+	// 	expectedRuntimeDependencies: map[string]map[string]*modconfig.RuntimeDependency{},
+	// },
 }
 
 func TestLoadWorkspace(t *testing.T) {
