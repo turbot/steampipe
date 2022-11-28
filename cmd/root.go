@@ -223,6 +223,10 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 }
 
 func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
+	log.Printf("[TRACE] loadWorkspaceProfile")
+	log.Printf("[TRACE] %s = %s", constants.EnvWorkspaceProfile, os.Getenv(constants.EnvWorkspaceProfile))
+	log.Printf("[TRACE] --%s = %s", constants.ArgWorkspaceProfile, viper.GetString(constants.ArgWorkspaceProfile))
+
 	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
 	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, "string")
 	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
@@ -234,10 +238,13 @@ func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 		return nil, err
 	}
 
+	log.Printf("[TRACE] installDir = %s", installDir)
+
 	workspaceProfileDir, err := filepaths.WorkspaceProfileDir(installDir)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[TRACE] workspaceProfileDir = %s", workspaceProfileDir)
 
 	// create loader
 	loader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)

@@ -20,6 +20,7 @@ type WorkspaceProfileLoader struct {
 }
 
 func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
+	log.Printf("[TRACE] NewWorkspaceProfileLoader workspaceProfilePath = %s", workspaceProfilePath)
 	loader := &WorkspaceProfileLoader{workspaceProfilePath: workspaceProfilePath}
 	workspaceProfiles, err := loader.load()
 	if err != nil {
@@ -35,7 +36,9 @@ func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLo
 	loader.DefaultProfile = defaultProfile
 
 	if viper.IsSet(constants.ArgWorkspaceProfile) {
-		configuredProfile, err := loader.get(viper.GetString(constants.ArgWorkspaceProfile))
+		configuredProfileName := viper.GetString(constants.ArgWorkspaceProfile)
+		log.Printf("[TRACE] load configured profile %s", configuredProfileName)
+		configuredProfile, err := loader.get(configuredProfileName)
 		if err != nil {
 			// could not find configured profile
 			return nil, err
@@ -54,6 +57,8 @@ func (l *WorkspaceProfileLoader) GetActiveWorkspaceProfile() *modconfig.Workspac
 }
 
 func (l *WorkspaceProfileLoader) get(name string) (*modconfig.WorkspaceProfile, error) {
+	log.Printf("[TRACE] WorkspaceProfileLoader get: name %s, workspaceProfilePath: %s", name, l.workspaceProfilePath)
+
 	if workspaceProfile, ok := l.workspaceProfiles[name]; ok {
 		return workspaceProfile, nil
 	}
