@@ -13,9 +13,9 @@ type DashboardTable struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
-
 	// required to allow partial decoding
-	Remain     hcl.Body                         `hcl:",remain" json:"-"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	Width      *int                             `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type       *string                          `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
