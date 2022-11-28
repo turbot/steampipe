@@ -19,6 +19,8 @@ type Variable struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	Default cty.Value `column:"default_value,jsonb" json:"-"`
 	Type    cty.Type  `column:"var_type,text" json:"-"`
