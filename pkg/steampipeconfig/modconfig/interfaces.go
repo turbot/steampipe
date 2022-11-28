@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // MappableResource must be implemented by resources which can be created
@@ -23,7 +22,6 @@ type HclResource interface {
 	Name() string
 	GetTitle() string
 	GetUnqualifiedName() string
-	CtyValue() (cty.Value, error)
 	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
 	GetDeclRange() *hcl.Range
 	BlockType() string
@@ -44,6 +42,7 @@ type ModTreeItem interface {
 	GetPaths() []NodePath
 	SetPaths()
 	GetMod() *Mod
+	GetModTreeItemBase() *ModTreeItemBase
 }
 
 // ResourceWithMetadata must be implemented by resources which supports reflection metadata

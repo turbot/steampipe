@@ -13,7 +13,8 @@ import (
 type DashboardCard struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
-	ModTreeItemBase
+	ModTreeItemBase          // required to allow partial decoding
+	Remain          hcl.Body `hcl:",remain" json:"-"`
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
