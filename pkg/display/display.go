@@ -26,40 +26,36 @@ import (
 )
 
 type DisplayConfiguration struct {
-	timing *bool
+	timing bool
 }
 
 type DisplayOption = func(config *DisplayConfiguration)
 
-// ShowTimingOnOutput only enables timing if the current output mode is the one provided
+// ShowTimingOnOutput only enables timing if the current output mode is the one provided and if --timing is set
 func ShowTimingOnOutput(output string) DisplayOption {
 	return func(o *DisplayConfiguration) {
-		t := (cmdconfig.Viper().GetString(constants.ArgOutput) == output)
-		o.timing = &t
+		o.timing = o.timing && (cmdconfig.Viper().GetString(constants.ArgOutput) == output)
 	}
 }
 
-// DisableTiming disables display of timing data
+// DisableTiming disables display of timing data forcefully
 func DisableTiming() DisplayOption {
 	return func(o *DisplayConfiguration) {
-		t := false
-		o.timing = &t
+		o.timing = false
 	}
 }
 
-// EnableTiming enables display of timing data
+// EnableTiming enables display of timing data forcefully
 func EnableTiming() DisplayOption {
 	return func(o *DisplayConfiguration) {
-		t := true
-		o.timing = &t
+		o.timing = true
 	}
 }
 
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) {
-	t := viper.GetBool(constants.ArgTiming)
 	options := &DisplayConfiguration{
-		timing: &t,
+		timing: cmdconfig.Viper().GetBool(constants.ArgTiming),
 	}
 	for _, o := range opts {
 		o(options)
@@ -76,7 +72,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 		displayTable(ctx, result)
 	}
 
-	if *options.timing {
+	if options.timing {
 		fmt.Println(buildTimingString(result))
 	}
 
