@@ -14,6 +14,7 @@ import {
   CategoryFold,
   FoldedNode,
   KeyValuePairs,
+  KeyValueStringPairs,
 } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { ExpandedNodeInfo, useGraph } from "../common/useGraph";
@@ -36,8 +37,14 @@ type AssetNodeProps = {
     foldedNodes?: FoldedNode[];
     label: string;
     row_data?: KeyValuePairs;
-    themeColors;
+    themeColors: KeyValueStringPairs;
   };
+};
+
+type LabelProps = {
+  children: ReactNode;
+  themeColors: KeyValueStringPairs;
+  title?: string;
 };
 
 type FoldedNodeCountBadgeProps = {
@@ -47,6 +54,7 @@ type FoldedNodeCountBadgeProps = {
 type FoldedNodeLabelProps = {
   category: Category | undefined;
   fold: CategoryFold | undefined;
+  themeColors: KeyValueStringPairs;
 };
 
 type FoldedNodeTooltipTitleProps = {
@@ -133,14 +141,37 @@ const FoldedNodeCountBadge = ({ foldedNodes }: FoldedNodeCountBadgeProps) => {
   );
 };
 
-const FoldedNodeLabel = ({ category, fold }: FoldedNodeLabelProps) => (
+const Label = ({ children, themeColors, title }: LabelProps) => (
+  <span
+    style={{
+      textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
+    }}
+    title={title}
+  >
+    {children}
+  </span>
+);
+
+const FoldedNodeLabel = ({
+  category,
+  fold,
+  themeColors,
+}: FoldedNodeLabelProps) => (
   <>
-    {fold?.title && <span title={fold?.title}>{fold?.title}</span>}
+    {fold?.title && (
+      <Label themeColors={themeColors} title={fold?.title}>
+        {fold?.title}
+      </Label>
+    )}
     {!fold?.title && category?.title && (
-      <span title={category?.title}>{category?.title}</span>
+      <Label themeColors={themeColors} title={category?.title}>
+        {category?.title}
+      </Label>
     )}
     {!fold?.title && !category?.title && (
-      <span title={category?.name}>{category?.name}</span>
+      <Label themeColors={themeColors} title={category?.name}>
+        {category?.name}
+      </Label>
     )}
   </>
 );
@@ -334,18 +365,21 @@ const AssetNode = ({
       )}
     >
       {!isFolded && (
-        <span
-          title={label}
-          style={{
-            textShadow: buildLabelTextShadow(themeColors.dashboardPanel),
-          }}
-        >
-          {label && label}
-          {!label && category?.title && category.title}
-          {!label && category?.name && category.name}
-        </span>
+        <Label themeColors={themeColors} title={label}>
+          <>
+            {label && label}
+            {!label && category?.title && category.title}
+            {!label && category?.name && category.name}
+          </>
+        </Label>
       )}
-      {isFolded && <FoldedNodeLabel category={category} fold={fold} />}
+      {isFolded && (
+        <FoldedNodeLabel
+          category={category}
+          fold={fold}
+          themeColors={themeColors}
+        />
+      )}
     </div>
   );
 
