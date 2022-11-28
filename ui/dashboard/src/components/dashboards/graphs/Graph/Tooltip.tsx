@@ -205,7 +205,8 @@ const Tooltip = ({
               </div>
             </ThemeWrapper>
           </ThemeProvider>,
-          document.body
+          // @ts-ignore as this element definitely exists
+          document.getElementById("portals")
         )}
     </>
   );

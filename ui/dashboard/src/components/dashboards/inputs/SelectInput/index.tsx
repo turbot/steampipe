@@ -202,7 +202,8 @@ const SelectInput = ({
           // @ts-ignore
           SingleValue: SingleValueWithTags,
         }}
-        menuPortalTarget={document.body}
+        // @ts-ignore as this element definitely exists
+        menuPortalTarget={document.getElementById("portals")}
         inputId={`${name}.input`}
         isDisabled={
           (!properties.options && !data) || dataMode !== DashboardDataModeLive

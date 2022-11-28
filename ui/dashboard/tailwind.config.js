@@ -43,6 +43,9 @@ module.exports = {
       maxHeight: {
         "1/2-screen": "50vh",
       },
+      spacing: {
+        "4.5": "1.125rem"
+      },
       typography: (theme) => ({
         DEFAULT: {
           css: {
