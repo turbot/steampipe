@@ -64,7 +64,7 @@ brews:
   -
     ids:
       - homebrew
-    name: steampipe
+    name: steampipe@{{ .Major }}.{{ .Minor }}.{{ .Patch }}
     tap:
       owner: turbot
       name: homebrew-tap

@@ -643,6 +643,37 @@ jobs:
         run: |
           gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
 
+  update_pr_for_versioning:
+    name: Update PR
+    needs: [create_pr_in_homebrew]
+    runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Update live version
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          scripts/formula_versioning.sh
+          git config --global user.email "puskar@turbot.com"
+          git config --global user.name "Puskar Basu"
+          git add .
+          git commit -m "Versioning brew formulas"
+          git push origin $VERSION
+
   clean_up:
     # let's clean up the artifacts.
     # in case this step isn't reached,
@@ -650,7 +681,7 @@ jobs:
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
-    needs: create_pr_in_homebrew
+    needs: update_pr_for_versioning
     runs-on: ubuntu-latest
     steps:
     - name: Clean up Linux Build
