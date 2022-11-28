@@ -13,7 +13,6 @@ type DashboardContainer struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
-
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 

@@ -25,7 +25,7 @@ type Mod struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
-
+	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	// ModDependencyPath is the fully qualified mod name, which can be used to 'require'  the mod,

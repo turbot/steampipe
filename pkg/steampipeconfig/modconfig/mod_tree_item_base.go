@@ -1,6 +1,8 @@
 package modconfig
 
-import "github.com/hashicorp/hcl/v2"
+import (
+	"github.com/hashicorp/hcl/v2"
+)
 
 type ModTreeItemBase struct {
 	ModTreeItemRemain hcl.Body `hcl:",remain" json:"-"`
@@ -46,4 +48,9 @@ func (b *ModTreeItemBase) SetPaths() {
 }
 func (b *ModTreeItemBase) GetMod() *Mod {
 	return b.Mod
+}
+
+// GetModTreeItemBase implements ModTreeItem
+func (b *ModTreeItemBase) GetModTreeItemBase() *ModTreeItemBase {
+	return b
 }

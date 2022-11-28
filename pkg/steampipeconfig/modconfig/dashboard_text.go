@@ -14,6 +14,8 @@ type DashboardText struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	Value   *string `cty:"value" hcl:"value" column:"value,text" json:"value,omitempty"`
 	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
