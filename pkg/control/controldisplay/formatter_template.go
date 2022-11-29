@@ -57,6 +57,7 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 			},
 			Config: TemplateRenderConfig{
 				RenderHeader: viper.GetBool(constants.ArgHeader),
+				Separator:    viper.GetString(constants.ArgSeparator),
 			},
 			Data: tree,
 		}
