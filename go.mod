@@ -2,6 +2,7 @@ module github.com/turbot/steampipe
 
 go 1.19
 
+
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver v1.5.0
