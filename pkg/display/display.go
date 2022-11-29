@@ -25,8 +25,42 @@ import (
 	"golang.org/x/text/message"
 )
 
+type DisplayConfiguration struct {
+	timing bool
+}
+
+type DisplayOption = func(config *DisplayConfiguration)
+
+// ShowTimingOnOutput only enables timing if the current output mode is the one provided and if --timing is set
+func ShowTimingOnOutput(output string) DisplayOption {
+	return func(o *DisplayConfiguration) {
+		o.timing = o.timing && (cmdconfig.Viper().GetString(constants.ArgOutput) == output)
+	}
+}
+
+// DisableTiming disables display of timing data forcefully
+func DisableTiming() DisplayOption {
+	return func(o *DisplayConfiguration) {
+		o.timing = false
+	}
+}
+
+// EnableTiming enables display of timing data forcefully
+func EnableTiming() DisplayOption {
+	return func(o *DisplayConfiguration) {
+		o.timing = true
+	}
+}
+
 // ShowOutput displays the output using the proper formatter as applicable
-func ShowOutput(ctx context.Context, result *queryresult.Result) {
+func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) {
+	options := &DisplayConfiguration{
+		timing: cmdconfig.Viper().GetBool(constants.ArgTiming),
+	}
+	for _, o := range opts {
+		o(options)
+	}
+
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
 	case constants.OutputFormatJSON:
 		displayJSON(ctx, result)
@@ -37,6 +71,11 @@ func ShowOutput(ctx context.Context, result *queryresult.Result) {
 	case constants.OutputFormatTable:
 		displayTable(ctx, result)
 	}
+
+	if options.timing {
+		fmt.Println(buildTimingString(result))
+	}
+
 }
 
 type ShowWrappedTableOptions struct {
@@ -305,11 +344,6 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// page out the table
 	ShowPaged(ctx, outbuf.String())
-
-	// if timer is turned on
-	if cmdconfig.Viper().GetBool(constants.ArgTiming) {
-		fmt.Println(buildTimingString(result))
-	}
 }
 
 func buildTimingString(result *queryresult.Result) string {

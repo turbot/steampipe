@@ -100,7 +100,7 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(ctx, r)
+		display.ShowOutput(ctx, r, display.ShowTimingOnOutput(constants.OutputFormatTable))
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}

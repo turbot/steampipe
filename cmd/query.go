@@ -219,8 +219,8 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			default:
 				// otherwise convert the snapshot into a query result
 				result, err := snapshotToQueryResult(snap, queryProvider.Name())
-				error_helpers.FailOnError(err)
-				display.ShowOutput(ctx, result)
+				error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
+				display.ShowOutput(ctx, result, display.DisableTiming())
 			}
 
 			// share the snapshot if necessary
