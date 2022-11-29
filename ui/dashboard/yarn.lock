@@ -3284,10 +3284,10 @@
     d3-zoom "^3.0.0"
     zustand "^4.1.1"
 
-"@reactflow/minimap@11.2.1":
-  version "11.2.1"
-  resolved "https://registry.yarnpkg.com/@reactflow/minimap/-/minimap-11.2.1.tgz#63c0d7d6a1bfe4c61bc8736c2f4112223ceaf057"
-  integrity sha512-fZRxoDczOyem5SiETcVd0BGoYNLC/BMEKcFyhv9z9r4hxx+yndLnD/Ayly5B06D3f6LoZVsF7TcPAPQt8sMd5Q==
+"@reactflow/minimap@11.2.2":
+  version "11.2.2"
+  resolved "https://registry.yarnpkg.com/@reactflow/minimap/-/minimap-11.2.2.tgz#295fbbb1b64cccaf0ea1b22f5e8d0daa6ecb80ba"
+  integrity sha512-KkB2eqf+cT1FwBmodqIw/f1dKXK9Pxcrt3DU5MEYjdN5Xw2/xHpy6od3+lxvUNziNKJTxRZRi0JQ6hAe3t3j4A==
   dependencies:
     "@babel/runtime" "^7.18.9"
     "@reactflow/core" "11.3.1"
@@ -15492,15 +15492,15 @@ react@18.2.0:
   dependencies:
     loose-envify "^1.1.0"
 
-reactflow@11.3.1:
-  version "11.3.1"
-  resolved "https://registry.yarnpkg.com/reactflow/-/reactflow-11.3.1.tgz#70f5fab9638e7177a05feab2c6ad8a46a7399f50"
-  integrity sha512-Jp9/Ffno2Zf2H+GyF4U/d28LafT4ebf10qSQrwQtdT+Rt7BxhizOEfloBeuIcMxMqlfZoUJS0xUU21OqEXKq6w==
+reactflow@11.3.2:
+  version "11.3.2"
+  resolved "https://registry.yarnpkg.com/reactflow/-/reactflow-11.3.2.tgz#838e9217669ccd75e881ae633dfe42e86af94c94"
+  integrity sha512-nEI4p77ESfWl+W0QF+TDqPApe3gXWmCFoY+ySxpEkVAY1oNQZNBrXrQWMVZwmMQawzGaVcEtioAq20jN9xkyGA==
   dependencies:
     "@reactflow/background" "11.0.6"
     "@reactflow/controls" "11.0.6"
     "@reactflow/core" "11.3.1"
-    "@reactflow/minimap" "11.2.1"
+    "@reactflow/minimap" "11.2.2"
     "@reactflow/node-toolbar" "1.0.1"
 
 read-cache@^1.0.0:
