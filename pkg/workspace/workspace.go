@@ -348,8 +348,10 @@ func (w *Workspace) loadWorkspaceLock() (*versionmap.WorkspaceLock, error) {
 func (w *Workspace) loadExclusions() error {
 	// default to ignoring hidden files and folders
 	w.exclusions = []string{
-		fmt.Sprintf("%s/**/.*", w.Path),
+		// ignore any hidden folder
 		fmt.Sprintf("%s/.*", w.Path),
+		// and sub files/folders of hidden folders
+		fmt.Sprintf("%s/.*/**", w.Path),
 	}
 
 	ignorePath := filepath.Join(w.Path, filepaths.WorkspaceIgnoreFile)
