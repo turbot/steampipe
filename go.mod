@@ -224,4 +224,5 @@ replace (
 	github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
+	github.com/turbot/go-kit => github.com/turbot/go-kit v0.5.0-rc.6.0.20221129133521-34c25ae5a389
 )
