@@ -661,7 +661,8 @@ func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClie
 	for i, config := range configs {
 		connections[i] = config.Connection
 	}
-	return connections, pluginClient.SetAllConnectionConfigs(req)
+	_, err := pluginClient.SetAllConnectionConfigs(req)
+	return connections, err
 }
 
 // set connection config for single connection, for legacy plugins)
