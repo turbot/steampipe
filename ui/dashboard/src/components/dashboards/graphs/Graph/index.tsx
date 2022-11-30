@@ -421,7 +421,15 @@ const useNodeAndEdgePanelInformation = (
         if (category.state === "pending") {
           pendingCategories.push(category);
         } else if (category.state === "error") {
-          errorCategories.push(category);
+          errorCategories.push({
+            ...category,
+            nodesInError: nodeAndEdgeStatus.nodes.filter(
+              (n) => n.category === category.id && n.state === "error"
+            ),
+            edgesInError: nodeAndEdgeStatus.edges.filter(
+              (e) => e.category === category.id && e.state === "error"
+            ),
+          });
         } else {
           completeCategories.push(category);
         }
@@ -431,7 +439,11 @@ const useNodeAndEdgePanelInformation = (
         errorCategories,
         completeCategories,
       };
-    }, [nodeAndEdgeStatus.categories]);
+    }, [
+      nodeAndEdgeStatus.categories,
+      nodeAndEdgeStatus.nodes,
+      nodeAndEdgeStatus.edges,
+    ]);
 
   useEffect(() => {
     if (

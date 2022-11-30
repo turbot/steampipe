@@ -33,6 +33,7 @@ interface PanelProps {
     | TableProps
     | TextProps;
   showControls?: boolean;
+  showPanelError?: boolean;
   forceBackground?: boolean;
   ready?: boolean;
 }
@@ -42,6 +43,7 @@ const Panel = ({
   className,
   definition,
   showControls = true,
+  showPanelError = true,
   forceBackground = false,
   ready = true,
 }: PanelProps) => {
@@ -57,6 +59,8 @@ const Panel = ({
 
   const ErrorComponent = Error;
   const PlaceholderComponent = Placeholder.component;
+  const showPanelContents =
+    !definition.error || (definition.error && !showPanelError);
 
   return (
     <div
@@ -136,16 +140,16 @@ const Panel = ({
           )}
         >
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
-          {!definition.error && <PanelInformation />}
+          {showPanelContents && <PanelInformation />}
           <PlaceholderComponent
             animate={!!children}
             ready={ready || !!definition.error}
           >
             <ErrorComponent
               className={definition.title ? "rounded-t-none" : null}
-              error={definition.error}
+              error={showPanelError && definition.error}
             />
-            <>{!definition.error ? children : null}</>
+            <>{showPanelContents ? children : null}</>
           </PlaceholderComponent>
         </div>
       </section>

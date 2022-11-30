@@ -3,12 +3,12 @@ import {
   ExecutablePrimitiveProps,
   LeafNodeDataColumn,
 } from "../common";
-import { ComponentType } from "react";
 import {
   CategoryMap,
   KeyValuePairs,
   NodeAndEdgeProperties,
 } from "../common/types";
+import { ComponentType } from "react";
 
 export type NodeAndEdgeDataFormat = "LEGACY" | "NODE_AND_EDGE";
 
@@ -58,10 +58,14 @@ export type NodeAndEdgeState = "pending" | "error" | "complete";
 type BaseNodeAndEdgeStatus = {
   id: string;
   state: NodeAndEdgeState;
+  category?: string;
+  error?: string;
 };
 
 export type CategoryStatus = BaseNodeAndEdgeStatus & {
   title?: string;
+  nodesInError?: NodeStatus[];
+  edgesInError?: EdgeStatus[];
 };
 
 type CategoryStatusMap = {

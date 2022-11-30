@@ -66,6 +66,8 @@ const Child = ({
           definition={panelDefinition}
           ready={format === "NODE_AND_EDGE"}
           showControls={showPanelControls}
+          // Node and edge format will show error info on the panel information
+          showPanelError={format === "LEGACY"}
         >
           <Flow {...panelDefinition} />
         </Panel>
@@ -81,6 +83,8 @@ const Child = ({
           definition={panelDefinition}
           ready={format === "NODE_AND_EDGE"}
           showControls={showPanelControls}
+          // Node and edge format will show error info on the panel information
+          showPanelError={format === "LEGACY"}
         >
           <Graph {...panelDefinition} />
         </Panel>
@@ -96,6 +100,8 @@ const Child = ({
           definition={panelDefinition}
           ready={format === "NODE_AND_EDGE"}
           showControls={showPanelControls}
+          // Node and edge format will show error info on the panel information
+          showPanelError={format === "LEGACY"}
         >
           <Hierarchy {...panelDefinition} />
         </Panel>

@@ -322,7 +322,7 @@ export interface PanelDefinition {
   data?: LeafNodeData;
   source_definition?: string;
   status?: DashboardRunState;
-  error?: Error;
+  error?: string;
   properties?: PanelProperties;
   dashboard: string;
   children?: DashboardLayoutNode[];
