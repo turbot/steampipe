@@ -59,6 +59,8 @@ const Panel = ({
 
   const ErrorComponent = Error;
   const PlaceholderComponent = Placeholder.component;
+  const showPanelContents =
+    !definition.error || (definition.error && !showPanelError);
 
   return (
     <div
@@ -138,9 +140,7 @@ const Panel = ({
           )}
         >
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
-          {(!definition.error || (definition.error && !showPanelError)) && (
-            <PanelInformation />
-          )}
+          {showPanelContents && <PanelInformation />}
           <PlaceholderComponent
             animate={!!children}
             ready={ready || !!definition.error}
@@ -149,11 +149,7 @@ const Panel = ({
               className={definition.title ? "rounded-t-none" : null}
               error={showPanelError && definition.error}
             />
-            <>
-              {!definition.error || (definition.error && !showPanelError)
-                ? children
-                : null}
-            </>
+            <>{showPanelContents ? children : null}</>
           </PlaceholderComponent>
         </div>
       </section>
