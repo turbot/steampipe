@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"log"
 )
 
 type NodeEdgeProviderRun struct {
 	LeafRun
-	Properties map[string]any `json:"properties"`
+	Properties map[string]any `json:"-"`
 }
 
 func NewNodeEdgeProviderRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*NodeEdgeProviderRun, error) {
@@ -17,8 +18,7 @@ func NewNodeEdgeProviderRun(resource modconfig.DashboardLeafNode, parent dashboa
 		return nil, err
 	}
 	res := &NodeEdgeProviderRun{
-		LeafRun:    *leafRun,
-		Properties: make(map[string]any),
+		LeafRun: *leafRun,
 	}
 
 	// HACK
@@ -30,10 +30,11 @@ func NewNodeEdgeProviderRun(resource modconfig.DashboardLeafNode, parent dashboa
 
 	// now populate node and edge names
 	for _, c := range leafRun.GetChildren() {
-		resource := c.(*LeafRun).DashboardNode
+		childResource := c.(*LeafRun).DashboardNode
 		var childKey string
+		log.Printf("[WARN] NewNodeEdgeProviderRun resource %s %p", childResource.Name(), childResource)
 
-		switch resource.(type) {
+		switch childResource.(type) {
 		case *modconfig.DashboardNode:
 			childKey = "nodes"
 		case *modconfig.DashboardEdge:
