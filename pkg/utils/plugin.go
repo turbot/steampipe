@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"strings"
+
+	"github.com/turbot/go-kit/helpers"
 )
 
 const maxSchemaNameLength = 63
@@ -15,7 +17,7 @@ func PluginFQNToSchemaName(pluginFQN string) string {
 		return pluginFQN
 	}
 
-	schemaName := TrimSchemaName(pluginFQN) + fmt.Sprintf("-%x", StringHash(pluginFQN))
+	schemaName := TrimSchemaName(pluginFQN) + fmt.Sprintf("-%x", helpers.StringFnvHash(pluginFQN))
 	return schemaName
 }
 

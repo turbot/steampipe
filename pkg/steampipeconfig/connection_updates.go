@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
 	"log"
 	"sort"
 	"strings"
