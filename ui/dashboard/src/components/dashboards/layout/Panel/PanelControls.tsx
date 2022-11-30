@@ -31,7 +31,8 @@ const PanelControls = ({ controls, referenceElement }) => {
       name: "offset",
       options: {
         offset: ({ popper }) => {
-          return [0, -popper.height / 2];
+          const offset = -popper.height / 2;
+          return [offset, offset];
         },
       },
     }),
