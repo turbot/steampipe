@@ -42,7 +42,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.14.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
-	github.com/turbot/go-kit v0.5.0-rc.6
+	github.com/turbot/go-kit v0.5.0
 	github.com/turbot/steampipe-cloud-sdk-go v0.2.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.8
 	github.com/xlab/treeprint v1.1.0
@@ -160,7 +160,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
-	github.com/tkrajina/go-reflector v0.5.4 // indirect
+	github.com/tkrajina/go-reflector v0.5.6 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
 	github.com/vmihailenco/tagparser v0.1.1 // indirect
@@ -224,5 +224,4 @@ replace (
 	github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
-	github.com/turbot/go-kit => github.com/turbot/go-kit v0.5.0-rc.6.0.20221129133521-34c25ae5a389
 )
