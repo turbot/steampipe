@@ -417,21 +417,23 @@ const useNodeAndEdgePanelInformation = (
       const pendingCategories: CategoryStatus[] = [];
       const errorCategories: CategoryStatus[] = [];
       const completeCategories: CategoryStatus[] = [];
-      for (const category of Object.values(nodeAndEdgeStatus.categories)) {
-        if (category.state === "pending") {
-          pendingCategories.push(category);
-        } else if (category.state === "error") {
-          errorCategories.push({
-            ...category,
-            nodesInError: nodeAndEdgeStatus.nodes.filter(
-              (n) => n.category === category.id && n.state === "error"
-            ),
-            edgesInError: nodeAndEdgeStatus.edges.filter(
-              (e) => e.category === category.id && e.state === "error"
-            ),
-          });
-        } else {
-          completeCategories.push(category);
+      if (nodeAndEdgeStatus) {
+        for (const category of Object.values(nodeAndEdgeStatus.categories)) {
+          if (category.state === "pending") {
+            pendingCategories.push(category);
+          } else if (category.state === "error") {
+            errorCategories.push({
+              ...category,
+              nodesInError: nodeAndEdgeStatus.nodes.filter(
+                (n) => n.category === category.id && n.state === "error"
+              ),
+              edgesInError: nodeAndEdgeStatus.edges.filter(
+                (e) => e.category === category.id && e.state === "error"
+              ),
+            });
+          } else {
+            completeCategories.push(category);
+          }
         }
       }
       return {
@@ -439,11 +441,7 @@ const useNodeAndEdgePanelInformation = (
         errorCategories,
         completeCategories,
       };
-    }, [
-      nodeAndEdgeStatus.categories,
-      nodeAndEdgeStatus.nodes,
-      nodeAndEdgeStatus.edges,
-    ]);
+    }, [nodeAndEdgeStatus]);
 
   useEffect(() => {
     if (
