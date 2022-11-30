@@ -46,12 +46,12 @@ const NodeAndEdgePanelInformation = ({
               </span>
             </div>
             {category.nodesInError?.map((n) => (
-              <span key={n.id}>
+              <span key={n.id} className="block">
                 <ErrorMessage error={n.error} />{" "}
               </span>
             ))}
             {category.edgesInError?.map((e) => (
-              <span key={e.id}>
+              <span key={e.id} className="block">
                 <ErrorMessage error={e.error} />{" "}
               </span>
             ))}

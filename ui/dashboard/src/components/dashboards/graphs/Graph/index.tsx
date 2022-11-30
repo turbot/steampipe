@@ -32,13 +32,11 @@ import {
 import {
   CategoryStatus,
   DagreRankDir,
-  EdgeStatus,
   GraphDirection,
   GraphProperties,
   GraphProps,
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
-  NodeStatus,
 } from "../types";
 import { DashboardRunState } from "../../../../types";
 import { ExpandedNodes, GraphProvider, useGraph } from "../common/useGraph";
@@ -423,16 +421,14 @@ const useNodeAndEdgePanelInformation = (
         if (category.state === "pending") {
           pendingCategories.push(category);
         } else if (category.state === "error") {
-          const nodesInError: NodeStatus[] = nodeAndEdgeStatus.nodes.filter(
-            (n) => n.category === category.id && n.state === "error"
-          );
-          const edgesInError: EdgeStatus[] = nodeAndEdgeStatus.nodes.filter(
-            (n) => n.category === category.id && n.state === "error"
-          );
           errorCategories.push({
             ...category,
-            nodesInError,
-            edgesInError,
+            nodesInError: nodeAndEdgeStatus.nodes.filter(
+              (n) => n.category === category.id && n.state === "error"
+            ),
+            edgesInError: nodeAndEdgeStatus.edges.filter(
+              (e) => e.category === category.id && e.state === "error"
+            ),
           });
         } else {
           completeCategories.push(category);
