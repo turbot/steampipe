@@ -1,6 +1,8 @@
+import ErrorMessage from "../../ErrorMessage";
 import Icon from "../../Icon";
 import LoadingIndicator from "../LoadingIndicator";
 import { CategoryStatus } from "../graphs/types";
+import { Fragment } from "react";
 
 type NodeAndEdgePanelInformationProps = {
   pendingCategories: CategoryStatus[];
@@ -26,22 +28,34 @@ const NodeAndEdgePanelInformation = ({
         </div>
         {pendingCategories.map((category) => (
           <div key={category.id} className="flex items-center space-x-1">
-            <LoadingIndicator className="w-3 h-3" />
+            <LoadingIndicator className="w-3.5 h-3.5" />
             <span key={category.id} className="block">
               {category.title || category.id}
             </span>
           </div>
         ))}
         {errorCategories.map((category) => (
-          <div key={category.id} className="flex items-center space-x-1">
-            <Icon
-              className="w-3 h-3 text-alert"
-              icon="heroicons-solid:exclamation-circle"
-            />
-            <span key={category.id} className="block">
-              {category.title || category.id}
-            </span>
-          </div>
+          <Fragment key={category.id}>
+            <div className="flex items-center space-x-1">
+              <Icon
+                className="w-3.5 h-3.5 text-alert"
+                icon="heroicons-solid:exclamation-circle"
+              />
+              <span key={category.id} className="block">
+                {category.title || category.id}
+              </span>
+            </div>
+            {category.nodesInError?.map((n) => (
+              <span key={n.id}>
+                <ErrorMessage error={n.error} />{" "}
+              </span>
+            ))}
+            {category.edgesInError?.map((e) => (
+              <span key={e.id}>
+                <ErrorMessage error={e.error} />{" "}
+              </span>
+            ))}
+          </Fragment>
         ))}
       </div>
     </div>
