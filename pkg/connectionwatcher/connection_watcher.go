@@ -30,7 +30,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 		Directories: []string{filepaths.EnsureConfigDir()},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
-		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename,
+		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write,
 		OnChange: func(events []fsnotify.Event) {
 			w.handleFileWatcherEvent(events)
 		},

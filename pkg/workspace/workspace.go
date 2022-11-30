@@ -147,7 +147,7 @@ func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, e
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		ListFlag:    w.listFlag,
-		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename,
+		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write,
 		// we should look into passing the callback function into the underlying watcher
 		// we need to analyze the kind of errors that come out from the watcher and
 		// decide how to handle them
