@@ -23,9 +23,6 @@ type DashboardGraph struct {
 
 	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
 	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
-	// for the snapshot we just serialise the names of nodes and edges
-	NodeNames []string `json:"nodes"`
-	EdgeNames []string ` json:"edges"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 	Direction  *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
@@ -296,13 +293,11 @@ func (g *DashboardGraph) GetNodes() DashboardNodeList {
 // SetEdges implements EdgeAndNodeProvider
 func (g *DashboardGraph) SetEdges(edges DashboardEdgeList) {
 	g.Edges = edges
-	g.EdgeNames = edges.Names()
 }
 
 // SetNodes implements EdgeAndNodeProvider
 func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
 	g.Nodes = nodes
-	g.NodeNames = nodes.Names()
 }
 
 // AddCategory implements EdgeAndNodeProvider

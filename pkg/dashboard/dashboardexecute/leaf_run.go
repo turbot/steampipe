@@ -57,10 +57,13 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
-	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
-	// (if we supported the children property then we could reuse resources)
-	// so FOR NOW it is safe to use the node name directly as the run name
 	name := resource.Name()
+	// check for uniqueness
+	idx := 0
+	if _, nameExists := executionTree.runs[name]; nameExists {
+		name = fmt.Sprintf("%s.%d", resource.Name(), idx)
+		idx++
+	}
 
 	r := &LeafRun{
 		Name:             name,
@@ -534,9 +537,11 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 
 	log.Printf("[TRACE] run %s ALL children complete", r.Name)
 	// so all children have completed - check for errors
+	// TODO format better error
 	err := error_helpers.CombineErrors(errors...)
+	// combine child data even if there is an error
+	r.combineChildData()
 	if err == nil {
-		r.combineChildData()
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
@@ -551,6 +556,9 @@ func (r *LeafRun) combineChildData() {
 	for _, c := range r.children {
 		childLeafRun := c.(*LeafRun)
 		data := childLeafRun.Data
+		if data == nil {
+			continue
+		}
 		for _, s := range data.Columns {
 			if _, ok := schemaMap[s.Name]; !ok {
 				schemaMap[s.Name] = s
@@ -573,21 +581,22 @@ func (r *LeafRun) getWithValue(name string, path *modconfig.ParsedPropertyPath) 
 	//  get the set of rows which will be used ot generate the return value
 	rows := val.Rows
 	/*
-		You can reference the whole table with:
-			with.stuff1
-		this is equivalent to:
-			with.stuff1.rows
-		and
-			with.stuff1.rows[*]
+			You can
+		reference the whole table with:
+				with.stuff1
+			this is equivalent to:
+				with.stuff1.rows
+			and
+				with.stuff1.rows[*]
 
-		Rows is a list, and you can index it to get a single row:
-			with.stuff1.rows[0]
-		or splat it to get all rows:
-			with.stuff1.rows[*]
-		Each row, in turn, contains all the columns, so you can get a single column of a single row:
-			with.stuff1.rows[0].a
-		if you splat the row, then you can get an array of a single column from all rows. This would be passed to sql as an array:
-			with.stuff1.rows[*].a
+			Rows is a list, and you can index it to get a single row:
+				with.stuff1.rows[0]
+			or splat it to get all rows:
+				with.stuff1.rows[*]
+			Each row, in turn, contains all the columns, so you can get a single column of a single row:
+				with.stuff1.rows[0].a
+			if you splat the row, then you can get an array of a single column from all rows. This would be passed to sql as an array:
+				with.stuff1.rows[*].a
 	*/
 
 	// with.stuff1 -> PropertyPath will be ""
