@@ -102,11 +102,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 			if err != nil {
 				return nil, err
 			}
-		case *modconfig.DashboardGraph, *modconfig.DashboardHierarchy, *modconfig.DashboardFlow:
-			childRun, err = NewNodeEdgeProviderRun(i.(modconfig.DashboardLeafNode), r, executionTree)
-			if err != nil {
-				return nil, err
-			}
+
 		default:
 			// ensure this item is a DashboardLeafNode
 			leafNode, ok := i.(modconfig.DashboardLeafNode)
