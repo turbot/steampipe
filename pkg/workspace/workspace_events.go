@@ -54,7 +54,6 @@ func (w *Workspace) handleDashboardEvent() {
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
-	fmt.Println(ev)
 	if err != nil {
 		// publish error event
 		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})
