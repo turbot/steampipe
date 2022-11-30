@@ -57,8 +57,6 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send dashboard events to the handleDashbooardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
-	// count of workspace changed events - used to ignore first event
-	changeEventCount int
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -149,6 +147,7 @@ func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, e
 		Include:     filehelpers.InclusionsFromExtensions(steampipeconfig.GetModFileExtensions()),
 		Exclude:     w.exclusions,
 		ListFlag:    w.listFlag,
+		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename,
 		// we should look into passing the callback function into the underlying watcher
 		// we need to analyze the kind of errors that come out from the watcher and
 		// decide how to handle them
@@ -349,8 +348,10 @@ func (w *Workspace) loadWorkspaceLock() (*versionmap.WorkspaceLock, error) {
 func (w *Workspace) loadExclusions() error {
 	// default to ignoring hidden files and folders
 	w.exclusions = []string{
-		fmt.Sprintf("%s/**/.*", w.Path),
+		// ignore any hidden folder
 		fmt.Sprintf("%s/.*", w.Path),
+		// and sub files/folders of hidden folders
+		fmt.Sprintf("%s/.*/**", w.Path),
 	}
 
 	ignorePath := filepath.Join(w.Path, filepaths.WorkspaceIgnoreFile)

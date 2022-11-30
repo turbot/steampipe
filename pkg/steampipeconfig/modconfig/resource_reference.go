@@ -3,7 +3,7 @@ package modconfig
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/go-kit/helpers"
 )
 
 type ResourceReference struct {
@@ -47,7 +47,7 @@ func (r *ResourceReference) Equals(other *ResourceReference) bool {
 // Name implements ResourceWithMetadata
 // the name must start with the 'resource type' as we parse it and use just the 'name' segment
 func (r *ResourceReference) Name() string {
-	hash := utils.GetMD5Hash(r.String())[:8]
+	hash := helpers.GetMD5Hash(r.String())[:8]
 	str := fmt.Sprintf("ref.%s", hash)
 	return str
 }
