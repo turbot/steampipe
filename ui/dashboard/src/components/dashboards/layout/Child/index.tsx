@@ -1,23 +1,17 @@
-import {
-  DashboardLayoutNode,
-  PanelDefinition,
-  PanelsMap,
-} from "../../../../types";
+import { DashboardLayoutNode, PanelDefinition } from "../../../../types";
 import { getComponent } from "../../index";
+import { getNodeAndEdgeDataFormat } from "../../common/useNodeAndEdgeData";
 import { NodeAndEdgeProperties } from "../../common/types";
-import { nodeAndEdgeResourceHasData } from "../../common";
 
 type ChildProps = {
   layoutDefinition: DashboardLayoutNode;
   panelDefinition: PanelDefinition;
-  panelsMap: PanelsMap;
   showPanelControls?: boolean;
 };
 
 const Child = ({
   layoutDefinition,
   panelDefinition,
-  panelsMap,
   showPanelControls = true,
 }: ChildProps) => {
   const Panel = getComponent("panel");
@@ -62,51 +56,51 @@ const Child = ({
           <ErrorPanel {...panelDefinition} />
         </Panel>
       );
-    case "flow":
+    case "flow": {
       const Flow = getComponent("flow");
+      const format = getNodeAndEdgeDataFormat(
+        panelDefinition.properties as NodeAndEdgeProperties
+      );
       return (
         <Panel
           definition={panelDefinition}
-          ready={nodeAndEdgeResourceHasData(
-            panelDefinition.data,
-            panelDefinition.properties as NodeAndEdgeProperties,
-            panelsMap
-          )}
+          ready={format === "NODE_AND_EDGE"}
           showControls={showPanelControls}
         >
           <Flow {...panelDefinition} />
         </Panel>
       );
-    case "graph":
+    }
+    case "graph": {
       const Graph = getComponent("graph");
+      const format = getNodeAndEdgeDataFormat(
+        panelDefinition.properties as NodeAndEdgeProperties
+      );
       return (
         <Panel
           definition={panelDefinition}
-          ready={nodeAndEdgeResourceHasData(
-            panelDefinition.data,
-            panelDefinition.properties as NodeAndEdgeProperties,
-            panelsMap
-          )}
+          ready={format === "NODE_AND_EDGE"}
           showControls={showPanelControls}
         >
           <Graph {...panelDefinition} />
         </Panel>
       );
-    case "hierarchy":
+    }
+    case "hierarchy": {
       const Hierarchy = getComponent("hierarchy");
+      const format = getNodeAndEdgeDataFormat(
+        panelDefinition.properties as NodeAndEdgeProperties
+      );
       return (
         <Panel
           definition={panelDefinition}
-          ready={nodeAndEdgeResourceHasData(
-            panelDefinition.data,
-            panelDefinition.properties as NodeAndEdgeProperties,
-            panelsMap
-          )}
+          ready={format === "NODE_AND_EDGE"}
           showControls={showPanelControls}
         >
           <Hierarchy {...panelDefinition} />
         </Panel>
       );
+    }
     case "image":
       const Image = getComponent("image");
       return (

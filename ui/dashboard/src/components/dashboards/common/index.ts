@@ -7,17 +7,15 @@ import {
   EdgeMap,
   KeyValuePairs,
   Node,
-  NodeAndEdgeProperties,
   NodeCategoryMap,
   NodeMap,
   NodesAndEdges,
 } from "./types";
 import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
-import { DashboardRunState, PanelsMap } from "../../../types";
+import { DashboardRunState } from "../../../types";
 import { ExpandedNodes } from "../graphs/common/useGraph";
 import { FlowProperties, FlowType } from "../flows/types";
 import { getColumn } from "../../../utils/data";
-import { getNodeAndEdgeDataFormat } from "./useNodeAndEdgeData";
 import { Graph, json } from "graphlib";
 import { GraphProperties, GraphType, NodeAndEdgeData } from "../graphs/types";
 import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
@@ -1096,28 +1094,6 @@ const getColorOverride = (colorOverride, namedThemeColors) => {
   return colorOverride;
 };
 
-const nodeAndEdgeResourceHasData = (
-  data: LeafNodeData | undefined,
-  properties: NodeAndEdgeProperties,
-  panelsMap: PanelsMap
-): boolean => {
-  const dataFormat = getNodeAndEdgeDataFormat(properties);
-  if (dataFormat === "LEGACY" && !!data) {
-    return true;
-  }
-  if (dataFormat === "LEGACY" && !data) {
-    return false;
-  }
-  if (
-    (properties?.nodes || []).some((p) => panelsMap[p] && !!panelsMap[p].data)
-  ) {
-    return true;
-  }
-  return (properties?.edges || []).some(
-    (p) => panelsMap[p] && !!panelsMap[p].data
-  );
-};
-
 export {
   adjustMinValue,
   adjustMaxValue,
@@ -1128,7 +1104,6 @@ export {
   foldNodesAndEdges,
   getColorOverride,
   isNumericCol,
-  nodeAndEdgeResourceHasData,
   themeColors,
   toEChartsType,
 };
