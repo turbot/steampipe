@@ -1,7 +1,7 @@
 package steampipeconfig
 
 import (
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -15,7 +15,7 @@ type ConnectionSchemaMap map[string][]string
 // and calls NewConnectionSchemaMapForConnections directly, passing the schema modes)
 func NewConnectionSchemaMap() (ConnectionSchemaMap, error) {
 	connectionNames := GlobalConfig.ConnectionNames()
-	connectionState, err := GetConnectionState(connectionNames)
+	connectionState, _, err := GetConnectionState(connectionNames)
 	if err != nil {
 		return nil, err
 	}

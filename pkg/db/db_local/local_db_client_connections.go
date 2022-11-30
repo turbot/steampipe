@@ -14,40 +14,52 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
 	// determine any necessary connection updates
-	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames())
+	var connectionUpdates *steampipeconfig.ConnectionUpdates
+	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(c.ForeignSchemaNames(), forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
-
 	if res.Error != nil {
 		return res
 	}
 
-	var conn_names, plugin_names []string
+	// before finishing - be sure to save connection state if
+	// 	- it was modified in the loading process (indicating it contained non-existent connections)
+	//  - connections have been updated
+	defer func() {
+		if res.Error == nil && connectionUpdates.ConnectionStateModified || res.UpdatedConnections {
+			// now serialise the connection state
+			// update required connections with the schema mode from the connection state and schema hash from the hash map
+			if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
+				res.Error = err
+			}
+		}
+	}()
+
+	var connectionNames, pluginNames []string
 	// add warning if there are connections left over, from missing plugins
 	if len(connectionUpdates.MissingPlugins) > 0 {
 		// warning
 		for a, conns := range connectionUpdates.MissingPlugins {
 			for _, con := range conns {
-				conn_names = append(conn_names, con.Name)
+				connectionNames = append(connectionNames, con.Name)
 			}
-			plugin_names = append(plugin_names, utils.GetPluginName(a))
+			pluginNames = append(pluginNames, utils.GetPluginName(a))
 		}
 		res.AddWarning(fmt.Sprintf("%d %s required by %s %s missing. To install, please run %s",
-			len(plugin_names),
-			utils.Pluralize("plugin", len(plugin_names)),
-			utils.Pluralize("connection", len(conn_names)),
-			utils.Pluralize("is", len(plugin_names)),
-			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(plugin_names, " ")))))
+			len(pluginNames),
+			utils.Pluralize("plugin", len(pluginNames)),
+			utils.Pluralize("connection", len(connectionNames)),
+			utils.Pluralize("is", len(pluginNames)),
+			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
 	}
 
 	if !connectionUpdates.HasUpdates() {
@@ -60,13 +72,6 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context) *steampipeconfig
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
-		return res
-	}
-
-	// now serialise the connection state
-	// update required connections with the schema mode from the connection state and schema hash from the hash map
-	if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
-		res.Error = err
 		return res
 	}
 
@@ -143,7 +148,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 	for connectionName, connectionData := range updates {
 
-		remoteSchema := pluginmanager.PluginFQNToSchemaName(connectionData.Plugin)
+		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		builder.WriteString(getUpdateConnectionQuery(connectionName, remoteSchema))
 
 		_, err := rootClient.Exec(ctx, builder.String())

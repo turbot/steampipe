@@ -37,6 +37,7 @@ message ReattachConfig {
 message SupportedOperations {
   bool query_cache = 1;
   bool multiple_connections = 2;
+  bool message_stream = 3;
 }
 
 message NetAddr {

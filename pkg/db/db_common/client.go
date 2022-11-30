@@ -37,5 +37,5 @@ type Client interface {
 	RefreshSessions(ctx context.Context) *AcquireSessionResult
 	GetSchemaFromDB(context.Context) (*schema.Metadata, error)
 	// remote client will have empty implementation
-	RefreshConnectionAndSearchPaths(context.Context) *steampipeconfig.RefreshConnectionResult
+	RefreshConnectionAndSearchPaths(context.Context, ...string) *steampipeconfig.RefreshConnectionResult
 }

@@ -8,7 +8,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/go-kit/helpers"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -53,7 +53,7 @@ func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkprot
 	return w, nil
 }
 
-func (w *ConnectionWatcher) handleFileWatcherEvent(e []fsnotify.Event) {
+func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())

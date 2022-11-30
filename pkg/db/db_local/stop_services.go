@@ -169,8 +169,6 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 }
 
 /*
-*
-
 	Postgres has three levels of shutdown:
 
 	* SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
@@ -194,8 +192,6 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	By the time we actually try to run this sequence, we will have
 	checked that the service can indeed shutdown gracefully,
 	the sequence is there only as a backup.
-
-*
 */
 func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
 	utils.LogTime("db_local.doThreeStepPostgresExit start")

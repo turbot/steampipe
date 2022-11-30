@@ -1,15 +1,15 @@
 package pluginmanager
 
 import (
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"io"
 	"log"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
+	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
 )
 
 // PluginManagerClient is the client used by steampipe to access the plugin manager

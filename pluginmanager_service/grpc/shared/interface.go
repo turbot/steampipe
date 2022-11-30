@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/go-plugin"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
+	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 	"google.golang.org/grpc"
 )
 

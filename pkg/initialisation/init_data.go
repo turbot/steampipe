@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/v4/telemetry"
+	"github.com/turbot/steampipe-plugin-sdk/v5/telemetry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -154,7 +154,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
 func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
-
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
 	} else {

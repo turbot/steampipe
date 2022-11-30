@@ -9,10 +9,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
+	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
 )
 
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager

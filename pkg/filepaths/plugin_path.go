@@ -1,4 +1,4 @@
-package pluginmanager
+package filepaths
 
 import (
 	"fmt"
@@ -6,18 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/utils"
 )
-
-const maxSchemaNameLength = 63
 
 func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	remoteSchema := plugin
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
-	pluginFolder := filepath.Join(filepaths.EnsurePluginDir(), remoteSchema)
+	pluginFolder := filepath.Join(EnsurePluginDir(), remoteSchema)
 
 	// if the plugin folder is missing, it is possible the plugin path was truncated to create a schema name
 	// - so search for a folder which when truncated would match the schema
@@ -48,32 +45,12 @@ func GetPluginPath(plugin, pluginShortName string) (string, error) {
 	return filepath.Join(pluginFolder, matches[0]), nil
 }
 
-// PluginFQNToSchemaName convert a full plugin name to a schema name
-// schemas in postgres are limited to 63 chars - the name may be longer than this, in which case trim the length
-// and add a hash to the end to make unique
-func PluginFQNToSchemaName(pluginFQN string) string {
-	if len(pluginFQN) < maxSchemaNameLength {
-		return pluginFQN
-	}
-
-	schemaName := trimSchemaName(pluginFQN) + fmt.Sprintf("-%x", helpers.StringFnvHash(pluginFQN))
-	return schemaName
-}
-
-func trimSchemaName(pluginFQN string) string {
-	if len(pluginFQN) < maxSchemaNameLength {
-		return pluginFQN
-	}
-
-	return pluginFQN[:maxSchemaNameLength-9]
-}
-
 // FindPluginFolder searches for a folder which when hashed would match the schema
 func FindPluginFolder(remoteSchema string) (string, error) {
-	pluginDir := filepaths.EnsurePluginDir()
+	pluginDir := EnsurePluginDir()
 
 	// first try searching by prefix - trim the schema name
-	globPattern := filepath.Join(pluginDir, trimSchemaName(remoteSchema)) + "*"
+	globPattern := filepath.Join(pluginDir, utils.TrimSchemaName(remoteSchema)) + "*"
 	matches, err := filepath.Glob(globPattern)
 	if err != nil {
 		return "", err
@@ -88,7 +65,7 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 			// do not fail on error here
 			continue
 		}
-		hashedName := PluginFQNToSchemaName(folderRelativePath)
+		hashedName := utils.PluginFQNToSchemaName(folderRelativePath)
 		if hashedName == remoteSchema {
 			return filepath.Join(pluginDir, folderRelativePath), nil
 		}

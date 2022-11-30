@@ -2,20 +2,17 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"io"
 	"log"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v4/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v4/plugin"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pluginmanager"
-	"github.com/turbot/steampipe/pluginmanager/grpc/proto"
+	"github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 )
 
 type ConnectionPluginData struct {
@@ -48,6 +45,28 @@ func (p ConnectionPlugin) addConnection(name string, config string, connectionOp
 func (p ConnectionPlugin) IncludesConnection(name string) bool {
 	_, ok := p.ConnectionMap[name]
 	return ok
+}
+
+// GetSchema returns the cached schema if it is static, or if it is dynamic, refetch it
+func (p ConnectionPlugin) GetSchema(connectionName string) (*sdkproto.Schema, error) {
+	connectionData, ok := p.ConnectionMap[connectionName]
+	if ok {
+		// if the schema mode is static, return the cached schema
+		if connectionData.Schema.Mode == sdkplugin.SchemaModeStatic {
+			return connectionData.Schema, nil
+		}
+	}
+	// otherwise this is a dynamic schema - refetch it
+	// we need to do this in case it has changed (for example as a result of a file watching event)
+	schema, err := p.PluginClient.GetSchema(connectionName)
+	if err != nil {
+		log.Printf("[TRACE] failed to get schema for connection '%s': %s", connectionName, err)
+		return nil, err
+	}
+	// update schema in our map
+	connectionData.Schema = schema
+
+	return schema, nil
 }
 
 func NewConnectionPlugin(pluginName string, pluginClient *sdkgrpc.PluginClient, supportedOperations *proto.SupportedOperations) *ConnectionPlugin {
@@ -171,6 +190,8 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 		schema, ok := staticSchemas[connectionPlugin.PluginName]
 		if !ok {
 			log.Printf("[TRACE] schema does not exist in list of static schemas, fetching")
+			log.Printf("[TRACE] GetSchema %s", connectionName)
+
 			// if not, fetch the schema
 			var err error
 			schema, err = connectionPlugin.PluginClient.GetSchema(connectionName)
@@ -187,7 +208,8 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 			}
 		}
 
-		log.Printf("[TRACE] add schema to connection map for connection name %s", connectionName)
+		log.Printf("[TRACE] add schema to connection map for connection name %s, len %d", connectionName, len(schema.Schema))
+
 		// set the schema on the connection plugin
 		connectionPlugin.ConnectionMap[connectionName].Schema = schema
 
@@ -403,29 +425,4 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 // use the reattach config to create a PluginClient for the plugin
 func attachToPlugin(reattach *plugin.ReattachConfig, pluginName string) (*sdkgrpc.PluginClient, error) {
 	return sdkgrpc.NewPluginClientFromReattach(reattach, pluginName)
-}
-
-// function used for debugging the plugin manager
-func runPluginManagerInProcess() (*pluginmanager.PluginManager, error) {
-	steampipeConfig, err := LoadConnectionConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	// discard logging from the plugin client (plugin logs will still flow through)
-	loggOpts := &hclog.LoggerOptions{Name: "plugin", Output: io.Discard}
-	logger := logging.NewLogger(loggOpts)
-
-	// build config map
-	configMap := make(map[string]*sdkproto.ConnectionConfig)
-	for connectionName, connection := range steampipeConfig.Connections {
-		configMap[connectionName] = &sdkproto.ConnectionConfig{
-			Connection:       connection.Name,
-			Plugin:           connection.Plugin,
-			PluginShortName:  connection.PluginShortName,
-			Config:           connection.Config,
-			ChildConnections: connection.GetResolveConnectionNames(),
-		}
-	}
-	return pluginmanager.NewPluginManager(configMap, logger)
 }

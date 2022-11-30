@@ -260,11 +260,11 @@ WHERE %s
 
 // local only functions
 
-func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
 	// NOTE: disable any status updates - we do not want 'loading' output from any queries
 	ctx = statushooks.DisableStatusHooks(ctx)
 
-	res := c.refreshConnections(ctx)
+	res := c.refreshConnections(ctx, forceUpdateConnectionNames...)
 	if res.Error != nil {
 		return res
 	}
@@ -276,11 +276,12 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *st
 
 	// reload the foreign schemas, in case they have changed
 	if err := c.LoadForeignSchemaNames(ctx); err != nil {
-		return &steampipeconfig.RefreshConnectionResult{Error: err}
+		res.Error = err
+		return res
 	}
 
 	// load the connection state and cache it!
-	connectionMap, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
+	connectionMap, _, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
 	if err != nil {
 		res.Error = err
 		return res

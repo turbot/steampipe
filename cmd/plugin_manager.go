@@ -11,14 +11,14 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe-plugin-sdk/v4/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connectionwatcher"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/pluginmanager_service"
 )
 
 func pluginManagerCmd() *cobra.Command {
@@ -46,7 +46,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
-	pluginManager, err := pluginmanager.NewPluginManager(configMap, logger)
+	pluginManager, err := pluginmanager_service.NewPluginManager(configMap, logger)
 	if err != nil {
 		log.Printf("[WARN] failed to create plugin manager: %s", err.Error())
 		os.Exit(1)

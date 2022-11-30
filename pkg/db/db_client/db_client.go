@@ -185,7 +185,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 }
 
 // RefreshConnectionAndSearchPaths implements Client
-func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context) *steampipeconfig.RefreshConnectionResult {
+func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context, _ ...string) *steampipeconfig.RefreshConnectionResult {
 	// base db client does not refresh connections, it just sets search path
 	// (only local db client refreshed connections)
 	res := &steampipeconfig.RefreshConnectionResult{}

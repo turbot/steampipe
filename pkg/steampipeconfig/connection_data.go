@@ -35,33 +35,6 @@ type ConnectionData struct {
 	LegacyModTime    time.Time             `json:"ModTime,omitempty"`
 }
 
-// IsValid checks whether the struct was correctly deserialized,
-// by checking if the StructVersion is populated
-func (s *ConnectionData) IsValid() bool {
-	return s.StructVersion > 0
-}
-
-// MigrateLegacy migrates the legacy properties into new properties
-func (s *ConnectionData) MigrateLegacy() {
-	s.StructVersion = ConnectionDataStructVersion
-	s.Plugin = s.LegacyPlugin
-	s.SchemaMode = s.LegacySchemaMode
-	s.SchemaHash = s.LegacySchemaHash
-	s.ModTime = s.LegacyModTime
-	s.Connection = s.LegacyConnection
-	s.Connection.MigrateLegacy()
-}
-
-// MaintainLegacy keeps the values of the legacy properties intact while
-// refreshing connections
-func (s *ConnectionData) MaintainLegacy() {
-	s.LegacyPlugin = s.Plugin
-	s.LegacySchemaMode = s.SchemaMode
-	s.LegacySchemaHash = s.SchemaHash
-	s.LegacyModTime = s.ModTime
-	s.LegacyConnection = s.Connection
-}
-
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
 	return &ConnectionData{
 		StructVersion: ConnectionDataStructVersion,
@@ -71,14 +44,41 @@ func NewConnectionData(remoteSchema string, connection *modconfig.Connection, cr
 	}
 }
 
-func (p *ConnectionData) Equals(other *ConnectionData) bool {
-	if p.Connection == nil || other.Connection == nil {
+// IsValid checks whether the struct was correctly deserialized,
+// by checking if the StructVersion is populated
+func (d *ConnectionData) IsValid() bool {
+	return d.StructVersion > 0
+}
+
+// MigrateLegacy migrates the legacy properties into new properties
+func (d *ConnectionData) MigrateLegacy() {
+	d.StructVersion = ConnectionDataStructVersion
+	d.Plugin = d.LegacyPlugin
+	d.SchemaMode = d.LegacySchemaMode
+	d.SchemaHash = d.LegacySchemaHash
+	d.ModTime = d.LegacyModTime
+	d.Connection = d.LegacyConnection
+	d.Connection.MigrateLegacy()
+}
+
+// MaintainLegacy keeps the values of the legacy properties intact while
+// refreshing connections
+func (d *ConnectionData) MaintainLegacy() {
+	d.LegacyPlugin = d.Plugin
+	d.LegacySchemaMode = d.SchemaMode
+	d.LegacySchemaHash = d.SchemaHash
+	d.LegacyModTime = d.ModTime
+	d.LegacyConnection = d.Connection
+}
+
+func (d *ConnectionData) Equals(other *ConnectionData) bool {
+	if d.Connection == nil || other.Connection == nil {
 		// if either object has a nil Connection, then it may be data from an old connection state file
 		// return false, so that connections get refreshed and this file gets written in the new format in the process
 		return false
 	}
 
-	return p.Plugin == other.Plugin &&
-		p.ModTime.Equal(other.ModTime) &&
-		p.Connection.Equals(other.Connection)
+	return d.Plugin == other.Plugin &&
+		d.ModTime.Equal(other.ModTime) &&
+		d.Connection.Equals(other.Connection)
 }

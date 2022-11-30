@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
 )
 
 type ConnectionDataMap map[string]*ConnectionData
@@ -84,14 +83,14 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
 	modTimeMap := make(map[string]time.Time)
 
-	// map ofd missing polugins, keyed by plugin, value is list of conections using missing plugin
+	// map of missing plugins, keyed by plugin, value is list of conections using missing plugin
 	missingPluginMap := make(map[string][]modconfig.Connection)
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
 		remoteSchema := connection.Plugin
-		pluginPath, _ := pluginmanager.GetPluginPath(connection.Plugin, connection.PluginShortName)
+		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginShortName)
 		// ignore error if plugin is not available
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {
