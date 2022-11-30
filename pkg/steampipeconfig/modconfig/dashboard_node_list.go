@@ -17,11 +17,3 @@ func (l *DashboardNodeList) Merge(other DashboardNodeList) {
 		}
 	}
 }
-
-func (l *DashboardNodeList) Names() []string {
-	res := make([]string, len(*l))
-	for i, n := range *l {
-		res[i] = n.Name()
-	}
-	return res
-}

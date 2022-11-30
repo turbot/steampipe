@@ -102,6 +102,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 			if err != nil {
 				return nil, err
 			}
+
 		default:
 			// ensure this item is a DashboardLeafNode
 			leafNode, ok := i.(modconfig.DashboardLeafNode)

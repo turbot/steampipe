@@ -57,10 +57,7 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
-	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
-	// (if we supported the children property then we could reuse resources)
-	// so FOR NOW it is safe to use the node name directly as the run name
-	name := resource.Name()
+	name := getUniqueRunName(resource, executionTree)
 
 	r := &LeafRun{
 		Name:             name,
@@ -125,6 +122,17 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	}
 
 	return r, nil
+}
+
+// resources (such as nodes/edges) may be reused by different parents - so wee need to give their LeafRuns unique names
+func getUniqueRunName(resource modconfig.DashboardLeafNode, executionTree *DashboardExecutionTree) string {
+	name := resource.Name()
+	// check for uniqueness
+	idx := 0
+	for _, nameExists := executionTree.runs[name]; nameExists; idx++ {
+		name = fmt.Sprintf("%s.%d", resource.Name(), idx)
+	}
+	return name
 }
 
 // if this node has runtime dependencies, create runtime dependency instances which we use to resolve the values
@@ -347,6 +355,69 @@ func (r *LeafRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 	return r.childComplete
 }
 
+func (r *LeafRun) MarshalJSON() ([]byte, error) {
+
+	// special case handling for EdgeAndNodeProvider
+	_, isEdgeAndNodeProvider := r.DashboardNode.(modconfig.EdgeAndNodeProvider)
+	if isEdgeAndNodeProvider {
+		return r.marshalEdgeAndNodeProvider()
+	}
+
+	// just marshal as normal
+	type Alias LeafRun
+	return json.Marshal(struct{ *Alias }{(*Alias)(r)})
+}
+
+// we need custom JSON serialisation for EdgeAndNodeProviders
+// This is because the name of the nodes and edges, which appears under properties,
+// must be populated with the names of the node and edge LeafRuns, rather than the nodes and edge resources.
+// These may be the same, but as the nodes/edges may be reused we ensure the run names are unique
+// The panels in the panel map will be keyed by run-name - so it is vital that the nodes and edges lists
+// correspond to the panel keys.
+func (r *LeafRun) marshalEdgeAndNodeProvider() ([]byte, error) {
+	type Alias LeafRun
+	// embed the run in a struct, wiuth an additional 'Properties' property.
+	// This will overwrite the `properties` value serialized from the underlying run
+	s := &struct {
+		Properties map[string]any `json:"properties"`
+		*Alias
+	}{
+		Alias:      (*Alias)(r),
+		Properties: make(map[string]any),
+	}
+
+	// add the node/edge child runs into the properties map, under the keys 'nodes'/'edges'
+	for _, c := range r.GetChildren() {
+		childResource := c.(*LeafRun).DashboardNode
+		var childKey string
+
+		switch childResource.(type) {
+		case *modconfig.DashboardNode:
+			childKey = "nodes"
+		case *modconfig.DashboardEdge:
+			childKey = "edges"
+		}
+		// add this child to the appropriate array
+		target, _ := s.Properties[childKey].([]string)
+		if target == nil {
+			target = []string{}
+		}
+		s.Properties[childKey] = append(target, c.GetName())
+	}
+
+	// now marshal/ the DashboardNode resource then unmarshal back into the properties map
+	resourceJson, err := json.Marshal(r.DashboardNode)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(resourceJson, &s.Properties); err != nil {
+		return nil, err
+	}
+
+	// now marshal our modified struct
+	return json.Marshal(s)
+}
+
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.DashboardNode.Name())
 	for _, resolvedDependency := range r.runtimeDependencies {
@@ -534,9 +605,11 @@ func (r *LeafRun) executeChildren(ctx context.Context) {
 
 	log.Printf("[TRACE] run %s ALL children complete", r.Name)
 	// so all children have completed - check for errors
+	// TODO format better error
 	err := error_helpers.CombineErrors(errors...)
+	// combine child data even if there is an error
+	r.combineChildData()
 	if err == nil {
-		r.combineChildData()
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
@@ -551,6 +624,9 @@ func (r *LeafRun) combineChildData() {
 	for _, c := range r.children {
 		childLeafRun := c.(*LeafRun)
 		data := childLeafRun.Data
+		if data == nil {
+			continue
+		}
 		for _, s := range data.Columns {
 			if _, ok := schemaMap[s.Name]; !ok {
 				schemaMap[s.Name] = s
@@ -573,21 +649,22 @@ func (r *LeafRun) getWithValue(name string, path *modconfig.ParsedPropertyPath) 
 	//  get the set of rows which will be used ot generate the return value
 	rows := val.Rows
 	/*
-		You can reference the whole table with:
-			with.stuff1
-		this is equivalent to:
-			with.stuff1.rows
-		and
-			with.stuff1.rows[*]
+			You can
+		reference the whole table with:
+				with.stuff1
+			this is equivalent to:
+				with.stuff1.rows
+			and
+				with.stuff1.rows[*]
 
-		Rows is a list, and you can index it to get a single row:
-			with.stuff1.rows[0]
-		or splat it to get all rows:
-			with.stuff1.rows[*]
-		Each row, in turn, contains all the columns, so you can get a single column of a single row:
-			with.stuff1.rows[0].a
-		if you splat the row, then you can get an array of a single column from all rows. This would be passed to sql as an array:
-			with.stuff1.rows[*].a
+			Rows is a list, and you can index it to get a single row:
+				with.stuff1.rows[0]
+			or splat it to get all rows:
+				with.stuff1.rows[*]
+			Each row, in turn, contains all the columns, so you can get a single column of a single row:
+				with.stuff1.rows[0].a
+			if you splat the row, then you can get an array of a single column from all rows. This would be passed to sql as an array:
+				with.stuff1.rows[*].a
 	*/
 
 	// with.stuff1 -> PropertyPath will be ""

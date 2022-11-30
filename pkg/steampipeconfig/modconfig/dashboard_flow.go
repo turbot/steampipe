@@ -24,9 +24,6 @@ type DashboardFlow struct {
 
 	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
 	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
-	// for the snapshot we just serialise the names of nodes and edges
-	NodeNames []string `json:"nodes"`
-	EdgeNames []string ` json:"edges"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
@@ -292,13 +289,11 @@ func (f *DashboardFlow) GetNodes() DashboardNodeList {
 // SetEdges implements EdgeAndNodeProvider
 func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
 	f.Edges = edges
-	f.EdgeNames = edges.Names()
 }
 
 // SetNodes implements EdgeAndNodeProvider
 func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 	f.Nodes = nodes
-	f.NodeNames = nodes.Names()
 }
 
 // AddCategory implements EdgeAndNodeProvider
