@@ -57,13 +57,7 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
-	name := resource.Name()
-	// check for uniqueness
-	idx := 0
-	if _, nameExists := executionTree.runs[name]; nameExists {
-		name = fmt.Sprintf("%s.%d", resource.Name(), idx)
-		idx++
-	}
+	name := getUniqueRunName(resource, executionTree)
 
 	r := &LeafRun{
 		Name:             name,
@@ -128,6 +122,17 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	}
 
 	return r, nil
+}
+
+// resources (such as nodes/edges) may be reused by different parents - so wee need to give their LeafRuns unique names
+func getUniqueRunName(resource modconfig.DashboardLeafNode, executionTree *DashboardExecutionTree) string {
+	name := resource.Name()
+	// check for uniqueness
+	idx := 0
+	for _, nameExists := executionTree.runs[name]; nameExists; idx++ {
+		name = fmt.Sprintf("%s.%d", resource.Name(), idx)
+	}
+	return name
 }
 
 // if this node has runtime dependencies, create runtime dependency instances which we use to resolve the values
