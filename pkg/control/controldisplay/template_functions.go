@@ -14,7 +14,7 @@ import (
 
 // templateFuncs merges desired functions from sprig with custom functions that we
 // define in steampipe
-func templateFuncs() template.FuncMap {
+func templateFuncs(renderContext TemplateRenderContext) template.FuncMap {
 	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now", "toPrettyJson"}
 
 	var funcs template.FuncMap = template.FuncMap{}
@@ -30,6 +30,11 @@ func templateFuncs() template.FuncMap {
 			funcs[use] = f
 		}
 	}
+	// custom steampipe functions - ones we couldn't find in sprig
+	formatterTemplateFuncMap := template.FuncMap{
+		"durationInSeconds": durationInSeconds,
+		"toCsvCell":         toCSVCellFnFactory(renderContext.Config.Separator),
+	}
 	for k, v := range formatterTemplateFuncMap {
 		funcs[k] = v
 	}
@@ -37,27 +42,27 @@ func templateFuncs() template.FuncMap {
 	return funcs
 }
 
-// custom steampipe functions - ones we couldn't find in sprig
-var formatterTemplateFuncMap template.FuncMap = template.FuncMap{
-	"durationInSeconds": durationInSeconds,
-	"toCsvCell":         toCsvCell,
-}
-
-var (
-	csvWriterBuffer = bytes.NewBufferString("")
-	csvWriter       = csv.NewWriter(csvWriterBuffer)
-	csvBufferLock   = sync.Mutex{}
-)
-
 // toCsvCell escapes a value for csv
-func toCsvCell(v interface{}) string {
-	csvBufferLock.Lock()
-	defer csvBufferLock.Unlock()
+// we need to do this in a factory function, so that we can
+// set the separator for the CSV writer for this render session
+func toCSVCellFnFactory(comma string) func(interface{}) string {
+	csvWriterBuffer := bytes.NewBufferString("")
+	csvBufferLock := sync.Mutex{}
 
-	csvWriterBuffer.Reset()
-	csvWriter.Write([]string{fmt.Sprintf("%v", v)})
-	csvWriter.Flush()
-	return strings.TrimSpace(csvWriterBuffer.String())
+	csvWriter := csv.NewWriter(csvWriterBuffer)
+	if len(comma) > 0 {
+		csvWriter.Comma = []rune(comma)[0]
+	}
+
+	return func(v interface{}) string {
+		csvBufferLock.Lock()
+		defer csvBufferLock.Unlock()
+
+		csvWriterBuffer.Reset()
+		csvWriter.Write([]string{fmt.Sprintf("%v", v)})
+		csvWriter.Flush()
+		return strings.TrimSpace(csvWriterBuffer.String())
+	}
 }
 
 // durationInSeconds returns the passed in duration as seconds
