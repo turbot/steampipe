@@ -196,6 +196,12 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 
+	// only 1 character is allowed for '--separator'
+	if len(viper.GetString(constants.ArgSeparator)) > 1 {
+		error_helpers.ShowError(ctx, fmt.Errorf("'--%s' can be 1 character long at most", constants.ArgSeparator))
+		return false
+	}
+
 	// only 1 of 'share' and 'snapshot' may be set
 	if viper.GetBool(constants.ArgShare) && viper.GetBool(constants.ArgSnapshot) {
 		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of '--%s' and '--%s' may be set", constants.ArgShare, constants.ArgSnapshot))

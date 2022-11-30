@@ -4,6 +4,7 @@ import "github.com/turbot/steampipe/pkg/control/controlexecute"
 
 type TemplateRenderConfig struct {
 	RenderHeader bool
+	Separator    string
 }
 
 type TemplateRenderConstants struct {

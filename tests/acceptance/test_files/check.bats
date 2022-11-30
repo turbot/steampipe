@@ -85,6 +85,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
+@test "steampipe check - export csv - pipe separator" {
+  cd $CONTROL_RENDERING_TEST_MOD
+  run steampipe check control.sample_control_mixed_results_1 --export test.csv --separator="|" --progress=false
+  assert_equal "$(cat test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv_pipe_separator.csv)"
+  rm -f test.csv
+  cd -
+}
+
 @test "steampipe check - export csv(check tags and dimensions sorting)" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_sorted_tags_and_dimensions --export test.csv --progress=false

@@ -23,7 +23,7 @@ type TemplateFormatter struct {
 }
 
 func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
-	templateFuncs := templateFuncs()
+	templateFuncs := templateFuncs(TemplateRenderContext{})
 
 	// add a stub "render_context" function
 	// this will be overwritten before we execute the template
@@ -57,12 +57,13 @@ func (tf TemplateFormatter) Format(ctx context.Context, tree *controlexecute.Exe
 			},
 			Config: TemplateRenderConfig{
 				RenderHeader: viper.GetBool(constants.ArgHeader),
+				Separator:    viper.GetString(constants.ArgSeparator),
 			},
 			Data: tree,
 		}
 
 		// overwrite the "render_context" function to return the current render context
-		templateFuncs := templateFuncs()
+		templateFuncs := templateFuncs(renderContext)
 		templateFuncs["render_context"] = func() TemplateRenderContext { return renderContext }
 
 		t, err := tf.template.Clone()
