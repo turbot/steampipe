@@ -55,7 +55,6 @@ func (d *ResolvedRuntimeDependency) Resolve() error {
 		d.value = type_conversion.AnySliceToTypedSlice([]any{d.value})
 	}
 
-
 	if val.Error != nil {
 		return val.Error
 	}
