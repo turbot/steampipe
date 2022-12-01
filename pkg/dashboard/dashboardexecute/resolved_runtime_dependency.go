@@ -2,12 +2,13 @@ package dashboardexecute
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"log"
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 )
 
 // ResolvedRuntimeDependency is a wrapper for RuntimeDependency which contains the resolved value
@@ -48,7 +49,13 @@ func (d *ResolvedRuntimeDependency) Resolve() error {
 	val := <-d.valueChannel
 
 	d.value = val.Value
-	// TODO will this be reported OK?
+
+	// TACTICAL if the desired value is an array, wrap in an array
+	if d.dependency.IsArray {
+		d.value = type_conversion.AnySliceToTypedSlice([]any{d.value})
+	}
+
+
 	if val.Error != nil {
 		return val.Error
 	}
