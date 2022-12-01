@@ -21,7 +21,6 @@ import { ExpandedNodeInfo, useGraph } from "../common/useGraph";
 import { getColorOverride } from "../../common";
 import { Handle } from "reactflow";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
-import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 type AssetNodeProps = {
@@ -238,7 +237,6 @@ const AssetNode = ({
     color,
     fields,
     fold,
-    href,
     icon,
     isFolded,
     foldedNodes,
@@ -247,38 +245,32 @@ const AssetNode = ({
     themeColors,
   },
 }: AssetNodeProps) => {
-  const { collapseNodes, expandNode, expandedNodes } = useGraph();
+  const { collapseNodes, expandNode, expandedNodes, renderResults } =
+    useGraph();
   const {
     components: { ExternalLink },
   } = useDashboard();
   const iconType = useDashboardIconType(icon);
-
   const [renderedHref, setRenderedHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    const renderResult = renderResults[id];
+    if (!renderResult) {
+      return;
+    }
+    if (!renderResult.result) {
+      return;
+    }
+    if (renderResult.result === renderedHref) {
+      return;
+    }
+    setRenderedHref(renderResult.result);
+  }, [id, renderedHref, renderResults]);
 
   const isExpandedNode = useMemo(
     () => !!expandedNodes[id],
     [id, expandedNodes]
   );
-
-  useEffect(() => {
-    if (isFolded || !href) {
-      setRenderedHref(null);
-      return;
-    }
-
-    const doRender = async () => {
-      const renderedResults = await renderInterpolatedTemplates(
-        { graph_node: href as string },
-        [row_data || {}]
-      );
-      const rowRenderResult = renderedResults[0];
-      if (rowRenderResult.graph_node.result) {
-        setRenderedHref(rowRenderResult.graph_node.result as string);
-      }
-    };
-
-    doRender();
-  }, [isFolded, href, row_data, setRenderedHref]);
 
   const textIconStringLength =
     iconType === "text" ? icon?.substring(5)?.length || 0 : null;
