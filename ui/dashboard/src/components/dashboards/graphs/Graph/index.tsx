@@ -38,7 +38,6 @@ import {
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
 } from "../types";
-import { DashboardRunState } from "../../../../types";
 import { ExpandedNodes, GraphProvider, useGraph } from "../common/useGraph";
 import { getGraphComponent } from "..";
 import { registerComponent } from "../../index";
@@ -103,8 +102,7 @@ const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
   themeColors: any,
-  expandedNodes: ExpandedNodes,
-  status: DashboardRunState
+  expandedNodes: ExpandedNodes
 ) => {
   if (!data) {
     return {
@@ -132,21 +130,14 @@ const buildGraphNodesAndEdges = (
   nodesAndEdges.edges.forEach((edge) => {
     dagreGraph.setEdge(edge.from_id, edge.to_id);
   });
-  const finalNodes: NodeType[] = [];
   nodesAndEdges.nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-    const nodeEdges = dagreGraph.nodeEdges(node.id);
-    if (status === "complete" || (nodeEdges && nodeEdges.length > 0)) {
-      finalNodes.push(node);
-    } else {
-      dagreGraph.removeNode(node.id);
-    }
   });
   dagre.layout(dagreGraph);
   const innerGraph = dagreGraph.graph();
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  for (const node of finalNodes) {
+  for (const node of nodesAndEdges.nodes) {
     const matchingNode = dagreGraph.node(node.id);
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
@@ -278,8 +269,7 @@ const useGraphOptions = (props: GraphProps) => {
   const { nodesAndEdges } = useGraphNodesAndEdges(
     props.categories,
     props.data,
-    props.properties,
-    props.status
+    props.properties
   );
   const { setGraphEdges, setGraphNodes } = useGraph();
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
@@ -312,8 +302,7 @@ const useGraphOptions = (props: GraphProps) => {
 const useGraphNodesAndEdges = (
   categories: CategoryMap,
   data: LeafNodeData | undefined,
-  properties: GraphProperties | undefined,
-  status: DashboardRunState
+  properties: GraphProperties | undefined
 ) => {
   const { expandedNodes } = useGraph();
   const themeColors = useChartThemeColors();
@@ -324,10 +313,9 @@ const useGraphNodesAndEdges = (
         data,
         properties,
         themeColors,
-        expandedNodes,
-        status
+        expandedNodes
       ),
-    [categories, data, expandedNodes, properties, status, themeColors]
+    [categories, data, expandedNodes, properties, themeColors]
   );
 
   return {
