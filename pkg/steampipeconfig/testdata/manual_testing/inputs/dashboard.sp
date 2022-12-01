@@ -3,12 +3,12 @@ dashboard "inputs" {
 
   input "i1" {
     sql = <<-EOQ
-          select arn from aws_account
+          select arn as label, arn as value from aws_account
         EOQ
   }
   input "i2" {
     sql = <<-EOQ
-          select arn from aws_account
+          select arn as label, arn as value from aws_account
         EOQ
   }
 
@@ -28,6 +28,6 @@ dashboard "inputs" {
 }
 
 query "q1"{
-  sql = "select organization_id from aws_account where arn = $1"
+  sql = "select arn from aws_account where arn = $1"
   param "arn" {   }
 }

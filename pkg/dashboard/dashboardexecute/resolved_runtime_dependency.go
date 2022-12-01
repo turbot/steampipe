@@ -2,6 +2,8 @@ package dashboardexecute
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"log"
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
@@ -14,10 +16,10 @@ type ResolvedRuntimeDependency struct {
 	dependency   *modconfig.RuntimeDependency
 	valueLock    sync.Mutex
 	value        any
-	valueChannel chan any
+	valueChannel chan *dashboardtypes.ResolvedRuntimeDependencyValue
 }
 
-func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel chan any) *ResolvedRuntimeDependency {
+func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel chan *dashboardtypes.ResolvedRuntimeDependencyValue) *ResolvedRuntimeDependency {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	return &ResolvedRuntimeDependency{
@@ -29,6 +31,8 @@ func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel
 func (d *ResolvedRuntimeDependency) Resolve() error {
 	d.valueLock.Lock()
 	defer d.valueLock.Unlock()
+
+	log.Printf("[TRACE] ResolvedRuntimeDependency Resolve dep %s chan %p", d.dependency.PropertyPath, d.valueChannel)
 
 	// if we are already resolved, do nothing
 	if d.hasValue() {
@@ -43,7 +47,11 @@ func (d *ResolvedRuntimeDependency) Resolve() error {
 	// wait for value
 	val := <-d.valueChannel
 
-	d.value = val
+	d.value = val.Value
+	// TODO will this be reported OK?
+	if val.Error != nil {
+		return val.Error
+	}
 
 	// we should have a non nil value now
 	if !d.hasValue() {

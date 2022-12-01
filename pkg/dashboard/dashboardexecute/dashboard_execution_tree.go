@@ -28,8 +28,9 @@ type DashboardExecutionTree struct {
 	runComplete   chan dashboardtypes.DashboardNodeRun
 
 	inputLock sync.Mutex
-	// store subscribers as a map of maps for simple unsubscription
-	inputDataSubscriptions map[string][]chan any
+
+	// map of subscribers to notify when an input value changes
+	inputDataSubscriptions map[string][]chan *dashboardtypes.ResolvedRuntimeDependencyValue
 	cancel                 context.CancelFunc
 	inputValues            map[string]any
 	id                     string
@@ -44,7 +45,7 @@ func NewDashboardExecutionTree(rootName string, sessionId string, client db_comm
 		runs:                   make(map[string]dashboardtypes.DashboardNodeRun),
 		workspace:              workspace,
 		runComplete:            make(chan dashboardtypes.DashboardNodeRun, 1),
-		inputDataSubscriptions: make(map[string][]chan any),
+		inputDataSubscriptions: make(map[string][]chan *dashboardtypes.ResolvedRuntimeDependencyValue),
 		inputValues:            make(map[string]any),
 	}
 	executionTree.id = fmt.Sprintf("%p", executionTree)
@@ -188,23 +189,28 @@ func (e *DashboardExecutionTree) GetName() string {
 }
 
 func (e *DashboardExecutionTree) SetInputs(inputValues map[string]any) {
+	log.Printf("[TRACE] SetInputs")
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
 
 	for name, value := range inputValues {
+		log.Printf("[TRACE] DashboardExecutionTree SetInput %s = %v", name, value)
 		e.inputValues[name] = value
 		e.publishInputValue(name, value)
 	}
 }
 
 func (e *DashboardExecutionTree) publishInputValue(name string, value any) {
+	log.Printf("[TRACE] DashboardExecutionTree publishInputValue %s", name)
+
 	// now see if anyone needs to be notified about this input
 	for _, c := range e.inputDataSubscriptions[name] {
-		c <- value
+		log.Printf("[TRACE] publishInputValue %p, %s = %v", c, name, value)
+		c <- &dashboardtypes.ResolvedRuntimeDependencyValue{Value: value}
 		close(c)
 	}
 	// clear subscriptions
-	e.inputDataSubscriptions[name] = nil
+	delete(e.inputDataSubscriptions, name)
 }
 
 // ChildCompleteChan implements DashboardNodeParent
@@ -225,19 +231,19 @@ func (e *DashboardExecutionTree) Cancel() {
 	}
 }
 
-func (e *DashboardExecutionTree) SubscribeToInput(inputName string) chan any {
+func (e *DashboardExecutionTree) SubscribeToInput(inputName string) chan *dashboardtypes.ResolvedRuntimeDependencyValue {
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
 
+	log.Printf("[TRACE] SubscribeToInput %s", inputName)
 	// make a channel (buffer to avoid potential sync issues)
-	valueChannel := make(chan any, 1)
+	valueChannel := make(chan *dashboardtypes.ResolvedRuntimeDependencyValue, 1)
 	// do we already have a value?
 	if value, ok := e.inputValues[inputName]; ok {
-		valueChannel <- value
+		valueChannel <- &dashboardtypes.ResolvedRuntimeDependencyValue{Value: value}
 		close(valueChannel)
 	} else {
-		subscriptions := e.inputDataSubscriptions[inputName]
-		e.inputDataSubscriptions[inputName] = append(subscriptions, valueChannel)
+		e.inputDataSubscriptions[inputName] = append(e.inputDataSubscriptions[inputName], valueChannel)
 	}
 	return valueChannel
 }

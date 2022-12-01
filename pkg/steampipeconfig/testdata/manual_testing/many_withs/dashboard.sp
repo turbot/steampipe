@@ -40,15 +40,15 @@ node "n1" {
       select
         $1 as id,
         $1 as title
-  EOQ
 
+  EOQ
   param "n1" {}
 }
 node "n2" {
   sql = <<-EOQ
       select
         $1 as id,
-        $1 as title,
+        $1 as title
   EOQ
 
   param "n2" {}

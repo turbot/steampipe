@@ -189,6 +189,21 @@ func (f *DashboardFlow) Diff(other *DashboardFlow) *DashboardTreeItemDiffs {
 			}
 		}
 	}
+	// populateChildDiffs will identify added/removed edges, but we need to manually compare if the nodes/edges have changed
+	for i, n := range f.Nodes {
+		if otherNode := other.Nodes.Get(n.Name()); otherNode != nil {
+			if !n.Equals(otherNode) {
+				res.AddPropertyDiff(fmt.Sprintf("Nodes.%d", i))
+			}
+		}
+	}
+	for i, n := range f.Edges {
+		if otherNode := other.Edges.Get(n.Name()); otherNode != nil {
+			if !n.Equals(otherNode) {
+				res.AddPropertyDiff(fmt.Sprintf("Edges.%d", i))
+			}
+		}
+	}
 
 	res.populateChildDiffs(f, other)
 	res.queryProviderDiff(f, other)
