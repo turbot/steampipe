@@ -2,7 +2,6 @@ package dashboardexecute
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
@@ -15,43 +14,42 @@ type ResolvedRuntimeDependency struct {
 	dependency   *modconfig.RuntimeDependency
 	valueLock    sync.Mutex
 	value        any
-	getValueFunc func(string) (any, error)
+	valueChannel chan any
 }
 
-func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, getValueFunc func(string) (any, error)) *ResolvedRuntimeDependency {
+func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel chan any) *ResolvedRuntimeDependency {
+	var wg sync.WaitGroup
+	wg.Add(1)
 	return &ResolvedRuntimeDependency{
 		dependency:   dep,
-		getValueFunc: getValueFunc,
+		valueChannel: valueChannel,
 	}
 }
 
-func (d *ResolvedRuntimeDependency) Resolve() (bool, error) {
+func (d *ResolvedRuntimeDependency) Resolve() error {
 	d.valueLock.Lock()
 	defer d.valueLock.Unlock()
 
 	// if we are already resolved, do nothing
 	if d.hasValue() {
-		return true, nil
+		return nil
 	}
 
 	// dependency must have a source resource - if not this is a bug
 	if d.dependency.SourceResource == nil {
-		return false, fmt.Errorf("runtime dependency '%s' Resolve() called but it does not have a source resource", d.dependency.String())
+		return fmt.Errorf("runtime dependency '%s' Resolve() called but it does not have a source resource", d.dependency.String())
 	}
 
-	// otherwise, try to read the value from the source
-	val, err := d.getValueFunc(d.dependency.SourceResource.GetUnqualifiedName())
-	if err != nil {
-		return false, err
-	}
-	// TACTICAL - if IsArray flag is set, wrap the dependency value in an array
-	if d.dependency.IsArray {
-		val = type_conversion.AnySliceToTypedSlice([]any{val})
-	}
+	// wait for value
+	val := <-d.valueChannel
+
 	d.value = val
 
-	// did we succeed
-	return d.hasValue(), nil
+	// we should have a non nil value now
+	if !d.hasValue() {
+		return fmt.Errorf("nil value recevied for runtime dependency %s", d.dependency.String())
+	}
+	return nil
 }
 
 func (d *ResolvedRuntimeDependency) hasValue() bool {

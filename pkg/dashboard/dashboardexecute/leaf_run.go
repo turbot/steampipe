@@ -158,16 +158,17 @@ func (r *LeafRun) addRuntimeDependencies() {
 		name := n
 		dep := d
 		// determine the function to use to retrieve the runtime dependency value
-		var getValueFunc func(string) (any, error)
+		var valueChannel chan any
 		switch dep.PropertyPath.ItemType {
-		case modconfig.BlockTypeWith:
-			getValueFunc = func(name string) (any, error) {
-				return r.getWithValue(name, dep.PropertyPath)
-			}
+		//case modconfig.BlockTypeWith:
+		//	getValueFunc = func(name string) (any, error) {
+		//		return r.getWithValue(name, dep.PropertyPath)
+		//	}
 		case modconfig.BlockTypeInput:
-			getValueFunc = r.executionTree.GetInputValue
+			valueChannel = r.executionTree.SubscribeToInput(name)
+
 		}
-		r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, getValueFunc)
+		r.runtimeDependencies[name] = NewResolvedRuntimeDependency(dep, valueChannel)
 	}
 
 	// if the parent is a leaf run, we must be a node or an edge, inherit our parent runtime dependencies
@@ -432,31 +433,9 @@ func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.DashboardNode.Name())
 	for _, resolvedDependency := range r.runtimeDependencies {
 		// check whether the dependency is available
-		isResolved, err := resolvedDependency.Resolve()
+		err := resolvedDependency.Resolve()
 		if err != nil {
 			return err
-		}
-
-		if isResolved {
-			// this one is available
-			continue
-		}
-		log.Printf("[TRACE] waitForRuntimeDependency %s", resolvedDependency.dependency.String())
-		if err := r.executionTree.waitForRuntimeDependency(ctx, resolvedDependency.dependency); err != nil {
-			return err
-		}
-
-		log.Printf("[TRACE] dependency %s should be available", resolvedDependency.dependency.String())
-
-		// now again resolve the dependency value - this sets the arg to have the runtime dependency value
-		isResolved, err = resolvedDependency.Resolve()
-		if err != nil {
-			return err
-		}
-		if !isResolved {
-			log.Printf("[TRACE] dependency %s not resolved after waitForRuntimeDependency returned", resolvedDependency.dependency.String())
-			// should now be resolved`
-			return fmt.Errorf("dependency %s not resolved after waitForRuntimeDependency returned", resolvedDependency.dependency.String())
 		}
 	}
 
