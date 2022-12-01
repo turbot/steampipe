@@ -329,6 +329,7 @@ const useGraphNodesAndEdges = (
       ),
     [categories, data, expandedNodes, properties, status, themeColors]
   );
+
   return {
     nodesAndEdges,
   };

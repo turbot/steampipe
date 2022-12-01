@@ -1,9 +1,14 @@
 import difference from "lodash/difference";
+import useDeepCompareEffect from "use-deep-compare-effect";
 import usePrevious from "../../../../hooks/usePrevious";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Edge, Node, useReactFlow } from "reactflow";
 import { FoldedNode } from "../../common/types";
 import { noop } from "../../../../utils/func";
+import {
+  renderInterpolatedTemplates,
+  RowRenderResult,
+} from "../../../../utils/template";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { v4 as uuid } from "uuid";
 
@@ -22,6 +27,7 @@ interface IGraphContext {
   expandedNodes: ExpandedNodes;
   layoutId: string;
   recalcLayout: () => void;
+  renderResults: RowRenderResult;
   setGraphEdges: (edges: Edge[]) => void;
   setGraphNodes: (nodes: Node[]) => void;
 }
@@ -32,6 +38,7 @@ const GraphContext = createContext<IGraphContext>({
   expandedNodes: {},
   layoutId: "",
   recalcLayout: noop,
+  renderResults: {},
   setGraphEdges: noop,
   setGraphNodes: noop,
 });
@@ -39,6 +46,10 @@ const GraphContext = createContext<IGraphContext>({
 type PreviousNodesAndEdges = {
   nodes: Node[];
   edges: Edge[];
+};
+
+type CategoryNodeMap = {
+  [category: string]: Node[];
 };
 
 const GraphProvider = ({ children }) => {
@@ -50,11 +61,50 @@ const GraphProvider = ({ children }) => {
   const [graphEdges, setGraphEdges] = useState<Edge[]>([]);
   const [graphNodes, setGraphNodes] = useState<Node[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<ExpandedNodes>({});
+  const [renderResults, setRenderResults] = useState<RowRenderResult>({});
 
   const previousNodesAndEdges = usePrevious<PreviousNodesAndEdges>({
     nodes: graphNodes,
     edges: graphEdges,
   });
+
+  useDeepCompareEffect(() => {
+    const doRender = async () => {
+      const nodesWithHrefs = graphNodes.filter(
+        (n) => n.data && !n.data.isFolded && !!n.data.href
+      );
+      const nodesByCategory: CategoryNodeMap = {};
+      for (const node of nodesWithHrefs) {
+        const category = node?.data?.category?.name || null;
+        if (!category) {
+          // What to do? We have no category for this node
+          continue;
+        }
+        nodesByCategory[category] = nodesByCategory[category] || [];
+        nodesByCategory[category].push(node);
+      }
+
+      const renderResults: RowRenderResult = {};
+
+      for (const [category, nodes] of Object.entries(nodesByCategory)) {
+        const hrefTemplate = nodes[0].data.href;
+        const results = await renderInterpolatedTemplates(
+          { [category]: hrefTemplate },
+          nodes.map((n) => n.data.row_data || {})
+        );
+        for (let nodeIdx = 0; nodeIdx < nodes.length; nodeIdx++) {
+          const node = nodes[nodeIdx];
+          if (!node.id) {
+            continue;
+          }
+          renderResults[node.id] = results[nodeIdx][category];
+        }
+      }
+      setRenderResults(renderResults);
+    };
+
+    doRender();
+  }, [graphNodes]);
 
   // When the edges or nodes change, update the layout
   useEffect(() => {
@@ -115,7 +165,6 @@ const GraphProvider = ({ children }) => {
   const collapseNodes = (foldedNodes: FoldedNode[] = []) => {
     setExpandedNodes((current) => {
       const newExpandedNodes = { ...current };
-      console.log({ current, foldedNodes });
       for (const foldedNode of foldedNodes) {
         delete newExpandedNodes[foldedNode.id];
       }
@@ -146,6 +195,7 @@ const GraphProvider = ({ children }) => {
         expandedNodes,
         layoutId,
         recalcLayout,
+        renderResults,
         setGraphEdges,
         setGraphNodes,
       }}

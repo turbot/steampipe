@@ -1,16 +1,16 @@
 import jq from "jq-web";
 import { KeyValuePairs } from "../components/dashboards/common/types";
 
-interface TemplatesMap {
+type TemplatesMap = {
   [key: string]: string;
-}
+};
 
-export interface RowRenderResult {
+export type RowRenderResult = {
   [key: string]: {
     result?: string;
     error?: string;
   };
-}
+};
 
 const replaceSingleQuotesWithDoubleQuotes = (str) => {
   if (!str) {
