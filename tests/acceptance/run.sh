@@ -36,7 +36,7 @@ export SPIPETOOLS_PG_CONN_STRING=$SPIPETOOLS_PG_CONN_STRING
 export SPIPETOOLS_TOKEN=$SPIPETOOLS_TOKEN
 
 # Must have these commands for the test suite to run
-declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch")
+declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch" "jd")
 
 for required_command in "${required_commands[@]}"
 do

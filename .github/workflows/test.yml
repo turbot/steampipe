@@ -118,6 +118,11 @@ jobs:
         with:
           submodules: true
 
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
       - name: Prepare for downloads
         id: prepare-for-downloads
         run: |
@@ -152,6 +157,14 @@ jobs:
       - name: Set PATH
         run: |
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+
+      - name: Go install jd
+        run: |
+          go install github.com/josephburnett/jd@latest
+
+      - name: Check
+        run: |
+          jd
 
       - name: Install DB
         id: install-db
