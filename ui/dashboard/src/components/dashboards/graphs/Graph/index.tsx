@@ -103,7 +103,8 @@ const buildGraphNodesAndEdges = (
   data: LeafNodeData | undefined,
   properties: GraphProperties | undefined,
   themeColors: any,
-  expandedNodes: ExpandedNodes
+  expandedNodes: ExpandedNodes,
+  status: DashboardRunState
 ) => {
   if (!data) {
     return {
@@ -131,14 +132,23 @@ const buildGraphNodesAndEdges = (
   nodesAndEdges.edges.forEach((edge) => {
     dagreGraph.setEdge(edge.from_id, edge.to_id);
   });
+  const finalNodes: NodeType[] = [];
   nodesAndEdges.nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    const nodeEdges = dagreGraph.nodeEdges(node.id);
+    if (
+      status === "complete" ||
+      status === "error" ||
+      (nodeEdges && nodeEdges.length > 0)
+    ) {
+      dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+      finalNodes.push(node);
+    }
   });
   dagre.layout(dagreGraph);
   const innerGraph = dagreGraph.graph();
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  for (const node of nodesAndEdges.nodes) {
+  for (const node of finalNodes) {
     const matchingNode = dagreGraph.node(node.id);
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
@@ -270,7 +280,8 @@ const useGraphOptions = (props: GraphProps) => {
   const { nodesAndEdges } = useGraphNodesAndEdges(
     props.categories,
     props.data,
-    props.properties
+    props.properties,
+    props.status
   );
   const { setGraphEdges, setGraphNodes } = useGraph();
   const [nodes, setNodes, onNodesChange] = useNodesState(nodesAndEdges.nodes);
@@ -303,7 +314,8 @@ const useGraphOptions = (props: GraphProps) => {
 const useGraphNodesAndEdges = (
   categories: CategoryMap,
   data: LeafNodeData | undefined,
-  properties: GraphProperties | undefined
+  properties: GraphProperties | undefined,
+  status: DashboardRunState
 ) => {
   const { expandedNodes } = useGraph();
   const themeColors = useChartThemeColors();
@@ -314,9 +326,10 @@ const useGraphNodesAndEdges = (
         data,
         properties,
         themeColors,
-        expandedNodes
+        expandedNodes,
+        status
       ),
-    [categories, data, expandedNodes, properties, themeColors]
+    [categories, data, expandedNodes, properties, status, themeColors]
   );
 
   return {
