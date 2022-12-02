@@ -23,8 +23,8 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
+	Nodes DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
@@ -83,8 +83,7 @@ func (h *DashboardHierarchy) Name() string {
 func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	h.setBaseProperties(resourceMapProvider)
 
-	// populate nodes and edges
-	return initialiseEdgesAndNodes(h, resourceMapProvider)
+	return nil
 }
 
 // AddReference implements ResourceWithMetadata
@@ -277,27 +276,27 @@ func (h *DashboardHierarchy) GetResolvedQuery(runtimeArgs *QueryArgs) (*Resolved
 	return h.getResolvedQuery(h, runtimeArgs)
 }
 
-// GetEdges implements EdgeAndNodeProvider
+// GetEdges implements NodeAndEdgeProvider
 func (h *DashboardHierarchy) GetEdges() DashboardEdgeList {
 	return h.Edges
 }
 
-// GetNodes implements EdgeAndNodeProvider
+// GetNodes implements NodeAndEdgeProvider
 func (h *DashboardHierarchy) GetNodes() DashboardNodeList {
 	return h.Nodes
 }
 
-// SetEdges implements EdgeAndNodeProvider
+// SetEdges implements NodeAndEdgeProvider
 func (h *DashboardHierarchy) SetEdges(edges DashboardEdgeList) {
 	h.Edges = edges
 }
 
-// SetNodes implements EdgeAndNodeProvider
+// SetNodes implements NodeAndEdgeProvider
 func (h *DashboardHierarchy) SetNodes(nodes DashboardNodeList) {
 	h.Nodes = nodes
 }
 
-// AddCategory implements EdgeAndNodeProvider
+// AddCategory implements NodeAndEdgeProvider
 func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) hcl.Diagnostics {
 	categoryName := category.ShortName
 	if _, ok := h.Categories[categoryName]; ok {
@@ -308,6 +307,23 @@ func (h *DashboardHierarchy) AddCategory(category *DashboardCategory) hcl.Diagno
 		}}
 	}
 	h.Categories[categoryName] = category
+	return nil
+}
+
+// AddChild implements NodeAndEdgeProvider
+func (h *DashboardHierarchy) AddChild(child HclResource) hcl.Diagnostics {
+	switch c := child.(type) {
+	case *DashboardNode:
+		h.Nodes = append(h.Nodes, c)
+	case *DashboardEdge:
+		h.Edges = append(h.Edges, c)
+	default:
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("DashboardHierarchy does not support children of type %s", child.BlockType()),
+			Subject:  h.GetDeclRange(),
+		}}
+	}
 	return nil
 }
 

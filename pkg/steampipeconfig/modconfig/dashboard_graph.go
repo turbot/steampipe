@@ -21,8 +21,8 @@ type DashboardGraph struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
+	Nodes DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 	Direction  *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
@@ -82,8 +82,7 @@ func (g *DashboardGraph) Name() string {
 func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	g.setBaseProperties(resourceMapProvider)
 
-	// populate nodes and edges
-	return initialiseEdgesAndNodes(g, resourceMapProvider)
+	return nil
 }
 
 // AddReference implements ResourceWithMetadata
@@ -280,27 +279,27 @@ func (g *DashboardGraph) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuer
 	return g.getResolvedQuery(g, runtimeArgs)
 }
 
-// GetEdges implements EdgeAndNodeProvider
+// GetEdges implements NodeAndEdgeProvider
 func (g *DashboardGraph) GetEdges() DashboardEdgeList {
 	return g.Edges
 }
 
-// GetNodes implements EdgeAndNodeProvider
+// GetNodes implements NodeAndEdgeProvider
 func (g *DashboardGraph) GetNodes() DashboardNodeList {
 	return g.Nodes
 }
 
-// SetEdges implements EdgeAndNodeProvider
+// SetEdges implements NodeAndEdgeProvider
 func (g *DashboardGraph) SetEdges(edges DashboardEdgeList) {
 	g.Edges = edges
 }
 
-// SetNodes implements EdgeAndNodeProvider
+// SetNodes implements NodeAndEdgeProvider
 func (g *DashboardGraph) SetNodes(nodes DashboardNodeList) {
 	g.Nodes = nodes
 }
 
-// AddCategory implements EdgeAndNodeProvider
+// AddCategory implements NodeAndEdgeProvider
 func (g *DashboardGraph) AddCategory(category *DashboardCategory) hcl.Diagnostics {
 	categoryName := category.ShortName
 	if _, ok := g.Categories[categoryName]; ok {
@@ -311,6 +310,23 @@ func (g *DashboardGraph) AddCategory(category *DashboardCategory) hcl.Diagnostic
 		}}
 	}
 	g.Categories[categoryName] = category
+	return nil
+}
+
+// AddChild implements NodeAndEdgeProvider
+func (g *DashboardGraph) AddChild(child HclResource) hcl.Diagnostics {
+	switch c := child.(type) {
+	case *DashboardNode:
+		g.Nodes = append(g.Nodes, c)
+	case *DashboardEdge:
+		g.Edges = append(g.Edges, c)
+	default:
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("DashboardGraph does not support children of type %s", child.BlockType()),
+			Subject:  g.GetDeclRange(),
+		}}
+	}
 	return nil
 }
 

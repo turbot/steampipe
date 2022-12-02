@@ -54,8 +54,8 @@ var QueryProviderBlocks = []string{
 	BlockTypeWith,
 }
 
-// EdgeAndNodeProviderBlocks is a list of block types which implement EdgeAndNodeProvider
-var EdgeAndNodeProviderBlocks = []string{
+// NodeAndEdgeProviderBlocks is a list of block types which implementnodeAndEdgeProvider
+var NodeAndEdgeProviderBlocks = []string{
 	BlockTypeHierarchy,
 	BlockTypeFlow,
 	BlockTypeGraph,
