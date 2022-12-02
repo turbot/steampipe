@@ -5,6 +5,9 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+// TODO Replace everything with consts
+// TODO add all attributes into validation-only-schemas
+
 var ConfigBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
@@ -161,11 +164,9 @@ var RequireModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// DashboardBlockSchema is used purely to validate dashboard child blocks
+// DashboardBlockSchema is only used to validate the blocks of a Dashboard
+// TODO add all atttributes and validate these as well
 var DashboardBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "args"},
-	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       modconfig.BlockTypeInput,
@@ -211,11 +212,9 @@ var DashboardBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// DashboardContainerBlockSchema contains the DashboardContainer attributes which cannot be automatically decoded
+// DashboardContainerBlockSchema is only used to validate the blocks of a DashboardContainer
+// TODO add all atttributes and validate these as well
 var DashboardContainerBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "args"},
-	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       modconfig.BlockTypeInput,
@@ -277,6 +276,8 @@ var BenchmarkBlockSchema = &hcl.BodySchema{
 }
 
 // QueryProviderBlockSchema schema for all blocks satisfying QueryProvider interface
+// NOTE: these are just the blocks/attributes that are explicitly decoded
+// other query provider properties are implicitly decoded using tags
 var QueryProviderBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
@@ -293,9 +294,9 @@ var QueryProviderBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// EdgeAndNodeProviderSchema is used to decode graph/hierarchy/flow
+// NodeAndEdgeProviderSchema is used to decode graph/hierarchy/flow
 // (EXCEPT categories)
-var EdgeAndNodeProviderSchema = &hcl.BodySchema{
+var NodeAndEdgeProviderSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},
 	},
@@ -311,6 +312,12 @@ var EdgeAndNodeProviderSchema = &hcl.BodySchema{
 		{
 			Type:       "with",
 			LabelNames: []string{"name"},
+		},
+		{
+			Type: modconfig.BlockTypeNode,
+		},
+		{
+			Type: modconfig.BlockTypeEdge,
 		},
 	},
 }
