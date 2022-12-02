@@ -14,10 +14,10 @@ cd $WD
 echo "Working directory: $WD"
 # setup a steampipe installation
 echo "Install directory: $STEAMPIPE_INSTALL_DIR"
-# steampipe query "select 1 as setup_complete"
+steampipe query "select 1 as setup_complete"
 echo "Installation complete at $STEAMPIPE_INSTALL_DIR"
 echo "Installing CHAOS"
-# steampipe plugin install chaos
+steampipe plugin install chaos
 echo "Installed CHAOS"
 
 if [ $# -eq 0 ]; then
