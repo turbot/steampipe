@@ -4,7 +4,9 @@
   "private": true,
   "main": "index.js",
   "scripts": {
+    "prestart": "node scripts/setupMaterialSymbols.js",
     "start": "if-node-version '>= 17' && craco --openssl-legacy-provider start || craco start",
+    "prebuid": "node scripts/setupMaterialSymbols.js",
     "build": "GENERATE_SOURCEMAP=false if-node-version '>= 17' && craco --openssl-legacy-provider build || craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
@@ -16,6 +18,7 @@
   "dependencies": {
     "@headlessui/react": "1.7.4",
     "@heroicons/react": "2.0.13",
+    "@material-symbols/svg-200": "0.4.1",
     "@popperjs/core": "2.11.6",
     "@supabase/sql-formatter": "4.0.3",
     "color-convert": "2.0.1",

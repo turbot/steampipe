@@ -1,6 +1,11 @@
 import kebabCase from "lodash/kebabCase";
 import * as outlineIconExports from "@heroicons/react/24/outline";
 import * as solidIconExports from "@heroicons/react/24/solid";
+// import {
+//   outline as materialSymbolsOutline,
+//   solid as materialSymbolsSolid,
+// } from "./materialSymbols";
+// console.log({ materialSymbolsOutline, materialSymbolsSolid });
 
 const icons = {};
 

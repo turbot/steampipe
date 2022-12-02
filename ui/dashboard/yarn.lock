@@ -3153,6 +3153,11 @@
     "@types/yargs" "^17.0.8"
     chalk "^4.0.0"
 
+"@material-symbols/svg-200@0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@material-symbols/svg-200/-/svg-200-0.4.1.tgz#0922c4d4fdf9bb828d1f3caf306c9a16e04a66b3"
+  integrity sha512-HNDf9+LYFF45u66NPyujcnKpNrwX8+pgjNKmJWNw1UzvhoTK95XKFDIqcW9C/p6lCud8bx38JI6VErlA4p7NaQ==
+
 "@mdx-js/mdx@^1.6.22":
   version "1.6.22"
   resolved "https://registry.npmjs.org/@mdx-js/mdx/-/mdx-1.6.22.tgz"
