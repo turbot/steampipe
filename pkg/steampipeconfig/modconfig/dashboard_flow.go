@@ -22,8 +22,8 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
+	Nodes DashboardNodeList `cty:"node_list"  column:"nodes,jsonb" json:"-"`
+	Edges DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
@@ -82,8 +82,7 @@ func (f *DashboardFlow) Name() string {
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	f.setBaseProperties(resourceMapProvider)
 
-	// populate nodes and edges
-	return initialiseEdgesAndNodes(f, resourceMapProvider)
+	return nil
 }
 
 // AddReference implements ResourceWithMetadata
@@ -276,27 +275,27 @@ func (f *DashboardFlow) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery
 	return f.getResolvedQuery(f, runtimeArgs)
 }
 
-// GetEdges implements EdgeAndNodeProvider
+// GetEdges implements NodeAndEdgeProvider
 func (f *DashboardFlow) GetEdges() DashboardEdgeList {
 	return f.Edges
 }
 
-// GetNodes implements EdgeAndNodeProvider
+// GetNodes implements NodeAndEdgeProvider
 func (f *DashboardFlow) GetNodes() DashboardNodeList {
 	return f.Nodes
 }
 
-// SetEdges implements EdgeAndNodeProvider
+// SetEdges implements NodeAndEdgeProvider
 func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
 	f.Edges = edges
 }
 
-// SetNodes implements EdgeAndNodeProvider
+// SetNodes implements NodeAndEdgeProvider
 func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 	f.Nodes = nodes
 }
 
-// AddCategory implements EdgeAndNodeProvider
+// AddCategory implements NodeAndEdgeProvider
 func (f *DashboardFlow) AddCategory(category *DashboardCategory) hcl.Diagnostics {
 	categoryName := category.ShortName
 	if _, ok := f.Categories[categoryName]; ok {
@@ -307,6 +306,23 @@ func (f *DashboardFlow) AddCategory(category *DashboardCategory) hcl.Diagnostics
 		}}
 	}
 	f.Categories[categoryName] = category
+	return nil
+}
+
+// AddChild implements NodeAndEdgeProvider
+func (f *DashboardFlow) AddChild(child HclResource) hcl.Diagnostics {
+	switch c := child.(type) {
+	case *DashboardNode:
+		f.Nodes = append(f.Nodes, c)
+	case *DashboardEdge:
+		f.Edges = append(f.Edges, c)
+	default:
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("DashboardFlow does not support children of type %s", child.BlockType()),
+			Subject:  f.GetDeclRange(),
+		}}
+	}
 	return nil
 }
 
