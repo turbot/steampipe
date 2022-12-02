@@ -1,13 +1,11 @@
 import kebabCase from "lodash/kebabCase";
 import * as outlineIconExports from "@heroicons/react/24/outline";
 import * as solidIconExports from "@heroicons/react/24/solid";
-// import {
-//   outline as materialSymbolsOutline,
-//   solid as materialSymbolsSolid,
-// } from "./materialSymbols";
-// console.log({ materialSymbolsOutline, materialSymbolsSolid });
-
-const icons = {};
+import { useMemo } from "react";
+let heroIcons = { outline: {}, solid: {} };
+let materialSymbols = {};
+import("./heroIcons").then((m) => (heroIcons = m));
+import("./materialSymbols").then((m) => (materialSymbols = m.outline));
 
 const migratedV2IconNames = {
   adjustments: "adjustments-vertical",
@@ -169,16 +167,22 @@ const getDashboardIconName = (name?: string | null) => {
   }
 };
 
-Object.entries(outlineIconExports).forEach(([name, exported]) => {
-  const iconName = convertIconName(name);
-  icons[iconName] = exported;
-  icons[`heroicons-outline:${iconName}`] = exported;
-});
+const getHeroIcons = (outline, solid) => {
+  const icons = {};
 
-Object.entries(solidIconExports).forEach(([name, exported]) => {
-  const iconName = convertIconName(name);
-  icons[`heroicons-solid:${iconName}`] = exported;
-});
+  Object.entries(outline).forEach(([name, exported]) => {
+    const iconName = convertIconName(name);
+    icons[iconName] = exported;
+    icons[`heroicons-outline:${iconName}`] = exported;
+  });
+
+  Object.entries(solid).forEach(([name, exported]) => {
+    const iconName = convertIconName(name);
+    icons[`heroicons-solid:${iconName}`] = exported;
+  });
+
+  return icons;
+};
 
 interface IconProps {
   className?: string;
@@ -188,7 +192,19 @@ interface IconProps {
 }
 
 const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
-  const MatchingIcon = icons[getDashboardIconName(icon)];
+  const icons = useMemo(
+    () => ({
+      heroIcons: getHeroIcons(heroIcons.outline, heroIcons.solid),
+      materialSymbols,
+    }),
+    [heroIcons]
+  );
+
+  let MatchingIcon;
+  MatchingIcon = icons.materialSymbols[icon]?.Component;
+  if (!MatchingIcon) {
+    MatchingIcon = icons.heroIcons[getDashboardIconName(icon)];
+  }
   if (!MatchingIcon) {
     return null;
   }
