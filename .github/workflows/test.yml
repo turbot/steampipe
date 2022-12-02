@@ -101,6 +101,7 @@ jobs:
           - "performance"
           - "workspace"
           - "cloud"
+          - "dashboard"
           - "exit_codes"
           - "force_stop"
         exclude:
@@ -158,10 +159,6 @@ jobs:
       - name: Go install jd
         run: |
           go install github.com/josephburnett/jd@latest
-
-      - name: Check
-        run: |
-          jd
 
       - name: Install DB
         id: install-db
