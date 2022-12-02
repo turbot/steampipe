@@ -3,6 +3,14 @@ _What's new?_
 * Add support for visualisations of your data with graphs, with easily composable data structures using nodes and edges. ([tbd])
 * Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2663](https://github.com/turbot/steampipe/issues/2663))
 
+## v0.17.4 [2022-12-02]
+_Bug fixes_
+* Fixes issue where the `--separator` flag was not being used in the `csv` output/export for `steampipe check`. ([#544](https://github.com/turbot/steampipe/issues/544))
+
+## v0.17.3 [2022-11-24]
+_Bug fixes_
+* Fix shared memory errors for high connection count - update postgres config to reverts `max_locks_per_transaction` to the pre v0.17.0 value of 2048. ([#2756](https://github.com/turbot/steampipe/issues/2756))
+
 ## v0.17.2 [2022-11-18]
 _Bug fixes_
 * Fix dashboard interpolated string expressions with adjacent expressions not separated by spaces not rendering the second expression ([#2752](https://github.com/turbot/steampipe/issues/2752))
