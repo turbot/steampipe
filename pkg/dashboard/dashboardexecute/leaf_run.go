@@ -363,10 +363,10 @@ func (r *LeafRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 
 func (r *LeafRun) MarshalJSON() ([]byte, error) {
 
-	// special case handling for EdgeAndNodeProvider
-	_, isEdgeAndNodeProvider := r.DashboardNode.(modconfig.EdgeAndNodeProvider)
-	if isEdgeAndNodeProvider {
-		return r.marshalEdgeAndNodeProvider()
+	// special case handling for NodeAndEdgeProvider
+	_, isNodeAndEdgeProvider := r.DashboardNode.(modconfig.NodeAndEdgeProvider)
+	if isNodeAndEdgeProvider {
+		return r.marshalNodeAndEdgeProvider()
 	}
 
 	// just marshal as normal
@@ -374,13 +374,13 @@ func (r *LeafRun) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct{ *Alias }{(*Alias)(r)})
 }
 
-// we need custom JSON serialisation for EdgeAndNodeProviders
+// we need custom JSON serialisation for NodeAndEdgeProviders
 // This is because the name of the nodes and edges, which appears under properties,
 // must be populated with the names of the node and edge LeafRuns, rather than the nodes and edge resources.
 // These may be the same, but as the nodes/edges may be reused we ensure the run names are unique
 // The panels in the panel map will be keyed by run-name - so it is vital that the nodes and edges lists
 // correspond to the panel keys.
-func (r *LeafRun) marshalEdgeAndNodeProvider() ([]byte, error) {
+func (r *LeafRun) marshalNodeAndEdgeProvider() ([]byte, error) {
 	type Alias LeafRun
 	// embed the run in a struct, wiuth an additional 'Properties' property.
 	// This will overwrite the `properties` value serialized from the underlying run
