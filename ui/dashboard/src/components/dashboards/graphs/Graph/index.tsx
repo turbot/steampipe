@@ -38,6 +38,7 @@ import {
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
 } from "../types";
+import { DashboardRunState } from "../../../../types";
 import { ExpandedNodes, GraphProvider, useGraph } from "../common/useGraph";
 import { getGraphComponent } from "..";
 import { registerComponent } from "../../index";
@@ -397,7 +398,9 @@ const CustomControls = () => {
 
 const useNodeAndEdgePanelInformation = (
   nodeAndEdgeStatus: NodeAndEdgeStatus,
-  dataFormat: NodeAndEdgeDataFormat
+  dataFormat: NodeAndEdgeDataFormat,
+  nodes: Node[],
+  status: DashboardRunState
 ) => {
   const { setShowPanelInformation, setPanelInformation } = usePanel();
 
@@ -436,7 +439,10 @@ const useNodeAndEdgePanelInformation = (
     if (
       !nodeAndEdgeStatus ||
       dataFormat === "LEGACY" ||
-      (pendingCategories.length === 0 && errorCategories.length === 0)
+      (pendingCategories.length === 0 &&
+        errorCategories.length === 0 &&
+        status === "complete" &&
+        nodes.length > 0)
     ) {
       setShowPanelInformation(false);
       setPanelInformation(null);
@@ -445,6 +451,8 @@ const useNodeAndEdgePanelInformation = (
     // @ts-ignore
     setPanelInformation(() => (
       <NodeAndEdgePanelInformation
+        nodes={nodes}
+        status={status}
         pendingCategories={pendingCategories}
         errorCategories={errorCategories}
         completeCategories={completeCategories}
@@ -454,9 +462,11 @@ const useNodeAndEdgePanelInformation = (
   }, [
     dataFormat,
     nodeAndEdgeStatus,
+    nodes,
     pendingCategories,
     errorCategories,
     completeCategories,
+    status,
     setPanelInformation,
     setShowPanelInformation,
   ]);
@@ -465,7 +475,12 @@ const useNodeAndEdgePanelInformation = (
 const Graph = (props) => {
   const { selectedPanel } = useDashboard();
   const graphOptions = useGraphOptions(props);
-  useNodeAndEdgePanelInformation(props.nodeAndEdgeStatus, props.dataFormat);
+  useNodeAndEdgePanelInformation(
+    props.nodeAndEdgeStatus,
+    props.dataFormat,
+    graphOptions.nodes,
+    props.status
+  );
 
   const nodeTypes = useMemo(
     () => ({
