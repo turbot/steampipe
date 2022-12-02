@@ -19,6 +19,8 @@ type DashboardChanged struct {
 	ChangedInputs      []*modconfig.DashboardTreeItemDiffs
 	ChangedTables      []*modconfig.DashboardTreeItemDiffs
 	ChangedTexts       []*modconfig.DashboardTreeItemDiffs
+	ChangedNodes       []*modconfig.DashboardTreeItemDiffs
+	ChangedEdges       []*modconfig.DashboardTreeItemDiffs
 
 	NewDashboards  []*modconfig.Dashboard
 	NewContainers  []*modconfig.DashboardContainer
@@ -34,6 +36,8 @@ type DashboardChanged struct {
 	NewInputs      []*modconfig.DashboardInput
 	NewTables      []*modconfig.DashboardTable
 	NewTexts       []*modconfig.DashboardText
+	NewNodes       []*modconfig.DashboardNode
+	NewEdges       []*modconfig.DashboardEdge
 
 	DeletedDashboards  []*modconfig.Dashboard
 	DeletedContainers  []*modconfig.DashboardContainer
@@ -49,6 +53,8 @@ type DashboardChanged struct {
 	DeletedInputs      []*modconfig.DashboardInput
 	DeletedTables      []*modconfig.DashboardTable
 	DeletedTexts       []*modconfig.DashboardText
+	DeletedNodes       []*modconfig.DashboardNode
+	DeletedEdges       []*modconfig.DashboardEdge
 }
 
 // IsDashboardEvent implements DashboardEvent interface
@@ -69,6 +75,8 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.ChangedInputs)+
 		len(c.ChangedTables)+
 		len(c.ChangedTexts)+
+		len(c.ChangedNodes)+
+		len(c.ChangedEdges)+
 		len(c.NewDashboards)+
 		len(c.NewContainers)+
 		len(c.NewBenchmarks)+
@@ -83,6 +91,8 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.NewInputs)+
 		len(c.NewTables)+
 		len(c.NewTexts)+
+		len(c.NewNodes)+
+		len(c.NewEdges)+
 		len(c.DeletedDashboards)+
 		len(c.DeletedContainers)+
 		len(c.DeletedBenchmarks)+
@@ -96,7 +106,9 @@ func (c *DashboardChanged) HasChanges() bool {
 		len(c.DeletedImages)+
 		len(c.DeletedInputs)+
 		len(c.DeletedTables)+
-		len(c.DeletedTexts) > 0
+		len(c.DeletedTexts)+
+		len(c.DeletedNodes)+
+		len(c.DeletedEdges) > 0
 }
 
 func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig.ModTreeItem) (bool, error)) error {

@@ -206,14 +206,11 @@ func (c *DashboardCategory) Diff(other *DashboardCategory) *DashboardTreeItemDif
 		Name: c.Name(),
 	}
 
-	if c.Fold == nil && other == nil {
+	if (c.Fold == nil) != (other.Fold == nil) {
 		res.AddPropertyDiff("Fold")
-	} else if c.Fold == nil && other != nil {
+	}
+	if c.Fold != nil && !c.Fold.Equals(other.Fold) {
 		res.AddPropertyDiff("Fold")
-	} else {
-		if !c.Fold.Equals(other.Fold) {
-			res.AddPropertyDiff("Fold")
-		}
 	}
 
 	if len(c.PropertyList) != len(other.PropertyList) {
