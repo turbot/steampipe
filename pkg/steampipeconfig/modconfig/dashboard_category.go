@@ -15,19 +15,21 @@ type DashboardCategory struct {
 	FullName        string `cty:"name" json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Title      *string                    `cty:"title" hcl:"title" json:"title,omitempty"`
-	Color      *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
-	Depth      *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
-	Icon       *string                    `cty:"icon" hcl:"icon" json:"icon,omitempty"`
-	HREF       *string                    `cty:"href" hcl:"href" json:"href,omitempty"`
-	Fold       *DashboardCategoryFold     `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
-	Fields     DashboardCategoryFieldList `cty:"fields" hcl:"field,block" json:"fields,omitempty"`
-	Base       *DashboardCategory         `hcl:"base" json:"-"`
-	References []*ResourceReference       `json:"-"`
-	Mod        *Mod                       `cty:"mod" json:"-"`
-	DeclRange  hcl.Range                  `json:"-"`
-	Paths      []NodePath                 `column:"path,jsonb" json:"-"`
-	Parents    []ModTreeItem              `json:"-"`
+	Title         *string                               `cty:"title" hcl:"title" json:"title,omitempty"`
+	Color         *string                               `cty:"color" hcl:"color" json:"color,omitempty"`
+	Depth         *int                                  `cty:"depth" hcl:"depth" json:"depth,omitempty"`
+	Icon          *string                               `cty:"icon" hcl:"icon" json:"icon,omitempty"`
+	HREF          *string                               `cty:"href" hcl:"href" json:"href,omitempty"`
+	Fold          *DashboardCategoryFold                `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
+	PropertyList  DashboardCategoryPropertyList         `cty:"property_list" hcl:"property,block" column:"properties,jsonb" json:"-"`
+	Properties    map[string]*DashboardCategoryProperty `cty:"properties" json:"properties,omitempty"`
+	PropertyOrder []string                              `cty:"property_order" hcl:"property_order,optional" json:"property_order,omitempty"`
+	Base          *DashboardCategory                    `hcl:"base" json:"-"`
+	References    []*ResourceReference                  `json:"-"`
+	Mod           *Mod                                  `cty:"mod" json:"-"`
+	DeclRange     hcl.Range                             `json:"-"`
+	Paths         []NodePath                            `column:"path,jsonb" json:"-"`
+	Parents       []ModTreeItem                         `json:"-"`
 }
 
 func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -71,7 +73,13 @@ func (*DashboardCategory) BlockType() string {
 // OnDecoded implements HclResource
 func (c *DashboardCategory) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
-
+	// populate properties map
+	if len(c.PropertyList) > 0 {
+		c.Properties = make(map[string]*DashboardCategoryProperty, len(c.PropertyList))
+		for _, p := range c.PropertyList {
+			c.Properties[p.ShortName] = p
+		}
+	}
 	return nil
 }
 
@@ -120,10 +128,15 @@ func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsPr
 	if c.Fold == nil {
 		c.Fold = c.Base.Fold
 	}
-	if c.Fields == nil {
-		c.Fields = c.Base.Fields
+
+	if c.PropertyList == nil {
+		c.PropertyList = c.Base.PropertyList
 	} else {
-		c.Fields.Merge(c.Base.Fields)
+		c.PropertyList.Merge(c.Base.PropertyList)
+	}
+
+	if c.PropertyOrder == nil {
+		c.PropertyOrder = c.Base.PropertyOrder
 	}
 }
 
@@ -203,13 +216,22 @@ func (c *DashboardCategory) Diff(other *DashboardCategory) *DashboardTreeItemDif
 		}
 	}
 
-	if len(c.Fields) != len(other.Fields) {
-		res.AddPropertyDiff("Fields")
+	if len(c.PropertyList) != len(other.PropertyList) {
+		res.AddPropertyDiff("Properties")
 	} else {
-		for i, c := range c.Fields {
-			if !c.Equals(other.Fields[i]) {
-				res.AddPropertyDiff("Fields")
-				break
+		for i, p := range c.Properties {
+			if !p.Equals(other.Properties[i]) {
+				res.AddPropertyDiff("Properties")
+			}
+		}
+	}
+
+	if len(c.PropertyOrder) != len(other.PropertyOrder) {
+		res.AddPropertyDiff("PropertyOrder")
+	} else {
+		for i, p := range c.PropertyOrder {
+			if p != other.PropertyOrder[i] {
+				res.AddPropertyDiff("PropertyOrder")
 			}
 		}
 	}
