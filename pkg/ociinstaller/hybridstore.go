@@ -10,26 +10,29 @@ import (
 	"regexp"
 
 	ocicontent "github.com/containerd/containerd/content"
-	"github.com/deislabs/oras/pkg/content"
+	"github.com/containerd/containerd/remotes"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"oras.land/oras-go/pkg/content"
+	"oras.land/oras-go/pkg/target"
 )
 
 type hybridStore struct {
-	*content.Memorystore
-	ingester ocicontent.Ingester
-	config   *ocispec.Descriptor
+	remotes.Resolver
+	*content.Memory
+	*content.File
+	config *ocispec.Descriptor
 }
 
-func newHybridStore(ingester ocicontent.Ingester) *hybridStore {
+func newHybridStore(persist *content.File) *hybridStore {
 	return &hybridStore{
-		Memorystore: content.NewMemoryStore(),
-		ingester:    ingester,
+		Memory: content.NewMemory(),
+		File:   persist,
 	}
 }
 
 func (s *hybridStore) GetConfig() (ocispec.Descriptor, []byte, error) {
 	if s.config != nil {
-		if desc, data, found := s.Memorystore.Get(*s.config); found {
+		if desc, data, found := s.Memory.Get(*s.config); found {
 			return desc, data, nil
 		}
 	}
@@ -37,21 +40,19 @@ func (s *hybridStore) GetConfig() (ocispec.Descriptor, []byte, error) {
 }
 
 // Writer begins or resumes the active writer identified by desc
-func (s *hybridStore) Writer(ctx context.Context, opts ...ocicontent.WriterOpt) (ocicontent.Writer, error) {
-	var wOpts ocicontent.WriterOpts
-	for _, opt := range opts {
-		if err := opt(&wOpts); err != nil {
+func (s *hybridStore) Push(ctx context.Context, desc ocispec.Descriptor) (ocicontent.Writer, error) {
+	pusher, err := s.File.Pusher(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	if isConfigMediaType(desc.MediaType) {
+		s.config = &desc
+		pusher, err = s.Memory.Pusher(ctx, "")
+		if err != nil {
 			return nil, err
 		}
 	}
-
-	if isConfigMediaType(wOpts.Desc.MediaType) {
-		s.config = &wOpts.Desc
-		return s.Memorystore.Writer(ctx, opts...)
-
-	}
-
-	return s.ingester.Writer(ctx, opts...)
+	return pusher.Push(ctx, desc)
 }
 
 func isConfigMediaType(mediaType string) bool {
@@ -60,4 +61,27 @@ func isConfigMediaType(mediaType string) bool {
 	// 		ex: "application/vnd.turbot.steampipe.plugin.config.v1+json"
 	matched, _ := regexp.MatchString(`.+\.config\.v\d\+json$`, mediaType)
 	return matched || mediaType == ocispec.MediaTypeImageManifest || mediaType == ocispec.MediaTypeImageIndex
+}
+
+type pushTarget struct {
+	target.Target
+	hStore *hybridStore
+}
+
+func (c pushTarget) Resolve(ctx context.Context, ref string) (name string, desc ocispec.Descriptor, err error) {
+	return "", ocispec.Descriptor{}, errors.New("not implemented")
+}
+
+func (c pushTarget) Fetcher(ctx context.Context, ref string) (remotes.Fetcher, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c pushTarget) Pusher(ctx context.Context, ref string) (remotes.Pusher, error) {
+	return c.hStore, nil
+}
+
+func WrappedHybridStore(h *hybridStore) target.Target {
+	return pushTarget{
+		hStore: h,
+	}
 }

@@ -4,51 +4,55 @@ import (
 	"context"
 	"log"
 
-	"github.com/containerd/containerd/remotes"
-	"github.com/containerd/containerd/remotes/docker"
-	"github.com/deislabs/oras/pkg/content"
-	"github.com/deislabs/oras/pkg/oras"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/sirupsen/logrus"
+	"oras.land/oras-go/pkg/content"
+	"oras.land/oras-go/pkg/oras"
 )
 
-type ociDownloader struct {
-	resolver remotes.Resolver
-	Images   []*SteampipeImage
-}
+type ociDownloader struct{}
 
 // NewOciDownloader creates and returns a ociDownloader instance
 func NewOciDownloader() *ociDownloader {
-	// oras uses containerd, which uses logrus and is set up to log
-	// warning and above.  Set to ErrrLevel to get rid of unwanted error message
-	logrus.SetLevel(logrus.ErrorLevel)
-	return &ociDownloader{
-		resolver: docker.NewResolver(docker.ResolverOptions{}),
-	}
+	return new(ociDownloader)
 }
 
-/**
+/*
+*
 
 Pull downloads the image from the given `ref` to the supplied `destDir`
 
 Returns
+
 	imageDescription, configDescription, config, imageLayers, error
 
-**/
-func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, *ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
+*
+*/
+func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
 	log.Println("[TRACE] ociDownloader.Pull:", "pulling", ref)
-	fileStore := content.NewFileStore(destDir)
+	fileStore := content.NewFile(destDir)
 	defer fileStore.Close()
 
+	layers := []ocispec.Descriptor{}
+
 	hybridStore := newHybridStore(fileStore)
-	pullOpts := []oras.PullOpt{
+	pullOpts := []oras.CopyOpt{
 		oras.WithAllowedMediaTypes(append(mediaTypes, MediaTypeConfig, MediaTypePluginConfig)),
 		oras.WithPullEmptyNameAllowed(),
+		oras.WithLayerDescriptors(func(d []ocispec.Descriptor) {
+			layers = d
+		}),
 	}
-	desc, layers, err := oras.Pull(ctx, o.resolver, ref, hybridStore, pullOpts...)
+
+	// An OCI Compliant registry is the source
+	registry, err := content.NewRegistry(content.RegistryOptions{})
 	if err != nil {
-		return &desc, nil, nil, layers, err
+		return nil, nil, nil, err
 	}
-	configDesc, configData, err := hybridStore.GetConfig()
-	return &desc, &configDesc, configData, layers, err
+
+	desc, err := oras.Copy(ctx, registry, ref, WrappedHybridStore(hybridStore), ref, pullOpts...)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	_, configData, err := hybridStore.GetConfig()
+	return &desc, configData, layers, err
 }

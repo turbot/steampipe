@@ -7,7 +7,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/containerd/containerd/remotes"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/turbot/steampipe/pkg/constants"
 )
@@ -20,7 +19,6 @@ type SteampipeImage struct {
 	Database      *DbImage
 	Fdw           *HubImage
 	Assets        *AssetsImage
-	resolver      *remotes.Resolver
 }
 
 type PluginImage struct {
@@ -49,10 +47,7 @@ type AssetsImage struct {
 }
 
 func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
-	SteampipeImage := &SteampipeImage{
-		resolver: &o.resolver,
-	}
-	o.Images = append(o.Images, SteampipeImage)
+	SteampipeImage := &SteampipeImage{}
 	return SteampipeImage
 }
 
@@ -81,7 +76,7 @@ func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, im
 	log.Println("[TRACE] ociDownloader.Download:", "downloading", ref.ActualImageRef())
 
 	// Download the files
-	imageDesc, _, configBytes, layers, err := o.Pull(ctx, ref.ActualImageRef(), mediaTypes, destDir)
+	imageDesc, configBytes, layers, err := o.Pull(ctx, ref.ActualImageRef(), mediaTypes, destDir)
 	if err != nil {
 		return nil, err
 	}
