@@ -8,17 +8,15 @@ import (
 func (w *Workspace) GetQueryProvider(queryName string) (modconfig.QueryProvider, bool) {
 	parsedName, err := modconfig.ParseResourceName(queryName)
 	if err != nil {
-		log.Printf("[TRACE] GetQueryProvider failed to parse query name '%s': %s", queryName, err.Error())
 		return nil, false
 	}
 	// try to find the resource
 	if resource, ok := modconfig.GetResource(w, parsedName); ok {
-		// found a resource - is itr a queyr provider
+		// found a resource - is itr a query provider
 		if qp := resource.(modconfig.QueryProvider); ok {
 			return qp, true
 		}
 		log.Printf("[TRACE] GetQueryProvider found a resource for '%s' but it is not a query provider", queryName)
-
 	}
 
 	return nil, false

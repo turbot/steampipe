@@ -17,3 +17,12 @@ func (l *DashboardEdgeList) Merge(other DashboardEdgeList) {
 		}
 	}
 }
+
+func (l *DashboardEdgeList) Get(name string) *DashboardEdge {
+	for _, n := range *l {
+		if n.Name() == name {
+			return n
+		}
+	}
+	return nil
+}

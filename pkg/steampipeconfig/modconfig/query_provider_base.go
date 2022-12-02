@@ -77,7 +77,6 @@ func (b *QueryProviderBase) getResolvedQuery(queryProvider QueryProvider, runtim
 		ExecuteSQL: sql,
 		RawSQL:     sql,
 		Args:       argsArray,
-		Params:     queryProvider.GetParams(),
 	}, nil
 }
 

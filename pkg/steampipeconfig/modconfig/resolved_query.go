@@ -9,7 +9,6 @@ type ResolvedQuery struct {
 	ExecuteSQL string
 	RawSQL     string
 	Args       []any
-	Params     []*ParamDef
 }
 
 func (r ResolvedQuery) QueryArgs() *QueryArgs {
