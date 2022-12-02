@@ -16,6 +16,7 @@ export BATS_PATH=$MY_PATH/lib/bats/bin/bats
 export LIB_BATS_ASSERT=$MY_PATH/lib/bats-assert
 export LIB_BATS_SUPPORT=$MY_PATH/lib/bats-support
 export TEST_DATA_DIR=$MY_PATH/test_data/templates
+export SNAPSHOTS_DIR=$MY_PATH/test_data/snapshots
 export SRC_DATA_DIR=$MY_PATH/test_data/source_files
 export WORKSPACE_DIR=$MY_PATH/test_data/sample_workspace
 export BAD_TEST_MOD_DIR=$MY_PATH/test_data/failure_test_mod
