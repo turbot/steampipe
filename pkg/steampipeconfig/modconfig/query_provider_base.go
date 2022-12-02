@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -12,7 +13,8 @@ import (
 
 type QueryProviderBase struct {
 	runtimeDependencies map[string]*RuntimeDependency
-	withs               []*DashboardWith
+	// map of withs keyed by unqualified name
+	withs map[string]*DashboardWith
 }
 
 // VerifyQuery returns an error if neither sql or query are set
@@ -129,18 +131,26 @@ func (*QueryProviderBase) GetDescription() string {
 	return ""
 }
 
-func (b *QueryProviderBase) AddWith(with *DashboardWith) {
-	b.withs = append(b.withs, with)
+func (b *QueryProviderBase) AddWith(with *DashboardWith) hcl.Diagnostics {
+	if b.withs == nil {
+		b.withs = make(map[string]*DashboardWith)
+	}
+	if _, ok := b.GetWith(with.UnqualifiedName); ok {
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("duplicate with block '%s'", with.ShortName),
+			Subject:  with.GetDeclRange(),
+		}}
+	}
+	b.withs[with.UnqualifiedName] = with
+	return nil
 }
 
 func (b *QueryProviderBase) GetWith(name string) (*DashboardWith, bool) {
-	for _, w := range b.withs {
-		if w.UnqualifiedName == name {
-			return w, true
-		}
-	}
-	return nil, false
+	w, ok := b.withs[name]
+	return w, ok
 }
+
 func (b *QueryProviderBase) GetWiths() []*DashboardWith {
-	return b.withs
+	return maps.Values(b.withs)
 }

@@ -74,8 +74,8 @@ type QueryProvider interface {
 	GetRuntimeDependencies() map[string]*RuntimeDependency
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
-	MergeParentArgs(QueryProvider, QueryProvider) (diags hcl.Diagnostics)
-	AddWith(with *DashboardWith)
+	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
+	AddWith(with *DashboardWith) hcl.Diagnostics
 	GetWith(name string) (*DashboardWith, bool)
 	GetWiths() []*DashboardWith
 }
@@ -108,4 +108,3 @@ type EdgeAndNodeProvider interface {
 	SetNodes(DashboardNodeList)
 	AddCategory(category *DashboardCategory) hcl.Diagnostics
 }
-

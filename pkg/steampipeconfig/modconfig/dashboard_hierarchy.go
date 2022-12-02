@@ -191,21 +191,6 @@ func (h *DashboardHierarchy) Diff(other *DashboardHierarchy) *DashboardTreeItemD
 		}
 	}
 
-	// populateChildDiffs will identify added/removed edges, but we need to manually compare if the nodes/edges have changed
-	for i, n := range h.Nodes {
-		if otherNode := other.Nodes.Get(n.Name()); otherNode != nil {
-			if !n.Equals(otherNode) {
-				res.AddPropertyDiff(fmt.Sprintf("Nodes.%d", i))
-			}
-		}
-	}
-	for i, n := range h.Edges {
-		if otherNode := other.Edges.Get(n.Name()); otherNode != nil {
-			if !n.Equals(otherNode) {
-				res.AddPropertyDiff(fmt.Sprintf("Edges.%d", i))
-			}
-		}
-	}
 	res.populateChildDiffs(h, other)
 	res.queryProviderDiff(h, other)
 	res.dashboardLeafNodeDiff(h, other)

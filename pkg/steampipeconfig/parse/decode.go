@@ -401,11 +401,13 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hcl.BodyContent, resou
 		case modconfig.BlockTypeWith:
 			with, withRes := decodeQueryProvider(block, parseCtx)
 			res.Merge(withRes)
-			queryProvider.AddWith(with.(*modconfig.DashboardWith))
+			if res.Success() {
+				moreDiags := queryProvider.AddWith(with.(*modconfig.DashboardWith))
+				res.addDiags(moreDiags)
+			}
 			// TACTICAL
 			// populate metadata for with block
 			handleModDecodeResult(with, withRes, block, parseCtx)
-
 		}
 	}
 

@@ -168,7 +168,10 @@ func (n *DashboardNode) Diff(other *DashboardNode) *DashboardTreeItemDiffs {
 		Name: n.Name(),
 	}
 
-	if !n.Category.Equals(other.Category) {
+	if (n.Category == nil) != (other.Category == nil) {
+		res.AddPropertyDiff("Category")
+	}
+	if n.Category != nil && !n.Category.Equals(other.Category) {
 		res.AddPropertyDiff("Category")
 	}
 

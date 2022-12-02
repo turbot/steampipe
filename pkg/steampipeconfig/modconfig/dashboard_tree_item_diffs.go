@@ -110,9 +110,22 @@ func (d *DashboardTreeItemDiffs) queryProviderDiff(l QueryProvider, r QueryProvi
 	if len(lParams) != len(rParams) {
 		d.AddPropertyDiff("Params")
 	} else {
-		for i, p := range lParams {
-			if !p.Equals(rParams[i]) {
+		for i, lParam := range lParams {
+			if !lParam.Equals(rParams[i]) {
 				d.AddPropertyDiff("Params")
+			}
+		}
+	}
+
+	// with
+	lWiths := l.GetWiths()
+	rWiths := r.GetWiths()
+	if len(lWiths) != len(rWiths) {
+		d.AddPropertyDiff("With")
+	} else {
+		for i, lWith := range lWiths {
+			if !lWith.Equals(rWiths[i]) {
+				d.AddPropertyDiff("With")
 			}
 		}
 	}

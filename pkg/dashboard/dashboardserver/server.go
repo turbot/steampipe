@@ -177,6 +177,8 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		changedTables := e.ChangedTables
 		changedTexts := e.ChangedTexts
 		changedDashboards := e.ChangedDashboards
+		changedNodes := e.ChangedNodes
+		changedEdges := e.ChangedEdges
 
 		// If nothing has changed, ignore
 		if len(deletedDashboards) == 0 &&
@@ -193,7 +195,9 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			len(changedInputs) == 0 &&
 			len(changedTables) == 0 &&
 			len(changedTexts) == 0 &&
-			len(changedDashboards) == 0 {
+			len(changedDashboards) == 0 &&
+			len(changedNodes) == 0 &&
+			len(changedEdges) == 0 {
 			return
 		}
 
@@ -240,6 +244,8 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedInputs)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedTables)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedTexts)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedNodes)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedEdges)...)
 
 		for _, changedDashboard := range changedDashboards {
 			if helpers.StringSliceContains(changedDashboardNames, changedDashboard.Name) {

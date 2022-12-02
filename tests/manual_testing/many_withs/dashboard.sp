@@ -17,6 +17,16 @@ dashboard "many_withs" {
           select 'n2'
         EOQ
       }
+      with "n2" {
+        sql = <<-EOQ
+          select 'n2'
+        EOQ
+      }
+      with "n3" {
+        sql = <<-EOQ
+          select 'n2'
+        EOQ
+      }
 
       nodes = [
         node.n1,
