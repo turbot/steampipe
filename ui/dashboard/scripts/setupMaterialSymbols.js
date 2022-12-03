@@ -1,6 +1,5 @@
-const fs = require("fs-extra");
 const camelCase = require("lodash/camelCase");
-const kebabCase = require("lodash/kebabCase");
+const fs = require("fs-extra");
 const upperFirst = require("lodash/upperFirst");
 
 (async () => {
@@ -19,9 +18,9 @@ const upperFirst = require("lodash/upperFirst");
     const nameKebab = nameParts[0].replace("_", "-");
     const isFillIcon = nameParts.length === 2 && nameParts[1] === "fill";
 
-    if (isFillIcon) {
-      continue;
-    }
+    // if (isFillIcon) {
+    //   continue;
+    // }
 
     if (isFillIcon) {
       solidIcons[nameKebab] = {
@@ -35,22 +34,24 @@ const upperFirst = require("lodash/upperFirst");
     generatedFile += `import { ReactComponent as ${importName} } from "${nodeModulesPath}/${file}";\n`;
   }
   generatedFile += "\n";
-  generatedFile += "const outline = {\n";
+  generatedFile += "const icons = {\n";
   for (const [name, definition] of Object.entries(outlineIcons)) {
-    generatedFile += `  "${name}": { Component: ${definition.component} },\n`;
-    generatedFile += `  "materialsymbols-outline:${name}": { Component: ${definition.component} },\n`;
+    generatedFile += `  "${name}": ${definition.component},\n`;
+    generatedFile += `  "materialsymbols-outline:${name}": ${definition.component},\n`;
   }
   // generatedFile += "}\n\n";
-  generatedFile += "}\n";
+  // generatedFile += "}\n";
   // generatedFile += "const solid = {\n";
-  // for (const [name, definition] of Object.entries(solidIcons)) {
-  //   generatedFile += `  "${name}": { Component: ${definition.component} },\n`;
-  // }
-  // generatedFile += "}\n\n";
+  for (const [name, definition] of Object.entries(solidIcons)) {
+    generatedFile += `  "materialsymbols-solid:${name}": ${definition.component},\n`;
+    // generatedFile += `  "${name}": { Component: ${definition.component} },\n`;
+  }
+  generatedFile += "}\n\n";
   generatedFile += "export {\n";
-  generatedFile += "  outline,\n";
+  // generatedFile += "  outline,\n";
   // generatedFile += "  solid,\n";
+  generatedFile += "  icons,\n";
   generatedFile += "}";
 
-  await fs.writeFile("./src/components/Icon/materialSymbols.ts", generatedFile);
+  await fs.writeFile("./src/icons/materialSymbols.ts", generatedFile);
 })();
