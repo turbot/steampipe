@@ -21,7 +21,19 @@ const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
   } else {
     return null;
   }
-  return <MatchingIcon className={className} style={style} title={title} />;
+  return (
+    <MatchingIcon
+      className={className}
+      style={
+        !!style
+          ? { fill: style.color ? "currentColor" : undefined, ...style }
+          : undefined
+      }
+      title={title}
+      width="auto"
+      height="auto"
+    />
+  );
 };
 
 export default Icon;
