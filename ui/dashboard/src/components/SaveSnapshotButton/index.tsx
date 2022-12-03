@@ -36,7 +36,7 @@ const SaveSnapshotButton = () => {
       <>
         <Icon
           className="inline-block text-foreground-lighter w-5 -mt-0.5"
-          icon="camera"
+          icon="heroicons-outline:camera"
         />
         <span className="hidden lg:block">Snap</span>
       </>
