@@ -14,8 +14,6 @@ import {
   ArrowRightCircleIcon as ArrowRightCircleIconSolid,
   BellIcon as BellIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
-  ChevronDownIcon as ChevronDownIconSolid,
-  ChevronUpIcon as ChevronUpIconSolid,
   ClipboardDocumentCheckIcon as ClipboardDocumentCheckIconSolid,
   ExclamationCircleIcon as ExclamationCircleIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
@@ -49,7 +47,3 @@ export const UnknownIcon = QuestionMarkCircleIconSolid;
 export const ZoomInIcon = PlusIconOutline;
 export const ZoomOutIcon = MinusIconOutline;
 export const ResetLayoutIcon = BackwardIconOutline;
-
-// Table
-export const SortAscendingIcon = ChevronUpIconSolid;
-export const SortDescendingIcon = ChevronDownIconSolid;

@@ -18,11 +18,6 @@ import {
 } from "../common";
 import { classNames } from "../../../utils/styles";
 import { DashboardDataMode, DashboardDataModeLive } from "../../../types";
-import {
-  ErrorIcon,
-  SortAscendingIcon,
-  SortDescendingIcon,
-} from "../../../constants/icons";
 import { isRelativeUrl } from "../../../utils/url";
 import { memo, useEffect, useMemo, useState } from "react";
 import { registerComponent } from "../index";
@@ -32,6 +27,7 @@ import {
 } from "../../../utils/template";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
+import Icon from "../../Icon";
 
 export type TableColumnDisplay = "all" | "none";
 export type TableColumnWrap = "all" | "none";
@@ -341,7 +337,11 @@ const CellValue = ({
   }
   return error ? (
     <span className="flex items-center space-x-2" title={error}>
-      {cellContent} <ErrorIcon className="inline h-4 w-4 text-alert" />
+      {cellContent}{" "}
+      <Icon
+        icon="heroicons-solid:exclamation-circle"
+        className="inline h-4 w-4 text-alert"
+      />
     </span>
   ) : (
     cellContent
@@ -437,9 +437,13 @@ const TableView = ({
                 >
                   {column.render("Header")}
                   {column.isSortedDesc ? (
-                    <SortDescendingIcon className="inline-block h-4 w-4" />
+                    <Icon
+                      icon="chevron-down"
+                      className="inline-block h-4 w-4"
+                    />
                   ) : (
-                    <SortAscendingIcon
+                    <Icon
+                      icon="chevron-up"
                       className={classNames(
                         "inline-block h-4 w-4",
                         !column.isSorted ? "invisible" : null
