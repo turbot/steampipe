@@ -1,5 +1,5 @@
 dashboard "inputs" {
-  title = "Many Withs"
+  title = "Inputs"
 
   input "i1" {
     sql = <<-EOQ
