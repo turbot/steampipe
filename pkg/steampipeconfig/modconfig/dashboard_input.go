@@ -309,7 +309,7 @@ func (i *DashboardInput) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuer
 // DependsOnInput returns whether this input has a runtime dependency on the given input
 func (i *DashboardInput) DependsOnInput(changedInputName string) bool {
 	for _, r := range i.runtimeDependencies {
-		if r.SourceResource.GetUnqualifiedName() == changedInputName {
+		if r.SourceResourceName() == changedInputName {
 			return true
 		}
 	}

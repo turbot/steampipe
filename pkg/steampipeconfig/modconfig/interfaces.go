@@ -56,9 +56,21 @@ type ResourceWithMetadata interface {
 	GetReferences() []*ResourceReference
 }
 
+type WithProvider interface {
+	HclResource
+	AddWith(with *DashboardWith) hcl.Diagnostics
+	//ResolveWithFromTree(name string) (*DashboardWith, bool)
+	//ResolveParamFromTree(name string) (*DashboardWith, bool)
+	GetWiths() []*DashboardWith
+	//GetParentPublisher() WithProvider
+}
+
+type RuntimeDependencyPublisher interface {
+}
+
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type QueryProvider interface {
-	HclResource
+	WithProvider
 	GetArgs() *QueryArgs
 	GetParams() []*ParamDef
 	GetSQL() *string
@@ -75,9 +87,6 @@ type QueryProvider interface {
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
-	AddWith(with *DashboardWith) hcl.Diagnostics
-	GetWith(name string) (*DashboardWith, bool)
-	GetWiths() []*DashboardWith
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
