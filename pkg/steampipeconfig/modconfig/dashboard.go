@@ -17,6 +17,8 @@ const runtimeDependencyDashboardScope = "self"
 // Dashboard is a struct representing the Dashboard  resource
 type Dashboard struct {
 	ResourceWithMetadataBase
+	// dashboards are with providers
+	WithProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
@@ -258,6 +260,13 @@ func (d *Dashboard) SetChildren(children []ModTreeItem) {
 
 func (d *Dashboard) AddChild(child ModTreeItem) {
 	d.children = append(d.children, child)
+
+	switch c := child.(type) {
+	case *DashboardInput:
+		d.Inputs = append(d.Inputs, c)
+	case *DashboardWith:
+		d.AddWith(c)
+	}
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
@@ -284,7 +293,7 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 	return nil
 }
 
-func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
+func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) error {
 	d.runtimeDependencyGraph = topsort.NewGraph()
 	// add root node - this will depend on all other nodes
 	d.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
@@ -300,7 +309,7 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 		}
 
 		runtimeDependencies := queryProvider.GetRuntimeDependencies()
-		err := d.addRuntimeDependenciesForResource(resource, runtimeDependencies, workspace)
+		err := d.validateRuntimeDependenciesForResource(resource, runtimeDependencies, workspace)
 		if err != nil {
 			return false, err
 		}
@@ -308,7 +317,7 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 		// if the query provider has any 'with' blocks, add these dependencies as well
 		for _, with := range queryProvider.GetWiths() {
 			runtimeDependencies = with.GetRuntimeDependencies()
-			err := d.addRuntimeDependenciesForResource(with, runtimeDependencies, workspace)
+			err := d.validateRuntimeDependenciesForResource(with, runtimeDependencies, workspace)
 			if err != nil {
 				return false, err
 			}
@@ -328,7 +337,9 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 	return nil
 }
 
-func (d *Dashboard) addRuntimeDependenciesForResource(resource HclResource, runtimeDependencies map[string]*RuntimeDependency, workspace ResourceMapsProvider) error {
+func (d *Dashboard) validateRuntimeDependenciesForResource(resource HclResource, runtimeDependencies map[string]*RuntimeDependency, workspace ResourceMapsProvider) error {
+	return nil
+	// TODO KAI WHAT ABOUT CHILDREN
 	if len(runtimeDependencies) == 0 {
 		return nil
 	}
@@ -339,7 +350,7 @@ func (d *Dashboard) addRuntimeDependenciesForResource(resource HclResource, runt
 
 	for _, dependency := range runtimeDependencies {
 		// try to resolve the dependency source resource
-		if err := dependency.ResolveSource(d, workspace); err != nil {
+		if err := dependency.ValidateSource(d, workspace); err != nil {
 			return err
 		}
 		if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
@@ -361,9 +372,7 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 	return input, found
 }
 
-func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
-	d.Inputs = inputs
-
+func (d *Dashboard) InitInputs() hcl.Diagnostics {
 	// add all our direct child inputs to a mp
 	// (we must do this before adding child container inputs to detect dupes)
 	duplicates := d.setInputMap()
@@ -403,7 +412,7 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
 
 	var diags hcl.Diagnostics
 	//  ensure they inputs not have cyclical dependencies
-	if err := d.validateInputDependencies(inputs); err != nil {
+	if err := d.validateInputDependencies(d.Inputs); err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("Failed to resolve input dependency order for dashboard '%s'", d.Name()),
@@ -412,7 +421,7 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
 		}}
 	}
 	// now 'claim' all inputs and add to mod
-	for _, input := range inputs {
+	for _, input := range d.Inputs {
 		input.SetDashboard(d)
 		moreDiags := d.Mod.AddResource(input)
 		diags = append(diags, moreDiags...)
