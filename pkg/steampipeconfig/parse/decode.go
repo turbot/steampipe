@@ -385,15 +385,13 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 			}
 			diags = append(diags, moreDiags...)
 		case modconfig.BlockTypeWith:
-			with, withRes := decodeQueryProvider(block, parseCtx)
+
+			with, withRes := decodeBlock(block, parseCtx)
 			res.Merge(withRes)
 			if res.Success() {
 				moreDiags := queryProvider.AddWith(with.(*modconfig.DashboardWith))
 				res.addDiags(moreDiags)
 			}
-			// TACTICAL
-			// populate metadata for with block
-			handleModDecodeResult(with, withRes, block, parseCtx)
 		}
 	}
 
@@ -528,8 +526,6 @@ func decodeDashboard(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Da
 
 func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboard, parseCtx *ModParseContext) *decodeResult {
 	var res = newDecodeResult()
-	var inputs []*modconfig.DashboardInput
-
 	// set dashboard as parent on the run context - this is used when generating names for anonymous blocks
 	parseCtx.PushParent(dashboard)
 	defer func() {
@@ -537,8 +533,9 @@ func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboa
 	}()
 
 	for _, b := range content.Blocks {
-		// decode block
 		block := b.AsHCLBlock()
+
+		// decode block
 		resource, blockRes := decodeBlock(block, parseCtx)
 		res.Merge(blockRes)
 		if !blockRes.Success() {
@@ -546,23 +543,17 @@ func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboa
 		}
 
 		// we expect either inputs or child report nodes
-		if b.Type == modconfig.BlockTypeInput {
-			input := resource.(*modconfig.DashboardInput)
-			inputs = append(inputs, input)
-			dashboard.AddChild(input)
-			// inputs get added to the mod in SetInputs
-		} else {
-			// add the resource to the mod
-			res.addDiags(addResourceToMod(resource, block, parseCtx))
-			// add to the dashboard children
-			// (we expect this cast to always succeed)
-			if child, ok := resource.(modconfig.ModTreeItem); ok {
-				dashboard.AddChild(child)
-			}
+		// add the resource to the mod
+		res.addDiags(addResourceToMod(resource, block, parseCtx))
+		// add to the dashboard children
+		// (we expect this cast to always succeed)
+		if child, ok := resource.(modconfig.ModTreeItem); ok {
+			dashboard.AddChild(child)
 		}
+
 	}
 
-	moreDiags := dashboard.SetInputs(inputs)
+	moreDiags := dashboard.InitInputs()
 	res.addDiags(moreDiags)
 
 	return res
