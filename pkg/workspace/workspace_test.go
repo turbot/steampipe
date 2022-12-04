@@ -130,7 +130,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 					PropertyPath: &modconfig.ParsedPropertyPath{
 						PropertyPath: []string{"value"},
 					},
-					SourceResource: &modconfig.DashboardInput{
+					SourceResourceName: &modconfig.DashboardInput{
 						FullName: "dashboard_runtime_deps_named_arg.input.user",
 					},
 				},
@@ -242,7 +242,7 @@ var testCasesLoadWorkspace = map[string]loadWorkspaceTest{
 					PropertyPath: &modconfig.ParsedPropertyPath{
 						PropertyPath: []string{"value"},
 					},
-					SourceResource: &modconfig.DashboardInput{
+					SourceResourceName: &modconfig.DashboardInput{
 						FullName: "dashboard_runtime_deps_pos_arg.input.user",
 					},
 				},

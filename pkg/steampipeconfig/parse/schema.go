@@ -177,6 +177,9 @@ var DashboardBlockSchema = &hcl.BodySchema{
 			LabelNames: []string{"name"},
 		},
 		{
+			Type: modconfig.BlockTypeWith,
+		},
+		{
 			Type: modconfig.BlockTypeContainer,
 		},
 		{

@@ -189,7 +189,7 @@ func (e *DashboardExecutionTree) GetName() string {
 }
 
 func (e *DashboardExecutionTree) SetInputs(inputValues map[string]any) {
-	log.Printf("[TRACE] SetInputs")
+	log.Printf("[TRACE] InitInputs")
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
 
@@ -263,8 +263,8 @@ func (e *DashboardExecutionTree) InputRuntimeDependencies() []string {
 	for _, r := range e.runs {
 		if leafRun, ok := r.(*LeafRun); ok {
 			for _, r := range leafRun.runtimeDependencies {
-				if r.dependency.PropertyPath.ItemType == modconfig.BlockTypeInput {
-					deps[r.dependency.SourceResource.GetUnqualifiedName()] = struct{}{}
+				if r.Dependency.PropertyPath.ItemType == modconfig.BlockTypeInput {
+					deps[r.Dependency.SourceResourceName()] = struct{}{}
 				}
 			}
 		}
