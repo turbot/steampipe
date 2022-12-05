@@ -82,7 +82,7 @@ func (b *RuntimeDependencyPublisherBase) PublishRuntimeDependencyValue(name stri
 }
 
 // if this node has runtime dependencies, create runtime dependency instances which we use to resolve the values
-func (b *RuntimeDependencyPublisherBase) addRuntimeDependencies(resource modconfig.DashboardLeafNode) error {
+func (b *RuntimeDependencyPublisherBase) addRuntimeDependencies(resource modconfig.RuntimeDependencyProvider) error {
 	// only QueryProvider resources support runtime dependencies
 	queryProvider, ok := resource.(modconfig.RuntimeDependencyProvider)
 	if !ok {
@@ -284,7 +284,7 @@ func (b *RuntimeDependencyPublisherBase) allWithsComplete() bool {
 
 func (b *RuntimeDependencyPublisherBase) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) RuntimeDependencyPublisher {
 	var res RuntimeDependencyPublisher
-	b.WalkParentPublishers(func(p RuntimeDependencyPublisher) (bool, error) {
+	b.WalkUpPublishers(func(p RuntimeDependencyPublisher) (bool, error) {
 		if p.ProvidesRuntimeDependency(runtimeDependency) {
 			res = p
 			return false, nil
@@ -293,17 +293,16 @@ func (b *RuntimeDependencyPublisherBase) findRuntimeDependencyPublisher(runtimeD
 	})
 	return res
 }
-func (b *RuntimeDependencyPublisherBase) WalkParentPublishers(parentFunc func(RuntimeDependencyPublisher) (bool, error)) error {
-	for continueWalking := true; continueWalking; {
-		parent := b.GetParentPublisher()
-		if parent == nil {
-			break
-		}
+
+func (b *RuntimeDependencyPublisherBase) WalkUpPublishers(walkFunc func(RuntimeDependencyPublisher) (bool, error)) error {
+	var publisher RuntimeDependencyPublisher = b
+	for continueWalking := true; continueWalking && publisher != nil; {
 		var err error
-		continueWalking, err = parentFunc(parent)
+		continueWalking, err = walkFunc(publisher)
 		if err != nil {
 			return err
 		}
+		publisher = publisher.GetParentPublisher()
 	}
 
 	return nil
@@ -315,9 +314,7 @@ func (b *RuntimeDependencyPublisherBase) GetParentPublisher() RuntimeDependencyP
 		if res, ok := parent.(RuntimeDependencyPublisher); ok {
 			return res
 		}
-		if grandparent := parent.GetParent(); grandparent != nil {
-			parent = grandparent
-		}
+		parent = parent.GetParent()
 	}
 	return nil
 }
