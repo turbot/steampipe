@@ -28,7 +28,9 @@ const useDashboardIconType = (icon) =>
     // This gets parsed as a URL if we don't check first
     if (
       icon.startsWith("heroicons-outline:") ||
-      icon.startsWith("heroicons-solid:")
+      icon.startsWith("heroicons-solid:") ||
+      icon.startsWith("materialsymbols-outline:") ||
+      icon.startsWith("materialsymbols-solid:")
     ) {
       return "icon";
     }

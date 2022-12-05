@@ -19,6 +19,7 @@ const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
   if (MatchingIcon) {
     console.log("Using hero icon", icon);
   } else {
+    console.log("Cannot find icon", icon);
     return null;
   }
   return (
@@ -30,8 +31,8 @@ const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
           : undefined
       }
       title={title}
-      width="auto"
-      height="auto"
+      width="100%"
+      height="100%"
     />
   );
 };
