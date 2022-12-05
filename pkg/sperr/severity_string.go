@@ -9,21 +9,16 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[Error-69]
-	_ = x[Warning-87]
 }
 
-const (
-	_Severity_name_0 = "Error"
-	_Severity_name_1 = "Warning"
-)
+const _Severity_name = "Error"
+
+var _Severity_index = [...]uint8{0, 5}
 
 func (i Severity) String() string {
-	switch {
-	case i == 69:
-		return _Severity_name_0
-	case i == 87:
-		return _Severity_name_1
-	default:
-		return "Severity(" + strconv.FormatInt(int64(i), 10) + ")"
+	i -= 69
+	if i < 0 || i >= Severity(len(_Severity_index)-1) {
+		return "Severity(" + strconv.FormatInt(int64(i+69), 10) + ")"
 	}
+	return _Severity_name[_Severity_index[i]:_Severity_index[i+1]]
 }

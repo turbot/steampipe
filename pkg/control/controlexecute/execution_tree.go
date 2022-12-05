@@ -10,10 +10,12 @@ import (
 	"github.com/turbot/go-kit/helpers"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -51,13 +53,21 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	noStatusCtx := statushooks.DisableStatusHooks(ctx)
 	err := executionTree.populateControlFilterMap(noStatusCtx, controlFilterWhereClause)
 	if err != nil {
-		return nil, err
+		return nil, sperr.NewSteampipeError(
+			err,
+			sperr.WithDiagnostic("failed to populate Control Filter Map"),
+			sperr.WithSeverity(sperr.Error),
+		)
 	}
 
 	// now identify the root item of the control list
 	rootItem, err := executionTree.getExecutionRootFromArg(arg)
 	if err != nil {
-		return nil, err
+		return nil, sperr.NewSteampipeError(
+			err,
+			sperr.WithDiagnostic("failed to resolve root item for execution"),
+			sperr.WithSeverity(sperr.Error),
+		)
 	}
 
 	// build tree of result groups, starting with a synthetic 'root' node

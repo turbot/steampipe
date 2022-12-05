@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 

@@ -1,5 +1,7 @@
 package sperr
 
+import "fmt"
+
 type SteampipeError struct {
 	// make this compatible with the golang error interface
 	error
@@ -15,10 +17,16 @@ func NewSteampipeError(err error, options ...SteampipeErrorOption) *SteampipeErr
 	if err == nil {
 		return nil
 	}
-	se := new(SteampipeError)
-	se.origErr = err
+	se := &SteampipeError{
+		origErr:  err,
+		severity: Warning,
+	}
 	for _, o := range options {
 		o(se)
 	}
 	return se
+}
+
+func (e *SteampipeError) Error() string {
+	return fmt.Sprintf("%s - %s", e.diagnosticMessage, e.origErr.Error())
 }
