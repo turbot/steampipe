@@ -1,5 +1,5 @@
-import Icon from "../Icon";
 import sortBy from "lodash/sortBy";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { classNames } from "../../utils/styles";
 import { DashboardActions } from "../../types";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
@@ -88,8 +88,7 @@ const DashboardTagGroupSelect = () => {
                 {value.label}
               </span>
               <span className="absolute inset-y-0 right-0 flex items-center pr-1 md:pr-2 pointer-events-none">
-                <Icon
-                  icon="chevron-up-down"
+                <ChevronUpDownIcon
                   className="h-5 w-5 text-gray-400"
                   aria-hidden="true"
                 />
@@ -127,11 +126,7 @@ const DashboardTagGroupSelect = () => {
                               "absolute inset-y-0 left-0 flex items-center pl-1.5"
                             }
                           >
-                            <Icon
-                              icon="check"
-                              className="h-5 w-5"
-                              aria-hidden="true"
-                            />
+                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
                           </span>
                         ) : null}
                       </>
