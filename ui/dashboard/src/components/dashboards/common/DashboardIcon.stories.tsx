@@ -27,6 +27,21 @@ heroIconSolid.args = {
   icon: "heroicons-solid:arrow-up-circle",
 };
 
+export const materialSymbolDefaultOutline = Template.bind({});
+materialSymbolDefaultOutline.args = {
+  icon: "cloud",
+};
+
+export const materialSymbolOutlineFullyNamespaced = Template.bind({});
+materialSymbolOutlineFullyNamespaced.args = {
+  icon: "materialsymbols-outline:cloud",
+};
+
+export const materialSymbolSolid = Template.bind({});
+materialSymbolSolid.args = {
+  icon: "materialsymbols-solid:cloud",
+};
+
 export const text1Letter = Template.bind({});
 text1Letter.args = {
   icon: "text:A",
