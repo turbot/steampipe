@@ -11,17 +11,15 @@ const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
   const icons = useDashboardIcons();
   let MatchingIcon;
   MatchingIcon = icons.materialSymbols[icon];
-  if (MatchingIcon) {
-    console.log("Using material symbol", icon);
-  } else {
+
+  if (!MatchingIcon) {
     MatchingIcon = icons.heroIcons[icon];
   }
-  if (MatchingIcon) {
-    console.log("Using hero icon", icon);
-  } else {
-    console.log("Cannot find icon", icon);
+
+  if (!MatchingIcon) {
     return null;
   }
+
   return (
     <MatchingIcon
       className={className}
