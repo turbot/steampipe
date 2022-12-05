@@ -12,6 +12,7 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
+	RuntimeDependencyPublisherBase
 	Name             string                            `json:"name"`
 	Title            string                            `json:"title,omitempty"`
 	Width            int                               `json:"width,omitempty"`
@@ -128,6 +129,8 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		r.children = append(r.children, childRun)
 	}
 
+	// set inputs map on RuntimeDependencyPublisherBase
+	r.inputs = dashboard.GetInputs()
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 	return r, nil
@@ -179,6 +182,11 @@ func (*DashboardRun) IsSnapshotPanel() {}
 // GetName implements DashboardNodeRun
 func (r *DashboardRun) GetName() string {
 	return r.Name
+}
+
+// GetParent implements DashboardNodeRun
+func (r *DashboardRun) GetParent() dashboardtypes.DashboardNodeParent {
+	return r.parent
 }
 
 // GetRunStatus implements DashboardNodeRun

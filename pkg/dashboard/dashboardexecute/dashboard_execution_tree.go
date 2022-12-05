@@ -27,26 +27,23 @@ type DashboardExecutionTree struct {
 	workspace     *workspace.Workspace
 	runComplete   chan dashboardtypes.DashboardNodeRun
 
-	inputLock sync.Mutex
-
 	// map of subscribers to notify when an input value changes
-	inputDataSubscriptions map[string][]chan *dashboardtypes.ResolvedRuntimeDependencyValue
-	cancel                 context.CancelFunc
-	inputValues            map[string]any
-	id                     string
+	cancel      context.CancelFunc
+	inputLock   sync.Mutex
+	inputValues map[string]any
+	id          string
 }
 
 func NewDashboardExecutionTree(rootName string, sessionId string, client db_common.Client, workspace *workspace.Workspace) (*DashboardExecutionTree, error) {
 	// now populate the DashboardExecutionTree
 	executionTree := &DashboardExecutionTree{
-		dashboardName:          rootName,
-		sessionId:              sessionId,
-		client:                 client,
-		runs:                   make(map[string]dashboardtypes.DashboardNodeRun),
-		workspace:              workspace,
-		runComplete:            make(chan dashboardtypes.DashboardNodeRun, 1),
-		inputDataSubscriptions: make(map[string][]chan *dashboardtypes.ResolvedRuntimeDependencyValue),
-		inputValues:            make(map[string]any),
+		dashboardName: rootName,
+		sessionId:     sessionId,
+		client:        client,
+		runs:          make(map[string]dashboardtypes.DashboardNodeRun),
+		workspace:     workspace,
+		runComplete:   make(chan dashboardtypes.DashboardNodeRun, 1),
+		inputValues:   make(map[string]any),
 	}
 	executionTree.id = fmt.Sprintf("%p", executionTree)
 
@@ -183,34 +180,35 @@ func (e *DashboardExecutionTree) SetError(ctx context.Context, err error) {
 }
 
 // GetName implements DashboardNodeParent
-// use mod chort name - this will be the root name for all child runs
+// use mod short name - this will be the root name for all child runs
 func (e *DashboardExecutionTree) GetName() string {
 	return e.workspace.Mod.ShortName
 }
 
-func (e *DashboardExecutionTree) SetInputs(inputValues map[string]any) {
-	log.Printf("[TRACE] InitInputs")
+// GetParent implements DashboardNodeRun
+func (e *DashboardExecutionTree) GetParent() dashboardtypes.DashboardNodeParent {
+	return nil
+}
+
+func (e *DashboardExecutionTree) SetInputValues(inputValues map[string]any) {
+	log.Printf("[TRACE] SetInputValues")
 	e.inputLock.Lock()
 	defer e.inputLock.Unlock()
+
+	// we only support inputs if root is a dashboard (NOT a benchmark)
+	runtimeDependencyPublisher, ok := e.Root.(RuntimeDependencyPublisher)
+	if !ok {
+		// should never happen
+		log.Printf("[WARN] SetInputValues called but root Dashboard run is not a RuntimeDependencyPublisher: %s", e.Root.GetName())
+		return
+	}
 
 	for name, value := range inputValues {
 		log.Printf("[TRACE] DashboardExecutionTree SetInput %s = %v", name, value)
 		e.inputValues[name] = value
-		e.publishInputValue(name, value)
+		// publish runtime dependency
+		runtimeDependencyPublisher.PublishRuntimeDependencyValue(name, &dashboardtypes.ResolvedRuntimeDependencyValue{Value: value})
 	}
-}
-
-func (e *DashboardExecutionTree) publishInputValue(name string, value any) {
-	log.Printf("[TRACE] DashboardExecutionTree publishInputValue %s", name)
-
-	// now see if anyone needs to be notified about this input
-	for _, c := range e.inputDataSubscriptions[name] {
-		log.Printf("[TRACE] publishInputValue %p, %s = %v", c, name, value)
-		c <- &dashboardtypes.ResolvedRuntimeDependencyValue{Value: value}
-		close(c)
-	}
-	// clear subscriptions
-	delete(e.inputDataSubscriptions, name)
 }
 
 // ChildCompleteChan implements DashboardNodeParent
@@ -229,23 +227,6 @@ func (e *DashboardExecutionTree) Cancel() {
 	if !e.Root.RunComplete() {
 		<-e.runComplete
 	}
-}
-
-func (e *DashboardExecutionTree) SubscribeToInput(inputName string) chan *dashboardtypes.ResolvedRuntimeDependencyValue {
-	e.inputLock.Lock()
-	defer e.inputLock.Unlock()
-
-	log.Printf("[TRACE] SubscribeToInput %s", inputName)
-	// make a channel (buffer to avoid potential sync issues)
-	valueChannel := make(chan *dashboardtypes.ResolvedRuntimeDependencyValue, 1)
-	// do we already have a value?
-	if value, ok := e.inputValues[inputName]; ok {
-		valueChannel <- &dashboardtypes.ResolvedRuntimeDependencyValue{Value: value}
-		close(valueChannel)
-	} else {
-		e.inputDataSubscriptions[inputName] = append(e.inputDataSubscriptions[inputName], valueChannel)
-	}
-	return valueChannel
 }
 
 func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {

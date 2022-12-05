@@ -56,18 +56,17 @@ type ResourceWithMetadata interface {
 	GetReferences() []*ResourceReference
 }
 
-type WithProvider interface {
+type RuntimeDependencyProvider interface {
 	HclResource
 	AddWith(with *DashboardWith) hcl.Diagnostics
-	//ResolveWithFromTree(name string) (*DashboardWith, bool)
-	//ResolveParamFromTree(name string) (*DashboardWith, bool)
 	GetWiths() []*DashboardWith
-	//GetParentPublisher() WithProvider
+	AddRuntimeDependencies([]*RuntimeDependency)
+	GetRuntimeDependencies() map[string]*RuntimeDependency
 }
 
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type QueryProvider interface {
-	WithProvider
+	RuntimeDependencyProvider
 	GetArgs() *QueryArgs
 	GetParams() []*ParamDef
 	GetSQL() *string
@@ -79,8 +78,6 @@ type QueryProvider interface {
 	GetPreparedStatementName() string
 	GetResolvedQuery(*QueryArgs) (*ResolvedQuery, error)
 	// implemented by QueryProviderBase
-	AddRuntimeDependencies([]*RuntimeDependency)
-	GetRuntimeDependencies() map[string]*RuntimeDependency
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
