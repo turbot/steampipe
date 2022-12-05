@@ -33,4 +33,5 @@ type DashboardNodeRun interface {
 type DashboardNodeParent interface {
 	GetName() string
 	ChildCompleteChan() chan DashboardNodeRun
+	GetParent() DashboardNodeParent
 }

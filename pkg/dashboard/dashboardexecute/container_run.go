@@ -172,6 +172,11 @@ func (r *DashboardContainerRun) GetName() string {
 	return r.Name
 }
 
+// GetParent implements DashboardNodeRun
+func (r *DashboardContainerRun) GetParent() dashboardtypes.DashboardNodeParent {
+	return r.parent
+}
+
 // GetRunStatus implements DashboardNodeRun
 func (r *DashboardContainerRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
 	return r.Status

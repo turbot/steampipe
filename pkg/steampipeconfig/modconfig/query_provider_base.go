@@ -11,8 +11,7 @@ import (
 )
 
 type QueryProviderBase struct {
-	WithProviderBase
-	runtimeDependencies map[string]*RuntimeDependency
+	RuntimeDependencyProviderBase
 }
 
 // VerifyQuery ensures we have either SQL or a Query defined.
@@ -76,31 +75,6 @@ func (b *QueryProviderBase) getResolvedQuery(queryProvider QueryProvider, runtim
 		RawSQL:     sql,
 		Args:       argsArray,
 	}, nil
-}
-
-func (b *QueryProviderBase) AddRuntimeDependencies(dependencies []*RuntimeDependency) {
-	if b.runtimeDependencies == nil {
-		b.runtimeDependencies = make(map[string]*RuntimeDependency)
-	}
-	for _, dependency := range dependencies {
-		b.runtimeDependencies[dependency.String()] = dependency
-	}
-}
-
-func (b *QueryProviderBase) MergeRuntimeDependencies(other QueryProvider) {
-	dependencies := other.GetRuntimeDependencies()
-	if b.runtimeDependencies == nil {
-		b.runtimeDependencies = make(map[string]*RuntimeDependency)
-	}
-	for _, dependency := range dependencies {
-		if _, ok := b.runtimeDependencies[dependency.String()]; !ok {
-			b.runtimeDependencies[dependency.String()] = dependency
-		}
-	}
-}
-
-func (b *QueryProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependency {
-	return b.runtimeDependencies
 }
 
 // MergeParentArgs merges our args with our parent args (ours take precedence)

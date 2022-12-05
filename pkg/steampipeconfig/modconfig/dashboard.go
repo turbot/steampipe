@@ -18,7 +18,7 @@ const runtimeDependencyDashboardScope = "self"
 type Dashboard struct {
 	ResourceWithMetadataBase
 	// dashboards are with providers
-	WithProviderBase
+	RuntimeDependencyProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
@@ -44,7 +44,7 @@ type Dashboard struct {
 	Paths []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
-
+	// map of all inputs in our resource tree
 	selfInputsMap map[string]*DashboardInput
 	// the actual children
 	children []ModTreeItem
@@ -371,9 +371,12 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 	input, found := d.selfInputsMap[name]
 	return input, found
 }
+func (d *Dashboard) GetInputs() map[string]*DashboardInput {
+	return d.selfInputsMap
+}
 
 func (d *Dashboard) InitInputs() hcl.Diagnostics {
-	// add all our direct child inputs to a mp
+	// add all our direct child inputs to a map
 	// (we must do this before adding child container inputs to detect dupes)
 	duplicates := d.setInputMap()
 
