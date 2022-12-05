@@ -2,7 +2,6 @@ package dashboardexecute
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
@@ -48,7 +47,7 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
-	name := getUniqueRunName(resource, executionTree)
+	name := resource.Name()
 
 	r := &LeafRun{
 		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(parent),
@@ -67,6 +66,12 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		executionTree: executionTree,
 		parent:        parent,
 	}
+	parsedName, err := modconfig.ParseResourceName(name)
+	if err != nil {
+		return nil, err
+	}
+	r.NodeType = parsedName.ItemType
+
 	// is the resource  a query provider
 	if queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider); ok {
 		// set params
@@ -79,15 +84,25 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		}
 	}
 
-	parsedName, err := modconfig.ParseResourceName(resource.Name())
-	if err != nil {
-		return nil, err
-	}
-	r.NodeType = parsedName.ItemType
+	// if the resource is a runtime dependency provider, create with runs if needed and set runtime dependencies
+	var withBlocks []*modconfig.DashboardWith
+	if rdp, ok := r.DashboardNode.(modconfig.RuntimeDependencyProvider); ok {
+		// if we have with blocks, create runs for them
+		// BEFORE creating child runs, and before adding runtime dependencies
+		withBlocks = rdp.GetWiths()
+		if len(withBlocks) > 0 {
+			// create the child runs
+			err := r.createWithRuns(withBlocks, executionTree)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-	if err := r.addRuntimeDependencies(resource); err != nil {
-		return nil, err
+		if err := r.addRuntimeDependencies(rdp); err != nil {
+			return nil, err
+		}
 	}
+
 	// if the node has no runtime dependencies, resolve the sql
 	if len(r.runtimeDependencies) == 0 {
 		if err := r.resolveSQLAndArgs(); err != nil {
@@ -97,25 +112,12 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 
-	// if we have with blocks, create runs for them
-	// BEFORE creating child runs
-	withBlocks := r.DashboardNode.(modconfig.QueryProvider).GetWiths()
-	if len(withBlocks) > 0 {
-		// create the child runs
-		err := r.createWithRuns(withBlocks, executionTree)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// if we have children (nodes/edges), create runs for them
 	children := resource.GetChildren()
-	if len(children) > 0 {
-		// create the child runs
-		err = r.createChildRuns(children, executionTree)
-		if err != nil {
-			return nil, err
-		}
+	// create the child runs
+	err = r.createChildRuns(children, executionTree)
+	if err != nil {
+		return nil, err
 	}
 
 	// create buffered child complete chan
@@ -126,18 +128,11 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	return r, nil
 }
 
-// resources (such as nodes/edges) may be reused by different parents - so wee need to give their LeafRuns unique names
-func getUniqueRunName(resource modconfig.DashboardLeafNode, executionTree *DashboardExecutionTree) string {
-	name := resource.Name()
-	// check for uniqueness
-	idx := 0
-	for _, nameExists := executionTree.runs[name]; nameExists; idx++ {
-		name = fmt.Sprintf("%s.%d", resource.Name(), idx)
-	}
-	return name
-}
-
 func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) error {
+	if len(children) == 0 {
+		return nil
+	}
+
 	r.children = make([]dashboardtypes.DashboardNodeRun, len(children))
 	var errors []error
 
@@ -296,69 +291,6 @@ func (r *LeafRun) GetInputsDependingOn(changedInputName string) []string { retur
 // ChildCompleteChan implements DashboardNodeParent
 func (r *LeafRun) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
 	return r.childComplete
-}
-
-func (r *LeafRun) MarshalJSON() ([]byte, error) {
-
-	// special case handling for NodeAndEdgeProvider
-	_, isNodeAndEdgeProvider := r.DashboardNode.(modconfig.NodeAndEdgeProvider)
-	if isNodeAndEdgeProvider {
-		return r.marshalNodeAndEdgeProvider()
-	}
-
-	// just marshal as normal
-	type Alias LeafRun
-	return json.Marshal(struct{ *Alias }{(*Alias)(r)})
-}
-
-// we need custom JSON serialisation for NodeAndEdgeProviders
-// This is because the name of the nodes and edges, which appears under properties,
-// must be populated with the names of the node and edge LeafRuns, rather than the nodes and edge resources.
-// These may be the same, but as the nodes/edges may be reused we ensure the run names are unique
-// The panels in the panel map will be keyed by run-name - so it is vital that the nodes and edges lists
-// correspond to the panel keys.
-func (r *LeafRun) marshalNodeAndEdgeProvider() ([]byte, error) {
-	type Alias LeafRun
-	// embed the run in a struct, wiuth an additional 'Properties' property.
-	// This will overwrite the `properties` value serialized from the underlying run
-	s := &struct {
-		Properties map[string]any `json:"properties"`
-		*Alias
-	}{
-		Alias:      (*Alias)(r),
-		Properties: make(map[string]any),
-	}
-
-	// add the node/edge child runs into the properties map, under the keys 'nodes'/'edges'
-	for _, c := range r.GetChildren() {
-		childResource := c.(*LeafRun).DashboardNode
-		var childKey string
-
-		switch childResource.(type) {
-		case *modconfig.DashboardNode:
-			childKey = "nodes"
-		case *modconfig.DashboardEdge:
-			childKey = "edges"
-		}
-		// add this child to the appropriate array
-		target, _ := s.Properties[childKey].([]string)
-		if target == nil {
-			target = []string{}
-		}
-		s.Properties[childKey] = append(target, c.GetName())
-	}
-
-	// now marshal/ the DashboardNode resource then unmarshal back into the properties map
-	resourceJson, err := json.Marshal(r.DashboardNode)
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(resourceJson, &s.Properties); err != nil {
-		return nil, err
-	}
-
-	// now marshal our modified struct
-	return json.Marshal(s)
 }
 
 func (r *LeafRun) waitForRuntimeDependencies(ctx context.Context) error {

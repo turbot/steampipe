@@ -49,7 +49,6 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
-	children := dashboard.GetChildren()
 
 	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
@@ -73,69 +72,43 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		executionTree: executionTree,
 		parent:        parent,
 		dashboardNode: dashboard,
-		childComplete: make(chan dashboardtypes.DashboardNodeRun, len(children)),
 	}
 	if dashboard.Width != nil {
 		r.Width = *dashboard.Width
 	}
 
+	// if we have with blocks, create runs for them
+	// BEFORE creating child runs, and before adding runtime dependencies
+	withBlocks := dashboard.GetWiths()
+	if len(withBlocks) > 0 {
+		// create the child runs
+		err := r.createWithRuns(withBlocks, executionTree)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := r.addRuntimeDependencies(dashboard); err != nil {
+		return nil, err
+	}
+
 	// set inputs map on RuntimeDependencyPublisherBase BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()
 
-	for _, child := range children {
-		var childRun dashboardtypes.DashboardNodeRun
-		var err error
-		switch i := child.(type) {
-		case *modconfig.Dashboard:
-			childRun, err = NewDashboardRun(i, r, executionTree)
-			if err != nil {
-				return nil, err
-			}
-		case *modconfig.DashboardContainer:
-			childRun, err = NewDashboardContainerRun(i, r, executionTree)
-			if err != nil {
-				return nil, err
-			}
-		case *modconfig.Benchmark, *modconfig.Control:
-			childRun, err = NewCheckRun(i.(modconfig.DashboardLeafNode), r, executionTree)
-			if err != nil {
-				return nil, err
-			}
-		case *modconfig.DashboardInput:
-			// NOTE: clone the input to avoid mutating the original
-			// TODO [reports] remove the need for this when we refactor input values resolution
-			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
-			if err != nil {
-				return nil, err
-			}
-
-		default:
-			// ensure this item is a DashboardLeafNode
-			leafNode, ok := i.(modconfig.DashboardLeafNode)
-			if !ok {
-				return nil, fmt.Errorf("child %s does not implement DashboardLeafNode", i.Name())
-			}
-
-			childRun, err = NewLeafRun(leafNode, r, executionTree)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// should never happen - container children must be either container or counter
-		if childRun == nil {
-			continue
-		}
-
-		// if our child has not completed, we have not completed
-		if childRun.GetRunStatus() == dashboardtypes.DashboardRunReady {
-			r.Status = dashboardtypes.DashboardRunReady
-		}
-		r.children = append(r.children, childRun)
+	children := dashboard.GetChildren()
+	err := r.createChildRuns(children, executionTree)
+	if err != nil {
+		return nil, err
 	}
 
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
+
+	// create buffered child complete chan
+	if childCount := len(children) + len(withBlocks); childCount > 0 {
+		r.childComplete = make(chan dashboardtypes.DashboardNodeRun, childCount)
+	}
+
 	return r, nil
 }
 
@@ -154,6 +127,9 @@ func (r *DashboardRun) Initialise(ctx context.Context) {
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
 func (r *DashboardRun) Execute(ctx context.Context) {
+	// start any `with` blocks
+	r.executeWithRuns(ctx, r.childComplete)
+
 	// execute all children asynchronously
 	for _, child := range r.children {
 		go child.Execute(ctx)
@@ -275,4 +251,70 @@ func (r *DashboardRun) GetInputsDependingOn(changedInputName string) []string {
 		}
 	}
 	return res
+}
+
+func (r *DashboardRun) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
+	for _, w := range withs {
+		withRun, err := NewLeafRun(w, r, executionTree)
+		if err != nil {
+			return err
+		}
+		r.withRuns[w.UnqualifiedName] = withRun
+	}
+	return nil
+}
+
+func (r *DashboardRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) error {
+	for _, child := range children {
+		var childRun dashboardtypes.DashboardNodeRun
+		var err error
+		switch i := child.(type) {
+		case *modconfig.Dashboard:
+			childRun, err = NewDashboardRun(i, r, executionTree)
+			if err != nil {
+				return err
+			}
+		case *modconfig.DashboardContainer:
+			childRun, err = NewDashboardContainerRun(i, r, executionTree)
+			if err != nil {
+				return err
+			}
+		case *modconfig.Benchmark, *modconfig.Control:
+			childRun, err = NewCheckRun(i.(modconfig.DashboardLeafNode), r, executionTree)
+			if err != nil {
+				return err
+			}
+		case *modconfig.DashboardInput:
+			// NOTE: clone the input to avoid mutating the original
+			// TODO [reports] remove the need for this when we refactor input values resolution
+			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
+			if err != nil {
+				return err
+			}
+
+		default:
+			// ensure this item is a DashboardLeafNode
+			leafNode, ok := i.(modconfig.DashboardLeafNode)
+			if !ok {
+				return fmt.Errorf("child %s does not implement DashboardLeafNode", i.Name())
+			}
+
+			childRun, err = NewLeafRun(leafNode, r, executionTree)
+			if err != nil {
+				return err
+			}
+		}
+
+		// should never happen - container children must be either container or counter
+		if childRun == nil {
+			continue
+		}
+
+		// if our child has not completed, we have not completed
+		if childRun.GetRunStatus() == dashboardtypes.DashboardRunReady {
+			r.Status = dashboardtypes.DashboardRunReady
+		}
+		r.children = append(r.children, childRun)
+	}
+	return nil
 }
