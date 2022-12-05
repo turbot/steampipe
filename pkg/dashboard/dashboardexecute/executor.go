@@ -72,7 +72,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 
 	// if inputs have been passed, set them first
 	if len(inputs) > 0 {
-		executionTree.SetInputs(inputs)
+		executionTree.SetInputValues(inputs)
 	}
 
 	go executionTree.Execute(ctx)
@@ -161,7 +161,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	}
 
 	// set the inputs
-	executionTree.SetInputs(inputs)
+	executionTree.SetInputValues(inputs)
 
 	return nil
 }
