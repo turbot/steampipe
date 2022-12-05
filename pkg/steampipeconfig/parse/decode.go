@@ -403,7 +403,7 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 func decodeNodeAndEdgeProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
 	res := newDecodeResult()
 
-	// TODO need raise errors for invalid properties
+	// TODO need raise errors for invalid properties - update validateHcl to include attributes
 
 	// get shell resource
 	resource, diags := resourceForBlock(block, parseCtx)
