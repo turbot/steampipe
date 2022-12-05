@@ -15,6 +15,8 @@ import (
 type DashboardImage struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	FullName        string `cty:"name" json:"-"`
 	ShortName       string `json:"-"`
