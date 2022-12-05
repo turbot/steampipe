@@ -24,7 +24,6 @@ type LeafRun struct {
 	Display          string                            `cty:"display" hcl:"display" json:"display,omitempty"`
 	RawSQL           string                            `json:"sql,omitempty"`
 	Args             []any                             `json:"args,omitempty"`
-	Params           []*modconfig.ParamDef             `json:"params,omitempty"`
 	Data             *dashboardtypes.LeafData          `json:"data,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
 	DashboardNode    modconfig.DashboardLeafNode       `json:"properties,omitempty"`
@@ -149,6 +148,9 @@ func (r *LeafRun) addRuntimeDependencies() {
 	}
 	runtimeDependencies := queryProvider.GetRuntimeDependencies()
 	for n, d := range runtimeDependencies {
+		// find a runtime depdency publisher who can provider this runtime depdency
+		//publisher := r.RuntimeDependencyPublisherBase.findRuntimeDependencyPublisher(d)
+
 		// read name and dep into local loop vars to ensure correct value used when getValueFunc is invoked
 		name := n
 		dep := d
@@ -157,10 +159,10 @@ func (r *LeafRun) addRuntimeDependencies() {
 		resourceName := d.SourceResourceName()
 		switch dep.PropertyPath.ItemType {
 		case modconfig.BlockTypeWith:
-
+			// set a transform function to extract the requested with data
 			transform := func(val *dashboardtypes.ResolvedRuntimeDependencyValue) *dashboardtypes.ResolvedRuntimeDependencyValue {
 				if val.Error == nil {
-					// the runtime dependency value for a with is *LeafData
+					// the runtime dependency value for a 'with' is *LeafData
 					val.Value, val.Error = r.getWithValue(name, val.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
 				}
 				return val
@@ -221,12 +223,8 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 	// to get here, we must be a query provider
 
-	// start all `with` blocks
-	if len(r.withRuns) > 0 {
-		if err := r.executeWithRuns(ctx, r.childComplete); err != nil {
-			r.SetError(ctx, err)
-		}
-	}
+	// start any `with` blocks
+	r.executeWithRuns(ctx, r.childComplete)
 
 	// we can either have children (i.e. edges/nodes) or we have sql/query
 	// we have already validated that both are not set so no need to check here
@@ -427,6 +425,7 @@ func (r *LeafRun) resolveSQLAndArgs() error {
 		// not a query provider - nothing to do
 		return nil
 	}
+	// does this leaf run have any SQL to execute?
 	if !queryProvider.RequiresExecution(queryProvider) {
 		log.Printf("[TRACE] LeafRun '%s'does NOT require execution - returning", r.DashboardNode.Name())
 		return nil
