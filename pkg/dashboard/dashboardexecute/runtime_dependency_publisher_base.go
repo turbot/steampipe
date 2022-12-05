@@ -29,6 +29,7 @@ func NewRuntimeDependencyPublisherBase(parent dashboardtypes.DashboardNodeParent
 		subscriptions:       make(map[string][]*RuntimeDependencyPublishTarget),
 		runtimeDependencies: make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
 		inputs:              make(map[string]*modconfig.DashboardInput),
+		withRuns:            make(map[string]*LeafRun),
 		parent:              parent,
 	}
 }
@@ -294,12 +295,14 @@ func (b *RuntimeDependencyPublisherBase) findRuntimeDependencyPublisher(runtimeD
 }
 func (b *RuntimeDependencyPublisherBase) WalkParentPublishers(parentFunc func(RuntimeDependencyPublisher) (bool, error)) error {
 	for continueWalking := true; continueWalking; {
-		if parent := b.GetParentPublisher(); parent != nil {
-			var err error
-			continueWalking, err = parentFunc(parent)
-			if err != nil {
-				return err
-			}
+		parent := b.GetParentPublisher()
+		if parent == nil {
+			break
+		}
+		var err error
+		continueWalking, err = parentFunc(parent)
+		if err != nil {
+			return err
 		}
 	}
 

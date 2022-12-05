@@ -154,8 +154,6 @@ func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTre
 }
 
 func (r *LeafRun) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
-	r.withRuns = make(map[string]*LeafRun, len(withs))
-
 	for _, w := range withs {
 		withRun, err := NewLeafRun(w, r, executionTree)
 		if err != nil {
