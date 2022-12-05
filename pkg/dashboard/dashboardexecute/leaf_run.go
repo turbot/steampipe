@@ -23,7 +23,6 @@ type LeafRun struct {
 	Type             string                            `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
 	Display          string                            `cty:"display" hcl:"display" json:"display,omitempty"`
 	RawSQL           string                            `json:"sql,omitempty"`
-	Args             []any                             `json:"args,omitempty"`
 	Data             *dashboardtypes.LeafData          `json:"data,omitempty"`
 	ErrorString      string                            `json:"error,omitempty"`
 	DashboardNode    modconfig.DashboardLeafNode       `json:"properties,omitempty"`
@@ -33,16 +32,12 @@ type LeafRun struct {
 	SourceDefinition string                            `json:"source_definition"`
 	TimingResult     *queryresult.TimingResult         `json:"-"`
 	// child runs (nodes/edges)
-	children            []dashboardtypes.DashboardNodeRun
-	executeSQL          string
-	error               error
-	parent              dashboardtypes.DashboardNodeParent
-	executionTree       *DashboardExecutionTree
-	runtimeDependencies map[string]*dashboardtypes.ResolvedRuntimeDependency
-	childComplete       chan dashboardtypes.DashboardNodeRun
-	// map of subscribers to notify when a with value changes
-	// (each subscriber is actually a func call which takes the value, extracts the required property and sends it on a channel)
-
+	children      []dashboardtypes.DashboardNodeRun
+	executeSQL    string
+	error         error
+	parent        dashboardtypes.DashboardNodeParent
+	executionTree *DashboardExecutionTree
+	childComplete chan dashboardtypes.DashboardNodeRun
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -56,7 +51,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	name := getUniqueRunName(resource, executionTree)
 
 	r := &LeafRun{
-		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(),
+		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(parent),
 		Name:                           name,
 		Title:                          resource.GetTitle(),
 		Width:                          resource.GetWidth(),
@@ -68,10 +63,9 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		SourceDefinition: resource.GetMetadata().SourceDefinition,
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
-		Status:              dashboardtypes.DashboardRunComplete,
-		executionTree:       executionTree,
-		parent:              parent,
-		runtimeDependencies: make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
+		Status:        dashboardtypes.DashboardRunComplete,
+		executionTree: executionTree,
+		parent:        parent,
 	}
 	// is the resource  a query provider
 	if queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider); ok {
@@ -91,7 +85,9 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	}
 	r.NodeType = parsedName.ItemType
 
-	r.addRuntimeDependencies()
+	if err := r.addRuntimeDependencies(resource); err != nil {
+		return nil, err
+	}
 	// if the node has no runtime dependencies, resolve the sql
 	if len(r.runtimeDependencies) == 0 {
 		if err := r.resolveSQLAndArgs(); err != nil {
@@ -100,6 +96,17 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	}
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
+
+	// if we have with blocks, create runs for them
+	// BEFORE creating child runs
+	withBlocks := r.DashboardNode.(modconfig.QueryProvider).GetWiths()
+	if len(withBlocks) > 0 {
+		// create the child runs
+		err := r.createWithRuns(withBlocks, executionTree)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// if we have children (nodes/edges), create runs for them
 	children := resource.GetChildren()
@@ -111,15 +118,6 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 		}
 	}
 
-	// if we have with blocks, create runs for them
-	withBlocks := r.DashboardNode.(modconfig.QueryProvider).GetWiths()
-	if len(withBlocks) > 0 {
-		// create the child runs
-		err := r.createWithRuns(withBlocks, executionTree)
-		if err != nil {
-			return nil, err
-		}
-	}
 	// create buffered child complete chan
 	if childCount := len(children) + len(withBlocks); childCount > 0 {
 		r.childComplete = make(chan dashboardtypes.DashboardNodeRun, childCount)
@@ -139,47 +137,6 @@ func getUniqueRunName(resource modconfig.DashboardLeafNode, executionTree *Dashb
 	return name
 }
 
-// if this node has runtime dependencies, create runtime dependency instances which we use to resolve the values
-func (r *LeafRun) addRuntimeDependencies() {
-	// only QueryProvider resources support runtime dependencies
-	queryProvider, ok := r.DashboardNode.(modconfig.QueryProvider)
-	if !ok {
-		return
-	}
-	runtimeDependencies := queryProvider.GetRuntimeDependencies()
-	for n, d := range runtimeDependencies {
-		// find a runtime depdency publisher who can provider this runtime depdency
-		//publisher := r.RuntimeDependencyPublisherBase.findRuntimeDependencyPublisher(d)
-
-		// read name and dep into local loop vars to ensure correct value used when getValueFunc is invoked
-		name := n
-		dep := d
-		// determine the function to use to retrieve the runtime dependency value
-		var valueChannel chan *dashboardtypes.ResolvedRuntimeDependencyValue
-		resourceName := d.SourceResourceName()
-		switch dep.PropertyPath.ItemType {
-		case modconfig.BlockTypeWith:
-			// set a transform function to extract the requested with data
-			transform := func(val *dashboardtypes.ResolvedRuntimeDependencyValue) *dashboardtypes.ResolvedRuntimeDependencyValue {
-				if val.Error == nil {
-					// the runtime dependency value for a 'with' is *LeafData
-					val.Value, val.Error = r.getWithValue(name, val.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
-				}
-				return val
-			}
-			// subscribe, passing a function which invokes getWithValue to resolve the required with value
-			valueChannel = r.SubscribeToRuntimeDependency(name, WithTransform(transform))
-
-		case modconfig.BlockTypeInput:
-			valueChannel = r.executionTree.SubscribeToInput(resourceName)
-
-		default:
-			valueChannel = r.SubscribeToRuntimeDependency(resourceName)
-		}
-		r.runtimeDependencies[name] = dashboardtypes.NewResolvedRuntimeDependency(dep, valueChannel)
-	}
-}
-
 func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) error {
 	r.children = make([]dashboardtypes.DashboardNodeRun, len(children))
 	var errors []error
@@ -197,14 +154,14 @@ func (r *LeafRun) createChildRuns(children []modconfig.ModTreeItem, executionTre
 }
 
 func (r *LeafRun) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
-	r.withRuns = make([]*LeafRun, len(withs))
+	r.withRuns = make(map[string]*LeafRun, len(withs))
 
-	for i, w := range withs {
+	for _, w := range withs {
 		withRun, err := NewLeafRun(w, r, executionTree)
 		if err != nil {
 			return err
 		}
-		r.withRuns[i] = withRun
+		r.withRuns[w.UnqualifiedName] = withRun
 	}
 	return nil
 }
@@ -255,6 +212,11 @@ func (r *LeafRun) Execute(ctx context.Context) {
 // GetName implements DashboardNodeRun
 func (r *LeafRun) GetName() string {
 	return r.Name
+}
+
+// GetParent implements DashboardNodeRun
+func (r *LeafRun) GetParent() dashboardtypes.DashboardNodeParent {
+	return r.parent
 }
 
 // GetRunStatus implements DashboardNodeRun

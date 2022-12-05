@@ -6,12 +6,13 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type WithProviderBase struct {
+type RuntimeDependencyProviderBase struct {
 	// map of withs keyed by unqualified name
-	withs map[string]*DashboardWith
+	withs               map[string]*DashboardWith
+	runtimeDependencies map[string]*RuntimeDependency
 }
 
-func (b *WithProviderBase) AddWith(with *DashboardWith) hcl.Diagnostics {
+func (b *RuntimeDependencyProviderBase) AddWith(with *DashboardWith) hcl.Diagnostics {
 	if b.withs == nil {
 		b.withs = make(map[string]*DashboardWith)
 	}
@@ -27,6 +28,31 @@ func (b *WithProviderBase) AddWith(with *DashboardWith) hcl.Diagnostics {
 	return nil
 }
 
-func (b *WithProviderBase) GetWiths() []*DashboardWith {
+func (b *RuntimeDependencyProviderBase) GetWiths() []*DashboardWith {
 	return maps.Values(b.withs)
+}
+
+func (b *RuntimeDependencyProviderBase) AddRuntimeDependencies(dependencies []*RuntimeDependency) {
+	if b.runtimeDependencies == nil {
+		b.runtimeDependencies = make(map[string]*RuntimeDependency)
+	}
+	for _, dependency := range dependencies {
+		b.runtimeDependencies[dependency.String()] = dependency
+	}
+}
+
+func (b *RuntimeDependencyProviderBase) MergeRuntimeDependencies(other QueryProvider) {
+	dependencies := other.GetRuntimeDependencies()
+	if b.runtimeDependencies == nil {
+		b.runtimeDependencies = make(map[string]*RuntimeDependency)
+	}
+	for _, dependency := range dependencies {
+		if _, ok := b.runtimeDependencies[dependency.String()]; !ok {
+			b.runtimeDependencies[dependency.String()] = dependency
+		}
+	}
+}
+
+func (b *RuntimeDependencyProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependency {
+	return b.runtimeDependencies
 }
