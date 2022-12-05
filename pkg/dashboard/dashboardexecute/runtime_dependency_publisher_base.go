@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"log"
@@ -14,9 +13,11 @@ import (
 )
 
 type RuntimeDependencyPublisherBase struct {
+	Params         []*modconfig.ParamDef `json:"params,omitempty"`
 	subscriptions  map[string][]*RuntimeDependencyPublishTarget
 	withValueMutex sync.Mutex
 	withRuns       []*LeafRun
+	parent         modconfig.ModTreeItem
 }
 
 func NewRuntimeDependencyPublisherBase() *RuntimeDependencyPublisherBase {
@@ -50,7 +51,7 @@ func (r *RuntimeDependencyPublisherBase) PublishRuntimeDependencyValue(name stri
 	delete(r.subscriptions, name)
 }
 
-func columnValuesFromRows(column string, rows []map[string]interface{}) (any, error) {
+func columnValuesFromRows(column string, rows []map[string]any) (any, error) {
 	var res = make([]any, len(rows))
 	for i, row := range rows {
 		var ok bool
@@ -138,72 +139,69 @@ func (r *RuntimeDependencyPublisherBase) getWithValue(name string, result *dashb
 }
 
 // if this leaf run has with runs), execute them
-func (r *RuntimeDependencyPublisherBase) executeWithRuns(ctx context.Context, childCompleteChan chan dashboardtypes.DashboardNodeRun) error {
+func (r *RuntimeDependencyPublisherBase) executeWithRuns(ctx context.Context, childCompleteChan chan dashboardtypes.DashboardNodeRun) {
+	if len(r.withRuns) == 0 {
+		return
+	}
+
+	// asynchronously execute all with runs
 	for _, w := range r.withRuns {
 		go w.Execute(ctx)
 	}
-	// wait for children to complete
-	var errors []error
 
-	for !r.withComplete() {
-
+	// wait for withs to complete
+	for !r.allWithsComplete() {
 		completeChild := <-childCompleteChan
-		log.Printf("[TRACE] run %s got with complete")
-		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
-			errors = append(errors, completeChild.GetError())
-		}
+		// set the with value (this will set error value for the 'with' if execute failed)
+		r.setWithValue(completeChild.(*LeafRun))
 		// fall through to recheck ChildrenComplete
 	}
 
-	log.Printf("[TRACE] run %s ALL children complete")
-	// so all with runs have completed - check for errors
-	err := error_helpers.CombineErrors(errors...)
-	if err == nil {
-		err = r.setWithData()
-	}
+	log.Printf("[TRACE] run %s ALL with runs complete")
 
-	// return error (is any)
-	return err
 }
 
-func (r *RuntimeDependencyPublisherBase) setWithData() error {
-	for _, w := range r.withRuns {
-		if err := r.setWithValue(w); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (r *RuntimeDependencyPublisherBase) setWithValue(w *LeafRun) error {
+func (r *RuntimeDependencyPublisherBase) setWithValue(w *LeafRun) {
 	r.withValueMutex.Lock()
 	defer r.withValueMutex.Unlock()
 
 	name := w.DashboardNode.GetUnqualifiedName()
-	result := &dashboardtypes.ResolvedRuntimeDependencyValue{Value: w.Data, Error: w.error}
+	// if there was an error, w.Data will be nil and w.error will be non-nil
+	result := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: w.error}
 
+	if w.error == nil {
+		populateData(w.Data, result)
+	}
+	r.PublishRuntimeDependencyValue(name, result)
+	return
+}
+
+func populateData(withData *dashboardtypes.LeafData, result *dashboardtypes.ResolvedRuntimeDependencyValue) {
+	result.Value = withData
 	// TACTICAL - is there are any JSON columns convert them back to a JSON string
 	var jsonColumns []string
-	for _, c := range w.Data.Columns {
+	for _, c := range withData.Columns {
 		if c.DataType == "JSONB" || c.DataType == "JSON" {
 			jsonColumns = append(jsonColumns, c.Name)
 		}
 	}
 	// now convert any json values into a json string
+
 	for _, c := range jsonColumns {
-		for _, row := range w.Data.Rows {
+		for _, row := range withData.Rows {
 			jsonBytes, err := json.Marshal(row[c])
 			if err != nil {
-				return err
+				// publish result with the error
+				result.Error = err
+				result.Value = nil
+				return
 			}
 			row[c] = string(jsonBytes)
 		}
 	}
-	r.PublishRuntimeDependencyValue(name, result)
-	return nil
 }
 
-func (r *RuntimeDependencyPublisherBase) withComplete() bool {
+func (r *RuntimeDependencyPublisherBase) allWithsComplete() bool {
 	for _, w := range r.withRuns {
 		if !w.RunComplete() {
 			return false
@@ -211,3 +209,55 @@ func (r *RuntimeDependencyPublisherBase) withComplete() bool {
 	}
 	return true
 }
+
+func (r *RuntimeDependencyPublisherBase) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) RuntimeDependencyPublisher {
+	return r
+}
+
+//
+//func (b *RuntimeDependencyPublisherBase) WalkParentPublishers(parentFunc func(RuntimeDependencyPublisher) (bool, error)) error {
+//	for continueWalking := true; continueWalking; {
+//		if parent := b.GetParentPublisher(); parent != nil {
+//			var err error
+//			continueWalking, err = parentFunc(parent)
+//			if err != nil {
+//				return err
+//			}
+//		}
+//	}
+//
+//	return nil
+//}
+//
+//func (b *RuntimeDependencyPublisherBase) ResolveWithFromTree(name string) (*DashboardWith, bool) {
+//
+//	b.WalkParentPublishers(func(RuntimeDependencyPublisher) (bool, error)){
+//
+//	}
+//	w, ok := b.withs[name]
+//	if !ok {
+//		parent := b.GetParentPublisher()
+//		if parent != nil {
+//			return parent.ResolveWithFromTree(name)
+//		}
+//	}
+//	return w, ok
+//}
+//
+//func (b *RuntimeDependencyPublisherBase) ResolveParamFromTree(name string) (any, bool) {
+//	// TODO
+//	return nil, false
+//}
+//
+//func (b *RuntimeDependencyPublisherBase) GetParentPublisher() RuntimeDependencyPublisher {
+//	parent := b.parent
+//	for parent != nil {
+//		if res, ok := parent.(RuntimeDependencyPublisher); ok {
+//			return res
+//		}
+//		if grandparents := parent.GetParents(); len(grandparents) > 0 {
+//			parent = grandparents[0]
+//		}
+//	}
+//	return nil
+//}
