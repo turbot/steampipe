@@ -57,15 +57,16 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	name := dashboard.Name()
 
 	r := &DashboardRun{
-		Name:             name,
-		NodeType:         modconfig.BlockTypeDashboard,
-		DashboardName:    executionTree.dashboardName,
-		Title:            typehelpers.SafeString(dashboard.Title),
-		Description:      typehelpers.SafeString(dashboard.Description),
-		Display:          typehelpers.SafeString(dashboard.Display),
-		Documentation:    typehelpers.SafeString(dashboard.Documentation),
-		Tags:             dashboard.Tags,
-		SourceDefinition: dashboard.GetMetadata().SourceDefinition,
+		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(parent),
+		Name:                           name,
+		NodeType:                       modconfig.BlockTypeDashboard,
+		DashboardName:                  executionTree.dashboardName,
+		Title:                          typehelpers.SafeString(dashboard.Title),
+		Description:                    typehelpers.SafeString(dashboard.Description),
+		Display:                        typehelpers.SafeString(dashboard.Display),
+		Documentation:                  typehelpers.SafeString(dashboard.Documentation),
+		Tags:                           dashboard.Tags,
+		SourceDefinition:               dashboard.GetMetadata().SourceDefinition,
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead
 		Status:        dashboardtypes.DashboardRunComplete,
@@ -77,6 +78,10 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	if dashboard.Width != nil {
 		r.Width = *dashboard.Width
 	}
+
+	// set inputs map on RuntimeDependencyPublisherBase BEFORE creating child runs
+	r.inputs = dashboard.GetInputs()
+
 	for _, child := range children {
 		var childRun dashboardtypes.DashboardNodeRun
 		var err error
@@ -129,8 +134,6 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		r.children = append(r.children, childRun)
 	}
 
-	// set inputs map on RuntimeDependencyPublisherBase
-	r.inputs = dashboard.GetInputs()
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 	return r, nil
