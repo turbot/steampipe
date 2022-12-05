@@ -1,18 +1,18 @@
 import { classNames } from "./styles";
 
 const getIconClasses = (type) => {
-  const coloredClasses = "text-3xl text-white opacity-40 print:opacity-100";
+  const coloredClasses = "text-3xl fill-white opacity-40 print:opacity-100";
   switch (type) {
     case "alert":
-      return classNames(coloredClasses, "print:text-alert");
+      return classNames(coloredClasses, "print:fill-alert");
     case "info":
-      return classNames(coloredClasses, "print:text-info");
+      return classNames(coloredClasses, "print:fill-info");
     case "ok":
-      return classNames(coloredClasses, "print:text-ok");
+      return classNames(coloredClasses, "print:fill-ok");
     case "severity":
-      return classNames(coloredClasses, "print:text-yellow");
+      return classNames(coloredClasses, "print:fill-yellow");
     default:
-      return "text-black-scale-4 text-3xl";
+      return "fill-black-scale-4 text-3xl";
   }
 };
 

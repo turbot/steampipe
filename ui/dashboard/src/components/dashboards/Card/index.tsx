@@ -69,13 +69,13 @@ const getIconForType = (type, icon) => {
 
   switch (type) {
     case "alert":
-      return "heroicons-solid:exclamation-circle";
+      return "materialsymbols-solid:error";
     case "ok":
-      return "heroicons-solid:check-circle";
+      return "materialsymbols-solid:check-circle";
     case "info":
-      return "heroicons-solid:information-circle";
+      return "materialsymbols-solid:info";
     case "severity":
-      return "heroicons-solid:exclamation";
+      return "materialsymbols-solid:exclamation";
     default:
       return null;
   }

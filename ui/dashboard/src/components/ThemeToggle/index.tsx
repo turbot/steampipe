@@ -38,22 +38,22 @@ const ThemeToggle = () => {
             (theme.name === ThemeNames.STEAMPIPE_DEFAULT
               ? "opacity-100 ease-in duration-200"
               : "opacity-0 ease-out duration-100") +
-            " absolute inset-0 h-full w-full flex items-center justify-center transition-opacity text-gray-500"
+            " absolute inset-0 h-full w-full flex items-center justify-center transition-opacity fill-gray-500"
           }
           aria-hidden="true"
         >
-          <DashboardIcon icon="heroicons-solid:sun" />
+          <DashboardIcon icon="materialsymbols-solid:light-mode" />
         </span>
         <span
           className={
             (theme.name === ThemeNames.STEAMPIPE_DEFAULT
               ? "opacity-0 ease-out duration-100"
               : "opacity-100 ease-in duration-200") +
-            " absolute inset-0 h-full w-full flex items-center justify-center transition-opacity text-gray-500"
+            " absolute inset-0 h-full w-full flex items-center justify-center transition-opacity fill-gray-500"
           }
           aria-hidden="true"
         >
-          <DashboardIcon icon="heroicons-solid:moon" />
+          <DashboardIcon icon="materialsymbols-solid:dark-mode" />
         </span>
       </span>
     </button>
