@@ -39,11 +39,6 @@ func (d *ResolvedRuntimeDependency) Resolve() error {
 		return nil
 	}
 
-	// dependency must have a source resource - if not this is a bug
-	//if d.dependency.SourceResource == nil {
-	//	return fmt.Errorf("runtime dependency '%s' Resolve() called but it does not have a source resource", d.dependency.String())
-	//}
-
 	// wait for value
 	val := <-d.valueChannel
 
