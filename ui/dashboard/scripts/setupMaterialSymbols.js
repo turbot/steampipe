@@ -18,10 +18,6 @@ const upperFirst = require("lodash/upperFirst");
     const nameKebab = nameParts[0].replace("_", "-");
     const isFillIcon = nameParts.length === 2 && nameParts[1] === "fill";
 
-    // if (isFillIcon) {
-    //   continue;
-    // }
-
     if (isFillIcon) {
       solidIcons[nameKebab] = {
         component: importName,
@@ -39,17 +35,12 @@ const upperFirst = require("lodash/upperFirst");
     generatedFile += `  "${name}": ${definition.component},\n`;
     generatedFile += `  "materialsymbols-outline:${name}": ${definition.component},\n`;
   }
-  // generatedFile += "}\n\n";
-  // generatedFile += "}\n";
-  // generatedFile += "const solid = {\n";
+
   for (const [name, definition] of Object.entries(solidIcons)) {
     generatedFile += `  "materialsymbols-solid:${name}": ${definition.component},\n`;
-    // generatedFile += `  "${name}": { Component: ${definition.component} },\n`;
   }
   generatedFile += "}\n\n";
   generatedFile += "export {\n";
-  // generatedFile += "  outline,\n";
-  // generatedFile += "  solid,\n";
   generatedFile += "  icons,\n";
   generatedFile += "}";
 
