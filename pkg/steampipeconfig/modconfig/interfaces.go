@@ -65,9 +65,6 @@ type WithProvider interface {
 	//GetParentPublisher() WithProvider
 }
 
-type RuntimeDependencyPublisher interface {
-}
-
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
 type QueryProvider interface {
 	WithProvider
