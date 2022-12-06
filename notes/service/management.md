@@ -21,7 +21,7 @@
 
 ### `Sc1`
 1. No `service` is running
-1. `steampipe check` is started - start `service` in `implicit` mode
+1. `steampipe check` is started - starts `service` in `implicit` mode
 1. `steampipe query` is started - binds to `service` started by `check`
 1. `steampipe check` finishes
     1. tries to shutdown service
@@ -32,7 +32,7 @@
 
 ## `Sc2`
 1. No `service` is running
-1. `steampipe check` is started - start `service` in `implicit` mode
+1. `steampipe check` is started - starts `service` in `implicit` mode
 1. `pgcli` is started with the connection string: `postgres://steampipe@localhost:9193`
     > Since on `localhost`, `steampipe` doesn't require authentication and accepts the connection
 1. `steampipe check` finishes
