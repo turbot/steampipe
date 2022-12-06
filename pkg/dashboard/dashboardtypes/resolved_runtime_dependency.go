@@ -13,19 +13,28 @@ import (
 // ResolvedRuntimeDependency is a wrapper for RuntimeDependency which contains the resolved value
 // we must wrap it so that we do not mutate the underlying workspace data when resolving dependency values
 type ResolvedRuntimeDependency struct {
-	Dependency   *modconfig.RuntimeDependency
-	valueLock    sync.Mutex
-	Value        any
-	valueChannel chan *ResolvedRuntimeDependencyValue
+	Dependency *modconfig.RuntimeDependency
+	valueLock  sync.Mutex
+	Value      any
+	// the name of the run which publishes this dependency
+	publisherName string
+	valueChannel  chan *ResolvedRuntimeDependencyValue
 }
 
-func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel chan *ResolvedRuntimeDependencyValue) *ResolvedRuntimeDependency {
+func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel chan *ResolvedRuntimeDependencyValue, publisherName string) *ResolvedRuntimeDependency {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	return &ResolvedRuntimeDependency{
-		Dependency:   dep,
-		valueChannel: valueChannel,
+		Dependency:    dep,
+		valueChannel:  valueChannel,
+		publisherName: publisherName,
 	}
+}
+
+// ScopedName returns is a unique name for the depdency by prepending the publisher name
+// this is used to uniquely identify which `with` is used - for the snapshot data
+func (d *ResolvedRuntimeDependency) ScopedName() string {
+	return fmt.Sprintf("%s.%s", d.publisherName, d.Dependency.SourceResourceName())
 }
 
 func (d *ResolvedRuntimeDependency) Resolve() error {
