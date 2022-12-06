@@ -1,5 +1,6 @@
-import jq from "jq-web";
 import { KeyValuePairs } from "../components/dashboards/common/types";
+let jq: any;
+import("jq-web").then((m) => (jq = m));
 
 type TemplatesMap = {
   [key: string]: string;

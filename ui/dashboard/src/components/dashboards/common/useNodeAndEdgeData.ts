@@ -1,4 +1,5 @@
 import has from "lodash/has";
+import isNumber from "lodash/isNumber";
 import {
   Category,
   CategoryMap,
@@ -7,7 +8,6 @@ import {
   NodeProperties,
 } from "./types";
 import { DashboardRunState, PanelsMap } from "../../../types";
-import { isNumber } from "lodash";
 import {
   NodeAndEdgeData,
   NodeAndEdgeDataColumn,
