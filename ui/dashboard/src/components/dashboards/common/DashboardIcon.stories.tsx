@@ -17,14 +17,65 @@ heroIconDefaultOutline.args = {
   icon: "arrow-up-circle",
 };
 
+export const heroIconDefaultOutlineWithColor = Template.bind({});
+heroIconDefaultOutlineWithColor.args = {
+  icon: "arrow-up-circle",
+  style: { color: "red" },
+};
+
 export const heroIconOutlineFullyNamespaced = Template.bind({});
 heroIconOutlineFullyNamespaced.args = {
   icon: "heroicons-outline:arrow-up-circle",
 };
 
+export const heroIconOutlineFullyNamespacedWithColor = Template.bind({});
+heroIconOutlineFullyNamespacedWithColor.args = {
+  icon: "heroicons-outline:arrow-up-circle",
+  style: { color: "red" },
+};
+
 export const heroIconSolid = Template.bind({});
 heroIconSolid.args = {
   icon: "heroicons-solid:arrow-up-circle",
+};
+
+export const heroIconSolidWithColor = Template.bind({});
+heroIconSolidWithColor.args = {
+  icon: "heroicons-solid:arrow-up-circle",
+  style: { color: "red" },
+};
+
+export const materialSymbolDefaultOutline = Template.bind({});
+materialSymbolDefaultOutline.args = {
+  icon: "cloud",
+};
+
+export const materialSymbolDefaultOutlineWithColor = Template.bind({});
+materialSymbolDefaultOutlineWithColor.args = {
+  icon: "cloud",
+  style: { color: "red" },
+};
+
+export const materialSymbolOutlineFullyNamespaced = Template.bind({});
+materialSymbolOutlineFullyNamespaced.args = {
+  icon: "materialsymbols-outline:cloud",
+};
+
+export const materialSymbolOutlineFullyNamespacedWithColor = Template.bind({});
+materialSymbolOutlineFullyNamespacedWithColor.args = {
+  icon: "materialsymbols-outline:cloud",
+  style: { color: "red" },
+};
+
+export const materialSymbolSolid = Template.bind({});
+materialSymbolSolid.args = {
+  icon: "materialsymbols-solid:cloud",
+};
+
+export const materialSymbolSolidWithColor = Template.bind({});
+materialSymbolSolidWithColor.args = {
+  icon: "materialsymbols-solid:cloud",
+  style: { color: "red" },
 };
 
 export const text1Letter = Template.bind({});

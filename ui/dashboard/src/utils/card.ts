@@ -16,6 +16,29 @@ const getIconClasses = (type) => {
   }
 };
 
+const getIconForType = (type, icon) => {
+  if (!type && !icon) {
+    return null;
+  }
+
+  if (icon) {
+    return icon;
+  }
+
+  switch (type) {
+    case "alert":
+      return "materialsymbols-solid:error";
+    case "ok":
+      return "materialsymbols-solid:check-circle";
+    case "info":
+      return "materialsymbols-solid:info";
+    case "severity":
+      return "materialsymbols-solid:exclamation";
+    default:
+      return null;
+  }
+};
+
 const getTextClasses = (type) => {
   switch (type) {
     case "alert":
@@ -46,4 +69,4 @@ const getWrapperClasses = (type) => {
   }
 };
 
-export { getIconClasses, getTextClasses, getWrapperClasses };
+export { getIconClasses, getIconForType, getTextClasses, getWrapperClasses };

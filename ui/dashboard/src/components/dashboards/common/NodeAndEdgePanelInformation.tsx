@@ -51,7 +51,7 @@ const NodeAndEdgePanelInformation = ({
             <div className="flex items-center space-x-1">
               <Icon
                 className="w-3.5 h-3.5 text-alert"
-                icon="heroicons-solid:exclamation-circle"
+                icon="materialsymbols-solid:error"
               />
               <span key={category.id} className="block">
                 {category.title || category.id}

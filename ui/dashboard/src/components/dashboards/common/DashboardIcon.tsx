@@ -1,6 +1,6 @@
 import Icon from "../../Icon";
 import { classNames } from "../../../utils/styles";
-import { memo, useMemo } from "react";
+import { useMemo } from "react";
 
 interface DashboardIconProps {
   className?: string;
@@ -9,14 +9,12 @@ interface DashboardIconProps {
   title?: string;
 }
 
-interface DashboardHeroIconProps extends DashboardIconProps {
+interface DashboardTextIconProps extends DashboardIconProps {
   icon: string;
-  style?: any;
 }
 
 interface DashboardImageIconProps extends DashboardIconProps {
   icon: string;
-  style?: any;
 }
 
 const useDashboardIconType = (icon) =>
@@ -28,7 +26,9 @@ const useDashboardIconType = (icon) =>
     // This gets parsed as a URL if we don't check first
     if (
       icon.startsWith("heroicons-outline:") ||
-      icon.startsWith("heroicons-solid:")
+      icon.startsWith("heroicons-solid:") ||
+      icon.startsWith("materialsymbols-outline:") ||
+      icon.startsWith("materialsymbols-solid:")
     ) {
       return "icon";
     }
@@ -57,21 +57,12 @@ const DashboardImageIcon = ({
   <img className={className} src={icon} alt="" style={style} title={title} />
 );
 
-const DashboardHeroIcon = ({
-  className,
-  icon,
-  style,
-  title,
-}: DashboardHeroIconProps) => (
-  <Icon className={className} icon={icon} style={style} title={title} />
-);
-
 const DashboardTextIcon = ({
   className,
   icon,
   style,
   title,
-}: DashboardHeroIconProps) => {
+}: DashboardTextIconProps) => {
   const text = useMemo(() => {
     if (!icon) {
       return "";
@@ -104,12 +95,7 @@ const DashboardIcon = ({
   switch (iconType) {
     case "icon":
       return (
-        <DashboardHeroIcon
-          className={className}
-          icon={icon}
-          style={style}
-          title={title}
-        />
+        <Icon className={className} icon={icon} style={style} title={title} />
       );
     case "text":
       return (
@@ -134,6 +120,6 @@ const DashboardIcon = ({
   }
 };
 
-export default memo(DashboardIcon);
+export default DashboardIcon;
 
 export { useDashboardIconType };
