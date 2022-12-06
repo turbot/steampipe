@@ -22,6 +22,7 @@ dashboard "many_withs" {
           select 'n2'
         EOQ
       }
+
       node "n1" {
         sql = <<-EOQ
       select
@@ -44,9 +45,7 @@ dashboard "many_withs" {
       select
         $1 as from_id,
         $2 as to_id
-
   EOQ
-
         args = [with.n1.rows[0], with.n2.rows[0]]
       }
     }

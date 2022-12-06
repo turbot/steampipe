@@ -18,11 +18,19 @@ func (l *DashboardNodeList) Merge(other DashboardNodeList) {
 	}
 }
 
-func (l *DashboardNodeList) Get(name string) *DashboardNode {
-	for _, n := range *l {
+func (l DashboardNodeList) Get(name string) *DashboardNode {
+	for _, n := range l {
 		if n.Name() == name {
 			return n
 		}
 	}
 	return nil
+}
+
+func (l DashboardNodeList) Names() []string {
+	res := make([]string, len(l))
+	for i, n := range l {
+		res[i] = n.Name()
+	}
+	return res
 }
