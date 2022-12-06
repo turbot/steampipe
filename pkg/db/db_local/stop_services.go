@@ -45,11 +45,14 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 	// how many clients are connected
 	// under a fresh context
-	count, _ := GetCountOfThirdPartyClients(context.Background())
-	if count > 0 {
-		// there are other clients connected to the database
-		// we can't stop the DB.
-		log.Printf("[TRACE] ShutdownService not closing database service - %d %s connected", count, utils.Pluralize("client", count))
+	steampipeCount, _, err := GetCountOfThirdPartyClients(context.Background())
+	// if there are other clients connected
+	// or if there's an error
+	if err != nil && steampipeCount > 0 {
+		// there are other steampipe clients connected to the database
+		// we don't need to stop the service
+		// the last one to exit will shutdown the service
+		log.Printf("[TRACE] ShutdownService not closing database service - %d steampipe %s connected", steampipeCount, utils.Pluralize("client", steampipeCount))
 		return
 	}
 
@@ -74,35 +77,41 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 // _this_execution_ of steampipe
 //
 // We assume that any connections from this execution will eventually be closed
-// - if there are any other external connections, we cannot shust down the database
+// - if there are any other external connections, we cannot shut down the database
 //
 // this is to handle cases where either a third party tool is connected to the database,
 // or other Steampipe sessions are attached to an already running Steampipe service
 // - we do not want the db service being closed underneath them
 //
-// note: we need the PgClientAppName chack to handle the case where there may be one or more open DB connections
+// note: we need the PgClientAppName check to handle the case where there may be one or more open DB connections
 // from this instance at the time of shutdown - for example when a control run is cancelled
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
-func GetCountOfThirdPartyClients(ctx context.Context) (i int, e error) {
+func GetCountOfThirdPartyClients(ctx context.Context) (steampipeClients int, totalClients int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
-	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end:%d", i))
+	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end: %d, %d", steampipeClients, totalClients))
 
 	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
-		return -1, err
+		return -1, -1, err
 	}
 	defer rootClient.Close(ctx)
 
-	clientCount := 0
 	// get the total number of connected clients which have not been created by this execution of steampipe
 	// - determined by the unique application_name client parameter
 	row := rootClient.QueryRow(ctx, "select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
-	err = row.Scan(&clientCount)
+	err = row.Scan(&totalClients)
 	if err != nil {
-		return -1, err
+		return -1, -1, err
 	}
 
-	return clientCount, nil
+	// get the number of steampipe client connected to the service - which are not this instance
+	row = rootClient.QueryRow(ctx, "select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name LIKE $1 and application_name != $2;", fmt.Sprintf("%s_%%", constants.AppName), runtime.PgClientAppName)
+	err = row.Scan(&steampipeClients)
+	if err != nil {
+		return -1, -1, err
+	}
+
+	return steampipeClients, totalClients, nil
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
@@ -169,29 +178,29 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 }
 
 /*
-	Postgres has three levels of shutdown:
+Postgres has three levels of shutdown:
 
-	* SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
-	* SIGINT    - Fast Shutdown      :  SIGTERM children, causing them to abort current
-									    transations and exit - wait for children to exit -
-									    exit self
-	* SIGQUIT   - Immediate Shutdown :  SIGQUIT children - wait at most 5 seconds,
-									    send SIGKILL to children - exit self immediately
+  - SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
+  - SIGINT    - Fast Shutdown      :  SIGTERM children, causing them to abort current
+    transations and exit - wait for children to exit -
+    exit self
+  - SIGQUIT   - Immediate Shutdown :  SIGQUIT children - wait at most 5 seconds,
+    send SIGKILL to children - exit self immediately
 
-	Postgres recommended shutdown is to send a SIGTERM - which initiates
-	a Smart-Shutdown sequence.
+Postgres recommended shutdown is to send a SIGTERM - which initiates
+a Smart-Shutdown sequence.
 
-	IMPORTANT:
-	As per documentation, it is best not to use SIGKILL
-	to shut down postgres. Doing so will prevent the server
-	from releasing shared memory and semaphores.
+IMPORTANT:
+As per documentation, it is best not to use SIGKILL
+to shut down postgres. Doing so will prevent the server
+from releasing shared memory and semaphores.
 
-	Reference:
-	https://www.postgresql.org/docs/12/server-shutdown.html
+Reference:
+https://www.postgresql.org/docs/12/server-shutdown.html
 
-	By the time we actually try to run this sequence, we will have
-	checked that the service can indeed shutdown gracefully,
-	the sequence is there only as a backup.
+By the time we actually try to run this sequence, we will have
+checked that the service can indeed shutdown gracefully,
+the sequence is there only as a backup.
 */
 func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
 	utils.LogTime("db_local.doThreeStepPostgresExit start")
