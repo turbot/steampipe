@@ -26,3 +26,11 @@ func (l *DashboardEdgeList) Get(name string) *DashboardEdge {
 	}
 	return nil
 }
+
+func (l DashboardEdgeList) Names() []string {
+	res := make([]string, len(l))
+	for i, e := range l {
+		res[i] = e.Name()
+	}
+	return res
+}
