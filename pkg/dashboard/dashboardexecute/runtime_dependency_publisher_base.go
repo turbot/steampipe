@@ -13,6 +13,7 @@ import (
 )
 
 type RuntimeDependencyPublisherBase struct {
+	Name   string                `json:"name"`
 	Args   []any                 `json:"args,omitempty"`
 	Params []*modconfig.ParamDef `json:"params,omitempty"`
 
@@ -24,8 +25,9 @@ type RuntimeDependencyPublisherBase struct {
 	parent              dashboardtypes.DashboardNodeParent
 }
 
-func NewRuntimeDependencyPublisherBase(parent dashboardtypes.DashboardNodeParent) *RuntimeDependencyPublisherBase {
+func NewRuntimeDependencyPublisherBase(name string, parent dashboardtypes.DashboardNodeParent) *RuntimeDependencyPublisherBase {
 	return &RuntimeDependencyPublisherBase{
+		Name:                name,
 		subscriptions:       make(map[string][]*RuntimeDependencyPublishTarget),
 		runtimeDependencies: make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
 		inputs:              make(map[string]*modconfig.DashboardInput),
