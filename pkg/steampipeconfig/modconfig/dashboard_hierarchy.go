@@ -23,8 +23,10 @@ type DashboardHierarchy struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
+	Nodes     DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
+	Edges     DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
+	NodeNames []string          `json:"edges"`
+	EdgeNames []string          `json:"nodes"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
@@ -82,7 +84,12 @@ func (h *DashboardHierarchy) Name() string {
 // OnDecoded implements HclResource
 func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	h.setBaseProperties(resourceMapProvider)
-
+	if len(h.Nodes) > 0 {
+		h.NodeNames = h.Nodes.Names()
+	}
+	if len(h.Edges) > 0 {
+		h.EdgeNames = h.Edges.Names()
+	}
 	return nil
 }
 

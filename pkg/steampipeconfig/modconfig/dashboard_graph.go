@@ -21,8 +21,10 @@ type DashboardGraph struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
+	Nodes     DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
+	Edges     DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
+	NodeNames []string          `json:"edges"`
+	EdgeNames []string          `json:"nodes"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 	Direction  *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
@@ -81,7 +83,12 @@ func (g *DashboardGraph) Name() string {
 // OnDecoded implements HclResource
 func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	g.setBaseProperties(resourceMapProvider)
-
+	if len(g.Nodes) > 0 {
+		g.NodeNames = g.Nodes.Names()
+	}
+	if len(g.Edges) > 0 {
+		g.EdgeNames = g.Edges.Names()
+	}
 	return nil
 }
 

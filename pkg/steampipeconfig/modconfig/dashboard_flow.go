@@ -22,8 +22,10 @@ type DashboardFlow struct {
 	ShortName       string `json:"-"`
 	UnqualifiedName string `json:"-"`
 
-	Nodes DashboardNodeList `cty:"node_list"  column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
+	Nodes     DashboardNodeList `cty:"node_list"  column:"nodes,jsonb" json:"-"`
+	Edges     DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
+	NodeNames []string          `json:"edges"`
+	EdgeNames []string          `json:"nodes"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
@@ -81,7 +83,12 @@ func (f *DashboardFlow) Name() string {
 // OnDecoded implements HclResource
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	f.setBaseProperties(resourceMapProvider)
-
+	if len(f.Nodes) > 0 {
+		f.NodeNames = f.Nodes.Names()
+	}
+	if len(f.Edges) > 0 {
+		f.EdgeNames = f.Edges.Names()
+	}
 	return nil
 }
 
