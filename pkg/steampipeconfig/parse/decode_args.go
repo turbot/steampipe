@@ -54,7 +54,7 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	}
 	// add parentResource to all runtime dependencies
 	for _, r := range runtimeDependencies {
-		r.SetParentResource(resource)
+		r.SetDependentResource(resource)
 	}
 
 	if err != nil {

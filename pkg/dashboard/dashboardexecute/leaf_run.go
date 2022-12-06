@@ -29,7 +29,9 @@ type LeafRun struct {
 	Status           dashboardtypes.DashboardRunStatus `json:"status"`
 	DashboardName    string                            `json:"dashboard"`
 	SourceDefinition string                            `json:"source_definition"`
-	TimingResult     *queryresult.TimingResult         `json:"-"`
+	// a list of the (scoped) names of any `withs` that we rely on
+	DependencyWiths []string                  `json:"withs,omitempty"`
+	TimingResult    *queryresult.TimingResult `json:"-"`
 	// child runs (nodes/edges)
 	children      []dashboardtypes.DashboardNodeRun
 	executeSQL    string
@@ -188,6 +190,8 @@ func (r *LeafRun) Execute(ctx context.Context) {
 				return
 			}
 
+			// populate the names of any withs we depend on
+			r.setDependencyWiths()
 			// ok now we have runtime dependencies, we can resolve the query
 			if err := r.resolveSQLAndArgs(); err != nil {
 				r.SetError(ctx, err)
@@ -464,6 +468,15 @@ func (r *LeafRun) hasParam(paramName string) bool {
 		}
 	}
 	return false
+}
+
+// populate the list of `withs` that this run depends on
+func (r *LeafRun) setDependencyWiths() {
+	for _, d := range r.runtimeDependencies {
+		if d.Dependency.PropertyPath.ItemType == modconfig.BlockTypeWith {
+			r.DependencyWiths = append(r.DependencyWiths, d.ScopedName())
+		}
+	}
 }
 
 //func (r *LeafRun) subscribeToParamValue(name string, path *modconfig.ParsedPropertyPath) chan *dashboardtypes.ResolvedRuntimeDependencyValue {
