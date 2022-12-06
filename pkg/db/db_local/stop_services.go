@@ -35,6 +35,10 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
+	if utils.IsContextCancelled(ctx) {
+		ctx = context.Background()
+	}
+
 	status, _ := GetState()
 
 	// if the service is not running or it was invoked by 'steampipe service',
@@ -45,10 +49,10 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 	// how many clients are connected
 	// under a fresh context
-	steampipeCount, _, err := GetCountOfThirdPartyClients(context.Background())
+	steampipeCount, _, err := GetClientCount(context.Background())
 	// if there are other clients connected
-	// or if there's an error
-	if err != nil && steampipeCount > 0 {
+	// and if there's no error
+	if err == nil && steampipeCount > 0 {
 		// there are other steampipe clients connected to the database
 		// we don't need to stop the service
 		// the last one to exit will shutdown the service
@@ -73,7 +77,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 }
 
-// GetCountOfThirdPartyClients returns the number of connections to the service from anyone other than
+// GetClientCount returns the number of connections to the service from anyone other than
 // _this_execution_ of steampipe
 //
 // We assume that any connections from this execution will eventually be closed
@@ -86,7 +90,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 // note: we need the PgClientAppName check to handle the case where there may be one or more open DB connections
 // from this instance at the time of shutdown - for example when a control run is cancelled
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
-func GetCountOfThirdPartyClients(ctx context.Context) (steampipeClients int, totalClients int, e error) {
+func GetClientCount(ctx context.Context) (steampipeClients int, totalClients int, e error) {
 	utils.LogTime("db_local.GetCountOfConnectedClients start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end: %d, %d", steampipeClients, totalClients))
 

@@ -173,7 +173,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	error_helpers.FailOnError(invoker.IsValid())
 
-	err := db_local.EnsureDBInstalled(ctx)
+	err := db_local.EnsureDBInstallation(ctx)
 	error_helpers.FailOnError(err)
 
 	// start db, refreshing connections
@@ -317,7 +317,7 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 			dashboardserver.StopDashboardService(ctx)
 			// if we have received this signal, then the user probably wants to shut down
 			// everything. Shutdowns MUST NOT happen in cancellable contexts
-			_, count, err := db_local.GetCountOfThirdPartyClients(context.Background())
+			_, count, err := db_local.GetClientCount(context.Background())
 			if err != nil {
 				// report the error in the off chance that there's one
 				error_helpers.ShowError(ctx, err)
@@ -512,7 +512,7 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 		var connectedClientCount int
 		// check if there are any connected clients to the service
-		_, connectedClientCount, err = db_local.GetCountOfThirdPartyClients(cmd.Context())
+		_, connectedClientCount, err = db_local.GetClientCount(cmd.Context())
 		error_helpers.FailOnErrorWithMessage(err, "service stop failed")
 
 		if connectedClientCount > 0 {
