@@ -264,6 +264,13 @@ func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.
 		}
 		res = e.buildSnapshotPanelsUnder(c, res)
 	}
+	// if the parent is a RuntimeDependencyPublisher, include all its `with` runs
+	if rdp, ok := parent.(RuntimeDependencyPublisher); ok {
+		for withName, withRun := range rdp.GetWithRuns() {
+			scopedName := fmt.Sprintf("%s.%s", parent.GetName(), withName)
+			res[scopedName] = withRun
+		}
+	}
 
 	return res
 }
