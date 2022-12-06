@@ -16,13 +16,9 @@ dashboard "with_graph_as_node" {
      param "subnet_ids" {
        default =   with.vpc.rows[*].vpc_id
      }
-     nodse
    }
 
-
-
   // vpc: vpc-0a93262e0a9f10dda
-
 
   graph "ec2_instance_detail" {
 
