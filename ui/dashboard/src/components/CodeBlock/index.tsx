@@ -1,6 +1,9 @@
 import CopyToClipboard, { CopyToClipboardProvider } from "../CopyToClipboard";
+import hcl from "react-syntax-highlighter/dist/esm/languages/prism/hcl";
+import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
+import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
 import { classNames } from "../../utils/styles";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeNames } from "../../hooks/useTheme";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useMemo, useState } from "react";
@@ -8,6 +11,10 @@ import {
   vs,
   vscDarkPlus,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+SyntaxHighlighter.registerLanguage("hcl", hcl);
+SyntaxHighlighter.registerLanguage("json", json);
+SyntaxHighlighter.registerLanguage("sql", sql);
 
 interface CodeBlockProps {
   children: string;

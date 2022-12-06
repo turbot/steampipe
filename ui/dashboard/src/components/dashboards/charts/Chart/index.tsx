@@ -7,28 +7,12 @@ import set from "lodash/set";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useMediaMode from "../../../../hooks/useMediaMode";
 import {
-  BarChart,
-  GraphChart,
-  LineChart,
-  PieChart,
-  SankeyChart,
-  TreeChart,
-} from "echarts/charts";
-import {
   buildChartDataset,
   getColorOverride,
   LeafNodeData,
   themeColors,
   Width,
 } from "../../common";
-import { CanvasRenderer } from "echarts/renderers";
-import {
-  DatasetComponent,
-  GridComponent,
-  LegendComponent,
-  TitleComponent,
-  TooltipComponent,
-} from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
 import {
   ChartProperties,
@@ -42,28 +26,12 @@ import { FlowType } from "../../flows/types";
 import { getChartComponent } from "..";
 import { GraphType } from "../../graphs/types";
 import { HierarchyType } from "../../hierarchies/types";
-import { LabelLayout } from "echarts/features";
 import { registerComponent } from "../../index";
 import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useNavigate } from "react-router-dom";
-import * as echarts from "echarts/core";
-
-echarts.use([
-  BarChart,
-  CanvasRenderer,
-  DatasetComponent,
-  GraphChart,
-  GridComponent,
-  LabelLayout,
-  LegendComponent,
-  LineChart,
-  PieChart,
-  SankeyChart,
-  TitleComponent,
-  TooltipComponent,
-  TreeChart,
-]);
+let echarts;
+import("./echarts").then((m) => (echarts = m.echarts));
 
 const getThemeColorsWithPointOverrides = (
   type: ChartType = "column",
