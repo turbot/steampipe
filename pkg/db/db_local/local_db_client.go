@@ -31,7 +31,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	defer utils.LogTime("db.GetLocalClient end")
 
 	// start db if necessary
-	if err := EnsureDBInstallation(ctx); err != nil {
+	if err := EnsureDBInstalled(ctx); err != nil {
 		return nil, err
 	}
 

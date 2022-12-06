@@ -173,7 +173,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	error_helpers.FailOnError(invoker.IsValid())
 
-	err := db_local.EnsureDBInstallation(ctx)
+	err := db_local.EnsureDBInstalled(ctx)
 	error_helpers.FailOnError(err)
 
 	// start db, refreshing connections
