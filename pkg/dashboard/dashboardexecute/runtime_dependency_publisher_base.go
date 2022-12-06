@@ -81,6 +81,10 @@ func (b *RuntimeDependencyPublisherBase) PublishRuntimeDependencyValue(name stri
 	delete(b.subscriptions, name)
 }
 
+func (b *RuntimeDependencyPublisherBase) GetWithRuns() map[string]*LeafRun {
+	return b.withRuns
+}
+
 // if this node has runtime dependencies, create runtime dependency instances which we use to resolve the values
 func (b *RuntimeDependencyPublisherBase) addRuntimeDependencies(resource modconfig.RuntimeDependencyProvider) error {
 	// only QueryProvider resources support runtime dependencies
@@ -118,7 +122,9 @@ func (b *RuntimeDependencyPublisherBase) addRuntimeDependencies(resource modconf
 		}
 		// subscribe, passing a function which invokes getWithValue to resolve the required with value
 		valueChannel := publisher.SubscribeToRuntimeDependency(d.SourceResourceName(), opts...)
-		b.runtimeDependencies[name] = dashboardtypes.NewResolvedRuntimeDependency(dep, valueChannel)
+
+		publisherName := publisher.(dashboardtypes.DashboardNodeRun).GetName()
+		b.runtimeDependencies[name] = dashboardtypes.NewResolvedRuntimeDependency(dep, valueChannel, publisherName)
 	}
 	return nil
 }

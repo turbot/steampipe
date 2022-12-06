@@ -12,7 +12,7 @@ type RuntimeDependency struct {
 	ArgName  *string
 	ArgIndex *int
 	// the resource which has the runtime dependency
-	ParentResource QueryProvider
+	DependentResource QueryProvider
 	// TACTICAL - if set, wrap the dependency value in an array
 	// this provides support for args which convert a runtime dependency to an array, like:
 	// arns = [input.arn]
@@ -79,15 +79,13 @@ func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
 		}
 	}
 
-	// TODO
-	//// SourceResource
-	//if d.SourceResource != other.SourceResource {
-	//	return false
-	//}
+	if d.SourceResourceName() != other.SourceResourceName() {
+		return false
+	}
 
 	return true
 }
 
-func (d *RuntimeDependency) SetParentResource(resource QueryProvider) {
-	d.ParentResource = resource
+func (d *RuntimeDependency) SetDependentResource(resource QueryProvider) {
+	d.DependentResource = resource
 }
