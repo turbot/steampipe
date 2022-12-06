@@ -13,7 +13,6 @@ import (
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
 	RuntimeDependencyPublisherBase
-	Name             string                            `json:"name"`
 	Title            string                            `json:"title,omitempty"`
 	Width            int                               `json:"width,omitempty"`
 	Description      string                            `json:"description,omitempty"`
@@ -56,8 +55,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	name := dashboard.Name()
 
 	r := &DashboardRun{
-		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(parent),
-		Name:                           name,
+		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(name, parent),
 		NodeType:                       modconfig.BlockTypeDashboard,
 		DashboardName:                  executionTree.dashboardName,
 		Title:                          typehelpers.SafeString(dashboard.Title),
