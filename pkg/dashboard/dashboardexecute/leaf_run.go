@@ -16,7 +16,6 @@ import (
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
 	RuntimeDependencyPublisherBase
-	Name             string                            `json:"name"`
 	Title            string                            `json:"title,omitempty"`
 	Width            int                               `json:"width,omitempty"`
 	Type             string                            `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
@@ -52,8 +51,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	name := resource.Name()
 
 	r := &LeafRun{
-		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(parent),
-		Name:                           name,
+		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(name, parent),
 		Title:                          resource.GetTitle(),
 		Width:                          resource.GetWidth(),
 		Type:                           resource.GetType(),
