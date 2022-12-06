@@ -39,3 +39,11 @@
     1. tries to shutdown service
     1. does not see any another `steampipe` connected to `service`
     1. forcefully shuts down service even if another client is connected
+    
+## `Sc3`
+1. `steampipe service start` is executed
+1. `steampipe check` is started - `service` is already running - binds to that service
+1. `steampipe query` is started - `service` is already running - binds to that service
+1. `steampipe check` finished - `service` is in explicit mode - no shutdown
+1. `steampipe query` finished - `service` is in explicit mode - no shutdown
+1. `steampipe service stop` stops the `service`
