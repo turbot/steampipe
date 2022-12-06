@@ -23,8 +23,8 @@ type DashboardGraph struct {
 
 	Nodes     DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
 	Edges     DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
-	NodeNames []string          `json:"edges"`
-	EdgeNames []string          `json:"nodes"`
+	NodeNames []string          `json:"nodes"`
+	EdgeNames []string          `json:"edges"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 	Direction  *string                       `cty:"direction" hcl:"direction" column:"direction,text" json:"direction"`
