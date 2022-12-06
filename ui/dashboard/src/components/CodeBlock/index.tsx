@@ -1,6 +1,7 @@
 import CopyToClipboard, { CopyToClipboardProvider } from "../CopyToClipboard";
-import json from "react-syntax-highlighter/dist/esm/languages/hljs/json";
-import sql from "react-syntax-highlighter/dist/esm/languages/hljs/sql";
+import hcl from "react-syntax-highlighter/dist/esm/languages/prism/hcl";
+import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
+import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
 import { classNames } from "../../utils/styles";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeNames } from "../../hooks/useTheme";
@@ -11,6 +12,7 @@ import {
   vscDarkPlus,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+SyntaxHighlighter.registerLanguage("hcl", hcl);
 SyntaxHighlighter.registerLanguage("json", json);
 SyntaxHighlighter.registerLanguage("sql", sql);
 
