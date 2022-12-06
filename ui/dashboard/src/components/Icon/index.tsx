@@ -9,10 +9,20 @@ interface IconProps {
 
 const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
   const icons = useDashboardIcons();
-  let MatchingIcon;
-  MatchingIcon = icons.materialSymbols[icon];
+  let MatchingIcon = icons.materialSymbols[icon];
 
-  if (!MatchingIcon) {
+  if (MatchingIcon) {
+    return (
+      <MatchingIcon
+        className={className}
+        style={{
+          fill: "currentColor",
+          color: style ? style.color : undefined,
+        }}
+        title={title}
+      />
+    );
+  } else {
     MatchingIcon = icons.heroIcons[icon];
   }
 
@@ -20,19 +30,7 @@ const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
     return null;
   }
 
-  return (
-    <MatchingIcon
-      className={className}
-      style={
-        !!style
-          ? { fill: style.color ? "currentColor" : undefined, ...style }
-          : undefined
-      }
-      title={title}
-      width="100%"
-      height="100%"
-    />
-  );
+  return <MatchingIcon className={className} style={style} title={title} />;
 };
 
 export default Icon;

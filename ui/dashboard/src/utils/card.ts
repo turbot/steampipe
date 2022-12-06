@@ -1,18 +1,41 @@
 import { classNames } from "./styles";
 
 const getIconClasses = (type) => {
-  const coloredClasses = "text-3xl fill-white opacity-40 print:opacity-100";
+  const coloredClasses = "text-3xl text-white opacity-40 print:opacity-100";
   switch (type) {
     case "alert":
-      return classNames(coloredClasses, "print:fill-alert");
+      return classNames(coloredClasses, "print:text-alert");
     case "info":
-      return classNames(coloredClasses, "print:fill-info");
+      return classNames(coloredClasses, "print:text-info");
     case "ok":
-      return classNames(coloredClasses, "print:fill-ok");
+      return classNames(coloredClasses, "print:text-ok");
     case "severity":
-      return classNames(coloredClasses, "print:fill-yellow");
+      return classNames(coloredClasses, "print:text-yellow");
     default:
-      return "fill-black-scale-4 text-3xl";
+      return "text-black-scale-4 text-3xl";
+  }
+};
+
+const getIconForType = (type, icon) => {
+  if (!type && !icon) {
+    return null;
+  }
+
+  if (icon) {
+    return icon;
+  }
+
+  switch (type) {
+    case "alert":
+      return "materialsymbols-solid:error";
+    case "ok":
+      return "materialsymbols-solid:check-circle";
+    case "info":
+      return "materialsymbols-solid:info";
+    case "severity":
+      return "materialsymbols-solid:exclamation";
+    default:
+      return null;
   }
 };
 
@@ -46,4 +69,4 @@ const getWrapperClasses = (type) => {
   }
 };
 
-export { getIconClasses, getTextClasses, getWrapperClasses };
+export { getIconClasses, getIconForType, getTextClasses, getWrapperClasses };

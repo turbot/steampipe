@@ -16,6 +16,7 @@ import { DashboardDataModeLive } from "../../../types";
 import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
+  getIconForType,
   getTextClasses,
   getWrapperClasses,
 } from "../../../utils/card";
@@ -56,29 +57,6 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
     return "formal";
   }
   return "simple";
-};
-
-const getIconForType = (type, icon) => {
-  if (!type && !icon) {
-    return null;
-  }
-
-  if (icon) {
-    return icon;
-  }
-
-  switch (type) {
-    case "alert":
-      return "materialsymbols-solid:error";
-    case "ok":
-      return "materialsymbols-solid:check-circle";
-    case "info":
-      return "materialsymbols-solid:info";
-    case "severity":
-      return "materialsymbols-solid:exclamation";
-    default:
-      return null;
-  }
 };
 
 const useCardState = ({ data, sql, display_type, properties }: CardProps) => {
@@ -233,12 +211,6 @@ const Card = (props: CardProps) => {
     doRender();
   }, [state, props.data]);
 
-  // return (
-  //   <div className="bg-alert text-alert print:bg-white print:border-2 print:border-alert">
-  //     Hello
-  //   </div>
-  // );
-
   const card = (
     <div
       className={classNames(
@@ -263,7 +235,10 @@ const Card = (props: CardProps) => {
         >
           {state.loading && "Loading..."}
           {!state.loading && !state.label && (
-            <DashboardIcon className="h-5 w-5" icon="heroicons-solid:minus" />
+            <DashboardIcon
+              className="h-5 w-5"
+              icon="materialsymbols-outline:remove"
+            />
           )}
           {!state.loading && state.label}
         </p>
@@ -295,7 +270,7 @@ const Card = (props: CardProps) => {
             (state.value === null || state.value === undefined) && (
               <DashboardIcon
                 className="h-10 w-10"
-                icon="heroicons-solid:minus"
+                icon="materialsymbols-outline:remove"
               />
             )}
           {state.value !== null &&

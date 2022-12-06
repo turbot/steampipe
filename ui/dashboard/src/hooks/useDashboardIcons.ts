@@ -10,12 +10,13 @@ import("../icons/materialSymbols").then((m) => {
 });
 
 const useDashboardIcons = () => {
-  return useMemo(() => {
-    return {
+  return useMemo(
+    () => ({
       heroIcons,
       materialSymbols,
-    };
-  }, [heroIcons, materialSymbols]);
+    }),
+    [heroIcons, materialSymbols]
+  );
 };
 
 export default useDashboardIcons;

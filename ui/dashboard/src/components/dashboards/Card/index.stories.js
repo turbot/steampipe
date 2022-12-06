@@ -27,40 +27,43 @@ LoadingCustomIcon.args = {
 export const LoadingOK = Template.bind({});
 LoadingOK.args = {
   data: null,
-  properties: { type: "ok" },
+  display_type: "ok",
 };
 
 export const LoadingOKCustomIcon = Template.bind({});
 LoadingOKCustomIcon.storyName = "Loading OK (Custom Icon)";
 LoadingOKCustomIcon.args = {
   data: null,
-  properties: { type: "ok", icon: "check-circle" },
+  display_type: "ok",
+  properties: { icon: "check-circle" },
 };
 
 export const LoadingAlert = Template.bind({});
 LoadingAlert.args = {
   data: null,
-  properties: { type: "alert" },
+  display_type: "alert",
 };
 
 export const LoadingAlertCustomIcon = Template.bind({});
 LoadingAlertCustomIcon.storyName = "Loading Alert (Custom Icon)";
 LoadingAlertCustomIcon.args = {
   data: null,
-  properties: { type: "alert", icon: "shield-exclamation" },
+  display_type: "alert",
+  properties: { icon: "shield-exclamation" },
 };
 
 export const LoadingInfo = Template.bind({});
 LoadingInfo.args = {
   data: null,
-  properties: { type: "info" },
+  display_type: "info",
 };
 
 export const LoadingInfoCustomIcon = Template.bind({});
 LoadingInfoCustomIcon.storyName = "Loading Info (Custom Icon)";
 LoadingInfoCustomIcon.args = {
   data: null,
-  properties: { type: "info", icon: "light-bulb" },
+  display_type: "info",
+  properties: { icon: "light-bulb" },
 };
 
 export const Error = Template.bind({});
@@ -77,19 +80,19 @@ Empty.args = {
 export const EmptyOK = Template.bind({});
 EmptyOK.args = {
   data: [],
-  properties: { type: "ok" },
+  display_type: "ok",
 };
 
 export const EmptyAlert = Template.bind({});
 EmptyAlert.args = {
   data: [],
-  properties: { type: "alert" },
+  display_type: "alert",
 };
 
 export const EmptyInfo = Template.bind({});
 EmptyInfo.args = {
   data: [],
-  properties: { type: "info" },
+  display_type: "info",
 };
 
 export const StringValue = Template.bind({});
@@ -122,7 +125,7 @@ SimpleDataFormatOK.args = {
     columns: [{ name: "Encrypted EC2 Instances", data_type: "INT8" }],
     rows: [{ "Encrypted EC2 Instances": 5 }],
   },
-  properties: { type: "ok" },
+  display_type: "ok",
 };
 
 export const SimpleDataFormatOKCustomIcon = Template.bind({});
@@ -132,7 +135,8 @@ SimpleDataFormatOKCustomIcon.args = {
     columns: [{ name: "Encrypted EC2 Instances", data_type: "INT8" }],
     rows: [{ "Encrypted EC2 Instances": 5 }],
   },
-  properties: { type: "ok", icon: "check-circle" },
+  display_type: "ok",
+  properties: { icon: "check-circle" },
 };
 
 export const SimpleDataFormatAlert = Template.bind({});
@@ -141,7 +145,7 @@ SimpleDataFormatAlert.args = {
     columns: [{ name: "Public Buckets", data_type: "INT8" }],
     rows: [{ "Public Buckets": 5 }],
   },
-  properties: { type: "alert" },
+  display_type: "alert",
 };
 
 export const SimpleDataFormatAlertCustomIcon = Template.bind({});
@@ -152,7 +156,8 @@ SimpleDataFormatAlertCustomIcon.args = {
     columns: [{ name: "Public Buckets", data_type: "INT8" }],
     rows: [{ "Public Buckets": 5 }],
   },
-  properties: { type: "alert", icon: "shield-exclamation" },
+  display_type: "alert",
+  properties: { icon: "shield-exclamation" },
 };
 
 export const SimpleDataFormatInfo = Template.bind({});
@@ -161,7 +166,7 @@ SimpleDataFormatInfo.args = {
     columns: [{ name: "EC2 Instances", data_type: "INT8" }],
     rows: [{ "EC2 Instances": 106 }],
   },
-  properties: { type: "info" },
+  display_type: "info",
 };
 
 export const SimpleDataFormatInfoCustomIcon = Template.bind({});
@@ -172,7 +177,8 @@ SimpleDataFormatInfoCustomIcon.args = {
     columns: [{ name: "EC2 Instances", data_type: "INT8" }],
     rows: [{ "EC2 Instances": 106 }],
   },
-  properties: { type: "info", icon: "light-bulb" },
+  display_type: "info",
+  properties: { icon: "light-bulb" },
 };
 
 export const SimpleDataFormatThousands = Template.bind({});
@@ -182,7 +188,7 @@ SimpleDataFormatThousands.args = {
     columns: [{ name: "EC2 Instances", data_type: "INT8" }],
     rows: [{ "EC2 Instances": 1236 }],
   },
-  properties: { type: "info" },
+  display_type: "info",
 };
 
 export const SimpleDataFormatMillions = Template.bind({});
@@ -192,7 +198,7 @@ SimpleDataFormatMillions.args = {
     columns: [{ name: "Log Lines", data_type: "INT8" }],
     rows: [{ "Log Lines": 5236174 }],
   },
-  properties: { type: "info" },
+  display_type: "info",
 };
 
 export const FormalDataFormat = Template.bind({});

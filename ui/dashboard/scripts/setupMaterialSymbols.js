@@ -14,9 +14,10 @@ const upperFirst = require("lodash/upperFirst");
     if (/^\d/.test(importName)) {
       importName = "_" + importName;
     }
-    const nameParts = fileNameParts[0].split("-");
-    const nameKebab = nameParts[0].replace("_", "-");
-    const isFillIcon = nameParts.length === 2 && nameParts[1] === "fill";
+    const nameAndStyleParts = fileNameParts[0].split("-");
+    const nameKebab = nameAndStyleParts[0].replaceAll("_", "-");
+    const isFillIcon =
+      nameAndStyleParts.length === 2 && nameAndStyleParts[1] === "fill";
 
     if (isFillIcon) {
       solidIcons[nameKebab] = {
