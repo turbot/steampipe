@@ -38,9 +38,9 @@ If you need to restore the contents of your public schema, please open an issue 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// EnsureDBInstalled makes sure that the embedded pg database is installed and running
-func EnsureDBInstalled(ctx context.Context) (err error) {
-	utils.LogTime("db_local.EnsureDBInstalled start")
+// EnsureDBInstallation makes sure that the embedded pg database is installed and running
+func EnsureDBInstallation(ctx context.Context) (err error) {
+	utils.LogTime("db_local.EnsureDBInstallation start")
 
 	ensureMux.Lock()
 
@@ -50,7 +50,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 			err = helpers.ToError(r)
 		}
 
-		utils.LogTime("db_local.EnsureDBInstalled end")
+		utils.LogTime("db_local.EnsureDBInstallation end")
 		ensureMux.Unlock()
 		close(doneChan)
 	}()
