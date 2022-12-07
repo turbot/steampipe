@@ -630,7 +630,6 @@ func decodeBenchmark(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Be
 		benchmark.ChildNameStrings = getChildNameStringsFromModTreeItem(children)
 	}
 
-	// decode report specific properties
 	diags = decodeProperty(content, "base", &benchmark.Base, parseCtx)
 	res.handleDecodeDiags(diags)
 	if benchmark.Base != nil && len(benchmark.Base.ChildNames) > 0 {
