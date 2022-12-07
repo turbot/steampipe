@@ -49,7 +49,7 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardNodeParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
 
-	// NOTE: for now we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
+	// NOTE: we MUST declare container/dashboard children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
 	// so FOR NOW it is safe to use the dashboard name directly as the run name
 	name := dashboard.Name()
@@ -86,7 +86,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		}
 	}
 
-	if err := r.addRuntimeDependencies(dashboard); err != nil {
+	if err := r.resolveRuntimeDependencies(dashboard); err != nil {
 		return nil, err
 	}
 
@@ -125,9 +125,7 @@ func (r *DashboardRun) Initialise(ctx context.Context) {
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
 func (r *DashboardRun) Execute(ctx context.Context) {
-	// start any `with` blocks
-	r.executeWithRuns(ctx, r.childComplete)
-
+	// TODO use with same execution as leaf runs
 	// execute all children asynchronously
 	for _, child := range r.children {
 		go child.Execute(ctx)
@@ -240,7 +238,7 @@ func (r *DashboardRun) GetInput(name string) (*modconfig.DashboardInput, bool) {
 	return r.dashboardNode.GetInput(name)
 }
 
-// GetInputsDependingOn returns a list o DashboardInputs which have a runtime depdendency on the given input
+// GetInputsDependingOn returns a list o DashboardInputs which have a runtime dependency on the given input
 func (r *DashboardRun) GetInputsDependingOn(changedInputName string) []string {
 	var res []string
 	for _, input := range r.dashboardNode.Inputs {

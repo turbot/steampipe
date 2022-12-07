@@ -301,19 +301,19 @@ func (q *QueryArgs) resolveNamedParameters(queryProvider QueryProvider) (argVals
 		}
 
 		// can we resolve a value for this param?
-		if argVal, ok, err := q.GetNamedArg(param.Name); ok {
+		if argVal, ok, err := q.GetNamedArg(param.ShortName); ok {
 			if err != nil {
 				return nil, nil, err
 			}
 			argVals[i] = argVal
-			argsWithParamDef[param.Name] = true
+			argsWithParamDef[param.ShortName] = true
 
 		} else if defaultValue != nil {
 			// is there a default
 			argVals[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.Name)
+			missingParams = append(missingParams, param.ShortName)
 		}
 	}
 
@@ -379,7 +379,7 @@ func (q *QueryArgs) resolvePositionalParameters(queryProvider QueryProvider) (ar
 			argValues[i] = defaultValue
 		} else {
 			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.Name)
+			missingParams = append(missingParams, param.ShortName)
 		}
 	}
 	return argValues, missingParams, nil
