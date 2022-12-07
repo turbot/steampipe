@@ -164,40 +164,42 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		deletedDashboards := e.DeletedDashboards
 		newDashboards := e.NewDashboards
 
-		changedContainers := e.ChangedContainers
 		changedBenchmarks := e.ChangedBenchmarks
+		changedCategories := e.ChangedCategories
+		changedContainers := e.ChangedContainers
 		changedControls := e.ChangedControls
 		changedCards := e.ChangedCards
 		changedCharts := e.ChangedCharts
+		changedDashboards := e.ChangedDashboards
+		changedEdges := e.ChangedEdges
 		changedFlows := e.ChangedFlows
 		changedGraphs := e.ChangedGraphs
 		changedHierarchies := e.ChangedHierarchies
 		changedImages := e.ChangedImages
 		changedInputs := e.ChangedInputs
+		changedNodes := e.ChangedNodes
 		changedTables := e.ChangedTables
 		changedTexts := e.ChangedTexts
-		changedDashboards := e.ChangedDashboards
-		changedNodes := e.ChangedNodes
-		changedEdges := e.ChangedEdges
 
 		// If nothing has changed, ignore
 		if len(deletedDashboards) == 0 &&
 			len(newDashboards) == 0 &&
-			len(changedContainers) == 0 &&
 			len(changedBenchmarks) == 0 &&
+			len(changedCategories) == 0 &&
+			len(changedContainers) == 0 &&
 			len(changedControls) == 0 &&
 			len(changedCards) == 0 &&
 			len(changedCharts) == 0 &&
+			len(changedDashboards) == 0 &&
+			len(changedEdges) == 0 &&
 			len(changedFlows) == 0 &&
 			len(changedGraphs) == 0 &&
 			len(changedHierarchies) == 0 &&
 			len(changedImages) == 0 &&
 			len(changedInputs) == 0 &&
-			len(changedTables) == 0 &&
-			len(changedTexts) == 0 &&
-			len(changedDashboards) == 0 &&
 			len(changedNodes) == 0 &&
-			len(changedEdges) == 0 {
+			len(changedTables) == 0 &&
+			len(changedTexts) == 0 {
 			return
 		}
 
@@ -232,20 +234,21 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		var newDashboardNames []string
 
 		// Process the changed items and make a note of the dashboard(s) they're in
-		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedContainers)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedBenchmarks)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedCategories)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedContainers)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedControls)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedCards)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedCharts)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedEdges)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedFlows)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedGraphs)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedHierarchies)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedImages)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedInputs)...)
+		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedNodes)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedTables)...)
 		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedTexts)...)
-		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedNodes)...)
-		changedDashboardNames = append(changedDashboardNames, getDashboardsInterestedInResourceChanges(dashboardssBeingWatched, changedDashboardNames, changedEdges)...)
 
 		for _, changedDashboard := range changedDashboards {
 			if helpers.StringSliceContains(changedDashboardNames, changedDashboard.Name) {
