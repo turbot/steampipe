@@ -23,12 +23,12 @@ type Query struct {
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	// TODO KAI overridden from base as they have JSON tags - DO A DIFFERENT WA
-	ShortName string  `cty:"short_name" json:"name"`
-	SQL       *string `cty:"sql" hcl:"sql" column:"sql,text" json:sql"`
-	Query     *Query  `hcl:"query" json:"query"`
-	// TODO wrong tag in 17?
-	Title         *string `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
-	Documentation *string `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
+	//ShortName string  `cty:"short_name" json:"name"`
+	//SQL       *string `cty:"sql" hcl:"sql" column:"sql,text" json:sql"`
+	//Query     *Query  `hcl:"query" json:"query"`
+	//// TODO wrong tag in 17?
+	//Title         *string `cty:"title" hcl:"title" column:"title,text" json:"title,omitempty"`
+	//Documentation *string `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
 
 	Description      *string `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
 	SearchPath       *string `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"seatch_path,omitempty"`
@@ -42,10 +42,10 @@ func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	// queries cannot be anonymous
 	q := &Query{
-		ShortName: shortName,
 		QueryProviderBase: QueryProviderBase{
 			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
+				ShortName:       shortName,
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
