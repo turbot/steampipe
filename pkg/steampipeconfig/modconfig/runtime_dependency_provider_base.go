@@ -16,7 +16,7 @@ func (b *RuntimeDependencyProviderBase) AddWith(with *DashboardWith) hcl.Diagnos
 	if b.withs == nil {
 		b.withs = make(map[string]*DashboardWith)
 	}
-	// if we already have a this with, fail
+	// if we already have this with, fail
 	if _, ok := b.withs[with.UnqualifiedName]; ok {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,

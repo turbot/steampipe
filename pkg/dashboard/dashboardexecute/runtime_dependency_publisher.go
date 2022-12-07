@@ -6,6 +6,7 @@ import (
 )
 
 type RuntimeDependencyPublisher interface {
+	GetName() string
 	ProvidesRuntimeDependency(dependency *modconfig.RuntimeDependency) bool
 	SubscribeToRuntimeDependency(name string, opts ...RuntimeDependencyPublishOption) chan *dashboardtypes.ResolvedRuntimeDependencyValue
 	PublishRuntimeDependencyValue(name string, result *dashboardtypes.ResolvedRuntimeDependencyValue)
