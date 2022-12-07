@@ -29,10 +29,14 @@ func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local 
 			FullName:        fullName,
 			DeclRange:       declRange,
 			blockType:       BlockTypeLocals,
+			// disable cty serialisation of base properties
+			disableCtySerialise: true,
 		},
 		ModTreeItemBase: ModTreeItemBase{
 			Mod:      mod,
 			fullName: fullName,
+			// disable cty serialisation of base properties
+			disableCtySerialise: true,
 		},
 	}
 	return l

@@ -324,19 +324,28 @@ func (r *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (c
 	}
 
 	if qp, ok := resource.(modconfig.QueryProvider); ok {
-		if err := r.mergeResourceCtyValue(qp.GetQueryProviderBase(), valueMap); err != nil {
-			return cty.Zero, r.errToCtyValueDiags(resource, err)
+		base := qp.GetQueryProviderBase()
+		if base.ShouldCtySerialise() {
+			if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+				return cty.Zero, r.errToCtyValueDiags(resource, err)
+			}
 		}
 	}
 	if h, ok := resource.(modconfig.HclResource); ok {
-		if err := r.mergeResourceCtyValue(h.GetHclResourceBase(), valueMap); err != nil {
-			return cty.Zero, r.errToCtyValueDiags(resource, err)
+		base := h.GetHclResourceBase()
+		if base.ShouldCtySerialise() {
+			if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+				return cty.Zero, r.errToCtyValueDiags(resource, err)
+			}
 		}
 	}
 
 	if treeItem, ok := resource.(modconfig.ModTreeItem); ok {
-		if err := r.mergeResourceCtyValue(treeItem.GetModTreeItemBase(), valueMap); err != nil {
-			return cty.Zero, r.errToCtyValueDiags(resource, err)
+		base := treeItem.GetModTreeItemBase()
+		if base.ShouldCtySerialise() {
+			if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+				return cty.Zero, r.errToCtyValueDiags(resource, err)
+			}
 		}
 	}
 	return cty.ObjectVal(valueMap), nil
