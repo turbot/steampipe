@@ -5,6 +5,7 @@ import (
 )
 
 type ModTreeItemBase struct {
+	// TODO NEEDED???
 	ModTreeItemRemain hcl.Body `hcl:",remain" json:"-"`
 
 	Mod   *Mod       `cty:"mod" json:"-"`
