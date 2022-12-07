@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"reflect"
 	"strings"
 
@@ -286,37 +285,6 @@ func decodeVariable(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Var
 
 }
 
-func decodeParam(block *hcl.Block, parseCtx *ModParseContext, parentName string) (*modconfig.ParamDef, hcl.Diagnostics) {
-	def := modconfig.NewParamDef(block)
-
-	content, diags := block.Body.Content(ParamDefBlockSchema)
-
-	if attr, exists := content.Attributes["description"]; exists {
-		moreDiags := gohcl.DecodeExpression(attr.Expr, parseCtx.EvalCtx, &def.Description)
-		diags = append(diags, moreDiags...)
-	}
-	if attr, exists := content.Attributes["default"]; exists {
-		v, moreDiags := attr.Expr.Value(parseCtx.EvalCtx)
-		diags = append(diags, moreDiags...)
-
-		if !moreDiags.HasErrors() {
-
-			// convert the raw default into a string representation
-			if val, err := type_conversion.CtyToGo(v); err == nil {
-				def.SetDefault(val)
-			} else {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("%s has invalid parameter config", parentName),
-					Detail:   err.Error(),
-					Subject:  &attr.Range,
-				})
-			}
-		}
-	}
-	return def, diags
-}
-
 func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
 	res := newDecodeResult()
 
@@ -361,7 +329,7 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 		panic(fmt.Sprintf("block type %s not convertible to a QueryProvider", block.Type))
 	}
 
-	if attr, exists := content.Attributes["args"]; exists {
+	if attr, exists := content.Attributes[modconfig.AttributeArgs]; exists {
 		args, runtimeDependencies, diags := decodeArgs(attr.AsHCLAttribute(), parseCtx.EvalCtx, queryProvider)
 		if diags.HasErrors() {
 			// handle dependencies
@@ -377,9 +345,10 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 		block = b.AsHCLBlock()
 		switch block.Type {
 		case modconfig.BlockTypeParam:
-			paramDef, moreDiags := decodeParam(block, parseCtx, resource.Name())
+			paramDef, runtimeDependencies, moreDiags := decodeParam(block, parseCtx, resource.Name())
 			if !moreDiags.HasErrors() {
 				params = append(params, paramDef)
+				queryProvider.AddRuntimeDependencies(runtimeDependencies)
 				// add and references contained in the param block to the control refs
 				moreDiags = AddReferences(resource, block, parseCtx)
 			}

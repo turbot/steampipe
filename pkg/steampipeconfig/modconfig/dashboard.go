@@ -301,24 +301,19 @@ func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) 
 	// define a walk function which determines whether the resource has runtime dependencies and if so,
 	// add to the graph
 	resourceFunc := func(resource HclResource) (bool, error) {
-		// currently only QueryProvider resources support runtime dependencies
-		queryProvider, ok := resource.(QueryProvider)
+		rdp, ok := resource.(RuntimeDependencyProvider)
 		if !ok {
 			// continue walking
 			return true, nil
 		}
 
-		runtimeDependencies := queryProvider.GetRuntimeDependencies()
-		err := d.validateRuntimeDependenciesForResource(resource, runtimeDependencies, workspace)
-		if err != nil {
+		if err := d.validateRuntimeDependenciesForResource(resource, workspace); err != nil {
 			return false, err
 		}
 
 		// if the query provider has any 'with' blocks, add these dependencies as well
-		for _, with := range queryProvider.GetWiths() {
-			runtimeDependencies = with.GetRuntimeDependencies()
-			err := d.validateRuntimeDependenciesForResource(with, runtimeDependencies, workspace)
-			if err != nil {
+		for _, with := range rdp.GetWiths() {
+			if err := d.validateRuntimeDependenciesForResource(with, workspace); err != nil {
 				return false, err
 			}
 		}
@@ -337,34 +332,36 @@ func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) 
 	return nil
 }
 
-func (d *Dashboard) validateRuntimeDependenciesForResource(resource HclResource, runtimeDependencies map[string]*RuntimeDependency, workspace ResourceMapsProvider) error {
+func (d *Dashboard) validateRuntimeDependenciesForResource(resource HclResource, workspace ResourceMapsProvider) error {
 	return nil
-	// TODO KAI WHAT ABOUT CHILDREN
-	if len(runtimeDependencies) == 0 {
-		return nil
-	}
-	name := resource.Name()
-	if !d.runtimeDependencyGraph.ContainsNode(name) {
-		d.runtimeDependencyGraph.AddNode(name)
-	}
-
-	for _, dependency := range runtimeDependencies {
-		// try to resolve the dependency source resource
-		if err := dependency.ValidateSource(d, workspace); err != nil {
-			return err
-		}
-		if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
-			return err
-		}
-		depString := dependency.String()
-		if !d.runtimeDependencyGraph.ContainsNode(depString) {
-			d.runtimeDependencyGraph.AddNode(depString)
-		}
-		if err := d.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
-			return err
-		}
-	}
-	return nil
+	//rdp := resource.(RuntimeDependencyProvider)
+	// TODO validate param and args runtime deps
+	//// TODO KAI WHAT ABOUT CHILDREN
+	//if len(runtimeDependencies) == 0 {
+	//	return nil
+	//}
+	//name := resource.Name()
+	//if !d.runtimeDependencyGraph.ContainsNode(name) {
+	//	d.runtimeDependencyGraph.AddNode(name)
+	//}
+	//
+	//for _, dependency := range runtimeDependencies {
+	//	// try to resolve the dependency source resource
+	//	if err := dependency.ValidateSource(d, workspace); err != nil {
+	//		return err
+	//	}
+	//	if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
+	//		return err
+	//	}
+	//	depString := dependency.String()
+	//	if !d.runtimeDependencyGraph.ContainsNode(depString) {
+	//		d.runtimeDependencyGraph.AddNode(depString)
+	//	}
+	//	if err := d.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
+	//		return err
+	//	}
+	//}
+	//return nil
 }
 
 func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
@@ -508,7 +505,7 @@ func (d *Dashboard) addBaseInputs(baseInputs []*DashboardInput) {
 	d.setInputMap()
 }
 
-// ensure that depdnecneis between inputs are resolveable
+// ensure that depdendencies between inputs are resolveable
 func (d *Dashboard) validateInputDependencies(inputs []*DashboardInput) error {
 	dependencyGraph := topsort.NewGraph()
 	rootDependencyNode := "dashboard"

@@ -3,6 +3,7 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -98,7 +99,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 			}
 		}
 
-		if err := r.addRuntimeDependencies(rdp); err != nil {
+		if err := r.resolveRuntimeDependencies(rdp); err != nil {
 			return nil, err
 		}
 	}
@@ -173,34 +174,49 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 	// to get here, we must be a query provider
 
-	// start any `with` blocks
-	r.executeWithRuns(ctx, r.childComplete)
+	// TODO validate we have either children or query
+	//r.SetError(ctx, fmt.Errorf("%s does not define query, SQL or nodes/edges", r.DashboardNode.Name()))
 
-	// we can either have children (i.e. edges/nodes) or we have sql/query
-	// we have already validated that both are not set so no need to check here
-	if len(r.children) > 0 {
-		r.executeChildren(ctx)
-	} else {
-		if len(r.runtimeDependencies) > 0 {
-			// if there are any unresolved runtime dependencies, wait for them
-			if err := r.waitForRuntimeDependencies(ctx); err != nil {
-				r.SetError(ctx, err)
-				return
-			}
+	// if we have children and with runs, start them asyncronously (they may block waiting for our runtime dependencies)
+	r.executeChildrenAsync(ctx)
 
-			// populate the names of any withs we depend on
-			r.setDependencyWiths()
-			// ok now we have runtime dependencies, we can resolve the query
-			if err := r.resolveSQLAndArgs(); err != nil {
-				r.SetError(ctx, err)
-				return
-			}
-		}
-		if r.executeSQL == "" {
-			r.SetError(ctx, fmt.Errorf("%s does not define query, SQL or nodes/edges", r.DashboardNode.Name()))
+	// now collect data from children and withs
+	doneChan := r.collectChildDataAsync(ctx)
+
+	// now wait for any runtime dependencies then resolve args and params
+	// (it is possible to have params but no sql)
+	if len(r.runtimeDependencies) > 0 {
+		// if there are any unresolved runtime dependencies, wait for them
+		if err := r.waitForRuntimeDependencies(ctx); err != nil {
+			r.SetError(ctx, err)
 			return
 		}
-		r.executeQuery(ctx)
+
+		// populate the names of any withs we depend on
+		r.setDependencyWiths()
+		// ok now we have runtime dependencies, we can resolve the query
+		if err := r.resolveSQLAndArgs(); err != nil {
+			r.SetError(ctx, err)
+			return
+		}
+	}
+
+	// if we have sql to execute, do it now
+	if r.executeSQL != "" {
+		if err := r.executeQuery(ctx); err != nil {
+			r.SetError(ctx, err)
+			return
+		}
+	}
+
+	// wait for all children and withs
+	err := <-doneChan
+	if err == nil {
+		// set complete status on dashboard
+		r.SetComplete(ctx)
+	} else {
+
+		r.SetError(ctx, err)
 	}
 }
 
@@ -319,33 +335,37 @@ func (r *LeafRun) resolveSQLAndArgs() error {
 		// not a query provider - nothing to do
 		return nil
 	}
-	// does this leaf run have any SQL to execute?
-	if !queryProvider.RequiresExecution(queryProvider) {
-		log.Printf("[TRACE] LeafRun '%s'does NOT require execution - returning", r.DashboardNode.Name())
-		return nil
-	}
+
 	err := queryProvider.VerifyQuery(queryProvider)
 	if err != nil {
 		log.Printf("[TRACE] LeafRun '%s' VerifyQuery failed: %s", r.DashboardNode.Name(), err.Error())
 		return err
 	}
 
-	// convert runtime dependencies into arg map
+	// convert arg runtime dependencies into arg map
 	runtimeArgs, err := r.buildRuntimeDependencyArgs()
 	if err != nil {
 		log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs failed: %s", r.DashboardNode.Name(), err.Error())
 		return err
 	}
 
+	// now if any param defaults had runtime depdencies, populate them
+	r.populateParamDefaults(queryProvider)
+
 	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", r.DashboardNode.Name(), runtimeArgs)
 
-	resolvedQuery, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
-	if err != nil {
-		return err
+	// does this leaf run have any SQL to execute?
+	// TODO split this into resolve query and resolve args - we may have args but no query
+	if queryProvider.RequiresExecution(queryProvider) {
+		resolvedQuery, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
+		if err != nil {
+			return err
+		}
+		r.RawSQL = resolvedQuery.RawSQL
+		r.executeSQL = resolvedQuery.ExecuteSQL
+		r.Args = resolvedQuery.Args
 	}
-	r.RawSQL = resolvedQuery.RawSQL
-	r.executeSQL = resolvedQuery.ExecuteSQL
-	r.Args = resolvedQuery.Args
+	//}
 	return nil
 }
 
@@ -357,28 +377,31 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 
 	// if the runtime dependencies use position args, get the max index and ensure the args array is large enough
 	maxArgIndex := -1
-	for _, dep := range r.runtimeDependencies {
-		if dep.Dependency.ArgIndex != nil && *dep.Dependency.ArgIndex > maxArgIndex {
-			maxArgIndex = *dep.Dependency.ArgIndex
+	// build list of all args runtime dependencies
+	argRuntimeDependencies := r.FindRuntimeDependenciesForParent(modconfig.AttributeArgs)
+
+	for _, dep := range argRuntimeDependencies {
+		if dep.Dependency.TargetPropertyIndex != nil && *dep.Dependency.TargetPropertyIndex > maxArgIndex {
+			maxArgIndex = *dep.Dependency.TargetPropertyIndex
 		}
 	}
 	if maxArgIndex != -1 {
 		res.ArgList = make([]*string, maxArgIndex+1)
 	}
 
-	// build map of default params
-	for _, dep := range r.runtimeDependencies {
-		if dep.Dependency.ArgName != nil {
-			err := res.SetNamedArgVal(dep.Value, *dep.Dependency.ArgName)
+	// now set the arg values
+	for _, dep := range argRuntimeDependencies {
+		if dep.Dependency.TargetPropertyName != nil {
+			err := res.SetNamedArgVal(dep.Value, *dep.Dependency.TargetPropertyName)
 			if err != nil {
 				return nil, err
 			}
 
 		} else {
-			if dep.Dependency.ArgIndex == nil {
+			if dep.Dependency.TargetPropertyIndex == nil {
 				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
-			err := res.SetPositionalArgVal(dep.Value, *dep.Dependency.ArgIndex)
+			err := res.SetPositionalArgVal(dep.Value, *dep.Dependency.TargetPropertyIndex)
 			if err != nil {
 				return nil, err
 			}
@@ -388,55 +411,62 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 }
 
 // if this leaf run has a query or sql, execute it now
-func (r *LeafRun) executeQuery(ctx context.Context) {
+func (r *LeafRun) executeQuery(ctx context.Context) error {
 	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.DashboardNode.Name())
 
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL, r.Args...)
 	if err != nil {
 		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.DashboardNode.Name(), err.Error())
-		// set the error status on the counter - this will raise counter error event
-		r.SetError(ctx, err)
-		return
+		return err
 
 	}
 	log.Printf("[TRACE] LeafRun '%s' complete", r.DashboardNode.Name())
 
 	r.Data = dashboardtypes.NewLeafData(queryResult)
 	r.TimingResult = queryResult.TimingResult
-	// set complete status on counter - this will raise counter complete event
-	r.SetComplete(ctx)
+	return nil
 }
 
-// if this leaf run has children (nodes/edges), execute them
-func (r *LeafRun) executeChildren(ctx context.Context) {
+// if this leaf run has children (nodes/edges), and with runs execute them asynchronously
+func (r *LeafRun) executeChildrenAsync(ctx context.Context) {
 	for _, c := range r.children {
 		go c.Execute(ctx)
 	}
-	// wait for children to complete
-	var errors []error
 
-	for !r.ChildrenComplete() {
-		log.Printf("[TRACE] run %s waiting for children", r.Name)
-		completeChild := <-r.childComplete
-		log.Printf("[TRACE] run %s got child complete", r.Name)
-		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
-			errors = append(errors, completeChild.GetError())
+	for _, w := range r.withRuns {
+		go w.Execute(ctx)
+	}
+}
+func (r *LeafRun) collectChildDataAsync(ctx context.Context) chan error {
+	var doneChan = make(chan error)
+	go func() {
+		// wait for children to complete
+		var errors []error
+
+		for !r.ChildrenComplete() {
+			log.Printf("[TRACE] run %s waiting for children", r.Name)
+			completeChild := <-r.childComplete
+			log.Printf("[TRACE] run %s got child complete", r.Name)
+			if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
+				errors = append(errors, completeChild.GetError())
+			} else {
+				// if this is a with, set with data
+				if leafRun, ok := completeChild.(*LeafRun); ok && leafRun.NodeType == modconfig.BlockTypeWith {
+					r.setWithValue(leafRun)
+				}
+			}
+			// fall through to recheck ChildrenComplete
 		}
-		// fall through to recheck ChildrenComplete
-	}
 
-	log.Printf("[TRACE] run %s ALL children complete", r.Name)
-	// so all children have completed - check for errors
-	// TODO format better error
-	err := error_helpers.CombineErrors(errors...)
-	// combine child data even if there is an error
-	r.combineChildData()
-	if err == nil {
-		// set complete status on dashboard
-		r.SetComplete(ctx)
-	} else {
-		r.SetError(ctx, err)
-	}
+		log.Printf("[TRACE] run %s ALL children complete", r.Name)
+		// so all children have completed - check for errors
+		// TODO format better error
+		err := error_helpers.CombineErrors(errors...)
+		// combine child data even if there is an error
+		r.combineChildData()
+		doneChan <- err
+	}()
+	return doneChan
 }
 
 func (r *LeafRun) combineChildData() {
@@ -461,7 +491,7 @@ func (r *LeafRun) combineChildData() {
 
 func (r *LeafRun) hasParam(paramName string) bool {
 	for _, p := range r.Params {
-		if p.Name == paramName {
+		if p.ShortName == paramName {
 			return true
 		}
 	}
@@ -477,34 +507,15 @@ func (r *LeafRun) setDependencyWiths() {
 	}
 }
 
-//func (r *LeafRun) subscribeToParamValue(name string, path *modconfig.ParsedPropertyPath) chan *dashboardtypes.ResolvedRuntimeDependencyValue {
-//
-//}
-//
-//func (r *LeafRun) subscribeToWithValue(name string, path *modconfig.ParsedPropertyPath) chan *dashboardtypes.ResolvedRuntimeDependencyValue {
-//	log.Printf("[TRACE] subscribeToWithValue %s", name)
-//	// make a channel (buffer to avoid potential sync issues)
-//	valueChannel := make(chan *dashboardtypes.ResolvedRuntimeDependencyValue, 1)
-//
-//	// subscribe, passing a function which invokes getWithValue to resolve the required with value
-//	r.withValueSubscriptions[name] = append(r.withValueSubscriptions[name], func(result *dashboardtypes.WithResult) {
-//		// the WithResult includes an error field indicating an error running the with query
-//		resolvedResult := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: result.Error}
-//		// if there was NO error, resolve the required result value
-//		if result.Error == nil {
-//			resolvedResult.Value, resolvedResult.Error = r.getWithValue(name, result, path)
-//		}
-//		valueChannel <- resolvedResult
-//		close(valueChannel)
-//	})
-//	return valueChannel
-//
-//}
-//
-//func (r *LeafRun) publishWithValues(name string, result *dashboardtypes.WithResult) {
-//	for _, f := range r.withValueSubscriptions[name] {
-//		f(result)
-//	}
-//	// clear subscriptions
-//	delete(r.withValueSubscriptions, name)
-//}
+func (r *LeafRun) populateParamDefaults(provider modconfig.QueryProvider) {
+	paramDefs := provider.GetParams()
+	for _, paramDef := range paramDefs {
+		if dep := r.FindRuntimeDependencyForParent(paramDef.UnqualifiedName); dep != nil {
+			// assuming the default property is the target, set the default
+			if typehelpers.SafeString(dep.Dependency.TargetPropertyName) == "default" {
+				paramDef.SetDefault(dep.Value)
+			}
+		}
+	}
+}
+
