@@ -26,7 +26,8 @@ type QueryProviderBase struct {
 	withs               []*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency
 	// we need the mod name for prepared statement name
-	modNameWithVersion string
+	modNameWithVersion  string
+	disableCtySerialise bool
 }
 
 // GetParams implements QueryProvider
@@ -84,41 +85,6 @@ func (b *QueryProviderBase) RequiresExecution(queryProvider QueryProvider) bool 
 	return queryProvider.GetQuery() != nil || queryProvider.GetSQL() != nil
 }
 
-func (b *QueryProviderBase) GetQueryProviderBase() *QueryProviderBase {
-	return b
-}
-
-func (b *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
-	// build prefix from mod name
-	prefix := b.buildPreparedStatementPrefix(modName)
-
-	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
-	str := fmt.Sprintf("%s%s%s", prefix, queryName, suffix)
-	hash := helpers.GetMD5Hash(str)[:4]
-	// add hash to suffix
-	suffix += hash
-
-	// truncate the name if necessary
-	nameLength := len(queryName)
-	maxNameLength := constants.MaxPreparedStatementNameLength - (len(prefix) + len(suffix))
-	if nameLength > maxNameLength {
-		nameLength = maxNameLength
-	}
-
-	// construct the name
-	return fmt.Sprintf("%s%s%s", prefix, queryName[:nameLength], suffix)
-}
-
-// set the prepared statement suffix and prefix
-// and also store the parent resource object as a QueryProvider interface (base struct cannot cast itself to this)
-func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string {
-	prefix := fmt.Sprintf("%s_", modName)
-	prefix = strings.Replace(prefix, ".", "_", -1)
-	prefix = strings.Replace(prefix, "@", "_", -1)
-
-	return prefix
-}
-
 // GetResolvedQuery return the SQL and args to run the query
 func (b *QueryProviderBase) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
 	argsArray, err := ResolveArgs(b, runtimeArgs)
@@ -158,4 +124,46 @@ func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent 
 
 	queryProvider.SetArgs(args)
 	return nil
+}
+
+// GetQueryProviderBase implements QueryProvider
+func (b *QueryProviderBase) GetQueryProviderBase() *QueryProviderBase {
+	return b
+}
+
+// ShouldCtySerialise implements QueryProvider
+// allows disabling of base class serialization, used for Local
+func (b *QueryProviderBase) ShouldCtySerialise() bool {
+	return !b.disableCtySerialise
+}
+
+func (b *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
+	// build prefix from mod name
+	prefix := b.buildPreparedStatementPrefix(modName)
+
+	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
+	str := fmt.Sprintf("%s%s%s", prefix, queryName, suffix)
+	hash := helpers.GetMD5Hash(str)[:4]
+	// add hash to suffix
+	suffix += hash
+
+	// truncate the name if necessary
+	nameLength := len(queryName)
+	maxNameLength := constants.MaxPreparedStatementNameLength - (len(prefix) + len(suffix))
+	if nameLength > maxNameLength {
+		nameLength = maxNameLength
+	}
+
+	// construct the name
+	return fmt.Sprintf("%s%s%s", prefix, queryName[:nameLength], suffix)
+}
+
+// set the prepared statement suffix and prefix
+// and also store the parent resource object as a QueryProvider interface (base struct cannot cast itself to this)
+func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string {
+	prefix := fmt.Sprintf("%s_", modName)
+	prefix = strings.Replace(prefix, ".", "_", -1)
+	prefix = strings.Replace(prefix, "@", "_", -1)
+
+	return prefix
 }

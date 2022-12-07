@@ -11,9 +11,10 @@ type ModTreeItemBase struct {
 	Mod   *Mod       `cty:"mod" json:"-"`
 	Paths []NodePath `column:"path,jsonb" json:"-"`
 
-	fullName string
-	parents  []ModTreeItem
-	children []ModTreeItem
+	fullName            string
+	parents             []ModTreeItem
+	children            []ModTreeItem
+	disableCtySerialise bool
 }
 
 // AddParent implements ModTreeItem
@@ -54,4 +55,10 @@ func (b *ModTreeItemBase) GetMod() *Mod {
 // GetModTreeItemBase implements ModTreeItem
 func (b *ModTreeItemBase) GetModTreeItemBase() *ModTreeItemBase {
 	return b
+}
+
+// ShouldCtySerialise implements ModTreeItem
+// allows disabling of base class serialization, used for Local
+func (b *ModTreeItemBase) ShouldCtySerialise() bool {
+	return !b.disableCtySerialise
 }
