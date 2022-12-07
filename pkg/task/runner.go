@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statefile"
@@ -20,16 +18,22 @@ const minimumDurationBetweenChecks = 24 * time.Hour
 
 type Runner struct {
 	currentState statefile.State
+	opts         *runConfig
 }
 
 // RunTasks runs all tasks asynchronously
 // returns a channel which is closed once all tasks are finished or the provided context is cancelled
-func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) chan struct{} {
+func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, opts ...TaskRunConfig) chan struct{} {
 	utils.LogTime("task.RunTasks start")
 	defer utils.LogTime("task.RunTasks end")
 
+	config := newRunConfig()
+	for _, o := range opts {
+		o(config)
+	}
+
 	doneChannel := make(chan struct{}, 1)
-	runner := newRunner()
+	runner := newRunner(config)
 
 	// if there are any notifications from the previous run - display them
 	if err := runner.displayNotifications(cmd, args); err != nil {
@@ -47,11 +51,12 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string) chan struc
 	return doneChannel
 }
 
-func newRunner() *Runner {
+func newRunner(config *runConfig) *Runner {
 	utils.LogTime("task.NewRunner start")
 	defer utils.LogTime("task.NewRunner end")
 
 	r := new(Runner)
+	r.opts = config
 
 	state, err := statefile.LoadState()
 	if err != nil {
@@ -72,7 +77,7 @@ func (r *Runner) run(ctx context.Context) {
 
 	waitGroup := sync.WaitGroup{}
 
-	if viper.GetBool(constants.ArgUpdateCheck) {
+	if r.opts.runUpdateCheck {
 		// check whether an updated version is available
 		r.runJobAsync(ctx, func(c context.Context) {
 			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
