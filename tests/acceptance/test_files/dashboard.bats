@@ -34,3 +34,20 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # check if there is no diff returned by the script
   assert_equal "$diff" ""
 }
+
+@test "dashboard with 'text' blocks" {
+  # run a dashboard and shapshot the output
+  run steampipe dashboard dashboard.testing_text_blocks --export test.sps --mod-location "$FILE_PATH/test_data/dashboard_texts"
+
+  # get the patch diff between the two snapshots
+  run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_text_blocks_dashboard.json test.sps
+
+  # run the script to evaluate the patch
+  # returns nothing if there is no diff(except start_time, end_time & search_path)
+  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  echo $diff
+  rm -f test.sps
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
+}
