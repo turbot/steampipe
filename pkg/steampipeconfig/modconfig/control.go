@@ -17,16 +17,12 @@ type Control struct {
 	ModTreeItemBase          // required to allow partial decoding
 	Remain          hcl.Body `hcl:",remain" json:"-"`
 
-	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text" json:"search_path,omitempty"`
-	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
-	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
-	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb" json:"-"`
-	Title            *string           `cty:"title" hcl:"title"  column:"title,text" json:"-"`
+	SearchPath       *string `cty:"search_path" hcl:"search_path"  column:"search_path,text" json:"search_path,omitempty"`
+	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
+	Severity         *string `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
 
 	// QueryProvider
-	PreparedStatementName string               `column:"prepared_statement_name,text" json:"-"`
-	References            []*ResourceReference ` json:"-"`
-	Paths                 []NodePath           `json:"-"`
+	References []*ResourceReference ` json:"-"`
 
 	// dashboard specific properties
 	Base    *Control `hcl:"base" json:"-"`
