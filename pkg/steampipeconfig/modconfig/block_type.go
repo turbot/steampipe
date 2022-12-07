@@ -35,6 +35,7 @@ const (
 	BlockTypeWorkspaceProfile = "workspace"
 
 	ResourceTypeSnapshot = "snapshot"
+	AttributeArgs        = "args"
 )
 
 // QueryProviderBlocks is a list of block types which implement QueryProvider
