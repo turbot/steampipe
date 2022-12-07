@@ -11,6 +11,7 @@ type ResolvedQuery struct {
 	Args       []any
 }
 
+// QueryArgs converts the ResolvedQuery into  QueryArgs
 func (r ResolvedQuery) QueryArgs() *QueryArgs {
 	res := NewQueryArgs()
 
