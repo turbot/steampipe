@@ -1,11 +1,13 @@
 import ErrorPanel from "../../Error";
 import has from "lodash/has";
 import merge from "lodash/merge";
+import Placeholder from "../../Placeholder";
 import React, { useEffect, useRef, useState } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import set from "lodash/set";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useMediaMode from "../../../../hooks/useMediaMode";
+import useTemplateRender from "../../../../hooks/useTemplateRender";
 import {
   buildChartDataset,
   getColorOverride,
@@ -27,11 +29,8 @@ import { getChartComponent } from "..";
 import { GraphType } from "../../graphs/types";
 import { HierarchyType } from "../../hierarchies/types";
 import { registerComponent } from "../../index";
-import { renderInterpolatedTemplates } from "../../../../utils/template";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useNavigate } from "react-router-dom";
-let echarts;
-import("./echarts").then((m) => (echarts = m.echarts));
 
 const getThemeColorsWithPointOverrides = (
   type: ChartType = "column",
@@ -635,7 +634,7 @@ interface ChartComponentProps {
   type: ChartType | FlowType | GraphType | HierarchyType;
 }
 
-const handleClick = async (params: any, navigate) => {
+const handleClick = async (params: any, navigate, renderTemplates) => {
   const componentType = params.componentType;
   if (componentType !== "series") {
     return;
@@ -647,7 +646,7 @@ const handleClick = async (params: any, navigate) => {
       if (!params.data.href) {
         return;
       }
-      const renderedResults = await renderInterpolatedTemplates(
+      const renderedResults = await renderTemplates(
         { graph_node: params.data.href as string },
         [params.data]
       );
@@ -657,10 +656,17 @@ const handleClick = async (params: any, navigate) => {
 };
 
 const Chart = ({ options, type }: ChartComponentProps) => {
+  const [echarts, setEcharts] = useState<any | null>(null);
   const navigate = useNavigate();
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const mediaMode = useMediaMode();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
+
+  // Dynamically import echarts from its own bundle
+  useEffect(() => {
+    import("./echarts").then((m) => setEcharts(m.echarts));
+  }, []);
 
   useEffect(() => {
     if (!chartRef.current || !options) {
@@ -680,33 +686,35 @@ const Chart = ({ options, type }: ChartComponentProps) => {
   }
 
   const eventsDict = {
-    click: (params) => handleClick(params, navigate),
+    click: (params) => handleClick(params, navigate, renderTemplates),
   };
 
   return (
-    <>
-      {mediaMode !== "print" && (
-        <div className="relative">
-          <ReactEChartsCore
-            ref={chartRef}
-            echarts={echarts}
-            className="chart-canvas"
-            onEvents={eventsDict}
-            option={options}
-            notMerge={true}
-            lazyUpdate={true}
-            style={
-              type === "pie" || type === "donut" ? { height: "250px" } : {}
-            }
-          />
-        </div>
-      )}
-      {mediaMode === "print" && imageUrl && (
-        <div>
-          <img alt="Chart" className="max-w-full max-h-full" src={imageUrl} />
-        </div>
-      )}
-    </>
+    <Placeholder.component ready={!!echarts && templateRenderReady}>
+      <>
+        {mediaMode !== "print" && (
+          <div className="relative">
+            <ReactEChartsCore
+              ref={chartRef}
+              echarts={echarts}
+              className="chart-canvas"
+              onEvents={eventsDict}
+              option={options}
+              notMerge={true}
+              lazyUpdate={true}
+              style={
+                type === "pie" || type === "donut" ? { height: "250px" } : {}
+              }
+            />
+          </div>
+        )}
+        {mediaMode === "print" && imageUrl && (
+          <div>
+            <img alt="Chart" className="max-w-full max-h-full" src={imageUrl} />
+          </div>
+        )}
+      </>
+    </Placeholder.component>
   );
 };
 

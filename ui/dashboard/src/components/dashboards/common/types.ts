@@ -112,3 +112,14 @@ export interface NodesAndEdges {
   metadata?: NodesAndEdgesMetadata;
   next_color_index?: number;
 }
+
+export type TemplatesMap = {
+  [key: string]: string;
+};
+
+export type RowRenderResult = {
+  [key: string]: {
+    result?: string;
+    error?: string;
+  };
+};

@@ -2,6 +2,7 @@ import ControlDimension from "../check/Benchmark/ControlDimension";
 import isEmpty from "lodash/isEmpty";
 import isObject from "lodash/isObject";
 import useDeepCompareEffect from "use-deep-compare-effect";
+import useTemplateRender from "../../../hooks/useTemplateRender";
 import {
   AlarmIcon,
   InfoIcon,
@@ -26,10 +27,7 @@ import {
 import { isRelativeUrl } from "../../../utils/url";
 import { memo, useEffect, useMemo, useState } from "react";
 import { registerComponent } from "../index";
-import {
-  RowRenderResult,
-  renderInterpolatedTemplates,
-} from "../../../utils/template";
+import { RowRenderResult } from "../common/types";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
@@ -379,6 +377,7 @@ const TableView = ({
   hasTopBorder = false,
 }) => {
   const { dataMode } = useDashboard();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
@@ -388,6 +387,11 @@ const TableView = ({
     );
 
   useDeepCompareEffect(() => {
+    if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
+      setRowTemplateData([]);
+      return;
+    }
+
     const doRender = async () => {
       const templates = Object.fromEntries(
         columns
@@ -399,20 +403,12 @@ const TableView = ({
         return;
       }
       const data = rows.map((row) => row.values);
-      const renderedResults = await renderInterpolatedTemplates(
-        templates,
-        data
-      );
-      setRowTemplateData(renderedResults);
+      const renderedResults = await renderTemplates(templates, data);
+      setRowTemplateData(renderedResults || []);
     };
 
-    if (columns.length === 0 || rows.length === 0) {
-      setRowTemplateData([]);
-      return;
-    }
-
     doRender();
-  }, [columns, rows]);
+  }, [columns, rows, renderTemplates, templateRenderReady]);
 
   return (
     <>
@@ -521,6 +517,7 @@ const TableViewWrapper = (props: TableProps) => {
 
 const LineView = (props: TableProps) => {
   const { dataMode } = useDashboard();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
   const [columns, setColumns] = useState<TableColumnInfo[]>([]);
   const [rows, setRows] = useState<LeafNodeDataRow[]>([]);
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
@@ -558,6 +555,11 @@ const LineView = (props: TableProps) => {
   }, [props.data, props.properties]);
 
   useDeepCompareEffect(() => {
+    if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
+      setRowTemplateData([]);
+      return;
+    }
+
     const doRender = async () => {
       const templates = Object.fromEntries(
         columns
@@ -569,20 +571,12 @@ const LineView = (props: TableProps) => {
         return;
       }
       const data = rows.map((row) => row.obj);
-      const renderedResults = await renderInterpolatedTemplates(
-        templates,
-        data
-      );
+      const renderedResults = await renderTemplates(templates, data);
       setRowTemplateData(renderedResults);
     };
 
-    if (columns.length === 0 || rows.length === 0) {
-      setRowTemplateData([]);
-      return;
-    }
-
     doRender();
-  }, [columns, rows]);
+  }, [columns, rows, renderTemplates, templateRenderReady]);
 
   if (columns.length === 0 || rows.length === 0) {
     return null;

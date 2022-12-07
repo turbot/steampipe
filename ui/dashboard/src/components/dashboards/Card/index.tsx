@@ -6,6 +6,7 @@ import isNumber from "lodash/isNumber";
 import isObject from "lodash/isObject";
 import LoadingIndicator from "../LoadingIndicator";
 import useDeepCompareEffect from "use-deep-compare-effect";
+import useTemplateRender from "../../../hooks/useTemplateRender";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
@@ -21,7 +22,6 @@ import {
   getWrapperClasses,
 } from "../../../utils/card";
 import { isRelativeUrl } from "../../../utils/url";
-import { renderInterpolatedTemplates } from "../../../utils/template";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
@@ -157,6 +157,7 @@ const Card = (props: CardProps) => {
   const {
     themeContext: { theme },
   } = useDashboard();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
 
   useEffect(() => {
     if ((state.loading || !state.href) && (renderError || renderedHref)) {
@@ -166,7 +167,7 @@ const Card = (props: CardProps) => {
   }, [state.loading, state.href, renderError, renderedHref]);
 
   useDeepCompareEffect(() => {
-    if (state.loading || !state.href) {
+    if (!templateRenderReady || state.loading || !state.href) {
       return;
     }
     // const { label, loading, value, ...rest } = state;
@@ -181,7 +182,7 @@ const Card = (props: CardProps) => {
     }
 
     const doRender = async () => {
-      const renderedResults = await renderInterpolatedTemplates(
+      const renderedResults = await renderTemplates(
         { card: state.href as string },
         [renderData]
       );
@@ -209,7 +210,7 @@ const Card = (props: CardProps) => {
       }
     };
     doRender();
-  }, [state, props.data]);
+  }, [renderTemplates, templateRenderReady, state, props.data]);
 
   const card = (
     <div

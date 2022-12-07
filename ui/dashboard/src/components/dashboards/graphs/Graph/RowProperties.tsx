@@ -1,16 +1,18 @@
 import isEmpty from "lodash/isEmpty";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useDeepCompareEffect from "use-deep-compare-effect";
-import { Category, CategoryFields, KeyValuePairs } from "../../common/types";
+import useTemplateRender from "../../../../hooks/useTemplateRender";
+import {
+  Category,
+  CategoryFields,
+  KeyValuePairs,
+  RowRenderResult,
+} from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive } from "../../../../types";
 import { ErrorIcon } from "../../../../constants/icons";
 import { getColorOverride } from "../../common";
 import { isRelativeUrl } from "../../../../utils/url";
-import {
-  renderInterpolatedTemplates,
-  RowRenderResult,
-} from "../../../../utils/template";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
@@ -180,8 +182,14 @@ const RowPropertyItem = ({
 const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
   const [rowTemplateData, setRowTemplateData] =
     useState<RowRenderResult | null>(null);
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
 
   useDeepCompareEffect(() => {
+    if (!templateRenderReady || isEmpty(fields) || !properties) {
+      setRowTemplateData(null);
+      return;
+    }
+
     const doRender = async () => {
       const templates = {};
       for (const [name, field] of Object.entries(fields || {})) {
@@ -198,19 +206,12 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
         setRowTemplateData(null);
         return;
       }
-      const renderedResults = await renderInterpolatedTemplates(templates, [
-        properties,
-      ]);
+      const renderedResults = await renderTemplates(templates, [properties]);
       setRowTemplateData(renderedResults[0]);
     };
 
-    if (isEmpty(fields) || !properties) {
-      setRowTemplateData(null);
-      return;
-    }
-
     doRender();
-  }, [fields, properties]);
+  }, [fields, properties, renderTemplates, templateRenderReady]);
 
   return (
     <div className="space-y-2">

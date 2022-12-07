@@ -1,17 +1,8 @@
-import { KeyValuePairs } from "../components/dashboards/common/types";
-let jq: any;
-import("jq-web").then((m) => (jq = m));
-
-type TemplatesMap = {
-  [key: string]: string;
-};
-
-export type RowRenderResult = {
-  [key: string]: {
-    result?: string;
-    error?: string;
-  };
-};
+import {
+  KeyValuePairs,
+  RowRenderResult,
+  TemplatesMap,
+} from "../components/dashboards/common/types";
 
 const replaceSingleQuotesWithDoubleQuotes = (str) => {
   if (!str) {
@@ -81,7 +72,8 @@ const buildCombinedJQFilter = (templates: TemplatesMap) => {
 
 const renderInterpolatedTemplates = async (
   templates: TemplatesMap,
-  data: KeyValuePairs[]
+  data: KeyValuePairs[],
+  jq: any
 ): Promise<RowRenderResult[]> => {
   try {
     const finalFilter = buildCombinedJQFilter(templates);

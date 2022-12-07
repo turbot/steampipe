@@ -1,14 +1,11 @@
 import difference from "lodash/difference";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import usePrevious from "../../../../hooks/usePrevious";
+import useTemplateRender from "../../../../hooks/useTemplateRender";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Edge, Node, useReactFlow } from "reactflow";
-import { FoldedNode } from "../../common/types";
+import { FoldedNode, RowRenderResult } from "../../common/types";
 import { noop } from "../../../../utils/func";
-import {
-  renderInterpolatedTemplates,
-  RowRenderResult,
-} from "../../../../utils/template";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { v4 as uuid } from "uuid";
 
@@ -57,6 +54,7 @@ const GraphProvider = ({ children }) => {
     themeContext: { theme },
   } = useDashboard();
   const { fitView } = useReactFlow();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
   const [layoutId, setLayoutId] = useState(uuid());
   const [graphEdges, setGraphEdges] = useState<Edge[]>([]);
   const [graphNodes, setGraphNodes] = useState<Node[]>([]);
@@ -69,6 +67,10 @@ const GraphProvider = ({ children }) => {
   });
 
   useDeepCompareEffect(() => {
+    if (!templateRenderReady) {
+      return;
+    }
+
     const doRender = async () => {
       const nodesWithHrefs = graphNodes.filter(
         (n) => n.data && !n.data.isFolded && !!n.data.href
@@ -88,7 +90,7 @@ const GraphProvider = ({ children }) => {
 
       for (const [category, nodes] of Object.entries(nodesByCategory)) {
         const hrefTemplate = nodes[0].data.href;
-        const results = await renderInterpolatedTemplates(
+        const results = await renderTemplates(
           { [category]: hrefTemplate },
           nodes.map((n) => n.data.row_data || {})
         );
@@ -104,7 +106,7 @@ const GraphProvider = ({ children }) => {
     };
 
     doRender();
-  }, [graphNodes]);
+  }, [graphNodes, renderTemplates, templateRenderReady]);
 
   // When the edges or nodes change, update the layout
   useEffect(() => {
