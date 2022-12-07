@@ -8,15 +8,16 @@ import (
 type HclResourceBase struct {
 	HclResourceRemain hcl.Body `hcl:",remain" json:"-"`
 
-	FullName        string            `cty:"name" json:"-"`
-	Title           *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	ShortName       string            `cty:"short_name" hcl:"name,label" json:"-"`
-	UnqualifiedName string            `json:"-"`
-	Description     *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
-	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	DeclRange       hcl.Range         `json:"-"`
-	Tags            map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
-	blockType       string
+	FullName            string            `cty:"name" json:"-"`
+	Title               *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	ShortName           string            `cty:"short_name" hcl:"name,label" json:"-"`
+	UnqualifiedName     string            `json:"-"`
+	Description         *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
+	Documentation       *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
+	DeclRange           hcl.Range         `json:"-"`
+	Tags                map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
+	blockType           string
+	disableCtySerialise bool
 }
 
 // Name implements HclResource
@@ -68,4 +69,10 @@ func (b *HclResourceBase) GetTags() map[string]string {
 // GetHclResourceBase implements HclResource
 func (b *HclResourceBase) GetHclResourceBase() *HclResourceBase {
 	return b
+}
+
+// ShouldCtySerialise implements ModTreeItem
+// allows disabling of base class serialization, used for Local
+func (b *HclResourceBase) ShouldCtySerialise() bool {
+	return !b.disableCtySerialise
 }
