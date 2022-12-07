@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/type_conversion"
-	"reflect"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -52,10 +52,6 @@ func decodeArgs(attr *hcl.Attribute, evalCtx *hcl.EvalContext, resource modconfi
 	default:
 		err = fmt.Errorf("'params' property must be either a map or an array")
 	}
-	// add parentResource to all runtime dependencies
-	for _, r := range runtimeDependencies {
-		r.SetDependentResource(resource)
-	}
 
 	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
@@ -79,7 +75,7 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]any, []*modconfig
 	for idx, v := range values {
 		// if the value is unknown, this is a runtime dependency
 		if !v.IsKnown() {
-			runtimeDependency, err := identifyRuntimeDependenciesFromArray(attr, idx)
+			runtimeDependency, err := identifyRuntimeDependenciesFromArray(attr, idx, modconfig.AttributeArgs)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -114,13 +110,13 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 
 		// if the value is unknown, this is a runtime dependency
 		if !v.IsKnown() {
-			runtimeDependency, err := identifyRuntimeDependenciesFromObject(attr, key, evalCtx)
+			runtimeDependency, err := identifyRuntimeDependenciesFromObject(attr, key, modconfig.AttributeArgs, evalCtx)
 			if err != nil {
 				return nil, nil, err
 			}
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else if getWrappedUnknownVal(v) {
-			runtimeDependency, err := identifyRuntimeDependenciesFromObject(attr, key, evalCtx)
+			runtimeDependency, err := identifyRuntimeDependenciesFromObject(attr, key, modconfig.AttributeArgs, evalCtx)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -154,23 +150,23 @@ func getWrappedUnknownVal(v cty.Value) bool {
 	return false
 }
 
-func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, evalCtx *hcl.EvalContext) (*modconfig.RuntimeDependency, error) {
+func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, targetProperty, parentProperty string, evalCtx *hcl.EvalContext) (*modconfig.RuntimeDependency, error) {
 	// find the expression for this key
 	argsExpr, ok := attr.Expr.(*hclsyntax.ObjectConsExpr)
 	if !ok {
-		return nil, fmt.Errorf("could not extract runtime dependency for arg %s", key)
+		return nil, fmt.Errorf("could not extract runtime dependency for arg %s", targetProperty)
 	}
 	for _, item := range argsExpr.Items {
-		argNameCty, valDiags := item.KeyExpr.Value(evalCtx)
+		nameCty, valDiags := item.KeyExpr.Value(evalCtx)
 		if valDiags.HasErrors() {
-			return nil, fmt.Errorf("could not extract runtime dependency for arg %s", key)
+			return nil, fmt.Errorf("could not extract runtime dependency for arg %s", targetProperty)
 		}
-		var argName string
-		if err := gocty.FromCtyValue(argNameCty, &argName); err != nil {
+		var name string
+		if err := gocty.FromCtyValue(nameCty, &name); err != nil {
 			return nil, err
 		}
-		if argName == key {
-			dep, err := getRuntimeDepFromExpression(item.ValueExpr, argName)
+		if name == targetProperty {
+			dep, err := getRuntimeDepFromExpression(item.ValueExpr, targetProperty, parentProperty)
 			if err != nil {
 				return nil, err
 			}
@@ -178,10 +174,10 @@ func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, key string, eval
 			return dep, nil
 		}
 	}
-	return nil, fmt.Errorf("could not extract runtime dependency for arg %s - not found in attribute map", key)
+	return nil, fmt.Errorf("could not extract runtime dependency for arg %s - not found in attribute map", targetProperty)
 }
 
-func getRuntimeDepFromExpression(expr hclsyntax.Expression, argName string) (*modconfig.RuntimeDependency, error) {
+func getRuntimeDepFromExpression(expr hcl.Expression, targetProperty, parentProperty string) (*modconfig.RuntimeDependency, error) {
 	var propertyPathStr string
 	var isArray bool
 
@@ -193,12 +189,12 @@ dep_loop:
 			break dep_loop
 		case *hclsyntax.SplatExpr:
 			root := hclhelpers.TraversalAsString(e.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
-			each, ok := e.Each.(*hclsyntax.RelativeTraversalExpr)
-			if !ok {
-				return nil, fmt.Errorf("unexpected traversal type %s", reflect.TypeOf(e.Each).Name())
+			var suffix string
+			// if there is a property path, add it
+			if each, ok := e.Each.(*hclsyntax.RelativeTraversalExpr); ok {
+				suffix = fmt.Sprintf(".%s", hclhelpers.TraversalAsString(each.Traversal))
 			}
-			suffix := hclhelpers.TraversalAsString(each.Traversal)
-			propertyPathStr = fmt.Sprintf("%s.*.%s", root, suffix)
+			propertyPathStr = fmt.Sprintf("%s.*%s", root, suffix)
 			break dep_loop
 		case *hclsyntax.TupleConsExpr:
 			// TACTICAL
@@ -224,14 +220,15 @@ dep_loop:
 	}
 
 	ret := &modconfig.RuntimeDependency{
-		PropertyPath: propertyPath,
-		ArgName:      &argName,
-		IsArray:      isArray,
+		PropertyPath:       propertyPath,
+		ParentPropertyName: parentProperty,
+		TargetPropertyName: &targetProperty,
+		IsArray:            isArray,
 	}
 	return ret, nil
 }
 
-func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modconfig.RuntimeDependency, error) {
+func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int, parentProperty string) (*modconfig.RuntimeDependency, error) {
 	// find the expression for this key
 	argsExpr, ok := attr.Expr.(*hclsyntax.TupleConsExpr)
 	if !ok {
@@ -245,12 +242,73 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int) (*modcon
 			}
 
 			ret := &modconfig.RuntimeDependency{
-				PropertyPath: propertyPath,
-				ArgIndex:     &idx,
+				PropertyPath:        propertyPath,
+				ParentPropertyName:  parentProperty,
+				TargetPropertyIndex: &idx,
 			}
 
 			return ret, nil
 		}
 	}
 	return nil, fmt.Errorf("could not extract runtime dependency for arg %d - not found in attribute list", idx)
+}
+
+func decodeParam(block *hcl.Block, parseCtx *ModParseContext, parentName string) (*modconfig.ParamDef, []*modconfig.RuntimeDependency, hcl.Diagnostics) {
+	def := modconfig.NewParamDef(block)
+	var runtimeDependencies []*modconfig.RuntimeDependency
+	content, diags := block.Body.Content(ParamDefBlockSchema)
+
+	if attr, exists := content.Attributes["description"]; exists {
+		moreDiags := gohcl.DecodeExpression(attr.Expr, parseCtx.EvalCtx, &def.Description)
+		diags = append(diags, moreDiags...)
+	}
+	if attr, exists := content.Attributes["default"]; exists {
+		defaultValue, deps, moreDiags := decodeParamDefault(attr, parseCtx, def.UnqualifiedName)
+		diags = append(diags, moreDiags...)
+		if !helpers.IsNil(defaultValue) {
+			def.SetDefault(defaultValue)
+		}
+		runtimeDependencies = deps
+	}
+	return def, runtimeDependencies, diags
+}
+
+func decodeParamDefault(attr *hcl.Attribute, parseCtx *ModParseContext, paramName string) (any, []*modconfig.RuntimeDependency, hcl.Diagnostics) {
+	v, diags := attr.Expr.Value(parseCtx.EvalCtx)
+
+	if v.IsKnown() {
+		// convert the raw default into a string representation
+		val, err := type_conversion.CtyToGo(v)
+		if err != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("%s has invalid default config", paramName),
+				Detail:   err.Error(),
+				Subject:  &attr.Range,
+			})
+			return nil, nil, diags
+		}
+		return val, nil, nil
+	}
+
+	// so value not known - is there a runtime dependency?
+
+	// check for a runtime dependency
+	runtimeDependency, err := getRuntimeDepFromExpression(attr.Expr, "default", paramName)
+	if err != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has invalid parameter default config", paramName),
+			Detail:   err.Error(),
+			Subject:  &attr.Range,
+		})
+		return nil, nil, diags
+	}
+	if runtimeDependency == nil {
+		// return the original diags
+		return nil, nil, diags
+	}
+
+	// so we have a runtime dependency
+	return nil, []*modconfig.RuntimeDependency{runtimeDependency}, nil
 }

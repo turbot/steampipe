@@ -5,14 +5,12 @@ import (
 )
 
 type RuntimeDependency struct {
-	PropertyPath *ParsedPropertyPath
-	// the resolved resource which we depend on
-	// get rid of this and resolve at runtime????
-	//SourceResourceName string
-	ArgName  *string
-	ArgIndex *int
-	// the resource which has the runtime dependency
-	DependentResource QueryProvider
+	PropertyPath       *ParsedPropertyPath
+	TargetPropertyName *string
+	// TACTICAL the name of the parent property - either "args" or "param.<name>"
+	ParentPropertyName  string
+	TargetPropertyIndex *int
+
 	// TACTICAL - if set, wrap the dependency value in an array
 	// this provides support for args which convert a runtime dependency to an array, like:
 	// arns = [input.arn]
@@ -22,12 +20,13 @@ type RuntimeDependency struct {
 func (d *RuntimeDependency) SourceResourceName() string {
 	return d.PropertyPath.ToResourceName()
 }
+
 func (d *RuntimeDependency) String() string {
-	if d.ArgIndex != nil {
-		return fmt.Sprintf("arg.%d->%s", *d.ArgIndex, d.PropertyPath.String())
+	if d.TargetPropertyIndex != nil {
+		return fmt.Sprintf("%s.%d->%s", d.ParentPropertyName, *d.TargetPropertyIndex, d.PropertyPath.String())
 	}
 
-	return fmt.Sprintf("arg.%s->%s", *d.ArgName, d.PropertyPath.String())
+	return fmt.Sprintf("%s.%s->%s", d.ParentPropertyName, *d.TargetPropertyName, d.PropertyPath.String())
 }
 
 func (d *RuntimeDependency) ValidateSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
@@ -84,8 +83,4 @@ func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
 	}
 
 	return true
-}
-
-func (d *RuntimeDependency) SetDependentResource(resource QueryProvider) {
-	d.DependentResource = resource
 }
