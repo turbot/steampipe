@@ -135,7 +135,8 @@ func (b *QueryProviderBase) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQ
 		ExecuteSQL: sql,
 		RawSQL:     sql,
 		Args:       argsArray,
-		Params:     b.GetParams(),
+		// TODO KAI CHECK
+		//Params: b.GetParams(),
 	}, nil
 }
 
@@ -157,20 +158,4 @@ func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent 
 
 	queryProvider.SetArgs(args)
 	return nil
-}
-// TODO KAI MOVE TO RUNDEPSBASE IF NOT THERE ALREADY
-func (b *QueryProviderBase) AddWith(with *DashboardWith) {
-	b.withs = append(b.withs, with)
-}
-
-func (b *QueryProviderBase) GetWith(name string) (*DashboardWith, bool) {
-	for _, w := range b.withs {
-		if w.UnqualifiedName == name {
-			return w, true
-		}
-	}
-	return nil, false
-}
-func (b *QueryProviderBase) GetWiths() []*DashboardWith {
-	return b.withs
 }
