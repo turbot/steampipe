@@ -1,0 +1,50 @@
+{
+  "end_time": "2022-12-07T18:55:01.009288+05:30",
+  "inputs": {},
+  "layout": {
+      "children": [
+          {
+              "name": "dashboard_texts.text.dashboard_testing_text_blocks_anonymous_text_0",
+              "panel_type": "text"
+          },
+          {
+              "name": "dashboard_texts.text.dashboard_testing_text_blocks_anonymous_text_1",
+              "panel_type": "text"
+          }
+      ],
+      "name": "dashboard_texts.dashboard.testing_text_blocks",
+      "panel_type": "dashboard"
+  },
+  "panels": {
+      "dashboard_texts.dashboard.testing_text_blocks": {
+          "dashboard": "dashboard.testing_text_blocks",
+          "name": "dashboard_texts.dashboard.testing_text_blocks",
+          "panel_type": "dashboard",
+          "status": "complete",
+          "title": "Testing text blocks"
+      },
+      "dashboard_texts.text.dashboard_testing_text_blocks_anonymous_text_0": {
+          "dashboard": "dashboard.testing_text_blocks",
+          "name": "dashboard_texts.text.dashboard_testing_text_blocks_anonymous_text_0",
+          "panel_type": "text",
+          "properties": {
+              "value": "## Note\nThis report requires an [AWS Credential Report](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html) for each account.\nYou can generate a credential report via the AWS CLI:\n"
+          },
+          "status": "complete"
+      },
+      "dashboard_texts.text.dashboard_testing_text_blocks_anonymous_text_1": {
+          "dashboard": "dashboard.testing_text_blocks",
+          "name": "dashboard_texts.text.dashboard_testing_text_blocks_anonymous_text_1",
+          "panel_type": "text",
+          "properties": {
+              "value": "```bash\naws iam generate-credential-report\n```\n"
+          },
+          "status": "complete",
+          "width": 3
+      }
+  },
+  "schema_version": "20220929",
+  "search_path": [],
+  "start_time": "2022-12-07T18:55:01.009274+05:30",
+  "variables": {}
+}
