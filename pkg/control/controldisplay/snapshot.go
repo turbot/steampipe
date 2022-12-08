@@ -34,13 +34,12 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 
 	// create a check run to wrap the execution tree
 	checkRun = &dashboardexecute.CheckRun{
-		Root:          e.Root.Children[0],
-		Name:          dashboardNode.Name(),
-		DashboardNode: dashboardNode,
-		NodeType:      nodeType,
-		DashboardName: dashboardNode.Name(),
-		Title:         dashboardNode.GetTitle(),
-		Description:   dashboardNode.GetDescription(),
+		DashboardTreeRunBase: dashboardexecute.NewDashboardTreeRunBase(dashboardNode, nil, nil),
+		Root:                 e.Root.Children[0],
+		DashboardNode:        dashboardNode,
+		NodeType:             nodeType,
+		DashboardName:        dashboardNode.Name(),
+		Description:          dashboardNode.GetDescription(),
 	}
 
 	// populate the panels
