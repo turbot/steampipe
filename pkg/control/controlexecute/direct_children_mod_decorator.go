@@ -3,7 +3,10 @@ package controlexecute
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/zclconf/go-cty/cty"
 )
+
+// TODO use mod as embedded struct
 
 // DirectChildrenModDecorator is a struct used to wrap a Mod but modify the results of GetChildren to only return
 // immediate mod children (as opposed to all resources in dependency mods as well)
@@ -67,4 +70,9 @@ func (r DirectChildrenModDecorator) GetType() string {
 // GetWidth implements DashboardLeafNode
 func (r DirectChildrenModDecorator) GetWidth() int {
 	return 0
+}
+
+// CtyValue implements CtyValueProvider
+func (r DirectChildrenModDecorator) CtyValue() (cty.Value, error) {
+	return r.Mod.CtyValue()
 }

@@ -3,6 +3,7 @@ package modconfig
 import (
 	"fmt"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -13,6 +14,7 @@ type DashboardTable struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -149,6 +151,11 @@ func (*DashboardTable) GetDocumentation() string {
 // GetType implements DashboardLeafNode
 func (t *DashboardTable) GetType() string {
 	return typehelpers.SafeString(t.Type)
+}
+
+// CtyValue implements CtyValueProvider
+func (t *DashboardTable) CtyValue() (cty.Value, error) {
+	return GetCtyValue(t)
 }
 
 func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

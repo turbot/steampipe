@@ -81,7 +81,7 @@ var ReferenceBlocks = []string{
 	BlockTypeText,
 	BlockTypeParam,
 	BlockTypeCategory,
-	BlockTypeWith, // TODO KAI check
+	BlockTypeWith,
 }
 
 var ValidResourceItemTypes = []string{

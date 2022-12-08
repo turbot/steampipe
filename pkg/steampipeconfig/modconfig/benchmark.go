@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 	"sort"
 	"strings"
 
@@ -15,8 +16,10 @@ import (
 type Benchmark struct {
 	ResourceWithMetadataBase
 	HclResourceBase
-	ModTreeItemBase          // required to allow partial decoding
-	Remain          hcl.Body `hcl:",remain" json:"-"`
+	ModTreeItemBase
+
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	// child names as NamedItem structs - used to allow setting children via the 'children' property
 	ChildNames NamedItemList `cty:"child_names" json:"-"`
@@ -75,11 +78,6 @@ func (b *Benchmark) GetReferences() []*ResourceReference {
 	return b.References
 }
 
-// GetMod implements ModTreeItem
-func (b *Benchmark) GetMod() *Mod {
-	return b.Mod
-}
-
 func (b *Benchmark) String() string {
 	// build list of children's names
 	var children []string
@@ -119,12 +117,6 @@ func (b *Benchmark) GetChildControls() []*Control {
 		}
 	}
 	return res
-}
-
-// Name implements ModTreeItem, HclResource, ResourceWithMetadata
-// return name in format: '<modname>.control.<shortName>'
-func (b *Benchmark) Name() string {
-	return b.FullName
 }
 
 // GetWidth implements DashboardLeafNode
@@ -216,6 +208,11 @@ func (b *Benchmark) WalkResources(resourceFunc func(resource ModTreeItem) (bool,
 
 func (b *Benchmark) SetChildren(children []ModTreeItem) {
 	b.children = children
+}
+
+// CtyValue implements CtyValueProvider
+func (b *Benchmark) CtyValue() (cty.Value, error) {
+	return GetCtyValue(b)
 }
 
 func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

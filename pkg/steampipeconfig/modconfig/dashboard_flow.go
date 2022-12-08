@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardFlow is a struct representing a leaf dashboard node
@@ -12,6 +13,7 @@ type DashboardFlow struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -42,6 +44,7 @@ func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource 
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
+				blockType:       block.Type,
 			},
 		},
 		ModTreeItemBase: ModTreeItemBase{
@@ -80,7 +83,7 @@ func (f *DashboardFlow) GetReferences() []*ResourceReference {
 	return f.References
 }
 
-// TODO KAI PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
+// TODO  [node_reuse] PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
 // GetChildren implements ModTreeItem
 func (f *DashboardFlow) GetChildren() []ModTreeItem {
 	// return nodes and edges (if any)
@@ -195,6 +198,11 @@ func (f *DashboardFlow) AddChild(child HclResource) hcl.Diagnostics {
 		}}
 	}
 	return nil
+}
+
+// CtyValue implements CtyValueProvider
+func (f *DashboardFlow) CtyValue() (cty.Value, error) {
+	return GetCtyValue(f)
 }
 
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

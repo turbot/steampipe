@@ -288,7 +288,7 @@ func decodeVariable(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Var
 func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
 	res := newDecodeResult()
 
-	// TODO need raise errors for invalid properties
+	// TODO  [node_reuse] need raise errors for invalid properties
 
 	// get shell resource
 	resource, diags := resourceForBlock(block, parseCtx)
@@ -316,6 +316,33 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 
 	res.addDiags(validateQueryProvider(resource.(modconfig.QueryProvider)))
 
+	if res.Success() {
+		// TODO  [node_reuse] encapsulate this
+
+		if queryName := resource.(modconfig.QueryProvider).GetQueryProviderBase().QueryName; queryName != nil {
+			parsedName, err := modconfig.ParseResourceName(queryName.Name)
+			if err != nil || parsedName.ItemType != modconfig.BlockTypeQuery {
+				res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("Invalid query for %s: %s", resource.Name(), queryName.Name),
+					Subject:  &block.TypeRange,
+				}})
+				return resource, res
+			}
+
+			// now get the resource from the parent mod
+			var mod = parseCtx.GetMod(parsedName.Mod)
+			q, found := modconfig.GetResource(mod, parsedName)
+			if !found {
+				res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("Invalid query for %s: %s", resource.Name(), queryName.Name),
+					Subject:  &block.TypeRange,
+				}})
+			}
+			resource.(modconfig.QueryProvider).SetQuery(q.(*modconfig.Query))
+		}
+	}
 	return resource, res
 }
 
@@ -371,7 +398,7 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 func decodeNodeAndEdgeProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
 	res := newDecodeResult()
 
-	// TODO need raise errors for invalid properties - update validateHcl to include attributes
+	// TODO  [node_reuse] need raise errors for invalid properties - update validateHcl to include attributes
 
 	// get shell resource
 	resource, diags := resourceForBlock(block, parseCtx)

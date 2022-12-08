@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type ModTreeItemBase struct {
@@ -57,8 +58,10 @@ func (b *ModTreeItemBase) GetModTreeItemBase() *ModTreeItemBase {
 	return b
 }
 
-// ShouldCtySerialise implements ModTreeItem
-// allows disabling of base class serialization, used for Local
-func (b *ModTreeItemBase) ShouldCtySerialise() bool {
-	return !b.disableCtySerialise
+// CtyValue implements CtyValueProvider
+func (b *ModTreeItemBase) CtyValue() (cty.Value, error) {
+	if b.disableCtySerialise {
+		return cty.Zero, nil
+	}
+	return GetCtyValue(b)
 }
