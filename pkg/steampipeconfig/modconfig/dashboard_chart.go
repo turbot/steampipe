@@ -38,7 +38,6 @@ func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource
 
 	c := &DashboardChart{
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,

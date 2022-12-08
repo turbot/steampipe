@@ -40,7 +40,6 @@ func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) HclResource
 	h := &DashboardGraph{
 		Categories: make(map[string]*DashboardCategory),
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,
