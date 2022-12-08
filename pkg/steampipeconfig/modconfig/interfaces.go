@@ -48,6 +48,7 @@ type ModTreeItem interface {
 	GetModTreeItemBase() *ModTreeItemBase
 }
 
+// RuntimeDependencyProvider is implemented by all QueryProviders and Dashboard
 type RuntimeDependencyProvider interface {
 	ModTreeItem
 	AddWith(with *DashboardWith) hcl.Diagnostics

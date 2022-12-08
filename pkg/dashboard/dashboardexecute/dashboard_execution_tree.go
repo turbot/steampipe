@@ -18,14 +18,14 @@ import (
 
 // DashboardExecutionTree is a structure representing the control result hierarchy
 type DashboardExecutionTree struct {
-	Root dashboardtypes.DashboardNodeRun
+	Root dashboardtypes.DashboardTreeRun
 
 	dashboardName string
 	sessionId     string
 	client        db_common.Client
-	runs          map[string]dashboardtypes.DashboardNodeRun
+	runs          map[string]dashboardtypes.DashboardTreeRun
 	workspace     *workspace.Workspace
-	runComplete   chan dashboardtypes.DashboardNodeRun
+	runComplete   chan dashboardtypes.DashboardTreeRun
 
 	// map of subscribers to notify when an input value changes
 	cancel      context.CancelFunc
@@ -40,9 +40,9 @@ func NewDashboardExecutionTree(rootName string, sessionId string, client db_comm
 		dashboardName: rootName,
 		sessionId:     sessionId,
 		client:        client,
-		runs:          make(map[string]dashboardtypes.DashboardNodeRun),
+		runs:          make(map[string]dashboardtypes.DashboardTreeRun),
 		workspace:     workspace,
-		runComplete:   make(chan dashboardtypes.DashboardNodeRun, 1),
+		runComplete:   make(chan dashboardtypes.DashboardTreeRun, 1),
 		inputValues:   make(map[string]any),
 	}
 	executionTree.id = fmt.Sprintf("%p", executionTree)
@@ -57,7 +57,7 @@ func NewDashboardExecutionTree(rootName string, sessionId string, client db_comm
 	return executionTree, nil
 }
 
-func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes.DashboardNodeRun, error) {
+func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes.DashboardTreeRun, error) {
 	parsedName, err := modconfig.ParseResourceName(rootName)
 	if err != nil {
 		return nil, err
@@ -179,14 +179,14 @@ func (e *DashboardExecutionTree) SetError(ctx context.Context, err error) {
 	e.Root.SetError(ctx, err)
 }
 
-// GetName implements DashboardNodeParent
+// GetName implements DashboardParent
 // use mod short name - this will be the root name for all child runs
 func (e *DashboardExecutionTree) GetName() string {
 	return e.workspace.Mod.ShortName
 }
 
-// GetParent implements DashboardNodeRun
-func (e *DashboardExecutionTree) GetParent() dashboardtypes.DashboardNodeParent {
+// GetParent implements DashboardTreeRun
+func (e *DashboardExecutionTree) GetParent() dashboardtypes.DashboardParent {
 	return nil
 }
 
@@ -211,8 +211,8 @@ func (e *DashboardExecutionTree) SetInputValues(inputValues map[string]any) {
 	}
 }
 
-// ChildCompleteChan implements DashboardNodeParent
-func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.DashboardNodeRun {
+// ChildCompleteChan implements DashboardParent
+func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.DashboardTreeRun {
 	return e.runComplete
 }
 
@@ -235,7 +235,7 @@ func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes
 	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
 		res[e.Root.GetName()] = snapshotNode
 	}
-	return e.buildSnapshotPanelsUnder(e.Root, res)
+	return e.buildSnapshotPanelsUnder(e.Root.(dashboardtypes.DashboardParent), res)
 }
 
 // InputRuntimeDependencies returns the names of all inputs which are runtime dependencies
@@ -253,7 +253,7 @@ func (e *DashboardExecutionTree) InputRuntimeDependencies() []string {
 	return maps.Keys(deps)
 }
 
-func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardNodeRun, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
+func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardParent, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
 	if checkRun, ok := parent.(*CheckRun); ok {
 		return checkRun.BuildSnapshotPanels(res)
 	}
@@ -262,15 +262,27 @@ func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.
 		if snapshotNode, ok := c.(dashboardtypes.SnapshotPanel); ok {
 			res[c.GetName()] = snapshotNode
 		}
-		res = e.buildSnapshotPanelsUnder(c, res)
+		if p, ok := c.(dashboardtypes.DashboardParent); ok {
+			res = e.buildSnapshotPanelsUnder(p, res)
+		}
 	}
 	// if the parent is a RuntimeDependencyPublisher, include all its `with` runs
 	if rdp, ok := parent.(RuntimeDependencyPublisher); ok {
 		for withName, withRun := range rdp.GetWithRuns() {
-			scopedName := fmt.Sprintf("%s.%s", parent.GetName(), withName)
+			scopedName := fmt.Sprintf("%s.%s", rdp.GetName(), withName)
 			res[scopedName] = withRun
 		}
 	}
 
 	return res
+}
+
+// GetChildren implements DashboardParent
+func (e *DashboardExecutionTree) GetChildren() []dashboardtypes.DashboardTreeRun {
+	return []dashboardtypes.DashboardTreeRun{e.Root}
+}
+
+// ChildrenComplete implements DashboardParent
+func (e *DashboardExecutionTree) ChildrenComplete() bool {
+	return e.Root.RunComplete()
 }
