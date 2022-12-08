@@ -11,7 +11,6 @@ import (
 type DashboardEdge struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
-	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -27,16 +26,17 @@ func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) HclResource 
 
 	c := &DashboardEdge{
 		QueryProviderBase: QueryProviderBase{
-			HclResourceBase: HclResourceBase{ShortName: shortName,
-				FullName:        fullName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
-				blockType:       block.Type,
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					HclResourceBase: HclResourceBase{ShortName: shortName,
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
 			},
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
 		},
 	}
 

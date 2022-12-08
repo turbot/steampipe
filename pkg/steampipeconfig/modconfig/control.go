@@ -15,7 +15,6 @@ import (
 type Control struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
-	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -41,18 +40,19 @@ func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
 
 	control := &Control{
 		QueryProviderBase: QueryProviderBase{
-			Args: NewQueryArgs(),
-			HclResourceBase: HclResourceBase{
-				FullName:        fullName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				ShortName:       shortName,
-				DeclRange:       block.DefRange,
-				blockType:       block.Type,
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					HclResourceBase: HclResourceBase{
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						ShortName:       shortName,
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
 			},
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
+			Args: NewQueryArgs(),
 		},
 	}
 
@@ -169,14 +169,6 @@ func (c *Control) GetParentNames() []string {
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
-	// verify the control has either a query or a sql attribute
-	if c.Query == nil && c.SQL == nil {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
-			Subject:  &c.DeclRange,
-		}}
-	}
 
 	return nil
 }

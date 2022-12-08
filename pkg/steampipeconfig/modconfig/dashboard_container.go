@@ -12,7 +12,6 @@ import (
 // DashboardContainer is a struct representing the Dashboard and Container resource
 type DashboardContainer struct {
 	ResourceWithMetadataBase
-	HclResourceBase
 	ModTreeItemBase
 
 	// required to allow partial decoding
@@ -34,16 +33,15 @@ func NewDashboardContainer(block *hcl.Block, mod *Mod, shortName string) HclReso
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	c := &DashboardContainer{
-		HclResourceBase: HclResourceBase{
-			ShortName:       shortName,
-			FullName:        fullName,
-			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-			DeclRange:       block.DefRange,
-			blockType:       block.Type,
-		},
 		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
+			HclResourceBase: HclResourceBase{
+				ShortName:       shortName,
+				FullName:        fullName,
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+				DeclRange:       block.DefRange,
+				blockType:       block.Type,
+			},
+			Mod: mod,
 		},
 	}
 	c.SetAnonymous(block)

@@ -13,7 +13,6 @@ import (
 type DashboardTable struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
-	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -32,17 +31,18 @@ func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) HclResource
 
 	t := &DashboardTable{
 		QueryProviderBase: QueryProviderBase{
-			HclResourceBase: HclResourceBase{
-				ShortName:       shortName,
-				FullName:        fullName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
-				blockType:       block.Type,
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					HclResourceBase: HclResourceBase{
+						ShortName:       shortName,
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
 			},
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
 		},
 	}
 	t.SetAnonymous(block)
@@ -68,19 +68,20 @@ func NewQueryDashboardTable(q ModTreeItem) (*DashboardTable, error) {
 			metadata: &ResourceMetadata{},
 		},
 		QueryProviderBase: QueryProviderBase{
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					HclResourceBase: HclResourceBase{
+						ShortName:       parsedName.Name,
+						FullName:        tableName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeTable, parsedName),
+						Title:           utils.ToStringPointer(q.GetTitle()),
+						blockType:       BlockTypeTable,
+					},
+					Mod: q.GetMod(),
+				},
+			},
 			Query: queryProvider.GetQuery(),
 			SQL:   queryProvider.GetSQL(),
-			HclResourceBase: HclResourceBase{
-				ShortName:       parsedName.Name,
-				FullName:        tableName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeTable, parsedName),
-				Title:           utils.ToStringPointer(q.GetTitle()),
-				blockType:       BlockTypeTable,
-			},
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      q.GetMod(),
-			fullName: tableName,
 		},
 	}
 	return c, nil

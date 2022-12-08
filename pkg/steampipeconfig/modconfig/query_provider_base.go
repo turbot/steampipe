@@ -8,7 +8,6 @@ import (
 )
 
 type QueryProviderBase struct {
-	HclResourceBase
 	RuntimeDependencyProviderBase
 	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
