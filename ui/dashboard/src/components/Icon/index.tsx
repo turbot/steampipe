@@ -1,13 +1,21 @@
 import useDashboardIcons from "../../hooks/useDashboardIcons";
+import { noop } from "lodash";
 
 type IconProps = {
   className?: string;
   icon: string;
+  onClick?: () => void;
   style?: any;
   title?: string;
 };
 
-const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
+const Icon = ({
+  className = "h-6 w-6",
+  icon,
+  onClick = noop,
+  style,
+  title,
+}: IconProps) => {
   const icons = useDashboardIcons();
   let MatchingIcon = icons.materialSymbols[icon];
 
@@ -15,6 +23,7 @@ const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
     return (
       <MatchingIcon
         className={className}
+        onClick={onClick}
         style={{
           fill: "currentColor",
           color: style ? style.color : undefined,
@@ -30,7 +39,14 @@ const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
     return null;
   }
 
-  return <MatchingIcon className={className} style={style} title={title} />;
+  return (
+    <MatchingIcon
+      className={className}
+      onClick={onClick}
+      style={style}
+      title={title}
+    />
+  );
 };
 
 export default Icon;
