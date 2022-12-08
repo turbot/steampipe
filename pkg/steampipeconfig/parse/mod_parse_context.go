@@ -7,6 +7,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
+	"runtime/debug"
 )
 
 const rootDependencyNode = "rootDependencyNode"
@@ -318,34 +319,34 @@ func (r *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) 
 }
 
 func (r *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (cty.Value, hcl.Diagnostics) {
-	var valueMap = make(map[string]cty.Value)
-	if err := r.mergeResourceCtyValue(resource, valueMap); err != nil {
+	ctyValue, err := resource.(modconfig.CtyValueProvider).CtyValue()
+	if err != nil {
+		return cty.Zero, r.errToCtyValueDiags(resource, err)
+	}
+
+	// if this is a value map, merge in the values of base structs
+	// if it is NOT a value map, the resource must have overridden CtyValue so do not merge base structs
+	if ctyValue.Type().FriendlyName() != "object" {
+		return ctyValue, nil
+	}
+	valueMap := ctyValue.AsValueMap()
+
+	base := resource.GetHclResourceBase()
+	if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
 		return cty.Zero, r.errToCtyValueDiags(resource, err)
 	}
 
 	if qp, ok := resource.(modconfig.QueryProvider); ok {
 		base := qp.GetQueryProviderBase()
-		if base.ShouldCtySerialise() {
-			if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
-				return cty.Zero, r.errToCtyValueDiags(resource, err)
-			}
-		}
-	}
-	if h, ok := resource.(modconfig.HclResource); ok {
-		base := h.GetHclResourceBase()
-		if base.ShouldCtySerialise() {
-			if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
-				return cty.Zero, r.errToCtyValueDiags(resource, err)
-			}
+		if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+			return cty.Zero, r.errToCtyValueDiags(resource, err)
 		}
 	}
 
 	if treeItem, ok := resource.(modconfig.ModTreeItem); ok {
 		base := treeItem.GetModTreeItemBase()
-		if base.ShouldCtySerialise() {
-			if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
-				return cty.Zero, r.errToCtyValueDiags(resource, err)
-			}
+		if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+			return cty.Zero, r.errToCtyValueDiags(resource, err)
 		}
 	}
 	return cty.ObjectVal(valueMap), nil
@@ -353,12 +354,19 @@ func (r *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (c
 
 // merge the cty value of the given interface into valueMap
 // (note: this mutates valueMap)
-func (r *ModParseContext) mergeResourceCtyValue(resource any, valueMap map[string]cty.Value) error {
-	ctyValue, err := modconfig.GetCtyValue(resource)
+func (r *ModParseContext) mergeResourceCtyValue(resource modconfig.CtyValueProvider, valueMap map[string]cty.Value) error {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(string(debug.Stack()))
+		}
+	}()
+	ctyValue, err := resource.CtyValue()
 	if err != nil {
 		return err
 	}
-
+	if ctyValue == cty.Zero {
+		return nil
+	}
 	// merge results
 	for k, v := range ctyValue.AsValueMap() {
 		valueMap[k] = v

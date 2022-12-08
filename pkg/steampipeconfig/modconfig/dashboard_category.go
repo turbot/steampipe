@@ -4,24 +4,27 @@ import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type DashboardCategory struct {
 	ResourceWithMetadataBase
 	HclResourceBase
-	ModTreeItemBase          // required to allow partial decoding
+	ModTreeItemBase
+
+	// required to allow partial decoding
 	Remain          hcl.Body `hcl:",remain" json:"-"`
 
-	Color      *string                    `cty:"color" hcl:"color" json:"color,omitempty"`
-	Depth      *int                       `cty:"depth" hcl:"depth" json:"depth,omitempty"`
-	Icon       *string                    `cty:"icon" hcl:"icon" json:"icon,omitempty"`
-	HREF       *string                    `cty:"href" hcl:"href" json:"href,omitempty"`
-	Fold       *DashboardCategoryFold     `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
+	Color         *string                               `cty:"color" hcl:"color" json:"color,omitempty"`
+	Depth         *int                                  `cty:"depth" hcl:"depth" json:"depth,omitempty"`
+	Icon          *string                               `cty:"icon" hcl:"icon" json:"icon,omitempty"`
+	HREF          *string                               `cty:"href" hcl:"href" json:"href,omitempty"`
+	Fold          *DashboardCategoryFold                `cty:"fold" hcl:"fold,block" json:"fold,omitempty"`
 	PropertyList  DashboardCategoryPropertyList         `cty:"property_list" hcl:"property,block" column:"properties,jsonb" json:"-"`
 	Properties    map[string]*DashboardCategoryProperty `cty:"properties" json:"properties,omitempty"`
 	PropertyOrder []string                              `cty:"property_order" hcl:"property_order,optional" json:"property_order,omitempty"`
-	Base       *DashboardCategory         `hcl:"base" json:"-"`
-	References []*ResourceReference       `json:"-"`
+	Base          *DashboardCategory                    `hcl:"base" json:"-"`
+	References    []*ResourceReference                  `json:"-"`
 }
 
 func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -167,4 +170,9 @@ func (c *DashboardCategory) Diff(other *DashboardCategory) *DashboardTreeItemDif
 	}
 
 	return res
+}
+
+// CtyValue implements CtyValueProvider
+func (c *DashboardCategory) CtyValue() (cty.Value, error) {
+	return GetCtyValue(c)
 }

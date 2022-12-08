@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,10 +20,11 @@ type Query struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	// TODO KAI overridden from base as they have JSON tags - DO A DIFFERENT WA
+	// TODO  [node_reuse] overridden from base as they have JSON tags - DO A DIFFERENT WAY
 	//ShortName string  `cty:"short_name" json:"name"`
 	//SQL       *string `cty:"sql" hcl:"sql" column:"sql,text" json:sql"`
 	//Query     *Query  `hcl:"query" json:"query"`
@@ -191,6 +193,11 @@ func (q *Query) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (q *Query) GetReferences() []*ResourceReference {
 	return q.References
+}
+
+// CtyValue implements CtyValueProvider
+func (q *Query) CtyValue() (cty.Value, error) {
+	return GetCtyValue(q)
 }
 
 func (q *Query) Diff(other *Query) *DashboardTreeItemDiffs {
