@@ -18,7 +18,7 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, error)
 	workspacePath := viper.GetString(constants.ArgModLocation)
 	t := time.Now()
 	defer func() {
-		fmt.Printf("Load took %dms\n", time.Since(t).Milliseconds())
+		log.Printf("[TRANCE] Workspace load took %dms\n", time.Since(t).Milliseconds())
 	}()
 	w, err := Load(ctx, workspacePath)
 	if err == nil {
