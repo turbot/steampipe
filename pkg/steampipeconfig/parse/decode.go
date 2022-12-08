@@ -424,7 +424,7 @@ func decodeNodeAndEdgeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 	res.addDiags(validateHcl(body, NodeAndEdgeProviderSchema, resource))
 
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(body, parseCtx.EvalCtx, resource)
+	diags = decodeHclBody(body, parseCtx.EvalCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
@@ -491,7 +491,7 @@ func decodeDashboard(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Da
 	}
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(body, parseCtx.EvalCtx, dashboard)
+	diags = decodeHclBody(body, parseCtx.EvalCtx, dashboard)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
@@ -566,7 +566,7 @@ func decodeDashboardContainer(block *hcl.Block, parseCtx *ModParseContext) (*mod
 	res.addDiags(validateHcl(body, DashboardContainerBlockSchema, container))
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(body, parseCtx.EvalCtx, container)
+	diags = decodeHclBody(body, parseCtx.EvalCtx, container)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
