@@ -19,7 +19,6 @@ import (
 type Query struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
-	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -45,17 +44,18 @@ func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	// queries cannot be anonymous
 	q := &Query{
 		QueryProviderBase: QueryProviderBase{
-			HclResourceBase: HclResourceBase{
-				ShortName:       shortName,
-				FullName:        fullName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
-				blockType:       block.Type,
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					HclResourceBase: HclResourceBase{
+						ShortName:       shortName,
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
 			},
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
 		},
 	}
 	return q
@@ -63,8 +63,12 @@ func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 
 func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
 	q := &Query{
-		ModTreeItemBase: ModTreeItemBase{
-			Mod: mod,
+		QueryProviderBase: QueryProviderBase{
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					Mod: mod,
+				},
+			},
 		},
 	}
 	return q.InitialiseFromFile(modPath, filePath)
@@ -95,8 +99,6 @@ func (q *Query) InitialiseFromFile(modPath, filePath string) (MappableResource, 
 	q.ShortName = name
 	q.UnqualifiedName = fmt.Sprintf("query.%s", name)
 	q.FullName = fmt.Sprintf("%s.query.%s", q.Mod.ShortName, name)
-	// TACTICAL set for ModTreeItemBase as well
-	q.fullName = q.FullName
 	q.SQL = &sql
 	q.DeclRange = hcl.Range{
 		Filename: filePath,

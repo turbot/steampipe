@@ -18,8 +18,6 @@ type Dashboard struct {
 	ResourceWithMetadataBase
 	// dashboards are with providers
 	RuntimeDependencyProviderBase
-	HclResourceBase
-	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
@@ -41,16 +39,17 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	c := &Dashboard{
-		HclResourceBase: HclResourceBase{
-			ShortName:       shortName,
-			FullName:        fullName,
-			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-			DeclRange:       block.DefRange,
-			blockType:       block.Type,
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
+		RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+			ModTreeItemBase: ModTreeItemBase{
+				HclResourceBase: HclResourceBase{
+					ShortName:       shortName,
+					FullName:        fullName,
+					UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+					DeclRange:       block.DefRange,
+					blockType:       block.Type,
+				},
+				Mod: mod,
+			},
 		},
 	}
 	c.SetAnonymous(block)
@@ -72,19 +71,20 @@ func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
 		ResourceWithMetadataBase: ResourceWithMetadataBase{
 			metadata: &ResourceMetadata{},
 		},
-		HclResourceBase: HclResourceBase{
-			ShortName:       parsedName.Name,
-			FullName:        dashboardName,
-			UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
-			Title:           utils.ToStringPointer(q.GetTitle()),
-			Description:     utils.ToStringPointer(q.GetDescription()),
-			Documentation:   utils.ToStringPointer(q.GetDocumentation()),
-			Tags:            q.GetTags(),
-			blockType:       BlockTypeDashboard,
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      q.GetMod(),
-			fullName: dashboardName,
+		RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+			ModTreeItemBase: ModTreeItemBase{
+				HclResourceBase: HclResourceBase{
+					ShortName:       parsedName.Name,
+					FullName:        dashboardName,
+					UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
+					Title:           utils.ToStringPointer(q.GetTitle()),
+					Description:     utils.ToStringPointer(q.GetDescription()),
+					Documentation:   utils.ToStringPointer(q.GetDocumentation()),
+					Tags:            q.GetTags(),
+					blockType:       BlockTypeDashboard,
+				},
+				Mod: q.GetMod(),
+			},
 		},
 	}
 
