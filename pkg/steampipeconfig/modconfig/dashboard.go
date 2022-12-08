@@ -20,7 +20,7 @@ type Dashboard struct {
 	RuntimeDependencyProviderBase
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	Width   *int              `cty:"width" hcl:"width"  column:"width,text"`
 	Display *string           `cty:"display" hcl:"display" column:"display,text"`

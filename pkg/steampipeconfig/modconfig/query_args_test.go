@@ -319,7 +319,19 @@ func TestResolveAsString(t *testing.T) {
 		if len(testsToRun) > 0 && !helpers.StringSliceContains(testsToRun, name) {
 			continue
 		}
-		query := &Control{FullName: "control.test_control", Params: test.paramDefs, Args: test.baseArgs}
+		query := &Control{
+			QueryProviderBase: QueryProviderBase{
+				RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+					ModTreeItemBase: ModTreeItemBase{
+						HclResourceBase: HclResourceBase{
+							FullName: "control.test_control",
+						},
+					},
+				},
+				Params: test.paramDefs,
+				Args:   test.baseArgs,
+			},
+		}
 		res, err := ResolveArgs(query, test.runtimeArgs)
 		if err != nil {
 			if test.expected != "ERROR" {
