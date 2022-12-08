@@ -6,9 +6,40 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+// validate the resource
+func validateResource(resource modconfig.HclResource) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if qp, ok := resource.(modconfig.QueryProvider); ok {
+		moreDiags := validateQueryProvider(qp)
+		diags = append(diags, moreDiags...)
+	}
+	if qp, ok := resource.(modconfig.NodeAndEdgeProvider); ok {
+		moreDiags := validateNodeAndEdgeProvider(qp)
+		diags = append(diags, moreDiags...)
+	}
+	if rdp, ok := resource.(modconfig.RuntimeDependencyProvider); ok {
+		moreDiags := validateRuntimeDependencyProvider(rdp)
+		diags = append(diags, moreDiags...)
+	}
+	return diags
+}
+
+func validateRuntimeDependencyProvider(rdp modconfig.RuntimeDependencyProvider) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if len(rdp.GetWiths()) > 0 && !rdp.IsTopLevelResource() {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s contains 'with' blocks but is not a top level resource", rdp.Name()),
+			Subject:  rdp.GetDeclRange(),
+		})
+	}
+	return diags
+}
+
 // validate that the provider does not contains both edges/nodes and a query/sql
 // enrich the loaded nodes and edges with the fully parsed resources from the resourceMapProvider
 func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Diagnostics {
+	var diags hcl.Diagnostics
 	existingEdges := resource.GetEdges()
 	existingNodes := resource.GetNodes()
 
@@ -16,14 +47,14 @@ func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Dia
 	providerDefinesQuery := resource.GetSQL() != nil || resource.GetQuery() != nil
 	providerContainsEdgesOrNodes := (len(existingEdges) + len(existingNodes)) > 0
 	if providerDefinesQuery && providerContainsEdgesOrNodes {
-		return hcl.Diagnostics{&hcl.Diagnostic{
+		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("%s contains edges/nodes AND has a query", resource.Name()),
 			Subject:  resource.GetDeclRange(),
-		}}
+		})
 	}
 
-	return nil
+	return diags
 }
 
 func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {

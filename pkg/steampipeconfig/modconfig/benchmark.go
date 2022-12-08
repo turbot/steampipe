@@ -15,7 +15,6 @@ import (
 // Benchmark is a struct representing the Benchmark resource
 type Benchmark struct {
 	ResourceWithMetadataBase
-	HclResourceBase
 	ModTreeItemBase
 
 	// required to allow partial decoding
@@ -38,16 +37,15 @@ type Benchmark struct {
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	benchmark := &Benchmark{
-		HclResourceBase: HclResourceBase{
-			ShortName:       shortName,
-			FullName:        fullName,
-			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-			DeclRange:       block.DefRange,
-			blockType:       block.Type,
-		},
 		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
+			HclResourceBase: HclResourceBase{
+				ShortName:       shortName,
+				FullName:        fullName,
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+				DeclRange:       block.DefRange,
+				blockType:       block.Type,
+			},
+			Mod: mod,
 		},
 	}
 	benchmark.SetAnonymous(block)
