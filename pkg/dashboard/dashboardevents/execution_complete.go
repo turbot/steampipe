@@ -7,7 +7,7 @@ import (
 )
 
 type ExecutionComplete struct {
-	Root        dashboardtypes.DashboardNodeRun
+	Root        dashboardtypes.DashboardTreeRun
 	Session     string
 	ExecutionId string
 	Panels      map[string]dashboardtypes.SnapshotPanel

@@ -3,7 +3,7 @@ package dashboardevents
 import "github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 
 type DashboardComplete struct {
-	Dashboard dashboardtypes.DashboardNodeRun
+	Dashboard dashboardtypes.DashboardTreeRun
 }
 
 // IsDashboardEvent implements DashboardEvent interface

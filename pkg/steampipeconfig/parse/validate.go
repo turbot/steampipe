@@ -24,13 +24,13 @@ func validateResource(resource modconfig.HclResource) hcl.Diagnostics {
 	return diags
 }
 
-func validateRuntimeDependencyProvider(rdp modconfig.RuntimeDependencyProvider) hcl.Diagnostics {
+func validateRuntimeDependencyProvider(resource modconfig.RuntimeDependencyProvider) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if len(rdp.GetWiths()) > 0 && !rdp.IsTopLevelResource() {
+	if len(resource.GetWiths()) > 0 && !resource.IsTopLevelResource() {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s contains 'with' blocks but is not a top level resource", rdp.Name()),
-			Subject:  rdp.GetDeclRange(),
+			Summary:  fmt.Sprintf("%s contains 'with' blocks but is not a top level resource", resource.Name()),
+			Subject:  resource.GetDeclRange(),
 		})
 	}
 	return diags
@@ -69,12 +69,21 @@ func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {
 	}
 
 	// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
-	if len(resource.GetParams()) > 0 && resource.GetQuery() != nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s has 'query' property set so cannot define param blocks", resource.Name()),
-			Subject:  resource.GetDeclRange(),
-		})
+	if len(resource.GetParams()) > 0 {
+		if resource.GetQuery() != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("%s has 'query' property set so cannot define param blocks", resource.Name()),
+				Subject:  resource.GetDeclRange(),
+			})
+		}
+		if resource.IsTopLevelResource() {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("%s contains 'param' blocks but is not a top level resource", resource.Name()),
+				Subject:  resource.GetDeclRange(),
+			})
+		}
 	}
 	return diags
 }
