@@ -37,7 +37,6 @@ func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource
 	// input cannot be anonymous
 	i := &DashboardInput{
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,

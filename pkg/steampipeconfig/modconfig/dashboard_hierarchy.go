@@ -45,7 +45,6 @@ func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) HclReso
 	h := &DashboardHierarchy{
 		Categories: make(map[string]*DashboardCategory),
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,
