@@ -12,6 +12,7 @@ import (
 type Local struct {
 	HclResourceBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -40,6 +41,11 @@ func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local 
 		},
 	}
 	return l
+}
+
+// CtyValue implements CtyValueProvider
+func (l *Local) CtyValue() (cty.Value, error) {
+	return l.Value, nil
 }
 
 func (l *Local) Diff(other *Local) *DashboardTreeItemDiffs {

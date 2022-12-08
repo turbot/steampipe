@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -13,6 +14,7 @@ type DashboardHierarchy struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -88,7 +90,7 @@ func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
 	return h.References
 }
 
-// TODO KAI PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
+// TODO  [node_reuse] PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
 // GetChildren implements ModTreeItem
 func (h *DashboardHierarchy) GetChildren() []ModTreeItem {
 	// return nodes and edges (if any)
@@ -202,6 +204,11 @@ func (h *DashboardHierarchy) AddChild(child HclResource) hcl.Diagnostics {
 		}}
 	}
 	return nil
+}
+
+// CtyValue implements CtyValueProvider
+func (h *DashboardHierarchy) CtyValue() (cty.Value, error) {
+	return GetCtyValue(h)
 }
 
 func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

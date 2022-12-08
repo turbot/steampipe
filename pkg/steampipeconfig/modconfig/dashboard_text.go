@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/turbot/steampipe/pkg/utils"
 
@@ -14,6 +15,7 @@ type DashboardText struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -68,11 +70,6 @@ func (t *DashboardText) GetReferences() []*ResourceReference {
 	return t.References
 }
 
-// GetMod implements ModTreeItem
-func (t *DashboardText) GetMod() *Mod {
-	return t.Mod
-}
-
 func (t *DashboardText) Diff(other *DashboardText) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
 		Item: t,
@@ -113,6 +110,11 @@ func (*DashboardText) GetDocumentation() string {
 // GetType implements DashboardLeafNode
 func (t *DashboardText) GetType() string {
 	return typehelpers.SafeString(t.Type)
+}
+
+// CtyValue implements CtyValueProvider
+func (t *DashboardText) CtyValue() (cty.Value, error) {
+	return GetCtyValue(t)
 }
 
 func (t *DashboardText) setBaseProperties() {
