@@ -1,21 +1,17 @@
 package modconfig
 
 import (
-	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
 
 type ModTreeItemBase struct {
-	// TODO NEEDED???
-	ModTreeItemRemain hcl.Body `hcl:",remain" json:"-"`
+	HclResourceBase
 
 	Mod   *Mod       `cty:"mod" json:"-"`
 	Paths []NodePath `column:"path,jsonb" json:"-"`
 
-	fullName            string
-	parents             []ModTreeItem
-	children            []ModTreeItem
-	disableCtySerialise bool
+	parents  []ModTreeItem
+	children []ModTreeItem
 }
 
 // AddParent implements ModTreeItem
@@ -45,12 +41,16 @@ func (b *ModTreeItemBase) GetPaths() []NodePath {
 func (b *ModTreeItemBase) SetPaths() {
 	for _, parent := range b.parents {
 		for _, parentPath := range parent.GetPaths() {
-			b.Paths = append(b.Paths, append(parentPath, b.fullName))
+			b.Paths = append(b.Paths, append(parentPath, b.FullName))
 		}
 	}
 }
 func (b *ModTreeItemBase) GetMod() *Mod {
 	return b.Mod
+}
+
+func (b *ModTreeItemBase) IsTopLevelResource() bool {
+	return len(b.parents) == 1 && b.parents[0] == b.Mod
 }
 
 // GetModTreeItemBase implements ModTreeItem

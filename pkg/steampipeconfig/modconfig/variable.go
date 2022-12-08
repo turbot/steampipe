@@ -17,7 +17,6 @@ import (
 // Variable is a struct representing a Variable resource
 type Variable struct {
 	ResourceWithMetadataBase
-	HclResourceBase
 	ModTreeItemBase
 
 	// required to allow partial decoding
@@ -49,17 +48,16 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	}
 	fullName := fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name)
 	return &Variable{
-		HclResourceBase: HclResourceBase{
-			ShortName:       v.Name,
-			Description:     &v.Description,
-			FullName:        fullName,
-			DeclRange:       v.DeclRange,
-			UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
-			blockType:       BlockTypeVariable,
-		},
 		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
+			HclResourceBase: HclResourceBase{
+				ShortName:       v.Name,
+				Description:     &v.Description,
+				FullName:        fullName,
+				DeclRange:       v.DeclRange,
+				UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
+				blockType:       BlockTypeVariable,
+			},
+			Mod: mod,
 		},
 		Default:     v.Default,
 		Type:        v.Type,

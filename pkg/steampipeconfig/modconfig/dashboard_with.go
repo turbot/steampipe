@@ -24,16 +24,18 @@ func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource 
 	// with blocks cannot be anonymous
 	c := &DashboardWith{
 		QueryProviderBase: QueryProviderBase{
-			HclResourceBase: HclResourceBase{
-				ShortName:       shortName,
-				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
-				blockType:       block.Type,
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					HclResourceBase: HclResourceBase{
+						ShortName:       shortName,
+						FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
 			},
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod: mod,
 		},
 	}
 
