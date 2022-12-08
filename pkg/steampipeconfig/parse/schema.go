@@ -5,8 +5,8 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-// TODO Replace everything with consts
-// TODO add all attributes into validation-only-schemas
+// TODO  [node_reuse] Replace everything with consts
+// TODO  [node_reuse] add all attributes into validation-only-schemas
 
 var ConfigBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
@@ -165,7 +165,7 @@ var RequireModBlockSchema = &hcl.BodySchema{
 }
 
 // DashboardBlockSchema is only used to validate the blocks of a Dashboard
-// TODO add all atttributes and validate these as well
+// TODO  [node_reuse] add all atttributes and validate these as well
 var DashboardBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{
@@ -216,7 +216,7 @@ var DashboardBlockSchema = &hcl.BodySchema{
 }
 
 // DashboardContainerBlockSchema is only used to validate the blocks of a DashboardContainer
-// TODO add all atttributes and validate these as well
+// TODO  [node_reuse] add all atttributes and validate these as well
 var DashboardContainerBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
 		{

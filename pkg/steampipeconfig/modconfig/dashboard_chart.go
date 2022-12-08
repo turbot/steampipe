@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -13,6 +14,7 @@ type DashboardChart struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -68,11 +70,6 @@ func (c *DashboardChart) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (c *DashboardChart) GetReferences() []*ResourceReference {
 	return c.References
-}
-
-// GetTitle implements HclResource
-func (c *DashboardChart) GetTitle() string {
-	return typehelpers.SafeString(c.Title)
 }
 
 func (c *DashboardChart) Diff(other *DashboardChart) *DashboardTreeItemDiffs {
@@ -139,14 +136,14 @@ func (c *DashboardChart) GetDisplay() string {
 	return typehelpers.SafeString(c.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (c *DashboardChart) GetDocumentation() string {
-	return ""
-}
-
 // GetType implements DashboardLeafNode
 func (c *DashboardChart) GetType() string {
 	return typehelpers.SafeString(c.Type)
+}
+
+// CtyValue implements CtyValueProvider
+func (c *DashboardChart) CtyValue() (cty.Value, error) {
+	return GetCtyValue(c)
 }
 
 func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

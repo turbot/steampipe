@@ -229,7 +229,7 @@ SetArgs(*QueryArgs)
 SetParams([]*ParamDef)
 GetMod() *Mod
 GetDescription() string
-GetPreparedStatementName() string
+
 GetPreparedStatementExecuteSQL(*QueryArgs) (*ResolvedQuery, error)
 // implemented by QueryProviderBase
 AddRuntimeDependencies([]*RuntimeDependency)

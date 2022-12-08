@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -19,6 +20,7 @@ type Dashboard struct {
 	RuntimeDependencyProviderBase
 	HclResourceBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -29,10 +31,9 @@ type Dashboard struct {
 	Base    *Dashboard        `hcl:"base"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
-	// TODO KAI NEEDED???
-	References             []*ResourceReference
+	References []*ResourceReference
 	// map of all inputs in our resource tree
-	selfInputsMap map[string]*DashboardInput
+	selfInputsMap          map[string]*DashboardInput
 	runtimeDependencyGraph *topsort.Graph
 }
 
@@ -245,8 +246,8 @@ func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) 
 func (d *Dashboard) validateRuntimeDependenciesForResource(resource HclResource, workspace ResourceMapsProvider) error {
 	return nil
 	//rdp := resource.(RuntimeDependencyProvider)
-	// TODO validate param and args runtime deps
-	//// TODO KAI WHAT ABOUT CHILDREN
+	// TODO  [node_reuse] validate param and args runtime deps
+	//// WHAT ABOUT CHILDREN
 	//if len(runtimeDependencies) == 0 {
 	//	return nil
 	//}
@@ -352,6 +353,11 @@ func (d *Dashboard) setInputMap() []string {
 		}
 	}
 	return duplicates
+}
+
+// CtyValue implements CtyValueProvider
+func (d *Dashboard) CtyValue() (cty.Value, error) {
+	return GetCtyValue(d)
 }
 
 func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
