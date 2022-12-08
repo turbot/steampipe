@@ -100,19 +100,45 @@ func GetClientCount(ctx context.Context) (steampipeClients int, totalClients int
 	}
 	defer rootClient.Close(ctx)
 
-	// get the total number of connected clients which have not been created by this execution of steampipe
-	// - determined by the unique application_name client parameter
-	row := rootClient.QueryRow(ctx, "select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name != $1;", runtime.PgClientAppName)
-	err = row.Scan(&totalClients)
+	query := `
+SELECT 
+  application_name,
+  count(*)
+FROM 
+  pg_stat_activity 
+WHERE
+	-- get only the network client processes
+  client_port IS NOT NULL 
+	AND
+	-- which are client backends
+  backend_type=$1 
+	AND
+	-- which are not connections from this application
+  application_name!=$2
+GROUP BY application_name
+`
+
+	steampipeClients = 0
+	totalClients = 0
+
+	rows, err := rootClient.Query(ctx, query, "client backend", runtime.PgClientAppName)
 	if err != nil {
 		return -1, -1, err
 	}
+	defer rows.Close()
 
-	// get the number of steampipe client connected to the service - which are not this instance
-	row = rootClient.QueryRow(ctx, "select count(*) from pg_stat_activity where client_port IS NOT NULL and backend_type='client backend' and application_name LIKE $1 and application_name != $2;", fmt.Sprintf("%s_%%", constants.AppName), runtime.PgClientAppName)
-	err = row.Scan(&steampipeClients)
-	if err != nil {
-		return -1, -1, err
+	for rows.Next() {
+		var appName string
+		var count int
+
+		if err := rows.Scan(&appName, &count); err != nil {
+			return -1, -1, nil
+		}
+
+		totalClients += count
+		if strings.HasPrefix(appName, constants.AppName) {
+			steampipeClients += count
+		}
 	}
 
 	return steampipeClients, totalClients, nil
