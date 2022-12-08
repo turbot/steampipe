@@ -3,7 +3,7 @@ package dashboardevents
 import "github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 
 type ExecutionStarted struct {
-	Root        dashboardtypes.DashboardNodeRun `json:"dashboard"`
+	Root        dashboardtypes.DashboardTreeRun `json:"dashboard"`
 	Panels      map[string]dashboardtypes.SnapshotPanel
 	Session     string
 	ExecutionId string
