@@ -32,7 +32,6 @@ type DashboardImage struct {
 func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	i := &DashboardImage{
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),

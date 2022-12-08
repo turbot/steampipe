@@ -27,7 +27,6 @@ func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) HclResource 
 
 	c := &DashboardEdge{
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{ShortName: shortName,
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),

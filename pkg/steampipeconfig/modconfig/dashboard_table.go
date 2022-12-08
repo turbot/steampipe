@@ -32,7 +32,6 @@ func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) HclResource
 
 	t := &DashboardTable{
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,
@@ -69,9 +68,8 @@ func NewQueryDashboardTable(q ModTreeItem) (*DashboardTable, error) {
 			metadata: &ResourceMetadata{},
 		},
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: q.GetMod().NameWithVersion(),
-			Query:              queryProvider.GetQuery(),
-			SQL:                queryProvider.GetSQL(),
+			Query: queryProvider.GetQuery(),
+			SQL:   queryProvider.GetSQL(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       parsedName.Name,
 				FullName:        tableName,
