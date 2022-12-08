@@ -14,7 +14,6 @@ import (
 type DashboardCard struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
-	ModTreeItemBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -39,17 +38,18 @@ func NewDashboardCard(block *hcl.Block, mod *Mod, shortName string) HclResource 
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	c := &DashboardCard{
 		QueryProviderBase: QueryProviderBase{
-			HclResourceBase: HclResourceBase{
-				ShortName:       shortName,
-				FullName:        fullName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
-				blockType:       block.Type,
+			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
+				ModTreeItemBase: ModTreeItemBase{
+					HclResourceBase: HclResourceBase{
+						ShortName:       shortName,
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
 			},
-		},
-		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
 		},
 	}
 

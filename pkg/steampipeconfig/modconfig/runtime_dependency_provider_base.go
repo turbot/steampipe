@@ -7,6 +7,7 @@ import (
 )
 
 type RuntimeDependencyProviderBase struct {
+	ModTreeItemBase
 	// map of withs keyed by unqualified name
 	withs               map[string]*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency
