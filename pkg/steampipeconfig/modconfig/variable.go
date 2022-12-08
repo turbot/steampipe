@@ -19,6 +19,7 @@ type Variable struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -140,4 +141,9 @@ func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {
 
 	res.populateChildDiffs(v, other)
 	return res
+}
+
+// CtyValue implements CtyValueProvider
+func (v *Variable) CtyValue() (cty.Value, error) {
+	return GetCtyValue(v)
 }

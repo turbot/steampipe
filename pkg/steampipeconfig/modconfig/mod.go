@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +24,7 @@ type Mod struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -161,22 +161,6 @@ func (m *Mod) NameWithVersion() string {
 	return fmt.Sprintf("%s@%s", m.ShortName, m.VersionString)
 }
 
-// AddChild implements ModTreeItem
-func (m *Mod) AddChild(child ModTreeItem) error {
-	m.children = append(m.children, child)
-	return nil
-}
-
-// AddParent implements ModTreeItem
-func (m *Mod) AddParent(ModTreeItem) error {
-	return errors.New("cannot set a parent on a mod")
-}
-
-// GetUnqualifiedName implements ModTreeItem
-func (m *Mod) GetUnqualifiedName() string {
-	return m.Name()
-}
-
 // GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
 func (m *Mod) GetModDependencyPath() string {
 	if m.ModDependencyPath != "" {
@@ -246,11 +230,6 @@ func (m *Mod) GetReferences() []*ResourceReference {
 		idx++
 	}
 	return res
-}
-
-// GetMod implements ModTreeItem
-func (m *Mod) GetMod() *Mod {
-	return nil
 }
 
 // GetResourceMaps implements ResourceMapsProvider
@@ -401,4 +380,9 @@ func (m *Mod) ValidateSteampipeVersion() error {
 		return nil
 	}
 	return m.Require.ValidateSteampipeVersion(m.Name())
+}
+
+// CtyValue implements CtyValueProvider
+func (m *Mod) CtyValue() (cty.Value, error) {
+	return GetCtyValue(m)
 }

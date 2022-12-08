@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
@@ -13,6 +14,7 @@ type DashboardContainer struct {
 	ResourceWithMetadataBase
 	HclResourceBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain"`
 
@@ -37,6 +39,7 @@ func NewDashboardContainer(block *hcl.Block, mod *Mod, shortName string) HclReso
 			FullName:        fullName,
 			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 			DeclRange:       block.DefRange,
+			blockType:       block.Type,
 		},
 		ModTreeItemBase: ModTreeItemBase{
 			Mod:      mod,
@@ -70,16 +73,6 @@ func (c *DashboardContainer) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (c *DashboardContainer) GetReferences() []*ResourceReference {
 	return c.References
-}
-
-// GetMod implements ModTreeItem
-func (c *DashboardContainer) GetMod() *Mod {
-	return c.Mod
-}
-
-// GetDocumentation implement ModTreeItem
-func (*DashboardContainer) GetDocumentation() string {
-	return ""
 }
 
 func (c *DashboardContainer) Diff(other *DashboardContainer) *DashboardTreeItemDiffs {
@@ -133,4 +126,9 @@ func (c *DashboardContainer) WalkResources(resourceFunc func(resource HclResourc
 		}
 	}
 	return nil
+}
+
+// CtyValue implements CtyValueProvider
+func (c *DashboardContainer) CtyValue() (cty.Value, error) {
+	return GetCtyValue(c)
 }

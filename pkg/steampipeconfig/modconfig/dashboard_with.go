@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 )
@@ -9,9 +10,9 @@ import (
 // DashboardWith is a struct representing a leaf dashboard node
 type DashboardWith struct {
 	ModTreeItemBase
-	HclResourceBase
 	ResourceWithMetadataBase
 	QueryProviderBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -27,6 +28,7 @@ func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource 
 			FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 			UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 			DeclRange:       block.DefRange,
+			blockType:       block.Type,
 		},
 		ModTreeItemBase: ModTreeItemBase{
 			Mod: mod,
@@ -41,22 +43,11 @@ func (e *DashboardWith) Equals(other *DashboardWith) bool {
 	return !diff.HasChanges()
 }
 
-// Name implements HclResource, ModTreeItem
-// return name in format: 'with.<shortName>'
-func (e *DashboardWith) Name() string {
-	return e.FullName
-}
-
 // OnDecoded implements HclResource
 func (e *DashboardWith) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	e.setBaseProperties(resourceMapProvider)
 
 	return nil
-}
-
-// BlockType implements HclResource
-func (*DashboardWith) BlockType() string {
-	return BlockTypeQuery
 }
 
 func (e *DashboardWith) Diff(other *DashboardWith) *DashboardTreeItemDiffs {
@@ -86,6 +77,11 @@ func (*DashboardWith) GetDisplay() string {
 // GetType implements DashboardLeafNode
 func (*DashboardWith) GetType() string {
 	return ""
+}
+
+// CtyValue implements CtyValueProvider
+func (t *DashboardWith) CtyValue() (cty.Value, error) {
+	return GetCtyValue(t)
 }
 
 func (e *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

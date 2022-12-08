@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -13,6 +14,7 @@ type DashboardImage struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -112,6 +114,11 @@ func (*DashboardImage) GetType() string {
 func (i *DashboardImage) VerifyQuery(QueryProvider) error {
 	// query is optional - nothing to do
 	return nil
+}
+
+// CtyValue implements CtyValueProvider
+func (i *DashboardImage) CtyValue() (cty.Value, error) {
+	return GetCtyValue(i)
 }
 
 func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

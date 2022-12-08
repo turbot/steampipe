@@ -2,10 +2,11 @@ package modconfig
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // MappableResource must be implemented by resources which can be created
-// directly from a content file (e.g. sql, markdown)
+// directly from a content file (e.g. sql)
 type MappableResource interface {
 	// InitialiseFromFile creates a mappable resource from a file path
 	// It returns the resource, and the raw file data
@@ -19,6 +20,7 @@ type MappableResource interface {
 
 // HclResource must be implemented by resources defined in HCL
 type HclResource interface {
+	// TODO  [node_reuse] rename to GetName/GetFullName
 	Name() string
 	GetTitle() string
 	GetUnqualifiedName() string
@@ -43,6 +45,10 @@ type ModTreeItem interface {
 	SetPaths()
 	GetMod() *Mod
 	GetModTreeItemBase() *ModTreeItemBase
+}
+
+type CtyValueProvider interface {
+	CtyValue() (cty.Value, error)
 }
 
 // ResourceWithMetadata must be implemented by resources which supports reflection metadata
@@ -73,30 +79,23 @@ type QueryProvider interface {
 	GetQuery() *Query
 	SetArgs(*QueryArgs)
 	SetParams([]*ParamDef)
-	GetDescription() string
-	GetPreparedStatementName() string
 	GetResolvedQuery(*QueryArgs) (*ResolvedQuery, error)
-	// implemented by QueryProviderBase
 	RequiresExecution(QueryProvider) bool
 	VerifyQuery(QueryProvider) error
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
 	GetQueryProviderBase() *QueryProviderBase
+	SetQuery(*Query)
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
 type DashboardLeafNode interface {
-	HclResource
-	GetTitle() string
+	ModTreeItem
+	ResourceWithMetadata
 	GetDisplay() string
-	GetDescription() string
-	GetDocumentation() string
 	GetType() string
-	GetTags() map[string]string
 	GetWidth() int
-	GetPaths() []NodePath
-	GetMetadata() *ResourceMetadata
-	GetChildren() []ModTreeItem
 }
+
 type ResourceMapsProvider interface {
 	GetResourceMaps() *ResourceMaps
 }
