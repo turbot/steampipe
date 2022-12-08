@@ -26,7 +26,6 @@ func NewDashboardNode(block *hcl.Block, mod *Mod, shortName string) HclResource 
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	c := &DashboardNode{
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,

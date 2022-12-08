@@ -38,7 +38,6 @@ func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource 
 	h := &DashboardFlow{
 		Categories: make(map[string]*DashboardCategory),
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,
