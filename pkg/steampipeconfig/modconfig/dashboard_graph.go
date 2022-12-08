@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardGraph is a struct representing a leaf dashboard node
@@ -12,6 +13,7 @@ type DashboardGraph struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -83,7 +85,7 @@ func (g *DashboardGraph) GetReferences() []*ResourceReference {
 	return g.References
 }
 
-// TODO KAI PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
+// TODO  [node_reuse] PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
 // GetChildren implements ModTreeItem
 func (g *DashboardGraph) GetChildren() []ModTreeItem {
 	// return nodes and edges (if any)
@@ -196,6 +198,11 @@ func (g *DashboardGraph) AddChild(child HclResource) hcl.Diagnostics {
 		}}
 	}
 	return nil
+}
+
+// CtyValue implements CtyValueProvider
+func (g *DashboardGraph) CtyValue() (cty.Value, error) {
+	return GetCtyValue(g)
 }
 
 func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

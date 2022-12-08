@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/turbot/steampipe/pkg/utils"
 
@@ -14,7 +15,7 @@ type DashboardCard struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
-	
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -65,7 +66,7 @@ func (c *DashboardCard) Equals(other *DashboardCard) bool {
 // OnDecoded implements HclResource
 func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
-	return nil
+	return c.QueryProviderBase.OnDecoded(block, resourceMapProvider)
 }
 
 // AddReference implements ResourceWithMetadata
@@ -138,6 +139,11 @@ func (c *DashboardCard) GetType() string {
 func (c *DashboardCard) VerifyQuery(QueryProvider) error {
 	// query is optional - nothing to do
 	return nil
+}
+
+// CtyValue implements CtyValueProvider
+func (c *DashboardCard) CtyValue() (cty.Value, error) {
+	return GetCtyValue(c)
 }
 
 func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

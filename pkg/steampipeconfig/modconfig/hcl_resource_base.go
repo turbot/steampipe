@@ -3,6 +3,7 @@ package modconfig
 import (
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type HclResourceBase struct {
@@ -37,7 +38,7 @@ func (b *HclResourceBase) GetUnqualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (*HclResourceBase) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (b *HclResourceBase) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 
@@ -71,8 +72,10 @@ func (b *HclResourceBase) GetHclResourceBase() *HclResourceBase {
 	return b
 }
 
-// ShouldCtySerialise implements ModTreeItem
-// allows disabling of base class serialization, used for Local
-func (b *HclResourceBase) ShouldCtySerialise() bool {
-	return !b.disableCtySerialise
+// CtyValue implements CtyValue implements CtyValueProvider
+func (b *HclResourceBase) CtyValue() (cty.Value, error) {
+	if b.disableCtySerialise {
+		return cty.Zero, nil
+	}
+	return GetCtyValue(b)
 }

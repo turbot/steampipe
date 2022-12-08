@@ -32,7 +32,7 @@ func (d *RuntimeDependency) String() string {
 func (d *RuntimeDependency) ValidateSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
 	//resourceName := d.PropertyPath.ToResourceName()
 	var found bool
-	// TODO KAI validate source resource in resource tree
+	// TODO  [node_reuse] validate source resource in resource tree
 	////var sourceResource HclResource
 	//switch d.PropertyPath.ItemType {
 	//// if this is a 'with' resolve from the parent resource
@@ -45,7 +45,6 @@ func (d *RuntimeDependency) ValidateSource(dashboard *Dashboard, workspace Resou
 	//	_, found = dashboard.GetInput(resourceName)
 	//
 	//	//default:
-	//	//	// TODO CAN WE REMOVE THIS AS GLOBAL INPUTS SHOULD NOT BE REFERENCED DIRECTLY
 	//	//	// otherwise, resolve from the global inputs
 	//	//	_, found = workspace.GetResourceMaps().GlobalDashboardInputs[resourceName]
 	//}

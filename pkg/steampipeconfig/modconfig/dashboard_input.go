@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -13,6 +14,7 @@ type DashboardInput struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -41,6 +43,7 @@ func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 				DeclRange:       block.DefRange,
+				blockType:       block.Type,
 			},
 		},
 		ModTreeItemBase: ModTreeItemBase{
@@ -162,6 +165,11 @@ func (i *DashboardInput) DependsOnInput(changedInputName string) bool {
 		}
 	}
 	return false
+}
+
+// CtyValue implements CtyValueProvider
+func (i *DashboardInput) CtyValue() (cty.Value, error) {
+	return GetCtyValue(i)
 }
 
 func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {

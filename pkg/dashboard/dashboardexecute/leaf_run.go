@@ -174,7 +174,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 	// to get here, we must be a query provider
 
-	// TODO validate we have either children or query
+	// TODO [node_reuse] validate we have either children or query
 	//r.SetError(ctx, fmt.Errorf("%s does not define query, SQL or nodes/edges", r.DashboardNode.Name()))
 
 	// if we have children and with runs, start them asyncronously (they may block waiting for our runtime dependencies)
@@ -355,7 +355,7 @@ func (r *LeafRun) resolveSQLAndArgs() error {
 	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", r.DashboardNode.Name(), runtimeArgs)
 
 	// does this leaf run have any SQL to execute?
-	// TODO split this into resolve query and resolve args - we may have args but no query
+	// TODO [node_reuse] split this into resolve query and resolve args - we may have args but no query
 	if queryProvider.RequiresExecution(queryProvider) {
 		resolvedQuery, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
 		if err != nil {
@@ -460,7 +460,7 @@ func (r *LeafRun) collectChildDataAsync(ctx context.Context) chan error {
 
 		log.Printf("[TRACE] run %s ALL children complete", r.Name)
 		// so all children have completed - check for errors
-		// TODO format better error
+		// TODO [node_reuse] format better error
 		err := error_helpers.CombineErrors(errors...)
 		// combine child data even if there is an error
 		r.combineChildData()
@@ -518,4 +518,3 @@ func (r *LeafRun) populateParamDefaults(provider modconfig.QueryProvider) {
 		}
 	}
 }
-

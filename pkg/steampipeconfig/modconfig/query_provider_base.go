@@ -2,12 +2,9 @@ package modconfig
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type QueryProviderBase struct {
@@ -15,10 +12,11 @@ type QueryProviderBase struct {
 	RuntimeDependencyProviderBase
 	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
-	// ONLY CONTROL HAS SQL AND QUERY JSON TAG
+	// TODO  [node_reuse] ONLY CONTROL HAS SQL AND QUERY JSON TAG
 	// control
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `hcl:"query" json:"-"`
+	Query                 *Query      `json:"-"`
+	QueryName             *NamedItem  `cty:"query" hcl:"query" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
@@ -61,15 +59,6 @@ func (b *QueryProviderBase) SetParams(params []*ParamDef) {
 	b.Params = params
 }
 
-// GetPreparedStatementName implements QueryProvider
-func (b *QueryProviderBase) GetPreparedStatementName() string {
-	if b.PreparedStatementName != "" {
-		return b.PreparedStatementName
-	}
-	b.PreparedStatementName = b.buildPreparedStatementName(b.ShortName, b.modNameWithVersion, constants.PreparedStatementImageSuffix)
-	return b.PreparedStatementName
-}
-
 // VerifyQuery implements QueryProvider
 // returns an error if neither sql or query are set
 // it is overidden by resource types for which sql is optional
@@ -101,9 +90,11 @@ func (b *QueryProviderBase) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQ
 		ExecuteSQL: sql,
 		RawSQL:     sql,
 		Args:       argsArray,
-		// TODO KAI CHECK
-		//Params: b.GetParams(),
 	}, nil
+}
+
+func (b *QueryProviderBase) SetQuery(q *Query) {
+	b.Query = q
 }
 
 // MergeParentArgs merges our args with our parent args (ours take precedence)
@@ -131,39 +122,10 @@ func (b *QueryProviderBase) GetQueryProviderBase() *QueryProviderBase {
 	return b
 }
 
-// ShouldCtySerialise implements QueryProvider
-// allows disabling of base class serialization, used for Local
-func (b *QueryProviderBase) ShouldCtySerialise() bool {
-	return !b.disableCtySerialise
-}
-
-func (b *QueryProviderBase) buildPreparedStatementName(queryName, modName, suffix string) string {
-	// build prefix from mod name
-	prefix := b.buildPreparedStatementPrefix(modName)
-
-	// build the hash from the query/control name, mod name and suffix and take the first 4 bytes
-	str := fmt.Sprintf("%s%s%s", prefix, queryName, suffix)
-	hash := helpers.GetMD5Hash(str)[:4]
-	// add hash to suffix
-	suffix += hash
-
-	// truncate the name if necessary
-	nameLength := len(queryName)
-	maxNameLength := constants.MaxPreparedStatementNameLength - (len(prefix) + len(suffix))
-	if nameLength > maxNameLength {
-		nameLength = maxNameLength
+// CtyValue implements CtyValueProvider
+func (b *QueryProviderBase) CtyValue() (cty.Value, error) {
+	if b.disableCtySerialise {
+		return cty.Zero, nil
 	}
-
-	// construct the name
-	return fmt.Sprintf("%s%s%s", prefix, queryName[:nameLength], suffix)
-}
-
-// set the prepared statement suffix and prefix
-// and also store the parent resource object as a QueryProvider interface (base struct cannot cast itself to this)
-func (b *QueryProviderBase) buildPreparedStatementPrefix(modName string) string {
-	prefix := fmt.Sprintf("%s_", modName)
-	prefix = strings.Replace(prefix, ".", "_", -1)
-	prefix = strings.Replace(prefix, "@", "_", -1)
-
-	return prefix
+	return GetCtyValue(b)
 }

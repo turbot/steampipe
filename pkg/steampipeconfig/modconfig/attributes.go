@@ -44,8 +44,10 @@ func GetCtyTypes(item interface{}) map[string]cty.Type {
 	return res
 }
 
-// convert the item into a cty value
+// GetCtyValue converts the item into a cty value
 func GetCtyValue(item interface{}) (cty.Value, error) {
+	// TODO  [node_reuse] look at merging base struct schemas
+
 	// build the block schema
 	var block = configschema.Block{Attributes: make(map[string]*configschema.Attribute)}
 

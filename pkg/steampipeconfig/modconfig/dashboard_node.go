@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 )
@@ -11,6 +12,7 @@ type DashboardNode struct {
 	ResourceWithMetadataBase
 	QueryProviderBase
 	ModTreeItemBase
+
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
@@ -112,6 +114,11 @@ func (n *DashboardNode) GetType() string {
 
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardNode) IsSnapshotPanel() {}
+
+// CtyValue implements CtyValueProvider
+func (n *DashboardNode) CtyValue() (cty.Value, error) {
+	return GetCtyValue(n)
+}
 
 func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
