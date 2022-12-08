@@ -41,8 +41,7 @@ func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
 
 	control := &Control{
 		QueryProviderBase: QueryProviderBase{
-			Args:               NewQueryArgs(),
-			modNameWithVersion: mod.NameWithVersion(),
+			Args: NewQueryArgs(),
 			HclResourceBase: HclResourceBase{
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -165,11 +164,6 @@ func (c *Control) GetParentNames() []string {
 		parents = append(parents, p.Name())
 	}
 	return parents
-}
-
-// QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
-func (c *Control) QualifiedNameWithVersion() string {
-	return fmt.Sprintf("%s.%s", c.Mod.NameWithVersion(), c.FullName)
 }
 
 // OnDecoded implements HclResource

@@ -45,7 +45,6 @@ func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	// queries cannot be anonymous
 	q := &Query{
 		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
 			HclResourceBase: HclResourceBase{
 				ShortName:       shortName,
 				FullName:        fullName,
@@ -64,9 +63,6 @@ func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 
 func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
 	q := &Query{
-		QueryProviderBase: QueryProviderBase{
-			modNameWithVersion: mod.NameWithVersion(),
-		},
 		ModTreeItemBase: ModTreeItemBase{
 			Mod: mod,
 		},

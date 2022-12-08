@@ -23,8 +23,6 @@ type QueryProviderBase struct {
 
 	withs               []*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency
-	// we need the mod name for prepared statement name
-	modNameWithVersion  string
 	disableCtySerialise bool
 }
 
