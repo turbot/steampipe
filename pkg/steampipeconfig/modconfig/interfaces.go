@@ -44,26 +44,12 @@ type ModTreeItem interface {
 	GetPaths() []NodePath
 	SetPaths()
 	GetMod() *Mod
+	IsTopLevelResource() bool
 	GetModTreeItemBase() *ModTreeItemBase
 }
 
-type CtyValueProvider interface {
-	CtyValue() (cty.Value, error)
-}
-
-// ResourceWithMetadata must be implemented by resources which supports reflection metadata
-type ResourceWithMetadata interface {
-	Name() string
-	GetMetadata() *ResourceMetadata
-	SetMetadata(metadata *ResourceMetadata)
-	SetAnonymous(block *hcl.Block)
-	IsAnonymous() bool
-	AddReference(ref *ResourceReference)
-	GetReferences() []*ResourceReference
-}
-
 type RuntimeDependencyProvider interface {
-	HclResource
+	ModTreeItem
 	AddWith(with *DashboardWith) hcl.Diagnostics
 	GetWiths() []*DashboardWith
 	AddRuntimeDependencies([]*RuntimeDependency)
@@ -85,6 +71,21 @@ type QueryProvider interface {
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
 	GetQueryProviderBase() *QueryProviderBase
 	SetQuery(*Query)
+}
+
+type CtyValueProvider interface {
+	CtyValue() (cty.Value, error)
+}
+
+// ResourceWithMetadata must be implemented by resources which supports reflection metadata
+type ResourceWithMetadata interface {
+	Name() string
+	GetMetadata() *ResourceMetadata
+	SetMetadata(metadata *ResourceMetadata)
+	SetAnonymous(block *hcl.Block)
+	IsAnonymous() bool
+	AddReference(ref *ResourceReference)
+	GetReferences() []*ResourceReference
 }
 
 // DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/spf13/viper"
@@ -15,7 +16,10 @@ import (
 
 func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgModLocation)
-
+	t := time.Now()
+	defer func() {
+		fmt.Printf("Load took %dms\n", time.Since(t).Milliseconds())
+	}()
 	w, err := Load(ctx, workspacePath)
 	if err == nil {
 		return w, nil

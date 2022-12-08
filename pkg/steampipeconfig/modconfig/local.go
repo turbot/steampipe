@@ -10,7 +10,6 @@ import (
 
 // Local is a struct representing a Local resource
 type Local struct {
-	HclResourceBase
 	ModTreeItemBase
 
 	// required to allow partial decoding
@@ -24,20 +23,17 @@ func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local 
 	fullName := fmt.Sprintf("%s.local.%s", mod.ShortName, name)
 	l := &Local{
 		Value: val,
-		HclResourceBase: HclResourceBase{
-			ShortName:       name,
-			UnqualifiedName: fmt.Sprintf("local.%s", name),
-			FullName:        fullName,
-			DeclRange:       declRange,
-			blockType:       BlockTypeLocals,
-			// disable cty serialisation of base properties
-			disableCtySerialise: true,
-		},
 		ModTreeItemBase: ModTreeItemBase{
-			Mod:      mod,
-			fullName: fullName,
-			// disable cty serialisation of base properties
-			disableCtySerialise: true,
+			HclResourceBase: HclResourceBase{
+				ShortName:       name,
+				UnqualifiedName: fmt.Sprintf("local.%s", name),
+				FullName:        fullName,
+				DeclRange:       declRange,
+				blockType:       BlockTypeLocals,
+				// disable cty serialisation of base properties
+				disableCtySerialise: true,
+			},
+			Mod: mod,
 		},
 	}
 	return l

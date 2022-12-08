@@ -168,6 +168,7 @@ func decodeBlock(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclReso
 			resource, res = decodeResource(block, parseCtx)
 		}
 	}
+	res.addDiags(validateResource(resource))
 
 	// handle the result
 	// - if there are dependencies, add to run context
@@ -314,11 +315,9 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 	// decode 'with',args and params blocks
 	res.Merge(decodeQueryProviderBlocks(block, remain.(*hclsyntax.Body), resource, parseCtx))
 
-	res.addDiags(validateQueryProvider(resource.(modconfig.QueryProvider)))
-
 	if res.Success() {
+		// populate the query field if set
 		// TODO  [node_reuse] encapsulate this
-
 		if queryName := resource.(modconfig.QueryProvider).GetQueryProviderBase().QueryName; queryName != nil {
 			parsedName, err := modconfig.ParseResourceName(queryName.Name)
 			if err != nil || parsedName.ItemType != modconfig.BlockTypeQuery {
@@ -437,9 +436,6 @@ func decodeNodeAndEdgeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 		blocksRes := decodeNodeAndEdgeProviderBlocks(body, nodeAndEdgeProvider, parseCtx)
 		res.Merge(blocksRes)
 	}
-
-	res.addDiags(validateQueryProvider(resource.(modconfig.QueryProvider)))
-	res.addDiags(validateNodeAndEdgeProvider(resource.(modconfig.NodeAndEdgeProvider)))
 
 	return resource, res
 }
