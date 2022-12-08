@@ -1,6 +1,7 @@
 package dashboardexecute
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
@@ -12,7 +13,7 @@ import (
 )
 
 type RuntimeDependencyPublisherBase struct {
-	Name   string                `json:"name"`
+	DashboardTreeRunBase
 	Args   []any                 `json:"args,omitempty"`
 	Params []*modconfig.ParamDef `json:"params,omitempty"`
 
@@ -22,18 +23,34 @@ type RuntimeDependencyPublisherBase struct {
 	withValueMutex      sync.Mutex
 	withRuns            map[string]*LeafRun
 	inputs              map[string]*modconfig.DashboardInput
-	parent              dashboardtypes.DashboardNodeParent
 }
 
-func NewRuntimeDependencyPublisherBase(name string, parent dashboardtypes.DashboardNodeParent) *RuntimeDependencyPublisherBase {
-	return &RuntimeDependencyPublisherBase{
-		Name:                name,
-		subscriptions:       make(map[string][]*RuntimeDependencyPublishTarget),
-		runtimeDependencies: make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
-		inputs:              make(map[string]*modconfig.DashboardInput),
-		withRuns:            make(map[string]*LeafRun),
-		parent:              parent,
+func NewRuntimeDependencyPublisherBase(resource modconfig.HclResource, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) RuntimeDependencyPublisherBase {
+	return RuntimeDependencyPublisherBase{
+		DashboardTreeRunBase: NewDashboardTreeRunBase(resource, parent, executionTree),
+		subscriptions:        make(map[string][]*RuntimeDependencyPublishTarget),
+		runtimeDependencies:  make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
+		inputs:               make(map[string]*modconfig.DashboardInput),
+		withRuns:             make(map[string]*LeafRun),
 	}
+}
+
+func (b *RuntimeDependencyPublisherBase) Initialise(context.Context) {}
+
+func (b *RuntimeDependencyPublisherBase) Execute(context.Context) {
+	panic("must be implemented by child struct")
+}
+
+func (b *RuntimeDependencyPublisherBase) SetError(context.Context, error) {
+	panic("must be implemented by child struct")
+}
+
+func (b *RuntimeDependencyPublisherBase) SetComplete(context.Context) {
+	panic("must be implemented by child struct")
+}
+
+func (b *RuntimeDependencyPublisherBase) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	panic("must be implemented by child struct")
 }
 
 func (b *RuntimeDependencyPublisherBase) GetName() string {
@@ -96,6 +113,7 @@ func (b *RuntimeDependencyPublisherBase) FindRuntimeDependenciesForParent(parent
 	}
 	return res
 }
+
 func (b *RuntimeDependencyPublisherBase) FindRuntimeDependencyForParent(parentProperty string) *dashboardtypes.ResolvedRuntimeDependency {
 	res := b.FindRuntimeDependenciesForParent(parentProperty)
 	if len(res) > 1 {
@@ -109,39 +127,13 @@ func (b *RuntimeDependencyPublisherBase) GetWithRuns() map[string]*LeafRun {
 	return b.withRuns
 }
 
-func (b *RuntimeDependencyPublisherBase) WalkUpPublishers(walkFunc func(RuntimeDependencyPublisher) (bool, error)) error {
-	var publisher RuntimeDependencyPublisher = b
-	for continueWalking := true; continueWalking && publisher != nil; {
-		var err error
-		continueWalking, err = walkFunc(publisher)
-		if err != nil {
-			return err
-		}
-		publisher = publisher.GetParentPublisher()
-	}
-
-	return nil
-}
-
-func (b *RuntimeDependencyPublisherBase) GetParentPublisher() RuntimeDependencyPublisher {
-
-	parent := b.parent
-	for parent != nil {
-		if res, ok := parent.(RuntimeDependencyPublisher); ok {
-			return res
-		}
-		parent = parent.GetParent()
-	}
-	return nil
-}
-
-// if this node has runtime dependencies, find the publisher of the dependency and create a ResolvedRuntimeDependency
+// if this node has runtime dependencies, find the publisher of the dependency and create a dashboardtypes.ResolvedRuntimeDependency
 // which  we use to resolve the values
 func (b *RuntimeDependencyPublisherBase) resolveRuntimeDependencies(rdp modconfig.RuntimeDependencyProvider) error {
 	runtimeDependencies := rdp.GetRuntimeDependencies()
 	for n, d := range runtimeDependencies {
 
-		// find a runtime depdency publisher who can provider this runtime depdency
+		// find a runtime dependency publisher who can provider this runtime dependency
 		publisher := b.findRuntimeDependencyPublisher(d)
 		if publisher == nil {
 			// should never happen as validation should have caught this
@@ -161,7 +153,7 @@ func (b *RuntimeDependencyPublisherBase) resolveRuntimeDependencies(rdp modconfi
 			opts = append(opts, WithTransform(func(resolvedVal *dashboardtypes.ResolvedRuntimeDependencyValue) *dashboardtypes.ResolvedRuntimeDependencyValue {
 				transformedResolvedVal := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: resolvedVal.Error}
 				if resolvedVal.Error == nil {
-					// the runtime dependency value for a 'with' is *LeafData
+					// the runtime dependency value for a 'with' is *dashboardtypes.LeafData
 					withValue, err := b.getWithValue(name, resolvedVal.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
 					if err != nil {
 						transformedResolvedVal.Error = fmt.Errorf("failed to resolve with value '%s' for %s: %s", dep.PropertyPath.Original, name, err.Error())
@@ -181,7 +173,7 @@ func (b *RuntimeDependencyPublisherBase) resolveRuntimeDependencies(rdp modconfi
 	return nil
 }
 
-// getWithValue accepts the raw with result (LeafData) and the property path, and extracts the appropriate data
+// getWithValue accepts the raw with result (dashboardtypes.LeafData) and the property path, and extracts the appropriate data
 func (b *RuntimeDependencyPublisherBase) getWithValue(name string, result *dashboardtypes.LeafData, path *modconfig.ParsedPropertyPath) (any, error) {
 	//  get the set of rows which will be used ot generate the return value
 	rows := result.Rows
@@ -274,11 +266,11 @@ func (b *RuntimeDependencyPublisherBase) setWithValue(w *LeafRun) {
 	b.withValueMutex.Lock()
 	defer b.withValueMutex.Unlock()
 
-	name := w.DashboardNode.GetUnqualifiedName()
+	name := w.LeafNode.GetUnqualifiedName()
 	// if there was an error, w.Data will be nil and w.error will be non-nil
-	result := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: w.error}
+	result := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: w.err}
 
-	if w.error == nil {
+	if w.err == nil {
 		populateData(w.Data, result)
 	}
 	b.PublishRuntimeDependencyValue(name, result)
@@ -310,7 +302,7 @@ func populateData(withData *dashboardtypes.LeafData, result *dashboardtypes.Reso
 	}
 }
 
-func (b *RuntimeDependencyPublisherBase) allWithsComplete() bool {
+func (b *RuntimeDependencyPublisherBase) withsComplete() bool {
 	for _, w := range b.withRuns {
 		if !w.RunComplete() {
 			return false
@@ -318,14 +310,37 @@ func (b *RuntimeDependencyPublisherBase) allWithsComplete() bool {
 	}
 	return true
 }
+
 func (b *RuntimeDependencyPublisherBase) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) RuntimeDependencyPublisher {
-	var res RuntimeDependencyPublisher
-	b.WalkUpPublishers(func(p RuntimeDependencyPublisher) (bool, error) {
-		if p.ProvidesRuntimeDependency(runtimeDependency) {
-			res = p
-			return false, nil
+	// the runtime dependency publisher is usually the root node of the execution tree
+	// the exception to this is if the node is a LeafRun(?) for a base node which has a with block,
+	// in which case it may provide its own runtime depdency
+
+	// try ourselves
+	if b.ProvidesRuntimeDependency(runtimeDependency) {
+		return b
+	}
+
+	// try root node
+	// NOTE: we cannot just use b.executionTree.Root as this function is called at init time before Root is assigned
+	rootPublisher := b.getRoot().(RuntimeDependencyPublisher)
+
+	if rootPublisher.ProvidesRuntimeDependency(runtimeDependency) {
+		return rootPublisher
+	}
+
+	return nil
+}
+
+// get the root of the tree by searching up the parents
+func (b *RuntimeDependencyPublisherBase) getRoot() dashboardtypes.DashboardTreeRun {
+	var root dashboardtypes.DashboardTreeRun = b
+	for {
+		parent := root.GetParent()
+		if parent == b.executionTree {
+			break
 		}
-		return true, nil
-	})
-	return res
+		root = parent.(dashboardtypes.DashboardTreeRun)
+	}
+	return root
 }

@@ -166,7 +166,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	return nil
 }
 
-func (e *DashboardExecutor) clearDependentInputs(root dashboardtypes.DashboardNodeRun, changedInput string, inputs map[string]any) []string {
+func (e *DashboardExecutor) clearDependentInputs(root dashboardtypes.DashboardTreeRun, changedInput string, inputs map[string]any) []string {
 	dependentInputs := root.GetInputsDependingOn(changedInput)
 	clearedInputs := dependentInputs
 	if len(dependentInputs) > 0 {
