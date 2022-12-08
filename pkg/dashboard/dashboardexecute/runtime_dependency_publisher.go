@@ -6,10 +6,9 @@ import (
 )
 
 type RuntimeDependencyPublisher interface {
-	GetName() string
+	dashboardtypes.DashboardTreeRun
 	ProvidesRuntimeDependency(dependency *modconfig.RuntimeDependency) bool
 	SubscribeToRuntimeDependency(name string, opts ...RuntimeDependencyPublishOption) chan *dashboardtypes.ResolvedRuntimeDependencyValue
 	PublishRuntimeDependencyValue(name string, result *dashboardtypes.ResolvedRuntimeDependencyValue)
-	GetParentPublisher() RuntimeDependencyPublisher
 	GetWithRuns() map[string]*LeafRun
 }

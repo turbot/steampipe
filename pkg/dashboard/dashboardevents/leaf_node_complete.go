@@ -3,7 +3,7 @@ package dashboardevents
 import "github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 
 type LeafNodeComplete struct {
-	LeafNode    dashboardtypes.DashboardNodeRun
+	LeafNode    dashboardtypes.DashboardTreeRun
 	Session     string
 	ExecutionId string
 }
