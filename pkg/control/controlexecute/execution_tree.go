@@ -170,7 +170,6 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 		// but NOT children which come from dependency mods
 
 		// to achieve this, use a  DirectChildrenModDecorator
-
 		return &DirectChildrenModDecorator{Mod: e.Workspace.Mod}, nil
 	}
 
