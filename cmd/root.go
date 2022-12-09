@@ -66,7 +66,7 @@ var rootCmd = &cobra.Command{
 
 		createLogger()
 
-		// set up the global viper config with values from
+		// set up the global viper config with default values from
 		// config files and ENV variables
 		initGlobalConfig()
 

@@ -1,19 +1,19 @@
 package task
 
-type runConfig struct {
+type taskRunConfig struct {
 	runUpdateCheck bool
 }
 
-func newRunConfig() *runConfig {
-	return &runConfig{
+func newRunConfig() *taskRunConfig {
+	return &taskRunConfig{
 		runUpdateCheck: true,
 	}
 }
 
-type TaskRunConfig func(o *runConfig)
+type TaskRunOption func(o *taskRunConfig)
 
-func WithUpdateCheck(run bool) TaskRunConfig {
-	return func(o *runConfig) {
+func WithUpdateCheck(run bool) TaskRunOption {
+	return func(o *taskRunConfig) {
 		o.runUpdateCheck = run
 	}
 }

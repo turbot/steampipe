@@ -18,17 +18,17 @@ const minimumDurationBetweenChecks = 24 * time.Hour
 
 type Runner struct {
 	currentState statefile.State
-	opts         *runConfig
+	options      *taskRunConfig
 }
 
 // RunTasks runs all tasks asynchronously
 // returns a channel which is closed once all tasks are finished or the provided context is cancelled
-func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, opts ...TaskRunConfig) chan struct{} {
+func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, options ...TaskRunOption) chan struct{} {
 	utils.LogTime("task.RunTasks start")
 	defer utils.LogTime("task.RunTasks end")
 
 	config := newRunConfig()
-	for _, o := range opts {
+	for _, o := range options {
 		o(config)
 	}
 
@@ -51,12 +51,12 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, opts ...Ta
 	return doneChannel
 }
 
-func newRunner(config *runConfig) *Runner {
+func newRunner(config *taskRunConfig) *Runner {
 	utils.LogTime("task.NewRunner start")
 	defer utils.LogTime("task.NewRunner end")
 
 	r := new(Runner)
-	r.opts = config
+	r.options = config
 
 	state, err := statefile.LoadState()
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *Runner) run(ctx context.Context) {
 
 	waitGroup := sync.WaitGroup{}
 
-	if r.opts.runUpdateCheck {
+	if r.options.runUpdateCheck {
 		// check whether an updated version is available
 		r.runJobAsync(ctx, func(c context.Context) {
 			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
