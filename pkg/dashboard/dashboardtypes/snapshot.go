@@ -2,8 +2,9 @@ package dashboardtypes
 
 import (
 	"encoding/json"
-	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"time"
+
+	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 )
 
 var SteampipeSnapshotSchemaVersion int64 = 20220929
@@ -70,7 +71,5 @@ func StripSnapshot(snapshot *steampipecloud.WorkspaceSnapshotData) error {
 			}
 		}
 	}
-	// clear top level search path
-	snapshot.SearchPath = []string{}
 	return nil
 }
