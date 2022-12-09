@@ -9,7 +9,6 @@ import (
 
 // DashboardWith is a struct representing a leaf dashboard node
 type DashboardWith struct {
-	ModTreeItemBase
 	ResourceWithMetadataBase
 	QueryProviderBase
 
