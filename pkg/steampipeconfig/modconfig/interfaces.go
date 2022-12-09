@@ -31,6 +31,8 @@ type HclResource interface {
 	GetDocumentation() string
 	GetTags() map[string]string
 	GetHclResourceBase() *HclResourceBase
+	SetTopLevel(bool)
+	IsTopLevel() bool
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
@@ -44,7 +46,6 @@ type ModTreeItem interface {
 	GetPaths() []NodePath
 	SetPaths()
 	GetMod() *Mod
-	IsTopLevelResource() bool
 	GetModTreeItemBase() *ModTreeItemBase
 }
 
