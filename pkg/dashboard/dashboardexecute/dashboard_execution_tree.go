@@ -76,13 +76,13 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		if !ok {
 			return nil, fmt.Errorf("dashboard '%s' does not exist in workspace", rootName)
 		}
-		return NewDashboardRun(dashboard, e)
+		return NewDashboardRun(dashboard, e, e)
 	case modconfig.BlockTypeBenchmark:
 		benchmark, ok := e.workspace.GetResourceMaps().Benchmarks[rootName]
 		if !ok {
 			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
 		}
-		return NewCheckRun(benchmark, nil, e)
+		return NewCheckRun(benchmark, e, e)
 	case modconfig.BlockTypeQuery:
 		// wrap in a table
 		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
@@ -94,7 +94,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		if err != nil {
 			return nil, err
 		}
-		return NewDashboardRun(dashboard, e)
+		return NewDashboardRun(dashboard, e, e)
 	case modconfig.BlockTypeControl:
 		// wrap in a table
 		control, ok := e.workspace.GetResourceMaps().Controls[rootName]
@@ -106,7 +106,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		if err != nil {
 			return nil, err
 		}
-		return NewDashboardRun(dashboard, e)
+		return NewDashboardRun(dashboard, e, e)
 	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed as dashboard", parsedName.ItemType)
 	}
@@ -285,4 +285,34 @@ func (e *DashboardExecutionTree) GetChildren() []dashboardtypes.DashboardTreeRun
 // ChildrenComplete implements DashboardParent
 func (e *DashboardExecutionTree) ChildrenComplete() bool {
 	return e.Root.RunComplete()
+}
+
+// Tactical: Empty implementations of DashboardParent functions
+
+func (e *DashboardExecutionTree) Initialise(ctx context.Context) {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (e *DashboardExecutionTree) GetTitle() string {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (e *DashboardExecutionTree) GetError() error {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (e *DashboardExecutionTree) SetComplete(ctx context.Context) {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (e *DashboardExecutionTree) RunComplete() bool {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (e *DashboardExecutionTree) GetInputsDependingOn(s string) []string {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (e *DashboardExecutionTree) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	panic("should never call for DashboardExecutionTree")
 }
