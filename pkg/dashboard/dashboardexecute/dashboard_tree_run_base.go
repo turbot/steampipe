@@ -13,6 +13,7 @@ type DashboardTreeRunBase struct {
 	err           error
 	parent        dashboardtypes.DashboardParent
 	executionTree *DashboardExecutionTree
+	resource      modconfig.HclResource
 }
 
 func NewDashboardTreeRunBase(resource modconfig.HclResource, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) DashboardTreeRunBase {
@@ -27,6 +28,7 @@ func NewDashboardTreeRunBase(resource modconfig.HclResource, parent dashboardtyp
 		Status:        dashboardtypes.DashboardRunComplete,
 		parent:        parent,
 		executionTree: executionTree,
+		resource:      resource,
 	}
 
 }

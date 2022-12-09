@@ -23,7 +23,7 @@ func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.W
 
 	switch r := root.(type) {
 	case *DashboardRun:
-		r.resource.WalkResources(
+		r.dashboard.WalkResources(
 			func(resource modconfig.HclResource) (bool, error) {
 				if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 					addReferencedVars(resourceWithMetadata.GetReferences())
