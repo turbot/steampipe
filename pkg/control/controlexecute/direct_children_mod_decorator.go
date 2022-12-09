@@ -13,7 +13,6 @@ import (
 // This is needed when running 'check all' for a mod which has dependency mopds'
 type DirectChildrenModDecorator struct {
 	modconfig.ModTreeItemBase
-	modconfig.HclResourceBase
 	Mod *modconfig.Mod
 }
 

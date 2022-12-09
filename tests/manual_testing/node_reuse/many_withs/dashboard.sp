@@ -1,5 +1,20 @@
 dashboard "many_withs" {
   title         = "Many Withs"
+  with "n1" {
+    sql = <<-EOQ
+          select 'n1'
+        EOQ
+  }
+  with "n2" {
+    sql = <<-EOQ
+          select 'n2'
+        EOQ
+  }
+  with "n3" {
+    sql = <<-EOQ
+          select 'n2'
+        EOQ
+  }
 
   container {
     graph {
@@ -7,21 +22,6 @@ dashboard "many_withs" {
       width = 12
       type  = "graph"
 
-      with "n1" {
-        sql = <<-EOQ
-          select 'n1'
-        EOQ
-      }
-      with "n2" {
-        sql = <<-EOQ
-          select 'n2'
-        EOQ
-      }
-      with "n3" {
-        sql = <<-EOQ
-          select 'n2'
-        EOQ
-      }
 
       node "n1" {
         sql = <<-EOQ
