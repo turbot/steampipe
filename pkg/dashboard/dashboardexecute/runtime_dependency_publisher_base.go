@@ -25,7 +25,7 @@ type RuntimeDependencyPublisherBase struct {
 	inputs              map[string]*modconfig.DashboardInput
 }
 
-func NewRuntimeDependencyPublisherBase(resource modconfig.HclResource, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*RuntimeDependencyPublisherBase, error) {
+func NewRuntimeDependencyPublisherBase(resource modconfig.HclResource, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) *RuntimeDependencyPublisherBase {
 	b := &RuntimeDependencyPublisherBase{
 		DashboardParentBase: DashboardParentBase{
 			DashboardTreeRunBase: NewDashboardTreeRunBase(resource, parent, executionTree),
@@ -44,21 +44,24 @@ func NewRuntimeDependencyPublisherBase(resource modconfig.HclResource, parent da
 		}
 	}
 
-	// ifd the resource is a runtime dependency provider, create with runs and resolve dependencies
-	if rdp, ok := resource.(modconfig.RuntimeDependencyProvider); ok {
+	return b
+}
+
+func (b *RuntimeDependencyPublisherBase) initRuntimeDependencies() error {
+	// if the resource is a runtime dependency provider, create with runs and resolve dependencies
+	if rdp, ok := b.resource.(modconfig.RuntimeDependencyProvider); ok {
 		// if we have with blocks, create runs for them
 		// BEFORE creating child runs, and before adding runtime dependencies
-		err := b.createWithRuns(rdp.GetWiths(), executionTree)
+		err := b.createWithRuns(rdp.GetWiths(), b.executionTree)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		// resolve any runtime dependencies
 		if err := b.resolveRuntimeDependencies(rdp); err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	return b, nil
+	return nil
 }
 
 func (b *RuntimeDependencyPublisherBase) Initialise(context.Context) {}
@@ -363,7 +366,7 @@ func (b *RuntimeDependencyPublisherBase) getRoot() dashboardtypes.DashboardTreeR
 	var root dashboardtypes.DashboardTreeRun = b
 	for {
 		parent := root.GetParent()
-		if parent == nil {
+		if parent == b.executionTree {
 			break
 		}
 		root = parent.(dashboardtypes.DashboardTreeRun)
