@@ -42,7 +42,7 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 // TODO can dashboards have params????
-func NewDashboardRun(dashboard *modconfig.Dashboard, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
+func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
 	// create RuntimeDependencyPublisherBase- this handles 'with' run creation and runtime dependency resolution
 	base, err := NewRuntimeDependencyPublisherBase(dashboard, nil, executionTree)
 	if err != nil {
@@ -58,6 +58,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, executionTree *DashboardExe
 		Tags:                           dashboard.Tags,
 		SourceDefinition:               dashboard.GetMetadata().SourceDefinition,
 		resource:                       dashboard,
+		parent:                         parent,
 	}
 	if dashboard.Width != nil {
 		r.Width = *dashboard.Width
@@ -119,7 +120,7 @@ func (r *DashboardRun) SetError(_ context.Context, err error) {
 		Session:     r.executionTree.sessionId,
 		ExecutionId: r.executionTree.id,
 	})
-	r.executionTree.ChildCompleteChan() <- r
+	r.parent.ChildCompleteChan() <- r
 }
 
 // SetComplete implements DashboardTreeRun
@@ -132,7 +133,7 @@ func (r *DashboardRun) SetComplete(context.Context) {
 		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
-	r.executionTree.ChildCompleteChan() <- r
+	r.parent.ChildCompleteChan() <- r
 }
 
 // GetInput searches for an input with the given name
@@ -160,7 +161,7 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 		var err error
 		switch i := child.(type) {
 		case *modconfig.Dashboard:
-			childRun, err = NewDashboardRun(i, executionTree)
+			childRun, err = NewDashboardRun(i, r, executionTree)
 			if err != nil {
 				return err
 			}

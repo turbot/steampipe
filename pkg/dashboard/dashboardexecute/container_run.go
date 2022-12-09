@@ -68,7 +68,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 				return nil, err
 			}
 		case *modconfig.Dashboard:
-			childRun, err = NewDashboardRun(i, executionTree)
+			childRun, err = NewDashboardRun(i, r, executionTree)
 			if err != nil {
 				return nil, err
 			}
