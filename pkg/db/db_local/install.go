@@ -40,7 +40,7 @@ If you need to restore the contents of your public schema, please open an issue 
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
 func EnsureDBInstalled(ctx context.Context) (err error) {
-	utils.LogTime("db_local.EnsureDBInstallation start")
+	utils.LogTime("db_local.EnsureDBInstalled start")
 
 	ensureMux.Lock()
 
@@ -50,7 +50,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 			err = helpers.ToError(r)
 		}
 
-		utils.LogTime("db_local.EnsureDBInstallation end")
+		utils.LogTime("db_local.EnsureDBInstalled end")
 		ensureMux.Unlock()
 		close(doneChan)
 	}()

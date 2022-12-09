@@ -49,14 +49,14 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 	// how many clients are connected
 	// under a fresh context
-	steampipeCount, _, err := GetClientCount(context.Background())
+	clientCounts, err := GetClientCount(context.Background())
 	// if there are other clients connected
 	// and if there's no error
-	if err == nil && steampipeCount > 0 {
+	if err == nil && clientCounts.SteampipeClients > 0 {
 		// there are other steampipe clients connected to the database
 		// we don't need to stop the service
 		// the last one to exit will shutdown the service
-		log.Printf("[TRACE] ShutdownService not closing database service - %d steampipe %s connected", steampipeCount, utils.Pluralize("client", steampipeCount))
+		log.Printf("[TRACE] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
 		return
 	}
 
@@ -77,6 +77,11 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 }
 
+type ClientCount struct {
+	SteampipeClients int
+	TotalClients     int
+}
+
 // GetClientCount returns the number of connections to the service from anyone other than
 // _this_execution_ of steampipe
 //
@@ -90,13 +95,13 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 // note: we need the PgClientAppName check to handle the case where there may be one or more open DB connections
 // from this instance at the time of shutdown - for example when a control run is cancelled
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
-func GetClientCount(ctx context.Context) (steampipeClients int, totalClients int, e error) {
-	utils.LogTime("db_local.GetCountOfConnectedClients start")
-	defer utils.LogTime(fmt.Sprintf("db_local.GetCountOfConnectedClients end: %d, %d", steampipeClients, totalClients))
+func GetClientCount(ctx context.Context) (*ClientCount, error) {
+	utils.LogTime("db_local.GetClientCount start")
+	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
 	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
-		return -1, -1, err
+		return nil, err
 	}
 	defer rootClient.Close(ctx)
 
@@ -118,12 +123,11 @@ WHERE
 GROUP BY application_name
 `
 
-	steampipeClients = 0
-	totalClients = 0
+	counts := &ClientCount{}
 
 	rows, err := rootClient.Query(ctx, query, "client backend", runtime.PgClientAppName)
 	if err != nil {
-		return -1, -1, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -132,16 +136,16 @@ GROUP BY application_name
 		var count int
 
 		if err := rows.Scan(&appName, &count); err != nil {
-			return -1, -1, nil
+			return nil, err
 		}
 
-		totalClients += count
+		counts.TotalClients += count
 		if strings.HasPrefix(appName, constants.AppName) {
-			steampipeClients += count
+			counts.SteampipeClients += count
 		}
 	}
 
-	return steampipeClients, totalClients, nil
+	return counts, nil
 }
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
