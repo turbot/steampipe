@@ -26,10 +26,11 @@ func validateResource(resource modconfig.HclResource) hcl.Diagnostics {
 
 func validateRuntimeDependencyProvider(resource modconfig.RuntimeDependencyProvider) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if len(resource.GetWiths()) > 0 && !resource.IsTopLevelResource() {
+	if len(resource.GetWiths()) > 0 && !resource.IsTopLevel() {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s contains 'with' blocks but is not a top level resource", resource.Name()),
+			Summary:  "Only top level resources can have `with` blocks",
+			Detail:   fmt.Sprintf("%s contains 'with' blocks but is not a top level resource.", resource.Name()),
 			Subject:  resource.GetDeclRange(),
 		})
 	}
@@ -40,16 +41,23 @@ func validateRuntimeDependencyProvider(resource modconfig.RuntimeDependencyProvi
 // enrich the loaded nodes and edges with the fully parsed resources from the resourceMapProvider
 func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	existingEdges := resource.GetEdges()
-	existingNodes := resource.GetNodes()
+	containsEdgesOrNodes := len(resource.GetEdges())+len(resource.GetNodes()) > 0
+	definesQuery := resource.GetSQL() != nil || resource.GetQuery() != nil
 
-	// validate that the resource does not declare both edges/nodes and sql/query
-	providerDefinesQuery := resource.GetSQL() != nil || resource.GetQuery() != nil
-	providerContainsEdgesOrNodes := (len(existingEdges) + len(existingNodes)) > 0
-	if providerDefinesQuery && providerContainsEdgesOrNodes {
+	// cannot declare both edges/nodes AND sql/query
+	if definesQuery && containsEdgesOrNodes {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("%s contains edges/nodes AND has a query", resource.Name()),
+			Subject:  resource.GetDeclRange(),
+		})
+	}
+
+	// must have either edges/nodes OR sql/query
+	if !definesQuery && !containsEdgesOrNodes {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s does not define a query or SQL, and has no edges/nodes", resource.Name()),
 			Subject:  resource.GetDeclRange(),
 		})
 	}
@@ -77,10 +85,11 @@ func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {
 				Subject:  resource.GetDeclRange(),
 			})
 		}
-		if resource.IsTopLevelResource() {
+		if resource.IsTopLevel() {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s contains 'param' blocks but is not a top level resource", resource.Name()),
+				Summary:  "Only top level resources can have `param` blocks",
+				Detail:   fmt.Sprintf("%s contains 'param' blocks but is not a top level resource.", resource.Name()),
 				Subject:  resource.GetDeclRange(),
 			})
 		}
