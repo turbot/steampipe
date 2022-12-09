@@ -43,20 +43,19 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
-	// create RuntimeDependencyPublisherBase- this handles 'with' run creation and resolving runtime dependency resolution
-	// NOTE: is there a timing issue here?
-	base, err := NewRuntimeDependencyPublisherBase(resource, parent, executionTree)
-	if err != nil {
-		return nil, err
-	}
 	r := &LeafRun{
-		RuntimeDependencyPublisherBase: *base,
+		// create RuntimeDependencyPublisherBase- this handles 'with' run creation and resolving runtime dependency resolution
+		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(resource, parent, executionTree),
 		Width:                          resource.GetWidth(),
 		Type:                           resource.GetType(),
 		Display:                        resource.GetDisplay(),
 		Resource:                       resource,
 		DashboardName:                  executionTree.dashboardName,
 		SourceDefinition:               resource.GetMetadata().SourceDefinition,
+	}
+	err := r.initRuntimeDependencies()
+	if err != nil {
+		return nil, err
 	}
 
 	parsedName, err := modconfig.ParseResourceName(r.Name)

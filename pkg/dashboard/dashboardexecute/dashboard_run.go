@@ -23,8 +23,8 @@ type DashboardRun struct {
 	DashboardName    string            `json:"dashboard"`
 	SourceDefinition string            `json:"source_definition"`
 
-	resource *modconfig.Dashboard
-	parent   dashboardtypes.DashboardParent
+	parent    dashboardtypes.DashboardParent
+	dashboard *modconfig.Dashboard
 }
 
 func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -43,13 +43,9 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 
 // TODO can dashboards have params????
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
-	// create RuntimeDependencyPublisherBase- this handles 'with' run creation and runtime dependency resolution
-	base, err := NewRuntimeDependencyPublisherBase(dashboard, nil, executionTree)
-	if err != nil {
-		return nil, err
-	}
 	r := &DashboardRun{
-		RuntimeDependencyPublisherBase: *base,
+		// create RuntimeDependencyPublisherBase- this handles 'with' run creation and runtime dependency resolution
+		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(dashboard, executionTree, executionTree),
 		NodeType:                       modconfig.BlockTypeDashboard,
 		DashboardName:                  executionTree.dashboardName,
 		Description:                    typehelpers.SafeString(dashboard.Description),
@@ -57,8 +53,8 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		Documentation:                  typehelpers.SafeString(dashboard.Documentation),
 		Tags:                           dashboard.Tags,
 		SourceDefinition:               dashboard.GetMetadata().SourceDefinition,
-		resource:                       dashboard,
 		parent:                         parent,
+		dashboard:                      dashboard,
 	}
 	if dashboard.Width != nil {
 		r.Width = *dashboard.Width
@@ -66,6 +62,12 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 
 	// set inputs map on RuntimeDependencyPublisherBase BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()
+
+	// after setting inputs, init runtime dependencies
+	err := r.initRuntimeDependencies()
+	if err != nil {
+		return nil, err
+	}
 
 	err = r.createChildRuns(executionTree)
 	if err != nil {
@@ -138,13 +140,13 @@ func (r *DashboardRun) SetComplete(context.Context) {
 
 // GetInput searches for an input with the given name
 func (r *DashboardRun) GetInput(name string) (*modconfig.DashboardInput, bool) {
-	return r.resource.GetInput(name)
+	return r.dashboard.GetInput(name)
 }
 
 // GetInputsDependingOn returns a list o DashboardInputs which have a runtime dependency on the given input
 func (r *DashboardRun) GetInputsDependingOn(changedInputName string) []string {
 	var res []string
-	for _, input := range r.resource.Inputs {
+	for _, input := range r.dashboard.Inputs {
 		if input.DependsOnInput(changedInputName) {
 			res = append(res, input.UnqualifiedName)
 		}
@@ -154,7 +156,7 @@ func (r *DashboardRun) GetInputsDependingOn(changedInputName string) []string {
 
 func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 	// ask our resource for its children
-	children := r.resource.GetChildren()
+	children := r.dashboard.GetChildren()
 
 	for _, child := range children {
 		var childRun dashboardtypes.DashboardTreeRun
