@@ -76,13 +76,13 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		if !ok {
 			return nil, fmt.Errorf("dashboard '%s' does not exist in workspace", rootName)
 		}
-		return NewDashboardRun(dashboard, e, e)
+		return NewDashboardRun(dashboard, e)
 	case modconfig.BlockTypeBenchmark:
 		benchmark, ok := e.workspace.GetResourceMaps().Benchmarks[rootName]
 		if !ok {
 			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
 		}
-		return NewCheckRun(benchmark, e, e)
+		return NewCheckRun(benchmark, nil, e)
 	case modconfig.BlockTypeQuery:
 		// wrap in a table
 		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
@@ -94,7 +94,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		if err != nil {
 			return nil, err
 		}
-		return NewDashboardRun(dashboard, e, e)
+		return NewDashboardRun(dashboard, e)
 	case modconfig.BlockTypeControl:
 		// wrap in a table
 		control, ok := e.workspace.GetResourceMaps().Controls[rootName]
@@ -106,7 +106,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		if err != nil {
 			return nil, err
 		}
-		return NewDashboardRun(dashboard, e, e)
+		return NewDashboardRun(dashboard, e)
 	default:
 		return nil, fmt.Errorf("reporting type %s cannot be executed as dashboard", parsedName.ItemType)
 	}
