@@ -25,7 +25,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.15.0
 	github.com/hashicorp/terraform v0.15.1
 	github.com/jackc/pgconn v1.13.0
-	github.com/jackc/pgx/v5 v5.1.1
+	github.com/jackc/pgx/v5 v5.2.0
 	github.com/jedib0t/go-pretty/v6 v6.4.3
 	github.com/karrick/gows v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
