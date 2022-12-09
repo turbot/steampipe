@@ -10,19 +10,18 @@ func WithSeverity(severity Severity) SteampipeErrorOption {
 
 func WithDiagnostic(message string) SteampipeErrorOption {
 	return func(se *SteampipeError) {
-		se.diagnosticMessage = message
+		se.diagnostic = message
 	}
 }
 
-func WithUserMessage(message string) SteampipeErrorOption {
+func WithMessage(message string) SteampipeErrorOption {
 	return func(se *SteampipeError) {
-		se.userMessage = message
+		se.message = message
 	}
 }
 
-func WithUserMessageReplaced(message string) SteampipeErrorOption {
+func AsTerminal() SteampipeErrorOption {
 	return func(se *SteampipeError) {
-		se.userMessage = message
-		se.replaceUserMessage = true
+		se.terminate = true
 	}
 }

@@ -53,20 +53,18 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	noStatusCtx := statushooks.DisableStatusHooks(ctx)
 	err := executionTree.populateControlFilterMap(noStatusCtx, controlFilterWhereClause)
 	if err != nil {
-		return nil, sperr.NewSteampipeError(
+		return nil, sperr.Wrap(
 			err,
 			sperr.WithDiagnostic("failed to populate Control Filter Map"),
-			sperr.WithSeverity(sperr.Error),
 		)
 	}
 
 	// now identify the root item of the control list
 	rootItem, err := executionTree.getExecutionRootFromArg(arg)
 	if err != nil {
-		return nil, sperr.NewSteampipeError(
+		return nil, sperr.Wrap(
 			err,
 			sperr.WithDiagnostic("failed to resolve root item for execution"),
-			sperr.WithSeverity(sperr.Error),
 		)
 	}
 
