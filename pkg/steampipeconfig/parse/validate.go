@@ -85,14 +85,14 @@ func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {
 				Subject:  resource.GetDeclRange(),
 			})
 		}
-		//if resource.IsTopLevel() {
-		//	diags = append(diags, &hcl.Diagnostic{
-		//		Severity: hcl.DiagError,
-		//		Summary:  "Only top level resources can have `param` blocks",
-		//		Detail:   fmt.Sprintf("%s contains 'param' blocks but is not a top level resource.", resource.Name()),
-		//		Subject:  resource.GetDeclRange(),
-		//	})
-		//}
+		if !resource.IsTopLevel() {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Only top level resources can have `param` blocks",
+				Detail:   fmt.Sprintf("%s contains 'param' blocks but is not a top level resource.", resource.Name()),
+				Subject:  resource.GetDeclRange(),
+			})
+		}
 	}
 	return diags
 }
