@@ -19,6 +19,7 @@ type HclResourceBase struct {
 	Tags                map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
 	blockType           string
 	disableCtySerialise bool
+	isTopLevel          bool
 }
 
 // Name implements HclResource
@@ -72,7 +73,17 @@ func (b *HclResourceBase) GetHclResourceBase() *HclResourceBase {
 	return b
 }
 
-// CtyValue implements CtyValue implements CtyValueProvider
+// SetTopLevel implements HclResource
+func (b *HclResourceBase) SetTopLevel(isTopLevel bool) {
+	b.isTopLevel = isTopLevel
+}
+
+// IsTopLevel implements HclResource
+func (b *HclResourceBase) IsTopLevel() bool {
+	return b.isTopLevel
+}
+
+// CtyValue implements CtyValueProvider
 func (b *HclResourceBase) CtyValue() (cty.Value, error) {
 	if b.disableCtySerialise {
 		return cty.Zero, nil
