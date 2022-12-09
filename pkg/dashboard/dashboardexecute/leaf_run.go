@@ -235,12 +235,6 @@ func (r *LeafRun) resolveSQLAndArgs() error {
 		return nil
 	}
 
-	err := queryProvider.VerifyQuery(queryProvider)
-	if err != nil {
-		log.Printf("[TRACE] LeafRun '%s' VerifyQuery failed: %s", r.Resource.Name(), err.Error())
-		return err
-	}
-
 	// convert arg runtime dependencies into arg map
 	runtimeArgs, err := r.buildRuntimeDependencyArgs()
 	if err != nil {

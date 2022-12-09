@@ -49,10 +49,6 @@ func (b *ModTreeItemBase) GetMod() *Mod {
 	return b.Mod
 }
 
-func (b *ModTreeItemBase) IsTopLevelResource() bool {
-	return len(b.parents) == 1 && b.parents[0] == b.Mod
-}
-
 // GetModTreeItemBase implements ModTreeItem
 func (b *ModTreeItemBase) GetModTreeItemBase() *ModTreeItemBase {
 	return b
