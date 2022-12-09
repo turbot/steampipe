@@ -6,14 +6,13 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
 	RuntimeDependencyPublisherBase
-	DashboardParentBase
+
 	Width            int               `json:"width,omitempty"`
 	Description      string            `json:"description,omitempty"`
 	Display          string            `json:"display,omitempty"`
@@ -24,8 +23,8 @@ type DashboardRun struct {
 	DashboardName    string            `json:"dashboard"`
 	SourceDefinition string            `json:"source_definition"`
 
-	dashboardNode *modconfig.Dashboard
-	parent        dashboardtypes.DashboardParent
+	resource *modconfig.Dashboard
+	parent   dashboardtypes.DashboardParent
 }
 
 func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -42,9 +41,15 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	return res
 }
 
-func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
+// TODO can dashboards have params????
+func NewDashboardRun(dashboard *modconfig.Dashboard, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
+	// create RuntimeDependencyPublisherBase- this handles 'with' run creation and runtime dependency resolution
+	base, err := NewRuntimeDependencyPublisherBase(dashboard, nil, executionTree)
+	if err != nil {
+		return nil, err
+	}
 	r := &DashboardRun{
-		RuntimeDependencyPublisherBase: NewRuntimeDependencyPublisherBase(dashboard, parent, executionTree),
+		RuntimeDependencyPublisherBase: *base,
 		NodeType:                       modconfig.BlockTypeDashboard,
 		DashboardName:                  executionTree.dashboardName,
 		Description:                    typehelpers.SafeString(dashboard.Description),
@@ -52,33 +57,16 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		Documentation:                  typehelpers.SafeString(dashboard.Documentation),
 		Tags:                           dashboard.Tags,
 		SourceDefinition:               dashboard.GetMetadata().SourceDefinition,
-		parent:                         parent,
-		dashboardNode:                  dashboard,
+		resource:                       dashboard,
 	}
 	if dashboard.Width != nil {
 		r.Width = *dashboard.Width
 	}
 
-	// if we have with blocks, create runs for them
-	// BEFORE creating child runs, and before adding runtime dependencies
-	withBlocks := dashboard.GetWiths()
-	if len(withBlocks) > 0 {
-		// create the child runs
-		err := r.createWithRuns(withBlocks, executionTree)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := r.resolveRuntimeDependencies(dashboard); err != nil {
-		return nil, err
-	}
-
 	// set inputs map on RuntimeDependencyPublisherBase BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()
 
-	children := dashboard.GetChildren()
-	err := r.createChildRuns(children, executionTree)
+	err = r.createChildRuns(executionTree)
 	if err != nil {
 		return nil, err
 	}
@@ -86,10 +74,8 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	// add r into execution tree
 	executionTree.runs[r.Name] = r
 
-	// create buffered child complete chan
-	if childCount := len(children) + len(withBlocks); childCount > 0 {
-		r.childComplete = make(chan dashboardtypes.DashboardTreeRun, childCount)
-	}
+	// create buffered channel for children to report their completion
+	r.createChildCompleteChan()
 
 	return r, nil
 }
@@ -105,24 +91,10 @@ func (r *DashboardRun) Initialise(ctx context.Context) {
 // Execute implements DashboardRunNode
 // execute all children and wait for them to complete
 func (r *DashboardRun) Execute(ctx context.Context) {
-	// TODO use with same execution as leaf runs
-	// execute all children asynchronously
-	for _, child := range r.children {
-		go child.Execute(ctx)
-	}
+	r.executeChildrenAsync(ctx)
 
 	// wait for children to complete
-	var errors []error
-	for !r.ChildrenComplete() {
-		completeChild := <-r.childComplete
-		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
-			errors = append(errors, completeChild.GetError())
-		}
-		// fall through to recheck ChildrenCompletes
-	}
-
-	// so all children have completed - check for errors
-	err := error_helpers.CombineErrors(errors...)
+	err := <-r.waitForChildren()
 	if err == nil {
 		// set complete status on dashboard
 		r.SetComplete(ctx)
@@ -147,7 +119,7 @@ func (r *DashboardRun) SetError(_ context.Context, err error) {
 		Session:     r.executionTree.sessionId,
 		ExecutionId: r.executionTree.id,
 	})
-	r.parent.ChildCompleteChan() <- r
+	r.executionTree.ChildCompleteChan() <- r
 }
 
 // SetComplete implements DashboardTreeRun
@@ -160,18 +132,18 @@ func (r *DashboardRun) SetComplete(context.Context) {
 		ExecutionId: r.executionTree.id,
 	})
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.executionTree.ChildCompleteChan() <- r
 }
 
 // GetInput searches for an input with the given name
 func (r *DashboardRun) GetInput(name string) (*modconfig.DashboardInput, bool) {
-	return r.dashboardNode.GetInput(name)
+	return r.resource.GetInput(name)
 }
 
 // GetInputsDependingOn returns a list o DashboardInputs which have a runtime dependency on the given input
 func (r *DashboardRun) GetInputsDependingOn(changedInputName string) []string {
 	var res []string
-	for _, input := range r.dashboardNode.Inputs {
+	for _, input := range r.resource.Inputs {
 		if input.DependsOnInput(changedInputName) {
 			res = append(res, input.UnqualifiedName)
 		}
@@ -179,24 +151,16 @@ func (r *DashboardRun) GetInputsDependingOn(changedInputName string) []string {
 	return res
 }
 
-func (r *DashboardRun) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
-	for _, w := range withs {
-		withRun, err := NewLeafRun(w, r, executionTree)
-		if err != nil {
-			return err
-		}
-		r.withRuns[w.UnqualifiedName] = withRun
-	}
-	return nil
-}
+func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) error {
+	// ask our resource for its children
+	children := r.resource.GetChildren()
 
-func (r *DashboardRun) createChildRuns(children []modconfig.ModTreeItem, executionTree *DashboardExecutionTree) error {
 	for _, child := range children {
 		var childRun dashboardtypes.DashboardTreeRun
 		var err error
 		switch i := child.(type) {
 		case *modconfig.Dashboard:
-			childRun, err = NewDashboardRun(i, r, executionTree)
+			childRun, err = NewDashboardRun(i, executionTree)
 			if err != nil {
 				return err
 			}
