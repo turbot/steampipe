@@ -683,6 +683,7 @@ func handleModDecodeResult(resource modconfig.HclResource, res *decodeResult, bl
 			moreDiags := parseCtx.AddDependencies(block, resource.GetUnqualifiedName(), res.Depends)
 			res.addDiags(moreDiags)
 		}
+		return
 	}
 	// set whether this is a top level resource
 	resource.SetTopLevel(parseCtx.IsTopLevelBlock(block))
