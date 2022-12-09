@@ -14,7 +14,7 @@ import (
 // DashboardContainerRun is a struct representing a container run
 type DashboardContainerRun struct {
 	DashboardParentBase
-	DashboardTreeRunBase
+
 	Width            int    `json:"width,omitempty"`
 	Display          string `json:"display,omitempty"`
 	ErrorString      string `json:"error,omitempty"`
@@ -41,12 +41,14 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	children := container.GetChildren()
 
 	r := &DashboardContainerRun{
-		DashboardTreeRunBase: NewDashboardTreeRunBase(container, parent, executionTree),
-		NodeType:             modconfig.BlockTypeContainer,
-		DashboardName:        executionTree.dashboardName,
-		Display:              typehelpers.SafeString(container.Display),
-		SourceDefinition:     container.GetMetadata().SourceDefinition,
-		dashboardNode:        container,
+		DashboardParentBase: DashboardParentBase{
+			DashboardTreeRunBase: NewDashboardTreeRunBase(container, parent, executionTree),
+		},
+		NodeType:         modconfig.BlockTypeContainer,
+		DashboardName:    executionTree.dashboardName,
+		Display:          typehelpers.SafeString(container.Display),
+		SourceDefinition: container.GetMetadata().SourceDefinition,
+		dashboardNode:    container,
 	}
 	if container.Title != nil {
 		r.Title = *container.Title
@@ -66,7 +68,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 				return nil, err
 			}
 		case *modconfig.Dashboard:
-			childRun, err = NewDashboardRun(i, r, executionTree)
+			childRun, err = NewDashboardRun(i, executionTree)
 			if err != nil {
 				return nil, err
 			}
