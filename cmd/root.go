@@ -77,10 +77,9 @@ var rootCmd = &cobra.Command{
 			taskUpdateCtx,
 			cmd,
 			args,
-			// we can use the update-check viper config here, since
-			// initGlobalConfig has already set it up with values from
-			// the config files and ENV settings
-			// update-check is not taken in as a flag from the command line
+			// pass the config value in rather than runRasks querying viper directly - to avoid concurrent map access issues
+			// (we can use the update-check viper config here, since initGlobalConfig has already set it up
+			// with values from the config files and ENV settings - update-check cannot be set from the command line)
 			task.WithUpdateCheck(viper.GetBool(constants.ArgUpdateCheck)),
 		)
 
