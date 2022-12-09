@@ -13,7 +13,7 @@ import (
 )
 
 type RuntimeDependencyPublisherBase struct {
-	DashboardTreeRunBase
+	DashboardParentBase
 	Args   []any                 `json:"args,omitempty"`
 	Params []*modconfig.ParamDef `json:"params,omitempty"`
 
@@ -25,14 +25,40 @@ type RuntimeDependencyPublisherBase struct {
 	inputs              map[string]*modconfig.DashboardInput
 }
 
-func NewRuntimeDependencyPublisherBase(resource modconfig.HclResource, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) RuntimeDependencyPublisherBase {
-	return RuntimeDependencyPublisherBase{
-		DashboardTreeRunBase: NewDashboardTreeRunBase(resource, parent, executionTree),
-		subscriptions:        make(map[string][]*RuntimeDependencyPublishTarget),
-		runtimeDependencies:  make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
-		inputs:               make(map[string]*modconfig.DashboardInput),
-		withRuns:             make(map[string]*LeafRun),
+func NewRuntimeDependencyPublisherBase(resource modconfig.HclResource, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*RuntimeDependencyPublisherBase, error) {
+	b := &RuntimeDependencyPublisherBase{
+		DashboardParentBase: DashboardParentBase{
+			DashboardTreeRunBase: NewDashboardTreeRunBase(resource, parent, executionTree),
+		},
+		subscriptions:       make(map[string][]*RuntimeDependencyPublishTarget),
+		runtimeDependencies: make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
+		inputs:              make(map[string]*modconfig.DashboardInput),
+		withRuns:            make(map[string]*LeafRun),
 	}
+	// ifs the resource is a query provider, get params and set status
+	if queryProvider, ok := resource.(modconfig.QueryProvider); ok {
+		// get params
+		b.Params = queryProvider.GetParams()
+		if queryProvider.RequiresExecution(queryProvider) || len(queryProvider.GetChildren()) > 0 {
+			b.Status = dashboardtypes.DashboardRunReady
+		}
+	}
+
+	// ifd the resource is a runtime dependency provider, create with runs and resolve dependencies
+	if rdp, ok := resource.(modconfig.RuntimeDependencyProvider); ok {
+		// if we have with blocks, create runs for them
+		// BEFORE creating child runs, and before adding runtime dependencies
+		err := b.createWithRuns(rdp.GetWiths(), executionTree)
+		if err != nil {
+			return nil, err
+		}
+		// resolve any runtime dependencies
+		if err := b.resolveRuntimeDependencies(rdp); err != nil {
+			return nil, err
+		}
+	}
+
+	return b, nil
 }
 
 func (b *RuntimeDependencyPublisherBase) Initialise(context.Context) {}
@@ -266,7 +292,7 @@ func (b *RuntimeDependencyPublisherBase) setWithValue(w *LeafRun) {
 	b.withValueMutex.Lock()
 	defer b.withValueMutex.Unlock()
 
-	name := w.LeafNode.GetUnqualifiedName()
+	name := w.Resource.GetUnqualifiedName()
 	// if there was an error, w.Data will be nil and w.error will be non-nil
 	result := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: w.err}
 
@@ -337,10 +363,24 @@ func (b *RuntimeDependencyPublisherBase) getRoot() dashboardtypes.DashboardTreeR
 	var root dashboardtypes.DashboardTreeRun = b
 	for {
 		parent := root.GetParent()
-		if parent == b.executionTree {
+		if parent == nil {
 			break
 		}
 		root = parent.(dashboardtypes.DashboardTreeRun)
 	}
 	return root
+}
+func (b *RuntimeDependencyPublisherBase) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
+	for _, w := range withs {
+		withRun, err := NewLeafRun(w, b, executionTree)
+		if err != nil {
+			return err
+		}
+		// set an onComplete function to populate 'with' data
+		withRun.onComplete = func() { b.setWithValue(withRun) }
+
+		b.withRuns[w.UnqualifiedName] = withRun
+		b.children = append(b.children, withRun)
+	}
+	return nil
 }
