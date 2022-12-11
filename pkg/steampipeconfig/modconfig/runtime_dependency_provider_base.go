@@ -7,7 +7,11 @@ import (
 )
 
 type RuntimeDependencyProviderBase struct {
-	ModTreeItemBase
+	// cty tag required to ensure base struct is serialised in the eval context
+	ModTreeItemBase `cty:"mod_tree_item_base"`
+	// required to allow partial decoding
+	RuntimeDependencyProviderBaseRemain hcl.Body `hcl:",remain" json:"-"`
+
 	// map of withs keyed by unqualified name
 	withs               map[string]*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency

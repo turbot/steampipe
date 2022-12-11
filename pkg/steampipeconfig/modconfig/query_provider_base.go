@@ -8,14 +8,14 @@ import (
 )
 
 type QueryProviderBase struct {
-	RuntimeDependencyProviderBase
-	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
+	// cty tag required to ensure base struct is serialised in the eval context
+	RuntimeDependencyProviderBase `cty:"runtime_dependency_provider_base"`
+	QueryProviderRemain           hcl.Body `hcl:",remain" json:"-"`
 
 	// TODO  [node_reuse] ONLY CONTROL HAS SQL AND QUERY JSON TAG
 	// control
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `json:"-"`
-	QueryName             *NamedItem  `cty:"query" hcl:"query" json:"-"`
+	Query                 *Query      `cty:"query" hcl:"query" json:"-"`
 	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
@@ -88,10 +88,6 @@ func (b *QueryProviderBase) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQ
 		RawSQL:     sql,
 		Args:       argsArray,
 	}, nil
-}
-
-func (b *QueryProviderBase) SetQuery(q *Query) {
-	b.Query = q
 }
 
 // MergeParentArgs merges our args with our parent args (ours take precedence)
