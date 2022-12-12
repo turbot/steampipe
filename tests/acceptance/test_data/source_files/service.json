@@ -1,0 +1,14 @@
+{
+  "test_name1": {
+    "run": [
+      "test1_run1",
+      "test1_run2"
+    ]
+  },
+  "test_name2": {
+    "run": [
+      "test2_run1",
+      "test2_run2"
+    ]
+  }
+}
