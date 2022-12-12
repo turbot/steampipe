@@ -242,10 +242,6 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		g.Args = g.Base.Args
 	}
 
-	if g.Params == nil {
-		g.Params = g.Base.Params
-	}
-
 	if g.Categories == nil {
 		g.Categories = g.Base.Categories
 	} else {
@@ -267,5 +263,9 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		g.Nodes.Merge(g.Base.Nodes)
 	}
 
+	// only inherit params if top level
+	if g.Params == nil && g.isTopLevel {
+		g.Params = g.Base.Params
+	}
 	g.MergeRuntimeDependencies(g.Base)
 }
