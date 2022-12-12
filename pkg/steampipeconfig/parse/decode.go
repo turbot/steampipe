@@ -432,13 +432,13 @@ func decodeNodeAndEdgeProviderBlocks(content *hclsyntax.Body, nodeAndEdgeProvide
 
 		case modconfig.BlockTypeNode, modconfig.BlockTypeEdge:
 			child, childRes := decodeQueryProvider(block, parseCtx)
+			// populate metadata, set references and call OnDecoded
+			handleModDecodeResult(child, childRes, block, parseCtx)
 			res.Merge(childRes)
 			if res.Success() {
 				moreDiags := nodeAndEdgeProvider.AddChild(child)
 				res.addDiags(moreDiags)
 			}
-			// populate metadata, set references and call OnDecoded
-			handleModDecodeResult(child, childRes, block, parseCtx)
 		}
 	}
 
