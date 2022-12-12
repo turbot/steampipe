@@ -1,11 +1,14 @@
 package modconfig
 
 import (
+	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
 
 type ModTreeItemBase struct {
 	HclResourceBase
+	// required to allow partial decoding
+	ModTreeItemBaseRemain hcl.Body `hcl:",remain" json:"-"`
 
 	Mod   *Mod       `cty:"mod" json:"-"`
 	Paths []NodePath `column:"path,jsonb" json:"-"`

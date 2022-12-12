@@ -281,9 +281,6 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if c.Args == nil {
 		c.Args = c.Base.Args
 	}
-	if c.Params == nil {
-		c.Params = c.Base.Params
-	}
 	if c.Width == nil {
 		c.Width = c.Base.Width
 	}
@@ -292,6 +289,10 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	}
 	if c.Display == nil {
 		c.Display = c.Base.Display
+	}
+	// only inherit params if top level
+	if c.Params == nil && c.isTopLevel {
+		c.Params = c.Base.Params
 	}
 	c.MergeRuntimeDependencies(c.Base)
 }
