@@ -10,8 +10,7 @@ import (
 // DashboardNode is a struct representing a leaf dashboard node
 type DashboardNode struct {
 	ResourceWithMetadataBase
-	// cty tag required to ensure base struct is serialised in the eval context
-	QueryProviderBase `cty:"query_provider_base"`
+	QueryProviderBase
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`

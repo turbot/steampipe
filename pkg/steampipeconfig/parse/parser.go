@@ -172,7 +172,7 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		return nil, fmt.Errorf("ParseMod called with no Current Mod set in ModParseContext")
 	}
 	// get names of all resources defined in hcl which may also be created as pseudo resources
-	hclResources, err := loadMappableResourceNames(modPath, content)
+	hclResources, err := loadMappableResourceNames(content)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 
 // get names of all resources defined in hcl which may also be created as pseudo resources
 // if we find a mod block, build a shell mod
-func loadMappableResourceNames(modPath string, content *hcl.BodyContent) (map[string]bool, error) {
+func loadMappableResourceNames(content *hcl.BodyContent) (map[string]bool, error) {
 	hclResources := make(map[string]bool)
 
 	for _, block := range content.Blocks {

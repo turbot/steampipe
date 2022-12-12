@@ -8,9 +8,8 @@ import (
 )
 
 type QueryProviderBase struct {
-	// cty tag required to ensure base struct is serialised in the eval context
-	RuntimeDependencyProviderBase `cty:"runtime_dependency_provider_base"`
-	QueryProviderRemain           hcl.Body `hcl:",remain" json:"-"`
+	RuntimeDependencyProviderBase
+	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
 	// TODO  [node_reuse] ONLY CONTROL HAS SQL AND QUERY JSON TAG
 	// control

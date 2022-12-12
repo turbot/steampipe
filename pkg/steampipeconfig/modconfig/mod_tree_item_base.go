@@ -6,8 +6,7 @@ import (
 )
 
 type ModTreeItemBase struct {
-	// cty tag required to ensure base struct is serialised in the eval context
-	HclResourceBase `cty:"hcl_resource_base"`
+	HclResourceBase
 	// required to allow partial decoding
 	ModTreeItemBaseRemain hcl.Body `hcl:",remain" json:"-"`
 

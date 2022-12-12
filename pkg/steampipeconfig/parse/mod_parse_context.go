@@ -324,7 +324,34 @@ func (r *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (c
 	if err != nil {
 		return cty.Zero, r.errToCtyValueDiags(resource, err)
 	}
-	return ctyValue, nil
+	// if this is a value map, merge in the values of base structs
+	// if it is NOT a value map, the resource must have overridden CtyValue so do not merge base structs
+	if ctyValue.Type().FriendlyName() != "object" {
+		return ctyValue, nil
+	}
+	valueMap := ctyValue.AsValueMap()
+	if valueMap == nil {
+		valueMap = make(map[string]cty.Value)
+	}
+	base := resource.GetHclResourceBase()
+	if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+		return cty.Zero, r.errToCtyValueDiags(resource, err)
+	}
+
+	if qp, ok := resource.(modconfig.QueryProvider); ok {
+		base := qp.GetQueryProviderBase()
+		if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+			return cty.Zero, r.errToCtyValueDiags(resource, err)
+		}
+	}
+
+	if treeItem, ok := resource.(modconfig.ModTreeItem); ok {
+		base := treeItem.GetModTreeItemBase()
+		if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
+			return cty.Zero, r.errToCtyValueDiags(resource, err)
+		}
+	}
+	return cty.ObjectVal(valueMap), nil
 }
 
 // merge the cty value of the given interface into valueMap
