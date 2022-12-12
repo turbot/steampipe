@@ -6,6 +6,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"reflect"
 )
+
 func decodeHclBody(body hcl.Body, evalCtx *hcl.EvalContext, resource any) hcl.Diagnostics {
 	defer func() {
 		if r := recover(); r != nil {
