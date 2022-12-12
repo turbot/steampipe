@@ -12,7 +12,7 @@ type CallContext struct {
 	Line           int
 }
 
-type SteampipeError struct {
+type Error struct {
 	callContext     *CallContext
 	originalError   error
 	diagnostic      string
@@ -20,9 +20,20 @@ type SteampipeError struct {
 	hideChildErrors bool
 }
 
-func (e *SteampipeError) Error() string {
-	if sperr, ok := e.originalError.(*SteampipeError); ok && !sperr.hideChildErrors {
-		return fmt.Sprintf("%s:%s", e.message, sperr.Error())
+func (e *Error) Error() string {
+	// if there's an underlying error
+	if e.originalError != nil {
+		// and if it is a sperr.Error
+		if sperr, ok := e.originalError.(*Error); ok {
+			// and if it wants to hide it's children
+			if sperr.hideChildErrors {
+				// return the error message itself
+				return e.message
+			}
+		}
+
+		// return the message with the message from it's children
+		return fmt.Sprintf("%s:%s", e.message, e.originalError.Error())
 	}
 	return e.message
 }
@@ -44,19 +55,19 @@ func getCallContext() *CallContext {
 	return callContext
 }
 
-func New(format string, args ...interface{}) *SteampipeError {
-	sperr := &SteampipeError{
+func New(format string, args ...interface{}) *Error {
+	sperr := &Error{
 		message:     fmt.Sprintf(format, args...),
 		callContext: getCallContext(),
 	}
 	return sperr
 }
 
-func Wrap(err error) *SteampipeError {
+func Wrap(err error) *Error {
 	if err == nil {
 		return nil
 	}
-	se := &SteampipeError{
+	se := &Error{
 		originalError: err,
 		callContext:   getCallContext(),
 	}
