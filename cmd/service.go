@@ -317,7 +317,7 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 			dashboardserver.StopDashboardService(ctx)
 			// if we have received this signal, then the user probably wants to shut down
 			// everything. Shutdowns MUST NOT happen in cancellable contexts
-			count, err := db_local.GetCountOfThirdPartyClients(context.Background())
+			connectedClients, err := db_local.GetClientCount(context.Background())
 			if err != nil {
 				// report the error in the off chance that there's one
 				error_helpers.ShowError(ctx, err)
@@ -325,7 +325,7 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 			}
 
 			// we know there will be at least 1 client (connectionWatcher)
-			if count > 1 {
+			if connectedClients.TotalClients > 1 {
 				if lastCtrlC.IsZero() || time.Since(lastCtrlC) > 30*time.Second {
 					lastCtrlC = time.Now()
 					fmt.Println(buildForegroundClientsConnectedMsg())
@@ -510,12 +510,11 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard server")
 		}
 
-		var connectedClientCount int
 		// check if there are any connected clients to the service
-		connectedClientCount, err = db_local.GetCountOfThirdPartyClients(cmd.Context())
+		connectedClients, err := db_local.GetClientCount(cmd.Context())
 		error_helpers.FailOnErrorWithMessage(err, "service stop failed")
 
-		if connectedClientCount > 0 {
+		if connectedClients.TotalClients > 0 {
 			printClientsConnected()
 			return
 		}
