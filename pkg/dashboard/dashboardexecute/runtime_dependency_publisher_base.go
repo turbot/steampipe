@@ -148,7 +148,10 @@ func (b *RuntimeDependencyPublisherBase) FindRuntimeDependencyForParent(parentPr
 	if len(res) > 1 {
 		panic(fmt.Sprintf("FindRuntimeDependencyForParent for %s, parent property %s, returned more that 1 result", b.Name, parentProperty))
 	}
-	// return (potentially nil) first result
+	if res == nil {
+		return nil
+	}
+	// return first result
 	return res[0]
 }
 
