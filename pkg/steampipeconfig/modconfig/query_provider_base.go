@@ -123,6 +123,10 @@ func (b *QueryProviderBase) GetQueryProviderBase() *QueryProviderBase {
 func (b *QueryProviderBase) ParamsInheritedFromBase() bool {
 	// note: this depends on baseQueryProvider being a reference to the same object as the derived class 
 	// base property which was used to populate the params
+	if b.baseQueryProvider == nil {
+		return false
+	}
+
 	baseParams := b.baseQueryProvider.GetParams()
 	if len(b.Params) != len(baseParams) {
 		return false
