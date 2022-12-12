@@ -220,6 +220,9 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 		h.Base = base.(*DashboardHierarchy)
 	}
 
+	// TACTICAL: store another reference to the base as a QueryProvider
+	h.baseQueryProvider = h.Base
+
 	if h.Title == nil {
 		h.Title = h.Base.Title
 	}
@@ -265,8 +268,7 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 		h.Nodes.Merge(h.Base.Nodes)
 	}
 
-	// only inherit params if top level
-	if h.Params == nil && h.isTopLevel {
+	if h.Params == nil {
 		h.Params = h.Base.Params
 	}
 	h.MergeRuntimeDependencies(h.Base)

@@ -167,6 +167,9 @@ func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		t.Base = base.(*DashboardTable)
 	}
 
+	// TACTICAL: store another reference to the base as a QueryProvider
+	t.baseQueryProvider = t.Base
+
 	if t.Title == nil {
 		t.Title = t.Base.Title
 	}

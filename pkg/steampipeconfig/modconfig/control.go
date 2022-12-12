@@ -253,6 +253,9 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 		c.Base = base.(*Control)
 	}
 
+	// TACTICAL: store another reference to the base as a QueryProvider
+	c.baseQueryProvider = c.Base
+
 	if c.Description == nil {
 		c.Description = c.Base.Description
 	}
@@ -290,8 +293,7 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if c.Display == nil {
 		c.Display = c.Base.Display
 	}
-	// only inherit params if top level
-	if c.Params == nil && c.isTopLevel {
+	if c.Params == nil {
 		c.Params = c.Base.Params
 	}
 	c.MergeRuntimeDependencies(c.Base)

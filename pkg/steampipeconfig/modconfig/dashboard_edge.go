@@ -134,6 +134,9 @@ func (e *DashboardEdge) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		e.Base = base.(*DashboardEdge)
 	}
 
+	// TACTICAL: store another reference to the base as a QueryProvider
+	e.baseQueryProvider = e.Base
+
 	if e.Title == nil {
 		e.Title = e.Base.Title
 	}
@@ -154,8 +157,7 @@ func (e *DashboardEdge) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		e.Category = e.Base.Category
 	}
 
-	// only inherit params if top level
-	if e.Params == nil && e.isTopLevel {
+	if e.Params == nil {
 		e.Params = e.Base.Params
 	}
 	e.MergeRuntimeDependencies(e.Base)

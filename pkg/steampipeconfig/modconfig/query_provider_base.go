@@ -19,6 +19,10 @@ type QueryProviderBase struct {
 	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
 	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
+	// TACTICAL: store another reference to the base as a QueryProvider
+	// stored purely so we can automatically determine whether we have overridden base properties
+	baseQueryProvider QueryProvider
+
 	withs               []*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency
 	disableCtySerialise bool
@@ -112,6 +116,23 @@ func (b *QueryProviderBase) MergeParentArgs(queryProvider QueryProvider, parent 
 // GetQueryProviderBase implements QueryProvider
 func (b *QueryProviderBase) GetQueryProviderBase() *QueryProviderBase {
 	return b
+}
+
+// ParamsInheritedFromBase implements QueryProvider
+// determine whether our params were inherited from base resource
+func (b *QueryProviderBase) ParamsInheritedFromBase() bool {
+	// note: this depends on baseQueryProvider being a reference to the same object as the derived class 
+	// base property which was used to populate the params
+	baseParams := b.baseQueryProvider.GetParams()
+	if len(b.Params) != len(baseParams) {
+		return false
+	}
+	for i, p := range b.Params {
+		if baseParams[i] != p {
+			return false
+		}
+	}
+	return true
 }
 
 // CtyValue implements CtyValueProvider

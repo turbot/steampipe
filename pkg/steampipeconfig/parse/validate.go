@@ -86,7 +86,7 @@ func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {
 				Subject:  resource.GetDeclRange(),
 			})
 		}
-		if !resource.IsTopLevel() {
+		if !resource.IsTopLevel() && !resource.ParamsInheritedFromBase() {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Only top level resources can have `param` blocks",

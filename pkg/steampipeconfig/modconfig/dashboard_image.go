@@ -134,6 +134,9 @@ func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		i.Base = base.(*DashboardImage)
 	}
 
+	// TACTICAL: store another reference to the base as a QueryProvider
+	i.baseQueryProvider = i.Base
+
 	if i.Title == nil {
 		i.Title = i.Base.Title
 	}
@@ -166,8 +169,7 @@ func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		i.Args = i.Base.Args
 	}
 
-	// only inherit params if top level
-	if i.Params == nil && i.isTopLevel {
+	if i.Params == nil {
 		i.Params = i.Base.Params
 	}
 

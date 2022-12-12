@@ -41,25 +41,25 @@ func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource 
 	return c
 }
 
-func (e *DashboardWith) Equals(other *DashboardWith) bool {
-	diff := e.Diff(other)
+func (w *DashboardWith) Equals(other *DashboardWith) bool {
+	diff := w.Diff(other)
 	return !diff.HasChanges()
 }
 
 // OnDecoded implements HclResource
-func (e *DashboardWith) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	e.setBaseProperties(resourceMapProvider)
+func (w *DashboardWith) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	w.setBaseProperties(resourceMapProvider)
 
 	return nil
 }
 
-func (e *DashboardWith) Diff(other *DashboardWith) *DashboardTreeItemDiffs {
+func (w *DashboardWith) Diff(other *DashboardWith) *DashboardTreeItemDiffs {
 	res := &DashboardTreeItemDiffs{
-		Item: e,
-		Name: e.Name(),
+		Item: w,
+		Name: w.Name(),
 	}
 
-	res.queryProviderDiff(e, other)
+	res.queryProviderDiff(w, other)
 
 	return res
 }
@@ -83,40 +83,42 @@ func (*DashboardWith) GetType() string {
 }
 
 // CtyValue implements CtyValueProvider
-func (t *DashboardWith) CtyValue() (cty.Value, error) {
-	return GetCtyValue(t)
+func (w *DashboardWith) CtyValue() (cty.Value, error) {
+	return GetCtyValue(w)
 }
 
-func (e *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (w *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(e.Base, resourceMapProvider); !resolved {
+	if base, resolved := resolveBase(w.Base, resourceMapProvider); !resolved {
 		return
 	} else {
-		e.Base = base.(*DashboardWith)
+		w.Base = base.(*DashboardWith)
 	}
 
-	if e.Title == nil {
-		e.Title = e.Base.Title
+	// TACTICAL: store another reference to the base as a QueryProvider
+	w.baseQueryProvider = w.Base
+
+	if w.Title == nil {
+		w.Title = w.Base.Title
 	}
 
-	if e.SQL == nil {
-		e.SQL = e.Base.SQL
+	if w.SQL == nil {
+		w.SQL = w.Base.SQL
 	}
 
-	if e.Query == nil {
-		e.Query = e.Base.Query
+	if w.Query == nil {
+		w.Query = w.Base.Query
 	}
 
-	if e.Args == nil {
-		e.Args = e.Base.Args
+	if w.Args == nil {
+		w.Args = w.Base.Args
 	}
 
-	// only inherit params if top level
-	if e.Params == nil && e.isTopLevel {
-		e.Params = e.Base.Params
+	if w.Params == nil {
+		w.Params = w.Base.Params
 	}
 
-	e.MergeRuntimeDependencies(e.Base)
+	w.MergeRuntimeDependencies(w.Base)
 }
