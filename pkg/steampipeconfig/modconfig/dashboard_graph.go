@@ -214,6 +214,9 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		g.Base = base.(*DashboardGraph)
 	}
 
+	// TACTICAL: store another reference to the base as a QueryProvider
+	g.baseQueryProvider = g.Base
+
 	if g.Title == nil {
 		g.Title = g.Base.Title
 	}
@@ -263,8 +266,7 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		g.Nodes.Merge(g.Base.Nodes)
 	}
 
-	// only inherit params if top level
-	if g.Params == nil && g.isTopLevel {
+	if g.Params == nil {
 		g.Params = g.Base.Params
 	}
 	g.MergeRuntimeDependencies(g.Base)
