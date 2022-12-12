@@ -61,6 +61,20 @@ func (c *DashboardChart) Equals(other *DashboardChart) bool {
 	return !diff.HasChanges()
 }
 
+// OnDecoded implements HclResource
+func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	c.setBaseProperties(resourceMapProvider)
+	// populate series map
+	if len(c.SeriesList) > 0 {
+		c.Series = make(map[string]*DashboardChartSeries, len(c.SeriesList))
+		for _, s := range c.SeriesList {
+			s.OnDecoded()
+			c.Series[s.Name] = s
+		}
+	}
+	return nil
+}
+
 // AddReference implements ResourceWithMetadata
 func (c *DashboardChart) AddReference(ref *ResourceReference) {
 	c.References = append(c.References, ref)

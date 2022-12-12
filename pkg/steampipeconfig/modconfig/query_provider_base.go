@@ -11,7 +11,6 @@ type QueryProviderBase struct {
 	RuntimeDependencyProviderBase
 	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
-	// TODO  [node_reuse] ONLY CONTROL HAS SQL AND QUERY JSON TAG
 	// control
 	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
 	Query                 *Query      `cty:"query" hcl:"query" json:"-"`
@@ -121,7 +120,7 @@ func (b *QueryProviderBase) GetQueryProviderBase() *QueryProviderBase {
 // ParamsInheritedFromBase implements QueryProvider
 // determine whether our params were inherited from base resource
 func (b *QueryProviderBase) ParamsInheritedFromBase() bool {
-	// note: this depends on baseQueryProvider being a reference to the same object as the derived class 
+	// note: this depends on baseQueryProvider being a reference to the same object as the derived class
 	// base property which was used to populate the params
 	if b.baseQueryProvider == nil {
 		return false

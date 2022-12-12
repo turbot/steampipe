@@ -5,6 +5,7 @@ chart global_chart {
 
 input "global_input" {
     title = "global input m1_i1"
+    sql = "select 1"
 }
 
 
@@ -18,5 +19,6 @@ dashboard m1_d1 {
   
   input "i1" {
     title = "input i1"
+    sql = "select 1"
   }
 }

@@ -3,20 +3,21 @@ package parse
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // validate the resource
 func validateResource(resource modconfig.HclResource) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if qp, ok := resource.(modconfig.QueryProvider); ok {
-		moreDiags := validateQueryProvider(qp)
-		diags = append(diags, moreDiags...)
-	}
 	if qp, ok := resource.(modconfig.NodeAndEdgeProvider); ok {
 		moreDiags := validateNodeAndEdgeProvider(qp)
 		diags = append(diags, moreDiags...)
+	} else if qp, ok := resource.(modconfig.QueryProvider); ok {
+		moreDiags := validateQueryProvider(qp)
+		diags = append(diags, moreDiags...)
 	}
+
 	if rdp, ok := resource.(modconfig.RuntimeDependencyProvider); ok {
 		moreDiags := validateRuntimeDependencyProvider(rdp)
 		diags = append(diags, moreDiags...)
@@ -53,9 +54,8 @@ func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Dia
 		})
 	}
 
-	// TODO KAI BASE WITH NO QUERY???
-	// must have either edges/nodes OR sql/query
-	if !definesQuery && !containsEdgesOrNodes {
+	// if resource is NOT top level must have either edges/nodes OR sql/query
+	if !resource.IsTopLevel() && !definesQuery && !containsEdgesOrNodes {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("%s does not define a query or SQL, and has no edges/nodes", resource.Name()),
@@ -63,19 +63,27 @@ func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Dia
 		})
 	}
 
+	diags = append(diags, validateSqlAndQueryNotBothSet(resource)...)
+
+	diags = append(diags, validateParamAndQueryNotBothSet(resource)...)
+
 	return diags
 }
 
 func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if resource.GetSQL() != nil && resource.GetQuery() != nil {
-		// either Query or SQL property may be set -  if Query property already set, error
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", resource.Name()),
-			Subject:  resource.GetDeclRange(),
-		})
-	}
+
+	diags = append(diags, validateSqlOrQuerySet(resource)...)
+
+	diags = append(diags, validateSqlAndQueryNotBothSet(resource)...)
+
+	diags = append(diags, validateParamAndQueryNotBothSet(resource)...)
+
+	return diags
+}
+
+func validateParamAndQueryNotBothSet(resource modconfig.QueryProvider) hcl.Diagnostics {
+	var diags hcl.Diagnostics
 
 	// param block cannot be set if a query property is set - it is only valid if inline SQL ids defined
 	if len(resource.GetParams()) > 0 {
@@ -94,6 +102,38 @@ func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {
 				Subject:  resource.GetDeclRange(),
 			})
 		}
+	}
+	return diags
+}
+
+func validateSqlOrQuerySet(resource modconfig.QueryProvider) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	// Top level resources (with the exceptions of controls and queries) are never executed directly,
+	// only used as base for a nested resource.
+	// Therefore only nested resources, controls and queries MUST have sql or a query defined
+	queryRequired := !resource.IsTopLevel() ||
+		helpers.StringSliceContains([]string{modconfig.BlockTypeQuery, modconfig.BlockTypeControl}, resource.BlockType())
+
+	if queryRequired && resource.GetSQL() == nil && resource.GetQuery() == nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s does not define a query or SQL", resource.Name()),
+			Subject:  resource.GetDeclRange(),
+		})
+	}
+	return diags
+}
+
+func validateSqlAndQueryNotBothSet(resource modconfig.QueryProvider) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	// are both sql and query set?
+	if resource.GetSQL() != nil && resource.GetQuery() != nil {
+		// either Query or SQL property may be set -  if Query property already set, error
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("%s has both 'SQL' and 'query' property set - only 1 of these may be set", resource.Name()),
+			Subject:  resource.GetDeclRange(),
+		})
 	}
 	return diags
 }
