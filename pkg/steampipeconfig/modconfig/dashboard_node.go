@@ -145,13 +145,13 @@ func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		n.Args = n.Base.Args
 	}
 
-	if n.Params == nil {
-		n.Params = n.Base.Params
-	}
-
 	if n.Category == nil {
 		n.Category = n.Base.Category
 	}
 
+	// only inherit params if top level
+	if n.Params == nil && n.isTopLevel {
+		n.Params = n.Base.Params
+	}
 	n.MergeRuntimeDependencies(n.Base)
 }

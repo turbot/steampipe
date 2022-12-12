@@ -113,7 +113,8 @@ func (e *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		e.Args = e.Base.Args
 	}
 
-	if e.Params == nil {
+	// only inherit params if top level
+	if e.Params == nil && e.isTopLevel {
 		e.Params = e.Base.Params
 	}
 

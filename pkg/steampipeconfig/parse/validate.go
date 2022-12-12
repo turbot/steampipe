@@ -53,6 +53,7 @@ func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Dia
 		})
 	}
 
+	// TODO KAI BASE WITH NO QUERY???
 	// must have either edges/nodes OR sql/query
 	if !definesQuery && !containsEdgesOrNodes {
 		diags = append(diags, &hcl.Diagnostic{

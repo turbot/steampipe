@@ -3,8 +3,10 @@ package modconfig
 import "github.com/hashicorp/hcl/v2"
 
 type ResourceWithMetadataBase struct {
-	metadata  *ResourceMetadata
-	anonymous bool
+	// required to allow partial decoding
+	ResourceWithMetadataBaseRemain hcl.Body `hcl:",remain" json:"-"`
+	metadata                       *ResourceMetadata
+	anonymous                      bool
 }
 
 // GetMetadata implements ResourceWithMetadata
