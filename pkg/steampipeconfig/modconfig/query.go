@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
 	"log"
 	"os"
@@ -24,7 +23,7 @@ type Query struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	/// TODO [node_reuse] remove as it exists in base - make sure introspection tabels include base
+	/// TODO [node_reuse] remove as it exists in base - make sure introspection tables include base
 	Description      *string `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
 	SearchPath       *string `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"search_path,omitempty"`
 	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
@@ -174,18 +173,6 @@ func (q *Query) String() string {
 
 // OnDecoded implements HclResource
 func (q *Query) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
-	r := q.Remain.(*hclsyntax.Body).Attributes
-	qp_r := q.QueryProviderRemain.(*hclsyntax.Body).Attributes
-	rdp_r := q.RuntimeDependencyProviderBaseRemain.(*hclsyntax.Body).Attributes
-	mti_r := q.ModTreeItemBaseRemain.(*hclsyntax.Body).Attributes
-	hrb_r := q.HclResourceBaseRemain.(*hclsyntax.Body).Attributes
-	log.Println(r)
-	log.Println(rdp_r)
-	log.Println(qp_r)
-	log.Println(mti_r)
-	log.Println(hrb_r)
-
-	//var unmatchedProps []string
 	return nil
 }
 
