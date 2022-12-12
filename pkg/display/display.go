@@ -278,7 +278,12 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 	// print the data as it comes
 	// define function display each csv row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
+		columns := result.Cols
+		rowAsString := make([]string, len(columns))
+		for idx, val := range row {
+			val, _ := ParseCSVOutputColumnValue(val, columns[idx])
+			rowAsString[idx] = val
+		}
 		_ = csvWriter.Write(rowAsString)
 	}
 

@@ -84,3 +84,11 @@ func ParseJSONOutputColumnValue(val interface{}, col *queryresult.ColumnDef) (in
 		return ColumnValueAsString(val, col)
 	}
 }
+
+func ParseCSVOutputColumnValue(val interface{}, col *queryresult.ColumnDef) (string, error) {
+	if val == nil {
+		return "", nil
+	}
+
+	return ColumnValueAsString(val, col)
+}
