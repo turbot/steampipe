@@ -72,7 +72,6 @@ type QueryProvider interface {
 	VerifyQuery(QueryProvider) error
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
 	GetQueryProviderBase() *QueryProviderBase
-	SetQuery(*Query)
 }
 
 type CtyValueProvider interface {

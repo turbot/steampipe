@@ -7,7 +7,8 @@ import (
 )
 
 type HclResourceBase struct {
-	HclResourceRemain hcl.Body `hcl:",remain" json:"-"`
+	// required to allow partial decoding
+	HclResourceBaseRemain hcl.Body `hcl:",remain" json:"-"`
 
 	FullName            string            `cty:"name" json:"-"`
 	Title               *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`

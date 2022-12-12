@@ -150,13 +150,13 @@ func (e *DashboardEdge) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		e.Args = e.Base.Args
 	}
 
-	if e.Params == nil {
-		e.Params = e.Base.Params
-	}
-
 	if e.Category == nil {
 		e.Category = e.Base.Category
 	}
 
+	// only inherit params if top level
+	if e.Params == nil && e.isTopLevel {
+		e.Params = e.Base.Params
+	}
 	e.MergeRuntimeDependencies(e.Base)
 }

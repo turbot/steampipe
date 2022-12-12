@@ -1,22 +1,24 @@
 package parse
 
 import (
+	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/parse/parse_hcl"
 )
 
-func decodeHclBody(body hcl.Body, evalCtx *hcl.EvalContext, resource modconfig.HclResource) hcl.Diagnostics {
+func decodeHclBody(body hcl.Body, evalCtx *hcl.EvalContext, resource any) hcl.Diagnostics {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
+	}()
 	var diags hcl.Diagnostics
-	diags = gohcl.DecodeBody(body, evalCtx, resource)
+	diags = parse_hcl.DecodeBody(body, evalCtx, resource)
 
-	moreDiags := gohcl.DecodeBody(body, evalCtx, resource.GetHclResourceBase())
-	diags = append(diags, moreDiags...)
-
-	// check what other interfaces the resource supports and deserialise into their base objects
-	if qp, ok := resource.(modconfig.QueryProvider); ok {
-		moreDiags = gohcl.DecodeBody(body, evalCtx, qp.GetQueryProviderBase())
+	for _, nestedStruct := range parse_hcl.GetNestedStructVals(resource) {
+		moreDiags := decodeHclBody(body, evalCtx, nestedStruct)
 		diags = append(diags, moreDiags...)
 	}
+
 	return diags
 }

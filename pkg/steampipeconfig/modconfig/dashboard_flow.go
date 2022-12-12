@@ -242,10 +242,6 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		f.Args = f.Base.Args
 	}
 
-	if f.Params == nil {
-		f.Params = f.Base.Params
-	}
-
 	if f.Categories == nil {
 		f.Categories = f.Base.Categories
 	} else {
@@ -263,5 +259,9 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		f.Nodes.Merge(f.Base.Nodes)
 	}
 
+	// only inherit params if top level
+	if f.Params == nil && f.isTopLevel {
+		f.Params = f.Base.Params
+	}
 	f.MergeRuntimeDependencies(f.Base)
 }

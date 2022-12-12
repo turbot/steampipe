@@ -8,6 +8,9 @@ import (
 
 type RuntimeDependencyProviderBase struct {
 	ModTreeItemBase
+	// required to allow partial decoding
+	RuntimeDependencyProviderBaseRemain hcl.Body `hcl:",remain" json:"-"`
+
 	// map of withs keyed by unqualified name
 	withs               map[string]*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency

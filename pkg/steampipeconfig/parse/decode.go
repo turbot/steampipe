@@ -314,33 +314,6 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 	// decode 'with',args and params blocks
 	res.Merge(decodeQueryProviderBlocks(block, remain.(*hclsyntax.Body), resource, parseCtx))
 
-	if res.Success() {
-		// populate the query field if set
-		// TODO  [node_reuse] encapsulate this
-		if queryName := resource.(modconfig.QueryProvider).GetQueryProviderBase().QueryName; queryName != nil {
-			parsedName, err := modconfig.ParseResourceName(queryName.Name)
-			if err != nil || parsedName.ItemType != modconfig.BlockTypeQuery {
-				res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("Invalid query for %s: %s", resource.Name(), queryName.Name),
-					Subject:  &block.TypeRange,
-				}})
-				return resource, res
-			}
-
-			// now get the resource from the parent mod
-			var mod = parseCtx.GetMod(parsedName.Mod)
-			q, found := modconfig.GetResource(mod, parsedName)
-			if !found {
-				res.addDiags(hcl.Diagnostics{&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("Invalid query for %s: %s", resource.Name(), queryName.Name),
-					Subject:  &block.TypeRange,
-				}})
-			}
-			resource.(modconfig.QueryProvider).SetQuery(q.(*modconfig.Query))
-		}
-	}
 	return resource, res
 }
 
@@ -459,13 +432,13 @@ func decodeNodeAndEdgeProviderBlocks(content *hclsyntax.Body, nodeAndEdgeProvide
 
 		case modconfig.BlockTypeNode, modconfig.BlockTypeEdge:
 			child, childRes := decodeQueryProvider(block, parseCtx)
+			// populate metadata, set references and call OnDecoded
+			handleModDecodeResult(child, childRes, block, parseCtx)
 			res.Merge(childRes)
 			if res.Success() {
 				moreDiags := nodeAndEdgeProvider.AddChild(child)
 				res.addDiags(moreDiags)
 			}
-			// populate metadata, set references and call OnDecoded
-			handleModDecodeResult(child, childRes, block, parseCtx)
 		}
 	}
 

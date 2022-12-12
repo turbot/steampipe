@@ -209,7 +209,8 @@ func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		c.Args = c.Base.Args
 	}
 
-	if c.Params == nil {
+	// only inherit params if top level
+	if c.Params == nil && c.isTopLevel {
 		c.Params = c.Base.Params
 	}
 
