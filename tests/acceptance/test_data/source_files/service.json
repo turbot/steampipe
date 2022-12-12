@@ -1,8 +1,8 @@
 {
   "test_name1": {
     "run": [
-      "test1_run1",
-      "test1_run2"
+      "steampipe query \"select 1\"",
+      "steampipe query \"select 2\""
     ]
   },
   "test_name2": {

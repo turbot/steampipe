@@ -2,17 +2,15 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "service stability" {
-  while read -r run n; do
+  steampipe query "select 1"
+  while read -r run; do
     echo "###"
-    for cmd in $(echo $run | jq --raw-output '. | @sh')
-    do
-      for i in 1..10
-      do
-        x=$($cmd)
+    while read -r cmd; do
+        echo $cmd
+        c=$($cmd)
         assert_success
         assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
-      done
-    done
+    done< <(echo $run | jq --raw-output '.[] | @sh')
     echo "###"
   done< <(cat $FILE_PATH/test_data/source_files/service.json | jq --raw-output '.[] | "\(.run)"')
 
