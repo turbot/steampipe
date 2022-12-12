@@ -2,19 +2,22 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "service stability" {
+  echo "# Setting up"
   steampipe query "select 1"
-  while read -r run; do
-    echo "###"
+  echo "# Setup Done"
+  echo "# Executing tests"
+  while read -r name run; do
+    echo "## Running $name"
+    cd $FILE_PATH
     while read -r cmd; do
-        echo $cmd
-        c=$($cmd)
-        assert_success
-        assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
-    done< <(echo $run | jq --raw-output '.[] | @sh')
-    echo "###"
-  done< <(cat $FILE_PATH/test_data/source_files/service.json | jq --raw-output '.[] | "\(.run)"')
-
-  fail "force fail"
+      echo "### Running '$cmd'"
+      STEAMPIPE_LOG=trace
+      x=$($cmd)
+      assert_success
+      assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
+    done< <(echo $run | jq --raw-output '.[] | @sh' | tr -d \')
+  done< <(cat $FILE_PATH/test_data/source_files/service.json | jq --raw-output '.[] | "\(.name) \(.run)"')
+  echo "# Execution Done"
 }
 
 # @test "implicit service from query" {

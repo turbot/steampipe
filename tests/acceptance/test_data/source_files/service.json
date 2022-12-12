@@ -1,14 +1,12 @@
-{
-  "test_name1": {
+[
+  {
+    "name": "query",
     "run": [
-      "steampipe query \"select 1\"",
-      "steampipe query \"select 2\""
+      "steampipe query \"select 1\""
     ]
   },
-  "test_name2": {
-    "run": [
-      "test2_run1",
-      "test2_run2"
-    ]
+  {
+    "name": "test_name2",
+    "run": []
   }
-}
+]
