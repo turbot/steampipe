@@ -117,9 +117,6 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 	// to get here, we must be a query provider
 
-	// TODO [node_reuse] validate we have either children or query
-	//r.SetError(ctx, fmt.Errorf("%s does not define query, SQL or nodes/edges", r.DashboardNode.Name()))
-
 	// if we have children and with runs, start them asyncronously (they may block waiting for our runtime dependencies)
 	r.executeChildrenAsync(ctx)
 
