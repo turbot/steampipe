@@ -9,8 +9,8 @@ import (
 
 // DashboardEdge is a struct representing a leaf dashboard node
 type DashboardEdge struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -25,10 +25,10 @@ func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) HclResource 
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	c := &DashboardEdge{
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{ShortName: shortName,
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{ShortName: shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 						DeclRange:       block.DefRange,

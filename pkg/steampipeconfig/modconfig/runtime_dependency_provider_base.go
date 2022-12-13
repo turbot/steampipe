@@ -6,17 +6,17 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type RuntimeDependencyProviderBase struct {
-	ModTreeItemBase
+type RuntimeDependencyProviderImpl struct {
+	ModTreeItemImpl
 	// required to allow partial decoding
-	RuntimeDependencyProviderBaseRemain hcl.Body `hcl:",remain" json:"-"`
+	RuntimeDependencyProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
 	// map of withs keyed by unqualified name
 	withs               map[string]*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency
 }
 
-func (b *RuntimeDependencyProviderBase) AddWith(with *DashboardWith) hcl.Diagnostics {
+func (b *RuntimeDependencyProviderImpl) AddWith(with *DashboardWith) hcl.Diagnostics {
 	if b.withs == nil {
 		b.withs = make(map[string]*DashboardWith)
 	}
@@ -32,11 +32,11 @@ func (b *RuntimeDependencyProviderBase) AddWith(with *DashboardWith) hcl.Diagnos
 	return nil
 }
 
-func (b *RuntimeDependencyProviderBase) GetWiths() []*DashboardWith {
+func (b *RuntimeDependencyProviderImpl) GetWiths() []*DashboardWith {
 	return maps.Values(b.withs)
 }
 
-func (b *RuntimeDependencyProviderBase) AddRuntimeDependencies(dependencies []*RuntimeDependency) {
+func (b *RuntimeDependencyProviderImpl) AddRuntimeDependencies(dependencies []*RuntimeDependency) {
 	if b.runtimeDependencies == nil {
 		b.runtimeDependencies = make(map[string]*RuntimeDependency)
 	}
@@ -45,7 +45,7 @@ func (b *RuntimeDependencyProviderBase) AddRuntimeDependencies(dependencies []*R
 	}
 }
 
-func (b *RuntimeDependencyProviderBase) MergeRuntimeDependencies(other QueryProvider) {
+func (b *RuntimeDependencyProviderImpl) MergeRuntimeDependencies(other QueryProvider) {
 	dependencies := other.GetRuntimeDependencies()
 	if b.runtimeDependencies == nil {
 		b.runtimeDependencies = make(map[string]*RuntimeDependency)
@@ -57,6 +57,6 @@ func (b *RuntimeDependencyProviderBase) MergeRuntimeDependencies(other QueryProv
 	}
 }
 
-func (b *RuntimeDependencyProviderBase) GetRuntimeDependencies() map[string]*RuntimeDependency {
+func (b *RuntimeDependencyProviderImpl) GetRuntimeDependencies() map[string]*RuntimeDependency {
 	return b.runtimeDependencies
 }

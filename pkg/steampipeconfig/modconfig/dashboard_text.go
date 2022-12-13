@@ -12,8 +12,8 @@ import (
 
 // DashboardText is a struct representing a leaf dashboard node
 type DashboardText struct {
-	ResourceWithMetadataBase
-	ModTreeItemBase
+	ResourceWithMetadataImpl
+	ModTreeItemImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -32,8 +32,8 @@ func NewDashboardText(block *hcl.Block, mod *Mod, shortName string) HclResource 
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	t := &DashboardText{
-		ModTreeItemBase: ModTreeItemBase{
-			HclResourceBase: HclResourceBase{
+		ModTreeItemImpl: ModTreeItemImpl{
+			HclResourceImpl: HclResourceImpl{
 				ShortName:       shortName,
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),

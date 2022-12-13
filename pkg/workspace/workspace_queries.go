@@ -99,18 +99,13 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (*modconf
 func (w *Workspace) ResolveQueryFromQueryProvider(queryProvider modconfig.QueryProvider, runtimeArgs *modconfig.QueryArgs) (*modconfig.ResolvedQuery, error) {
 	log.Printf("[TRACE] ResolveQueryFromQueryProvider for %s", queryProvider.Name())
 
-	// verify the resource has qa query or sql, if required
-	err := queryProvider.VerifyQuery(queryProvider)
-	if err != nil {
-		return nil, err
-	}
-
 	query := queryProvider.GetQuery()
 	sql := queryProvider.GetSQL()
 
 	params := queryProvider.GetParams()
 
 	// merge the base args with the runtime args
+	var err error
 	runtimeArgs, err = modconfig.MergeArgs(queryProvider, runtimeArgs)
 	if err != nil {
 		return nil, err

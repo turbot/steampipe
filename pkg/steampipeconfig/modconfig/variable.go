@@ -16,8 +16,8 @@ import (
 
 // Variable is a struct representing a Variable resource
 type Variable struct {
-	ResourceWithMetadataBase
-	ModTreeItemBase
+	ResourceWithMetadataImpl
+	ModTreeItemImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -48,8 +48,8 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 	}
 	fullName := fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name)
 	return &Variable{
-		ModTreeItemBase: ModTreeItemBase{
-			HclResourceBase: HclResourceBase{
+		ModTreeItemImpl: ModTreeItemImpl{
+			HclResourceImpl: HclResourceImpl{
 				ShortName:       v.Name,
 				Description:     &v.Description,
 				FullName:        fullName,

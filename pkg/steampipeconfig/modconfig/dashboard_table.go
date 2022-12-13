@@ -11,8 +11,8 @@ import (
 
 // DashboardTable is a struct representing a leaf dashboard node
 type DashboardTable struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -30,10 +30,10 @@ func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) HclResource
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	t := &DashboardTable{
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -64,13 +64,13 @@ func NewQueryDashboardTable(q ModTreeItem) (*DashboardTable, error) {
 
 	tableName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeTable, parsedName.Name)
 	c := &DashboardTable{
-		ResourceWithMetadataBase: ResourceWithMetadataBase{
+		ResourceWithMetadataImpl: ResourceWithMetadataImpl{
 			metadata: &ResourceMetadata{},
 		},
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       parsedName.Name,
 						FullName:        tableName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeTable, parsedName),

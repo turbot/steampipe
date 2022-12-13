@@ -22,7 +22,6 @@ func DecodeExpressionNested(expr hcl.Expression, ctx *hcl.EvalContext, val inter
 	//	_, shouldDecode = val.(modconfig.CtyValueProvider)
 	//}
 	//if shouldDecode {
-	// TODO use gohcl fxn
 	diags = DecodeExpression(expr, ctx, val)
 	if diags.HasErrors() {
 		return diags

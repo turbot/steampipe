@@ -5,10 +5,10 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type ModTreeItemBase struct {
-	HclResourceBase
+type ModTreeItemImpl struct {
+	HclResourceImpl
 	// required to allow partial decoding
-	ModTreeItemBaseRemain hcl.Body `hcl:",remain" json:"-"`
+	ModTreeItemRemain hcl.Body `hcl:",remain" json:"-"`
 
 	Mod   *Mod       `cty:"mod" json:"-"`
 	Paths []NodePath `column:"path,jsonb" json:"-"`
@@ -18,21 +18,21 @@ type ModTreeItemBase struct {
 }
 
 // AddParent implements ModTreeItem
-func (b *ModTreeItemBase) AddParent(parent ModTreeItem) error {
+func (b *ModTreeItemImpl) AddParent(parent ModTreeItem) error {
 	b.parents = append(b.parents, parent)
 	return nil
 }
 
 // GetParents implements ModTreeItem
-func (b *ModTreeItemBase) GetParents() []ModTreeItem {
+func (b *ModTreeItemImpl) GetParents() []ModTreeItem {
 	return b.parents
 }
 
 // GetChildren implements ModTreeItem
-func (b *ModTreeItemBase) GetChildren() []ModTreeItem {
+func (b *ModTreeItemImpl) GetChildren() []ModTreeItem {
 	return b.children
 }
-func (b *ModTreeItemBase) GetPaths() []NodePath {
+func (b *ModTreeItemImpl) GetPaths() []NodePath {
 	// lazy load
 	if len(b.Paths) == 0 {
 		b.SetPaths()
@@ -41,24 +41,24 @@ func (b *ModTreeItemBase) GetPaths() []NodePath {
 }
 
 // SetPaths implements ModTreeItem
-func (b *ModTreeItemBase) SetPaths() {
+func (b *ModTreeItemImpl) SetPaths() {
 	for _, parent := range b.parents {
 		for _, parentPath := range parent.GetPaths() {
 			b.Paths = append(b.Paths, append(parentPath, b.FullName))
 		}
 	}
 }
-func (b *ModTreeItemBase) GetMod() *Mod {
+func (b *ModTreeItemImpl) GetMod() *Mod {
 	return b.Mod
 }
 
 // GetModTreeItemBase implements ModTreeItem
-func (b *ModTreeItemBase) GetModTreeItemBase() *ModTreeItemBase {
+func (b *ModTreeItemImpl) GetModTreeItemImpl() *ModTreeItemImpl {
 	return b
 }
 
 // CtyValue implements CtyValueProvider
-func (b *ModTreeItemBase) CtyValue() (cty.Value, error) {
+func (b *ModTreeItemImpl) CtyValue() (cty.Value, error) {
 	if b.disableCtySerialise {
 		return cty.Zero, nil
 	}

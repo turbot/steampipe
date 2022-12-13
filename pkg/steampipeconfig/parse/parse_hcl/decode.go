@@ -9,6 +9,7 @@ import (
 	"reflect"
 )
 
+// TODO add options pattern and raise PR
 // DecodeBody extracts the configuration within the given body into the given
 // value. This value must be a non-nil pointer to either a struct or
 // a map, where in the former case the configuration will be decoded using
@@ -46,8 +47,8 @@ func decodeBodyToValue(body hcl.Body, ctx *hcl.EvalContext, val reflect.Value) h
 	}
 }
 
-// NOTE: change in behaviour from gohcl - when evaluating an expression, call DecodeExpressionNested instead of
-// DecodeExpression - this will populate nested structs from the cty value
+// NOTE: change in behaviour from gohcl - when evaluating an expression, call DecodeExpressionNested
+// instead of DecodeExpression - this will populate nested structs from the cty value
 func decodeBodyToStruct(body hcl.Body, ctx *hcl.EvalContext, val reflect.Value) hcl.Diagnostics {
 	schema, partial := ImpliedBodySchema(val.Interface())
 
@@ -285,7 +286,7 @@ func decodeBlockToValue(block *hcl.Block, ctx *hcl.EvalContext, v reflect.Value)
 // may still be accessed by a careful caller for static analysis and editor
 // integration use-cases.
 //
-// NOTE: change in behaviour from gohcl - if no ImpliedType can be determined, do not panic, just retuirn nil
+// NOTE: change in behaviour from gohcl - if no ImpliedType can be determined, do not panic, just return nil
 // this is to handle the case where we are trying to decode into a nested struct type which has no cty tags
 func DecodeExpression(expr hcl.Expression, ctx *hcl.EvalContext, val interface{}) hcl.Diagnostics {
 	srcVal, diags := expr.Value(ctx)

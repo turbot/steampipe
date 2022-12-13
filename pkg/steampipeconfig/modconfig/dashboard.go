@@ -15,9 +15,9 @@ const runtimeDependencyDashboardScope = "self"
 
 // Dashboard is a struct representing the Dashboard  resource
 type Dashboard struct {
-	ResourceWithMetadataBase
+	ResourceWithMetadataImpl
 	// dashboards are with providers
-	RuntimeDependencyProviderBase
+	RuntimeDependencyProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -39,9 +39,9 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	c := &Dashboard{
-		RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-			ModTreeItemBase: ModTreeItemBase{
-				HclResourceBase: HclResourceBase{
+		RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+			ModTreeItemImpl: ModTreeItemImpl{
+				HclResourceImpl: HclResourceImpl{
 					ShortName:       shortName,
 					FullName:        fullName,
 					UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -68,12 +68,12 @@ func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
 	dashboardName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeDashboard, parsedName.Name)
 
 	var dashboard = &Dashboard{
-		ResourceWithMetadataBase: ResourceWithMetadataBase{
+		ResourceWithMetadataImpl: ResourceWithMetadataImpl{
 			metadata: &ResourceMetadata{},
 		},
-		RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-			ModTreeItemBase: ModTreeItemBase{
-				HclResourceBase: HclResourceBase{
+		RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+			ModTreeItemImpl: ModTreeItemImpl{
+				HclResourceImpl: HclResourceImpl{
 					ShortName:       parsedName.Name,
 					FullName:        dashboardName,
 					UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),

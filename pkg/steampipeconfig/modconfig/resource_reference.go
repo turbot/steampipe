@@ -7,7 +7,7 @@ import (
 )
 
 type ResourceReference struct {
-	ResourceWithMetadataBase
+	ResourceWithMetadataImpl
 
 	To        string `cty:"reference_to" column:"reference_to,text"`
 	From      string `cty:"reference_from" column:"reference_from,text"`

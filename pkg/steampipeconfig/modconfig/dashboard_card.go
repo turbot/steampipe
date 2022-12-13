@@ -12,8 +12,8 @@ import (
 
 // DashboardCard is a struct representing a leaf dashboard node
 type DashboardCard struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -37,10 +37,10 @@ type DashboardCard struct {
 func NewDashboardCard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	c := &DashboardCard{
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -65,7 +65,7 @@ func (c *DashboardCard) Equals(other *DashboardCard) bool {
 // OnDecoded implements HclResource
 func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
-	return c.QueryProviderBase.OnDecoded(block, resourceMapProvider)
+	return c.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 // AddReference implements ResourceWithMetadata
@@ -134,8 +134,8 @@ func (c *DashboardCard) GetType() string {
 	return typehelpers.SafeString(c.Type)
 }
 
-// VerifyQuery implements QueryProvider
-func (c *DashboardCard) VerifyQuery(QueryProvider) error {
+// ValidateQuery implements QueryProvider
+func (c *DashboardCard) ValidateQuery() hcl.Diagnostics {
 	// query is optional - nothing to do
 	return nil
 }

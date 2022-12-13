@@ -6,9 +6,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type HclResourceBase struct {
+type HclResourceImpl struct {
 	// required to allow partial decoding
-	HclResourceBaseRemain hcl.Body `hcl:",remain" json:"-"`
+	HclResourceRemain hcl.Body `hcl:",remain" json:"-"`
 
 	FullName            string            `cty:"name" json:"-"`
 	Title               *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
@@ -25,47 +25,47 @@ type HclResourceBase struct {
 
 // Name implements HclResource
 // return name in format: '<blocktype>.<shortName>'
-func (b *HclResourceBase) Name() string {
+func (b *HclResourceImpl) Name() string {
 	return b.FullName
 }
 
 // GetTitle implements HclResource
-func (b *HclResourceBase) GetTitle() string {
+func (b *HclResourceImpl) GetTitle() string {
 	return typehelpers.SafeString(b.Title)
 }
 
 // GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (b *HclResourceBase) GetUnqualifiedName() string {
+func (b *HclResourceImpl) GetUnqualifiedName() string {
 	return b.UnqualifiedName
 }
 
 // OnDecoded implements HclResource
-func (b *HclResourceBase) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (b *HclResourceImpl) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 
 // GetDeclRange implements HclResource
-func (b *HclResourceBase) GetDeclRange() *hcl.Range {
+func (b *HclResourceImpl) GetDeclRange() *hcl.Range {
 	return &b.DeclRange
 }
 
 // BlockType implements HclResource
-func (b *HclResourceBase) BlockType() string {
+func (b *HclResourceImpl) BlockType() string {
 	return b.blockType
 }
 
 // GetDescription implements HclResource
-func (b *HclResourceBase) GetDescription() string {
+func (b *HclResourceImpl) GetDescription() string {
 	return typehelpers.SafeString(b.Description)
 }
 
 // GetDocumentation implements HclResource
-func (b *HclResourceBase) GetDocumentation() string {
+func (b *HclResourceImpl) GetDocumentation() string {
 	return typehelpers.SafeString(b.Documentation)
 }
 
 // GetTags implements HclResource
-func (b *HclResourceBase) GetTags() map[string]string {
+func (b *HclResourceImpl) GetTags() map[string]string {
 	if b.Tags != nil {
 		return b.Tags
 	}
@@ -73,22 +73,22 @@ func (b *HclResourceBase) GetTags() map[string]string {
 }
 
 // GetHclResourceBase implements HclResource
-func (b *HclResourceBase) GetHclResourceBase() *HclResourceBase {
+func (b *HclResourceImpl) GetHclResourceImpl() *HclResourceImpl {
 	return b
 }
 
 // SetTopLevel implements HclResource
-func (b *HclResourceBase) SetTopLevel(isTopLevel bool) {
+func (b *HclResourceImpl) SetTopLevel(isTopLevel bool) {
 	b.isTopLevel = isTopLevel
 }
 
 // IsTopLevel implements HclResource
-func (b *HclResourceBase) IsTopLevel() bool {
+func (b *HclResourceImpl) IsTopLevel() bool {
 	return b.isTopLevel
 }
 
 // CtyValue implements CtyValueProvider
-func (b *HclResourceBase) CtyValue() (cty.Value, error) {
+func (b *HclResourceImpl) CtyValue() (cty.Value, error) {
 	if b.disableCtySerialise {
 		return cty.Zero, nil
 	}

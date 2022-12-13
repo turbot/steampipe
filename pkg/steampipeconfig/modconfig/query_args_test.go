@@ -320,10 +320,10 @@ func TestResolveAsString(t *testing.T) {
 			continue
 		}
 		query := &Control{
-			QueryProviderBase: QueryProviderBase{
-				RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-					ModTreeItemBase: ModTreeItemBase{
-						HclResourceBase: HclResourceBase{
+			QueryProviderImpl: QueryProviderImpl{
+				RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+					ModTreeItemImpl: ModTreeItemImpl{
+						HclResourceImpl: HclResourceImpl{
 							FullName: "control.test_control",
 						},
 					},

@@ -9,8 +9,8 @@ import (
 
 // DashboardWith is a struct representing a leaf dashboard node
 type DashboardWith struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -22,10 +22,10 @@ type DashboardWith struct {
 func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	// with blocks cannot be anonymous
 	c := &DashboardWith{
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),

@@ -11,8 +11,8 @@ import (
 
 // DashboardImage is a struct representing a leaf dashboard node
 type DashboardImage struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -30,10 +30,10 @@ type DashboardImage struct {
 
 func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	i := &DashboardImage{
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -113,8 +113,8 @@ func (*DashboardImage) GetType() string {
 	return ""
 }
 
-// VerifyQuery implements QueryProvider
-func (i *DashboardImage) VerifyQuery(QueryProvider) error {
+// ValidateQuery implements QueryProvider
+func (i *DashboardImage) ValidateQuery() hcl.Diagnostics {
 	// query is optional - nothing to do
 	return nil
 }
