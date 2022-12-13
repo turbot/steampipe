@@ -65,7 +65,7 @@ func (c *DashboardCard) Equals(other *DashboardCard) bool {
 // OnDecoded implements HclResource
 func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
-	return c.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
+	return nil
 }
 
 // AddReference implements ResourceWithMetadata

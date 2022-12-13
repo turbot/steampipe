@@ -92,6 +92,19 @@ func (t *DashboardTable) Equals(other *DashboardTable) bool {
 	return !diff.HasChanges()
 }
 
+// OnDecoded implements HclResource
+func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	t.setBaseProperties(resourceMapProvider)
+	// populate columns map
+	if len(t.ColumnList) > 0 {
+		t.Columns = make(map[string]*DashboardTableColumn, len(t.ColumnList))
+		for _, c := range t.ColumnList {
+			t.Columns[c.Name] = c
+		}
+	}
+	return nil
+}
+
 // AddReference implements ResourceWithMetadata
 func (t *DashboardTable) AddReference(ref *ResourceReference) {
 	t.References = append(t.References, ref)
