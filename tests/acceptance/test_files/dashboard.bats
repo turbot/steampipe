@@ -19,7 +19,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "dashboard with 'with' blocks" {
-  skip
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_with_blocks --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_withs"
 
@@ -30,7 +29,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # returns nothing if there is no diff(except start_time, end_time & search_path)
   diff=$($FILE_PATH/test_files/json_patch.sh $output)
   echo $diff
-  # rm -f test.sps
+  rm -f test.sps
 
   # check if there is no diff returned by the script
   assert_equal "$diff" ""
