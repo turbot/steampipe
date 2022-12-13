@@ -179,7 +179,8 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 			}
 		case *modconfig.DashboardInput:
 			// NOTE: clone the input to avoid mutating the original
-			// TODO [reports] remove the need for this when we refactor input values resolution
+			// TODO remove the need for this when we refactor input values resolution
+			// TODO https://github.com/turbot/steampipe/issues/2864
 			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
 			if err != nil {
 				return err

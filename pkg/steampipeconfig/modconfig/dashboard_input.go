@@ -21,6 +21,9 @@ type DashboardInput struct {
 	Label         *string                 `cty:"label" hcl:"label" column:"label,text" json:"label,omitempty"`
 	Placeholder   *string                 `cty:"placeholder" hcl:"placeholder" column:"placeholder,text" json:"placeholder,omitempty"`
 	Options       []*DashboardInputOption `cty:"options" hcl:"option,block" json:"options,omitempty"`
+	// tactical - exists purely so we can put "unqualified_name" in the snbapshot panel for the input
+	// TODO remove when input names are refactored https://github.com/turbot/steampipe/issues/2863
+	InputName string `cty:"input_name" json:"unqualified_name"`
 
 	// these properties are JSON serialised by the parent LeafRun
 	Width      *int                 `cty:"width" hcl:"width" column:"width,text" json:"-"`
@@ -50,9 +53,14 @@ func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource
 			},
 		},
 	}
+
+	// tactical set input name
+	i.InputName = i.UnqualifiedName
+
 	return i
 }
 
+// TODO remove https://github.com/turbot/steampipe/issues/2864
 func (i *DashboardInput) Clone() *DashboardInput {
 	return &DashboardInput{
 		ResourceWithMetadataImpl: i.ResourceWithMetadataImpl,
@@ -63,6 +71,7 @@ func (i *DashboardInput) Clone() *DashboardInput {
 		Placeholder:              i.Placeholder,
 		Display:                  i.Display,
 		Options:                  i.Options,
+		InputName:                i.InputName,
 		dashboard:                i.dashboard,
 	}
 }
