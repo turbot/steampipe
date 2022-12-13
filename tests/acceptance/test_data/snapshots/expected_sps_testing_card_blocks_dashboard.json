@@ -1,90 +1,89 @@
 {
-  "end_time": "2022-12-08T14:28:48.089836+05:30",
-  "inputs": {},
-  "layout": {
-      "children": [
-          {
-              "children": [
-                  {
-                      "name": "dashboard_cards.card.card1",
-                      "panel_type": "card"
-                  },
-                  {
-                      "name": "dashboard_cards.card.card2",
-                      "panel_type": "card"
-                  }
-              ],
-              "name": "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0",
-              "panel_type": "container"
-          }
-      ],
-      "name": "dashboard_cards.dashboard.testing_card_blocks",
-      "panel_type": "dashboard"
-  },
-  "panels": {
-      "dashboard_cards.card.card1": {
-          "dashboard": "dashboard.testing_card_blocks",
-          "data": {
-              "columns": [
-                  {
-                      "data_type": "INT4",
-                      "name": "card1_value"
-                  }
-              ],
-              "rows": [
-                  {
-                      "card1_value": 1
-                  }
-              ]
-          },
-          "name": "dashboard_cards.card.card1",
-          "panel_type": "card",
-          "properties": {
-              "Withs": null
-          },
-          "status": "complete",
-          "width": 2
-      },
-      "dashboard_cards.card.card2": {
-          "dashboard": "dashboard.testing_card_blocks",
-          "data": {
-              "columns": [
-                  {
-                      "data_type": "INT4",
-                      "name": "card2_value"
-                  }
-              ],
-              "rows": [
-                  {
-                      "card2_value": 2
-                  }
-              ]
-          },
-          "display_type": "info",
-          "name": "dashboard_cards.card.card2",
-          "panel_type": "card",
-          "properties": {
-              "Withs": null
-          },
-          "status": "complete",
-          "width": 2
-      },
-      "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0": {
-          "dashboard": "dashboard.testing_card_blocks",
-          "name": "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0",
-          "panel_type": "container",
-          "status": "complete"
-      },
-      "dashboard_cards.dashboard.testing_card_blocks": {
-          "dashboard": "dashboard.testing_card_blocks",
-          "name": "dashboard_cards.dashboard.testing_card_blocks",
-          "panel_type": "dashboard",
-          "status": "complete",
-          "title": "Testing card blocks"
-      }
-  },
-  "schema_version": "20220929",
-  "search_path": [],
-  "start_time": "2022-12-08T14:28:48.082183+05:30",
-  "variables": {}
+    "end_time": "2022-12-13T13:07:02.987267+05:30",
+    "inputs": {},
+    "layout": {
+        "children": [
+            {
+                "children": [
+                    {
+                        "name": "dashboard_cards.card.card1",
+                        "panel_type": "card"
+                    },
+                    {
+                        "name": "dashboard_cards.card.card2",
+                        "panel_type": "card"
+                    }
+                ],
+                "name": "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0",
+                "panel_type": "container"
+            }
+        ],
+        "name": "dashboard_cards.dashboard.testing_card_blocks",
+        "panel_type": "dashboard"
+    },
+    "panels": {
+        "dashboard_cards.card.card1": {
+            "dashboard": "dashboard.testing_card_blocks",
+            "data": {
+                "columns": [
+                    {
+                        "data_type": "INT4",
+                        "name": "card1_value"
+                    }
+                ],
+                "rows": [
+                    {
+                        "card1_value": 1
+                    }
+                ]
+            },
+            "name": "dashboard_cards.card.card1",
+            "panel_type": "card",
+            "properties": {
+                "unqualified_name": "card.card1"
+            },
+            "status": "complete",
+            "width": 2
+        },
+        "dashboard_cards.card.card2": {
+            "dashboard": "dashboard.testing_card_blocks",
+            "data": {
+                "columns": [
+                    {
+                        "data_type": "INT4",
+                        "name": "card2_value"
+                    }
+                ],
+                "rows": [
+                    {
+                        "card2_value": 2
+                    }
+                ]
+            },
+            "display_type": "info",
+            "name": "dashboard_cards.card.card2",
+            "panel_type": "card",
+            "properties": {
+                "unqualified_name": "card.card2"
+            },
+            "status": "complete",
+            "width": 2
+        },
+        "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0": {
+            "dashboard": "dashboard.testing_card_blocks",
+            "name": "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0",
+            "panel_type": "container",
+            "status": "complete"
+        },
+        "dashboard_cards.dashboard.testing_card_blocks": {
+            "dashboard": "dashboard.testing_card_blocks",
+            "name": "dashboard_cards.dashboard.testing_card_blocks",
+            "panel_type": "dashboard",
+            "status": "complete",
+            "title": "Testing card blocks"
+        }
+    },
+    "schema_version": "20220929",
+    "start_time": "2022-12-13T13:07:02.979018+05:30",
+    "variables": {}
 }
