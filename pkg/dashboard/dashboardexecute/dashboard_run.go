@@ -3,7 +3,6 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -11,17 +10,7 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
-	RuntimeDependencyPublisherBase
-
-	Width            int               `json:"width,omitempty"`
-	Description      string            `json:"description,omitempty"`
-	Display          string            `json:"display,omitempty"`
-	Documentation    string            `json:"documentation,omitempty"`
-	Tags             map[string]string `json:"tags,omitempty"`
-	ErrorString      string            `json:"error,omitempty"`
-	NodeType         string            `json:"panel_type"`
-	DashboardName    string            `json:"dashboard"`
-	SourceDefinition string            `json:"source_definition"`
+	RuntimeDependencyPublisherImpl
 
 	parent    dashboardtypes.DashboardParent
 	dashboard *modconfig.Dashboard
@@ -31,11 +20,14 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	res := &dashboardtypes.SnapshotTreeNode{
 		Name:     r.Name,
 		NodeType: r.NodeType,
-		Children: make([]*dashboardtypes.SnapshotTreeNode, len(r.children)),
+		Children: make([]*dashboardtypes.SnapshotTreeNode, 0, len(r.children)),
 	}
 
-	for i, c := range r.children {
-		res.Children[i] = c.AsTreeNode()
+	for _, c := range r.children {
+		// NOTE: exclude with runs
+		if c.GetNodeType() != modconfig.BlockTypeWith {
+			res.Children = append(res.Children, c.AsTreeNode())
+		}
 	}
 
 	return res
@@ -44,26 +36,16 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 // TODO can dashboards have params????
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
 	r := &DashboardRun{
-		// create RuntimeDependencyPublisherBase- this handles 'with' run creation and runtime dependency resolution
-		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(dashboard, executionTree, executionTree),
-		NodeType:                       modconfig.BlockTypeDashboard,
-		DashboardName:                  executionTree.dashboardName,
-		Description:                    typehelpers.SafeString(dashboard.Description),
-		Display:                        typehelpers.SafeString(dashboard.Display),
-		Documentation:                  typehelpers.SafeString(dashboard.Documentation),
-		Tags:                           dashboard.Tags,
-		SourceDefinition:               dashboard.GetMetadata().SourceDefinition,
+		// create RuntimeDependencyPublisherImpl- this handles 'with' run creation and runtime dependency resolution
+		RuntimeDependencyPublisherImpl: *NewRuntimeDependencyPublisherImpl(dashboard, executionTree, executionTree),
 		parent:                         parent,
 		dashboard:                      dashboard,
 	}
-	if dashboard.Width != nil {
-		r.Width = *dashboard.Width
-	}
 
-	// set inputs map on RuntimeDependencyPublisherBase BEFORE creating child runs
+	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()
 
-	// after setting inputs, init runtime dependencies
+	// after setting inputs, init runtime dependencies. this creates with runs and adds them to our children
 	err := r.initRuntimeDependencies()
 	if err != nil {
 		return nil, err
@@ -162,6 +144,9 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 		var childRun dashboardtypes.DashboardTreeRun
 		var err error
 		switch i := child.(type) {
+		case *modconfig.DashboardWith:
+			// ignore as with runs are created by RuntimeDependencyPublisherImpl
+			continue
 		case *modconfig.Dashboard:
 			childRun, err = NewDashboardRun(i, r, executionTree)
 			if err != nil {

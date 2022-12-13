@@ -116,9 +116,6 @@ func (e *DashboardEdge) GetType() string {
 	return ""
 }
 
-// IsSnapshotPanel implements SnapshotPanel
-func (*DashboardEdge) IsSnapshotPanel() {}
-
 // CtyValue implements CtyValueProvider
 func (e *DashboardEdge) CtyValue() (cty.Value, error) {
 	return GetCtyValue(e)

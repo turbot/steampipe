@@ -17,5 +17,6 @@ type DashboardTreeRun interface {
 	SetComplete(context.Context)
 	RunComplete() bool
 	GetInputsDependingOn(string) []string
+	GetNodeType() string
 	AsTreeNode() *SnapshotTreeNode
 }

@@ -190,6 +190,11 @@ func (e *DashboardExecutionTree) GetParent() dashboardtypes.DashboardParent {
 	return nil
 }
 
+// GetNodeType implements DashboardTreeRun
+func (*DashboardExecutionTree) GetNodeType() string {
+	panic("should never call for DashboardExecutionTree")
+}
+
 func (e *DashboardExecutionTree) SetInputValues(inputValues map[string]any) {
 	log.Printf("[TRACE] SetInputValues")
 	e.inputLock.Lock()
@@ -264,13 +269,6 @@ func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.
 		}
 		if p, ok := c.(dashboardtypes.DashboardParent); ok {
 			res = e.buildSnapshotPanelsUnder(p, res)
-		}
-	}
-	// if the parent is a RuntimeDependencyPublisher, include all its `with` runs
-	if rdp, ok := parent.(RuntimeDependencyPublisher); ok {
-		for withName, withRun := range rdp.GetWithRuns() {
-			scopedName := fmt.Sprintf("%s.%s", rdp.GetName(), withName)
-			res[scopedName] = withRun
 		}
 	}
 
