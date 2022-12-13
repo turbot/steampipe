@@ -5,7 +5,6 @@ import Icon from "../../../Icon";
 import IntegerDisplay from "../../../IntegerDisplay";
 import RowProperties, { RowPropertiesTitle } from "./RowProperties";
 import Tooltip from "./Tooltip";
-import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import usePaginatedList from "../../../../hooks/usePaginatedList";
 import { buildLabelTextShadow } from "./utils";
 import {
@@ -18,7 +17,6 @@ import {
 } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { ExpandedNodeInfo, useGraph } from "../common/useGraph";
-import { getColorOverride } from "../../common";
 import { Handle } from "reactflow";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../../hooks/useDashboard";
@@ -85,24 +83,21 @@ type RefoldNodeControlProps = {
 const FoldedNodeTooltipTitle = ({
   category,
   foldedNodesCount,
-}: FoldedNodeTooltipTitleProps) => {
-  const themeColors = useChartThemeColors();
-  return (
-    <div className="flex flex-col space-y-1">
-      {category && (
-        <span
-          className="block text-foreground-lighter text-xs"
-          style={{ color: getColorOverride(category.color, themeColors) }}
-        >
-          {category.title || category.name}
-        </span>
-      )}
-      <strong className="block">
-        <IntegerDisplay num={foldedNodesCount} /> nodes
-      </strong>
-    </div>
-  );
-};
+}: FoldedNodeTooltipTitleProps) => (
+  <div className="flex flex-col space-y-1">
+    {category && (
+      <span
+        className="block text-foreground-lighter text-xs"
+        style={{ color: category.color }}
+      >
+        {category.title || category.name}
+      </span>
+    )}
+    <strong className="block">
+      <IntegerDisplay num={foldedNodesCount} /> nodes
+    </strong>
+  </div>
+);
 
 const FolderNodeTooltipNodes = ({
   foldedNodes,

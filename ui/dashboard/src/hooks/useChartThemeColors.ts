@@ -1,3 +1,4 @@
+import { KeyValueStringPairs } from "../components/dashboards/common/types";
 import { useDashboard } from "./useDashboard";
 import { useCallback, useEffect, useState } from "react";
 
@@ -48,13 +49,15 @@ const useChartThemeColors = () => {
         alert,
         info,
         ok,
-      };
+      } as KeyValueStringPairs;
     } else {
       return {};
     }
   }, [wrapperRef]);
 
-  const [themeColors, setThemeColors] = useState(getThemeColors());
+  const [themeColors, setThemeColors] = useState<KeyValueStringPairs>(
+    getThemeColors()
+  );
   const [random, setRandom] = useState<number | null>(null);
 
   useEffect(() => {

@@ -661,10 +661,7 @@ const buildNodesAndEdges = (
       const overrides = categoryProperties[category];
       const categorySettings: Category = {};
       if (overrides) {
-        const overrideColor = getColorOverride(
-          overrides.color,
-          namedThemeColors
-        );
+        const overrideColor = overrides.color;
         // @ts-ignore
         categorySettings.color = overrideColor
           ? overrideColor

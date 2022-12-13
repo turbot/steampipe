@@ -1,5 +1,4 @@
 import isEmpty from "lodash/isEmpty";
-import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import useTemplateRender from "../../../../hooks/useTemplateRender";
 import {
@@ -11,7 +10,6 @@ import {
 import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive } from "../../../../types";
 import { ErrorIcon } from "../../../../constants/icons";
-import { getColorOverride } from "../../common";
 import { isRelativeUrl } from "../../../../utils/url";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
@@ -33,22 +31,19 @@ interface RowPropertyItemProps {
   wrap: boolean;
 }
 
-const RowPropertiesTitle = ({ category, title }: RowPropertiesTitleProps) => {
-  const themeColors = useChartThemeColors();
-  return (
-    <div className="flex flex-col space-y-1">
-      {category && (
-        <span
-          className="block text-foreground-lighter text-xs"
-          style={{ color: getColorOverride(category.color, themeColors) }}
-        >
-          {category.title || category.name}
-        </span>
-      )}
-      <strong className="block">{title}</strong>
-    </div>
-  );
-};
+const RowPropertiesTitle = ({ category, title }: RowPropertiesTitleProps) => (
+  <div className="flex flex-col space-y-1">
+    {category && (
+      <span
+        className="block text-foreground-lighter text-xs"
+        style={{ color: category.color }}
+      >
+        {category.title || category.name}
+      </span>
+    )}
+    <strong className="block">{title}</strong>
+  </div>
+);
 
 const RowPropertyItemValue = ({
   name,

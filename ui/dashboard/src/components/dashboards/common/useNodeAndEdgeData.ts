@@ -1,13 +1,16 @@
 import has from "lodash/has";
 import isNumber from "lodash/isNumber";
+import useChartThemeColors from "../../../hooks/useChartThemeColors";
 import {
   Category,
   CategoryMap,
   EdgeProperties,
+  KeyValueStringPairs,
   NodeAndEdgeProperties,
   NodeProperties,
 } from "./types";
 import { DashboardRunState, PanelsMap } from "../../../types";
+import { getColorOverride } from "./index";
 import {
   NodeAndEdgeData,
   NodeAndEdgeDataColumn,
@@ -66,10 +69,13 @@ const addColumnsForResource = (
   return newColumns;
 };
 
-const populateCategoryWithDefaults = (category: Category): Category => {
+const populateCategoryWithDefaults = (
+  category: Category,
+  themeColors: KeyValueStringPairs
+): Category => {
   return {
     name: category.name,
-    color: category.color,
+    color: getColorOverride(category.color, themeColors),
     depth: category.depth,
     fields: category.fields,
     fold: {
@@ -98,6 +104,7 @@ const useNodeAndEdgeData = (
   status: DashboardRunState
 ) => {
   const { panelsMap } = useDashboard();
+  const themeColors = useChartThemeColors();
   const dataFormat = getNodeAndEdgeDataFormat(properties);
   const panels = useMemo(() => {
     if (dataFormat === "LEGACY") {
@@ -115,7 +122,10 @@ const useNodeAndEdgeData = (
         for (const [name, category] of Object.entries(
           properties?.categories || {}
         )) {
-          categories[name] = populateCategoryWithDefaults(category);
+          categories[name] = populateCategoryWithDefaults(
+            category,
+            themeColors
+          );
         }
 
         return data ? { categories, data, dataFormat, properties } : null;
@@ -134,7 +144,7 @@ const useNodeAndEdgeData = (
     for (const [name, category] of Object.entries(
       properties?.categories || {}
     )) {
-      categories[name] = populateCategoryWithDefaults(category);
+      categories[name] = populateCategoryWithDefaults(category, themeColors);
     }
 
     const missingNodes = {};
@@ -172,7 +182,10 @@ const useNodeAndEdgeData = (
       let nodeCategory: Category | null = null;
       let nodeCategoryId: string = "";
       if (nodeProperties.category) {
-        nodeCategory = populateCategoryWithDefaults(nodeProperties.category);
+        nodeCategory = populateCategoryWithDefaults(
+          nodeProperties.category,
+          themeColors
+        );
         nodeCategoryId = `node.${nodePanelName}.${nodeCategory.name}`;
         categories[nodeCategoryId] = nodeCategory;
       }
@@ -247,7 +260,10 @@ const useNodeAndEdgeData = (
       let edgeCategory: Category | null = null;
       let edgeCategoryId: string = "";
       if (edgeProperties.category) {
-        edgeCategory = populateCategoryWithDefaults(edgeProperties.category);
+        edgeCategory = populateCategoryWithDefaults(
+          edgeProperties.category,
+          themeColors
+        );
         edgeCategoryId = `edge.${edgePanelName}.${edgeCategory.name}`;
         categories[edgeCategoryId] = edgeCategory;
       }
@@ -325,7 +341,7 @@ const useNodeAndEdgeData = (
       properties,
       status: nodeAndEdgeStatus,
     };
-  }, [data, dataFormat, panels, properties, status]);
+  }, [data, dataFormat, panels, properties, status, themeColors]);
 };
 
 export default useNodeAndEdgeData;

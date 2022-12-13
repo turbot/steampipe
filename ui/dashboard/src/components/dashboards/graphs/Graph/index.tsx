@@ -20,7 +20,6 @@ import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   foldNodesAndEdges,
-  getColorOverride,
   LeafNodeData,
 } from "../../common";
 import {
@@ -153,10 +152,7 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = node.category
       ? nodesAndEdges.categories[node.category]
       : null;
-    let categoryColor = getColorOverride(
-      matchingCategory ? matchingCategory.color : null,
-      themeColors
-    );
+    let categoryColor = matchingCategory ? matchingCategory.color : null;
     if (categoryColor === "auto") {
       categoryColor = null;
     }
@@ -198,10 +194,7 @@ const buildGraphNodesAndEdges = (
     const matchingCategory = edge.category
       ? nodesAndEdges.categories[edge.category]
       : null;
-    let categoryColor = getColorOverride(
-      matchingCategory ? matchingCategory.color : null,
-      themeColors
-    );
+    let categoryColor = matchingCategory ? matchingCategory.color : null;
     if (categoryColor === "auto") {
       categoryColor = null;
     }
@@ -215,9 +208,9 @@ const buildGraphNodesAndEdges = (
       }
     }
     const color = categoryColor
-      ? getColorOverride(categoryColor, themeColors)
+      ? categoryColor
       : targetNodeColor
-      ? getColorOverride(targetNodeColor, themeColors)
+      ? targetNodeColor
       : themeColors.blackScale4;
     const labelOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
     const lineOpacity = categoryColor ? 1 : targetNodeColor ? 0.7 : 1;
