@@ -329,24 +329,25 @@ func (r *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (c
 	if ctyValue.Type().FriendlyName() != "object" {
 		return ctyValue, nil
 	}
+	// TODO [node_reuse] fetch nested structs and serialise automatically
 	valueMap := ctyValue.AsValueMap()
 	if valueMap == nil {
 		valueMap = make(map[string]cty.Value)
 	}
-	base := resource.GetHclResourceBase()
+	base := resource.GetHclResourceImpl()
 	if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
 		return cty.Zero, r.errToCtyValueDiags(resource, err)
 	}
 
 	if qp, ok := resource.(modconfig.QueryProvider); ok {
-		base := qp.GetQueryProviderBase()
+		base := qp.GetQueryProviderImpl()
 		if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
 			return cty.Zero, r.errToCtyValueDiags(resource, err)
 		}
 	}
 
 	if treeItem, ok := resource.(modconfig.ModTreeItem); ok {
-		base := treeItem.GetModTreeItemBase()
+		base := treeItem.GetModTreeItemImpl()
 		if err := r.mergeResourceCtyValue(base, valueMap); err != nil {
 			return cty.Zero, r.errToCtyValueDiags(resource, err)
 		}

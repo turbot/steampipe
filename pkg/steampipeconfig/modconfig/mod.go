@@ -21,8 +21,8 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
-	ResourceWithMetadataBase
-	ModTreeItemBase
+	ResourceWithMetadataImpl
+	ModTreeItemImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -59,8 +59,8 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	require := NewRequire()
 	name := fmt.Sprintf("mod.%s", shortName)
 	mod := &Mod{
-		ModTreeItemBase: ModTreeItemBase{
-			HclResourceBase: HclResourceBase{
+		ModTreeItemImpl: ModTreeItemImpl{
+			HclResourceImpl: HclResourceImpl{
 				ShortName:       shortName,
 				FullName:        name,
 				UnqualifiedName: name,

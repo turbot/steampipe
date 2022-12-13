@@ -16,7 +16,7 @@ func (w *Workspace) GetQueryProvider(queryName string) (modconfig.QueryProvider,
 		if qp := resource.(modconfig.QueryProvider); ok {
 			return qp, true
 		}
-		log.Printf("[TRACE] GetQueryProvider found a resource for '%s' but it is not a query provider", queryName)
+		log.Printf("[TRACE] GetQueryProviderImpl found a resource for '%s' but it is not a query provider", queryName)
 	}
 
 	return nil, false
