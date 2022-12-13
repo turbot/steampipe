@@ -11,8 +11,8 @@ import (
 
 // DashboardHierarchy is a struct representing a leaf dashboard node
 type DashboardHierarchy struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -43,10 +43,10 @@ func NewDashboardHierarchy(block *hcl.Block, mod *Mod, shortName string) HclReso
 
 	h := &DashboardHierarchy{
 		Categories: make(map[string]*DashboardCategory),
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),

@@ -10,8 +10,8 @@ import (
 
 // DashboardGraph is a struct representing a leaf dashboard node
 type DashboardGraph struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -38,10 +38,10 @@ func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) HclResource
 
 	h := &DashboardGraph{
 		Categories: make(map[string]*DashboardCategory),
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),

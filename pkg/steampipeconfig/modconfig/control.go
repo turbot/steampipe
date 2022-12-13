@@ -13,8 +13,8 @@ import (
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -39,10 +39,10 @@ func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	control := &Control{
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 						ShortName:       shortName,
