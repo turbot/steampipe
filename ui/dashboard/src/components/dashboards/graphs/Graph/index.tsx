@@ -158,8 +158,8 @@ const buildGraphNodesAndEdges = (
     }
     nodes.push({
       type: "asset",
-      dragHandle: ".custom-drag-handle",
       id: node.id,
+      dragHandle: ".custom-drag-handle",
       position: { x: matchingNode.x, y: matchingNode.y },
       // height: 70,
       data: {

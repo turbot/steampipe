@@ -417,9 +417,9 @@ const AssetNode = ({
   return (
     <>
       {/*@ts-ignore*/}
-      <Handle type="target" />
+      <Handle className="hidden" isConnectable={false} type="target" />
       {/*@ts-ignore*/}
-      <Handle type="source" />
+      <Handle className="hidden" isConnectable={false} type="source" />
       {!hasProperties && !isFolded && wrappedNode}
       {hasProperties && !isFolded && (
         <Tooltip
