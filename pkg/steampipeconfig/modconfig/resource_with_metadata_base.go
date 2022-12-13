@@ -2,7 +2,7 @@ package modconfig
 
 import "github.com/hashicorp/hcl/v2"
 
-type ResourceWithMetadataBase struct {
+type ResourceWithMetadataImpl struct {
 	// required to allow partial decoding
 	ResourceWithMetadataBaseRemain hcl.Body `hcl:",remain" json:"-"`
 	metadata                       *ResourceMetadata
@@ -10,30 +10,30 @@ type ResourceWithMetadataBase struct {
 }
 
 // GetMetadata implements ResourceWithMetadata
-func (b *ResourceWithMetadataBase) GetMetadata() *ResourceMetadata {
+func (b *ResourceWithMetadataImpl) GetMetadata() *ResourceMetadata {
 	return b.metadata
 }
 
 // SetMetadata implements ResourceWithMetadata
-func (b *ResourceWithMetadataBase) SetMetadata(metadata *ResourceMetadata) {
+func (b *ResourceWithMetadataImpl) SetMetadata(metadata *ResourceMetadata) {
 	b.metadata = metadata
 	// set anonymous property on metadata
 	b.metadata.Anonymous = b.anonymous
 }
 
 // SetAnonymous implements ResourceWithMetadata
-func (b *ResourceWithMetadataBase) SetAnonymous(block *hcl.Block) {
+func (b *ResourceWithMetadataImpl) SetAnonymous(block *hcl.Block) {
 	b.anonymous = len(block.Labels) == 0
 }
 
 // IsAnonymous implements ResourceWithMetadata
-func (b *ResourceWithMetadataBase) IsAnonymous() bool {
+func (b *ResourceWithMetadataImpl) IsAnonymous() bool {
 	return b.anonymous
 }
 
-func (b *ResourceWithMetadataBase) AddReference(ref *ResourceReference) {
+func (b *ResourceWithMetadataImpl) AddReference(ref *ResourceReference) {
 }
 
-func (b *ResourceWithMetadataBase) GetReferences() []*ResourceReference {
+func (b *ResourceWithMetadataImpl) GetReferences() []*ResourceReference {
 	return nil
 }

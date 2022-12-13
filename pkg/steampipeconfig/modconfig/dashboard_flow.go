@@ -10,8 +10,8 @@ import (
 
 // DashboardFlow is a struct representing a leaf dashboard node
 type DashboardFlow struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -36,10 +36,10 @@ func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource 
 
 	h := &DashboardFlow{
 		Categories: make(map[string]*DashboardCategory),
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -142,8 +142,8 @@ func (f *DashboardFlow) GetType() string {
 	return typehelpers.SafeString(f.Type)
 }
 
-// VerifyQuery implements QueryProvider
-func (*DashboardFlow) VerifyQuery(QueryProvider) error {
+// ValidateQuery implements QueryProvider
+func (*DashboardFlow) ValidateQuery() hcl.Diagnostics {
 	// query is optional - nothing to do
 	return nil
 }

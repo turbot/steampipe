@@ -11,8 +11,8 @@ import (
 
 // DashboardInput is a struct representing a leaf dashboard node
 type DashboardInput struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -35,10 +35,10 @@ func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	// input cannot be anonymous
 	i := &DashboardInput{
-		QueryProviderBase: QueryProviderBase{
-			RuntimeDependencyProviderBase: RuntimeDependencyProviderBase{
-				ModTreeItemBase: ModTreeItemBase{
-					HclResourceBase: HclResourceBase{
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
@@ -55,8 +55,8 @@ func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource
 
 func (i *DashboardInput) Clone() *DashboardInput {
 	return &DashboardInput{
-		ResourceWithMetadataBase: i.ResourceWithMetadataBase,
-		QueryProviderBase:        i.QueryProviderBase,
+		ResourceWithMetadataImpl: i.ResourceWithMetadataImpl,
+		QueryProviderImpl:        i.QueryProviderImpl,
 		Width:                    i.Width,
 		Type:                     i.Type,
 		Label:                    i.Label,
@@ -150,13 +150,17 @@ func (i *DashboardInput) SetDashboard(dashboard *Dashboard) {
 	i.DashboardName = dashboard.Name()
 }
 
-// VerifyQuery implements QueryProvider
-func (i *DashboardInput) VerifyQuery(QueryProvider) error {
-	// query is optional - nothing to do
-	return nil
+// ValidateQuery implements QueryProvider
+func (i *DashboardInput) ValidateQuery() hcl.Diagnostics {
+	// inputs with placeholder or options do not need a query
+	if i.Placeholder != nil || len(i.Options) > 0 {
+		return nil
+	}
+
+	return i.QueryProviderImpl.ValidateQuery()
 }
 
-// DependsOnInput returns whether this input has a runtime dependency on the given input
+// DependsOnInput returns whether this input has a runtime dependency on the given input¬
 func (i *DashboardInput) DependsOnInput(changedInputName string) bool {
 	for _, r := range i.runtimeDependencies {
 		if r.SourceResourceName() == changedInputName {

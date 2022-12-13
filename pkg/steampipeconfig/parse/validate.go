@@ -3,7 +3,6 @@ package parse
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -41,6 +40,8 @@ func validateRuntimeDependencyProvider(resource modconfig.RuntimeDependencyProvi
 // validate that the provider does not contains both edges/nodes and a query/sql
 // enrich the loaded nodes and edges with the fully parsed resources from the resourceMapProvider
 func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Diagnostics {
+	// TODO [node_reuse] add NodeAndEdgeProviderImpl and move validate there
+
 	var diags hcl.Diagnostics
 	containsEdgesOrNodes := len(resource.GetEdges())+len(resource.GetNodes()) > 0
 	definesQuery := resource.GetSQL() != nil || resource.GetQuery() != nil
@@ -73,7 +74,7 @@ func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Dia
 func validateQueryProvider(resource modconfig.QueryProvider) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
-	diags = append(diags, validateSqlOrQuerySet(resource)...)
+	diags = append(diags, resource.ValidateQuery()...)
 
 	diags = append(diags, validateSqlAndQueryNotBothSet(resource)...)
 
@@ -102,24 +103,6 @@ func validateParamAndQueryNotBothSet(resource modconfig.QueryProvider) hcl.Diagn
 				Subject:  resource.GetDeclRange(),
 			})
 		}
-	}
-	return diags
-}
-
-func validateSqlOrQuerySet(resource modconfig.QueryProvider) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	// Top level resources (with the exceptions of controls and queries) are never executed directly,
-	// only used as base for a nested resource.
-	// Therefore only nested resources, controls and queries MUST have sql or a query defined
-	queryRequired := !resource.IsTopLevel() ||
-		helpers.StringSliceContains([]string{modconfig.BlockTypeQuery, modconfig.BlockTypeControl}, resource.BlockType())
-
-	if queryRequired && resource.GetSQL() == nil && resource.GetQuery() == nil {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s does not define a query or SQL", resource.Name()),
-			Subject:  resource.GetDeclRange(),
-		})
 	}
 	return diags
 }

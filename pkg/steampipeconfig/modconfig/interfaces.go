@@ -30,9 +30,9 @@ type HclResource interface {
 	GetDescription() string
 	GetDocumentation() string
 	GetTags() map[string]string
-	GetHclResourceBase() *HclResourceBase
 	SetTopLevel(bool)
 	IsTopLevel() bool
+	GetHclResourceImpl() *HclResourceImpl
 }
 
 // ModTreeItem must be implemented by elements of the mod resource hierarchy
@@ -46,7 +46,7 @@ type ModTreeItem interface {
 	GetPaths() []NodePath
 	SetPaths()
 	GetMod() *Mod
-	GetModTreeItemBase() *ModTreeItemBase
+	GetModTreeItemImpl() *ModTreeItemImpl
 }
 
 // RuntimeDependencyProvider is implemented by all QueryProviders and Dashboard
@@ -69,9 +69,9 @@ type QueryProvider interface {
 	SetParams([]*ParamDef)
 	GetResolvedQuery(*QueryArgs) (*ResolvedQuery, error)
 	RequiresExecution(QueryProvider) bool
-	VerifyQuery(QueryProvider) error
+	ValidateQuery() hcl.Diagnostics
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
-	GetQueryProviderBase() *QueryProviderBase
+	GetQueryProviderImpl() *QueryProviderImpl
 	ParamsInheritedFromBase() bool
 }
 
