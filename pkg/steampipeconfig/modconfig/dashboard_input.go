@@ -81,9 +81,6 @@ func (i *DashboardInput) Equals(other *DashboardInput) bool {
 	return !diff.HasChanges()
 }
 
-// IsSnapshotPanel implements SnapshotPanel
-func (*DashboardInput) IsSnapshotPanel() {}
-
 // OnDecoded implements HclResource
 func (i *DashboardInput) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	i.setBaseProperties(resourceMapProvider)

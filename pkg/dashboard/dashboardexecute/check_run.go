@@ -15,24 +15,12 @@ import (
 
 // CheckRun is a struct representing the execution of a control or benchmark
 type CheckRun struct {
-	DashboardTreeRunBase
-	DashboardParentBase
+	DashboardParentImpl
 
-	Width            int                          `json:"width,omitempty"`
-	Description      string                       `json:"description,omitempty"`
-	Documentation    string                       `json:"documentation,omitempty"`
-	Display          string                       `json:"display,omitempty"`
-	Type             string                       `json:"display_type,omitempty"`
-	Tags             map[string]string            `json:"tags,omitempty"`
-	ErrorString      string                       `json:"error,omitempty"`
-	NodeType         string                       `json:"panel_type"`
-	DashboardName    string                       `json:"dashboard"`
-	SourceDefinition string                       `json:"source_definition"`
-	Summary          *controlexecute.GroupSummary `json:"summary"`
-	SessionId        string                       `json:"-"`
+	Summary   *controlexecute.GroupSummary `json:"summary"`
+	SessionId string                       `json:"-"`
 	// if the dashboard node is a control, serialise to json as 'properties'
-	Control *modconfig.Control `json:"properties,omitempty"`
-
+	Control       *modconfig.Control               `json:"properties,omitempty"`
 	DashboardNode modconfig.DashboardLeafNode      `json:"-"`
 	Root          controlexecute.ExecutionTreeNode `json:"-"`
 
@@ -48,20 +36,14 @@ func (r *CheckRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
 	c := &CheckRun{
-		DashboardTreeRunBase: NewDashboardTreeRunBase(resource, nil, nil),
+		DashboardParentImpl: DashboardParentImpl{
+			DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, nil, nil),
+		},
 
-		Width:            resource.GetWidth(),
-		Description:      resource.GetDescription(),
-		Documentation:    resource.GetDocumentation(),
-		Display:          resource.GetDisplay(),
-		Type:             resource.GetType(),
-		Tags:             resource.GetTags(),
-		DashboardName:    executionTree.dashboardName,
-		SourceDefinition: resource.GetMetadata().SourceDefinition,
-		SessionId:        executionTree.sessionId,
-		executionTree:    executionTree,
-		DashboardNode:    resource,
-		parent:           parent,
+		SessionId:     executionTree.sessionId,
+		executionTree: executionTree,
+		DashboardNode: resource,
+		parent:        parent,
 
 		// set to complete, optimistically
 		// if any children have SQL we will set this to DashboardRunReady instead

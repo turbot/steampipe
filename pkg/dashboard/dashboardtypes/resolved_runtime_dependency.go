@@ -31,7 +31,7 @@ func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel
 	}
 }
 
-// ScopedName returns is a unique name for the depdency by prepending the publisher name
+// ScopedName returns is a unique name for the dependency by prepending the publisher name
 // this is used to uniquely identify which `with` is used - for the snapshot data
 func (d *ResolvedRuntimeDependency) ScopedName() string {
 	return fmt.Sprintf("%s.%s", d.publisherName, d.Dependency.SourceResourceName())

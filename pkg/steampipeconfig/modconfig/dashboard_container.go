@@ -2,12 +2,15 @@ package modconfig
 
 import (
 	"fmt"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	"github.com/turbot/steampipe/pkg/utils"
 )
+
+// TODO [node_reuse] add DashboardLeafNodeImpl
 
 // DashboardContainer is a struct representing the Dashboard and Container resource
 type DashboardContainer struct {
@@ -71,6 +74,24 @@ func (c *DashboardContainer) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (c *DashboardContainer) GetReferences() []*ResourceReference {
 	return c.References
+}
+
+// GetWidth implements DashboardLeafNode
+func (c *DashboardContainer) GetWidth() int {
+	if c.Width == nil {
+		return 0
+	}
+	return *c.Width
+}
+
+// GetDisplay implements DashboardLeafNode
+func (c *DashboardContainer) GetDisplay() string {
+	return typehelpers.SafeString(c.Display)
+}
+
+// GetType implements DashboardLeafNode
+func (c *DashboardContainer) GetType() string {
+	return ""
 }
 
 func (c *DashboardContainer) Diff(other *DashboardContainer) *DashboardTreeItemDiffs {

@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/zclconf/go-cty/cty"
 	"strings"
 
@@ -128,6 +129,24 @@ func (d *Dashboard) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (d *Dashboard) GetReferences() []*ResourceReference {
 	return d.References
+}
+
+// GetWidth implements DashboardLeafNode
+func (d *Dashboard) GetWidth() int {
+	if d.Width == nil {
+		return 0
+	}
+	return *d.Width
+}
+
+// GetDisplay implements DashboardLeafNode
+func (d *Dashboard) GetDisplay() string {
+	return typehelpers.SafeString(d.Display)
+}
+
+// GetType implements DashboardLeafNode
+func (d *Dashboard) GetType() string {
+	return ""
 }
 
 func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {
@@ -279,6 +298,7 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 	input, found := d.selfInputsMap[name]
 	return input, found
 }
+
 func (d *Dashboard) GetInputs() map[string]*DashboardInput {
 	return d.selfInputsMap
 }

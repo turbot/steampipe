@@ -7,13 +7,13 @@ import (
 	"log"
 )
 
-type DashboardParentBase struct {
-	DashboardTreeRunBase
+type DashboardParentImpl struct {
+	DashboardTreeRunImpl
 	children      []dashboardtypes.DashboardTreeRun
 	childComplete chan dashboardtypes.DashboardTreeRun
 }
 
-func (r *DashboardParentBase) initialiseChildren(ctx context.Context) error {
+func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {
 	var errors []error
 	for _, child := range r.children {
 		child.Initialise(ctx)
@@ -27,12 +27,12 @@ func (r *DashboardParentBase) initialiseChildren(ctx context.Context) error {
 }
 
 // GetChildren implements DashboardTreeRun
-func (r *DashboardParentBase) GetChildren() []dashboardtypes.DashboardTreeRun {
+func (r *DashboardParentImpl) GetChildren() []dashboardtypes.DashboardTreeRun {
 	return r.children
 }
 
 // ChildrenComplete implements DashboardTreeRun
-func (r *DashboardParentBase) ChildrenComplete() bool {
+func (r *DashboardParentImpl) ChildrenComplete() bool {
 	for _, child := range r.children {
 		if !child.RunComplete() {
 			return false
@@ -42,11 +42,11 @@ func (r *DashboardParentBase) ChildrenComplete() bool {
 	return true
 }
 
-func (r *DashboardParentBase) ChildCompleteChan() chan dashboardtypes.DashboardTreeRun {
+func (r *DashboardParentImpl) ChildCompleteChan() chan dashboardtypes.DashboardTreeRun {
 	return r.childComplete
 }
 
-func (r *DashboardParentBase) createChildCompleteChan() {
+func (r *DashboardParentImpl) createChildCompleteChan() {
 	// create buffered child complete chan
 	if childCount := len(r.children); childCount > 0 {
 		r.childComplete = make(chan dashboardtypes.DashboardTreeRun, childCount)
@@ -54,13 +54,13 @@ func (r *DashboardParentBase) createChildCompleteChan() {
 }
 
 // if this leaf run has children (including with runs) execute them asynchronously
-func (r *DashboardParentBase) executeChildrenAsync(ctx context.Context) {
+func (r *DashboardParentImpl) executeChildrenAsync(ctx context.Context) {
 	for _, c := range r.children {
 		go c.Execute(ctx)
 	}
 }
 
-func (r *DashboardParentBase) waitForChildren() chan error {
+func (r *DashboardParentImpl) waitForChildren() chan error {
 	var doneChan = make(chan error)
 	if len(r.children) == 0 {
 		// if there are no children, return a closed channel so we do not wait

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -13,14 +12,7 @@ import (
 
 // DashboardContainerRun is a struct representing a container run
 type DashboardContainerRun struct {
-	DashboardParentBase
-
-	Width            int    `json:"width,omitempty"`
-	Display          string `json:"display,omitempty"`
-	ErrorString      string `json:"error,omitempty"`
-	NodeType         string `json:"panel_type"`
-	DashboardName    string `json:"dashboard"`
-	SourceDefinition string `json:"source_definition"`
+	DashboardParentImpl
 
 	dashboardNode *modconfig.DashboardContainer
 }
@@ -41,14 +33,11 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	children := container.GetChildren()
 
 	r := &DashboardContainerRun{
-		DashboardParentBase: DashboardParentBase{
-			DashboardTreeRunBase: NewDashboardTreeRunBase(container, parent, executionTree),
+		DashboardParentImpl: DashboardParentImpl{
+			DashboardTreeRunImpl: NewDashboardTreeRunImpl(container, parent, executionTree),
 		},
-		NodeType:         modconfig.BlockTypeContainer,
-		DashboardName:    executionTree.dashboardName,
-		Display:          typehelpers.SafeString(container.Display),
-		SourceDefinition: container.GetMetadata().SourceDefinition,
-		dashboardNode:    container,
+
+		dashboardNode: container,
 	}
 	if container.Title != nil {
 		r.Title = *container.Title

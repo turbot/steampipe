@@ -111,9 +111,6 @@ func (n *DashboardNode) GetType() string {
 	return ""
 }
 
-// IsSnapshotPanel implements SnapshotPanel
-func (*DashboardNode) IsSnapshotPanel() {}
-
 // CtyValue implements CtyValueProvider
 func (n *DashboardNode) CtyValue() (cty.Value, error) {
 	return GetCtyValue(n)

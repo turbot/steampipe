@@ -64,9 +64,6 @@ func (w *DashboardWith) Diff(other *DashboardWith) *DashboardTreeItemDiffs {
 	return res
 }
 
-// IsSnapshotPanel implements SnapshotPanel
-func (*DashboardWith) IsSnapshotPanel() {}
-
 // GetWidth implements DashboardLeafNode
 func (*DashboardWith) GetWidth() int {
 	return 0

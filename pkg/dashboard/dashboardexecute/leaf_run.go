@@ -16,18 +16,11 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	RuntimeDependencyPublisherBase
+	RuntimeDependencyPublisherImpl
 
-	Width            int                         `json:"width,omitempty"`
-	Type             string                      `cty:"type" hcl:"type" column:"type,text" json:"display_type,omitempty"`
-	Display          string                      `cty:"display" hcl:"display" json:"display,omitempty"`
-	RawSQL           string                      `json:"sql,omitempty"`
-	Data             *dashboardtypes.LeafData    `json:"data,omitempty"`
-	ErrorString      string                      `json:"error,omitempty"`
-	Resource         modconfig.DashboardLeafNode `json:"properties,omitempty"`
-	NodeType         string                      `json:"panel_type"`
-	DashboardName    string                      `json:"dashboard"`
-	SourceDefinition string                      `json:"source_definition"`
+	RawSQL   string                      `json:"sql,omitempty"`
+	Data     *dashboardtypes.LeafData    `json:"data,omitempty"`
+	Resource modconfig.DashboardLeafNode `json:"properties,omitempty"`
 	// a list of the (scoped) names of any `withs` that we rely on
 	DependencyWiths []string                  `json:"withs,omitempty"`
 	TimingResult    *queryresult.TimingResult `json:"-"`
@@ -44,25 +37,16 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
 	r := &LeafRun{
-		// create RuntimeDependencyPublisherBase- this handles 'with' run creation and resolving runtime dependency resolution
-		RuntimeDependencyPublisherBase: *NewRuntimeDependencyPublisherBase(resource, parent, executionTree),
-		Width:                          resource.GetWidth(),
-		Type:                           resource.GetType(),
-		Display:                        resource.GetDisplay(),
+		// create RuntimeDependencyPublisherImpl- this handles 'with' run creation and resolving runtime dependency resolution
+		RuntimeDependencyPublisherImpl: *NewRuntimeDependencyPublisherImpl(resource, parent, executionTree),
 		Resource:                       resource,
-		DashboardName:                  executionTree.dashboardName,
-		SourceDefinition:               resource.GetMetadata().SourceDefinition,
 	}
 	err := r.initRuntimeDependencies()
 	if err != nil {
 		return nil, err
 	}
 
-	parsedName, err := modconfig.ParseResourceName(r.Name)
-	if err != nil {
-		return nil, err
-	}
-	r.NodeType = parsedName.ItemType
+	r.NodeType = resource.BlockType()
 
 	// if the node has no runtime dependencies, resolve the sql
 	if len(r.runtimeDependencies) == 0 {
@@ -96,6 +80,7 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 
 	// if the leaf run has children (nodes/edges) create a run for this too
 	for i, c := range children {
+		// TODO [node_reuse] what about with nodes - only relevant when running base withs
 		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), r, executionTree)
 		if err != nil {
 			errors = append(errors, err)
@@ -356,6 +341,9 @@ func (r *LeafRun) combineChildData() {
 func (r *LeafRun) setDependencyWiths() {
 	for _, d := range r.runtimeDependencies {
 		if d.Dependency.PropertyPath.ItemType == modconfig.BlockTypeWith {
+			// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
+			// we do this as there may be a with from a base resource with a clashing with name
+			// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
 			r.DependencyWiths = append(r.DependencyWiths, d.ScopedName())
 		}
 	}
