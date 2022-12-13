@@ -12,8 +12,8 @@ type HclResourceImpl struct {
 
 	FullName            string            `cty:"name" json:"-"`
 	Title               *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	ShortName           string            `cty:"short_name" hcl:"name,label" json:"-"`
-	UnqualifiedName     string            `cty:"unqualified_name" json:"unqualified_name"`
+	ShortName           string            `cty:"short_name" hcl:"name,label" json:"name"`
+	UnqualifiedName     string            `cty:"unqualified_name" json:"-"`
 	Description         *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
 	Documentation       *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
 	DeclRange           hcl.Range         `json:"-"`
