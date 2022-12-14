@@ -51,7 +51,7 @@ jobs:
       - name: Run CLI Unit Tests
         run: |
           go clean -testcache
-          go test -timeout 30s ./...
+          go test -timeout 30s ./... -test.v
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
