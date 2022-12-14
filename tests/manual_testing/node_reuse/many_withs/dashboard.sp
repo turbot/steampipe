@@ -27,7 +27,7 @@ dashboard "many_withs" {
         sql = <<-EOQ
       select
         $1 as id,
-        $1 as title
+        $1 as totle
   EOQ
         args = [ with.n1.rows[0]]
       }
@@ -52,3 +52,12 @@ dashboard "many_withs" {
   }
 }
 
+
+node "n3" {
+  sql = <<-EOQ
+      select
+        $1 as id,
+        $1 as totle,
+  EOQ
+  args = [ with.n1.rows[0]]
+}

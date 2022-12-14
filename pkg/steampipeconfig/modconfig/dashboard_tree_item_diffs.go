@@ -31,8 +31,8 @@ func (d *DashboardTreeItemDiffs) AddRemovedItem(name string) {
 
 func (d *DashboardTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTreeItem) {
 	// build map of child names
-	oldChildMap := make(map[string]bool)
-	newChildMap := make(map[string]bool)
+	oldChildMap := make(map[string]ModTreeItem)
+	newChildMap := make(map[string]ModTreeItem)
 
 	oldChildren := old.GetChildren()
 	newChildren := new.GetChildren()
@@ -42,19 +42,37 @@ func (d *DashboardTreeItemDiffs) populateChildDiffs(old ModTreeItem, new ModTree
 		if i < len(newChildren) && newChildren[i].Name() != child.Name() {
 			d.AddPropertyDiff("Children")
 		}
-		oldChildMap[child.Name()] = true
+		oldChildMap[child.Name()] = child
 	}
 	for _, child := range newChildren {
-		newChildMap[child.Name()] = true
+		newChildMap[child.Name()] = child
 	}
 
-	for childName := range oldChildMap {
-		if !newChildMap[childName] {
+	for childName, prevChild := range oldChildMap {
+		if child, existInNew := newChildMap[childName]; !existInNew {
 			d.AddRemovedItem(childName)
+		} else {
+			// so this resource exists on old and new
+
+			// TACTICAL
+			// some child resources are not added to the mod but we must consider them for the diff
+			var childDiff = &DashboardTreeItemDiffs{}
+			switch t := child.(type) {
+			case *DashboardWith:
+				childDiff = t.Diff(prevChild.(*DashboardWith))
+			case *DashboardNode:
+				childDiff = t.Diff(prevChild.(*DashboardNode))
+			case *DashboardEdge:
+				childDiff = t.Diff(prevChild.(*DashboardEdge))
+			}
+			if childDiff.HasChanges() {
+				d.AddPropertyDiff("Children")
+			}
+
 		}
 	}
 	for childName := range newChildMap {
-		if !oldChildMap[childName] {
+		if _, existsInOld := oldChildMap[childName]; !existsInOld {
 			d.AddAddedItem(childName)
 		}
 	}

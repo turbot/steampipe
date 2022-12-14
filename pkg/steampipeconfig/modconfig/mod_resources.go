@@ -637,6 +637,7 @@ func (m *ResourceMaps) AddResource(item HclResource) hcl.Diagnostics {
 			break
 		}
 		m.DashboardEdges[name] = r
+
 	case *DashboardCategory:
 		name := r.Name()
 		if existing, ok := m.DashboardCategories[name]; ok {

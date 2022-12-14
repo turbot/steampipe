@@ -78,17 +78,17 @@ func addResourceToMod(resource modconfig.HclResource, block *hcl.Block, parseCtx
 }
 
 func shouldAddToMod(resource modconfig.HclResource, block *hcl.Block, parseCtx *ModParseContext) bool {
-	// do not add mods
-	if _, ok := resource.(*modconfig.Mod); ok {
+	switch resource.(type) {
+	// do not add mods or withs
+	case *modconfig.Mod, *modconfig.DashboardWith:
 		return false
-	}
-
-	// if this is a dashboard category, only add top level blocks
-	// this is to allow nested categories to have the same name as top level categories
-	if _, ok := resource.(*modconfig.DashboardCategory); ok {
+	case *modconfig.DashboardCategory:
+		// if this is a dashboard category, only add top level blocks
+		// this is to allow nested categories to have the same name as top level categories
 		return parseCtx.IsTopLevelBlock(block)
+	default:
+		return true
 	}
-	return true
 }
 
 // special case decode logic for locals
