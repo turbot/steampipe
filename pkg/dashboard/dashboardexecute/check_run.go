@@ -37,7 +37,7 @@ func (r *CheckRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
 	c := &CheckRun{
 		DashboardParentImpl: DashboardParentImpl{
-			DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, nil, nil),
+			DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, executionTree, executionTree),
 		},
 
 		SessionId:     executionTree.sessionId,

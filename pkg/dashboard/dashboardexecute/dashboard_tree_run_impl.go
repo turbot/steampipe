@@ -30,7 +30,7 @@ func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashbo
 	// NOTE: for now we MUST declare children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
 	// so FOR NOW it is safe to use the container name directly as the run name
-	return DashboardTreeRunImpl{
+	res := DashboardTreeRunImpl{
 		Name:             resource.Name(),
 		Title:            resource.GetTitle(),
 		NodeType:         resource.BlockType(),
@@ -40,7 +40,6 @@ func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashbo
 		Documentation:    resource.GetDocumentation(),
 		Type:             resource.GetType(),
 		Tags:             resource.GetTags(),
-		DashboardName:    executionTree.dashboardName,
 		SourceDefinition: resource.GetMetadata().SourceDefinition,
 
 		// set to complete, optimistically
@@ -51,6 +50,15 @@ func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashbo
 		resource:      resource,
 	}
 
+	// TACTICAL if this run was created to create a snapshot output for a control run,
+	// there will be no execution tree
+	if executionTree != nil {
+		res.DashboardName = executionTree.dashboardName
+	} else {
+		// there is no execution tree - use the resource name as the dashboard name
+		res.DashboardName = resource.Name()
+	}
+	return res
 }
 
 // GetName implements DashboardTreeRun

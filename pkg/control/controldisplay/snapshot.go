@@ -29,7 +29,7 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 		dashboardNode = root.Control
 	}
 
-	// create a check run to wrap the execution tree
+	// TACTICAL create a check run to wrap the execution tree
 	checkRun = &dashboardexecute.CheckRun{
 		DashboardParentImpl: dashboardexecute.DashboardParentImpl{
 			DashboardTreeRunImpl: dashboardexecute.NewDashboardTreeRunImpl(dashboardNode, nil, nil),
