@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -30,21 +31,24 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
+	return nil, sperr.Wrap(fmt.Errorf("injected error")).WithMessage("injected error")
+
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
-		return nil, err
+		return nil, sperr.Wrap(err).WithDiagnostic("failed to ensure db installation")
 	}
 
 	startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
 	if startResult.Error != nil {
-		return nil, startResult.Error
+		return nil, sperr.Wrap(startResult.Error).WithDiagnostic("failed to start service")
 	}
 
 	client, err := NewLocalClient(ctx, invoker, onConnectionCallback)
 	if err != nil {
 		ShutdownService(ctx, invoker)
+		return nil, sperr.Wrap(err).WithDiagnostic("failed to create local client")
 	}
-	return client, err
+	return client, nil
 }
 
 // NewLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it

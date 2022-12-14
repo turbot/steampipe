@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -100,7 +101,7 @@ func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListIt
 
 	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
-		return nil, err
+		return nil, sperr.Wrap(err).WithDiagnostic("failed to load plugin version file")
 	}
 
 	pluginVersions := v.Plugins

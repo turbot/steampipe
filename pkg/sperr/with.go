@@ -10,7 +10,7 @@ func (e *Error) WithDiagnostic(format string, args ...interface{}) *Error {
 
 // WithMessage  the provided message in the error
 func (e *Error) WithMessage(format string, args ...interface{}) *Error {
-	e.message = fmt.Sprintf(format, args...)
+	e.msg = fmt.Sprintf(format, args...)
 	return e
 }
 

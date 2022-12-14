@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -44,7 +45,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	doneChan := make(chan bool, 1)
 	defer func() {
 		if r := recover(); r != nil {
-			err = helpers.ToError(r)
+			err = sperr.Wrap(helpers.ToError(r))
 		}
 
 		utils.LogTime("db_local.EnsureDBInstalled end")
@@ -55,24 +56,24 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
 		err := prepareDb(ctx)
-		return err
+		return sperr.Wrap(err).WithMessage("failed to prepare db installation")
 	}
 
 	// handle the case that the previous db version may still be running
 	dbState, err := GetState()
 	if err != nil {
 		log.Println("[TRACE] Error while loading database state", err)
-		return err
+		return sperr.Wrap(err).WithMessage("failed to read service state")
 	}
 	if dbState != nil {
-		return fmt.Errorf("cannot install db - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+		return sperr.New("cannot install db - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
 	err = removeRunningInstanceInfo()
 	if err != nil && !os.IsNotExist(err) {
 		log.Printf("[TRACE] removeRunningInstanceInfo failed: %v", err)
-		return fmt.Errorf("Cleanup any Steampipe processes... FAILED!")
+		return sperr.New("Cleanup any Steampipe processes... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Installing database...")
@@ -80,7 +81,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	err = downloadAndInstallDbFiles(ctx)
 	if err != nil {
-		return err
+		return sperr.Wrap(err).WithMessage("failed to download and install db files")
 	}
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
@@ -102,7 +103,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	_, err = installFDW(ctx, true)
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
-		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
+		return sperr.New("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
 	// run the database installation
@@ -117,7 +118,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	err = updateDownloadedBinarySignature()
 	if err != nil {
 		log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
-		return fmt.Errorf("Updating install records... FAILED!")
+		return sperr.New("Updating install records... FAILED!")
 	}
 
 	return nil
@@ -129,14 +130,14 @@ func downloadAndInstallDbFiles(ctx context.Context) error {
 	err := os.RemoveAll(getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
-		return fmt.Errorf("Prepare database install location... FAILED!")
+		return sperr.New("Prepare database install location... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
 	_, err = ociinstaller.InstallDB(ctx, getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
-		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
+		return sperr.New("Download & install embedded PostgreSQL database... FAILED!")
 	}
 	return nil
 }
@@ -199,18 +200,18 @@ func prepareDb(ctx context.Context) error {
 		statushooks.SetStatus(ctx, "Updating install records...")
 		if err = updateDownloadedBinarySignature(); err != nil {
 			log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
-			return fmt.Errorf("Updating install records... FAILED!")
+			return sperr.New("Updating install records... FAILED!")
 		}
 
 		// install fdw
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
-			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
+			return sperr.New("Update steampipe-postgres-fdw... FAILED!")
 		}
 	} else if fdwNeedsUpdate(versionInfo) {
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
-			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
+			return sperr.New("Update steampipe-postgres-fdw... FAILED!")
 		}
 
 		// get the message renderer from the context
@@ -276,33 +277,33 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	err := utils.RemoveDirectoryContents(getDataLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
-		return fmt.Errorf("Prepare database install location... FAILED!")
+		return sperr.New("Prepare database install location... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Initializing database...")
 	err = initDatabase()
 	if err != nil {
 		log.Printf("[TRACE] initDatabase failed: %v", err)
-		return fmt.Errorf("Initializing database... FAILED!")
+		return sperr.New("Initializing database... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Starting database...")
 	port, err := getNextFreePort()
 	if err != nil {
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
-		return fmt.Errorf("Starting database... FAILED!")
+		return sperr.New("Starting database... FAILED!")
 	}
 
 	process, err := startServiceForInstall(port)
 	if err != nil {
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
-		return fmt.Errorf("Starting database... FAILED!")
+		return sperr.New("Starting database... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Connection to database...")
 	client, err := createMaintenanceClient(ctx, port)
 	if err != nil {
-		return fmt.Errorf("Connection to database... FAILED!")
+		return sperr.New("Connection to database... FAILED!")
 	}
 	defer func() {
 		statushooks.SetStatus(ctx, "Completing configuration")
@@ -315,7 +316,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	_, err = readPasswordFile()
 	if err != nil {
 		log.Printf("[TRACE] readPassword failed: %v", err)
-		return fmt.Errorf("Generating database passwords... FAILED!")
+		return sperr.New("Generating database passwords... FAILED!")
 	}
 
 	// resolve the name of the database that is to be installed
@@ -330,21 +331,21 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	if firstCharacter == "_" || (ascii >= 'a' && ascii <= 'z') {
 		log.Printf("[TRACE] valid database name: %s", databaseName)
 	} else {
-		return fmt.Errorf("Invalid database name '%s' - must start with either a lowercase character or an underscore", databaseName)
+		return sperr.New("Invalid database name '%s' - must start with either a lowercase character or an underscore", databaseName)
 	}
 
 	statushooks.SetStatus(ctx, "Configuring database...")
 	err = installDatabaseWithPermissions(ctx, databaseName, client)
 	if err != nil {
 		log.Printf("[TRACE] installSteampipeDatabaseAndUser failed: %v", err)
-		return fmt.Errorf("Configuring database... FAILED!")
+		return sperr.New("Configuring database... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Configuring Steampipe...")
 	err = installForeignServer(ctx, client)
 	if err != nil {
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
-		return fmt.Errorf("Configuring Steampipe... FAILED!")
+		return sperr.New("Configuring Steampipe... FAILED!")
 	}
 
 	return nil
@@ -402,7 +403,7 @@ func getNextFreePort() (int, error) {
 	defer listener.Close()
 	addr, ok := listener.Addr().(*net.TCPAddr)
 	if !ok {
-		return -1, fmt.Errorf("count not retrieve port")
+		return -1, sperr.New("count not retrieve port")
 	}
 	return addr.Port, nil
 }
@@ -520,7 +521,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		// not logging here, since the password may get logged
 		// we don't want that
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
-			return err
+			return sperr.Wrap(err).WithDiagnostic("failed setup statement: %s", statement)
 		}
 	}
 	return writePgHbaContent(databaseName, constants.DatabaseUser)
@@ -548,7 +549,7 @@ func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
-			return err
+			return sperr.Wrap(err).WithDiagnostic("install foreign server statement: %s", statement)
 		}
 	}
 
@@ -561,7 +562,7 @@ func updateDownloadedBinarySignature() error {
 
 	versionInfo, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
-		return err
+		return sperr.Wrap(err).WithDiagnostic("failed to load database version file")
 	}
 	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
 	return os.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)

@@ -2,74 +2,51 @@ package sperr
 
 import (
 	"fmt"
-	"runtime"
+	"io"
 )
 
-type CallContext struct {
-	ProgramCounter uintptr
-	Function       *runtime.Func
-	File           string
-	Line           int
-}
-
 type Error struct {
-	callContext     *CallContext
-	originalError   error
+	stack           *stack
+	cause           error
 	diagnostic      string
-	message         string
+	msg             string
 	hideChildErrors bool
 }
 
+// Cause will recursively retrieve
+// the topmost error that does not have a cause, which is assumed to be
+// the original cause.
+func (e *Error) Cause() error {
+	type hasCause interface {
+		Cause() error
+	}
+	if cause, ok := e.cause.(hasCause); ok {
+		return cause.Cause()
+	}
+	return e.cause
+
+}
+
 func (e *Error) Error() string {
-	// if there's an underlying error
-	if e.originalError != nil {
-		// and if it is a sperr.Error
-		if sperr, ok := e.originalError.(*Error); ok {
-			// and if it wants to hide it's children
-			if sperr.hideChildErrors {
-				// return the error message itself
-				return e.message
-			}
+	if e.cause != nil && !e.hideChildErrors {
+		return e.msg + ": " + e.cause.Error()
+	}
+	return e.msg
+}
+
+// implement the fmt.Formatter interface
+func (e *Error) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('+') {
+			io.WriteString(s, e.msg)
+			e.stack.Format(s, verb)
+			return
 		}
-
-		// return the message with the message from it's children
-		return fmt.Sprintf("%s:%s", e.message, e.originalError.Error())
+		fallthrough
+	case 's':
+		io.WriteString(s, e.msg)
+	case 'q':
+		fmt.Fprintf(s, "%q", e.msg)
 	}
-	return e.message
-}
-
-func getCallContext() *CallContext {
-	callContext := &CallContext{
-		File: "unknown",
-		Line: -1,
-	}
-	if pc, file, line, ok := runtime.Caller(2 /*skip this function and the function in this package*/); ok {
-		fn := runtime.FuncForPC(pc)
-		callContext = &CallContext{
-			ProgramCounter: pc,
-			Function:       fn,
-			File:           file,
-			Line:           line,
-		}
-	}
-	return callContext
-}
-
-func New(format string, args ...interface{}) *Error {
-	sperr := &Error{
-		message:     fmt.Sprintf(format, args...),
-		callContext: getCallContext(),
-	}
-	return sperr
-}
-
-func Wrap(err error) *Error {
-	if err == nil {
-		return nil
-	}
-	se := &Error{
-		originalError: err,
-		callContext:   getCallContext(),
-	}
-	return se
 }

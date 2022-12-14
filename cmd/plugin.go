@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/plugin"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -572,14 +573,14 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	defer func() {
 		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
-			error_helpers.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, sperr.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
+		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("failed to get connection map"))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -589,7 +590,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
+		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("plugin listing failed"))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -687,12 +688,12 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, sperr.Wrap(err).WithDiagnostic("failed to create db client")
 	}
 	defer client.Close(ctx)
 	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
-		return nil, nil, res.Error
+		return nil, nil, sperr.Wrap(res.Error).WithDiagnostic("failed to refresh connection")
 	}
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
