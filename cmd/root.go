@@ -34,7 +34,7 @@ import (
 
 var exitCode int
 var waitForTasksChannel chan struct{}
-var tasksCancel context.CancelFunc
+var tasksCancelFn context.CancelFunc
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 			// wait for the async tasks to finish
 			select {
 			case <-time.After(100 * time.Millisecond):
-				tasksCancel()
+				tasksCancelFn()
 				return
 			case <-waitForTasksChannel:
 				return
@@ -66,12 +66,22 @@ var rootCmd = &cobra.Command{
 
 		createLogger()
 
+		// set up the global viper config with default values from
+		// config files and ENV variables
 		initGlobalConfig()
 
 		var taskUpdateCtx context.Context
-		taskUpdateCtx, tasksCancel = context.WithCancel(cmd.Context())
+		taskUpdateCtx, tasksCancelFn = context.WithCancel(cmd.Context())
 
-		waitForTasksChannel = task.RunTasks(taskUpdateCtx, cmd, args)
+		waitForTasksChannel = task.RunTasks(
+			taskUpdateCtx,
+			cmd,
+			args,
+			// pass the config value in rather than runRasks querying viper directly - to avoid concurrent map access issues
+			// (we can use the update-check viper config here, since initGlobalConfig has already set it up
+			// with values from the config files and ENV settings - update-check cannot be set from the command line)
+			task.WithUpdateCheck(viper.GetBool(constants.ArgUpdateCheck)),
+		)
 
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
