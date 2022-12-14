@@ -61,8 +61,10 @@ func (r *DashboardParentImpl) executeChildrenAsync(ctx context.Context) {
 }
 
 func (r *DashboardParentImpl) waitForChildren() chan error {
+	log.Printf("[TRACE] %s waitForChildren", r.Name)
 	var doneChan = make(chan error)
 	if len(r.children) == 0 {
+		log.Printf("[TRACE] %s waitForChildren - no children so we're done", r.Name)
 		// if there are no children, return a closed channel so we do not wait
 		close(doneChan)
 	} else {
@@ -71,16 +73,16 @@ func (r *DashboardParentImpl) waitForChildren() chan error {
 			var errors []error
 
 			for !(r.ChildrenComplete()) {
-				log.Printf("[TRACE] run %s waiting for children", r.Name)
 				completeChild := <-r.childComplete
-				log.Printf("[TRACE] run %s got child complete", r.Name)
+				log.Printf("[TRACE] %s got child complete for %s", r.Name, completeChild.GetName())
 				if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
 					errors = append(errors, completeChild.GetError())
+					log.Printf("[TRACE] %s child %s has error %v", r.Name, completeChild.GetName(), completeChild.GetError())
 				}
 				// fall through to recheck ChildrenComplete
 			}
 
-			log.Printf("[TRACE] run %s ALL children and withs complete", r.Name)
+			log.Printf("[TRACE]  %s ALL children and withs complete, errors: %v", r.Name, errors)
 			// so all children have completed - check for errors
 			// TODO [node_reuse] format better error
 			doneChan <- error_helpers.CombineErrors(errors...)

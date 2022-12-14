@@ -318,7 +318,6 @@ func populateData(withData *dashboardtypes.LeafData, result *dashboardtypes.Reso
 		}
 	}
 	// now convert any json values into a json string
-
 	for _, c := range jsonColumns {
 		for _, row := range withData.Rows {
 			jsonBytes, err := json.Marshal(row[c])

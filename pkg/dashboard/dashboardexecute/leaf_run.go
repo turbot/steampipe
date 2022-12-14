@@ -93,6 +93,14 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 
 // Execute implements DashboardRunNode
 func (r *LeafRun) Execute(ctx context.Context) {
+	defer func() {
+		// call our oncomplete is we have one
+		// (this is used to collect 'with' data and propagate errors)
+		if r.onComplete != nil {
+			r.onComplete()
+		}
+	}()
+
 	// if there is nothing to do, return
 	if r.Status == dashboardtypes.DashboardRunComplete {
 		return
@@ -132,12 +140,6 @@ func (r *LeafRun) Execute(ctx context.Context) {
 			r.SetError(ctx, err)
 			return
 		}
-		// so query was successful
-		// call our oncomplete is we have one
-		// (this is used to collect 'with' data
-		if r.onComplete != nil {
-			r.onComplete()
-		}
 
 	}
 
@@ -156,6 +158,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 // SetError implements DashboardTreeRun
 func (r *LeafRun) SetError(ctx context.Context, err error) {
+	log.Printf("[TRACE] %s SetError err %v", r.Name, err)
 	r.err = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
