@@ -164,6 +164,24 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
+@test "steampipe check - export snapshot" {
+  cd $CONTROL_RENDERING_TEST_MOD
+  run steampipe check control.sample_control_mixed_results_1 --export test.sps --progress=false
+
+  # get the patch diff between the two snapshots
+  run jd -f patch $TEST_DATA_DIR/expected_check_snapshot.sps test.sps
+
+  # run the script to evaluate the patch
+  # returns nothing if there is no diff(except start_time, end_time & search_path)
+  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  echo $diff
+  rm -f test.sps
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
+  cd -
+}
+
 @test "steampipe check all" {
   cd $CHECK_ALL_MOD
   run steampipe check all --export test.json --progress=false
