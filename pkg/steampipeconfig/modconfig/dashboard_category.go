@@ -14,6 +14,10 @@ type DashboardCategory struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
+	// TACTICAL: include a title property (with a different name to the property in HclResourceImpl  for clarity)
+	// This is purely to ensure the title is included in the panel properties of snapshots
+	// Note: this will be parsed from HCL, but we must set this explicitly in setBaseProperties if there is a base
+	CategoryTitle *string                               `cty:"title" hcl:"title" json:"title,omitempty"`
 	Color         *string                               `cty:"color" hcl:"color" json:"color,omitempty"`
 	Depth         *int                                  `cty:"depth" hcl:"depth" json:"depth,omitempty"`
 	Icon          *string                               `cty:"icon" hcl:"icon" json:"icon,omitempty"`
@@ -87,7 +91,11 @@ func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsPr
 
 	if c.Title == nil {
 		c.Title = c.Base.Title
+		// TACTICAL: DashboardCategory overrides the title property to ensure is included in the snapshot
+		// set the base value as well, to ensure that GetTitle works correctly
+		c.CategoryTitle = c.Base.Title
 	}
+
 	if c.Color == nil {
 		c.Color = c.Base.Color
 	}
