@@ -9,10 +9,10 @@ import (
 )
 
 type ParamDef struct {
-	Name        string  `cty:"name" json:"name"`
-	FullName    string  `cty:"full_name" json:"-"`
-	Description *string `cty:"description" json:"description"`
-	Default     *string `cty:"default" json:"default"`
+	ShortName       string  `cty:"name" json:"name"`
+	UnqualifiedName string  `cty:"full_name" json:"-"`
+	Description     *string `cty:"description" json:"description"`
+	Default         *string `cty:"default" json:"default"`
 	// tactical - is the raw value a string
 	IsString bool `cty:"is_string" json:"-"`
 
@@ -23,18 +23,18 @@ type ParamDef struct {
 
 func NewParamDef(block *hcl.Block) *ParamDef {
 	return &ParamDef{
-		Name:      block.Labels[0],
-		FullName:  fmt.Sprintf("param.%s", block.Labels[0]),
-		DeclRange: block.DefRange,
+		ShortName:       block.Labels[0],
+		UnqualifiedName: fmt.Sprintf("param.%s", block.Labels[0]),
+		DeclRange:       block.DefRange,
 	}
 }
 
 func (p *ParamDef) String() string {
-	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", p.FullName, typehelpers.SafeString(p.Description), typehelpers.SafeString(p.Default))
+	return fmt.Sprintf("Name: %s, Description: %s, Default: %s", p.UnqualifiedName, typehelpers.SafeString(p.Description), typehelpers.SafeString(p.Default))
 }
 
 func (p *ParamDef) Equals(other *ParamDef) bool {
-	return p.Name == other.Name &&
+	return p.ShortName == other.ShortName &&
 		typehelpers.SafeString(p.Description) == typehelpers.SafeString(other.Description) &&
 		typehelpers.SafeString(p.Default) == typehelpers.SafeString(other.Default)
 }

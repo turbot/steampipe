@@ -3,7 +3,7 @@ package dashboardevents
 import "github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 
 type DashboardError struct {
-	Dashboard   dashboardtypes.DashboardNodeRun
+	Dashboard   dashboardtypes.DashboardTreeRun
 	Session     string
 	ExecutionId string
 }

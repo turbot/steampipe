@@ -8,7 +8,7 @@ import (
 )
 
 // GetReferencedVariables builds map of variables values containing only those mod variables which are referenced
-func GetReferencedVariables(root dashboardtypes.DashboardNodeRun, w *workspace.Workspace) map[string]string {
+func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.Workspace) map[string]string {
 	var referencedVariables = make(map[string]string)
 
 	addReferencedVars := func(refs []*modconfig.ResourceReference) {
@@ -23,7 +23,7 @@ func GetReferencedVariables(root dashboardtypes.DashboardNodeRun, w *workspace.W
 
 	switch r := root.(type) {
 	case *DashboardRun:
-		r.dashboardNode.WalkResources(
+		r.dashboard.WalkResources(
 			func(resource modconfig.HclResource) (bool, error) {
 				if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
 					addReferencedVars(resourceWithMetadata.GetReferences())

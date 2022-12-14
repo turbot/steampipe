@@ -1,7 +1,6 @@
 package modconfig
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -22,25 +21,21 @@ const defaultModName = "local"
 
 // Mod is a struct representing a Mod resource
 type Mod struct {
-	ResourceWithMetadataBase
+	ResourceWithMetadataImpl
+	ModTreeItemImpl
 
-	// ShortName is the mod name, e.g. azure_thrifty
-	ShortName string `cty:"short_name" hcl:"name,label"`
-	// FullName is the mod name prefixed with 'mod', e.g. mod.azure_thrifty
-	FullName string `cty:"name"`
+	// required to allow partial decoding
+	Remain hcl.Body `hcl:",remain" json:"-"`
+
 	// ModDependencyPath is the fully qualified mod name, which can be used to 'require'  the mod,
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
 	// This is only set if the mod is installed as a dependency
 	ModDependencyPath string `cty:"mod_dependency_path"`
 
 	// attributes
-	Categories    []string          `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
-	Color         *string           `cty:"color" hcl:"color" column:"color,text"`
-	Description   *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Icon          *string           `cty:"icon" hcl:"icon" column:"icon,text"`
-	Tags          map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb"`
-	Title         *string           `cty:"title" hcl:"title" column:"title,text"`
+	Categories []string `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
+	Color      *string  `cty:"color" hcl:"color" column:"color,text"`
+	Icon       *string  `cty:"icon" hcl:"icon" column:"icon,text"`
 
 	// blocks
 	Require       *Require
@@ -51,13 +46,10 @@ type Mod struct {
 	Version       *semver.Version
 
 	// ModPath is the installation location of the mod
-	ModPath   string
-	DeclRange hcl.Range
+	ModPath string
 
 	// the filepath of the mod.sp file (will be empty for default mod)
 	modFilePath string
-	// array of direct mod children - excludes resources which are children of other resources
-	children []ModTreeItem
 	// convenient aggregation of all resources
 	// NOTE: this resource map object references the same set of resources
 	ResourceMaps *ResourceMaps
@@ -65,13 +57,19 @@ type Mod struct {
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	require := NewRequire()
-
+	name := fmt.Sprintf("mod.%s", shortName)
 	mod := &Mod{
-		ShortName: shortName,
-		FullName:  fmt.Sprintf("mod.%s", shortName),
-		ModPath:   modPath,
-		DeclRange: defRange,
-		Require:   require,
+		ModTreeItemImpl: ModTreeItemImpl{
+			HclResourceImpl: HclResourceImpl{
+				ShortName:       shortName,
+				FullName:        name,
+				UnqualifiedName: name,
+				DeclRange:       defRange,
+				blockType:       BlockTypeMod,
+			},
+		},
+		ModPath: modPath,
+		Require: require,
 	}
 	mod.ResourceMaps = NewModResources(mod)
 
@@ -161,32 +159,6 @@ func (m *Mod) NameWithVersion() string {
 	return fmt.Sprintf("%s@%s", m.ShortName, m.VersionString)
 }
 
-// AddChild implements ModTreeItem
-func (m *Mod) AddChild(child ModTreeItem) error {
-	m.children = append(m.children, child)
-	return nil
-}
-
-// AddParent implements ModTreeItem
-func (m *Mod) AddParent(ModTreeItem) error {
-	return errors.New("cannot set a parent on a mod")
-}
-
-// GetParents implements ModTreeItem
-func (m *Mod) GetParents() []ModTreeItem {
-	return nil
-}
-
-// Name implements ModTreeItem, HclResource
-func (m *Mod) Name() string {
-	return m.FullName
-}
-
-// GetUnqualifiedName implements ModTreeItem
-func (m *Mod) GetUnqualifiedName() string {
-	return m.Name()
-}
-
 // GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
 func (m *Mod) GetModDependencyPath() string {
 	if m.ModDependencyPath != "" {
@@ -195,46 +167,13 @@ func (m *Mod) GetModDependencyPath() string {
 	return m.NameWithVersion()
 }
 
-// GetTitle implements HclResource
-func (m *Mod) GetTitle() string {
-	return typehelpers.SafeString(m.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (m *Mod) GetDescription() string {
-	return typehelpers.SafeString(m.Description)
-}
-
-// GetTags implements HclResource
-func (m *Mod) GetTags() map[string]string {
-	if m.Tags != nil {
-		return m.Tags
-	}
-	return map[string]string{}
-}
-
-// GetChildren implements ModTreeItem
-func (m *Mod) GetChildren() []ModTreeItem {
-	return m.children
-}
-
-// GetPaths implements ModTreeItem
+// GetPaths implements ModTreeItem (override base functionality)
 func (m *Mod) GetPaths() []NodePath {
 	return []NodePath{{m.Name()}}
 }
 
-// SetPaths implements ModTreeItem
+// SetPaths implements ModTreeItem (override base functionality)
 func (m *Mod) SetPaths() {}
-
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (m *Mod) GetDocumentation() string {
-	return typehelpers.SafeString(m.Documentation)
-}
-
-// CtyValue implements HclResource
-func (m *Mod) CtyValue() (cty.Value, error) {
-	return getCtyValue(m)
-}
 
 // OnDecoded implements HclResource
 func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
@@ -289,21 +228,6 @@ func (m *Mod) GetReferences() []*ResourceReference {
 		idx++
 	}
 	return res
-}
-
-// GetMod implements ModTreeItem
-func (m *Mod) GetMod() *Mod {
-	return nil
-}
-
-// GetDeclRange implements HclResource
-func (m *Mod) GetDeclRange() *hcl.Range {
-	return &m.DeclRange
-}
-
-// BlockType implements HclResource
-func (*Mod) BlockType() string {
-	return BlockTypeMod
 }
 
 // GetResourceMaps implements ResourceMapsProvider
@@ -454,4 +378,9 @@ func (m *Mod) ValidateSteampipeVersion() error {
 		return nil
 	}
 	return m.Require.ValidateSteampipeVersion(m.Name())
+}
+
+// CtyValue implements CtyValueProvider
+func (m *Mod) CtyValue() (cty.Value, error) {
+	return GetCtyValue(m)
 }

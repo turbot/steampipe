@@ -2,13 +2,13 @@ package modconfig
 
 import (
 	"fmt"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
@@ -16,48 +16,42 @@ const runtimeDependencyDashboardScope = "self"
 
 // Dashboard is a struct representing the Dashboard  resource
 type Dashboard struct {
-	ResourceWithMetadataBase
+	ResourceWithMetadataImpl
+	// dashboards are with providers
+	RuntimeDependencyProviderImpl
 
 	// required to allow partial decoding
-	Remain hcl.Body `hcl:",remain"`
+	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	ShortName       string
-	FullName        string            `cty:"name"`
-	UnqualifiedName string            `cty:"unqualified_name"`
-	Title           *string           `cty:"title" hcl:"title" column:"title,text"`
-	Width           *int              `cty:"width" hcl:"width"  column:"width,text"`
-	Display         *string           `cty:"display" hcl:"display" column:"display,text"`
-	Inputs          []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
-	Description     *string           `cty:"description" hcl:"description" column:"description,text"`
-	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text"`
-	Tags            map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb"`
-	UrlPath         string            `cty:"url_path"  column:"url_path,jsonb"`
-
-	Base *Dashboard `hcl:"base"`
-
-	References []*ResourceReference
-	Mod        *Mod `cty:"mod"`
-	DeclRange  hcl.Range
-
-	Paths []NodePath `column:"path,jsonb"`
+	Width   *int              `cty:"width" hcl:"width"  column:"width,text"`
+	Display *string           `cty:"display" hcl:"display" column:"display,text"`
+	Inputs  []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
+	UrlPath string            `cty:"url_path"  column:"url_path,jsonb"`
+	Base    *Dashboard        `hcl:"base"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
-
-	selfInputsMap map[string]*DashboardInput
-	// the actual children
-	children []ModTreeItem
-	// TODO [reports] can a dashboard ever have multiple parents??
-	parents                []ModTreeItem
+	References []*ResourceReference
+	// map of all inputs in our resource tree
+	selfInputsMap          map[string]*DashboardInput
 	runtimeDependencyGraph *topsort.Graph
 }
 
 func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	c := &Dashboard{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
+		RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+			ModTreeItemImpl: ModTreeItemImpl{
+				HclResourceImpl: HclResourceImpl{
+					ShortName:       shortName,
+					FullName:        fullName,
+					UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+					DeclRange:       block.DefRange,
+					blockType:       block.Type,
+				},
+				Mod: mod,
+			},
+		},
 	}
 	c.SetAnonymous(block)
 	c.setUrlPath()
@@ -75,17 +69,24 @@ func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
 	dashboardName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeDashboard, parsedName.Name)
 
 	var dashboard = &Dashboard{
-		ResourceWithMetadataBase: ResourceWithMetadataBase{
+		ResourceWithMetadataImpl: ResourceWithMetadataImpl{
 			metadata: &ResourceMetadata{},
 		},
-		ShortName:       parsedName.Name,
-		FullName:        dashboardName,
-		UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
-		Title:           utils.ToStringPointer(q.GetTitle()),
-		Description:     utils.ToStringPointer(q.GetDescription()),
-		Documentation:   utils.ToStringPointer(q.GetDocumentation()),
-		Tags:            q.GetTags(),
-		Mod:             q.GetMod(),
+		RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+			ModTreeItemImpl: ModTreeItemImpl{
+				HclResourceImpl: HclResourceImpl{
+					ShortName:       parsedName.Name,
+					FullName:        dashboardName,
+					UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
+					Title:           utils.ToStringPointer(q.GetTitle()),
+					Description:     utils.ToStringPointer(q.GetDescription()),
+					Documentation:   utils.ToStringPointer(q.GetDocumentation()),
+					Tags:            q.GetTags(),
+					blockType:       BlockTypeDashboard,
+				},
+				Mod: q.GetMod(),
+			},
+		},
 	}
 
 	dashboard.setUrlPath()
@@ -106,16 +107,6 @@ func (d *Dashboard) setUrlPath() {
 func (d *Dashboard) Equals(other *Dashboard) bool {
 	diff := d.Diff(other)
 	return !diff.HasChanges()
-}
-
-// CtyValue implements HclResource
-func (d *Dashboard) CtyValue() (cty.Value, error) {
-	return getCtyValue(d)
-}
-
-// Name implements HclResource, ModTreeItem
-func (d *Dashboard) Name() string {
-	return d.FullName
 }
 
 // OnDecoded implements HclResource
@@ -140,76 +131,22 @@ func (d *Dashboard) GetReferences() []*ResourceReference {
 	return d.References
 }
 
-// GetMod implements ModTreeItem
-func (d *Dashboard) GetMod() *Mod {
-	return d.Mod
+// GetWidth implements DashboardLeafNode
+func (d *Dashboard) GetWidth() int {
+	if d.Width == nil {
+		return 0
+	}
+	return *d.Width
 }
 
-// GetDeclRange implements HclResource
-func (d *Dashboard) GetDeclRange() *hcl.Range {
-	return &d.DeclRange
+// GetDisplay implements DashboardLeafNode
+func (d *Dashboard) GetDisplay() string {
+	return typehelpers.SafeString(d.Display)
 }
 
-// BlockType implements HclResource
-func (*Dashboard) BlockType() string {
-	return BlockTypeDashboard
-}
-
-// AddParent implements ModTreeItem
-func (d *Dashboard) AddParent(parent ModTreeItem) error {
-	d.parents = append(d.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (d *Dashboard) GetParents() []ModTreeItem {
-	return d.parents
-}
-
-// GetChildren implements ModTreeItem
-func (d *Dashboard) GetChildren() []ModTreeItem {
-	return d.children
-}
-
-// GetTitle implements HclResource
-func (d *Dashboard) GetTitle() string {
-	return typehelpers.SafeString(d.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (d *Dashboard) GetDescription() string {
+// GetType implements DashboardLeafNode
+func (d *Dashboard) GetType() string {
 	return ""
-}
-
-// GetTags implements HclResource
-func (d *Dashboard) GetTags() map[string]string {
-	if d.Tags != nil {
-		return d.Tags
-	}
-	return map[string]string{}
-}
-
-// GetPaths implements ModTreeItem
-func (d *Dashboard) GetPaths() []NodePath {
-	// lazy load
-	if len(d.Paths) == 0 {
-		d.SetPaths()
-	}
-	return d.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (d *Dashboard) SetPaths() {
-	for _, parent := range d.parents {
-		for _, parentPath := range parent.GetPaths() {
-			d.Paths = append(d.Paths, append(parentPath, d.Name()))
-		}
-	}
-}
-
-// GetDocumentation implement ModTreeItem
-func (d *Dashboard) GetDocumentation() string {
-	return typehelpers.SafeString(d.Documentation)
 }
 
 func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {
@@ -258,11 +195,13 @@ func (d *Dashboard) SetChildren(children []ModTreeItem) {
 
 func (d *Dashboard) AddChild(child ModTreeItem) {
 	d.children = append(d.children, child)
-}
 
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (d *Dashboard) GetUnqualifiedName() string {
-	return d.UnqualifiedName
+	switch c := child.(type) {
+	case *DashboardInput:
+		d.Inputs = append(d.Inputs, c)
+	case *DashboardWith:
+		d.AddWith(c)
+	}
 }
 
 func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool, error)) error {
@@ -284,7 +223,7 @@ func (d *Dashboard) WalkResources(resourceFunc func(resource HclResource) (bool,
 	return nil
 }
 
-func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) error {
+func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) error {
 	d.runtimeDependencyGraph = topsort.NewGraph()
 	// add root node - this will depend on all other nodes
 	d.runtimeDependencyGraph.AddNode(rootRuntimeDependencyNode)
@@ -292,24 +231,19 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 	// define a walk function which determines whether the resource has runtime dependencies and if so,
 	// add to the graph
 	resourceFunc := func(resource HclResource) (bool, error) {
-		// currently only QueryProvider resources support runtime dependencies
-		queryProvider, ok := resource.(QueryProvider)
+		rdp, ok := resource.(RuntimeDependencyProvider)
 		if !ok {
 			// continue walking
 			return true, nil
 		}
 
-		runtimeDependencies := queryProvider.GetRuntimeDependencies()
-		err := d.addRuntimeDependenciesForResource(resource, runtimeDependencies, workspace)
-		if err != nil {
+		if err := d.validateRuntimeDependenciesForResource(resource, workspace); err != nil {
 			return false, err
 		}
 
 		// if the query provider has any 'with' blocks, add these dependencies as well
-		for _, with := range queryProvider.GetWiths() {
-			runtimeDependencies = with.GetRuntimeDependencies()
-			err := d.addRuntimeDependenciesForResource(with, runtimeDependencies, workspace)
-			if err != nil {
+		for _, with := range rdp.GetWiths() {
+			if err := d.validateRuntimeDependenciesForResource(with, workspace); err != nil {
 				return false, err
 			}
 		}
@@ -328,32 +262,36 @@ func (d *Dashboard) BuildRuntimeDependencyTree(workspace ResourceMapsProvider) e
 	return nil
 }
 
-func (d *Dashboard) addRuntimeDependenciesForResource(resource HclResource, runtimeDependencies map[string]*RuntimeDependency, workspace ResourceMapsProvider) error {
-	if len(runtimeDependencies) == 0 {
-		return nil
-	}
-	name := resource.Name()
-	if !d.runtimeDependencyGraph.ContainsNode(name) {
-		d.runtimeDependencyGraph.AddNode(name)
-	}
-
-	for _, dependency := range runtimeDependencies {
-		// try to resolve the dependency source resource
-		if err := dependency.ResolveSource(d, workspace); err != nil {
-			return err
-		}
-		if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
-			return err
-		}
-		depString := dependency.String()
-		if !d.runtimeDependencyGraph.ContainsNode(depString) {
-			d.runtimeDependencyGraph.AddNode(depString)
-		}
-		if err := d.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
-			return err
-		}
-	}
+func (d *Dashboard) validateRuntimeDependenciesForResource(resource HclResource, workspace ResourceMapsProvider) error {
 	return nil
+	//rdp := resource.(RuntimeDependencyProvider)
+	// TODO  [node_reuse] validate param and args runtime deps
+	//// WHAT ABOUT CHILDREN
+	//if len(runtimeDependencies) == 0 {
+	//	return nil
+	//}
+	//name := resource.Name()
+	//if !d.runtimeDependencyGraph.ContainsNode(name) {
+	//	d.runtimeDependencyGraph.AddNode(name)
+	//}
+	//
+	//for _, dependency := range runtimeDependencies {
+	//	// try to resolve the dependency source resource
+	//	if err := dependency.ValidateSource(d, workspace); err != nil {
+	//		return err
+	//	}
+	//	if err := d.runtimeDependencyGraph.AddEdge(rootRuntimeDependencyNode, name); err != nil {
+	//		return err
+	//	}
+	//	depString := dependency.String()
+	//	if !d.runtimeDependencyGraph.ContainsNode(depString) {
+	//		d.runtimeDependencyGraph.AddNode(depString)
+	//	}
+	//	if err := d.runtimeDependencyGraph.AddEdge(name, dependency.String()); err != nil {
+	//		return err
+	//	}
+	//}
+	//return nil
 }
 
 func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
@@ -361,10 +299,12 @@ func (d *Dashboard) GetInput(name string) (*DashboardInput, bool) {
 	return input, found
 }
 
-func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
-	d.Inputs = inputs
+func (d *Dashboard) GetInputs() map[string]*DashboardInput {
+	return d.selfInputsMap
+}
 
-	// add all our direct child inputs to a mp
+func (d *Dashboard) InitInputs() hcl.Diagnostics {
+	// add all our direct child inputs to a map
 	// (we must do this before adding child container inputs to detect dupes)
 	duplicates := d.setInputMap()
 
@@ -403,7 +343,7 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
 
 	var diags hcl.Diagnostics
 	//  ensure they inputs not have cyclical dependencies
-	if err := d.validateInputDependencies(inputs); err != nil {
+	if err := d.validateInputDependencies(d.Inputs); err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("Failed to resolve input dependency order for dashboard '%s'", d.Name()),
@@ -412,7 +352,7 @@ func (d *Dashboard) SetInputs(inputs []*DashboardInput) hcl.Diagnostics {
 		}}
 	}
 	// now 'claim' all inputs and add to mod
-	for _, input := range inputs {
+	for _, input := range d.Inputs {
 		input.SetDashboard(d)
 		moreDiags := d.Mod.AddResource(input)
 		diags = append(diags, moreDiags...)
@@ -433,6 +373,11 @@ func (d *Dashboard) setInputMap() []string {
 		}
 	}
 	return duplicates
+}
+
+// CtyValue implements CtyValueProvider
+func (d *Dashboard) CtyValue() (cty.Value, error) {
+	return GetCtyValue(d)
 }
 
 func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
@@ -496,7 +441,7 @@ func (d *Dashboard) addBaseInputs(baseInputs []*DashboardInput) {
 	d.setInputMap()
 }
 
-// ensure that depdnecneis between inputs are resolveable
+// ensure that dependencies between inputs are resolveable
 func (d *Dashboard) validateInputDependencies(inputs []*DashboardInput) error {
 	dependencyGraph := topsort.NewGraph()
 	rootDependencyNode := "dashboard"

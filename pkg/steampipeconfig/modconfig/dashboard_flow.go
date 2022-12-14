@@ -2,8 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants"
-
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -12,51 +10,46 @@ import (
 
 // DashboardFlow is a struct representing a leaf dashboard node
 type DashboardFlow struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	FullName        string `cty:"name" json:"-"`
-	ShortName       string `json:"-"`
-	UnqualifiedName string `json:"-"`
-
-	Nodes DashboardNodeList `cty:"node_list"  hcl:"nodes,optional" column:"nodes,jsonb" json:"-"`
-	Edges DashboardEdgeList `cty:"edge_list" hcl:"edges,optional" column:"edges,jsonb" json:"-"`
+	Nodes     DashboardNodeList `cty:"node_list"  column:"nodes,jsonb" json:"-"`
+	Edges     DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
+	NodeNames []string          `json:"nodes"`
+	EdgeNames []string          `json:"edges"`
 
 	Categories map[string]*DashboardCategory `cty:"categories" json:"categories"`
 
-	// these properties are JSON serialised by the parent LeafRun
-	Title   *string `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display *string `cty:"display" hcl:"display" json:"-"`
 
-	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `hcl:"query" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
-
 	Base       *DashboardFlow       `hcl:"base" json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
 	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
-
-	parents []ModTreeItem
 }
 
 func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	h := &DashboardFlow{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
-		UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
-		Categories:      make(map[string]*DashboardCategory),
+		Categories: make(map[string]*DashboardCategory),
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
+						ShortName:       shortName,
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
+			},
+		},
 	}
 	h.SetAnonymous(block)
 	return h
@@ -67,23 +60,16 @@ func (f *DashboardFlow) Equals(other *DashboardFlow) bool {
 	return !diff.HasChanges()
 }
 
-// CtyValue implements HclResource
-func (f *DashboardFlow) CtyValue() (cty.Value, error) {
-	return getCtyValue(f)
-}
-
-// Name implements HclResource, ModTreeItem
-// return name in format: 'chart.<shortName>'
-func (f *DashboardFlow) Name() string {
-	return f.FullName
-}
-
 // OnDecoded implements HclResource
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	f.setBaseProperties(resourceMapProvider)
-
-	// populate nodes and edges
-	return initialiseEdgesAndNodes(f, resourceMapProvider)
+	if len(f.Nodes) > 0 {
+		f.NodeNames = f.Nodes.Names()
+	}
+	if len(f.Edges) > 0 {
+		f.EdgeNames = f.Edges.Names()
+	}
+	return nil
 }
 
 // AddReference implements ResourceWithMetadata
@@ -96,32 +82,7 @@ func (f *DashboardFlow) GetReferences() []*ResourceReference {
 	return f.References
 }
 
-// GetMod implements ModTreeItem
-func (f *DashboardFlow) GetMod() *Mod {
-	return f.Mod
-}
-
-// GetDeclRange implements HclResource
-func (f *DashboardFlow) GetDeclRange() *hcl.Range {
-	return &f.DeclRange
-}
-
-// BlockType implements HclResource
-func (*DashboardFlow) BlockType() string {
-	return BlockTypeFlow
-}
-
-// AddParent implements ModTreeItem
-func (f *DashboardFlow) AddParent(parent ModTreeItem) error {
-	f.parents = append(f.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (f *DashboardFlow) GetParents() []ModTreeItem {
-	return f.parents
-}
-
+// TODO  [node_reuse] PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
 // GetChildren implements ModTreeItem
 func (f *DashboardFlow) GetChildren() []ModTreeItem {
 	// return nodes and edges (if any)
@@ -134,40 +95,6 @@ func (f *DashboardFlow) GetChildren() []ModTreeItem {
 		children[i+offset] = e
 	}
 	return children
-}
-
-// GetTitle implements HclResource
-func (f *DashboardFlow) GetTitle() string {
-	return typehelpers.SafeString(f.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (f *DashboardFlow) GetDescription() string {
-	return ""
-}
-
-// GetTags implements HclResource
-func (f *DashboardFlow) GetTags() map[string]string {
-	return map[string]string{}
-}
-
-// GetPaths implements ModTreeItem
-func (f *DashboardFlow) GetPaths() []NodePath {
-	// lazy load
-	if len(f.Paths) == 0 {
-		f.SetPaths()
-	}
-
-	return f.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (f *DashboardFlow) SetPaths() {
-	for _, parent := range f.parents {
-		for _, parentPath := range parent.GetPaths() {
-			f.Paths = append(f.Paths, append(parentPath, f.Name()))
-		}
-	}
 }
 
 func (f *DashboardFlow) Diff(other *DashboardFlow) *DashboardTreeItemDiffs {
@@ -210,93 +137,38 @@ func (f *DashboardFlow) GetDisplay() string {
 	return typehelpers.SafeString(f.Display)
 }
 
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (f *DashboardFlow) GetDocumentation() string {
-	return ""
-}
-
 // GetType implements DashboardLeafNode
 func (f *DashboardFlow) GetType() string {
 	return typehelpers.SafeString(f.Type)
 }
 
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (f *DashboardFlow) GetUnqualifiedName() string {
-	return f.UnqualifiedName
-}
-
-// GetParams implements QueryProvider
-func (f *DashboardFlow) GetParams() []*ParamDef {
-	return f.Params
-}
-
-// GetArgs implements QueryProvider
-func (f *DashboardFlow) GetArgs() *QueryArgs {
-	return f.Args
-}
-
-// GetSQL implements QueryProvider
-func (f *DashboardFlow) GetSQL() *string {
-	return f.SQL
-}
-
-// GetQuery implements QueryProvider
-func (f *DashboardFlow) GetQuery() *Query {
-	return f.Query
-}
-
-// VerifyQuery implements QueryProvider
-func (*DashboardFlow) VerifyQuery(QueryProvider) error {
+// ValidateQuery implements QueryProvider
+func (*DashboardFlow) ValidateQuery() hcl.Diagnostics {
 	// query is optional - nothing to do
 	return nil
 }
 
-// SetArgs implements QueryProvider
-func (f *DashboardFlow) SetArgs(args *QueryArgs) {
-	f.Args = args
-}
-
-// SetParams implements QueryProvider
-func (f *DashboardFlow) SetParams(params []*ParamDef) {
-	f.Params = params
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (f *DashboardFlow) GetPreparedStatementName() string {
-	if f.PreparedStatementName != "" {
-		return f.PreparedStatementName
-	}
-	f.PreparedStatementName = f.buildPreparedStatementName(f.ShortName, f.Mod.NameWithVersion(), constants.PreparedStatementFlowSuffix)
-	return f.PreparedStatementName
-}
-
-// GetResolvedQuery implements QueryProvider
-func (f *DashboardFlow) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return f.getResolvedQuery(f, runtimeArgs)
-}
-
-// GetEdges implements EdgeAndNodeProvider
+// GetEdges implements NodeAndEdgeProvider
 func (f *DashboardFlow) GetEdges() DashboardEdgeList {
 	return f.Edges
 }
 
-// GetNodes implements EdgeAndNodeProvider
+// GetNodes implements NodeAndEdgeProvider
 func (f *DashboardFlow) GetNodes() DashboardNodeList {
 	return f.Nodes
 }
 
-// SetEdges implements EdgeAndNodeProvider
+// SetEdges implements NodeAndEdgeProvider
 func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
 	f.Edges = edges
 }
 
-// SetNodes implements EdgeAndNodeProvider
+// SetNodes implements NodeAndEdgeProvider
 func (f *DashboardFlow) SetNodes(nodes DashboardNodeList) {
 	f.Nodes = nodes
 }
 
-// AddCategory implements EdgeAndNodeProvider
+// AddCategory implements NodeAndEdgeProvider
 func (f *DashboardFlow) AddCategory(category *DashboardCategory) hcl.Diagnostics {
 	categoryName := category.ShortName
 	if _, ok := f.Categories[categoryName]; ok {
@@ -310,6 +182,28 @@ func (f *DashboardFlow) AddCategory(category *DashboardCategory) hcl.Diagnostics
 	return nil
 }
 
+// AddChild implements NodeAndEdgeProvider
+func (f *DashboardFlow) AddChild(child HclResource) hcl.Diagnostics {
+	switch c := child.(type) {
+	case *DashboardNode:
+		f.Nodes = append(f.Nodes, c)
+	case *DashboardEdge:
+		f.Edges = append(f.Edges, c)
+	default:
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("DashboardFlow does not support children of type %s", child.BlockType()),
+			Subject:  f.GetDeclRange(),
+		}}
+	}
+	return nil
+}
+
+// CtyValue implements CtyValueProvider
+func (f *DashboardFlow) CtyValue() (cty.Value, error) {
+	return GetCtyValue(f)
+}
+
 func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
@@ -319,6 +213,9 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	} else {
 		f.Base = base.(*DashboardFlow)
 	}
+
+	// TACTICAL: store another reference to the base as a QueryProvider
+	f.baseQueryProvider = f.Base
 
 	if f.Title == nil {
 		f.Title = f.Base.Title
@@ -348,10 +245,6 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		f.Args = f.Base.Args
 	}
 
-	if f.Params == nil {
-		f.Params = f.Base.Params
-	}
-
 	if f.Categories == nil {
 		f.Categories = f.Base.Categories
 	} else {
@@ -369,5 +262,8 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 		f.Nodes.Merge(f.Base.Nodes)
 	}
 
+	if f.Params == nil {
+		f.Params = f.Base.Params
+	}
 	f.MergeRuntimeDependencies(f.Base)
 }

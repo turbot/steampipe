@@ -215,6 +215,26 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 			event.DeletedImages = append(event.DeletedImages, prev)
 		}
 	}
+	for name, prev := range prevResourceMaps.DashboardNodes {
+		if current, ok := resourceMaps.DashboardNodes[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedNodes = append(event.ChangedNodes, diff)
+			}
+		} else {
+			event.DeletedNodes = append(event.DeletedNodes, prev)
+		}
+	}
+	for name, prev := range prevResourceMaps.DashboardEdges {
+		if current, ok := resourceMaps.DashboardEdges[name]; ok {
+			diff := prev.Diff(current)
+			if diff.HasChanges() {
+				event.ChangedEdges = append(event.ChangedEdges, diff)
+			}
+		} else {
+			event.DeletedEdges = append(event.DeletedEdges, prev)
+		}
+	}
 	for name, prev := range prevResourceMaps.GlobalDashboardInputs {
 		if current, ok := resourceMaps.GlobalDashboardInputs[name]; ok {
 			diff := prev.Diff(current)
@@ -328,6 +348,16 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 	for name, p := range resourceMaps.DashboardImages {
 		if _, ok := prevResourceMaps.DashboardImages[name]; !ok {
 			event.NewImages = append(event.NewImages, p)
+		}
+	}
+	for name, p := range resourceMaps.DashboardNodes {
+		if _, ok := prevResourceMaps.DashboardNodes[name]; !ok {
+			event.NewNodes = append(event.NewNodes, p)
+		}
+	}
+	for name, p := range resourceMaps.DashboardEdges {
+		if _, ok := prevResourceMaps.DashboardEdges[name]; !ok {
+			event.NewEdges = append(event.NewEdges, p)
 		}
 	}
 	for name, p := range resourceMaps.GlobalDashboardInputs {

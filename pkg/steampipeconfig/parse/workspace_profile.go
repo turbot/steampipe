@@ -68,7 +68,7 @@ func parseWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string]
 	for attempts := 0; ; attempts++ {
 		_, diags := decodeWorkspaceProfiles(parseCtx)
 		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+			return nil, plugin.DiagsToError("Failed to decode all workspace profile files", diags)
 		}
 
 		// if there are no unresolved blocks, we are done

@@ -19,8 +19,7 @@ func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (
 	res.handleDecodeDiags(diags)
 
 	// decode the body to populate all properties that can be automatically decoded
-	diags = gohcl.DecodeBody(remain, evalCtx, mod)
-	// handle any resulting diags, which may specify dependencies
+	diags = decodeHclBody(remain, evalCtx, mod)
 	res.handleDecodeDiags(diags)
 	if !res.Success() {
 		return mod, res

@@ -77,7 +77,7 @@ func (p *WorkspaceProfile) Name() string {
 }
 
 func (p *WorkspaceProfile) CtyValue() (cty.Value, error) {
-	return getCtyValue(p)
+	return GetCtyValue(p)
 }
 
 func (p *WorkspaceProfile) OnDecoded() hcl.Diagnostics {

@@ -2,46 +2,29 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
 type Control struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	ShortName        string            `json:"-"`
-	FullName         string            `cty:"name" json:"-"`
-	Description      *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
-	Documentation    *string           `cty:"documentation" hcl:"documentation"  column:"documentation,text" json:"-"`
-	SearchPath       *string           `cty:"search_path" hcl:"search_path"  column:"search_path,text" json:"search_path,omitempty"`
-	SearchPathPrefix *string           `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
-	Severity         *string           `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
-	Tags             map[string]string `cty:"tags" hcl:"tags,optional"  column:"tags,jsonb" json:"-"`
-	Title            *string           `cty:"title" hcl:"title"  column:"title,text" json:"-"`
+	SearchPath       *string `cty:"search_path" hcl:"search_path"  column:"search_path,text" json:"search_path,omitempty"`
+	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
+	Severity         *string `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
 
 	// QueryProvider
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"sql,omitempty"`
-	Query                 *Query      `hcl:"query" json:"query,omitempty"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
-
-	References      []*ResourceReference ` json:"-"`
-	Mod             *Mod                 `cty:"mod" json:"-"`
-	DeclRange       hcl.Range            `json:"-"`
-	UnqualifiedName string               `json:"-"`
-	Paths           []NodePath           `json:"-"`
+	References []*ResourceReference ` json:"-"`
 
 	// dashboard specific properties
 	Base    *Control `hcl:"base" json:"-"`
@@ -53,13 +36,24 @@ type Control struct {
 }
 
 func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
+
 	control := &Control{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.control.%s", mod.ShortName, shortName),
-		UnqualifiedName: fmt.Sprintf("control.%s", shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
-		Args:            NewQueryArgs(),
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						ShortName:       shortName,
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
+			},
+			Args: NewQueryArgs(),
+		},
 	}
 
 	control.SetAnonymous(block)
@@ -172,86 +166,9 @@ func (c *Control) GetParentNames() []string {
 	return parents
 }
 
-// AddParent implements ModTreeItem
-func (c *Control) AddParent(parent ModTreeItem) error {
-	c.parents = append(c.parents, parent)
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (c *Control) GetParents() []ModTreeItem {
-	return c.parents
-}
-
-// GetTitle implements HclResource
-func (c *Control) GetTitle() string {
-	return typehelpers.SafeString(c.Title)
-}
-
-// GetDescription implements ModTreeItem
-func (c *Control) GetDescription() string {
-	return typehelpers.SafeString(c.Description)
-}
-
-// GetTags implements HclResource
-func (c *Control) GetTags() map[string]string {
-	if c.Tags != nil {
-		return c.Tags
-	}
-	return map[string]string{}
-}
-
-// GetChildren implements ModTreeItem
-func (c *Control) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// Name implements ModTreeItem, HclResource
-// return name in format: 'control.<shortName>'
-func (c *Control) Name() string {
-	return c.FullName
-}
-
-// QualifiedNameWithVersion returns the name in format: '<modName>@version.control.<shortName>'
-func (c *Control) QualifiedNameWithVersion() string {
-	return fmt.Sprintf("%s.%s", c.Mod.NameWithVersion(), c.FullName)
-}
-
-// GetPaths implements ModTreeItem
-func (c *Control) GetPaths() []NodePath {
-	// lazy load
-	if len(c.Paths) == 0 {
-		c.SetPaths()
-	}
-
-	return c.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (c *Control) SetPaths() {
-	for _, parent := range c.parents {
-		for _, parentPath := range parent.GetPaths() {
-			c.Paths = append(c.Paths, append(parentPath, c.Name()))
-		}
-	}
-}
-
-// CtyValue implements HclResource
-func (c *Control) CtyValue() (cty.Value, error) {
-	return getCtyValue(c)
-}
-
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
-	// verify the control has either a query or a sql attribute
-	if c.Query == nil && c.SQL == nil {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s must define either a 'sql' property or a 'query' property", c.FullName),
-			Subject:  &c.DeclRange,
-		}}
-	}
 
 	return nil
 }
@@ -264,66 +181,6 @@ func (c *Control) AddReference(ref *ResourceReference) {
 // GetReferences implements ResourceWithMetadata
 func (c *Control) GetReferences() []*ResourceReference {
 	return c.References
-}
-
-// GetMod implements ModTreeItem
-func (c *Control) GetMod() *Mod {
-	return c.Mod
-}
-
-// GetDeclRange implements HclResource
-func (c *Control) GetDeclRange() *hcl.Range {
-	return &c.DeclRange
-}
-
-// BlockType implements HclResource
-func (*Control) BlockType() string {
-	return BlockTypeControl
-}
-
-// GetParams implements QueryProvider
-func (c *Control) GetParams() []*ParamDef {
-	return c.Params
-}
-
-// GetQuery implements QueryProvider
-func (c *Control) GetQuery() *Query {
-	return c.Query
-}
-
-// GetArgs implements QueryProvider
-func (c *Control) GetArgs() *QueryArgs {
-	return c.Args
-}
-
-// GetSQL implements QueryProvider
-func (c *Control) GetSQL() *string {
-	return c.SQL
-}
-
-// SetArgs implements QueryProvider
-func (c *Control) SetArgs(args *QueryArgs) {
-	c.Args = args
-}
-
-// SetParams implements QueryProvider
-func (c *Control) SetParams(params []*ParamDef) {
-	c.Params = params
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (c *Control) GetPreparedStatementName() string {
-	if c.PreparedStatementName != "" {
-		return c.PreparedStatementName
-	}
-	c.PreparedStatementName = c.buildPreparedStatementName(c.ShortName, c.Mod.NameWithVersion(), constants.PreparedStatementControlSuffix)
-	return c.PreparedStatementName
-}
-
-// GetResolvedQuery implements QueryProvider
-func (c *Control) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return c.getResolvedQuery(c, runtimeArgs)
 }
 
 // GetWidth implements DashboardLeafNode
@@ -339,19 +196,9 @@ func (c *Control) GetDisplay() string {
 	return ""
 }
 
-// GetDocumentation implements DashboardLeafNode, ModTreeItem
-func (c *Control) GetDocumentation() string {
-	return typehelpers.SafeString(c.Documentation)
-}
-
 // GetType implements DashboardLeafNode
 func (c *Control) GetType() string {
 	return typehelpers.SafeString(c.Type)
-}
-
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (c *Control) GetUnqualifiedName() string {
-	return c.UnqualifiedName
 }
 
 func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
@@ -391,6 +238,11 @@ func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
 	return res
 }
 
+// CtyValue implements CtyValueProvider
+func (c *Control) CtyValue() (cty.Value, error) {
+	return GetCtyValue(c)
+}
+
 func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
@@ -400,6 +252,9 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	} else {
 		c.Base = base.(*Control)
 	}
+
+	// TACTICAL: store another reference to the base as a QueryProvider
+	c.baseQueryProvider = c.Base
 
 	if c.Description == nil {
 		c.Description = c.Base.Description
@@ -429,9 +284,6 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if c.Args == nil {
 		c.Args = c.Base.Args
 	}
-	if c.Params == nil {
-		c.Params = c.Base.Params
-	}
 	if c.Width == nil {
 		c.Width = c.Base.Width
 	}
@@ -440,6 +292,9 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	}
 	if c.Display == nil {
 		c.Display = c.Base.Display
+	}
+	if c.Params == nil {
+		c.Params = c.Base.Params
 	}
 	c.MergeRuntimeDependencies(c.Base)
 }

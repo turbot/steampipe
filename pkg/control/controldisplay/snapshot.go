@@ -16,7 +16,6 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 	var dashboardNode modconfig.DashboardLeafNode
 	var panels map[string]dashboardtypes.SnapshotPanel
 	var checkRun *dashboardexecute.CheckRun
-	var nodeType string
 
 	// get root benchmark/control
 	switch root := e.Root.Children[0].(type) {
@@ -26,21 +25,17 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 		if !ok {
 			return nil, fmt.Errorf("invalid node found in control execution tree - cannot cast '%s' to a DashboardLeafNode", root.GroupItem.Name())
 		}
-		nodeType = "benchmark"
 	case *controlexecute.ControlRun:
 		dashboardNode = root.Control
-		nodeType = "control"
 	}
 
-	// create a check run to wrap the execution tree
+	// TACTICAL create a check run to wrap the execution tree
 	checkRun = &dashboardexecute.CheckRun{
+		DashboardParentImpl: dashboardexecute.DashboardParentImpl{
+			DashboardTreeRunImpl: dashboardexecute.NewDashboardTreeRunImpl(dashboardNode, nil, nil),
+		},
 		Root:          e.Root.Children[0],
-		Name:          dashboardNode.Name(),
 		DashboardNode: dashboardNode,
-		NodeType:      nodeType,
-		DashboardName: dashboardNode.Name(),
-		Title:         dashboardNode.GetTitle(),
-		Description:   dashboardNode.GetDescription(),
 	}
 
 	// populate the panels

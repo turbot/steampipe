@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/spf13/viper"
@@ -15,7 +16,10 @@ import (
 
 func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, error) {
 	workspacePath := viper.GetString(constants.ArgModLocation)
-
+	t := time.Now()
+	defer func() {
+		log.Printf("[TRANCE] Workspace load took %dms\n", time.Since(t).Milliseconds())
+	}()
 	w, err := Load(ctx, workspacePath)
 	if err == nil {
 		return w, nil
@@ -51,7 +55,7 @@ func promptForMissingVariables(ctx context.Context, missingVariables []*modconfi
 			variableDisplayName = fmt.Sprintf("%s.var.%s", v.ModName, v.ShortName)
 			variableName = fmt.Sprintf("%s.%s", v.ModName, v.ShortName)
 		}
-		r, err := promptForVariable(ctx, variableDisplayName, v.Description)
+		r, err := promptForVariable(ctx, variableDisplayName, v.GetDescription())
 		if err != nil {
 			return err
 		}

@@ -53,7 +53,7 @@ type ExecutionStartedPayload struct {
 
 type LeafNodeCompletePayload struct {
 	Action        string                          `json:"action"`
-	DashboardNode dashboardtypes.DashboardNodeRun `json:"dashboard_node"`
+	DashboardNode dashboardtypes.DashboardTreeRun `json:"dashboard_node"`
 	ExecutionId   string                          `json:"execution_id"`
 }
 

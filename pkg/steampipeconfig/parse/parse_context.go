@@ -52,7 +52,6 @@ func (r *ParseContext) ClearDependencies() {
 // AddDependencies is called when a block could not be resolved as it has dependencies
 // 1) store block as unresolved
 // 2) add dependencies to our tree of dependencies
-
 func (r *ParseContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block

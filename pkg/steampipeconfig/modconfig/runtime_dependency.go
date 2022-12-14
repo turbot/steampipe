@@ -5,48 +5,53 @@ import (
 )
 
 type RuntimeDependency struct {
-	PropertyPath *ParsedPropertyPath
-	// the resolved resource which we depend on
-	SourceResource HclResource
-	ArgName        *string
-	ArgIndex       *int
-	// the resource which has the runtime dependency
-	ParentResource QueryProvider
+	PropertyPath       *ParsedPropertyPath
+	TargetPropertyName *string
+	// TACTICAL the name of the parent property - either "args" or "param.<name>"
+	ParentPropertyName  string
+	TargetPropertyIndex *int
+
 	// TACTICAL - if set, wrap the dependency value in an array
 	// this provides support for args which convert a runtime dependency to an array, like:
 	// arns = [input.arn]
 	IsArray bool
 }
 
-func (d *RuntimeDependency) String() string {
-	if d.ArgIndex != nil {
-		return fmt.Sprintf("arg.%d->%s", *d.ArgIndex, d.PropertyPath.String())
-	}
-
-	return fmt.Sprintf("arg.%s->%s", *d.ArgName, d.PropertyPath.String())
+func (d *RuntimeDependency) SourceResourceName() string {
+	return d.PropertyPath.ToResourceName()
 }
 
-func (d *RuntimeDependency) ResolveSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
-	resourceName := d.PropertyPath.ToResourceName()
-	var found bool
-	var sourceResource HclResource
-	switch {
-	// if this is a 'with' resolve from the parent resource
-	case d.PropertyPath.ItemType == BlockTypeWith:
-		sourceResource, found = d.ParentResource.GetWith(resourceName)
-	// if this dependency has a 'self' prefix, resolve from the current dashboard container
-	case d.PropertyPath.Scope == runtimeDependencyDashboardScope:
-		sourceResource, found = dashboard.GetInput(resourceName)
-
-	default:
-		// otherwise, resolve from the global inputs
-		sourceResource, found = workspace.GetResourceMaps().GlobalDashboardInputs[resourceName]
+func (d *RuntimeDependency) String() string {
+	if d.TargetPropertyIndex != nil {
+		return fmt.Sprintf("%s.%d->%s", d.ParentPropertyName, *d.TargetPropertyIndex, d.PropertyPath.String())
 	}
+
+	return fmt.Sprintf("%s.%s->%s", d.ParentPropertyName, *d.TargetPropertyName, d.PropertyPath.String())
+}
+
+func (d *RuntimeDependency) ValidateSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
+	//resourceName := d.PropertyPath.ToResourceName()
+	var found bool
+	// TODO  [node_reuse] validate source resource in resource tree
+	////var sourceResource HclResource
+	//switch d.PropertyPath.ItemType {
+	//// if this is a 'with' resolve from the parent resource
+	//case BlockTypeParam:
+	//	_, found = d.ParentResource.ResolveWithFromTree(resourceName)
+	//case BlockTypeWith:
+	//	_, found = d.ParentResource.ResolveWithFromTree(resourceName)
+	//// if this dependency has a 'self' prefix, resolve from the current dashboard container
+	//case BlockTypeInput:
+	//	_, found = dashboard.GetInput(resourceName)
+	//
+	//	//default:
+	//	//	// otherwise, resolve from the global inputs
+	//	//	_, found = workspace.GetResourceMaps().GlobalDashboardInputs[resourceName]
+	//}
 	if !found {
 		return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)
 	}
 
-	d.SourceResource = sourceResource
 	return nil
 }
 
@@ -72,14 +77,9 @@ func (d *RuntimeDependency) Equals(other *RuntimeDependency) bool {
 		}
 	}
 
-	// SourceResource
-	if d.SourceResource.Name() != other.SourceResource.Name() {
+	if d.SourceResourceName() != other.SourceResourceName() {
 		return false
 	}
 
 	return true
-}
-
-func (d *RuntimeDependency) SetParentResource(resource QueryProvider) {
-	d.ParentResource = resource
 }

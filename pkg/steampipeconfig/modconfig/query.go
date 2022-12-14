@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,56 +13,56 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // Query is a struct representing the Query resource
 type Query struct {
-	ResourceWithMetadataBase
-	QueryProviderBase
+	ResourceWithMetadataImpl
+	QueryProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	ShortName string `cty:"short_name" json:"name"`
-	FullName  string `cty:"name" json:"-"`
+	/// TODO [node_reuse] remove as it exists in base - make sure introspection tables include base
+	Description      *string `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
+	SearchPath       *string `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"search_path,omitempty"`
+	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
 
-	Description           *string           `cty:"description" hcl:"description" column:"description,text" json:"description,omitempty"`
-	Documentation         *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"documentation,omitempty"`
-	SearchPath            *string           `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"seatch_path,omitempty"`
-	SearchPathPrefix      *string           `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
-	Tags                  map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
-	Title                 *string           `cty:"title" hcl:"title" column:"title,text" json:"tags,omitempty"`
-	PreparedStatementName string            `column:"prepared_statement_name,text" json:"-"`
-	SQL                   *string           `cty:"sql" hcl:"sql" column:"sql,text" json:"sql"`
-
-	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"params,omitempty"`
 	// list of all blocks referenced by the resource
 	References []*ResourceReference ` json:"-"`
-
-	Mod       *Mod      `cty:"mod" json:"-"`
-	DeclRange hcl.Range `json:"-"`
-
-	UnqualifiedName string        `json:"-"`
-	Paths           []NodePath    `column:"path,jsonb" json:"-"`
-	parents         []ModTreeItem `json:"-"`
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 	// queries cannot be anonymous
 	q := &Query{
-		ShortName:       shortName,
-		FullName:        fmt.Sprintf("%s.query.%s", mod.ShortName, shortName),
-		UnqualifiedName: fmt.Sprintf("query.%s", shortName),
-		Mod:             mod,
-		DeclRange:       block.DefRange,
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					HclResourceImpl: HclResourceImpl{
+						ShortName:       shortName,
+						FullName:        fullName,
+						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+						DeclRange:       block.DefRange,
+						blockType:       block.Type,
+					},
+					Mod: mod,
+				},
+			},
+		},
 	}
 	return q
 }
 
 func QueryFromFile(modPath, filePath string, mod *Mod) (MappableResource, []byte, error) {
 	q := &Query{
-		Mod: mod,
+		QueryProviderImpl: QueryProviderImpl{
+			RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
+				ModTreeItemImpl: ModTreeItemImpl{
+					Mod: mod,
+				},
+			},
+		},
 	}
 	return q.InitialiseFromFile(modPath, filePath)
 }
@@ -150,10 +151,6 @@ func (q *Query) Equals(other *Query) bool {
 	return true
 }
 
-func (q *Query) CtyValue() (cty.Value, error) {
-	return getCtyValue(q)
-}
-
 func (q *Query) String() string {
 	res := fmt.Sprintf(`
   -----
@@ -174,16 +171,6 @@ func (q *Query) String() string {
 	return res
 }
 
-// Name implements MappableResource, HclResource
-func (q *Query) Name() string {
-	return q.FullName
-}
-
-// GetUnqualifiedName implements DashboardLeafNode, ModTreeItem
-func (q *Query) GetUnqualifiedName() string {
-	return q.UnqualifiedName
-}
-
 // OnDecoded implements HclResource
 func (q *Query) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
 	return nil
@@ -199,122 +186,9 @@ func (q *Query) GetReferences() []*ResourceReference {
 	return q.References
 }
 
-// GetMod implements ModTreeItem
-func (q *Query) GetMod() *Mod {
-	return q.Mod
-}
-
-// GetDeclRange implements HclResource
-func (q *Query) GetDeclRange() *hcl.Range {
-	return &q.DeclRange
-}
-
-// BlockType implements HclResource
-func (*Query) BlockType() string {
-	return BlockTypeQuery
-}
-
-// GetParams implements QueryProvider
-func (q *Query) GetParams() []*ParamDef {
-	return q.Params
-}
-
-// GetArgs implements QueryProvider
-func (q *Query) GetArgs() *QueryArgs {
-	return nil
-}
-
-// GetQuery implements QueryProvider
-func (q *Query) GetQuery() *Query {
-	return nil
-}
-
-// GetSQL implements QueryProvider
-func (q *Query) GetSQL() *string {
-	return q.SQL
-}
-
-// SetArgs implements QueryProvider
-func (q *Query) SetArgs(args *QueryArgs) {
-	// nothing
-}
-
-// SetParams implements QueryProvider
-func (q *Query) SetParams(params []*ParamDef) {
-	q.Params = params
-}
-
-// GetPreparedStatementName implements QueryProvider
-func (q *Query) GetPreparedStatementName() string {
-	if q.PreparedStatementName != "" {
-		return q.PreparedStatementName
-	}
-	q.PreparedStatementName = q.buildPreparedStatementName(q.ShortName, q.Mod.NameWithVersion(), constants.PreparedStatementQuerySuffix)
-	return q.PreparedStatementName
-}
-
-// GetResolvedQuery implements QueryProvider
-func (q *Query) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	// defer to base
-	return q.getResolvedQuery(q, runtimeArgs)
-}
-
-// AddParent implements ModTreeItem
-func (q *Query) AddParent(parent ModTreeItem) error {
-	q.parents = append(q.parents, parent)
-
-	return nil
-}
-
-// GetParents implements ModTreeItem
-func (q *Query) GetParents() []ModTreeItem {
-	return q.parents
-}
-
-// GetChildren implements ModTreeItem
-func (q *Query) GetChildren() []ModTreeItem {
-	return nil
-}
-
-// GetDescription implements ModTreeItem
-func (q *Query) GetDescription() string {
-	return ""
-}
-
-// GetTitle implements HclResource
-func (q *Query) GetTitle() string {
-	return typehelpers.SafeString(q.Title)
-}
-
-// GetTags implements HclResource
-func (q *Query) GetTags() map[string]string {
-	if q.Tags != nil {
-		return q.Tags
-	}
-	return map[string]string{}
-}
-
-// GetPaths implements ModTreeItem
-func (q *Query) GetPaths() []NodePath {
-	// lazy load
-	if len(q.Paths) == 0 {
-		q.SetPaths()
-	}
-	return q.Paths
-}
-
-// SetPaths implements ModTreeItem
-func (q *Query) SetPaths() {
-	for _, parent := range q.parents {
-		for _, parentPath := range parent.GetPaths() {
-			q.Paths = append(q.Paths, append(parentPath, q.Name()))
-		}
-	}
-}
-
-// GetDocumentation implement ModTreeItem
-func (q *Query) GetDocumentation() string {
-	return typehelpers.SafeString(q.Documentation)
+// CtyValue implements CtyValueProvider
+func (q *Query) CtyValue() (cty.Value, error) {
+	return GetCtyValue(q)
 }
 
 func (q *Query) Diff(other *Query) *DashboardTreeItemDiffs {

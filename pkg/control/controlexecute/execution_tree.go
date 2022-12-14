@@ -170,15 +170,14 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 		// but NOT children which come from dependency mods
 
 		// to achieve this, use a  DirectChildrenModDecorator
-
-		return DirectChildrenModDecorator{e.Workspace.Mod}, nil
+		return &DirectChildrenModDecorator{Mod: e.Workspace.Mod}, nil
 	}
 
 	// if the arg is the name of one of the workspace dependendencies, wrap it in DirectChildrenModDecorator
 	// so we only execute _its_ direct children
 	for _, mod := range e.Workspace.Mods {
 		if mod.ShortName == arg {
-			return DirectChildrenModDecorator{mod}, nil
+			return &DirectChildrenModDecorator{Mod: mod}, nil
 		}
 	}
 
