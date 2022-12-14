@@ -158,8 +158,10 @@ func (i *DashboardInput) SetDashboard(dashboard *Dashboard) {
 
 // ValidateQuery implements QueryProvider
 func (i *DashboardInput) ValidateQuery() hcl.Diagnostics {
-	// inputs with placeholder or options do not need a query
-	if i.Placeholder != nil || len(i.Options) > 0 {
+	// inputs with placeholder or options, or text type do not need a query
+	if i.Placeholder != nil ||
+		len(i.Options) > 0 ||
+		typehelpers.SafeString(i.Type) == "text" {
 		return nil
 	}
 
