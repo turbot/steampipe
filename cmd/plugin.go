@@ -580,7 +580,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("failed to get connection map"))
+		error_helpers.ShowError(ctx, sperr.Wrap(err, sperr.WithMessage("failed to get connection map")))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -590,7 +590,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("plugin listing failed"))
+		error_helpers.ShowError(ctx, sperr.Wrap(err, sperr.WithMessage("plugin listing failed")))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -688,12 +688,12 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
-		return nil, nil, sperr.Wrap(err).WithDiagnostic("failed to create db client")
+		return nil, nil, sperr.Wrap(err).WithDetail("failed to create db client")
 	}
 	defer client.Close(ctx)
 	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
-		return nil, nil, sperr.Wrap(res.Error).WithDiagnostic("failed to refresh connection")
+		return nil, nil, sperr.Wrap(res.Error).WithDetail("failed to refresh connection")
 	}
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)

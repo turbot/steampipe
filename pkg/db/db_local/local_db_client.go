@@ -31,22 +31,20 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
-	return nil, sperr.Wrap(fmt.Errorf("injected error")).WithMessage("injected error")
-
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
-		return nil, sperr.Wrap(err).WithDiagnostic("failed to ensure db installation")
+		return nil, sperr.Wrap(err).WithDetail("failed to ensure db installation")
 	}
 
 	startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
 	if startResult.Error != nil {
-		return nil, sperr.Wrap(startResult.Error).WithDiagnostic("failed to start service")
+		return nil, sperr.Wrap(startResult.Error).WithDetail("failed to start service")
 	}
 
 	client, err := NewLocalClient(ctx, invoker, onConnectionCallback)
 	if err != nil {
 		ShutdownService(ctx, invoker)
-		return nil, sperr.Wrap(err).WithDiagnostic("failed to create local client")
+		return nil, sperr.Wrap(err).WithDetail("failed to create local client")
 	}
 	return client, nil
 }
