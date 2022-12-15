@@ -66,6 +66,9 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	// create buffered channel for children to report their completion
 	r.createChildCompleteChan()
 
+	// populate the names of any withs we depend on
+	r.setDependencyWiths()
+
 	return r, nil
 }
 
@@ -125,8 +128,6 @@ func (r *LeafRun) Execute(ctx context.Context) {
 			return
 		}
 
-		// populate the names of any withs we depend on
-		r.setDependencyWiths()
 		// ok now we have runtime dependencies, we can resolve the query
 		if err := r.resolveSQLAndArgs(); err != nil {
 			r.SetError(ctx, err)
@@ -170,6 +171,7 @@ func (r *LeafRun) SetError(ctx context.Context, err error) {
 		LeafNode:    r,
 		Session:     r.executionTree.sessionId,
 		ExecutionId: r.executionTree.id,
+		Error:       err,
 	})
 	r.parent.ChildCompleteChan() <- r
 }
