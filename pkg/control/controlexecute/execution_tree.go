@@ -15,7 +15,6 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -53,13 +52,13 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	noStatusCtx := statushooks.DisableStatusHooks(ctx)
 	err := executionTree.populateControlFilterMap(noStatusCtx, controlFilterWhereClause)
 	if err != nil {
-		return nil, sperr.Wrap(err).WithDetail("failed to populate Control Filter Map")
+		return nil, err
 	}
 
 	// now identify the root item of the control list
 	rootItem, err := executionTree.getExecutionRootFromArg(arg)
 	if err != nil {
-		return nil, sperr.Wrap(err).WithDetail("failed to resolve root item for execution")
+		return nil, err
 	}
 
 	// build tree of result groups, starting with a synthetic 'root' node
