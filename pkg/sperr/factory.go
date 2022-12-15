@@ -1,7 +1,6 @@
 package sperr
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -25,7 +24,7 @@ func Wrap(err error, options ...ErrorOption) *Error {
 	// this works because Is repeatedly calls Unwrap and runs Is (if available)
 	// in the result. Since Error implements Is - any Error in the stack will
 	// return true
-	if !errors.Is(err, Error{}) {
+	if _, ok := err.(*Error); !ok {
 		// if this is not an Error, then there's no Stack in the underlying error
 		// add it
 		se.stack = callers()
