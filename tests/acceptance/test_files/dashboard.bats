@@ -37,7 +37,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'text' blocks" {
   # run a dashboard and shapshot the output
-  run steampipe dashboard dashboard.testing_text_blocks --export test.sps --mod-location "$FILE_PATH/test_data/dashboard_texts"
+  run steampipe dashboard dashboard.testing_text_blocks --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_texts"
 
   # get the patch diff between the two snapshots
   run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_text_blocks_dashboard.json test.sps
@@ -54,7 +54,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'card' blocks" {
   # run a dashboard and shapshot the output
-  run steampipe dashboard dashboard.testing_card_blocks --export test.sps --mod-location "$FILE_PATH/test_data/dashboard_cards"
+  run steampipe dashboard dashboard.testing_card_blocks --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_cards"
 
   # get the patch diff between the two snapshots
   run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_card_blocks_dashboard.json test.sps
@@ -72,7 +72,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with node and edge blocks" {
   # run a dashboard and shapshot the output
-  run steampipe dashboard dashboard.testing_nodes_and_edges --export test.sps --mod-location "$FILE_PATH/test_data/dashboard_graphs"
+  run steampipe dashboard dashboard.testing_nodes_and_edges --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_graphs"
 
   # get the patch diff between the two snapshots
   run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_nodes_and_edges_dashboard.json test.sps

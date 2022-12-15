@@ -1,5 +1,5 @@
 {
-    "end_time": "2022-12-13T13:07:02.987267+05:30",
+    "end_time": "2022-12-15T19:58:44.625895+05:30",
     "inputs": {},
     "layout": {
         "children": [
@@ -40,7 +40,7 @@
             "name": "dashboard_cards.card.card1",
             "panel_type": "card",
             "properties": {
-                "unqualified_name": "card.card1"
+                "name": "card1"
             },
             "status": "complete",
             "width": 2
@@ -64,7 +64,7 @@
             "name": "dashboard_cards.card.card2",
             "panel_type": "card",
             "properties": {
-                "unqualified_name": "card.card2"
+                "name": "card2"
             },
             "status": "complete",
             "width": 2
@@ -84,6 +84,6 @@
         }
     },
     "schema_version": "20220929",
-    "start_time": "2022-12-13T13:07:02.979018+05:30",
+    "start_time": "2022-12-15T19:58:44.617054+05:30",
     "variables": {}
 }
