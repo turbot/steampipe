@@ -17,8 +17,6 @@ type Error struct {
 // Cause will recursively retrieve
 // the topmost error that does not have a cause, which is assumed to be
 // the original cause.
-//
-// TODO: also have a global Cause which calls into this if it is an sperr.Error
 func (e Error) Cause() error {
 	type hasCause interface {
 		Cause() error
@@ -41,17 +39,21 @@ func (e Error) Stack() StackTrace {
 
 func (e Error) Unwrap() error { return e.cause }
 func (e Error) Is(target error) bool {
-	_, ok := target.(Error)
+	_, ok := target.(*Error)
 	return ok
 }
 
 func (e Error) Error() string {
 	res := e.msg
-	if len(e.rootMsg) == 0 {
-		return res
+	if len(e.rootMsg) != 0 {
+		return e.rootMsg
 	}
 	if e.cause != nil {
-		res = e.msg + ": " + e.cause.Error()
+		if len(e.msg) > 0 {
+			res = e.msg + ": " + e.cause.Error()
+		} else {
+			res = e.cause.Error()
+		}
 	}
 	return res
 }
