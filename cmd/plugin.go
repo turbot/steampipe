@@ -580,7 +580,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		error_helpers.ShowError(ctx, sperr.Wrap(err, sperr.WithMessage("failed to get connection map")))
+		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("failed to get connection map"))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -590,7 +590,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		error_helpers.ShowError(ctx, sperr.Wrap(err, sperr.WithMessage("plugin listing failed")))
+		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("plugin listing failed"))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}

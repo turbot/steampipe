@@ -56,14 +56,14 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
 		err := prepareDb(ctx)
-		return sperr.Wrap(err, sperr.WithMessage("failed to prepare db installation"))
+		return sperr.Wrap(err).WithMessage("failed to prepare db installation")
 	}
 
 	// handle the case that the previous db version may still be running
 	dbState, err := GetState()
 	if err != nil {
 		log.Println("[TRACE] Error while loading database state", err)
-		return sperr.Wrap(err, sperr.WithMessage("failed to read service state"))
+		return sperr.Wrap(err).WithMessage("failed to read service state")
 	}
 	if dbState != nil {
 		return sperr.New("cannot install db - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
@@ -81,7 +81,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	err = downloadAndInstallDbFiles(ctx)
 	if err != nil {
-		return sperr.Wrap(err, sperr.WithMessage("failed to download and install db files"))
+		return sperr.Wrap(err).WithMessage("failed to download and install db files")
 	}
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
