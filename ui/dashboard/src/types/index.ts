@@ -305,6 +305,10 @@ export interface PanelProperties {
   [key: string]: any;
 }
 
+export type WithPanelProperties = {
+  name: string;
+};
+
 export interface SQLDataMap {
   [sql: string]: LeafNodeData;
 }

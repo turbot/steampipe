@@ -9,7 +9,11 @@ import {
   NodeAndEdgeProperties,
   NodeProperties,
 } from "./types";
-import { DashboardRunState, PanelsMap } from "../../../types";
+import {
+  DashboardRunState,
+  PanelsMap,
+  WithPanelProperties,
+} from "../../../types";
 import { getColorOverride } from "./index";
 import {
   NodeAndEdgeData,
@@ -139,6 +143,7 @@ const useNodeAndEdgeData = (
     let columns: NodeAndEdgeDataColumn[] = [];
     let rows: NodeAndEdgeDataRow[] = [];
     const categories: CategoryMap = {};
+    const withNameLookup: KeyValueStringPairs = {};
 
     // Add flow/graph/hierarchy level categories
     for (const [name, category] of Object.entries(
@@ -150,6 +155,7 @@ const useNodeAndEdgeData = (
     const missingNodes = {};
     const missingEdges = {};
     const nodeAndEdgeStatus: NodeAndEdgeStatus = {
+      withs: {},
       categories: {},
       nodes: [],
       edges: [],
@@ -166,6 +172,26 @@ const useNodeAndEdgeData = (
         continue;
       }
 
+      // Capture the status of any with blocks that this node depends on
+      const withNames = panel.withs || [];
+      if (withNames.length > 0) {
+        for (const withName of withNames) {
+          // If we've already logged the status of this with, carry on
+          if (withNameLookup[withName]) {
+            continue;
+          }
+
+          const withPanel = panelsMap[withName];
+          const withPanelProperties =
+            withPanel.properties as WithPanelProperties;
+          withNameLookup[withName] = withPanelProperties.name;
+          nodeAndEdgeStatus.withs[withPanelProperties.name] = {
+            id: withPanelProperties.name,
+            state: panelStateToCategoryState(withPanel.status || "ready"),
+          };
+        }
+      }
+
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
       columns = addColumnsForResource(columns, typedPanelData);
       const nodeProperties = (panel.properties || {}) as NodeProperties;
@@ -177,6 +203,7 @@ const useNodeAndEdgeData = (
         state: panelStateToCategoryState(panel.status || "ready"),
         category: nodeProperties.category && nodeProperties.category.name,
         error: panel.error,
+        withs: panel.withs,
       });
 
       let nodeCategory: Category | null = null;
@@ -255,6 +282,7 @@ const useNodeAndEdgeData = (
         state: panelStateToCategoryState(panel.status || "ready"),
         category: edgeProperties.category && edgeProperties.category.name,
         error: panel.error,
+        withs: panel.withs,
       });
 
       let edgeCategory: Category | null = null;

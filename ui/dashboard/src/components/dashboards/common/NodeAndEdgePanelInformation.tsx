@@ -9,6 +9,9 @@ import { Node } from "reactflow";
 type NodeAndEdgePanelInformationProps = {
   nodes: Node[];
   status: DashboardRunState;
+  pendingWiths: CategoryStatus[];
+  errorWiths: CategoryStatus[];
+  completeWiths: CategoryStatus[];
   pendingCategories: CategoryStatus[];
   errorCategories: CategoryStatus[];
   completeCategories: CategoryStatus[];
@@ -17,12 +20,61 @@ type NodeAndEdgePanelInformationProps = {
 const NodeAndEdgePanelInformation = ({
   nodes,
   status,
+  pendingWiths,
+  errorWiths,
+  completeWiths,
   pendingCategories,
   errorCategories,
   completeCategories,
 }: NodeAndEdgePanelInformationProps) => {
   return (
     <div className="space-y-2 overflow-y-scroll">
+      <div className="space-y-1">
+        <span className="block font-medium">Withs</span>
+        <div>
+          {completeWiths.length} complete, {pendingWiths.length} running,{" "}
+          {errorWiths.length} {errorWiths.length === 1 ? "error" : "errors"}
+        </div>
+        {pendingWiths.length === 0 &&
+          errorWiths.length === 0 &&
+          status === "complete" &&
+          nodes.length === 0 && (
+            <span className="block text-foreground-light italic">
+              No nodes or edges
+            </span>
+          )}
+        {pendingWiths.map((withStatus) => (
+          <div key={withStatus.id} className="flex items-center space-x-1">
+            <LoadingIndicator className="w-3.5 h-3.5" />
+            <span key={withStatus.id} className="block">
+              {withStatus.title || withStatus.id}
+            </span>
+          </div>
+        ))}
+        {errorWiths.map((category) => (
+          <Fragment key={category.id}>
+            <div className="flex items-center space-x-1">
+              <Icon
+                className="w-3.5 h-3.5 text-alert"
+                icon="materialsymbols-solid:error"
+              />
+              <span key={category.id} className="block">
+                {category.title || category.id}
+              </span>
+            </div>
+            {category.nodesInError?.map((n) => (
+              <span key={n.id} className="block">
+                <ErrorMessage error={n.error} />{" "}
+              </span>
+            ))}
+            {category.edgesInError?.map((e) => (
+              <span key={e.id} className="block">
+                <ErrorMessage error={e.error} />{" "}
+              </span>
+            ))}
+          </Fragment>
+        ))}
+      </div>
       <div className="space-y-1">
         <span className="block font-medium">Categories</span>
         <div>
