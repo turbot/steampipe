@@ -327,7 +327,12 @@ export interface PanelDefinition {
   properties?: PanelProperties;
   dashboard: string;
   children?: DashboardLayoutNode[];
+  withs?: string[];
 }
+
+export type PanelWithsByStatus = {
+  [status: string]: PanelDefinition[];
+};
 
 export interface DashboardDefinition {
   artificial: boolean;
