@@ -188,6 +188,7 @@ const useNodeAndEdgeData = (
           nodeAndEdgeStatus.withs[withPanelProperties.name] = {
             id: withPanelProperties.name,
             state: panelStateToCategoryState(withPanel.status || "ready"),
+            error: withPanel.error,
           };
         }
       }

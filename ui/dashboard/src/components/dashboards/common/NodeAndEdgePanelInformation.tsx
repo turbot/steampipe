@@ -51,27 +51,20 @@ const NodeAndEdgePanelInformation = ({
             </span>
           </div>
         ))}
-        {errorWiths.map((category) => (
-          <Fragment key={category.id}>
+        {errorWiths.map((withStatus) => (
+          <Fragment key={withStatus.id}>
             <div className="flex items-center space-x-1">
               <Icon
                 className="w-3.5 h-3.5 text-alert"
                 icon="materialsymbols-solid:error"
               />
-              <span key={category.id} className="block">
-                {category.title || category.id}
+              <span key={withStatus.id} className="block">
+                {withStatus.title || withStatus.id}
               </span>
             </div>
-            {category.nodesInError?.map((n) => (
-              <span key={n.id} className="block">
-                <ErrorMessage error={n.error} />{" "}
-              </span>
-            ))}
-            {category.edgesInError?.map((e) => (
-              <span key={e.id} className="block">
-                <ErrorMessage error={e.error} />{" "}
-              </span>
-            ))}
+            <span className="block">
+              <ErrorMessage error={withStatus.error} />{" "}
+            </span>
           </Fragment>
         ))}
       </div>
