@@ -18,17 +18,9 @@ func Wrap(err error, options ...ErrorOption) *Error {
 	}
 	se := &Error{
 		cause: err,
+		stack: callers(),
 	}
 
-	// does the wrapped error have an sperr.Error down in it's stack?
-	// this works because Is repeatedly calls Unwrap and runs Is (if available)
-	// in the result. Since Error implements Is - any Error in the stack will
-	// return true
-	if _, ok := err.(*Error); !ok {
-		// if this is not an Error, then there's no Stack in the underlying error
-		// add it
-		se.stack = callers()
-	}
 	for _, o := range options {
 		se = o(se)
 	}
