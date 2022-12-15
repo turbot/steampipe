@@ -12,17 +12,16 @@ func New(format string, args ...interface{}) *Error {
 	return sperr
 }
 
-func Wrap(err error, options ...ErrorOption) *Error {
+func Wrap(err error) *Error {
 	if err == nil {
 		return nil
+	}
+	if castedErr, ok := err.(*Error); ok {
+		return castedErr
 	}
 	se := &Error{
 		cause: err,
 		stack: callers(),
-	}
-
-	for _, o := range options {
-		se = o(se)
 	}
 	return se
 }
@@ -31,10 +30,10 @@ func Wrapf(err error, format string, args ...interface{}) *Error {
 	if err == nil {
 		return nil
 	}
-	return Wrap(err, WithMessage(format, args...))
+	return Wrap(err).WithMessage(format, args...)
 }
 
-func ToError(val interface{}, options ...ErrorOption) *Error {
+func ToError(val interface{}) *Error {
 	if val == nil {
 		return nil
 	}
@@ -45,8 +44,5 @@ func ToError(val interface{}, options ...ErrorOption) *Error {
 		err = New("%v", val)
 	}
 	sperr := err.(*Error)
-	for _, o := range options {
-		err = o(sperr)
-	}
 	return sperr
 }

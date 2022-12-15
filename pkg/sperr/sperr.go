@@ -6,11 +6,11 @@ import (
 )
 
 type Error struct {
-	stack           *stack
-	cause           error
-	detail          string
-	msg             string
-	hideChildErrors bool
+	stack   *stack
+	cause   error
+	detail  string
+	msg     string
+	rootMsg string
 }
 
 // Cause will retrieves the underlying root error in the error stack
@@ -47,7 +47,10 @@ func (e Error) Is(target error) bool {
 
 func (e Error) Error() string {
 	res := e.msg
-	if e.cause != nil && !e.hideChildErrors {
+	if len(e.rootMsg) == 0 {
+		return res
+	}
+	if e.cause != nil {
 		res = e.msg + ": " + e.cause.Error()
 	}
 	return res
@@ -56,11 +59,14 @@ func (e Error) Error() string {
 // All error values returned from this package implement fmt.Formatter and can
 // be formatted by the fmt package. The following verbs are supported:
 //
-//	%s    print the error. If the error has a Cause it will be
-//	      printed recursively.
-//	%v    see %s
-//	%+v   extended format. Each Frame of the error's StackTrace will
-//	      be printed in detail.
+//		%s    print the error. If the error has a Cause it will be
+//		      printed recursively.
+//		%v    see %s
+//		%+v   extended format. Each Frame of the error's StackTrace will
+//		      be printed in detail.
+//	  %q		a double-quoted string safely escaped with Go syntax
+//
+// TODO: add Details for +
 func (e Error) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':

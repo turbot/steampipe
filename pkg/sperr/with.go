@@ -2,14 +2,27 @@ package sperr
 
 import "fmt"
 
-// WithDiagnostic updates Error and sets the provided message in the error
-func (e *Error) WithDetail(format string, args ...interface{}) *Error {
-	e.detail = fmt.Sprintf(format, args...)
-	return e
+// WithMessage wraps Error and sets the provided message in the new error
+func (e *Error) WithMessage(format string, args ...interface{}) *Error {
+	newErr := &Error{
+		msg: fmt.Sprintf(format, args...),
+	}
+	return newErr
 }
 
-// HideChildErrors forces child errors to be hidden from the message output
-func (e *Error) HideChildErrors() *Error {
-	e.hideChildErrors = true
-	return e
+// WithRootMessage wraps Error and sets the provided message as the final message in the new error.
+// When a root message is set, all child errors are hidden from display
+func (e *Error) WithRootMessage(format string, args ...interface{}) *Error {
+	newErr := &Error{
+		msg: fmt.Sprintf(format, args...),
+	}
+	return newErr
+}
+
+// WithDetail wraps Error and sets the provided detail message in the new error
+func (e *Error) WithDetail(format string, args ...interface{}) *Error {
+	newErr := &Error{
+		detail: fmt.Sprintf(format, args...),
+	}
+	return newErr
 }
