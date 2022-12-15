@@ -43,18 +43,19 @@ func Wrapf(err error, format string, args ...interface{}) *Error {
 	return Wrap(err, WithMessage(format, args...))
 }
 
-func ToError(val interface{}, options ...ErrorOption) error {
-	var err *Error = nil
+func ToError(val interface{}, options ...ErrorOption) *Error {
 	if val == nil {
 		return nil
 	}
+	var err error
 	if e, ok := val.(error); ok {
 		err = Wrap(e)
 	} else {
 		err = New("%v", val)
 	}
+	sperr := err.(*Error)
 	for _, o := range options {
-		err = o(err)
+		err = o(sperr)
 	}
-	return err
+	return sperr
 }
