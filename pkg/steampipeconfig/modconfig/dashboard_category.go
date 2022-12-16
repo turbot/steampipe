@@ -80,21 +80,16 @@ func (c *DashboardCategory) Equals(other *DashboardCategory) bool {
 }
 
 func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+	if c.Base == nil {
 		return
-	} else {
-		c.Base = base.(*DashboardCategory)
 	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	c.base = c.Base
+	// call into parent nested struct setBaseProperties
+	c.ModTreeItemImpl.setBaseProperties()
 
-	if c.Title == nil {
-		c.Title = c.Base.Title
-		// TACTICAL: DashboardCategory overrides the title property to ensure is included in the snapshot
-		// set the base value as well, to ensure that GetTitle works correctly
-		c.CategoryTitle = c.Base.Title
-	}
+	// TACTICAL: DashboardCategory overrides the title property to ensure is included in the snapshot
+	c.CategoryTitle = c.Title
 
 	if c.Color == nil {
 		c.Color = c.Base.Color

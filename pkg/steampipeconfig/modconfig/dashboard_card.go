@@ -146,21 +146,13 @@ func (c *DashboardCard) CtyValue() (cty.Value, error) {
 }
 
 func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+	if c.Base == nil {
 		return
-	} else {
-		c.Base = base.(*DashboardCard)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	c.baseQueryProvider = c.Base
-
-	if c.Title == nil {
-		c.Title = c.Base.Title
-	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	c.base = c.Base
+	// call into parent nested struct setBaseProperties
+	c.QueryProviderImpl.setBaseProperties()
 
 	if c.Label == nil {
 		c.Label = c.Base.Label
@@ -188,21 +180,6 @@ func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvid
 
 	if c.Width == nil {
 		c.Width = c.Base.Width
-	}
-
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
-	}
-
-	if c.Query == nil {
-		c.Query = c.Base.Query
-	}
-
-	if c.Args == nil {
-		c.Args = c.Base.Args
-	}
-	if c.Params == nil {
-		c.Params = c.Base.Params
 	}
 
 	c.MergeRuntimeDependencies(c.Base)

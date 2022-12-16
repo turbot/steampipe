@@ -17,10 +17,6 @@ type DashboardHierarchy struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	FullName        string `cty:"name" json:"-"`
-	ShortName       string `json:"-"`
-	UnqualifiedName string `json:"-"`
-
 	Nodes     DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
 	Edges     DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
 	NodeNames []string          `json:"nodes"`
@@ -211,21 +207,13 @@ func (h *DashboardHierarchy) CtyValue() (cty.Value, error) {
 }
 
 func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(h.Base, resourceMapProvider); !resolved {
+	if h.Base == nil {
 		return
-	} else {
-		h.Base = base.(*DashboardHierarchy)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	h.baseQueryProvider = h.Base
-
-	if h.Title == nil {
-		h.Title = h.Base.Title
-	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	h.base = h.Base
+	// call into parent nested struct setBaseProperties
+	h.QueryProviderImpl.setBaseProperties()
 
 	if h.Type == nil {
 		h.Type = h.Base.Type
@@ -239,18 +227,6 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 		h.Width = h.Base.Width
 	}
 
-	if h.SQL == nil {
-		h.SQL = h.Base.SQL
-	}
-
-	if h.Query == nil {
-		h.Query = h.Base.Query
-	}
-
-	if h.Args == nil {
-		h.Args = h.Base.Args
-	}
-
 	if h.Categories == nil {
 		h.Categories = h.Base.Categories
 	} else {
@@ -262,14 +238,11 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 	} else {
 		h.Edges.Merge(h.Base.Edges)
 	}
+
 	if h.Nodes == nil {
 		h.Nodes = h.Base.Nodes
 	} else {
 		h.Nodes.Merge(h.Base.Nodes)
-	}
-
-	if h.Params == nil {
-		h.Params = h.Base.Params
 	}
 	h.MergeRuntimeDependencies(h.Base)
 }

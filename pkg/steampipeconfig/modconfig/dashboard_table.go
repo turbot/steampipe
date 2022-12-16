@@ -17,6 +17,7 @@ type DashboardTable struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
+	// TODO remove - check introspection tables
 	Width      *int                             `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type       *string                          `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
@@ -171,28 +172,16 @@ func (t *DashboardTable) CtyValue() (cty.Value, error) {
 }
 
 func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(t.Base, resourceMapProvider); !resolved {
+	if t.Base == nil {
 		return
-	} else {
-		t.Base = base.(*DashboardTable)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	t.baseQueryProvider = t.Base
-
-	if t.Title == nil {
-		t.Title = t.Base.Title
-	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	t.base = t.Base
+	// call into parent nested struct setBaseProperties
+	t.QueryProviderImpl.setBaseProperties()
 
 	if t.Width == nil {
 		t.Width = t.Base.Width
-	}
-
-	if t.SQL == nil {
-		t.SQL = t.Base.SQL
 	}
 
 	if t.Type == nil {

@@ -244,24 +244,14 @@ func (c *Control) CtyValue() (cty.Value, error) {
 }
 
 func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+	if c.Base == nil {
 		return
-	} else {
-		c.Base = base.(*Control)
 	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	c.base = c.Base
+	// call into parent nested struct setBaseProperties    
+	c.QueryProviderImpl.setBaseProperties()
 
-	// TACTICAL: store another reference to the base as a QueryProvider
-	c.baseQueryProvider = c.Base
-
-	if c.Description == nil {
-		c.Description = c.Base.Description
-	}
-	if c.Documentation == nil {
-		c.Documentation = c.Base.Documentation
-	}
 	if c.SearchPath == nil {
 		c.SearchPath = c.Base.SearchPath
 	}
@@ -271,19 +261,7 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if c.Severity == nil {
 		c.Severity = c.Base.Severity
 	}
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
-	}
-	c.Tags = utils.MergeMaps(c.Tags, c.Base.Tags)
-	if c.Title == nil {
-		c.Title = c.Base.Title
-	}
-	if c.Query == nil {
-		c.Query = c.Base.Query
-	}
-	if c.Args == nil {
-		c.Args = c.Base.Args
-	}
+
 	if c.Width == nil {
 		c.Width = c.Base.Width
 	}
@@ -293,8 +271,6 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if c.Display == nil {
 		c.Display = c.Base.Display
 	}
-	if c.Params == nil {
-		c.Params = c.Base.Params
-	}
+
 	c.MergeRuntimeDependencies(c.Base)
 }

@@ -214,34 +214,20 @@ func (b *Benchmark) CtyValue() (cty.Value, error) {
 }
 
 func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(b.Base, resourceMapProvider); !resolved {
+	if b.Base == nil {
 		return
-	} else {
-		b.Base = base.(*Benchmark)
 	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	b.base = b.Base
+	// call into parent nested struct setBaseProperties    
+	b.ModTreeItemImpl.setBaseProperties()
 
-	if b.Description == nil {
-		b.Description = b.Base.Description
-	}
-
-	if b.Documentation == nil {
-		b.Documentation = b.Base.Documentation
-	}
-
-	if b.Type == nil {
-		b.Type = b.Base.Type
+	if b.Width == nil {
+		b.Width = b.Base.Width
 	}
 
 	if b.Display == nil {
 		b.Display = b.Base.Display
-	}
-
-	b.Tags = utils.MergeMaps(b.Tags, b.Base.Tags)
-	if b.Title == nil {
-		b.Title = b.Base.Title
 	}
 
 	if len(b.children) == 0 {

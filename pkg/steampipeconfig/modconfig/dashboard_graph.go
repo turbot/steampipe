@@ -205,21 +205,13 @@ func (g *DashboardGraph) CtyValue() (cty.Value, error) {
 }
 
 func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(g.Base, resourceMapProvider); !resolved {
+	if g.Base == nil {
 		return
-	} else {
-		g.Base = base.(*DashboardGraph)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	g.baseQueryProvider = g.Base
-
-	if g.Title == nil {
-		g.Title = g.Base.Title
-	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	g.base = g.Base
+	// call into parent nested struct setBaseProperties
+	g.QueryProviderImpl.setBaseProperties()
 
 	if g.Type == nil {
 		g.Type = g.Base.Type
@@ -231,18 +223,6 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 
 	if g.Width == nil {
 		g.Width = g.Base.Width
-	}
-
-	if g.SQL == nil {
-		g.SQL = g.Base.SQL
-	}
-
-	if g.Query == nil {
-		g.Query = g.Base.Query
-	}
-
-	if g.Args == nil {
-		g.Args = g.Base.Args
 	}
 
 	if g.Categories == nil {
@@ -260,14 +240,11 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	} else {
 		g.Edges.Merge(g.Base.Edges)
 	}
+
 	if g.Nodes == nil {
 		g.Nodes = g.Base.Nodes
 	} else {
 		g.Nodes.Merge(g.Base.Nodes)
-	}
-
-	if g.Params == nil {
-		g.Params = g.Base.Params
 	}
 	g.MergeRuntimeDependencies(g.Base)
 }

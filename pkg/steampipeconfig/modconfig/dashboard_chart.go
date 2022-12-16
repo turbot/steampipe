@@ -26,10 +26,9 @@ type DashboardChart struct {
 	Grouping   *string                          `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
-
-	Base       *DashboardChart      `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
+	Base       *DashboardChart                  `hcl:"base" json:"-"`
+	References []*ResourceReference             `json:"-"`
+	Paths      []NodePath                       `column:"path,jsonb" json:"-"`
 }
 
 func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -160,21 +159,13 @@ func (c *DashboardChart) CtyValue() (cty.Value, error) {
 }
 
 func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+	if c.Base == nil {
 		return
-	} else {
-		c.Base = base.(*DashboardChart)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	c.baseQueryProvider = c.Base
-
-	if c.Title == nil {
-		c.Title = c.Base.Title
-	}
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	c.base = c.Base
+	// call into parent nested struct setBaseProperties
+	c.QueryProviderImpl.setBaseProperties()
 
 	if c.Type == nil {
 		c.Type = c.Base.Type
@@ -212,22 +203,6 @@ func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvi
 
 	if c.Width == nil {
 		c.Width = c.Base.Width
-	}
-
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
-	}
-
-	if c.Query == nil {
-		c.Query = c.Base.Query
-	}
-
-	if c.Args == nil {
-		c.Args = c.Base.Args
-	}
-
-	if c.Params == nil {
-		c.Params = c.Base.Params
 	}
 
 	c.MergeRuntimeDependencies(c.Base)

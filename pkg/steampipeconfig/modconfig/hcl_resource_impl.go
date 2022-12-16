@@ -3,6 +3,7 @@ package modconfig
 import (
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -10,14 +11,16 @@ type HclResourceImpl struct {
 	// required to allow partial decoding
 	HclResourceRemain hcl.Body `hcl:",remain" json:"-"`
 
-	FullName            string            `cty:"name" json:"-"`
-	Title               *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
-	ShortName           string            `cty:"short_name" hcl:"name,label" json:"name"`
-	UnqualifiedName     string            `cty:"unqualified_name" json:"-"`
-	Description         *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
-	Documentation       *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
-	DeclRange           hcl.Range         `json:"-"`
-	Tags                map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
+	FullName        string            `cty:"name" json:"-"`
+	Title           *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
+	ShortName       string            `cty:"short_name" hcl:"name,label" json:"name"`
+	UnqualifiedName string            `cty:"unqualified_name" json:"-"`
+	Description     *string           `cty:"description" hcl:"description" column:"description,text" json:"-"`
+	Documentation   *string           `cty:"documentation" hcl:"documentation" column:"documentation,text" json:"-"`
+	DeclRange       hcl.Range         `json:"-"`
+	Tags            map[string]string `cty:"tags" hcl:"tags,optional" column:"tags,jsonb" json:"-"`
+
+	base                HclResource
 	blockType           string
 	disableCtySerialise bool
 	isTopLevel          bool
@@ -93,4 +96,20 @@ func (b *HclResourceImpl) CtyValue() (cty.Value, error) {
 		return cty.Zero, nil
 	}
 	return GetCtyValue(b)
+}
+
+func (b *HclResourceImpl) setBaseProperties() {
+	if b.Title == nil {
+		b.Title = b.getBaseImpl().Title
+	}
+	if b.Description == nil {
+		b.Description = b.getBaseImpl().Description
+	}
+
+	b.Tags = utils.MergeMaps(b.Tags, b.getBaseImpl().Tags)
+
+}
+
+func (b *HclResourceImpl) getBaseImpl() *HclResourceImpl {
+	return b.base.GetHclResourceImpl()
 }

@@ -117,17 +117,13 @@ func (n *DashboardNode) CtyValue() (cty.Value, error) {
 }
 
 func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(n.Base, resourceMapProvider); !resolved {
+	if n.Base == nil {
 		return
-	} else {
-		n.Base = base.(*DashboardNode)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	n.baseQueryProvider = n.Base
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	n.base = n.Base
+	// call into parent nested struct setBaseProperties
+	n.QueryProviderImpl.setBaseProperties()
 
 	if n.Title == nil {
 		n.Title = n.Base.Title

@@ -1,385 +1,488 @@
+dashboard "name_graph" {
 
+  title         = "named graph with base and args"
 
-locals {
-  vpc_common_tags = {
-    service = "AWS/VPC"
-  }
-  networking_color = "red"
-  compute_color = "blue"
-}
-
-
-dashboard "with_graph_as_node" {
-  title = "With Graph as Node"
-
-  input "instance_id" {
-    title = "Select an instance:"
-    query = query.ec2_instance_input
+  input "bucket_arn" {
+    title = "Select a bucket:"
+    query = query.s3_bucket_input
     width = 4
   }
 
-  //self.input.instance_id.value
-  //i-04cd720cb5b0e2d05
-
-  with "security_groups" {
+  with "bucket_policy" {
     sql = <<-EOQ
       select
-        s ->> 'GroupId' as sg_id
+        policy_std
       from
-        aws_ec2_instance,
-        jsonb_array_elements(security_groups) as s
+        aws_s3_bucket
       where
-        instance_id = $1
+        arn = $1;
     EOQ
 
-    args = [self.input.instance_id.value]
+    args = [self.input.bucket_arn.value]
   }
-
-  with "vpc_details" {
-    sql = <<-EOQ
-      select
-        instance_id,
-        vpc_id,
-        subnet_id
-      from
-        aws_ec2_instance
-      where
-        instance_id = $1
-    EOQ
-
-    args = [self.input.instance_id.value]
-  }
-
 
   graph {
-
-
-    node {
-      base = node.ec2_instance
-      args = {
-        ec2_instance_ids  = [self.input.instance_id.value]
-      }
+    base = graph.iam_policy_structure
+    args = {
+      policy_std = with.bucket_policy[0].policy_std
     }
-
-    edge {
-      base = edge.aws_ec2_instance_to_security_group
-      args = {
-        ec2_instance_id  = self.input.instance_id.value
-      }
-    }
-
-
-
-    node {
-      base = node.vpc_vpc
-      args = {
-        vpc_vpc_ids = with.vpc_details.rows[*].vpc_id
-      }
-    }
-
-    node "mynode" {
-      base = node.vpc_subnet
-      args = {
-        vpc_subnet_ids    = with.vpc_details.rows[*].subnet_id
-      }
-    }
-
-    node {
-      base = node.vpc_security_group
-      args = {
-        vpc_security_group_ids        = with.security_groups.rows[*].sg_id
-      }
-    }
-
-    edge {
-      base = edge.vpc_security_group_to_vpc_subnet
-      args = {
-        vpc_security_group_ids        = with.security_groups.rows[*].sg_id
-      }
-    }
-
-    edge {
-      base = edge.vpc_subnet_to_vpc
-      args = {
-        vpc_subnet_ids    = with.vpc_details.rows[*].subnet_id
-      }
-    }
-
   }
-
 }
 
 
-
-//************************
-
-query "ec2_instance_input" {
+query "s3_bucket_input" {
   sql = <<-EOQ
     select
       title as label,
-      instance_id as value,
+      arn as value,
       json_build_object(
         'account_id', account_id,
-        'region', region,
-        'instance_id', instance_id
+        'region', region
       ) as tags
     from
-      aws_ec2_instance
+      aws_s3_bucket
     order by
       title;
   EOQ
 }
-//************************
 
 
 
+//**  The Graph....
 
-node "ec2_instance" {
-  category = category.ec2_instance
+graph "iam_policy_structure" {
+  title = "IAM Policy"
+
+  param "policy_std" {}
+
+  # node {
+  #   base = node.iam_policy_statement
+  #   args = {
+  #     iam_policy_std = param.policy_std
+  #   }
+  # }
+
+  node {
+    base = node.iam_policy_statement_action_notaction
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  node {
+    base = node.iam_policy_statement_condition
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  node {
+    base = node.iam_policy_statement_condition_key
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  node {
+    base = node.iam_policy_statement_condition_key_value
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  node {
+    base = node.iam_policy_statement_resource_notresource
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+
+  # edge {
+  #   base = edge.iam_policy_statement
+  #   args = {
+  #     iam_policy_arns = [self.input.policy_arn.value]
+  #   }
+  # }
+
+  edge {
+    base = edge.iam_policy_statement_action
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  edge {
+    base = edge.iam_policy_statement_condition
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  edge {
+    base = edge.iam_policy_statement_condition_key
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  edge {
+    base = edge.iam_policy_statement_condition_key_value
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  edge {
+    base = edge.iam_policy_statement_notaction
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  edge {
+    base = edge.iam_policy_statement_notresource
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+
+  edge {
+    base = edge.iam_policy_statement_resource
+    args = {
+      iam_policy_std = param.policy_std
+    }
+  }
+}
+
+
+
+// nodes
+
+
+node "iam_policy_statement" {
+  category = category.iam_policy_statement
 
   sql = <<-EOQ
     select
-      instance_id as id,
-      title,
-      jsonb_build_object(
-        'Instance ID', instance_id,
-        'Name', tags ->> 'Name',
-        'ARN', arn,
-        'Account ID', account_id,
-        'Region', region
-      ) as properties
+      concat('statement:', i) as id,
+      coalesce (
+        t.stmt ->> 'Sid',
+        concat('[', i::text, ']')
+        ) as title
     from
-      aws_ec2_instance
-    where
-      instance_id = any($1);
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i)
   EOQ
 
-  param "ec2_instance_ids" {}
+  param "iam_policy_std" {}
 }
 
+node "iam_policy_statement_action_notaction" {
+  category = category.iam_policy_action
 
+  sql = <<-EOQ
 
-edge "aws_ec2_instance_to_security_group" {
-  title = "security group"
+    select
+      concat('action:', action) as id,
+      action as title
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_array_elements_text(coalesce(t.stmt -> 'Action','[]'::jsonb) || coalesce(t.stmt -> 'NotAction','[]'::jsonb)) as action
+  EOQ
+
+  param "iam_policy_std" {}
+}
+
+node "iam_policy_statement_condition" {
+  category = category.iam_policy_condition
 
   sql = <<-EOQ
     select
-      instance_id as from_id,
-      sg ->> 'GroupId' as to_id
+      condition.key as title,
+      concat('statement:', i, ':condition:', condition.key  ) as id,
+      condition.value as properties
     from
-      aws_ec2_instance,
-      jsonb_array_elements(security_groups) as sg
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_each(t.stmt -> 'Condition') as condition
     where
-      instance_id = $1
+      stmt -> 'Condition' <> 'null'
   EOQ
 
-  param "ec2_instance_id" {}
+  param "iam_policy_std" {}
 }
 
-//**********************
-
-
-
-
-
-
-node "vpc_vpc" {
-  category = category.vpc_vpc
-
-  sql = <<-EOQ
-   select
-      vpc_id as id,
-      title as title,
-      jsonb_build_object(
-        'ARN', arn,
-        'VPC ID', vpc_id,
-        'Is Default', is_default,
-        'State', state,
-        'CIDR Block', cidr_block,
-        'DHCP Options ID', dhcp_options_id,
-        'Owner ID', owner_id,
-        'Account ID', account_id,
-        'Region', region
-      ) as properties
-    from
-      aws_vpc
-    where
-      vpc_id = any($1 ::text[]);
-  EOQ
-
-  param "vpc_vpc_ids" {}
-}
-
-
-
-node "vpc_security_group" {
-  category = category.vpc_security_group
+node "iam_policy_statement_condition_key" {
+  category = category.iam_policy_condition_key
 
   sql = <<-EOQ
     select
-      group_id as id,
-      title as title,
-      jsonb_build_object(
-        'Group ID', group_id,
-        'Description', description,
-        'ARN', arn,
-        'Account ID', account_id,
-        'Region', region
-      ) as properties
+      condition_key.key as title,
+      concat('statement:', i, ':condition:', condition.key, ':', condition_key.key  ) as id,
+      condition_key.value as properties
     from
-      aws_vpc_security_group
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_each(t.stmt -> 'Condition') as condition,
+      jsonb_each(condition.value) as condition_key
     where
-      group_id = any($1 ::text[]);
+      stmt -> 'Condition' <> 'null'
   EOQ
 
-  param "vpc_security_group_ids" {}
+  param "iam_policy_std" {}
 }
 
-node "vpc_subnet" {
-  category = category.vpc_subnet
-
-  sql = <<-EOQ
-   select
-      subnet_id as id,
-      title as title,
-      jsonb_build_object(
-        'Subnet ID', subnet_id,
-        'ARN', subnet_arn,
-        'VPC ID', vpc_id,
-        'Account ID', account_id,
-        'Region', region
-      ) as properties
-    from
-      aws_vpc_subnet
-    where
-      subnet_id = any($1 ::text[]);
-  EOQ
-
-  param "vpc_subnet_ids" {}
-}
-
-
-
-
-////////
-edge "vpc_subnet_to_vpc" {
-  title = "vpc"
+node "iam_policy_statement_condition_key_value" {
+  category = category.iam_policy_condition_value
 
   sql = <<-EOQ
     select
-      subnet_id as from_id,
-      vpc_id as to_id
+      condition_value as title,
+      concat('statement:', i, ':condition:', condition.key, ':', condition_key.key, ':', condition_value  ) as id
     from
-      aws_vpc_subnet
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_each(t.stmt -> 'Condition') as condition,
+      jsonb_each(condition.value) as condition_key,
+      jsonb_array_elements_text(condition_key.value) as condition_value
     where
-      subnet_id = any($1)
+      stmt -> 'Condition' <> 'null'
   EOQ
 
-  param "vpc_subnet_ids" {}
+  param "iam_policy_std" {}
 }
 
-
-//edge.aws_security_group_to_subnets
-
-edge "vpc_security_group_to_vpc_subnet" {
-  title = "subnet"
+node "iam_policy_statement_resource_notresource" {
+  category = category.iam_policy_resource
 
   sql = <<-EOQ
     select
-      subnet.subnet_id as from_id,
-      sg.group_id as to_id
+      resource as id,
+      resource as title
     from
-      aws_vpc_security_group as sg,
-      aws_svpc_subnet as subnet
-    where
-      sg.vpc_id = subnet.vpc_id
-      and sg.group_id = any($1)
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_array_elements_text(coalesce(t.stmt -> 'Action','[]'::jsonb) || coalesce(t.stmt -> 'NotAction','[]'::jsonb)) as action,
+      jsonb_array_elements_text(coalesce(t.stmt -> 'Resource','[]'::jsonb) || coalesce(t.stmt -> 'NotResource','[]'::jsonb)) as resource
   EOQ
 
-  param "vpc_security_group_ids" {}
+  param "iam_policy_std" {}
 }
 
 
-category "vpc_eip" {
-  title = "VPC EIP"
-  color = local.networking_color
-  href  = "/aws_insights.dashboard.vpc_eip_detail?input.eip_arn={{.properties.'ARN' | @uri}}"
-  icon  = "swipe-right-alt"
+// edges
+
+edge "iam_policy_statement_action" {
+  //title = "allows"
+  sql = <<-EOQ
+
+    select
+      --distinct on (p.arn,action)
+      concat('action:', action) as to_id,
+      concat('statement:', i) as from_id,
+      lower(t.stmt ->> 'Effect') as title,
+      lower(t.stmt ->> 'Effect') as category
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_array_elements_text(t.stmt -> 'Action') as action
+  EOQ
+
+  param "iam_policy_std" {}
 }
 
-category "vpc_endpoint" {
-  title = "VPC Endpoint"
-  color = local.networking_color
-  icon  = "mediation"
+edge "iam_policy_statement_condition" {
+  title = "condition"
+  sql   = <<-EOQ
+
+    select
+      concat('statement:', i, ':condition:', condition.key) as to_id,
+      concat('statement:', i) as from_id
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_each(t.stmt -> 'Condition') as condition
+    where
+      stmt -> 'Condition' <> 'null'
+  EOQ
+
+  param "iam_policy_std" {}
 }
 
-category "vpc_flow_log" {
-  title = "VPC Flow Log"
-  href  = "/aws_insights.dashboard.vpc_flow_logs_detail?input.flow_log_id={{.properties.'Flow Log ID' | @uri}}"
-  color = local.networking_color
-  icon  = "format-text-overflow"
+edge "iam_policy_statement_condition_key" {
+  title = "all of"
+  sql   = <<-EOQ
+    select
+      concat('statement:', i, ':condition:', condition.key, ':', condition_key.key  ) as to_id,
+      concat('statement:', i, ':condition:', condition.key) as from_id
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_each(t.stmt -> 'Condition') as condition,
+      jsonb_each(condition.value) as condition_key
+    where
+      stmt -> 'Condition' <> 'null'
+  EOQ
+
+  param "iam_policy_std" {}
 }
 
-category "vpc_internet_gateway" {
-  title = "VPC Internet Gateway"
-  icon  = "gate"
-  color = local.networking_color
+edge "iam_policy_statement_condition_key_value" {
+  title = "any of"
+  sql   = <<-EOQ
+    select
+      concat('statement:', i, ':condition:', condition.key, ':', condition_key.key, ':', condition_value  ) as to_id,
+      concat('statement:', i, ':condition:', condition.key, ':', condition_key.key  ) as from_id
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_each(t.stmt -> 'Condition') as condition,
+      jsonb_each(condition.value) as condition_key,
+      jsonb_array_elements_text(condition_key.value) as condition_value
+    where
+      stmt -> 'Condition' <> 'null'
+  EOQ
+
+  param "iam_policy_std" {}
 }
 
-category "vpc_nat_gateway" {
-  title = "VPC NAT Gateway"
-  icon  = "lan"
-  color = local.networking_color
+edge "iam_policy_statement_notaction" {
+  sql = <<-EOQ
+
+    select
+      --distinct on (p.arn,notaction)
+      concat('action:', notaction) as to_id,
+      concat('statement:', i) as from_id,
+      concat(lower(t.stmt ->> 'Effect'), ' not action') as title,
+      lower(t.stmt ->> 'Effect') as category
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i),
+      jsonb_array_elements_text(t.stmt -> 'NotAction') as notaction
+  EOQ
+
+  param "iam_policy_std" {}
 }
 
-category "vpc_network_acl" {
-  title = "VPC Network ACL"
-  icon  = "fact-check"
-  color = local.networking_color
+edge "iam_policy_statement_notresource" {
+  title = "not resource"
+
+  sql = <<-EOQ
+    select
+      concat('action:', coalesce(action, notaction)) as from_id,
+      notresource as to_id,
+      lower(stmt ->> 'Effect') as category
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i)
+      left join jsonb_array_elements_text(stmt -> 'Action') as action on true
+      left join jsonb_array_elements_text(stmt -> 'NotAction') as notaction on true
+      left join jsonb_array_elements_text(stmt -> 'NotResource') as notresource on true
+  EOQ
+
+  param "iam_policy_std" {}
 }
 
-category "vpc_peering_connection" {
-  title = "VPC Peering Connection"
-  color = local.networking_color
-  icon  = "text:Peering"
+edge "iam_policy_statement_resource" {
+  title = "resource"
+
+  sql = <<-EOQ
+    select
+      concat('action:', coalesce(action, notaction)) as from_id,
+      resource as to_id,
+      lower(stmt ->> 'Effect') as category
+    from
+      jsonb_array_elements(($1 :: jsonb) ->  'Statement') with ordinality as t(stmt,i)
+      left join jsonb_array_elements_text(stmt -> 'Action') as action on true
+      left join jsonb_array_elements_text(stmt -> 'NotAction') as notaction on true
+      left join jsonb_array_elements_text(stmt -> 'Resource') as resource on true
+  EOQ
+
+  param "iam_policy_std" {}
 }
 
-category "vpc_route_table" {
-  title = "VPC Route Table"
-  icon  = "table-rows"
-  color = local.networking_color
+
+
+// categories
+
+
+category "iam_policy" {
+  title = "IAM Policy"
+  color = local.iam_color
+  href  = "/aws_insights.dashboard.iam_policy_detail?input.policy_arn={{.properties.'ARN' | @uri}}"
+  icon  = "rule"
 }
 
-category "vpc_security_group" {
-  title = "VPC Security Group"
-  href  = "/aws_insights.dashboard.vpc_security_group_detail?input.security_group_id={{.properties.'Group ID' | @uri}}"
-  icon  = "enhanced-encryption"
-  color = local.networking_color
+category "iam_policy_action" {
+  href  = "/aws_insights.dashboard.iam_action_glob_report?input.action_glob={{.title | @uri}}"
+  icon  = "electric-bolt"
+  color = local.iam_color
+  title = "Action"
 }
 
-category "vpc_subnet" {
-  title = "VPC Subnet"
-  href  = "/aws_insights.dashboard.vpc_subnet_detail?input.subnet_id={{.properties.'Subnet ID' | @uri}}"
-  icon  = "share"
-  color = local.networking_color
+category "iam_policy_condition" {
+  icon  = "help"
+  color = local.iam_color
+  title = "Condition"
 }
 
-category "vpc_vpc" {
-  title = "VPC"
-  href  = "/aws_insights.dashboard.vpc_detail?input.vpc_id={{.properties.'VPC ID' | @uri}}"
-  icon  = "cloud"
-  color = local.networking_color
+category "iam_policy_condition_key" {
+  icon  = "vpn-key"
+  color = local.iam_color
+  title = "Condition Key"
 }
 
-category "vpc_vpn_gateway" {
-  title = "VPC VPN Gateway"
-  icon  = "vpn_lock"
-  color = local.networking_color
+category "iam_policy_condition_value" {
+  icon  = "text:val"
+  color = local.iam_color
+  title = "Condition Value"
 }
 
-category "ec2_instance" {
-  title = "EC2 Instance"
-  href  = "/aws_insights.dashboard.ec2_instance_detail?input.instance_arn={{.properties.'ARN' | @uri}}"
-  icon  = "dns"
-  color = local.compute_color
+category "iam_policy_notaction" {
+  icon  = "flash-off"
+  color = local.iam_color
+  title = "NotAction"
+}
+
+category "iam_policy_notresource" {
+  icon  = "bookmark-remove"
+  color = local.iam_color
+  title = "NotResource"
+}
+
+category "iam_policy_resource" {
+  icon  = "bookmark"
+  color = local.iam_color
+  title = "Resource"
+}
+
+category "iam_policy_statement" {
+  icon  = "assignment"
+  color = local.iam_color
+  title = "Statement"
+}
+
+
+
+// color
+
+locals {
+  analytics_color               = "purple"
+  application_integration_color = "deeppink"
+  ar_vr_color                   = "deeppink"
+  blockchain_color              = "orange"
+  business_application_color    = "red"
+  compliance_color              = "orange"
+  compute_color                 = "orange"
+  containers_color              = "orange"
+  content_delivery_color        = "purple"
+  cost_management_color         = "green"
+  database_color                = "blue"
+  developer_tools_color          = "blue"
+  end_user_computing_color      = "green"
+  front_end_web_color           = "red"
+  game_tech_color               = "purple"
+  iam_color                     = "red"
+  iot_color                     = "green"
+  management_governance_color   = "pink"
+  media_color                   = "orange"
+  migration_transfer_color      = "green"
+  ml_color                      = "green"
+  mobile_color                  = "red"
+  networking_color              = "purple"
+  quantum_technologies_color    = "orange"
+  robotics_color                = "red"
+  satellite_color               = "blue"
+  security_color                = "red"
+  storage_color                 = "green"
 }
