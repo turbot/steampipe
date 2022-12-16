@@ -180,7 +180,7 @@ func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, erro
 
 func buildLeafNodeUpdatedPayload(event *dashboardevents.LeafNodeUpdated) ([]byte, error) {
 	payload := LeafNodeCompletePayload{
-		Action:        "leaf_node_complete",
+		Action:        "leaf_node_updated",
 		DashboardNode: event.LeafNode,
 		ExecutionId:   event.ExecutionId,
 	}
