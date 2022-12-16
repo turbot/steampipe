@@ -127,7 +127,6 @@ export const DashboardActions: IActions = {
   LEAF_NODE_UPDATED: "leaf_node_updated",
   LEAF_NODES_COMPLETE: "leaf_nodes_complete",
   LEAF_NODES_UPDATED: "leaf_nodes_updated",
-  LEAF_NODE_PROGRESS: "leaf_node_progress",
   SELECT_DASHBOARD: "select_dashboard",
   SELECT_PANEL: "select_panel",
   SET_DASHBOARD: "set_dashboard",
