@@ -34,8 +34,10 @@ import {
   GraphDirection,
   GraphProperties,
   GraphProps,
+  NoCategoryStatus,
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
+  WithStatus,
 } from "../types";
 import { DashboardRunState } from "../../../../types";
 import { ExpandedNodes, GraphProvider, useGraph } from "../common/useGraph";
@@ -51,6 +53,7 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
 import "reactflow/dist/style.css";
+import sortBy from "lodash/sortBy";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -412,39 +415,53 @@ const useNodeAndEdgePanelInformation = (
 
   const {
     pendingWiths,
-    errorWiths,
-    completeWiths,
+    pendingNoCategories,
     pendingCategories,
+    errorWiths,
+    errorNoCategories,
     errorCategories,
+    completeWiths,
+    completeNoCategories,
     completeCategories,
   } = useMemo(() => {
-    const pendingWiths: CategoryStatus[] = [];
-    const errorWiths: CategoryStatus[] = [];
-    const completeWiths: CategoryStatus[] = [];
+    const pendingWiths: WithStatus[] = [];
+    const errorWiths: WithStatus[] = [];
+    const completeWiths: WithStatus[] = [];
+    const pendingNoCategories: NoCategoryStatus[] = [];
+    const errorNoCategories: NoCategoryStatus[] = [];
+    const completeNoCategories: NoCategoryStatus[] = [];
     const pendingCategories: CategoryStatus[] = [];
     const errorCategories: CategoryStatus[] = [];
     const completeCategories: CategoryStatus[] = [];
     if (nodeAndEdgeStatus) {
-      for (const withStatus of Object.values(nodeAndEdgeStatus.withs)) {
+      for (const withStatus of sortBy(Object.values(nodeAndEdgeStatus.withs), [
+        "title",
+        "id",
+      ])) {
         if (withStatus.state === "pending") {
           pendingWiths.push(withStatus);
         } else if (withStatus.state === "error") {
-          errorWiths.push({
-            ...withStatus,
-            nodesInError: nodeAndEdgeStatus.nodes.filter(
-              (n) =>
-                (n.withs || []).includes(withStatus.id) && n.state === "error"
-            ),
-            edgesInError: nodeAndEdgeStatus.edges.filter(
-              (e) =>
-                (e.withs || []).includes(withStatus.id) && e.state === "error"
-            ),
-          });
+          errorWiths.push(withStatus);
         } else {
           completeWiths.push(withStatus);
         }
       }
-      for (const category of Object.values(nodeAndEdgeStatus.categories)) {
+      for (const noCategory of sortBy(
+        Object.values(nodeAndEdgeStatus.noCategories),
+        ["panelType", "title", "id"]
+      )) {
+        if (noCategory.state === "pending") {
+          pendingNoCategories.push(noCategory);
+        } else if (noCategory.state === "error") {
+          errorNoCategories.push(noCategory);
+        } else {
+          completeNoCategories.push(noCategory);
+        }
+      }
+      for (const category of sortBy(
+        Object.values(nodeAndEdgeStatus.categories),
+        ["title", "id"]
+      )) {
         if (category.state === "pending") {
           pendingCategories.push(category);
         } else if (category.state === "error") {
@@ -464,10 +481,13 @@ const useNodeAndEdgePanelInformation = (
     }
     return {
       pendingWiths,
-      errorWiths,
-      completeWiths,
+      pendingNoCategories,
       pendingCategories,
+      errorWiths,
+      errorNoCategories,
       errorCategories,
+      completeWiths,
+      completeNoCategories,
       completeCategories,
     };
   }, [nodeAndEdgeStatus]);
@@ -493,10 +513,13 @@ const useNodeAndEdgePanelInformation = (
         nodes={nodes}
         status={status}
         pendingWiths={pendingWiths}
-        errorWiths={errorWiths}
-        completeWiths={completeWiths}
+        pendingNoCategories={pendingNoCategories}
         pendingCategories={pendingCategories}
+        errorWiths={errorWiths}
+        errorNoCategories={errorNoCategories}
         errorCategories={errorCategories}
+        completeWiths={completeWiths}
+        completeNoCategories={completeNoCategories}
         completeCategories={completeCategories}
       />
     ));

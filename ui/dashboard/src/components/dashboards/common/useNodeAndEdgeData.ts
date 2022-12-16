@@ -157,6 +157,7 @@ const useNodeAndEdgeData = (
     const nodeAndEdgeStatus: NodeAndEdgeStatus = {
       withs: {},
       categories: {},
+      noCategories: {},
       nodes: [],
       edges: [],
     };
@@ -187,6 +188,7 @@ const useNodeAndEdgeData = (
           withNameLookup[withName] = withPanelProperties.name;
           nodeAndEdgeStatus.withs[withPanelProperties.name] = {
             id: withPanelProperties.name,
+            title: withPanel.title,
             state: panelStateToCategoryState(withPanel.status || "ready"),
             error: withPanel.error,
           };
@@ -229,6 +231,15 @@ const useNodeAndEdgeData = (
           nodeAndEdgeStatus.categories[nodeProperties.category.name].state =
             panelStateToCategoryState(panel.status || "ready");
         }
+      } else {
+        const id = nodeProperties.name;
+        nodeAndEdgeStatus.noCategories[id] = {
+          id,
+          title: panel.title,
+          panelType: "node",
+          error: panel.error,
+          state: panelStateToCategoryState(panel.status || "ready"),
+        };
       }
 
       // Loop over each row and ensure we have the correct category information set for it
@@ -271,6 +282,28 @@ const useNodeAndEdgeData = (
       if (!panel) {
         missingEdges[edgePanelName] = true;
         continue;
+      }
+
+      // Capture the status of any with blocks that this edge depends on
+      const withNames = panel.withs || [];
+      if (withNames.length > 0) {
+        for (const withName of withNames) {
+          // If we've already logged the status of this with, carry on
+          if (withNameLookup[withName]) {
+            continue;
+          }
+
+          const withPanel = panelsMap[withName];
+          const withPanelProperties =
+            withPanel.properties as WithPanelProperties;
+          withNameLookup[withName] = withPanelProperties.name;
+          nodeAndEdgeStatus.withs[withPanelProperties.name] = {
+            id: withPanelProperties.name,
+            title: withPanel.title,
+            state: panelStateToCategoryState(withPanel.status || "ready"),
+            error: withPanel.error,
+          };
+        }
       }
 
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
@@ -316,6 +349,15 @@ const useNodeAndEdgeData = (
           nodeAndEdgeStatus.categories[edgeProperties.category.name].state =
             panel.status === "error" ? "error" : "pending";
         }
+      } else {
+        const id = edgeProperties.name;
+        nodeAndEdgeStatus.noCategories[id] = {
+          id,
+          title: panel.title,
+          panelType: "edge",
+          error: panel.error,
+          state: panelStateToCategoryState(panel.status || "ready"),
+        };
       }
 
       for (const row of typedPanelData.rows || []) {

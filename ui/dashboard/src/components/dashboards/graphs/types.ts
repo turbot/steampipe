@@ -69,8 +69,17 @@ export type CategoryStatus = BaseNodeAndEdgeStatus & {
   withsInError?: WithStatus[];
 };
 
+export type NoCategoryStatus = BaseNodeAndEdgeStatus & {
+  title?: string;
+  panelType: "node" | "edge";
+};
+
 type CategoryStatusMap = {
   [name: string]: CategoryStatus;
+};
+
+type NoCategoryStatusMap = {
+  [name: string]: NoCategoryStatus;
 };
 
 type WithStatusMap = {
@@ -85,11 +94,14 @@ export type EdgeStatus = BaseNodeAndEdgeStatus & {
   withs?: string[];
 };
 
-export type WithStatus = BaseNodeAndEdgeStatus;
+export type WithStatus = BaseNodeAndEdgeStatus & {
+  title?: string;
+};
 
 export type NodeAndEdgeStatus = {
   withs: WithStatusMap;
   categories: CategoryStatusMap;
+  noCategories: NoCategoryStatusMap;
   nodes: NodeStatus[];
   edges: EdgeStatus[];
 };
