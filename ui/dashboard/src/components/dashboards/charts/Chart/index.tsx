@@ -689,8 +689,10 @@ const Chart = ({ options, type }: ChartComponentProps) => {
     click: (params) => handleClick(params, navigate, renderTemplates),
   };
 
+  const PlaceholderComponent = Placeholder.component;
+
   return (
-    <Placeholder.component ready={!!echarts && templateRenderReady}>
+    <PlaceholderComponent ready={!!echarts && templateRenderReady}>
       <>
         {mediaMode !== "print" && (
           <div className="relative">
@@ -714,7 +716,7 @@ const Chart = ({ options, type }: ChartComponentProps) => {
           </div>
         )}
       </>
-    </Placeholder.component>
+    </PlaceholderComponent>
   );
 };
 

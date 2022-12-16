@@ -1,7 +1,8 @@
 import usePanelControls from "./usePanelControls";
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 import { IPanelControl } from "../components/dashboards/layout/Panel/PanelControls";
-import { PanelDefinition } from "../types";
+import { PanelDefinition, PanelWithsByStatus } from "../types";
+import { useDashboard } from "./useDashboard";
 
 interface IPanelContext {
   definition: PanelDefinition;
@@ -12,17 +13,36 @@ interface IPanelContext {
   setPanelInformation: (information: ReactNode) => void;
   setShowPanelControls: (show: boolean) => void;
   setShowPanelInformation: (show: boolean) => void;
+  withStatuses: PanelWithsByStatus;
 }
 
 const PanelContext = createContext<IPanelContext | null>(null);
 
 const PanelProvider = ({ children, definition, showControls }) => {
+  const { panelsMap } = useDashboard();
   const [showPanelControls, setShowPanelControls] = useState(false);
   const [showPanelInformation, setShowPanelInformation] = useState(false);
   const [panelInformation, setPanelInformation] = useState<ReactNode | null>(
     null
   );
   const { panelControls } = usePanelControls(definition, showControls);
+  const withStatuses = useMemo<PanelWithsByStatus>(() => {
+    if (!definition || !definition.withs || definition.withs.length === 0) {
+      return {} as PanelWithsByStatus;
+    }
+    const withsByStatus: PanelWithsByStatus = {};
+    for (const withName of definition.withs) {
+      const withPanel = panelsMap[withName];
+      if (!withPanel || !withPanel.status) {
+        continue;
+      }
+      const statuses = withsByStatus[withPanel.status] || [];
+      statuses[withPanel.status].push(withPanel);
+      withsByStatus[withPanel.status] = statuses;
+    }
+    return withsByStatus;
+  }, [definition, panelsMap]);
+
   return (
     <PanelContext.Provider
       value={{
@@ -34,6 +54,7 @@ const PanelProvider = ({ children, definition, showControls }) => {
         setPanelInformation,
         setShowPanelControls,
         setShowPanelInformation,
+        withStatuses,
       }}
     >
       {children}

@@ -129,6 +129,14 @@ const updateSelectedDashboard = (
   }
 };
 
+function getSqlDataMapKey(sql: string, args?: any[]) {
+  return `sql:${sql}${
+    args && args.length > 0
+      ? `:args:${args.map((a) => a.toString()).join(",")}`
+      : ""
+  }`;
+}
+
 function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
   const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
@@ -137,10 +145,16 @@ function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
   for (const sqlPath of sqlPaths) {
     // @ts-ignore
     const sql: string = get(panels, sqlPath);
-    const dataPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}.data`;
-    const data = get(panels, dataPath);
-    if (!sqlDataMap[sql]) {
-      sqlDataMap[sql] = data;
+    const panelPath = sqlPath.substring(0, sqlPath.indexOf(".sql"));
+    const panel = get(panels, panelPath);
+    const data = panel.data;
+    if (!data) {
+      continue;
+    }
+    const args = panel.args;
+    const key = getSqlDataMapKey(sql, args);
+    if (!sqlDataMap[key]) {
+      sqlDataMap[key] = data;
     }
   }
   return sqlDataMap;
@@ -151,15 +165,21 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
     path.endsWith(".sql")
   );
   for (const sqlPath of sqlPaths) {
+    const panelPath = sqlPath.substring(0, sqlPath.indexOf(".sql"));
+    const panel = get(panels, panelPath);
+    const args = panel.args;
+    const sql = panel.sql;
+    if (!sql) {
+      continue;
+    }
+    const key = getSqlDataMapKey(sql, args);
     // @ts-ignore
-    const sql: string = get(panels, sqlPath);
-    const data = sqlDataMap[sql];
+    const data = sqlDataMap[key];
     if (!data) {
       continue;
     }
-    const panelPath = `${sqlPath.substring(0, sqlPath.indexOf(".sql"))}`;
+
     const dataPath = `${panelPath}.data`;
-    const panel = get(panels, panelPath);
     // We don't want to retain panel data for inputs as it causes issues with selection
     // of incorrect values for select controls without placeholders
     if (panel && panel.panel_type !== "input") {

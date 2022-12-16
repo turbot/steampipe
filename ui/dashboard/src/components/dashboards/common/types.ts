@@ -22,10 +22,12 @@ export interface KeyValueStringPairs {
 }
 
 export interface NodeProperties {
+  name: string;
   category?: Category;
 }
 
 export interface EdgeProperties {
+  name: string;
   category?: Category;
 }
 

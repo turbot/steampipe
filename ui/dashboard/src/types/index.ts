@@ -305,12 +305,17 @@ export interface PanelProperties {
   [key: string]: any;
 }
 
+export type WithPanelProperties = {
+  name: string;
+};
+
 export interface SQLDataMap {
   [sql: string]: LeafNodeData;
 }
 
 export interface PanelDefinition {
   name: string;
+  args?: any[];
   display?: string;
   display_type?: string;
   panel_type: DashboardPanelType;
@@ -326,7 +331,12 @@ export interface PanelDefinition {
   properties?: PanelProperties;
   dashboard: string;
   children?: DashboardLayoutNode[];
+  withs?: string[];
 }
+
+export type PanelWithsByStatus = {
+  [status: string]: PanelDefinition[];
+};
 
 export interface DashboardDefinition {
   artificial: boolean;

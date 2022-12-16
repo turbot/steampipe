@@ -9,14 +9,20 @@ import {
   NodeAndEdgeProperties,
   NodeProperties,
 } from "./types";
-import { DashboardRunState, PanelsMap } from "../../../types";
+import {
+  DashboardRunState,
+  PanelsMap,
+  WithPanelProperties,
+} from "../../../types";
 import { getColorOverride } from "./index";
 import {
+  NoCategoryStatusMap,
   NodeAndEdgeData,
   NodeAndEdgeDataColumn,
   NodeAndEdgeDataFormat,
   NodeAndEdgeDataRow,
   NodeAndEdgeStatus,
+  WithStatusMap,
 } from "../graphs/types";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useMemo } from "react";
@@ -94,6 +100,50 @@ const populateCategoryWithDefaults = (
 
 const emptyPanels: PanelsMap = {};
 
+const addPanelWithsStatus = (
+  panelsMap: PanelsMap,
+  withs: string[] | undefined,
+  withNameLookup: KeyValueStringPairs,
+  withsStatuses: WithStatusMap
+) => {
+  const withNames = withs || [];
+  if (withNames.length > 0) {
+    for (const withName of withNames) {
+      // If we've already logged the status of this with, carry on
+      if (withNameLookup[withName]) {
+        continue;
+      }
+
+      const withPanel = panelsMap[withName];
+      const withPanelProperties = withPanel.properties as WithPanelProperties;
+      withNameLookup[withName] = withPanelProperties.name;
+      withsStatuses[withPanelProperties.name] = {
+        id: withPanelProperties.name,
+        title: withPanel.title,
+        state: panelStateToCategoryState(withPanel.status || "ready"),
+        error: withPanel.error,
+      };
+    }
+  }
+};
+
+const addNoCategoryStatus = (
+  panelType: "node" | "edge",
+  id: string,
+  title: string | undefined,
+  error: string | undefined,
+  status: DashboardRunState | undefined,
+  noCategoriesLookup: NoCategoryStatusMap
+) => {
+  noCategoriesLookup[id] = {
+    id,
+    title,
+    panelType,
+    error,
+    state: panelStateToCategoryState(status || "ready"),
+  };
+};
+
 // This function will normalise both the legacy and node/edge data formats into a data table.
 // In the node/edge approach, the data will be spread out across the node and edge resources
 // until the flow/graph/hierarchy has completed, at which point we'll have a populated data
@@ -139,6 +189,7 @@ const useNodeAndEdgeData = (
     let columns: NodeAndEdgeDataColumn[] = [];
     let rows: NodeAndEdgeDataRow[] = [];
     const categories: CategoryMap = {};
+    const withNameLookup: KeyValueStringPairs = {};
 
     // Add flow/graph/hierarchy level categories
     for (const [name, category] of Object.entries(
@@ -150,7 +201,9 @@ const useNodeAndEdgeData = (
     const missingNodes = {};
     const missingEdges = {};
     const nodeAndEdgeStatus: NodeAndEdgeStatus = {
+      withs: {},
       categories: {},
+      noCategories: {},
       nodes: [],
       edges: [],
     };
@@ -166,6 +219,14 @@ const useNodeAndEdgeData = (
         continue;
       }
 
+      // Capture the status of any with blocks that this node depends on
+      addPanelWithsStatus(
+        panelsMap,
+        panel.withs,
+        withNameLookup,
+        nodeAndEdgeStatus.withs
+      );
+
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
       columns = addColumnsForResource(columns, typedPanelData);
       const nodeProperties = (panel.properties || {}) as NodeProperties;
@@ -177,6 +238,7 @@ const useNodeAndEdgeData = (
         state: panelStateToCategoryState(panel.status || "ready"),
         category: nodeProperties.category && nodeProperties.category.name,
         error: panel.error,
+        withs: panel.withs,
       });
 
       let nodeCategory: Category | null = null;
@@ -201,6 +263,15 @@ const useNodeAndEdgeData = (
           nodeAndEdgeStatus.categories[nodeProperties.category.name].state =
             panelStateToCategoryState(panel.status || "ready");
         }
+      } else {
+        addNoCategoryStatus(
+          "node",
+          nodeProperties.name,
+          panel.title,
+          panel.error,
+          panel.status,
+          nodeAndEdgeStatus.noCategories
+        );
       }
 
       // Loop over each row and ensure we have the correct category information set for it
@@ -245,6 +316,14 @@ const useNodeAndEdgeData = (
         continue;
       }
 
+      // Capture the status of any with blocks that this edge depends on
+      addPanelWithsStatus(
+        panelsMap,
+        panel.withs,
+        withNameLookup,
+        nodeAndEdgeStatus.withs
+      );
+
       const typedPanelData = (panel.data || {}) as NodeAndEdgeData;
       columns = addColumnsForResource(columns, typedPanelData);
       const edgeProperties = (panel.properties || {}) as EdgeProperties;
@@ -255,6 +334,7 @@ const useNodeAndEdgeData = (
         state: panelStateToCategoryState(panel.status || "ready"),
         category: edgeProperties.category && edgeProperties.category.name,
         error: panel.error,
+        withs: panel.withs,
       });
 
       let edgeCategory: Category | null = null;
@@ -287,6 +367,15 @@ const useNodeAndEdgeData = (
           nodeAndEdgeStatus.categories[edgeProperties.category.name].state =
             panel.status === "error" ? "error" : "pending";
         }
+      } else {
+        addNoCategoryStatus(
+          "edge",
+          edgeProperties.name,
+          panel.title,
+          panel.error,
+          panel.status,
+          nodeAndEdgeStatus.noCategories
+        );
       }
 
       for (const row of typedPanelData.rows || []) {
