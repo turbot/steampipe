@@ -30,13 +30,18 @@ const NodeAndEdgePanelInformation = ({
   return (
     <div className="space-y-2 overflow-y-scroll">
       <div className="space-y-1">
-        <span className="block font-medium">Withs</span>
         <div>
-          {completeWiths.length} complete, {pendingWiths.length} running,{" "}
-          {errorWiths.length} {errorWiths.length === 1 ? "error" : "errors"}
+          {completeWiths.length + completeCategories.length} complete,{" "}
+          {pendingWiths.length + pendingCategories.length} running,{" "}
+          {errorWiths.length + errorCategories.length}{" "}
+          {errorWiths.length + errorCategories.length === 1
+            ? "error"
+            : "errors"}
         </div>
         {pendingWiths.length === 0 &&
           errorWiths.length === 0 &&
+          pendingCategories.length === 0 &&
+          errorCategories.length === 0 &&
           status === "complete" &&
           nodes.length === 0 && (
             <span className="block text-foreground-light italic">
@@ -47,7 +52,15 @@ const NodeAndEdgePanelInformation = ({
           <div key={withStatus.id} className="flex items-center space-x-1">
             <LoadingIndicator className="w-3.5 h-3.5" />
             <span key={withStatus.id} className="block">
-              {withStatus.title || withStatus.id}
+              with: {withStatus.title || withStatus.id}
+            </span>
+          </div>
+        ))}
+        {pendingCategories.map((category) => (
+          <div key={category.id} className="flex items-center space-x-1">
+            <LoadingIndicator className="w-3.5 h-3.5" />
+            <span key={category.id} className="block">
+              {category.title || category.id}
             </span>
           </div>
         ))}
@@ -59,37 +72,13 @@ const NodeAndEdgePanelInformation = ({
                 icon="materialsymbols-solid:error"
               />
               <span key={withStatus.id} className="block">
-                {withStatus.title || withStatus.id}
+                with: {withStatus.title || withStatus.id}
               </span>
             </div>
             <span className="block">
               <ErrorMessage error={withStatus.error} />{" "}
             </span>
           </Fragment>
-        ))}
-      </div>
-      <div className="space-y-1">
-        <span className="block font-medium">Categories</span>
-        <div>
-          {completeCategories.length} complete, {pendingCategories.length}{" "}
-          running, {errorCategories.length}{" "}
-          {errorCategories.length === 1 ? "error" : "errors"}
-        </div>
-        {pendingCategories.length === 0 &&
-          errorCategories.length === 0 &&
-          status === "complete" &&
-          nodes.length === 0 && (
-            <span className="block text-foreground-light italic">
-              No nodes or edges
-            </span>
-          )}
-        {pendingCategories.map((category) => (
-          <div key={category.id} className="flex items-center space-x-1">
-            <LoadingIndicator className="w-3.5 h-3.5" />
-            <span key={category.id} className="block">
-              {category.title || category.id}
-            </span>
-          </div>
         ))}
         {errorCategories.map((category) => (
           <Fragment key={category.id}>
