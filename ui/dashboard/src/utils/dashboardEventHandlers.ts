@@ -121,7 +121,7 @@ const controlsUpdatedEventHandler = (action, state) => {
   };
 };
 
-const leafNodesCompleteEventHandler = (action, state) => {
+const leafNodesUpdatedEventHandler = (action, state) => {
   // If the dashboard has already completed,
   // no need to process these events
   if (
@@ -179,7 +179,7 @@ const calculateProgress = (panelsMap) => {
 
 export {
   controlsUpdatedEventHandler,
-  leafNodesCompleteEventHandler,
+  leafNodesUpdatedEventHandler,
   migrateDashboardExecutionCompleteSchema,
   migrateSnapshotDataToExecutionCompleteEvent,
 };

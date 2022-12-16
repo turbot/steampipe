@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from "react";
 
 const useDashboardWebSocketEventHandler = (dispatch, eventHooks) => {
   const controlEventBuffer = useRef<ReceivedSocketMessagePayload[]>([]);
-  const leafNodeCompleteEventBuffer = useRef<ReceivedSocketMessagePayload[]>(
+  const leafNodesUpdatedEventBuffer = useRef<ReceivedSocketMessagePayload[]>(
     []
   );
 
@@ -15,7 +15,8 @@ const useDashboardWebSocketEventHandler = (dispatch, eventHooks) => {
           controlEventBuffer.current.push(event);
           break;
         case DashboardActions.LEAF_NODE_COMPLETE:
-          leafNodeCompleteEventBuffer.current.push(event);
+        case DashboardActions.LEAF_NODE_UPDATED:
+          leafNodesUpdatedEventBuffer.current.push(event);
           break;
         default:
           dispatch({
@@ -36,16 +37,16 @@ const useDashboardWebSocketEventHandler = (dispatch, eventHooks) => {
     const interval = setInterval(() => {
       if (
         controlEventBuffer.current.length === 0 &&
-        leafNodeCompleteEventBuffer.current.length === 0
+        leafNodesUpdatedEventBuffer.current.length === 0
       ) {
         return;
       }
       const controlEventsToProcess = [...controlEventBuffer.current];
       const leafNodeCompleteEventsToProcess = [
-        ...leafNodeCompleteEventBuffer.current,
+        ...leafNodesUpdatedEventBuffer.current,
       ];
       controlEventBuffer.current = [];
-      leafNodeCompleteEventBuffer.current = [];
+      leafNodesUpdatedEventBuffer.current = [];
       if (controlEventsToProcess.length > 0) {
         dispatch({
           type: DashboardActions.CONTROLS_UPDATED,
@@ -54,7 +55,7 @@ const useDashboardWebSocketEventHandler = (dispatch, eventHooks) => {
       }
       if (leafNodeCompleteEventsToProcess.length > 0) {
         dispatch({
-          type: DashboardActions.LEAF_NODES_COMPLETE,
+          type: DashboardActions.LEAF_NODES_UPDATED,
           nodes: leafNodeCompleteEventsToProcess,
         });
       }

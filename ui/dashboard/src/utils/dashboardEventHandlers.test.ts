@@ -1,6 +1,6 @@
 import {
   controlsUpdatedEventHandler,
-  leafNodesCompleteEventHandler,
+  leafNodesUpdatedEventHandler,
   migrateDashboardExecutionCompleteSchema,
   migrateSnapshotDataToExecutionCompleteEvent,
 } from "./dashboardEventHandlers";
@@ -451,24 +451,22 @@ describe("dashboard event handlers", () => {
     });
   });
 
-  describe("leafNodesCompleteEventHandler", () => {
+  describe("leafNodesUpdatedEventHandler", () => {
     test("ignore complete events", () => {
       const state = { state: "complete" };
-      expect(leafNodesCompleteEventHandler(null, state)).toEqual(state);
+      expect(leafNodesUpdatedEventHandler(null, state)).toEqual(state);
     });
 
     test("no event nodes", () => {
       const state = { state: "ready" };
-      expect(leafNodesCompleteEventHandler({ nodes: null }, state)).toEqual(
+      expect(leafNodesUpdatedEventHandler({ nodes: null }, state)).toEqual(
         state
       );
     });
 
     test("empty event nodes", () => {
       const state = { state: "ready" };
-      expect(leafNodesCompleteEventHandler({ nodes: [] }, state)).toEqual(
-        state
-      );
+      expect(leafNodesUpdatedEventHandler({ nodes: [] }, state)).toEqual(state);
     });
 
     test("node for different execution", () => {
@@ -479,7 +477,7 @@ describe("dashboard event handlers", () => {
         progress: 100,
       };
       expect(
-        leafNodesCompleteEventHandler({ nodes: [{ execution_id: "2" }] }, state)
+        leafNodesUpdatedEventHandler({ nodes: [{ execution_id: "2" }] }, state)
       ).toEqual(state);
     });
 
@@ -497,7 +495,7 @@ describe("dashboard event handlers", () => {
         status: "complete",
       };
       expect(
-        leafNodesCompleteEventHandler(
+        leafNodesUpdatedEventHandler(
           {
             nodes: [
               {
@@ -543,7 +541,7 @@ describe("dashboard event handlers", () => {
         status: "complete",
       };
       expect(
-        leafNodesCompleteEventHandler(
+        leafNodesUpdatedEventHandler(
           {
             nodes: [
               {

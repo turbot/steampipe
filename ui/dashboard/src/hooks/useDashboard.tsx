@@ -36,7 +36,7 @@ import {
 import { buildComponentsMap } from "../components";
 import {
   controlsUpdatedEventHandler,
-  leafNodesCompleteEventHandler,
+  leafNodesUpdatedEventHandler,
   migrateDashboardExecutionCompleteSchema,
 } from "../utils/dashboardEventHandlers";
 import { GlobalHotKeys } from "react-hotkeys";
@@ -356,7 +356,8 @@ function reducer(state: IDashboardContext, action) {
     case DashboardActions.CONTROLS_UPDATED:
       return controlsUpdatedEventHandler(action, state);
     case DashboardActions.LEAF_NODES_COMPLETE:
-      return leafNodesCompleteEventHandler(action, state);
+    case DashboardActions.LEAF_NODES_UPDATED:
+      return leafNodesUpdatedEventHandler(action, state);
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
     case DashboardActions.SET_DATA_MODE:
