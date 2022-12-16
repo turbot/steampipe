@@ -113,7 +113,7 @@ const buildDashboards = (
 };
 
 const updateSelectedDashboard = (
-  selectedDashboard: AvailableDashboard,
+  selectedDashboard: AvailableDashboard | null,
   newDashboards: AvailableDashboard[]
 ) => {
   if (!selectedDashboard) {
@@ -129,15 +129,15 @@ const updateSelectedDashboard = (
   }
 };
 
-function getSqlDataMapKey(sql: string, args?: any[]) {
+const getSqlDataMapKey = (sql: string, args?: any[]) => {
   return `sql:${sql}${
     args && args.length > 0
       ? `:args:${args.map((a) => a.toString()).join(",")}`
       : ""
   }`;
-}
+};
 
-function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
+const buildSqlDataMap = (panels: PanelsMap): SQLDataMap => {
   const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
@@ -158,9 +158,12 @@ function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
     }
   }
   return sqlDataMap;
-}
+};
 
-function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
+const addDataToPanels = (
+  panels: PanelsMap,
+  sqlDataMap: SQLDataMap
+): PanelsMap => {
   const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
@@ -187,7 +190,7 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
     }
   }
   return { ...panels };
-}
+};
 
 const wrapDefinitionInArtificialDashboard = (
   definition: PanelDefinition,
@@ -210,7 +213,7 @@ const wrapDefinitionInArtificialDashboard = (
   };
 };
 
-function reducer(state, action) {
+function reducer(state: IDashboardContext, action) {
   if (state.ignoreEvents) {
     return state;
   }

@@ -20,6 +20,8 @@ export interface IDashboardContext {
 
   panelsMap: PanelsMap;
 
+  execution_id: string | null;
+
   dashboards: AvailableDashboard[];
   dashboardsMap: AvailableDashboardsDictionary;
   dashboard: DashboardDefinition | null;
