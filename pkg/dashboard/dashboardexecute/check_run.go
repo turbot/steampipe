@@ -86,6 +86,9 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	utils.LogTime("CheckRun.execute start")
 	defer utils.LogTime("CheckRun.execute end")
 
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunRunning)
+
 	// create a context with a DashboardEventControlHooks to report control execution progress
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))
 	r.controlExecutionTree.Execute(ctx)
@@ -108,27 +111,17 @@ func (r *CheckRun) SetError(ctx context.Context, err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 
-	r.runStatus = dashboardtypes.DashboardRunError
-	// raise dashboard error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
-		LeafNode:    r,
-		Session:     r.executionTree.sessionId,
-		Error:       err,
-		ExecutionId: r.executionTree.id,
-	})
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunError)
+
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }
 
 // SetComplete implements DashboardTreeRun
 func (r *CheckRun) SetComplete(ctx context.Context) {
-	r.runStatus = dashboardtypes.DashboardRunComplete
-	// raise counter complete event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
-		LeafNode:    r,
-		Session:     r.executionTree.sessionId,
-		ExecutionId: r.executionTree.id,
-	})
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunComplete)
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }
@@ -168,4 +161,11 @@ func (r *CheckRun) buildSnapshotPanelsUnder(parent controlexecute.ExecutionTreeN
 		res = r.buildSnapshotPanelsUnder(c, res)
 	}
 	return res
+}
+
+func (r *CheckRun) setStatus(status dashboardtypes.DashboardRunStatus) {
+	r.Status = status
+	// raise LeafNodeUpdated event
+	e := dashboardevents.NewLeafNodeUpdate(r, r.executionTree.sessionId, r.executionTree.id)
+	r.executionTree.workspace.PublishDashboardEvent(e)
 }

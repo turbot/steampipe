@@ -37,6 +37,13 @@ func (d *ResolvedRuntimeDependency) ScopedName() string {
 	return fmt.Sprintf("%s.%s", d.publisherName, d.Dependency.SourceResourceName())
 }
 
+func (d *ResolvedRuntimeDependency) IsResolved() bool {
+	d.valueLock.Lock()
+	defer d.valueLock.Unlock()
+
+	return d.hasValue()
+}
+
 func (d *ResolvedRuntimeDependency) Resolve() error {
 	d.valueLock.Lock()
 	defer d.valueLock.Unlock()

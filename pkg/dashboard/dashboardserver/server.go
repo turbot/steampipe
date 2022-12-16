@@ -132,9 +132,6 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		s.writePayloadToSession(e.Session, payload)
 		outputReady(s.context, fmt.Sprintf("Execution complete: %s", dashboardName))
 
-	case *dashboardevents.LeafNodeError:
-		log.Printf("[TRACE] LeafNodeError event session %s, node %s, error %v", e.Session, e.LeafNode.GetName(), e.Error)
-
 	case *dashboardevents.ControlComplete:
 		log.Printf("[TRACE] ControlComplete event session %s, control %s", e.Session, e.Control.GetControlId())
 		payload, payloadError = buildControlCompletePayload(e)
@@ -151,9 +148,9 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		}
 		s.writePayloadToSession(e.Session, payload)
 
-	case *dashboardevents.LeafNodeComplete:
-		log.Printf("[TRACE] LeafNodeComplete event session %s, node %s", e.Session, e.LeafNode.GetName())
-		payload, payloadError = buildLeafNodeCompletePayload(e)
+	case *dashboardevents.LeafNodeUpdated:
+		log.Printf("[TRACE] LeafNodeUpdated event session %s, node %s", e.Session, e.LeafNode.GetName())
+		payload, payloadError = buildLeafNodeUpdatedPayload(e)
 		if payloadError != nil {
 			return
 		}

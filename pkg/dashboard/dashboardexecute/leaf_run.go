@@ -22,10 +22,10 @@ type LeafRun struct {
 	Data     *dashboardtypes.LeafData    `json:"data,omitempty"`
 	Resource modconfig.DashboardLeafNode `json:"properties,omitempty"`
 	// a list of the (scoped) names of any `withs` that we rely on
-	DependencyWiths []string                  `json:"withs,omitempty"`
-	TimingResult    *queryresult.TimingResult `json:"-"`
-	executeSQL      string
-	onComplete      func()
+	RuntimeDependencies []string                  `json:"dependencies,omitempty"`
+	TimingResult        *queryresult.TimingResult `json:"-"`
+	executeSQL          string
+	onComplete          func()
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -67,7 +67,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	r.createChildCompleteChan()
 
 	// populate the names of any withs we depend on
-	r.setDependencyWiths()
+	r.setRuntimeDependencies()
 
 	return r, nil
 }
@@ -135,6 +135,9 @@ func (r *LeafRun) Execute(ctx context.Context) {
 		}
 	}
 
+	// set status to running (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunRunning)
+
 	// if we have sql to execute, do it now
 	if r.executeSQL != "" {
 		if err := r.executeQuery(ctx); err != nil {
@@ -163,28 +166,18 @@ func (r *LeafRun) SetError(ctx context.Context, err error) {
 	r.err = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
-	r.Status = dashboardtypes.DashboardRunError
 	// increment error count for snapshot hook
 	statushooks.SnapshotError(ctx)
-	// raise counter error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeError{
-		LeafNode:    r,
-		Session:     r.executionTree.sessionId,
-		ExecutionId: r.executionTree.id,
-		Error:       err,
-	})
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunError)
+
 	r.parent.ChildCompleteChan() <- r
 }
 
 // SetComplete implements DashboardTreeRun
 func (r *LeafRun) SetComplete(ctx context.Context) {
-	r.Status = dashboardtypes.DashboardRunComplete
-	// raise counter complete event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.LeafNodeComplete{
-		LeafNode:    r,
-		Session:     r.executionTree.sessionId,
-		ExecutionId: r.executionTree.id,
-	})
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunComplete)
 
 	// call snapshot hooks with progress
 	statushooks.UpdateSnapshotProgress(ctx, 1)
@@ -197,6 +190,19 @@ func (r *LeafRun) SetComplete(ctx context.Context) {
 func (*LeafRun) IsSnapshotPanel() {}
 
 func (r *LeafRun) waitForRuntimeDependencies() error {
+	allRuntimeDepsResolved := true
+	for _, dep := range r.runtimeDependencies {
+		if !dep.IsResolved() {
+			allRuntimeDepsResolved = false
+		}
+	}
+	if allRuntimeDepsResolved {
+		return nil
+	}
+
+	// set status to blocked
+	r.setStatus(dashboardtypes.DashboardRunBlocked)
+
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.Resource.Name())
 	for _, resolvedDependency := range r.runtimeDependencies {
 		// check whether the dependency is available
@@ -342,15 +348,13 @@ func (r *LeafRun) combineChildData() {
 	r.Data.Columns = maps.Values(schemaMap)
 }
 
-// populate the list of `withs` that this run depends on
-func (r *LeafRun) setDependencyWiths() {
+// populate the list of runtime dependencies that this run depends on
+func (r *LeafRun) setRuntimeDependencies() {
 	for _, d := range r.runtimeDependencies {
-		if d.Dependency.PropertyPath.ItemType == modconfig.BlockTypeWith {
-			// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
-			// we do this as there may be a with from a base resource with a clashing with name
-			// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
-			r.DependencyWiths = append(r.DependencyWiths, d.ScopedName())
-		}
+		// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
+		// we do this as there may be a with from a base resource with a clashing with name
+		// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
+		r.RuntimeDependencies = append(r.RuntimeDependencies, d.ScopedName())
 	}
 }
 
@@ -364,4 +368,11 @@ func (r *LeafRun) populateParamDefaults(provider modconfig.QueryProvider) {
 			}
 		}
 	}
+}
+
+func (r *LeafRun) setStatus(status dashboardtypes.DashboardRunStatus) {
+	r.Status = status
+	// raise LeafNodeUpdated event
+	e := dashboardevents.NewLeafNodeUpdate(r, r.executionTree.sessionId, r.executionTree.id)
+	r.executionTree.workspace.PublishDashboardEvent(e)
 }

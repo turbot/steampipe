@@ -1,6 +1,7 @@
 package dashboardexecute
 
 import (
+	"context"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -98,4 +99,23 @@ func (r *DashboardTreeRunImpl) GetTitle() string {
 // GetNodeType implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) GetNodeType() string {
 	return r.NodeType
+}
+
+func (r *DashboardTreeRunImpl) Initialise(context.Context) {
+	panic("must be implemented by child struct")
+}
+
+func (r *DashboardTreeRunImpl) Execute(ctx context.Context) {
+	panic("must be implemented by child struct")
+}
+
+func (r *DashboardTreeRunImpl) SetError(context.Context, error) {
+	panic("must be implemented by child struct")
+}
+
+func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
+	panic("must be implemented by child struct")
+}
+func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	panic("must be implemented by child struct")
 }
