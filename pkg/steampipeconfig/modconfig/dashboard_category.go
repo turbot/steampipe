@@ -83,43 +83,41 @@ func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsPr
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(c.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		c.Base = base.(*DashboardCategory)
 	}
+	c.base = base
+	c.ModTreeItemImpl.setBaseProperties()
+	baseCategory := base.(*DashboardCategory)
 
-	if c.Title == nil {
-		c.Title = c.Base.Title
-		// TACTICAL: DashboardCategory overrides the title property to ensure is included in the snapshot
-		// set the base value as well, to ensure that GetTitle works correctly
-		c.CategoryTitle = c.Base.Title
-	}
+	// TACTICAL: DashboardCategory overrides the title property to ensure is included in the snapshot
+	c.CategoryTitle = c.Title
 
 	if c.Color == nil {
-		c.Color = c.Base.Color
+		c.Color = baseCategory.Color
 	}
 	if c.Depth == nil {
-		c.Depth = c.Base.Depth
+		c.Depth = baseCategory.Depth
 	}
 	if c.Icon == nil {
-		c.Icon = c.Base.Icon
+		c.Icon = baseCategory.Icon
 	}
 	if c.HREF == nil {
-		c.HREF = c.Base.HREF
+		c.HREF = baseCategory.HREF
 	}
 	if c.Fold == nil {
-		c.Fold = c.Base.Fold
+		c.Fold = baseCategory.Fold
 	}
 
 	if c.PropertyList == nil {
-		c.PropertyList = c.Base.PropertyList
+		c.PropertyList = baseCategory.PropertyList
 	} else {
-		c.PropertyList.Merge(c.Base.PropertyList)
+		c.PropertyList.Merge(baseCategory.PropertyList)
 	}
 
 	if c.PropertyOrder == nil {
-		c.PropertyOrder = c.Base.PropertyOrder
+		c.PropertyOrder = baseCategory.PropertyOrder
 	}
 }
 

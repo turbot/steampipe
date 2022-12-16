@@ -208,62 +208,41 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(f.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(f.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		f.Base = base.(*DashboardFlow)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	f.baseQueryProvider = f.Base
-
-	if f.Title == nil {
-		f.Title = f.Base.Title
-	}
+	f.base = base
+	f.QueryProviderImpl.setBaseProperties()
+	baseFlow := base.(*DashboardFlow)
 
 	if f.Type == nil {
-		f.Type = f.Base.Type
+		f.Type = baseFlow.Type
 	}
 
 	if f.Display == nil {
-		f.Display = f.Base.Display
+		f.Display = baseFlow.Display
 	}
 
 	if f.Width == nil {
-		f.Width = f.Base.Width
-	}
-
-	if f.SQL == nil {
-		f.SQL = f.Base.SQL
-	}
-
-	if f.Query == nil {
-		f.Query = f.Base.Query
-	}
-
-	if f.Args == nil {
-		f.Args = f.Base.Args
+		f.Width = baseFlow.Width
 	}
 
 	if f.Categories == nil {
-		f.Categories = f.Base.Categories
+		f.Categories = baseFlow.Categories
 	} else {
-		f.Categories = utils.MergeMaps(f.Categories, f.Base.Categories)
+		f.Categories = utils.MergeMaps(f.Categories, baseFlow.Categories)
 	}
 
 	if f.Edges == nil {
-		f.Edges = f.Base.Edges
+		f.Edges = baseFlow.Edges
 	} else {
-		f.Edges.Merge(f.Base.Edges)
+		f.Edges.Merge(baseFlow.Edges)
 	}
 	if f.Nodes == nil {
-		f.Nodes = f.Base.Nodes
+		f.Nodes = baseFlow.Nodes
 	} else {
-		f.Nodes.Merge(f.Base.Nodes)
+		f.Nodes.Merge(baseFlow.Nodes)
 	}
-
-	if f.Params == nil {
-		f.Params = f.Base.Params
-	}
-	f.MergeRuntimeDependencies(f.Base)
+	f.MergeRuntimeDependencies(baseFlow)
 }

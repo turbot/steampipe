@@ -17,10 +17,6 @@ type DashboardHierarchy struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	FullName        string `cty:"name" json:"-"`
-	ShortName       string `json:"-"`
-	UnqualifiedName string `json:"-"`
-
 	Nodes     DashboardNodeList `cty:"node_list" column:"nodes,jsonb" json:"-"`
 	Edges     DashboardEdgeList `cty:"edge_list" column:"edges,jsonb" json:"-"`
 	NodeNames []string          `json:"nodes"`
@@ -214,62 +210,42 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(h.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(h.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		h.Base = base.(*DashboardHierarchy)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	h.baseQueryProvider = h.Base
-
-	if h.Title == nil {
-		h.Title = h.Base.Title
-	}
+	h.base = base
+	h.QueryProviderImpl.setBaseProperties()
+	baseHierarchy := base.(*DashboardHierarchy)
 
 	if h.Type == nil {
-		h.Type = h.Base.Type
+		h.Type = baseHierarchy.Type
 	}
 
 	if h.Display == nil {
-		h.Display = h.Base.Display
+		h.Display = baseHierarchy.Display
 	}
 
 	if h.Width == nil {
-		h.Width = h.Base.Width
-	}
-
-	if h.SQL == nil {
-		h.SQL = h.Base.SQL
-	}
-
-	if h.Query == nil {
-		h.Query = h.Base.Query
-	}
-
-	if h.Args == nil {
-		h.Args = h.Base.Args
+		h.Width = baseHierarchy.Width
 	}
 
 	if h.Categories == nil {
-		h.Categories = h.Base.Categories
+		h.Categories = baseHierarchy.Categories
 	} else {
-		h.Categories = utils.MergeMaps(h.Categories, h.Base.Categories)
+		h.Categories = utils.MergeMaps(h.Categories, baseHierarchy.Categories)
 	}
 
 	if h.Edges == nil {
-		h.Edges = h.Base.Edges
+		h.Edges = baseHierarchy.Edges
 	} else {
-		h.Edges.Merge(h.Base.Edges)
-	}
-	if h.Nodes == nil {
-		h.Nodes = h.Base.Nodes
-	} else {
-		h.Nodes.Merge(h.Base.Nodes)
+		h.Edges.Merge(baseHierarchy.Edges)
 	}
 
-	if h.Params == nil {
-		h.Params = h.Base.Params
+	if h.Nodes == nil {
+		h.Nodes = baseHierarchy.Nodes
+	} else {
+		h.Nodes.Merge(baseHierarchy.Nodes)
 	}
-	h.MergeRuntimeDependencies(h.Base)
+	h.MergeRuntimeDependencies(baseHierarchy)
 }

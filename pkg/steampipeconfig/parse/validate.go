@@ -98,7 +98,7 @@ func validateParamAndQueryNotBothSet(resource modconfig.QueryProvider) hcl.Diagn
 		if !resource.IsTopLevel() && !resource.ParamsInheritedFromBase() {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  "Only top level resources can have `param` blocks",
+				Summary:  "Only top level resources can have 'param' blocks",
 				Detail:   fmt.Sprintf("%s contains 'param' blocks but is not a top level resource.", resource.Name()),
 				Subject:  resource.GetDeclRange(),
 			})

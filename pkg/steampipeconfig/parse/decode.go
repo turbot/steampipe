@@ -186,7 +186,7 @@ func decodeResource(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclR
 		return nil, res
 	}
 
-	diags = decodeHclBody(block.Body, parseCtx.EvalCtx, resource)
+	diags = decodeHclBody(block.Body, parseCtx.EvalCtx, parseCtx, resource)
 	if len(diags) > 0 {
 		res.handleDecodeDiags(diags)
 	}
@@ -296,7 +296,6 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 	if diags.HasErrors() {
 		return nil, res
 	}
-
 	// do a partial decode using an empty schema - use to pull out all body content in the remain block
 	_, remain, diags := block.Body.PartialContent(&hcl.BodySchema{})
 	res.handleDecodeDiags(diags)
@@ -308,7 +307,7 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 	res.addDiags(validateHcl(remain.(*hclsyntax.Body), QueryProviderBlockSchema, resource))
 
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
-	diags = decodeHclBody(remain, parseCtx.EvalCtx, resource)
+	diags = decodeHclBody(remain, parseCtx.EvalCtx, parseCtx, resource)
 	res.handleDecodeDiags(diags)
 
 	// decode 'with',args and params blocks
@@ -395,7 +394,7 @@ func decodeNodeAndEdgeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 	res.addDiags(validateHcl(body, NodeAndEdgeProviderSchema, resource))
 
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
-	diags = decodeHclBody(body, parseCtx.EvalCtx, resource)
+	diags = decodeHclBody(body, parseCtx.EvalCtx, parseCtx, resource)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
@@ -462,7 +461,7 @@ func decodeDashboard(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Da
 	}
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
-	diags = decodeHclBody(body, parseCtx.EvalCtx, dashboard)
+	diags = decodeHclBody(body, parseCtx.EvalCtx, parseCtx, dashboard)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 
@@ -537,7 +536,7 @@ func decodeDashboardContainer(block *hcl.Block, parseCtx *ModParseContext) (*mod
 	res.addDiags(validateHcl(body, DashboardContainerBlockSchema, container))
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
-	diags = decodeHclBody(body, parseCtx.EvalCtx, container)
+	diags = decodeHclBody(body, parseCtx.EvalCtx, parseCtx, container)
 	// handle any resulting diags, which may specify dependencies
 	res.handleDecodeDiags(diags)
 

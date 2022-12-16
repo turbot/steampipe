@@ -12,15 +12,10 @@ type QueryProviderImpl struct {
 	RuntimeDependencyProviderImpl
 	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
-	SQL                   *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query                 *Query      `cty:"query" hcl:"query" json:"-"`
-	Args                  *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	PreparedStatementName string      `column:"prepared_statement_name,text" json:"-"`
-	Params                []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	// stored purely so we can automatically determine whether we have overridden base properties
-	baseQueryProvider QueryProvider
+	SQL    *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Query  *Query      `cty:"query" hcl:"query" json:"-"`
+	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
+	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	withs               []*DashboardWith
 	runtimeDependencies map[string]*RuntimeDependency
@@ -137,11 +132,11 @@ func (b *QueryProviderImpl) GetQueryProviderImpl() *QueryProviderImpl {
 func (b *QueryProviderImpl) ParamsInheritedFromBase() bool {
 	// note: this depends on baseQueryProvider being a reference to the same object as the derived class
 	// base property which was used to populate the params
-	if b.baseQueryProvider == nil {
+	if b.base == nil {
 		return false
 	}
 
-	baseParams := b.baseQueryProvider.GetParams()
+	baseParams := b.base.(QueryProvider).GetParams()
 	if len(b.Params) != len(baseParams) {
 		return false
 	}
@@ -159,4 +154,24 @@ func (b *QueryProviderImpl) CtyValue() (cty.Value, error) {
 		return cty.Zero, nil
 	}
 	return GetCtyValue(b)
+}
+
+func (b *QueryProviderImpl) setBaseProperties() {
+	b.RuntimeDependencyProviderImpl.setBaseProperties()
+	if b.SQL == nil {
+		b.SQL = b.getBaseImpl().SQL
+	}
+	if b.Query == nil {
+		b.Query = b.getBaseImpl().Query
+	}
+	if b.Args == nil {
+		b.Args = b.getBaseImpl().Args
+	}
+	if b.Params == nil {
+		b.Params = b.getBaseImpl().Params
+	}
+}
+
+func (b *QueryProviderImpl) getBaseImpl() *QueryProviderImpl {
+	return b.base.(QueryProvider).GetQueryProviderImpl()
 }

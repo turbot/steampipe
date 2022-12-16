@@ -295,8 +295,8 @@ func DecodeExpression(expr hcl.Expression, ctx *hcl.EvalContext, val interface{}
 	if err != nil {
 		// NOTE: gohcl panics here
 		// we may hit this if we try to decode into a base struct with no cty tags
-		// so just return nil
-		return nil
+		// so just return any existing diags
+		return diags
 		//panic(fmt.Sprintf("unsuitable DecodeExpression target: %s", err))
 	}
 

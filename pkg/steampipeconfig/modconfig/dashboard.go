@@ -384,36 +384,24 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(d.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(d.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		d.Base = base.(*Dashboard)
 	}
-
-	if d.Title == nil {
-		d.Title = d.Base.Title
-	}
+	d.base = base
+	d.RuntimeDependencyProviderImpl.setBaseProperties()
+	baseDashboard := base.(*Dashboard)
 
 	if d.Width == nil {
-		d.Width = d.Base.Width
+		d.Width = baseDashboard.Width
 	}
 
 	if len(d.children) == 0 {
-		d.children = d.Base.children
-		d.ChildNames = d.Base.ChildNames
+		d.children = baseDashboard.children
+		d.ChildNames = baseDashboard.ChildNames
 	}
 
-	d.addBaseInputs(d.Base.Inputs)
-
-	d.Tags = utils.MergeMaps(d.Tags, d.Base.Tags)
-
-	if d.Description == nil {
-		d.Description = d.Base.Description
-	}
-
-	if d.Documentation == nil {
-		d.Documentation = d.Base.Documentation
-	}
+	d.addBaseInputs(baseDashboard.Inputs)
 }
 
 func (d *Dashboard) addBaseInputs(baseInputs []*DashboardInput) {

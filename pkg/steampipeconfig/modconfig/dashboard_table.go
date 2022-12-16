@@ -17,6 +17,7 @@ type DashboardTable struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
+	// TODO remove - check introspection tables
 	Width      *int                             `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type       *string                          `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	ColumnList DashboardTableColumnList         `cty:"column_list" hcl:"column,block" column:"columns,jsonb" json:"-"`
@@ -174,38 +175,30 @@ func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(t.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(t.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		t.Base = base.(*DashboardTable)
 	}
+	t.base = base
+	baseTable := base.(*DashboardTable)
 
-	// TACTICAL: store another reference to the base as a QueryProvider
-	t.baseQueryProvider = t.Base
-
-	if t.Title == nil {
-		t.Title = t.Base.Title
-	}
+	t.QueryProviderImpl.setBaseProperties()
 
 	if t.Width == nil {
-		t.Width = t.Base.Width
-	}
-
-	if t.SQL == nil {
-		t.SQL = t.Base.SQL
+		t.Width = baseTable.Width
 	}
 
 	if t.Type == nil {
-		t.Type = t.Base.Type
+		t.Type = baseTable.Type
 	}
 
 	if t.Display == nil {
-		t.Display = t.Base.Display
+		t.Display = baseTable.Display
 	}
 
 	if t.ColumnList == nil {
-		t.ColumnList = t.Base.ColumnList
+		t.ColumnList = baseTable.ColumnList
 	} else {
-		t.ColumnList.Merge(t.Base.ColumnList)
+		t.ColumnList.Merge(baseTable.ColumnList)
 	}
 }

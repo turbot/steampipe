@@ -149,61 +149,41 @@ func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(c.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		c.Base = base.(*DashboardCard)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	c.baseQueryProvider = c.Base
-
-	if c.Title == nil {
-		c.Title = c.Base.Title
-	}
+	c.base = base
+	c.QueryProviderImpl.setBaseProperties()
+	baseCard := base.(*DashboardCard)
 
 	if c.Label == nil {
-		c.Label = c.Base.Label
+		c.Label = baseCard.Label
 	}
 
 	if c.Value == nil {
-		c.Value = c.Base.Value
+		c.Value = baseCard.Value
 	}
 
 	if c.Type == nil {
-		c.Type = c.Base.Type
+		c.Type = baseCard.Type
 	}
 
 	if c.Display == nil {
-		c.Display = c.Base.Display
+		c.Display = baseCard.Display
 	}
 
 	if c.Icon == nil {
-		c.Icon = c.Base.Icon
+		c.Icon = baseCard.Icon
 	}
 
 	if c.HREF == nil {
-		c.HREF = c.Base.HREF
+		c.HREF = baseCard.HREF
 	}
 
 	if c.Width == nil {
-		c.Width = c.Base.Width
+		c.Width = baseCard.Width
 	}
 
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
-	}
-
-	if c.Query == nil {
-		c.Query = c.Base.Query
-	}
-
-	if c.Args == nil {
-		c.Args = c.Base.Args
-	}
-	if c.Params == nil {
-		c.Params = c.Base.Params
-	}
-
-	c.MergeRuntimeDependencies(c.Base)
+	c.MergeRuntimeDependencies(baseCard)
 }

@@ -228,7 +228,7 @@ func (r *LeafRun) resolveSQLAndArgs() error {
 		return err
 	}
 
-	// now if any param defaults had runtime depdencies, populate them
+	// now if any param defaults had runtime dependencies, populate them
 	r.populateParamDefaults(queryProvider)
 
 	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", r.Resource.Name(), runtimeArgs)

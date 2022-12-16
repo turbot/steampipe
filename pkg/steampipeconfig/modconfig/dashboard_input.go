@@ -187,54 +187,33 @@ func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(i.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(i.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		i.Base = base.(*DashboardInput)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	i.baseQueryProvider = i.Base
-
-	if i.Title == nil {
-		i.Title = i.Base.Title
-	}
+	i.base = base
+	i.QueryProviderImpl.setBaseProperties()
+	baseInput := base.(*DashboardInput)
 
 	if i.Type == nil {
-		i.Type = i.Base.Type
+		i.Type = baseInput.Type
 	}
 
 	if i.Display == nil {
-		i.Display = i.Base.Display
+		i.Display = baseInput.Display
 	}
 
 	if i.Label == nil {
-		i.Label = i.Base.Label
+		i.Label = baseInput.Label
 	}
 
 	if i.Placeholder == nil {
-		i.Placeholder = i.Base.Placeholder
+		i.Placeholder = baseInput.Placeholder
 	}
 
 	if i.Width == nil {
-		i.Width = i.Base.Width
+		i.Width = baseInput.Width
 	}
 
-	if i.SQL == nil {
-		i.SQL = i.Base.SQL
-	}
-
-	if i.Query == nil {
-		i.Query = i.Base.Query
-	}
-
-	if i.Args == nil {
-		i.Args = i.Base.Args
-	}
-
-	if i.Params == nil {
-		i.Params = i.Base.Params
-	}
-
-	i.MergeRuntimeDependencies(i.Base)
+	i.MergeRuntimeDependencies(baseInput)
 }

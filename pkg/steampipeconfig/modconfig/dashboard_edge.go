@@ -125,37 +125,16 @@ func (e *DashboardEdge) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(e.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(e.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		e.Base = base.(*DashboardEdge)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	e.baseQueryProvider = e.Base
-
-	if e.Title == nil {
-		e.Title = e.Base.Title
-	}
-
-	if e.SQL == nil {
-		e.SQL = e.Base.SQL
-	}
-
-	if e.Query == nil {
-		e.Query = e.Base.Query
-	}
-
-	if e.Args == nil {
-		e.Args = e.Base.Args
-	}
+	e.base = base
+	e.QueryProviderImpl.setBaseProperties()
+	baseEdge := base.(*DashboardEdge)
 
 	if e.Category == nil {
-		e.Category = e.Base.Category
+		e.Category = baseEdge.Category
 	}
-
-	if e.Params == nil {
-		e.Params = e.Base.Params
-	}
-	e.MergeRuntimeDependencies(e.Base)
+	e.MergeRuntimeDependencies(baseEdge)
 }

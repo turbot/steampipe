@@ -26,10 +26,9 @@ type DashboardChart struct {
 	Grouping   *string                          `cty:"grouping" hcl:"grouping" json:"grouping,omitempty"`
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
-
-	Base       *DashboardChart      `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
+	Base       *DashboardChart                  `hcl:"base" json:"-"`
+	References []*ResourceReference             `json:"-"`
+	Paths      []NodePath                       `column:"path,jsonb" json:"-"`
 }
 
 func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -163,72 +162,51 @@ func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(c.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(c.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		c.Base = base.(*DashboardChart)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	c.baseQueryProvider = c.Base
-
-	if c.Title == nil {
-		c.Title = c.Base.Title
-	}
+	c.base = base
+	c.QueryProviderImpl.setBaseProperties()
+	baseChart := base.(*DashboardChart)
 
 	if c.Type == nil {
-		c.Type = c.Base.Type
+		c.Type = baseChart.Type
 	}
 
 	if c.Display == nil {
-		c.Display = c.Base.Display
+		c.Display = baseChart.Display
 	}
 
 	if c.Axes == nil {
-		c.Axes = c.Base.Axes
+		c.Axes = baseChart.Axes
 	} else {
-		c.Axes.Merge(c.Base.Axes)
+		c.Axes.Merge(baseChart.Axes)
 	}
 
 	if c.Grouping == nil {
-		c.Grouping = c.Base.Grouping
+		c.Grouping = baseChart.Grouping
 	}
 
 	if c.Transform == nil {
-		c.Transform = c.Base.Transform
+		c.Transform = baseChart.Transform
 	}
 
 	if c.Legend == nil {
-		c.Legend = c.Base.Legend
+		c.Legend = baseChart.Legend
 	} else {
-		c.Legend.Merge(c.Base.Legend)
+		c.Legend.Merge(baseChart.Legend)
 	}
 
 	if c.SeriesList == nil {
-		c.SeriesList = c.Base.SeriesList
+		c.SeriesList = baseChart.SeriesList
 	} else {
-		c.SeriesList.Merge(c.Base.SeriesList)
+		c.SeriesList.Merge(baseChart.SeriesList)
 	}
 
 	if c.Width == nil {
-		c.Width = c.Base.Width
+		c.Width = baseChart.Width
 	}
 
-	if c.SQL == nil {
-		c.SQL = c.Base.SQL
-	}
-
-	if c.Query == nil {
-		c.Query = c.Base.Query
-	}
-
-	if c.Args == nil {
-		c.Args = c.Base.Args
-	}
-
-	if c.Params == nil {
-		c.Params = c.Base.Params
-	}
-
-	c.MergeRuntimeDependencies(c.Base)
+	c.MergeRuntimeDependencies(baseChart)
 }

@@ -208,66 +208,46 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	// not all base properties are stored in the evalContext
 	// (e.g. resource metadata and runtime dependencies are not stores)
 	//  so resolve base from the resource map provider (which is the RunContext)
-	if base, resolved := resolveBase(g.Base, resourceMapProvider); !resolved {
+	base, resolved := resolveBase(g.Base, resourceMapProvider)
+	if !resolved {
 		return
-	} else {
-		g.Base = base.(*DashboardGraph)
 	}
-
-	// TACTICAL: store another reference to the base as a QueryProvider
-	g.baseQueryProvider = g.Base
-
-	if g.Title == nil {
-		g.Title = g.Base.Title
-	}
+	g.base = base
+	g.QueryProviderImpl.setBaseProperties()
+	baseDashboardGraph := base.(*DashboardGraph)
 
 	if g.Type == nil {
-		g.Type = g.Base.Type
+		g.Type = baseDashboardGraph.Type
 	}
 
 	if g.Display == nil {
-		g.Display = g.Base.Display
+		g.Display = baseDashboardGraph.Display
 	}
 
 	if g.Width == nil {
-		g.Width = g.Base.Width
-	}
-
-	if g.SQL == nil {
-		g.SQL = g.Base.SQL
-	}
-
-	if g.Query == nil {
-		g.Query = g.Base.Query
-	}
-
-	if g.Args == nil {
-		g.Args = g.Base.Args
+		g.Width = baseDashboardGraph.Width
 	}
 
 	if g.Categories == nil {
-		g.Categories = g.Base.Categories
+		g.Categories = baseDashboardGraph.Categories
 	} else {
-		g.Categories = utils.MergeMaps(g.Categories, g.Base.Categories)
+		g.Categories = utils.MergeMaps(g.Categories, baseDashboardGraph.Categories)
 	}
 
 	if g.Direction == nil {
-		g.Direction = g.Base.Direction
+		g.Direction = baseDashboardGraph.Direction
 	}
 
 	if g.Edges == nil {
-		g.Edges = g.Base.Edges
+		g.Edges = baseDashboardGraph.Edges
 	} else {
-		g.Edges.Merge(g.Base.Edges)
-	}
-	if g.Nodes == nil {
-		g.Nodes = g.Base.Nodes
-	} else {
-		g.Nodes.Merge(g.Base.Nodes)
+		g.Edges.Merge(baseDashboardGraph.Edges)
 	}
 
-	if g.Params == nil {
-		g.Params = g.Base.Params
+	if g.Nodes == nil {
+		g.Nodes = baseDashboardGraph.Nodes
+	} else {
+		g.Nodes.Merge(baseDashboardGraph.Nodes)
 	}
-	g.MergeRuntimeDependencies(g.Base)
+	g.MergeRuntimeDependencies(baseDashboardGraph)
 }
