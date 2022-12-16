@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/parse/parse_hcl"
 	"reflect"
 	"strings"
 )
@@ -22,7 +21,7 @@ func decodeHclBody(body hcl.Body, evalCtx *hcl.EvalContext, resourceProvider mod
 	diags = gohcl.DecodeBody(body, evalCtx, resource)
 
 	resolveReferences(body, resourceProvider, resource)
-	for _, nestedStruct := range parse_hcl.GetNestedStructVals(resource) {
+	for _, nestedStruct := range getNestedStructVals(resource) {
 		moreDiags := decodeHclBody(body, evalCtx, resourceProvider, nestedStruct)
 		diags = append(diags, moreDiags...)
 	}
@@ -102,4 +101,32 @@ func getHclAttributeTag(field reflect.StructField) string {
 	default:
 		return ""
 	}
+}
+
+// GetNestedStructVals return a slice of any nested structs within val
+func getNestedStructVals(val any) []any {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("getNestedStructVals", r)
+		}
+	}()
+
+	rv := reflect.ValueOf(val)
+	for rv.Type().Kind() == reflect.Pointer {
+		rv = rv.Elem()
+	}
+	ty := rv.Type()
+	if ty.Kind() != reflect.Struct {
+		return nil
+	}
+	ct := ty.NumField()
+	var res []any
+	for i := 0; i < ct; i++ {
+		field := ty.Field(i)
+		fieldVal := rv.Field(i)
+		if field.Anonymous && fieldVal.Kind() == reflect.Struct {
+			res = append(res, fieldVal.Addr().Interface())
+		}
+	}
+	return res
 }
