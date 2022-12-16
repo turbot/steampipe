@@ -78,11 +78,11 @@ type CategoryStatusMap = {
   [name: string]: CategoryStatus;
 };
 
-type NoCategoryStatusMap = {
+export type NoCategoryStatusMap = {
   [name: string]: NoCategoryStatus;
 };
 
-type WithStatusMap = {
+export type WithStatusMap = {
   [name: string]: WithStatus;
 };
 
