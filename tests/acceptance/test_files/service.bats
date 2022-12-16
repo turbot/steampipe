@@ -12,12 +12,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
     while read -r cmd; do
       echo "### Running '$cmd'"
       STEAMPIPE_LOG=trace
-      x=$($cmd)
+      run $cmd
       assert_success
       assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
     done< <(echo $run | jq --raw-output '.[] | @sh' | tr -d \')
   done< <(cat $FILE_PATH/test_data/source_files/service.json | jq --raw-output '.[] | "\(.name) \(.run)"')
   echo "# Execution Done"
+  
+  fail "inject failure"
 }
 
 # @test "implicit service from query" {
