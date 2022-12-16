@@ -80,44 +80,41 @@ func (c *DashboardCategory) Equals(other *DashboardCategory) bool {
 }
 
 func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	base, resolved := resolveBase(c.Base, resourceMapProvider)
-	if !resolved {
+	if c.Base == nil {
 		return
 	}
-	c.base = base
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	c.base = c.Base
+	// call into parent nested struct setBaseProperties
 	c.ModTreeItemImpl.setBaseProperties()
-	baseCategory := base.(*DashboardCategory)
 
 	// TACTICAL: DashboardCategory overrides the title property to ensure is included in the snapshot
 	c.CategoryTitle = c.Title
 
 	if c.Color == nil {
-		c.Color = baseCategory.Color
+		c.Color = c.Base.Color
 	}
 	if c.Depth == nil {
-		c.Depth = baseCategory.Depth
+		c.Depth = c.Base.Depth
 	}
 	if c.Icon == nil {
-		c.Icon = baseCategory.Icon
+		c.Icon = c.Base.Icon
 	}
 	if c.HREF == nil {
-		c.HREF = baseCategory.HREF
+		c.HREF = c.Base.HREF
 	}
 	if c.Fold == nil {
-		c.Fold = baseCategory.Fold
+		c.Fold = c.Base.Fold
 	}
 
 	if c.PropertyList == nil {
-		c.PropertyList = baseCategory.PropertyList
+		c.PropertyList = c.Base.PropertyList
 	} else {
-		c.PropertyList.Merge(baseCategory.PropertyList)
+		c.PropertyList.Merge(c.Base.PropertyList)
 	}
 
 	if c.PropertyOrder == nil {
-		c.PropertyOrder = baseCategory.PropertyOrder
+		c.PropertyOrder = c.Base.PropertyOrder
 	}
 }
 

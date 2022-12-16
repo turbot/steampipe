@@ -207,45 +207,42 @@ func (h *DashboardHierarchy) CtyValue() (cty.Value, error) {
 }
 
 func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	base, resolved := resolveBase(h.Base, resourceMapProvider)
-	if !resolved {
+	if h.Base == nil {
 		return
 	}
-	h.base = base
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	h.base = h.Base
+	// call into parent nested struct setBaseProperties
 	h.QueryProviderImpl.setBaseProperties()
-	baseHierarchy := base.(*DashboardHierarchy)
 
 	if h.Type == nil {
-		h.Type = baseHierarchy.Type
+		h.Type = h.Base.Type
 	}
 
 	if h.Display == nil {
-		h.Display = baseHierarchy.Display
+		h.Display = h.Base.Display
 	}
 
 	if h.Width == nil {
-		h.Width = baseHierarchy.Width
+		h.Width = h.Base.Width
 	}
 
 	if h.Categories == nil {
-		h.Categories = baseHierarchy.Categories
+		h.Categories = h.Base.Categories
 	} else {
-		h.Categories = utils.MergeMaps(h.Categories, baseHierarchy.Categories)
+		h.Categories = utils.MergeMaps(h.Categories, h.Base.Categories)
 	}
 
 	if h.Edges == nil {
-		h.Edges = baseHierarchy.Edges
+		h.Edges = h.Base.Edges
 	} else {
-		h.Edges.Merge(baseHierarchy.Edges)
+		h.Edges.Merge(h.Base.Edges)
 	}
 
 	if h.Nodes == nil {
-		h.Nodes = baseHierarchy.Nodes
+		h.Nodes = h.Base.Nodes
 	} else {
-		h.Nodes.Merge(baseHierarchy.Nodes)
+		h.Nodes.Merge(h.Base.Nodes)
 	}
-	h.MergeRuntimeDependencies(baseHierarchy)
+	h.MergeRuntimeDependencies(h.Base)
 }

@@ -159,54 +159,51 @@ func (c *DashboardChart) CtyValue() (cty.Value, error) {
 }
 
 func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	// not all base properties are stored in the evalContext
-	// (e.g. resource metadata and runtime dependencies are not stores)
-	//  so resolve base from the resource map provider (which is the RunContext)
-	base, resolved := resolveBase(c.Base, resourceMapProvider)
-	if !resolved {
+	if c.Base == nil {
 		return
 	}
-	c.base = base
+	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
+	c.base = c.Base
+	// call into parent nested struct setBaseProperties
 	c.QueryProviderImpl.setBaseProperties()
-	baseChart := base.(*DashboardChart)
 
 	if c.Type == nil {
-		c.Type = baseChart.Type
+		c.Type = c.Base.Type
 	}
 
 	if c.Display == nil {
-		c.Display = baseChart.Display
+		c.Display = c.Base.Display
 	}
 
 	if c.Axes == nil {
-		c.Axes = baseChart.Axes
+		c.Axes = c.Base.Axes
 	} else {
-		c.Axes.Merge(baseChart.Axes)
+		c.Axes.Merge(c.Base.Axes)
 	}
 
 	if c.Grouping == nil {
-		c.Grouping = baseChart.Grouping
+		c.Grouping = c.Base.Grouping
 	}
 
 	if c.Transform == nil {
-		c.Transform = baseChart.Transform
+		c.Transform = c.Base.Transform
 	}
 
 	if c.Legend == nil {
-		c.Legend = baseChart.Legend
+		c.Legend = c.Base.Legend
 	} else {
-		c.Legend.Merge(baseChart.Legend)
+		c.Legend.Merge(c.Base.Legend)
 	}
 
 	if c.SeriesList == nil {
-		c.SeriesList = baseChart.SeriesList
+		c.SeriesList = c.Base.SeriesList
 	} else {
-		c.SeriesList.Merge(baseChart.SeriesList)
+		c.SeriesList.Merge(c.Base.SeriesList)
 	}
 
 	if c.Width == nil {
-		c.Width = baseChart.Width
+		c.Width = c.Base.Width
 	}
 
-	c.MergeRuntimeDependencies(baseChart)
+	c.MergeRuntimeDependencies(c.Base)
 }
