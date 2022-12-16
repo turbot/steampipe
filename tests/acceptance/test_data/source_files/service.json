@@ -2,7 +2,8 @@
   {
     "name": "query",
     "run": [
-      "steampipe query \"select 1\""
+      "steampipe query 'select 1'",
+      "cd dir"
     ]
   },
   {

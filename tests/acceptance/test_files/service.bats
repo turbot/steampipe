@@ -22,6 +22,35 @@ load "$LIB_BATS_SUPPORT/load.bash"
   fail "inject failure"
 }
 
+@test "service stability 2" {
+  echo "# Setting up"
+  steampipe query "select 1"
+  echo "# Setup Done"
+  echo "# Executing tests"
+
+  tests=$(cat $FILE_PATH/test_data/source_files/service.json)
+  test_keys=$(echo $tests | jq '. | keys[]')
+
+  for i in $test_keys; do
+    test_name=$(echo $tests | jq -c ".[${i}]" | jq ".name")
+    echo "### Running '$test_name'"
+    runs=$(echo $tests | jq -c ".[${i}]" | jq ".run")
+    echo $runs
+    run_keys=$(echo $runs | jq '. | keys[]')
+
+    for j in $run_keys; do
+      command=''
+      cmd=$(echo $runs | jq ".[${j}]" | tr -d '"')
+      # echo $cmd
+      command="${command}${cmd}"
+      echo $command
+      # $command
+      # echo $output
+    done
+  done
+  assert_equal 1 0
+}
+
 # @test "implicit service from query" {
 #   for i in {1..10}
 #   do
