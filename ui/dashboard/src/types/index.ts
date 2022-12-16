@@ -104,7 +104,12 @@ export interface PanelsMap {
   [name: string]: PanelDefinition;
 }
 
-export type DashboardRunState = "ready" | "error" | "complete";
+export type DashboardRunState =
+  | "ready"
+  | "blocked"
+  | "running"
+  | "error"
+  | "complete";
 
 export const DashboardActions: IActions = {
   AVAILABLE_DASHBOARDS: "available_dashboards",
