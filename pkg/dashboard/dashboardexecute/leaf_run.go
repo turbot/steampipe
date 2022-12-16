@@ -16,7 +16,7 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
-	RuntimeDependencyPublisherImpl
+	RuntimeDependencySubscriberImpl
 
 	RawSQL   string                      `json:"sql,omitempty"`
 	Data     *dashboardtypes.LeafData    `json:"data,omitempty"`
@@ -37,9 +37,9 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
 	r := &LeafRun{
-		// create RuntimeDependencyPublisherImpl- this handles 'with' run creation and resolving runtime dependency resolution
-		RuntimeDependencyPublisherImpl: *NewRuntimeDependencyPublisherImpl(resource, parent, executionTree),
-		Resource:                       resource,
+		// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
+		RuntimeDependencySubscriberImpl: NewRuntimeDependencySubscriberImpl(resource, parent, executionTree),
+		Resource:                        resource,
 	}
 	err := r.initRuntimeDependencies()
 	if err != nil {
@@ -263,7 +263,7 @@ func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 	// if the runtime dependencies use position args, get the max index and ensure the args array is large enough
 	maxArgIndex := -1
 	// build list of all args runtime dependencies
-	argRuntimeDependencies := r.FindRuntimeDependenciesForParent(modconfig.AttributeArgs)
+	argRuntimeDependencies := r.FindRuntimeDependenciesForParentProperty(modconfig.AttributeArgs)
 
 	for _, dep := range argRuntimeDependencies {
 		if dep.Dependency.TargetPropertyIndex != nil && *dep.Dependency.TargetPropertyIndex > maxArgIndex {
@@ -361,7 +361,7 @@ func (r *LeafRun) setRuntimeDependencies() {
 func (r *LeafRun) populateParamDefaults(provider modconfig.QueryProvider) {
 	paramDefs := provider.GetParams()
 	for _, paramDef := range paramDefs {
-		if dep := r.FindRuntimeDependencyForParent(paramDef.UnqualifiedName); dep != nil {
+		if dep := r.FindRuntimeDependencyForParentProperty(paramDef.UnqualifiedName); dep != nil {
 			// assuming the default property is the target, set the default
 			if typehelpers.SafeString(dep.Dependency.TargetPropertyName) == "default" {
 				paramDef.SetDefault(dep.Value)

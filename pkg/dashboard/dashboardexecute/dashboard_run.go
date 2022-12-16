@@ -11,7 +11,7 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
-	RuntimeDependencyPublisherImpl
+	RuntimeDependencySubscriberImpl
 
 	parent    dashboardtypes.DashboardParent
 	dashboard *modconfig.Dashboard
@@ -37,10 +37,10 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 // TODO can dashboards have params????
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
 	r := &DashboardRun{
-		// create RuntimeDependencyPublisherImpl- this handles 'with' run creation and runtime dependency resolution
-		RuntimeDependencyPublisherImpl: *NewRuntimeDependencyPublisherImpl(dashboard, executionTree, executionTree),
-		parent:                         parent,
-		dashboard:                      dashboard,
+		// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
+		RuntimeDependencySubscriberImpl: NewRuntimeDependencySubscriberImpl(dashboard, parent, executionTree),
+		parent:                          parent,
+		dashboard:                       dashboard,
 	}
 
 	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs
