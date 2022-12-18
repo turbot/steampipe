@@ -16,7 +16,6 @@ import {
 } from "../../../types";
 import { getColorOverride } from "./index";
 import {
-  NoCategoryStatusMap,
   NodeAndEdgeData,
   NodeAndEdgeDataColumn,
   NodeAndEdgeDataFormat,
@@ -127,23 +126,6 @@ const addPanelWithsStatus = (
   }
 };
 
-const addNoCategoryStatus = (
-  panelType: "node" | "edge",
-  id: string,
-  title: string | undefined,
-  error: string | undefined,
-  status: DashboardRunState | undefined,
-  noCategoriesLookup: NoCategoryStatusMap
-) => {
-  noCategoriesLookup[id] = {
-    id,
-    title,
-    panelType,
-    error,
-    state: panelStateToCategoryState(status || "ready"),
-  };
-};
-
 // This function will normalise both the legacy and node/edge data formats into a data table.
 // In the node/edge approach, the data will be spread out across the node and edge resources
 // until the flow/graph/hierarchy has completed, at which point we'll have a populated data
@@ -202,8 +184,6 @@ const useNodeAndEdgeData = (
     const missingEdges = {};
     const nodeAndEdgeStatus: NodeAndEdgeStatus = {
       withs: {},
-      categories: {},
-      noCategories: {},
       nodes: [],
       edges: [],
     };
@@ -234,10 +214,11 @@ const useNodeAndEdgeData = (
 
       // Capture the status of this node resource
       nodeAndEdgeStatus.nodes.push({
-        id: nodePanelName,
+        id: panel.title || nodeProperties.name,
         state: panelStateToCategoryState(panel.status || "ready"),
-        category: nodeProperties.category && nodeProperties.category.name,
+        category: nodeProperties.category,
         error: panel.error,
+        title: panel.title,
         withs: panel.withs,
       });
 
@@ -250,28 +231,6 @@ const useNodeAndEdgeData = (
         );
         nodeCategoryId = `node.${nodePanelName}.${nodeCategory.name}`;
         categories[nodeCategoryId] = nodeCategory;
-      }
-
-      if (nodeProperties.category && nodeProperties.category.name) {
-        if (!nodeAndEdgeStatus.categories[nodeProperties.category.name]) {
-          nodeAndEdgeStatus.categories[nodeProperties.category.name] = {
-            id: nodeProperties.category.name,
-            title: nodeProperties.category.title,
-            state: panelStateToCategoryState(panel.status || "ready"),
-          };
-        } else if (panel.status !== "complete") {
-          nodeAndEdgeStatus.categories[nodeProperties.category.name].state =
-            panelStateToCategoryState(panel.status || "ready");
-        }
-      } else {
-        addNoCategoryStatus(
-          "node",
-          nodeProperties.name,
-          panel.title,
-          panel.error,
-          panel.status,
-          nodeAndEdgeStatus.noCategories
-        );
       }
 
       // Loop over each row and ensure we have the correct category information set for it
@@ -330,10 +289,11 @@ const useNodeAndEdgeData = (
 
       // Capture the status of this edge resource
       nodeAndEdgeStatus.edges.push({
-        id: edgePanelName,
+        id: panel.title || edgeProperties.name,
         state: panelStateToCategoryState(panel.status || "ready"),
-        category: edgeProperties.category && edgeProperties.category.name,
+        category: edgeProperties.category,
         error: panel.error,
+        title: panel.title,
         withs: panel.withs,
       });
 
@@ -346,36 +306,6 @@ const useNodeAndEdgeData = (
         );
         edgeCategoryId = `edge.${edgePanelName}.${edgeCategory.name}`;
         categories[edgeCategoryId] = edgeCategory;
-      }
-
-      if (edgeProperties.category) {
-        // @ts-ignore
-        if (!nodeAndEdgeStatus.categories[edgeProperties.category.name]) {
-          // @ts-ignore
-          nodeAndEdgeStatus.categories[edgeProperties.category.name] = {
-            id: edgeProperties.category.name,
-            title: edgeProperties.category.title,
-            state:
-              panel.status === "error"
-                ? "error"
-                : panel.status === "complete"
-                ? "complete"
-                : "pending",
-          };
-        } else if (panel.status !== "complete") {
-          // @ts-ignore
-          nodeAndEdgeStatus.categories[edgeProperties.category.name].state =
-            panel.status === "error" ? "error" : "pending";
-        }
-      } else {
-        addNoCategoryStatus(
-          "edge",
-          edgeProperties.name,
-          panel.title,
-          panel.error,
-          panel.status,
-          nodeAndEdgeStatus.noCategories
-        );
       }
 
       for (const row of typedPanelData.rows || []) {

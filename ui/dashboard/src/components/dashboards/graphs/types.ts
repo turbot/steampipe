@@ -4,6 +4,7 @@ import {
   LeafNodeDataColumn,
 } from "../common";
 import {
+  Category,
   CategoryMap,
   KeyValuePairs,
   NodeAndEdgeProperties,
@@ -58,28 +59,9 @@ export type NodeAndEdgeState = "pending" | "error" | "complete";
 type BaseNodeAndEdgeStatus = {
   id: string;
   state: NodeAndEdgeState;
-  category?: string;
+  category?: Category;
+  title?: string;
   error?: string;
-};
-
-export type CategoryStatus = BaseNodeAndEdgeStatus & {
-  title?: string;
-  nodesInError?: NodeStatus[];
-  edgesInError?: EdgeStatus[];
-  withsInError?: WithStatus[];
-};
-
-export type NoCategoryStatus = BaseNodeAndEdgeStatus & {
-  title?: string;
-  panelType: "node" | "edge";
-};
-
-type CategoryStatusMap = {
-  [name: string]: CategoryStatus;
-};
-
-export type NoCategoryStatusMap = {
-  [name: string]: NoCategoryStatus;
 };
 
 export type WithStatusMap = {
@@ -100,8 +82,6 @@ export type WithStatus = BaseNodeAndEdgeStatus & {
 
 export type NodeAndEdgeStatus = {
   withs: WithStatusMap;
-  categories: CategoryStatusMap;
-  noCategories: NoCategoryStatusMap;
   nodes: NodeStatus[];
   edges: EdgeStatus[];
 };

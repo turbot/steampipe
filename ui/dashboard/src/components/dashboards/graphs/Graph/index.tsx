@@ -15,6 +15,7 @@ import ReactFlow, {
   useEdgesState,
   useReactFlow,
 } from "reactflow";
+import sortBy from "lodash/sortBy";
 import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
@@ -29,14 +30,14 @@ import {
   Node as NodeType,
 } from "../../common/types";
 import {
-  CategoryStatus,
   DagreRankDir,
+  EdgeStatus,
   GraphDirection,
   GraphProperties,
   GraphProps,
-  NoCategoryStatus,
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
+  NodeStatus,
   WithStatus,
 } from "../types";
 import { DashboardRunState } from "../../../../types";
@@ -53,7 +54,6 @@ import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo } from "react";
 import { usePanel } from "../../../../hooks/usePanel";
 import "reactflow/dist/style.css";
-import sortBy from "lodash/sortBy";
 
 const nodeWidth = 100;
 const nodeHeight = 100;
@@ -415,24 +415,24 @@ const useNodeAndEdgePanelInformation = (
 
   const {
     pendingWiths,
-    pendingNoCategories,
-    pendingCategories,
+    pendingNodes,
+    pendingEdges,
     errorWiths,
-    errorNoCategories,
-    errorCategories,
+    errorNodes,
+    errorEdges,
     completeWiths,
-    completeNoCategories,
-    completeCategories,
+    completeNodes,
+    completeEdges,
   } = useMemo(() => {
     const pendingWiths: WithStatus[] = [];
     const errorWiths: WithStatus[] = [];
     const completeWiths: WithStatus[] = [];
-    const pendingNoCategories: NoCategoryStatus[] = [];
-    const errorNoCategories: NoCategoryStatus[] = [];
-    const completeNoCategories: NoCategoryStatus[] = [];
-    const pendingCategories: CategoryStatus[] = [];
-    const errorCategories: CategoryStatus[] = [];
-    const completeCategories: CategoryStatus[] = [];
+    const pendingNodes: NodeStatus[] = [];
+    const errorNodes: NodeStatus[] = [];
+    const completeNodes: NodeStatus[] = [];
+    const pendingEdges: EdgeStatus[] = [];
+    const errorEdges: EdgeStatus[] = [];
+    const completeEdges: EdgeStatus[] = [];
     if (nodeAndEdgeStatus) {
       for (const withStatus of sortBy(Object.values(nodeAndEdgeStatus.withs), [
         "title",
@@ -446,49 +446,45 @@ const useNodeAndEdgePanelInformation = (
           completeWiths.push(withStatus);
         }
       }
-      for (const noCategory of sortBy(
-        Object.values(nodeAndEdgeStatus.noCategories),
-        ["panelType", "title", "id"]
-      )) {
-        if (noCategory.state === "pending") {
-          pendingNoCategories.push(noCategory);
-        } else if (noCategory.state === "error") {
-          errorNoCategories.push(noCategory);
+      for (const node of sortBy(Object.values(nodeAndEdgeStatus.nodes), [
+        "title",
+        "category.title",
+        "category.name",
+        "id",
+      ])) {
+        if (node.state === "pending") {
+          pendingNodes.push(node);
+        } else if (node.state === "error") {
+          errorNodes.push(node);
         } else {
-          completeNoCategories.push(noCategory);
+          completeNodes.push(node);
         }
       }
-      for (const category of sortBy(
-        Object.values(nodeAndEdgeStatus.categories),
-        ["title", "id"]
-      )) {
-        if (category.state === "pending") {
-          pendingCategories.push(category);
-        } else if (category.state === "error") {
-          errorCategories.push({
-            ...category,
-            nodesInError: nodeAndEdgeStatus.nodes.filter(
-              (n) => n.category === category.id && n.state === "error"
-            ),
-            edgesInError: nodeAndEdgeStatus.edges.filter(
-              (e) => e.category === category.id && e.state === "error"
-            ),
-          });
+      for (const edge of sortBy(Object.values(nodeAndEdgeStatus.edges), [
+        "title",
+        "category.title",
+        "category.name",
+        "id",
+      ])) {
+        if (edge.state === "pending") {
+          pendingEdges.push(edge);
+        } else if (edge.state === "error") {
+          errorEdges.push(edge);
         } else {
-          completeCategories.push(category);
+          completeEdges.push(edge);
         }
       }
     }
     return {
       pendingWiths,
-      pendingNoCategories,
-      pendingCategories,
+      pendingNodes,
+      pendingEdges,
       errorWiths,
-      errorNoCategories,
-      errorCategories,
+      errorNodes,
+      errorEdges,
       completeWiths,
-      completeNoCategories,
-      completeCategories,
+      completeNodes,
+      completeEdges,
     };
   }, [nodeAndEdgeStatus]);
 
@@ -498,8 +494,10 @@ const useNodeAndEdgePanelInformation = (
       dataFormat === "LEGACY" ||
       (pendingWiths.length === 0 &&
         errorWiths.length === 0 &&
-        pendingCategories.length === 0 &&
-        errorCategories.length === 0 &&
+        pendingNodes.length === 0 &&
+        errorNodes.length === 0 &&
+        pendingEdges.length === 0 &&
+        errorEdges.length === 0 &&
         status === "complete" &&
         nodes.length > 0)
     ) {
@@ -513,14 +511,14 @@ const useNodeAndEdgePanelInformation = (
         nodes={nodes}
         status={status}
         pendingWiths={pendingWiths}
-        pendingNoCategories={pendingNoCategories}
-        pendingCategories={pendingCategories}
+        pendingNodes={pendingNodes}
+        pendingEdges={pendingEdges}
         errorWiths={errorWiths}
-        errorNoCategories={errorNoCategories}
-        errorCategories={errorCategories}
+        errorNodes={errorNodes}
+        errorEdges={errorEdges}
         completeWiths={completeWiths}
-        completeNoCategories={completeNoCategories}
-        completeCategories={completeCategories}
+        completeNodes={completeNodes}
+        completeEdges={completeEdges}
       />
     ));
     setShowPanelInformation(true);
@@ -528,9 +526,15 @@ const useNodeAndEdgePanelInformation = (
     dataFormat,
     nodeAndEdgeStatus,
     nodes,
-    pendingCategories,
-    errorCategories,
-    completeCategories,
+    pendingWiths,
+    pendingNodes,
+    pendingEdges,
+    errorWiths,
+    errorNodes,
+    errorEdges,
+    completeWiths,
+    completeNodes,
+    completeEdges,
     status,
     setPanelInformation,
     setShowPanelInformation,

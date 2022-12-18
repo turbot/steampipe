@@ -1,52 +1,42 @@
 import ErrorMessage from "../../ErrorMessage";
 import Icon from "../../Icon";
 import LoadingIndicator from "../LoadingIndicator";
-import {
-  CategoryStatus,
-  EdgeStatus,
-  NoCategoryStatus,
-  NodeStatus,
-  WithStatus,
-} from "../graphs/types";
 import { DashboardRunState } from "../../../types";
+import { EdgeStatus, NodeStatus, WithStatus } from "../graphs/types";
 import { Node } from "reactflow";
 
 type NodeAndEdgePanelInformationProps = {
   nodes: Node[];
   status: DashboardRunState;
   pendingWiths: WithStatus[];
-  pendingNoCategories: NoCategoryStatus[];
-  pendingCategories: CategoryStatus[];
+  pendingNodes: NodeStatus[];
+  pendingEdges: EdgeStatus[];
   errorWiths: WithStatus[];
-  errorNoCategories: NoCategoryStatus[];
-  errorCategories: CategoryStatus[];
+  errorNodes: NodeStatus[];
+  errorEdges: EdgeStatus[];
   completeWiths: WithStatus[];
-  completeNoCategories: NoCategoryStatus[];
-  completeCategories: CategoryStatus[];
+  completeNodes: NodeStatus[];
+  completeEdges: EdgeStatus[];
 };
+
+const nodeOrEdgeTitle = (nodeOrEdge: NodeStatus | EdgeStatus) =>
+  nodeOrEdge.title ||
+  nodeOrEdge?.category?.title ||
+  nodeOrEdge?.category?.name ||
+  nodeOrEdge.id;
 
 const PendingRow = ({ title }) => (
   <div className="flex items-center space-x-1">
-    <LoadingIndicator className="w-3.5 h-3.5" />
-    <span className="block">{title}</span>
+    <LoadingIndicator className="w-3.5 h-3.5 shrink-0" />
+    <span className="block truncate">{title}</span>
   </div>
 );
 
-const ErrorRow = ({
-  title,
-  error,
-  nodesInError,
-  edgesInError,
-}: {
-  title: string;
-  error?: string;
-  nodesInError?: NodeStatus[];
-  edgesInError?: EdgeStatus[];
-}) => (
+const ErrorRow = ({ title, error }: { title: string; error?: string }) => (
   <>
     <div className="flex items-center space-x-1">
       <Icon
-        className="w-3.5 h-3.5 text-alert"
+        className="w-3.5 h-3.5 text-alert shrink-0"
         icon="materialsymbols-solid:error"
       />
       <span className="block">{title}</span>
@@ -56,16 +46,6 @@ const ErrorRow = ({
         <ErrorMessage error={error} />
       </span>
     )}
-    {nodesInError?.map((n) => (
-      <span key={n.id} className="block">
-        <ErrorMessage error={n.error} />{" "}
-      </span>
-    ))}
-    {edgesInError?.map((e) => (
-      <span key={e.id} className="block">
-        <ErrorMessage error={e.error} />{" "}
-      </span>
-    ))}
   </>
 );
 
@@ -73,23 +53,20 @@ const NodeAndEdgePanelInformation = ({
   nodes,
   status,
   pendingWiths,
-  pendingNoCategories,
-  pendingCategories,
+  pendingNodes,
+  pendingEdges,
   errorWiths,
-  errorNoCategories,
-  errorCategories,
+  errorNodes,
+  errorEdges,
   completeWiths,
-  completeNoCategories,
-  completeCategories,
+  completeNodes,
+  completeEdges,
 }: NodeAndEdgePanelInformationProps) => {
   const totalPending =
-    pendingWiths.length + pendingNoCategories.length + pendingCategories.length;
-  const totalError =
-    errorWiths.length + errorNoCategories.length + errorCategories.length;
+    pendingWiths.length + pendingNodes.length + pendingEdges.length;
+  const totalError = errorWiths.length + errorNodes.length + errorEdges.length;
   const totalComplete =
-    completeWiths.length +
-    completeNoCategories.length +
-    completeCategories.length;
+    completeWiths.length + completeNodes.length + completeEdges.length;
   return (
     <div className="space-y-2 overflow-y-scroll">
       <div className="space-y-1">
@@ -111,19 +88,11 @@ const NodeAndEdgePanelInformation = ({
             title={`with: ${withStatus.title || withStatus.id}`}
           />
         ))}
-        {pendingNoCategories.map((noCategory) => (
-          <PendingRow
-            key={noCategory.id}
-            title={`${noCategory.panelType}: ${
-              noCategory.title || noCategory.id
-            }`}
-          />
+        {pendingNodes.map((node) => (
+          <PendingRow key={node.id} title={`node: ${nodeOrEdgeTitle(node)}`} />
         ))}
-        {pendingCategories.map((category) => (
-          <PendingRow
-            key={category.id}
-            title={`category: ${category.title || category.id}`}
-          />
+        {pendingEdges.map((edge) => (
+          <PendingRow key={edge.id} title={`edge: ${nodeOrEdgeTitle(edge)}`} />
         ))}
         {errorWiths.map((withStatus) => (
           <ErrorRow
@@ -132,21 +101,18 @@ const NodeAndEdgePanelInformation = ({
             error={withStatus.error}
           />
         ))}
-        {errorNoCategories.map((noCategory) => (
+        {errorNodes.map((node) => (
           <ErrorRow
-            key={noCategory.id}
-            title={`${noCategory.panelType}: ${
-              noCategory.title || noCategory.id
-            }`}
-            error={noCategory.error}
+            key={node.id}
+            title={`node: ${nodeOrEdgeTitle(node)}`}
+            error={node.error}
           />
         ))}
-        {errorCategories.map((category) => (
+        {errorEdges.map((edge) => (
           <ErrorRow
-            key={category.id}
-            title={`category: ${category.title || category.id}`}
-            nodesInError={category.nodesInError}
-            edgesInError={category.edgesInError}
+            key={edge.id}
+            title={`edge: ${nodeOrEdgeTitle(edge)}`}
+            error={edge.error}
           />
         ))}
       </div>
