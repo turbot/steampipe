@@ -104,12 +104,14 @@ func (e Error) Detail() string {
 func (e Error) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
+		io.WriteString(s, e.Error())
+		io.WriteString(s, "\n")
 		if s.Flag('+') {
+			io.WriteString(s, "Details:\n")
 			io.WriteString(s, e.Detail())
 			e.Stack().Format(s, verb)
-			return
+			io.WriteString(s, "\n")
 		}
-		fallthrough
 	case 's':
 		io.WriteString(s, e.Error())
 	case 'q':
