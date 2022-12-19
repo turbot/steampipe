@@ -15,9 +15,9 @@ import (
 type LeafRun struct {
 	// all RuntimeDependencySubscribers are also publishers as they have args/params
 	RuntimeDependencySubscriberImpl
+	Resource modconfig.DashboardLeafNode `json:"properties,omitempty"`
 
-	Data *dashboardtypes.LeafData `json:"data,omitempty"`
-
+	Data         *dashboardtypes.LeafData  `json:"data,omitempty"`
 	TimingResult *queryresult.TimingResult `json:"-"`
 	// function called when the run is complete
 	// this property populated for 'with' runs
@@ -35,6 +35,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	r := &LeafRun{
 		// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
 		RuntimeDependencySubscriberImpl: NewRuntimeDependencySubscriberImpl(resource, parent, executionTree),
+		Resource:                        resource,
 	}
 	err := r.initRuntimeDependencies()
 	if err != nil {
