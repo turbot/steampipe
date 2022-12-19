@@ -9,7 +9,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   tests=$(cat $FILE_PATH/test_data/source_files/service.json)
   test_keys=$(echo $tests | jq '. | keys[]')
-  cd $FILE_PATH
+  cd $FILE_PATH/test_data/service_mod
 
   for i in $test_keys; do
     test_name=$(echo $tests | jq -c ".[${i}]" | jq ".name")

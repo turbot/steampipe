@@ -34,5 +34,41 @@
     "run": [
       "steampipe query sample.sql"
     ]
+  },
+  {
+    "name": "check test 1",
+    "run": [
+      "steampipe check all"
+    ]
+  },
+  {
+    "name": "check test 2",
+    "run": [
+      "steampipe check all"
+    ]
+  },
+  {
+    "name": "check test 3",
+    "run": [
+      "steampipe check all"
+    ]
+  },
+  {
+    "name": "check test 4",
+    "run": [
+      "steampipe check all"
+    ]
+  },
+  {
+    "name": "check test 5",
+    "run": [
+      "steampipe check all"
+    ]
+  },
+  {
+    "name": "check test 6",
+    "run": [
+      "steampipe check all"
+    ]
   }
 ]
