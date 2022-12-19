@@ -1,7 +1,11 @@
 import ErrorModal from "../Modal/ErrorModal";
-import { Component } from "react";
+import { Component, ReactNode } from "react";
 
-class ErrorBoundary extends Component {
+type ErrorBoundaryProps = {
+  children: ReactNode;
+};
+
+class ErrorBoundary extends Component<ErrorBoundaryProps> {
   state = {
     error: null,
     errorInfo: null,
