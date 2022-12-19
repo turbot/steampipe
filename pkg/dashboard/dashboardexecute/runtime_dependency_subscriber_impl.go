@@ -147,6 +147,7 @@ func (s *RuntimeDependencySubscriber) waitForRuntimeDependencies() error {
 
 	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", s.resource.Name())
 	for _, resolvedDependency := range s.runtimeDependencies {
+		// TODO [node_reuse] what about dependencies _between_ dependencies - do this async
 		// block until the dependency is available
 		err := resolvedDependency.Resolve()
 		if err != nil {
