@@ -2,28 +2,6 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "service stability" {
-  skip
-  echo "# Setting up"
-  steampipe query "select 1"
-  echo "# Setup Done"
-  echo "# Executing tests"
-  while read -r name run; do
-    echo "## Running $name"
-    cd $FILE_PATH
-    while read -r cmd; do
-      echo "### Running '$cmd'"
-      STEAMPIPE_LOG=trace
-      run $cmd
-      assert_success
-      assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
-    done< <(echo $run | jq --raw-output '.[] | @sh' | tr -d \')
-  done< <(cat $FILE_PATH/test_data/source_files/service.json | jq --raw-output '.[] | "\(.name) \(.run)"')
-  echo "# Execution Done"
-  
-  fail "inject failure"
-}
-
-@test "service stability 2" {
   echo "# Setting up"
   steampipe query "select 1"
   echo "# Setup Done"
@@ -35,18 +13,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   for i in $test_keys; do
     test_name=$(echo $tests | jq -c ".[${i}]" | jq ".name")
-    echo "### Running '$test_name'"
+    echo ">>> TEST NAME: '$test_name'"
     runs=$(echo $tests | jq -c ".[${i}]" | jq ".run")
     run_keys=$(echo $runs | jq '. | keys[]')
+    echo 'select 1' > sample.sql
 
     for j in $run_keys; do
-      command=''
       cmd=$(echo $runs | jq ".[${j}]" | tr -d '"')
-      command="${command}${cmd}"
-      echo $command
+      echo ">>>>>>Command: $cmd"
       run $command
       assert_success
     done
+    rm -f sample.sql
   done
   assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
 }

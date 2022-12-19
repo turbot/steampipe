@@ -1,13 +1,38 @@
 [
   {
-    "name": "query",
+    "name": "query test 1",
     "run": [
-      "cd test_data",
-      "steampipe service status"
+      "steampipe query sample.sql"
     ]
   },
   {
-    "name": "test2",
-    "run": []
+    "name": "query test 2",
+    "run": [
+      "steampipe query sample.sql"
+    ]
+  },
+  {
+    "name": "query test 3",
+    "run": [
+      "steampipe query sample.sql"
+    ]
+  },
+  {
+    "name": "query test 4",
+    "run": [
+      "steampipe query sample.sql"
+    ]
+  },
+  {
+    "name": "query test 5",
+    "run": [
+      "steampipe query sample.sql"
+    ]
+  },
+  {
+    "name": "query test 6",
+    "run": [
+      "steampipe query sample.sql"
+    ]
   }
 ]
