@@ -101,7 +101,7 @@ func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListIt
 
 	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
-		return nil, sperr.Wrap(err).WithDetail("failed to load plugin version file")
+		return nil, sperr.Wrapf(err, "failed to load plugin version file")
 	}
 
 	pluginVersions := v.Plugins

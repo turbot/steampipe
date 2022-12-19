@@ -53,15 +53,18 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}()
 
 	if IsInstalled() {
-		// check if the FDW need updating, and init the db id required
-		return sperr.Wrap(err).WithMessage("failed to prepare db installation")
+		// check if the FDW need updating, and init the db if required
+		if err := prepareDb(ctx); err != nil {
+			return sperr.Wrapf(prepareDb(ctx), "failed to prepare db installation")
+		}
+		return nil
 	}
 
 	// handle the case that the previous db version may still be running
 	dbState, err := GetState()
 	if err != nil {
 		log.Println("[TRACE] Error while loading database state", err)
-		return sperr.Wrap(err).WithMessage("failed to read service state")
+		return sperr.Wrapf(err, "failed to read service state")
 	}
 	if dbState != nil {
 		return sperr.New("cannot install db - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
@@ -79,7 +82,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	err = downloadAndInstallDbFiles(ctx)
 	if err != nil {
-		return sperr.Wrap(err).WithMessage("failed to download and install db files")
+		return sperr.Wrapf(err, "failed to download and install db files")
 	}
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
@@ -519,7 +522,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		// not logging here, since the password may get logged
 		// we don't want that
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
-			return sperr.Wrap(err).WithDetail("failed setup statement: %s", statement)
+			return sperr.Wrapf(err, "failed setup statement: %s", statement)
 		}
 	}
 	return writePgHbaContent(databaseName, constants.DatabaseUser)
@@ -547,7 +550,7 @@ func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
-			return sperr.Wrap(err).WithDetail("install foreign server statement: %s", statement)
+			return sperr.Wrapf(err, "install foreign server statement: %s", statement)
 		}
 	}
 
@@ -560,7 +563,7 @@ func updateDownloadedBinarySignature() error {
 
 	versionInfo, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
-		return sperr.Wrap(err).WithDetail("failed to load database version file")
+		return sperr.Wrapf(err, "failed to load database version file")
 	}
 	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
 	return os.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)

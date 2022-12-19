@@ -11,6 +11,7 @@ import (
 	"github.com/shiena/ansicolor"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
@@ -51,7 +52,7 @@ func ShowError(ctx context.Context, err error) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Output, "%s: %+v\n", colorErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
@@ -68,32 +69,33 @@ func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 // with all the unnecessary information that comes from the
 // drivers and libraries
 func TransformErrorToSteampipe(err error) error {
-	if err == nil {
-		return err
-	}
-	// transform to a context
-	err = HandleCancelError(err)
+	return sperr.Wrap(err)
+	// if err == nil {
+	// 	return err
+	// }
+	// // transform to a context
+	// err = HandleCancelError(err)
 
-	errString := strings.TrimSpace(err.Error())
+	// errString := strings.TrimSpace(err.Error())
 
-	// an error that originated from our database/sql driver (always prefixed with "ERROR:")
-	if strings.HasPrefix(errString, "ERROR:") {
-		errString = strings.TrimSpace(strings.TrimPrefix(errString, "ERROR:"))
+	// // an error that originated from our database/sql driver (always prefixed with "ERROR:")
+	// if strings.HasPrefix(errString, "ERROR:") {
+	// 	errString = strings.TrimSpace(strings.TrimPrefix(errString, "ERROR:"))
 
-		// if this is an RPC Error while talking with the plugin
-		if strings.HasPrefix(errString, "rpc error") {
-			// trim out "rpc error: code = Unknown desc ="
-			errString = strings.TrimPrefix(errString, "rpc error: code = Unknown desc =")
-		}
-	}
-	return fmt.Errorf(strings.TrimSpace(errString))
+	// 	// if this is an RPC Error while talking with the plugin
+	// 	if strings.HasPrefix(errString, "rpc error") {
+	// 		// trim out "rpc error: code = Unknown desc ="
+	// 		errString = strings.TrimPrefix(errString, "rpc error: code = Unknown desc =")
+	// 	}
+	// }
+	// return fmt.Errorf(strings.TrimSpace(errString))
 }
 
 // HandleCancelError modifies a context.Canceled error into a readable error that can
 // be printed on the console
 func HandleCancelError(err error) error {
 	if IsCancelledError(err) {
-		err = errors.New("execution cancelled")
+		err = sperr.Wrapf(err, "execution cancelled")
 	}
 
 	return err
@@ -101,7 +103,7 @@ func HandleCancelError(err error) error {
 
 func HandleQueryTimeoutError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) {
-		err = fmt.Errorf("query timeout exceeded (%ds)", viper.GetInt(constants.ArgDatabaseQueryTimeout))
+		err = sperr.Wrapf(err, "query timeout exceeded (%ds)", viper.GetInt(constants.ArgDatabaseQueryTimeout))
 	}
 	return err
 }
@@ -158,5 +160,5 @@ func CombineErrors(errors ...error) error {
 }
 
 func PrefixError(err error, prefix string) error {
-	return fmt.Errorf("%s: %s\n", prefix, TransformErrorToSteampipe(err).Error())
+	return sperr.Wrapf(err, prefix)
 }

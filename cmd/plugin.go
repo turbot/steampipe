@@ -206,7 +206,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(plugins) == 0 {
 		fmt.Println()
-		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
+		error_helpers.ShowError(ctx, sperr.New("you need to provide at least one plugin to install"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -517,12 +517,12 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 
 	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
 		// either plugin name(s) or "all" must be provided
-		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
+		return nil, sperr.New("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
 	}
 
 	if len(plugins) > 0 && cmdconfig.Viper().GetBool(constants.ArgAll) {
 		// we can't allow update and install at the same time
-		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
+		return nil, sperr.New("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
 	}
 
 	return plugins, nil
@@ -580,7 +580,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("failed to get connection map"))
+		error_helpers.ShowError(ctx, sperr.Wrapf(err, "failed to get connection map").WithDetail("another detail"))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -590,7 +590,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
-		error_helpers.ShowError(ctx, sperr.Wrap(err).WithMessage("plugin listing failed"))
+		error_helpers.ShowError(ctx, sperr.Wrapf(err, "plugin listing failed"))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -652,7 +652,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(args) == 0 {
 		fmt.Println()
-		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
+		error_helpers.ShowError(ctx, sperr.New("you need to provide at least one plugin to uninstall"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -686,14 +686,15 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 }
 
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
+	return nil, nil, sperr.New("injected error").WithDetail("an injected detail")
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
-		return nil, nil, sperr.Wrap(err).WithDetail("failed to create db client")
+		return nil, nil, sperr.Wrapf(err, "failed to create db client")
 	}
 	defer client.Close(ctx)
 	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
-		return nil, nil, sperr.Wrap(res.Error).WithDetail("failed to refresh connection")
+		return nil, nil, sperr.Wrapf(res.Error, "failed to refresh connection")
 	}
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
