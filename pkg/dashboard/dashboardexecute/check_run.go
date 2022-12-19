@@ -7,7 +7,6 @@ import (
 
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -20,14 +19,10 @@ type CheckRun struct {
 	Summary   *controlexecute.GroupSummary `json:"summary"`
 	SessionId string                       `json:"-"`
 	// if the dashboard node is a control, serialise to json as 'properties'
-	Control       *modconfig.Control               `json:"properties,omitempty"`
-	DashboardNode modconfig.DashboardLeafNode      `json:"-"`
-	Root          controlexecute.ExecutionTreeNode `json:"-"`
+	Control *modconfig.Control               `json:"properties,omitempty"`
+	Root    controlexecute.ExecutionTreeNode `json:"-"`
 
 	controlExecutionTree *controlexecute.ExecutionTree
-	parent               dashboardtypes.DashboardParent
-	runStatus            dashboardtypes.DashboardRunStatus
-	executionTree        *DashboardExecutionTree
 }
 
 func (r *CheckRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -35,20 +30,12 @@ func (r *CheckRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
-	c := &CheckRun{
-		DashboardParentImpl: DashboardParentImpl{
-			DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, executionTree, executionTree),
-		},
+	c := &CheckRun{SessionId: executionTree.sessionId}
+	// create NewDashboardTreeRunImpl
+	// (we must create after creating the run as it requires a ref to the run)
+	// TODO [node_reuse] do this a different way
+	c.DashboardTreeRunImpl = NewDashboardTreeRunImpl(resource, parent, c, executionTree)
 
-		SessionId:     executionTree.sessionId,
-		executionTree: executionTree,
-		DashboardNode: resource,
-		parent:        parent,
-
-		// set to complete, optimistically
-		// if any children have SQL we will set this to DashboardRunReady instead
-		runStatus: dashboardtypes.DashboardRunComplete,
-	}
 	// verify node type
 	switch t := resource.(type) {
 	case *modconfig.Control:
@@ -60,9 +47,6 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 		return nil, fmt.Errorf("check run instantiated with invalid node type %s", reflect.TypeOf(resource).Name())
 	}
 
-	//  set status to ready
-	c.runStatus = dashboardtypes.DashboardRunReady
-
 	// add r into execution tree
 	executionTree.runs[c.Name] = c
 	return c, nil
@@ -71,7 +55,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 // Initialise implements DashboardRunNode
 func (r *CheckRun) Initialise(ctx context.Context) {
 	// build control execution tree during init, rather than in Execute, so that it is populated when the ExecutionStarted event is sent
-	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.DashboardNode.Name(), "")
+	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.resource.Name(), "")
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(ctx, err)
@@ -98,32 +82,6 @@ func (r *CheckRun) Execute(ctx context.Context) {
 
 	// set complete status on counter - this will raise counter complete event
 	r.SetComplete(ctx)
-}
-
-// GetRunStatus implements DashboardTreeRun
-func (r *CheckRun) GetRunStatus() dashboardtypes.DashboardRunStatus {
-	return r.runStatus
-}
-
-// SetError implements DashboardTreeRun
-func (r *CheckRun) SetError(ctx context.Context, err error) {
-	r.err = err
-	// error type does not serialise to JSON so copy into a string
-	r.ErrorString = err.Error()
-
-	// set status (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunError)
-
-	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
-}
-
-// SetComplete implements DashboardTreeRun
-func (r *CheckRun) SetComplete(ctx context.Context) {
-	// set status (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunComplete)
-	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
 }
 
 // ChildrenComplete implements DashboardTreeRun (override base)
@@ -161,11 +119,4 @@ func (r *CheckRun) buildSnapshotPanelsUnder(parent controlexecute.ExecutionTreeN
 		res = r.buildSnapshotPanelsUnder(c, res)
 	}
 	return res
-}
-
-func (r *CheckRun) setStatus(status dashboardtypes.DashboardRunStatus) {
-	r.Status = status
-	// raise LeafNodeUpdated event
-	e := dashboardevents.NewLeafNodeUpdate(r, r.executionTree.sessionId, r.executionTree.id)
-	r.executionTree.workspace.PublishDashboardEvent(e)
 }

@@ -28,7 +28,7 @@ func MergeArgs(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*QueryArgs,
 // falling back on defaults from param definitions in the source (if present)
 // it returns the arg values as a csv string which can be used in a prepared statement invocation
 // (the arg values and param defaults will already have been converted to postgres format)
-func ResolveArgs(source QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
+func ResolveArgs(qp QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 	var paramVals []any
 	var missingParams []string
 	var err error
@@ -38,26 +38,26 @@ func ResolveArgs(source QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 	}
 
 	// merge the query provider args (if any) with the runtime args
-	sourceArgs := source.GetArgs()
+	sourceArgs := qp.GetArgs()
 	if sourceArgs == nil {
 		sourceArgs = &QueryArgs{}
 	}
-	mergedArgs, err := sourceArgs.Merge(runtimeArgs, source)
+	mergedArgs, err := sourceArgs.Merge(runtimeArgs, qp)
 	if err != nil {
 		return nil, err
 	}
 	if namedArgCount := len(mergedArgs.ArgMap); namedArgCount > 0 {
 		// if named args are provided and the query does not define params, we cannot resolve the args
-		if len(source.GetParams()) == 0 {
-			log.Printf("[TRACE] %s defines %d named %s but has no parameters definitions", source.Name(), namedArgCount, utils.Pluralize("arg", namedArgCount))
+		if len(qp.GetParams()) == 0 {
+			log.Printf("[TRACE] %s defines %d named %s but has no parameters definitions", qp.Name(), namedArgCount, utils.Pluralize("arg", namedArgCount))
 		} else {
 			// do params contain named params?
-			paramVals, missingParams, err = mergedArgs.resolveNamedParameters(source)
+			paramVals, missingParams, err = mergedArgs.resolveNamedParameters(qp)
 		}
 	} else {
 		// resolve as positional parameters
 		// (or fall back to defaults if no positional params are present)
-		paramVals, missingParams, err = mergedArgs.resolvePositionalParameters(source)
+		paramVals, missingParams, err = mergedArgs.resolvePositionalParameters(qp)
 	}
 	if err != nil {
 		return nil, err

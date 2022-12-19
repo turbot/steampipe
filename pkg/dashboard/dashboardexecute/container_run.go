@@ -32,13 +32,12 @@ func (r *DashboardContainerRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardContainerRun, error) {
 	children := container.GetChildren()
 
-	r := &DashboardContainerRun{
-		DashboardParentImpl: DashboardParentImpl{
-			DashboardTreeRunImpl: NewDashboardTreeRunImpl(container, parent, executionTree),
-		},
+	r := &DashboardContainerRun{dashboardNode: container}
+	// create NewDashboardTreeRunImpl
+	// (we must create after creating the run as it requires a ref to the run)
+	// TODO [node_reuse] do this a different way
+	r.DashboardTreeRunImpl = NewDashboardTreeRunImpl(container, parent, r, executionTree)
 
-		dashboardNode: container,
-	}
 	if container.Title != nil {
 		r.Title = *container.Title
 	}

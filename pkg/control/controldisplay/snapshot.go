@@ -30,13 +30,8 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 	}
 
 	// TACTICAL create a check run to wrap the execution tree
-	checkRun = &dashboardexecute.CheckRun{
-		DashboardParentImpl: dashboardexecute.DashboardParentImpl{
-			DashboardTreeRunImpl: dashboardexecute.NewDashboardTreeRunImpl(dashboardNode, nil, nil),
-		},
-		Root:          e.Root.Children[0],
-		DashboardNode: dashboardNode,
-	}
+	checkRun = &dashboardexecute.CheckRun{Root: e.Root.Children[0]}
+	checkRun.DashboardTreeRunImpl = dashboardexecute.NewDashboardTreeRunImpl(dashboardNode, nil, checkRun, nil)
 
 	// populate the panels
 	panels = checkRun.BuildSnapshotPanels(make(map[string]dashboardtypes.SnapshotPanel))

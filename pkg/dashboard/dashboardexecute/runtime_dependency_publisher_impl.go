@@ -17,23 +17,20 @@ type RuntimeDependencyPublisherImpl struct {
 	Args   []any                 `json:"args,omitempty"`
 	Params []*modconfig.ParamDef `json:"params,omitempty"`
 
-	// map of runtime dependencies, keyed by dependency long name
-	runtimeDependencies map[string]*dashboardtypes.ResolvedRuntimeDependency
-	subscriptions       map[string][]*RuntimeDependencyPublishTarget
-	withValueMutex      sync.Mutex
-	withRuns            map[string]*LeafRun
-	inputs              map[string]*modconfig.DashboardInput
+	subscriptions  map[string][]*RuntimeDependencyPublishTarget
+	withValueMutex sync.Mutex
+	withRuns       map[string]*LeafRun
+	inputs         map[string]*modconfig.DashboardInput
 }
 
-func NewRuntimeDependencyPublisherImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) *RuntimeDependencyPublisherImpl {
-	b := &RuntimeDependencyPublisherImpl{
+func NewRuntimeDependencyPublisherImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) RuntimeDependencyPublisherImpl {
+	b := RuntimeDependencyPublisherImpl{
 		DashboardParentImpl: DashboardParentImpl{
-			DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, parent, executionTree),
+			DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, parent, run, executionTree),
 		},
-		subscriptions:       make(map[string][]*RuntimeDependencyPublishTarget),
-		runtimeDependencies: make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
-		inputs:              make(map[string]*modconfig.DashboardInput),
-		withRuns:            make(map[string]*LeafRun),
+		subscriptions: make(map[string][]*RuntimeDependencyPublishTarget),
+		inputs:        make(map[string]*modconfig.DashboardInput),
+		withRuns:      make(map[string]*LeafRun),
 	}
 	// if the resource is a query provider, get params and set status
 	if queryProvider, ok := resource.(modconfig.QueryProvider); ok {
@@ -47,54 +44,37 @@ func NewRuntimeDependencyPublisherImpl(resource modconfig.DashboardLeafNode, par
 	return b
 }
 
-func (b *RuntimeDependencyPublisherImpl) initRuntimeDependencies() error {
-	// if the resource is a runtime dependency provider, create with runs and resolve dependencies
-	if rdp, ok := b.resource.(modconfig.RuntimeDependencyProvider); ok {
-		// if we have with blocks, create runs for them
-		// BEFORE creating child runs, and before adding runtime dependencies
-		err := b.createWithRuns(rdp.GetWiths(), b.executionTree)
-		if err != nil {
-			return err
-		}
-		// resolve any runtime dependencies
-		if err := b.resolveRuntimeDependencies(rdp); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+func (p *RuntimeDependencyPublisherImpl) Initialise(context.Context) {}
 
-func (b *RuntimeDependencyPublisherImpl) Initialise(context.Context) {}
-
-func (b *RuntimeDependencyPublisherImpl) Execute(context.Context) {
+func (p *RuntimeDependencyPublisherImpl) Execute(context.Context) {
 	panic("must be implemented by child struct")
 }
 
-func (b *RuntimeDependencyPublisherImpl) SetError(context.Context, error) {
+func (p *RuntimeDependencyPublisherImpl) SetError(context.Context, error) {
 	panic("must be implemented by child struct")
 }
 
-func (b *RuntimeDependencyPublisherImpl) SetComplete(context.Context) {
+func (p *RuntimeDependencyPublisherImpl) SetComplete(context.Context) {
 	panic("must be implemented by child struct")
 }
 
-func (b *RuntimeDependencyPublisherImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+func (p *RuntimeDependencyPublisherImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
 }
 
-func (b *RuntimeDependencyPublisherImpl) GetName() string {
-	return b.Name
+func (p *RuntimeDependencyPublisherImpl) GetName() string {
+	return p.Name
 }
 
-func (b *RuntimeDependencyPublisherImpl) ProvidesRuntimeDependency(dependency *modconfig.RuntimeDependency) bool {
+func (p *RuntimeDependencyPublisherImpl) ProvidesRuntimeDependency(dependency *modconfig.RuntimeDependency) bool {
 	resourceName := dependency.SourceResourceName()
 	switch dependency.PropertyPath.ItemType {
 	case modconfig.BlockTypeWith:
-		return b.withRuns[resourceName] != nil
+		return p.withRuns[resourceName] != nil
 	case modconfig.BlockTypeInput:
-		return b.inputs[resourceName] != nil
+		return p.inputs[resourceName] != nil
 	case modconfig.BlockTypeParam:
-		for _, p := range b.Params {
+		for _, p := range p.Params {
 			// check short name not resource name (which is unqualified name)
 			if p.ShortName == dependency.PropertyPath.Name {
 				return true
@@ -104,7 +84,7 @@ func (b *RuntimeDependencyPublisherImpl) ProvidesRuntimeDependency(dependency *m
 	return false
 }
 
-func (b *RuntimeDependencyPublisherImpl) SubscribeToRuntimeDependency(name string, opts ...RuntimeDependencyPublishOption) chan *dashboardtypes.ResolvedRuntimeDependencyValue {
+func (p *RuntimeDependencyPublisherImpl) SubscribeToRuntimeDependency(name string, opts ...RuntimeDependencyPublishOption) chan *dashboardtypes.ResolvedRuntimeDependencyValue {
 	target := &RuntimeDependencyPublishTarget{
 		// make a channel (buffer to avoid potential sync issues)
 		channel: make(chan *dashboardtypes.ResolvedRuntimeDependencyValue, 1),
@@ -115,12 +95,12 @@ func (b *RuntimeDependencyPublisherImpl) SubscribeToRuntimeDependency(name strin
 	log.Printf("[TRACE] SubscribeToRuntimeDependency %s", name)
 
 	// subscribe, passing a function which invokes getWithValue to resolve the required with value
-	b.subscriptions[name] = append(b.subscriptions[name], target)
+	p.subscriptions[name] = append(p.subscriptions[name], target)
 	return target.channel
 }
 
-func (b *RuntimeDependencyPublisherImpl) PublishRuntimeDependencyValue(name string, result *dashboardtypes.ResolvedRuntimeDependencyValue) {
-	for _, target := range b.subscriptions[name] {
+func (p *RuntimeDependencyPublisherImpl) PublishRuntimeDependencyValue(name string, result *dashboardtypes.ResolvedRuntimeDependencyValue) {
+	for _, target := range p.subscriptions[name] {
 		if target.transform != nil {
 			// careful not to mutate result which may be reused
 			target.channel <- target.transform(result)
@@ -130,82 +110,31 @@ func (b *RuntimeDependencyPublisherImpl) PublishRuntimeDependencyValue(name stri
 		close(target.channel)
 	}
 	// clear subscriptions
-	delete(b.subscriptions, name)
+	delete(p.subscriptions, name)
 }
 
-func (b *RuntimeDependencyPublisherImpl) FindRuntimeDependenciesForParent(parentProperty string) []*dashboardtypes.ResolvedRuntimeDependency {
-	var res []*dashboardtypes.ResolvedRuntimeDependency
-	for _, dep := range b.runtimeDependencies {
-		if dep.Dependency.ParentPropertyName == parentProperty {
-			res = append(res, dep)
-		}
-	}
-	return res
+func (p *RuntimeDependencyPublisherImpl) GetWithRuns() map[string]*LeafRun {
+	return p.withRuns
 }
 
-func (b *RuntimeDependencyPublisherImpl) FindRuntimeDependencyForParent(parentProperty string) *dashboardtypes.ResolvedRuntimeDependency {
-	res := b.FindRuntimeDependenciesForParent(parentProperty)
-	if len(res) > 1 {
-		panic(fmt.Sprintf("FindRuntimeDependencyForParent for %s, parent property %s, returned more that 1 result", b.Name, parentProperty))
-	}
-	if res == nil {
+func (p *RuntimeDependencyPublisherImpl) initRuntimeDependencies() error {
+	// if the resource is a runtime dependency provider, create with runs and resolve dependencies
+	rdp, ok := p.resource.(modconfig.RuntimeDependencyProvider)
+	if !ok {
 		return nil
 	}
-	// return first result
-	return res[0]
-}
-
-func (b *RuntimeDependencyPublisherImpl) GetWithRuns() map[string]*LeafRun {
-	return b.withRuns
-}
-
-// if this node has runtime dependencies, find the publisher of the dependency and create a dashboardtypes.ResolvedRuntimeDependency
-// which  we use to resolve the values
-func (b *RuntimeDependencyPublisherImpl) resolveRuntimeDependencies(rdp modconfig.RuntimeDependencyProvider) error {
-	runtimeDependencies := rdp.GetRuntimeDependencies()
-	for n, d := range runtimeDependencies {
-		// find a runtime dependency publisher who can provider this runtime dependency
-		publisher := b.findRuntimeDependencyPublisher(d)
-		if publisher == nil {
-			// should never happen as validation should have caught this
-			return fmt.Errorf("cannot resolve runtime dependency %s", d.String())
-		}
-
-		// read name and dep into local loop vars to ensure correct value used when transform func is invoked
-		name := n
-		dep := d
-
-		// determine the function to use to retrieve the runtime dependency value
-		var opts []RuntimeDependencyPublishOption
-
-		switch dep.PropertyPath.ItemType {
-		case modconfig.BlockTypeWith:
-			// set a transform function to extract the requested with data
-			opts = append(opts, WithTransform(func(resolvedVal *dashboardtypes.ResolvedRuntimeDependencyValue) *dashboardtypes.ResolvedRuntimeDependencyValue {
-				transformedResolvedVal := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: resolvedVal.Error}
-				if resolvedVal.Error == nil {
-					// the runtime dependency value for a 'with' is *dashboardtypes.LeafData
-					withValue, err := b.getWithValue(name, resolvedVal.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
-					if err != nil {
-						transformedResolvedVal.Error = fmt.Errorf("failed to resolve with value '%s' for %s: %s", dep.PropertyPath.Original, name, err.Error())
-					} else {
-						transformedResolvedVal.Value = withValue
-					}
-				}
-				return transformedResolvedVal
-			}))
-		}
-		// subscribe, passing a function which invokes getWithValue to resolve the required with value
-		valueChannel := publisher.SubscribeToRuntimeDependency(d.SourceResourceName(), opts...)
-
-		publisherName := publisher.GetName()
-		b.runtimeDependencies[name] = dashboardtypes.NewResolvedRuntimeDependency(dep, valueChannel, publisherName)
+	// if we have with blocks, create runs for them
+	// BEFORE creating child runs, and before adding runtime dependencies
+	err := p.createWithRuns(rdp.GetWiths(), p.executionTree)
+	if err != nil {
+		return err
 	}
+
 	return nil
 }
 
 // getWithValue accepts the raw with result (dashboardtypes.LeafData) and the property path, and extracts the appropriate data
-func (b *RuntimeDependencyPublisherImpl) getWithValue(name string, result *dashboardtypes.LeafData, path *modconfig.ParsedPropertyPath) (any, error) {
+func (p *RuntimeDependencyPublisherImpl) getWithValue(name string, result *dashboardtypes.LeafData, path *modconfig.ParsedPropertyPath) (any, error) {
 	//  get the set of rows which will be used ot generate the return value
 	rows := result.Rows
 	/*
@@ -293,18 +222,18 @@ func columnValuesFromRows(column string, rows []map[string]any) (any, error) {
 	return res, nil
 }
 
-func (b *RuntimeDependencyPublisherImpl) setWithValue(w *LeafRun) {
-	b.withValueMutex.Lock()
-	defer b.withValueMutex.Unlock()
+func (p *RuntimeDependencyPublisherImpl) setWithValue(w *LeafRun) {
+	p.withValueMutex.Lock()
+	defer p.withValueMutex.Unlock()
 
-	name := w.Resource.GetUnqualifiedName()
+	name := w.resource.GetUnqualifiedName()
 	// if there was an error, w.Data will be nil and w.error will be non-nil
 	result := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: w.err}
 
 	if w.err == nil {
 		populateData(w.Data, result)
 	}
-	b.PublishRuntimeDependencyValue(name, result)
+	p.PublishRuntimeDependencyValue(name, result)
 	return
 }
 
@@ -332,8 +261,8 @@ func populateData(withData *dashboardtypes.LeafData, result *dashboardtypes.Reso
 	}
 }
 
-func (b *RuntimeDependencyPublisherImpl) withsComplete() bool {
-	for _, w := range b.withRuns {
+func (p *RuntimeDependencyPublisherImpl) withsComplete() bool {
+	for _, w := range p.withRuns {
 		if !w.RunComplete() {
 			return false
 		}
@@ -341,19 +270,19 @@ func (b *RuntimeDependencyPublisherImpl) withsComplete() bool {
 	return true
 }
 
-func (b *RuntimeDependencyPublisherImpl) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) RuntimeDependencyPublisher {
+func (p *RuntimeDependencyPublisherImpl) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) RuntimeDependencyPublisher {
 	// the runtime dependency publisher is usually the root node of the execution tree
 	// the exception to this is if the node is a LeafRun(?) for a base node which has a with block,
 	// in which case it may provide its own runtime depdency
 
 	// try ourselves
-	if b.ProvidesRuntimeDependency(runtimeDependency) {
-		return b
+	if p.ProvidesRuntimeDependency(runtimeDependency) {
+		return p
 	}
 
 	// try root node
 	// NOTE: we cannot just use b.executionTree.Root as this function is called at init time before Root is assigned
-	rootPublisher := b.getRoot().(RuntimeDependencyPublisher)
+	rootPublisher := p.getRoot().(RuntimeDependencyPublisher)
 
 	if rootPublisher.ProvidesRuntimeDependency(runtimeDependency) {
 		return rootPublisher
@@ -363,11 +292,11 @@ func (b *RuntimeDependencyPublisherImpl) findRuntimeDependencyPublisher(runtimeD
 }
 
 // get the root of the tree by searching up the parents
-func (b *RuntimeDependencyPublisherImpl) getRoot() dashboardtypes.DashboardTreeRun {
-	var root dashboardtypes.DashboardTreeRun = b
+func (p *RuntimeDependencyPublisherImpl) getRoot() dashboardtypes.DashboardTreeRun {
+	var root dashboardtypes.DashboardTreeRun = p
 	for {
 		parent := root.GetParent()
-		if parent == b.executionTree {
+		if parent == p.executionTree {
 			break
 		}
 		root = parent.(dashboardtypes.DashboardTreeRun)
@@ -375,19 +304,19 @@ func (b *RuntimeDependencyPublisherImpl) getRoot() dashboardtypes.DashboardTreeR
 	return root
 }
 
-func (b *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
+func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
 	for _, w := range withs {
-		withRun, err := NewLeafRun(w, b, executionTree)
+		withRun, err := NewLeafRun(w, p, executionTree)
 		if err != nil {
 			return err
 		}
 		// NOTE: set the name of the run toe be the scoped name
 		withRun.Name = fmt.Sprintf("%s.%s", withRun.GetParent().GetName(), w.UnqualifiedName)
 		// set an onComplete function to populate 'with' data
-		withRun.onComplete = func() { b.setWithValue(withRun) }
+		withRun.onComplete = func() { p.setWithValue(withRun) }
 
-		b.withRuns[w.UnqualifiedName] = withRun
-		b.children = append(b.children, withRun)
+		p.withRuns[w.UnqualifiedName] = withRun
+		p.children = append(p.children, withRun)
 	}
 	return nil
 }

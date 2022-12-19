@@ -2,8 +2,11 @@ package dashboardexecute
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"log"
 )
 
 type DashboardTreeRunImpl struct {
@@ -24,11 +27,14 @@ type DashboardTreeRunImpl struct {
 	err           error
 	parent        dashboardtypes.DashboardParent
 	executionTree *DashboardExecutionTree
-	resource      modconfig.HclResource
+	resource      modconfig.DashboardLeafNode
+	// store the top level run which embeds this struct
+	// we need this for setStatus which serialises the run for the message payload
+	run dashboardtypes.DashboardTreeRun
 }
 
-func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) DashboardTreeRunImpl {
-	// NOTE: for now we MUST declare children inline - therefore we cannot share children between runs in the tree
+func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) DashboardTreeRunImpl {
+	// NOTE: we MUST declare children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
 	// so FOR NOW it is safe to use the container name directly as the run name
 	res := DashboardTreeRunImpl{
@@ -49,6 +55,7 @@ func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashbo
 		parent:        parent,
 		executionTree: executionTree,
 		resource:      resource,
+		run:           run,
 	}
 
 	// TACTICAL if this run was created to create a snapshot output for a control run,
@@ -109,13 +116,41 @@ func (r *DashboardTreeRunImpl) Execute(ctx context.Context) {
 	panic("must be implemented by child struct")
 }
 
-func (r *DashboardTreeRunImpl) SetError(context.Context, error) {
+func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
 }
 
-func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
-	panic("must be implemented by child struct")
+// TODO [node_reuse] do this a different way
+// maybe move to a different embedded struct - ExecutableRun, to differentiate between Base runs
+
+// SetError implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) SetError(ctx context.Context, err error) {
+	log.Printf("[TRACE] %s SetError err %v", r.Name, err)
+	r.err = err
+	// error type does not serialise to JSON so copy into a string
+	r.ErrorString = err.Error()
+	// increment error count for snapshot hook
+	statushooks.SnapshotError(ctx)
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunError)
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
 }
-func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
-	panic("must be implemented by child struct")
+
+// SetComplete implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunComplete)
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
+}
+
+func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatus) {
+	r.Status = status
+
+	// raise LeafNodeUpdated event
+	// TODO [node_reuse] tidy this up
+	// NOTE: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
+	e := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
+	r.executionTree.workspace.PublishDashboardEvent(e)
 }

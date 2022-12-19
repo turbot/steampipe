@@ -22,8 +22,6 @@ type ResolvedRuntimeDependency struct {
 }
 
 func NewResolvedRuntimeDependency(dep *modconfig.RuntimeDependency, valueChannel chan *ResolvedRuntimeDependencyValue, publisherName string) *ResolvedRuntimeDependency {
-	var wg sync.WaitGroup
-	wg.Add(1)
 	return &ResolvedRuntimeDependency{
 		Dependency:    dep,
 		valueChannel:  valueChannel,
