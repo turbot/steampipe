@@ -2,9 +2,9 @@ import { classNames } from "../../../../utils/styles";
 import { Dispatch, MouseEventHandler, ReactNode, SetStateAction } from "react";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 
-interface GridEvents {
+type GridEvents = {
   [name: string]: MouseEventHandler<HTMLDivElement>;
-}
+};
 
 type GridProps = {
   children: ReactNode;

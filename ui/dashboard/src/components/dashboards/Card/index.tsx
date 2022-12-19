@@ -44,14 +44,14 @@ export type CardProps = PanelProperties &
 
 type CardDataFormat = "simple" | "formal";
 
-interface CardState {
+type CardState = {
   loading: boolean;
   label: string | null;
   value: any | null;
   type: CardType;
   icon: string | null;
   href: string | null;
-}
+};
 
 const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   if (data.columns.length > 1) {

@@ -1,6 +1,6 @@
 import { classNames } from "../../../utils/styles";
 
-export interface ButtonProps {
+export type ButtonProps = {
   children: JSX.Element | JSX.Element[];
   className?: string;
   disabled?: boolean;
@@ -8,7 +8,7 @@ export interface ButtonProps {
   size?: "sm" | "md" | "lg";
   title?: string;
   type?: "button" | "submit";
-}
+};
 
 const Button = ({
   children,

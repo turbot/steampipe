@@ -2,36 +2,36 @@ import IntegerDisplay from "../../../IntegerDisplay";
 import { CheckNodeStatus, CheckSummary } from "../common";
 import { classNames } from "../../../../utils/styles";
 
-interface ProgressBarGroupProps {
+type ProgressBarGroupProps = {
   children: JSX.Element | JSX.Element[];
   className?: string;
-}
+};
 
-interface ProgressBarProps {
+type ProgressBarProps = {
   className?: string;
   percent: number;
-}
+};
 
-interface CheckSummaryChartProps {
+type CheckSummaryChartProps = {
   status: CheckNodeStatus;
   summary: CheckSummary;
   firstChildSummaries: CheckSummary[];
-}
+};
 
-interface AlertProgressBarGroupTotalProps {
+type AlertProgressBarGroupTotalProps = {
   className?: string;
   summary: CheckSummary;
-}
+};
 
-interface NonAlertProgressBarGroupTotalProps {
+type NonAlertProgressBarGroupTotalProps = {
   className?: string;
   summary: CheckSummary;
-}
+};
 
-interface ProgressBarGroupTotalProps {
+type ProgressBarGroupTotalProps = {
   className?: string;
   total: number;
-}
+};
 
 const getWidth = (x, y) => {
   const percent = (x / (x + y)) * 100;

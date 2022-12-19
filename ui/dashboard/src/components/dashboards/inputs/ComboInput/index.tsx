@@ -11,10 +11,10 @@ import {
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 
-export interface SelectOption {
+export type SelectOption = {
   label: string;
   value: string;
-}
+};
 
 type SelectInputProps = InputProps & {
   multi?: boolean;

@@ -1,12 +1,12 @@
 import isNil from "lodash/isNil";
 import isObject from "lodash/isObject";
 
-interface IntegerDisplayProps {
+type IntegerDisplayProps = {
   num: number | null;
   className?: string;
   startAt?: "k" | "100k" | "m";
   withTitle?: boolean;
-}
+};
 
 // Adapted from https://stackoverflow.com/questions/42658221/vanilla-javascript-function-to-round-to-nearest-hundred-or-100k-plus-symbol
 // const truncate = (num: number) => {

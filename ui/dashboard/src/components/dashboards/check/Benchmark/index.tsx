@@ -26,10 +26,10 @@ import { Width } from "../../common";
 
 const Table = getComponent("table");
 
-interface BenchmarkTableViewProps {
+type BenchmarkTableViewProps = {
   benchmark: BenchmarkType;
   definition: PanelDefinition;
-}
+};
 
 type InnerCheckProps = {
   benchmark: BenchmarkType;

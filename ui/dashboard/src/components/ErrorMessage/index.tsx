@@ -19,10 +19,10 @@ const getErrorMessage = (error: any, fallbackMessage: string) => {
   return fallbackMessage;
 };
 
-interface ErrorMessageProps {
+type ErrorMessageProps = {
   error?: any;
   fallbackMessage?: string;
-}
+};
 
 const ErrorMessage = ({
   error,

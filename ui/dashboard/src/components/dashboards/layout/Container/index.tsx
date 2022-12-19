@@ -5,10 +5,10 @@ import { ContainerDefinition } from "../../../../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
-interface ContainerProps {
+type ContainerProps = {
   layoutDefinition?: ContainerDefinition;
   definition?: ContainerDefinition;
-}
+};
 
 const Container = ({ definition, layoutDefinition }: ContainerProps) => {
   const { panelsMap } = useDashboard();

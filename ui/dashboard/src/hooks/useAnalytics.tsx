@@ -16,18 +16,18 @@ import {
 } from "react";
 import { useTheme } from "./useTheme";
 
-interface AnalyticsProperties {
+type AnalyticsProperties = {
   [key: string]: any;
-}
+};
 
-interface IAnalyticsContext {
+type IAnalyticsContext = {
   reset: () => void;
   track: (string, properties: AnalyticsProperties) => void;
-}
+};
 
-interface SelectedDashboardStates {
+type SelectedDashboardStates = {
   selectedDashboard: AvailableDashboard | null;
-}
+};
 
 const AnalyticsContext = createContext<IAnalyticsContext>({
   reset: () => {},

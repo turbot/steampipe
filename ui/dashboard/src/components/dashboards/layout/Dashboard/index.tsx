@@ -8,16 +8,16 @@ import { DashboardDataModeLive, DashboardDefinition } from "../../../../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
-interface DashboardProps {
+type DashboardProps = {
   definition: DashboardDefinition;
   isRoot?: boolean;
   showPanelControls?: boolean;
   withPadding?: boolean;
-}
+};
 
-interface DashboardWrapperProps {
+type DashboardWrapperProps = {
   showPanelControls?: boolean;
-}
+};
 
 // TODO allow full-screen of a panel
 const Dashboard = ({

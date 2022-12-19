@@ -1,11 +1,11 @@
 import useDashboardIcons from "../../hooks/useDashboardIcons";
 
-interface IconProps {
+type IconProps = {
   className?: string;
   icon: string;
   style?: any;
   title?: string;
-}
+};
 
 const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
   const icons = useDashboardIcons();

@@ -16,28 +16,28 @@ import { stringToColor } from "../../utils/color";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
-interface DashboardListSection {
+type DashboardListSection = {
   title: string;
   dashboards: AvailableDashboardWithMod[];
-}
+};
 
 type AvailableDashboardWithMod = AvailableDashboard & {
   mod?: ModDashboardMetadata;
 };
 
-interface DashboardTagProps {
+type DashboardTagProps = {
   tagKey: string;
   tagValue: string;
   dispatch?: (action: DashboardAction) => void;
   searchValue?: string;
-}
+};
 
-interface SectionProps {
+type SectionProps = {
   title: string;
   dashboards: AvailableDashboardWithMod[];
   dispatch: (action: DashboardAction) => void;
   searchValue: string;
-}
+};
 
 const DashboardTag = ({
   tagKey,
@@ -168,9 +168,9 @@ const Section = ({
   );
 };
 
-interface GroupedDashboards {
+type GroupedDashboards = {
   [key: string]: AvailableDashboardWithMod[];
-}
+};
 
 const useGroupedDashboards = (dashboards, group_by, metadata) => {
   const [sections, setSections] = useState<DashboardListSection[]>([]);

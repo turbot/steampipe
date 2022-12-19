@@ -1,9 +1,9 @@
 import ErrorModal from "../../Modal/ErrorModal";
 import { useDashboard } from "../../../hooks/useDashboard";
 
-interface WorkspaceErrorModalProps {
+type WorkspaceErrorModalProps = {
   error: any;
-}
+};
 
 const WorkspaceErrorModal = ({ error }: WorkspaceErrorModalProps) => (
   <ErrorModal error={error} title="Workspace Error" />

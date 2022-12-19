@@ -578,7 +578,7 @@ const getInitialState = (searchParams, defaults: any = {}) => {
 
 const DashboardContext = createContext<IDashboardContext | null>(null);
 
-interface DashboardProviderProps {
+type DashboardProviderProps = {
   analyticsContext: any;
   breakpointContext: any;
   children: null | JSX.Element | JSX.Element[];
@@ -591,7 +591,7 @@ interface DashboardProviderProps {
   stateDefaults?: {};
   themeContext: any;
   versionMismatchCheck?: boolean;
-}
+};
 
 const DashboardProvider = ({
   analyticsContext,

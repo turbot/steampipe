@@ -2,48 +2,48 @@ import { TableColumnDisplay, TableColumnWrap } from "../Table";
 import { ColorOverride, LeafNodeDataRow } from "./index";
 import { Graph } from "graphlib";
 
-export interface CategoryFields {
+export type CategoryFields = {
   [name: string]: CategoryField;
-}
+};
 
-export interface CategoryField {
+export type CategoryField = {
   name: string;
   href?: string | null;
   display?: TableColumnDisplay;
   wrap?: TableColumnWrap;
-}
+};
 
-export interface KeyValuePairs {
+export type KeyValuePairs = {
   [key: string]: any;
-}
+};
 
-export interface KeyValueStringPairs {
+export type KeyValueStringPairs = {
   [key: string]: string;
-}
+};
 
-export interface NodeProperties {
+export type NodeProperties = {
   name: string;
   category?: Category;
-}
+};
 
-export interface EdgeProperties {
+export type EdgeProperties = {
   name: string;
   category?: Category;
-}
+};
 
-export interface NodeAndEdgeProperties {
+export type NodeAndEdgeProperties = {
   categories?: CategoryMap;
   edges?: string[];
   nodes?: string[];
-}
+};
 
-export interface CategoryFold {
+export type CategoryFold = {
   threshold: number;
   title?: string;
   icon?: string;
-}
+};
 
-export interface Category {
+export type Category = {
   name?: string;
   color?: ColorOverride;
   depth?: number;
@@ -52,18 +52,18 @@ export interface Category {
   href?: string;
   icon?: string;
   title?: string;
-}
+};
 
-export interface CategoryMap {
+export type CategoryMap = {
   [category: string]: Category;
-}
+};
 
-export interface FoldedNode {
+export type FoldedNode = {
   id: string;
   title?: string;
-}
+};
 
-export interface Node {
+export type Node = {
   id: string;
   title: string | null;
   category: string | null;
@@ -73,9 +73,9 @@ export interface Node {
   href: string | null;
   isFolded: boolean;
   foldedNodes?: FoldedNode[];
-}
+};
 
-export interface Edge {
+export type Edge = {
   id: string;
   from_id: string;
   to_id: string;
@@ -83,26 +83,26 @@ export interface Edge {
   category: string | null;
   row_data: LeafNodeDataRow | null;
   isFolded: boolean;
-}
+};
 
-export interface NodeMap {
+export type NodeMap = {
   [id: string]: Node;
-}
+};
 
-export interface EdgeMap {
+export type EdgeMap = {
   [edge_id: string]: boolean;
-}
+};
 
-export interface NodeCategoryMap {
+export type NodeCategoryMap = {
   [category: string]: NodeMap;
-}
+};
 
-interface NodesAndEdgesMetadata {
+type NodesAndEdgesMetadata = {
   has_multiple_roots: boolean;
   contains_duplicate_edges: boolean;
-}
+};
 
-export interface NodesAndEdges {
+export type NodesAndEdges = {
   graph: Graph;
   nodes: Node[];
   edges: Edge[];
@@ -113,7 +113,7 @@ export interface NodesAndEdges {
   categories: CategoryMap;
   metadata?: NodesAndEdgesMetadata;
   next_color_index?: number;
-}
+};
 
 export type TemplatesMap = {
   [key: string]: string;

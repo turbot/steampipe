@@ -2,20 +2,20 @@ import Icon from "../../Icon";
 import { classNames } from "../../../utils/styles";
 import { useMemo } from "react";
 
-interface DashboardIconProps {
+type DashboardIconProps = {
   className?: string;
   icon?: string | null;
   style?: any;
   title?: string;
-}
+};
 
-interface DashboardTextIconProps extends DashboardIconProps {
+type DashboardTextIconProps = DashboardIconProps & {
   icon: string;
-}
+};
 
-interface DashboardImageIconProps extends DashboardIconProps {
+type DashboardImageIconProps = DashboardIconProps & {
   icon: string;
-}
+};
 
 const useDashboardIconType = (icon) =>
   useMemo(() => {
