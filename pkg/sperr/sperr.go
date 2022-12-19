@@ -46,25 +46,48 @@ func (e Error) Stack() StackTrace {
 
 func (e Error) Unwrap() error { return e.cause }
 func (e Error) Is(target error) bool {
-	_, ok := target.(*Error)
+	_, ok := target.(Error)
 	return ok
 }
 
 func (e Error) As(target any) bool {
-	if err, ok := target.(*Error); ok {
+	if err, ok := target.(Error); ok {
 		target = err
 		return true
 	}
 	return errors.As(e.RootCause(), target)
 }
 
-func (e Error) Error() string {
-	return strings.Join(e.messageChain(), ":")
+func (e Error) Error() (str string) {
+	res := []string{}
+	if len(e.msg) > 0 {
+		res = append(res, e.msg)
+	}
+	if e.isRoot || e.cause == nil {
+		return e.msg
+	}
+	if e.cause != nil && len(e.cause.Error()) > 0 {
+		res = append(res, e.cause.Error())
+	}
+	return strings.Join(res, ":")
 }
 
-// TODO recurse down to all the details
 func (e Error) Detail() string {
-	return strings.Join(e.detailChain(), "\n|-")
+	type hasDetail interface {
+		Detail() string
+	}
+	res := []string{}
+	if len(e.detail) > 0 {
+		res = append(res, e.detail)
+	}
+	if e.cause != nil && len(e.cause.Error()) > 0 {
+		if asD, ok := e.cause.(hasDetail); ok {
+			res = append(res, asD.Detail())
+		} else {
+			res = append(res, e.Error())
+		}
+	}
+	return strings.Join(res, "\n|-")
 }
 
 // All error values returned from this package implement fmt.Formatter and can
@@ -92,47 +115,4 @@ func (e Error) Format(s fmt.State, verb rune) {
 	case 'q':
 		fmt.Fprintf(s, "%q", e.Error())
 	}
-}
-
-func (e Error) messageChain() []string {
-	res := []string{}
-	if len(e.msg) > 0 {
-		res = []string{e.msg}
-	}
-	if e.isRoot || e.cause == nil {
-		return res
-	}
-
-	type hasMsgChain interface {
-		messageChain() []string
-	}
-
-	// is the underlying a sperr
-	if under, ok := e.cause.(hasMsgChain); ok {
-		res = append(res, under.messageChain()...)
-	} else {
-		res = append(res, e.cause.Error())
-	}
-	return res
-}
-
-func (e Error) detailChain() []string {
-	res := []string{}
-	if len(e.detail) > 0 {
-		res = []string{e.detail}
-	}
-	if e.cause == nil {
-		return res
-	}
-
-	type hasDetailChain interface {
-		detailChain() []string
-	}
-	// is the underlying a sperr
-	if under, ok := e.cause.(hasDetailChain); ok {
-		res = append(res, under.detailChain()...)
-	} else {
-		res = append(res, e.cause.Error())
-	}
-	return res
 }
