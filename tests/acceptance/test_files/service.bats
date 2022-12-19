@@ -2,6 +2,7 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "service stability" {
+  skip
   echo "# Setting up"
   steampipe query "select 1"
   echo "# Setup Done"
@@ -30,25 +31,24 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   tests=$(cat $FILE_PATH/test_data/source_files/service.json)
   test_keys=$(echo $tests | jq '. | keys[]')
+  # cd $FILE_PATH
 
   for i in $test_keys; do
     test_name=$(echo $tests | jq -c ".[${i}]" | jq ".name")
     echo "### Running '$test_name'"
     runs=$(echo $tests | jq -c ".[${i}]" | jq ".run")
-    echo $runs
     run_keys=$(echo $runs | jq '. | keys[]')
 
     for j in $run_keys; do
       command=''
       cmd=$(echo $runs | jq ".[${j}]" | tr -d '"')
-      # echo $cmd
       command="${command}${cmd}"
       echo $command
-      # $command
-      # echo $output
+      run $command
+      echo $output
     done
   done
-  assert_equal 1 0
+  assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
 }
 
 # @test "implicit service from query" {

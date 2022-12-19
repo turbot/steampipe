@@ -2,12 +2,12 @@
   {
     "name": "query",
     "run": [
-      "steampipe query 'select 1'",
-      "cd dir"
+      "cd test_data",
+      "steampipe service status"
     ]
   },
   {
-    "name": "test_name2",
+    "name": "test2",
     "run": []
   }
 ]
