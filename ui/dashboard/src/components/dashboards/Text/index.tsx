@@ -3,6 +3,7 @@ import gfm from "remark-gfm"; // Support for strikethrough, tables, tasklists an
 import ReactMarkdown from "react-markdown";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import { classNames } from "../../../utils/styles";
+import { PanelDefinition } from "../../../types";
 import { registerComponent } from "../index";
 
 const getLongPanelClasses = () => {
@@ -23,7 +24,8 @@ const getShortPanelClasses = () => {
   // }
 };
 
-export type TextProps = BasePrimitiveProps &
+export type TextProps = PanelDefinition &
+  BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     display_type?: "raw" | "markdown" | "html";
     properties: {

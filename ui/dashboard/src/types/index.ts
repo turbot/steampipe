@@ -2,7 +2,7 @@ import { LeafNodeData, Width } from "../components/dashboards/common";
 import { Ref } from "react";
 import { Theme } from "../hooks/useTheme";
 
-export interface IDashboardContext {
+export type IDashboardContext = {
   versionMismatchCheck: boolean;
   ignoreEvents: boolean;
   metadata: DashboardMetadata | null;
@@ -51,33 +51,22 @@ export interface IDashboardContext {
 
   snapshot: DashboardSnapshot | null;
   snapshotFileName: string | null;
-}
+};
 
 type DashboardSnapshotSchemaVersion = "20220614" | "20220929";
 
-export interface DashboardSnapshot {
-  schema_version: DashboardSnapshotSchemaVersion;
-  layout: DashboardLayoutNode;
-  panels: PanelsMap;
-  inputs: DashboardInputs;
-  variables: DashboardVariables;
-  search_path: string[];
-  start_time: string;
-  end_time: string;
-}
-
-export interface IBreakpointContext {
+export type IBreakpointContext = {
   currentBreakpoint: string | null;
   maxBreakpoint(breakpointAndDown: string): boolean;
   minBreakpoint(breakpointAndUp: string): boolean;
   width: number;
-}
+};
 
-export interface IThemeContext {
+export type IThemeContext = {
   theme: Theme;
   setTheme(theme: string): void;
   wrapperRef: Ref<null>;
-}
+};
 
 export const DashboardDataModeLive = "live";
 export const DashboardDataModeCLISnapshot = "cli_snapshot";
@@ -87,22 +76,22 @@ export type DashboardDataMode = "live" | "cli_snapshot" | "cloud_snapshot";
 
 export type SocketURLFactory = () => Promise<string>;
 
-export interface IActions {
+export type IActions = {
   [type: string]: string;
-}
+};
 
-export interface ReceivedSocketMessagePayload {
+export type ReceivedSocketMessagePayload = {
   action: string;
   [key: string]: any;
-}
+};
 
-export interface ComponentsMap {
+export type ComponentsMap = {
   [name: string]: any;
-}
+};
 
-export interface PanelsMap {
+export type PanelsMap = {
   [name: string]: PanelDefinition;
-}
+};
 
 export type DashboardRunState =
   | "ready"
@@ -142,17 +131,17 @@ export const DashboardActions: IActions = {
 
 type DashboardExecutionEventSchemaVersion = "20220614" | "20220929";
 
-export interface DashboardExecutionEventWithSchema {
+export type DashboardExecutionEventWithSchema = {
   schema_version: DashboardExecutionEventSchemaVersion;
   [key: string]: any;
-}
+};
 
-export interface DashboardExecutionCompleteEvent {
+export type DashboardExecutionCompleteEvent = {
   action: string;
   schema_version: DashboardExecutionEventSchemaVersion;
   execution_id: string;
   snapshot: DashboardSnapshot;
-}
+};
 
 // https://github.com/microsoft/TypeScript/issues/28046
 export type ElementType<T extends ReadonlyArray<unknown>> =
@@ -162,28 +151,28 @@ const dashboardActions = Object.values(DashboardActions);
 
 export type DashboardActionType = ElementType<typeof dashboardActions>;
 
-export interface DashboardAction {
+export type DashboardAction = {
   type: DashboardActionType;
   [key: string]: any;
-}
+};
 
 type DashboardSearchGroupByMode = "mod" | "tag";
 
-interface DashboardSearchGroupBy {
+type DashboardSearchGroupBy = {
   value: DashboardSearchGroupByMode;
   tag: string | null;
-}
+};
 
-export interface DashboardSearch {
+export type DashboardSearch = {
   value: string;
   groupBy: DashboardSearchGroupBy;
-}
+};
 
-export interface DashboardTags {
+export type DashboardTags = {
   keys: string[];
-}
+};
 
-export interface SelectedDashboardStates {
+export type SelectedDashboardStates = {
   dashboard_name: string | undefined;
   dataMode: DashboardDataMode;
   refetchDashboard: boolean;
@@ -191,58 +180,59 @@ export interface SelectedDashboardStates {
   searchParams: URLSearchParams;
   selectedDashboard: AvailableDashboard | null;
   selectedDashboardInputs: DashboardInputs;
-}
+};
 
-interface DashboardInputs {
+type DashboardInputs = {
   [name: string]: string;
-}
+};
 
-interface DashboardVariables {
+type DashboardVariables = {
   [name: string]: any;
-}
-export interface ModDashboardMetadata {
+};
+
+export type ModDashboardMetadata = {
   title: string;
   full_name: string;
   short_name: string;
-}
+};
 
-interface InstalledModsDashboardMetadata {
+type InstalledModsDashboardMetadata = {
   [key: string]: ModDashboardMetadata;
-}
+};
 
-interface CliDashboardMetadata {
+type CliDashboardMetadata = {
   version: string;
-}
+};
 
-export interface CloudDashboardActorMetadata {
+export type CloudDashboardActorMetadata = {
   id: string;
   handle: string;
-}
+};
 
-export interface CloudDashboardIdentityMetadata {
+export type CloudDashboardIdentityMetadata = {
   id: string;
   handle: string;
   type: "org" | "user";
-}
+};
 
-export interface CloudDashboardWorkspaceMetadata {
+export type CloudDashboardWorkspaceMetadata = {
   id: string;
   handle: string;
-}
+};
 
-interface CloudDashboardMetadata {
+type CloudDashboardMetadata = {
   actor: CloudDashboardActorMetadata;
   identity: CloudDashboardIdentityMetadata;
   workspace: CloudDashboardWorkspaceMetadata;
-}
+};
 
-export interface DashboardMetadata {
+export type DashboardMetadata = {
   mod: ModDashboardMetadata;
   installed_mods?: InstalledModsDashboardMetadata;
   cli?: CliDashboardMetadata;
   cloud?: CloudDashboardMetadata;
   telemetry: "info" | "none";
-}
+};
 
 export type DashboardLayoutNode = {
   name: string;
@@ -267,24 +257,24 @@ export type DashboardPanelType =
   | "table"
   | "text";
 
-export interface DashboardSnapshot {
-  start_time: string;
-  end_time: string;
+export type DashboardSnapshot = {
   schema_version: DashboardSnapshotSchemaVersion;
-  search_path: string[];
   layout: DashboardLayoutNode;
   panels: PanelsMap;
-  variables: DashboardVariables;
   inputs: DashboardInputs;
-}
+  variables: DashboardVariables;
+  search_path: string[];
+  start_time: string;
+  end_time: string;
+};
 
-interface AvailableDashboardTags {
+type AvailableDashboardTags = {
   [key: string]: string;
-}
+};
 
 type AvailableDashboardType = "benchmark" | "dashboard" | "snapshot";
 
-export interface AvailableDashboard {
+export type AvailableDashboard = {
   full_name: string;
   short_name: string;
   mod_full_name?: string;
@@ -294,34 +284,34 @@ export interface AvailableDashboard {
   type: AvailableDashboardType;
   children?: AvailableDashboard[];
   trunks?: string[][];
-}
+};
 
-export interface AvailableDashboardsDictionary {
+export type AvailableDashboardsDictionary = {
   [key: string]: AvailableDashboard;
-}
+};
 
-export interface ContainerDefinition {
+export type ContainerDefinition = {
   name: string;
   panel_type?: string;
   data?: LeafNodeData;
   title?: string;
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
-}
+};
 
-export interface PanelProperties {
+export type PanelProperties = {
   [key: string]: any;
-}
+};
 
-export type WithPanelProperties = {
+export type DependencyPanelProperties = {
   name: string;
 };
 
-export interface SQLDataMap {
+export type SQLDataMap = {
   [sql: string]: LeafNodeData;
-}
+};
 
-export interface PanelDefinition {
+export type PanelDefinition = {
   name: string;
   args?: any[];
   display?: string;
@@ -339,14 +329,14 @@ export interface PanelDefinition {
   properties?: PanelProperties;
   dashboard: string;
   children?: DashboardLayoutNode[];
-  withs?: string[];
-}
+  dependencies?: string[];
+};
 
-export type PanelWithsByStatus = {
+export type PanelDependenciesByStatus = {
   [status: string]: PanelDefinition[];
 };
 
-export interface DashboardDefinition {
+export type DashboardDefinition = {
   artificial: boolean;
   name: string;
   panel_type: string;
@@ -354,18 +344,18 @@ export interface DashboardDefinition {
   width?: number;
   children?: (ContainerDefinition | PanelDefinition)[];
   dashboard: string;
-}
+};
 
-export interface DashboardsCollection {
+export type DashboardsCollection = {
   dashboards: AvailableDashboard[];
   dashboardsMap: AvailableDashboardsDictionary;
-}
+};
 
-export interface DashboardDataOptions {
+export type DashboardDataOptions = {
   dataMode: DashboardDataMode;
   snapshotId?: string;
-}
+};
 
-export interface DashboardRenderOptions {
+export type DashboardRenderOptions = {
   headless?: boolean;
-}
+};

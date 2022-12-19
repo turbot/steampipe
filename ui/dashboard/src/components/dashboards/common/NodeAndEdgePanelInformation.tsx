@@ -51,7 +51,7 @@ const NodeAndEdgePanelInformation = ({
       <div>
         {statuses.complete.total} complete, {statuses.running.total} running,{" "}
         {statuses.error.total} {statuses.error.total === 1 ? "error" : "errors"}
-        , {statuses.ready.total} waiting,
+        .
       </div>
       {statuses.ready.total === 0 &&
         statuses.blocked.total === 0 &&

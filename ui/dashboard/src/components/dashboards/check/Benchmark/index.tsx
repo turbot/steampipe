@@ -184,8 +184,9 @@ const Benchmark = (props: InnerCheckProps) => {
       )}
       <Grid name={`${props.definition.name}.container.summary`}>
         {summaryCards.map((summaryCard) => {
-          const props: CardProps = {
+          const cardProps: CardProps = {
             name: summaryCard.name,
+            dashboard: props.definition.dashboard,
             display_type: summaryCard.display_type as CardType,
             panel_type: "card",
             properties: summaryCard.properties,
@@ -195,10 +196,10 @@ const Benchmark = (props: InnerCheckProps) => {
           return (
             <Panel
               key={summaryCard.name}
-              definition={props}
+              definition={cardProps}
               showControls={false}
             >
-              <Card {...props} />
+              <Card {...cardProps} />
             </Panel>
           );
         })}
@@ -206,6 +207,7 @@ const Benchmark = (props: InnerCheckProps) => {
       <Grid name={`${props.definition.name}.container.tree`}>
         <BenchmarkTree
           name={`${props.definition.name}.container.tree.results`}
+          dashboard={props.definition.dashboard}
           panel_type="benchmark_tree"
           properties={{
             grouping: props.grouping,
@@ -239,6 +241,7 @@ const BenchmarkTableView = ({
     <Panel
       definition={{
         name: definition.name,
+        dashboard: definition.dashboard,
         panel_type: "table",
         width: definition.width,
         children: definition.children,
@@ -289,6 +292,7 @@ const Inner = ({ showControls, withTitle }) => {
       <Panel
         definition={{
           name: definition.name,
+          dashboard: definition.dashboard,
           panel_type: "benchmark",
           width: definition.width,
           status: "error",

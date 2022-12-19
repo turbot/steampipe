@@ -3,9 +3,12 @@ import {
   ColorOverride,
   ExecutablePrimitiveProps,
 } from "../common";
-import React from "react";
+import { ComponentType } from "react";
+import { PanelDefinition } from "../../../types";
 
-export type BaseChartProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+export type BaseChartProps = PanelDefinition &
+  BasePrimitiveProps &
+  ExecutablePrimitiveProps;
 
 type ChartLabelOptions = {
   display: "auto" | "all" | "none";
@@ -22,9 +25,9 @@ type ChartSeriesPointOptions = {
   color?: ColorOverride;
 };
 
-interface ChartSeriesPoints {
+type ChartSeriesPoints = {
   [key: string]: ChartSeriesPointOptions;
-}
+};
 
 export type ChartSeriesOptions = {
   title: string;
@@ -89,7 +92,7 @@ export type ChartType =
   | "pie"
   | "table";
 
-export interface IChart {
+export type IChart = {
   type: ChartType;
-  component: React.ComponentType<any>;
-}
+  component: ComponentType<any>;
+};

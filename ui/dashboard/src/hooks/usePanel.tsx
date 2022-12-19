@@ -1,11 +1,31 @@
 import usePanelControls from "./usePanelControls";
+import { BaseChartProps } from "../components/dashboards/charts/types";
+import { CardProps } from "../components/dashboards/Card";
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import { FlowProps } from "../components/dashboards/flows/types";
+import { GraphProps } from "../components/dashboards/graphs/types";
+import { HierarchyProps } from "../components/dashboards/hierarchies/types";
+import { ImageProps } from "../components/dashboards/Image";
+import { InputProps } from "../components/dashboards/inputs/types";
 import { IPanelControl } from "../components/dashboards/layout/Panel/PanelControls";
-import { PanelDefinition, PanelWithsByStatus } from "../types";
+import { PanelDefinition, PanelDependenciesByStatus } from "../types";
+import { TableProps } from "../components/dashboards/Table";
+import { TextProps } from "../components/dashboards/Text";
 import { useDashboard } from "./useDashboard";
 
-interface IPanelContext {
-  definition: PanelDefinition;
+type IPanelContext = {
+  definition:
+    | BaseChartProps
+    | CardProps
+    | FlowProps
+    | GraphProps
+    | HierarchyProps
+    | ImageProps
+    | InputProps
+    | PanelDefinition
+    | TableProps
+    | TextProps;
+  dependenciesByStatus: PanelDependenciesByStatus;
   panelControls: IPanelControl[];
   panelInformation: ReactNode | null;
   showPanelControls: boolean;
@@ -13,12 +33,31 @@ interface IPanelContext {
   setPanelInformation: (information: ReactNode) => void;
   setShowPanelControls: (show: boolean) => void;
   setShowPanelInformation: (show: boolean) => void;
-  withStatuses: PanelWithsByStatus;
-}
+};
+
+type PanelProviderProps = {
+  children: ReactNode;
+  definition:
+    | BaseChartProps
+    | CardProps
+    | FlowProps
+    | GraphProps
+    | HierarchyProps
+    | ImageProps
+    | InputProps
+    | PanelDefinition
+    | TableProps
+    | TextProps;
+  showControls?: boolean;
+};
 
 const PanelContext = createContext<IPanelContext | null>(null);
 
-const PanelProvider = ({ children, definition, showControls }) => {
+const PanelProvider = ({
+  children,
+  definition,
+  showControls,
+}: PanelProviderProps) => {
   const { panelsMap } = useDashboard();
   const [showPanelControls, setShowPanelControls] = useState(false);
   const [showPanelInformation, setShowPanelInformation] = useState(false);
@@ -26,27 +65,32 @@ const PanelProvider = ({ children, definition, showControls }) => {
     null
   );
   const { panelControls } = usePanelControls(definition, showControls);
-  const withStatuses = useMemo<PanelWithsByStatus>(() => {
-    if (!definition || !definition.withs || definition.withs.length === 0) {
-      return {} as PanelWithsByStatus;
+  const dependenciesByStatus = useMemo<PanelDependenciesByStatus>(() => {
+    if (
+      !definition ||
+      !definition.dependencies ||
+      definition.dependencies.length === 0
+    ) {
+      return {} as PanelDependenciesByStatus;
     }
-    const withsByStatus: PanelWithsByStatus = {};
-    for (const withName of definition.withs) {
-      const withPanel = panelsMap[withName];
-      if (!withPanel || !withPanel.status) {
+    const dependenciesByStatus: PanelDependenciesByStatus = {};
+    for (const dependency of definition.dependencies) {
+      const dependencyPanel = panelsMap[dependency];
+      if (!dependencyPanel || !dependencyPanel.status) {
         continue;
       }
-      const statuses = withsByStatus[withPanel.status] || [];
-      statuses[withPanel.status].push(withPanel);
-      withsByStatus[withPanel.status] = statuses;
+      const statuses = dependenciesByStatus[dependencyPanel.status] || [];
+      statuses.push(dependencyPanel);
+      dependenciesByStatus[dependencyPanel.status] = statuses;
     }
-    return withsByStatus;
+    return dependenciesByStatus;
   }, [definition, panelsMap]);
 
   return (
     <PanelContext.Provider
       value={{
         definition,
+        dependenciesByStatus,
         panelControls,
         panelInformation,
         showPanelControls,
@@ -54,7 +98,6 @@ const PanelProvider = ({ children, definition, showControls }) => {
         setPanelInformation,
         setShowPanelControls,
         setShowPanelInformation,
-        withStatuses,
       }}
     >
       {children}
