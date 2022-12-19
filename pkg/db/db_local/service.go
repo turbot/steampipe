@@ -73,13 +73,13 @@ func errorIfUnknownService() error {
 	}
 
 	// extract it
-	pid, err := strconv.ParseInt(lines[0], 10, 64)
+	pid, err := strconv.Atoi(lines[0])
 	if err != nil {
 		return err
 	}
 
 	// check if a process with that PID exists
-	exists, err := utils.PidExists(int(pid))
+	exists, err := utils.PidExists(pid)
 	if err != nil {
 		return err
 	}
