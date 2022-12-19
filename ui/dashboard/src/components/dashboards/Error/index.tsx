@@ -2,10 +2,10 @@ import ErrorMessage from "../../ErrorMessage";
 import { registerComponent } from "../index";
 import { classNames } from "../../../utils/styles";
 
-interface ErrorProps {
+type ErrorProps = {
   className?: string | null;
   error?: any;
-}
+};
 
 const Error = ({ className, error }: ErrorProps) => {
   if (!error) {

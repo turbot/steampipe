@@ -16,12 +16,12 @@ SyntaxHighlighter.registerLanguage("hcl", hcl);
 SyntaxHighlighter.registerLanguage("json", json);
 SyntaxHighlighter.registerLanguage("sql", sql);
 
-interface CodeBlockProps {
+type CodeBlockProps = {
   children: string;
   copyToClipboard?: boolean;
   language?: "hcl" | "json" | "sql";
   style?: any;
-}
+};
 
 const CodeBlock = ({
   children,

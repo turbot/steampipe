@@ -12,10 +12,10 @@ import {
   useState,
 } from "react";
 
-interface ICopyToClipboardContext {
+type ICopyToClipboardContext = {
   doCopy: boolean;
   setDoCopy: (value: boolean) => void;
-}
+};
 
 const CopyToClipboardContext = createContext<ICopyToClipboardContext | null>(
   null

@@ -12,14 +12,14 @@ import { noop } from "../../../../utils/func";
 import { ThemeProvider, ThemeWrapper } from "../../../../hooks/useTheme";
 import { usePopper } from "react-popper";
 
-interface TooltipProps {
+type TooltipProps = {
   children: JSX.Element;
   hideDelay?: number;
   overlay: JSX.Element;
   show?: boolean;
   showDelay?: number;
   title: ReactNode;
-}
+};
 
 // Start: adapted from https://github.com/streamich/react-use
 export function on<T extends Window | Document | HTMLElement | EventTarget>(
@@ -76,11 +76,11 @@ export function off<T extends Window | Document | HTMLElement | EventTarget>(
 // };
 // End: adapted from https://github.com/streamich/react-use
 
-interface ITooltipsContext {
+type ITooltipsContext = {
   closeTooltips: (id?: string) => void;
   retainTooltipId: string | null;
   shouldCloseTooltips: boolean;
-}
+};
 
 const TooltipsContext = createContext<ITooltipsContext | null>({
   closeTooltips: noop,

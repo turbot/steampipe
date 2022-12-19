@@ -2,12 +2,12 @@ import React from "react";
 import useWindowSize from "./useWindowSize";
 import { useCallback, useEffect, useState } from "react";
 
-interface IBreakpointContext {
+type IBreakpointContext = {
   currentBreakpoint: string | null;
   maxBreakpoint(breakpointAndDown: string): boolean;
   minBreakpoint(breakpointAndUp: string): boolean;
   width: number;
-}
+};
 
 const BreakpointContext = React.createContext<IBreakpointContext | null>(null);
 

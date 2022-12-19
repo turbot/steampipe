@@ -18,7 +18,11 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { DashboardDataMode, DashboardDataModeLive } from "../../../types";
+import {
+  DashboardDataMode,
+  DashboardDataModeLive,
+  PanelDefinition,
+} from "../../../types";
 import {
   ErrorIcon,
   SortAscendingIcon,
@@ -34,7 +38,7 @@ import { useSortBy, useTable } from "react-table";
 export type TableColumnDisplay = "all" | "none";
 export type TableColumnWrap = "all" | "none";
 
-interface TableColumnInfo {
+type TableColumnInfo = {
   Header: string;
   accessor: string;
   name: string;
@@ -43,7 +47,7 @@ interface TableColumnInfo {
   wrap: TableColumnWrap;
   href_template?: string;
   sortType?: any;
-}
+};
 
 const getColumns = (
   cols: LeafNodeDataColumn[],
@@ -99,14 +103,14 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow[]) => {
   return rows;
 };
 
-interface CellValueProps {
+type CellValueProps = {
   column: TableColumnInfo;
   dataMode: DashboardDataMode;
   rowIndex: number;
   rowTemplateData: RowRenderResult[];
   value: any;
   showTitle?: boolean;
-}
+};
 
 const CellValue = ({
   column,
@@ -348,11 +352,11 @@ const CellValue = ({
 
 const MemoCellValue = memo(CellValue);
 
-interface TableColumnOptions {
+type TableColumnOptions = {
   display?: TableColumnDisplay;
   href?: string;
   wrap?: TableColumnWrap;
-}
+};
 
 type TableColumns = {
   [column: string]: TableColumnOptions;
@@ -364,7 +368,8 @@ export type TableProperties = {
   columns?: TableColumns;
 };
 
-export type TableProps = BasePrimitiveProps &
+export type TableProps = PanelDefinition &
+  BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     display_type?: TableType;
     properties?: TableProperties;

@@ -13,7 +13,7 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { DashboardDataModeLive } from "../../../types";
+import { DashboardDataModeLive, PanelProperties } from "../../../types";
 import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
@@ -30,7 +30,8 @@ const Table = getComponent("table");
 
 export type CardType = "alert" | "info" | "ok" | "table" | null;
 
-export type CardProps = Omit<BasePrimitiveProps, "display_type"> &
+export type CardProps = PanelProperties &
+  Omit<BasePrimitiveProps, "display_type"> &
   ExecutablePrimitiveProps & {
     display_type?: CardType;
     properties: {
@@ -43,14 +44,14 @@ export type CardProps = Omit<BasePrimitiveProps, "display_type"> &
 
 type CardDataFormat = "simple" | "formal";
 
-interface CardState {
+type CardState = {
   loading: boolean;
   label: string | null;
   value: any | null;
   type: CardType;
   icon: string | null;
   href: string | null;
-}
+};
 
 const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   if (data.columns.length > 1) {

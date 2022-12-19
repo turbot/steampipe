@@ -6,14 +6,14 @@ const maxColumn = 51;
 const minRow = 0;
 const maxRow = 5;
 
-interface Color {
+type Color = {
   ansi256: number;
   hex: string;
-}
+};
 
-interface ColorDictionary {
+type ColorDictionary = {
   [key: number]: boolean;
-}
+};
 
 export class ColorGenerator {
   private readonly startingColumn: number;

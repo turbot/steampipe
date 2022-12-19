@@ -29,20 +29,20 @@ import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
 
-export interface CheckGroupNodeState {
+export type CheckGroupNodeState = {
   expanded: boolean;
-}
+};
 
-export interface CheckGroupNodeStates {
+export type CheckGroupNodeStates = {
   [name: string]: CheckGroupNodeState;
-}
+};
 
-export interface CheckGroupingAction {
+export type CheckGroupingAction = {
   type: CheckGroupingActionType;
   [key: string]: any;
-}
+};
 
-interface ICheckGroupingContext {
+type ICheckGroupingContext = {
   benchmark: BenchmarkType | null;
   definition: PanelDefinition;
   grouping: CheckNode | null;
@@ -50,7 +50,7 @@ interface ICheckGroupingContext {
   firstChildSummaries: CheckSummary[];
   nodeStates: CheckGroupNodeStates;
   dispatch(action: CheckGroupingAction): void;
-}
+};
 
 const CheckGroupingActions: IActions = {
   COLLAPSE_ALL_NODES: "collapse_all_nodes",
@@ -350,10 +350,10 @@ const reducer = (state: CheckGroupNodeStates, action) => {
   }
 };
 
-interface CheckGroupingProviderProps {
+type CheckGroupingProviderProps = {
   children: null | JSX.Element | JSX.Element[];
   definition: PanelDefinition;
-}
+};
 
 const CheckGroupingProvider = ({
   children,

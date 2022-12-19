@@ -7,7 +7,9 @@ import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts/types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
+import { FlowProps } from "../../flows/types";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
+import { GraphProps } from "../../graphs/types";
 import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs/types";
@@ -20,12 +22,14 @@ import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
-interface PanelProps {
+type PanelProps = {
   children: ReactNode;
   className?: string;
   definition:
     | BaseChartProps
     | CardProps
+    | FlowProps
+    | GraphProps
     | HierarchyProps
     | ImageProps
     | InputProps
@@ -36,7 +40,7 @@ interface PanelProps {
   showPanelError?: boolean;
   forceBackground?: boolean;
   ready?: boolean;
-}
+};
 
 const Panel = ({
   children,
@@ -142,12 +146,20 @@ const Panel = ({
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
           {showPanelContents && <PanelInformation />}
           <PlaceholderComponent
-            animate={!!children}
-            ready={ready || !!definition.error}
+            animate={definition.status === "running"}
+            ready={
+              ready ||
+              definition.status === "complete" ||
+              definition.status === "error"
+            }
           >
             <ErrorComponent
               className={definition.title ? "rounded-t-none" : null}
-              error={showPanelError && definition.error}
+              error={
+                showPanelError &&
+                definition.status === "error" &&
+                definition.error
+              }
             />
             <>{showPanelContents ? children : null}</>
           </PlaceholderComponent>

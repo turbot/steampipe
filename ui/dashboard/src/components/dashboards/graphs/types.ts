@@ -10,12 +10,15 @@ import {
   NodeAndEdgeProperties,
 } from "../common/types";
 import { ComponentType } from "react";
+import { DashboardRunState, PanelDefinition } from "../../../types";
 
 export type NodeAndEdgeDataFormat = "LEGACY" | "NODE_AND_EDGE";
 
-export type BaseGraphProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+export type BaseGraphProps = PanelDefinition &
+  BasePrimitiveProps &
+  ExecutablePrimitiveProps;
 
-export interface NodeAndEdgeDataRow {
+export type NodeAndEdgeDataRow = {
   from_id?: string;
   to_id?: string;
   id?: string;
@@ -23,14 +26,14 @@ export interface NodeAndEdgeDataRow {
   category?: string;
   properties?: KeyValuePairs;
   depth?: number;
-}
+};
 
 export type NodeAndEdgeDataColumn = LeafNodeDataColumn;
 
-export interface NodeAndEdgeData {
+export type NodeAndEdgeData = {
   columns: NodeAndEdgeDataColumn[];
   rows: NodeAndEdgeDataRow[];
-}
+};
 
 export type DagreRankDir = "LR" | "TB";
 
@@ -40,25 +43,23 @@ export type GraphProperties = NodeAndEdgeProperties & {
   direction?: GraphDirection | null;
 };
 
-export interface GraphProps extends BaseGraphProps {
+export type GraphProps = BaseGraphProps & {
   categories: CategoryMap;
   data?: NodeAndEdgeData;
   display_type?: GraphType;
   properties?: GraphProperties;
-}
+};
 
 export type GraphType = "graph" | "table";
 
-export interface IGraph {
+export type IGraph = {
   type: GraphType;
   component: ComponentType<any>;
-}
-
-export type NodeAndEdgeState = "pending" | "error" | "complete";
+};
 
 type BaseNodeAndEdgeStatus = {
   id: string;
-  state: NodeAndEdgeState;
+  state: DashboardRunState;
   category?: Category;
   title?: string;
   error?: string;
@@ -69,11 +70,11 @@ export type WithStatusMap = {
 };
 
 export type NodeStatus = BaseNodeAndEdgeStatus & {
-  withs?: string[];
+  dependencies?: string[];
 };
 
 export type EdgeStatus = BaseNodeAndEdgeStatus & {
-  withs?: string[];
+  dependencies?: string[];
 };
 
 export type WithStatus = BaseNodeAndEdgeStatus & {
@@ -84,4 +85,13 @@ export type NodeAndEdgeStatus = {
   withs: WithStatusMap;
   nodes: NodeStatus[];
   edges: EdgeStatus[];
+};
+
+export type GraphStatuses = {
+  [key in DashboardRunState]: {
+    total: number;
+    withs: WithStatus[];
+    nodes: NodeStatus[];
+    edges: EdgeStatus[];
+  };
 };

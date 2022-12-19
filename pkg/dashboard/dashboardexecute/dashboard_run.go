@@ -173,6 +173,8 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 			if err != nil {
 				return err
 			}
+			// TACTICAL: as this is a runtime dependency,  set the run name to the 'scoped name'
+			childRun.(*LeafRun).Name = fmt.Sprintf("%s.%s", r.DashboardName, i.UnqualifiedName)
 
 		default:
 			// ensure this item is a DashboardLeafNode

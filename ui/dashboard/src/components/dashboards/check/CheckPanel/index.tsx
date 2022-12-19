@@ -28,47 +28,47 @@ import {
 import { classNames } from "../../../../utils/styles";
 import { useMemo } from "react";
 
-interface CheckChildrenProps {
+type CheckChildrenProps = {
   depth: number;
   children: CheckNode[];
-}
+};
 
-interface CheckResultsProps {
+type CheckResultsProps = {
   empties: ControlEmptyResultNode[];
   errors: ControlErrorNode[];
   results: ControlResultNode[];
-}
+};
 
-interface CheckPanelProps {
+type CheckPanelProps = {
   depth: number;
   node: CheckNode;
-}
+};
 
-interface CheckPanelSeverityProps {
+type CheckPanelSeverityProps = {
   severity_summary: CheckSeveritySummary;
-}
+};
 
-interface CheckPanelSeverityBadgeProps {
+type CheckPanelSeverityBadgeProps = {
   label: string;
   count: number;
   title: string;
-}
+};
 
-interface CheckEmptyResultRowProps {
+type CheckEmptyResultRowProps = {
   node: ControlEmptyResultNode;
-}
+};
 
-interface CheckResultRowProps {
+type CheckResultRowProps = {
   result: CheckResult;
-}
+};
 
-interface CheckErrorRowProps {
+type CheckErrorRowProps = {
   error: string;
-}
+};
 
-interface CheckResultRowStatusIconProps {
+type CheckResultRowStatusIconProps = {
   status: CheckResultStatus;
-}
+};
 
 const getMargin = (depth) => {
   switch (depth) {

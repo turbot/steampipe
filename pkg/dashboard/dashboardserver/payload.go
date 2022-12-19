@@ -178,9 +178,9 @@ func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, erro
 	return json.Marshal(payload)
 }
 
-func buildLeafNodeCompletePayload(event *dashboardevents.LeafNodeComplete) ([]byte, error) {
+func buildLeafNodeUpdatedPayload(event *dashboardevents.LeafNodeUpdated) ([]byte, error) {
 	payload := LeafNodeCompletePayload{
-		Action:        "leaf_node_complete",
+		Action:        "leaf_node_updated",
 		DashboardNode: event.LeafNode,
 		ExecutionId:   event.ExecutionId,
 	}

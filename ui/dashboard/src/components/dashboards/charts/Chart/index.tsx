@@ -629,10 +629,10 @@ const buildChartOptions = (props: ChartProps, themeColors: any) => {
   );
 };
 
-interface ChartComponentProps {
+type ChartComponentProps = {
   options: EChartsOption;
   type: ChartType | FlowType | GraphType | HierarchyType;
-}
+};
 
 const handleClick = async (params: any, navigate, renderTemplates) => {
   const componentType = params.componentType;

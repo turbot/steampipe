@@ -22,35 +22,36 @@ import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
-export interface BasePrimitiveProps {
+export type BasePrimitiveProps = {
   base?: string;
+  dashboard: string;
   name: string;
   panel_type: string;
   display_type?: string;
   title?: string;
   width?: Width;
-}
+};
 
-export interface LeafNodeDataColumn {
+export type LeafNodeDataColumn = {
   name: string;
   data_type: string;
-}
+};
 
-export interface LeafNodeDataRow {
+export type LeafNodeDataRow = {
   [key: string]: any;
-}
+};
 
-export interface LeafNodeData {
+export type LeafNodeData = {
   columns: LeafNodeDataColumn[];
   rows: LeafNodeDataRow[];
-}
+};
 
-export interface ExecutablePrimitiveProps {
+export type ExecutablePrimitiveProps = {
   sql?: string;
   data?: LeafNodeData;
   error?: Error;
   status: DashboardRunState;
-}
+};
 
 export type ColorOverride = "alert" | "info" | "ok" | string;
 
@@ -70,11 +71,11 @@ const toEChartsType = (
   return type as EChartsType;
 };
 
-interface ChartDatasetResponse {
+type ChartDatasetResponse = {
   dataset: any[][];
   rowSeriesLabels: string[];
   transform: ChartTransform;
-}
+};
 
 const crosstabDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   if (data.columns.length < 3) {
@@ -956,13 +957,13 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   };
 };
 
-interface Item {
+type Item = {
   [key: string]: any;
-}
+};
 
-interface TreeItem {
+type TreeItem = {
   [key: string]: Item | TreeItem[] | any;
-}
+};
 
 // Taken from https://github.com/philipstanislaus/performant-array-to-tree
 const nodesAndEdgesToTree = (nodesAndEdges: NodesAndEdges): TreeItem[] => {

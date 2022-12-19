@@ -6,6 +6,7 @@ import {
   LeafNodeData,
 } from "../common";
 import { getComponent, registerComponent } from "../index";
+import { PanelDefinition } from "../../../types";
 import { useEffect, useState } from "react";
 const Table = getComponent("table");
 
@@ -13,12 +14,13 @@ type ImageType = "image" | "table" | null;
 
 type ImageDataFormat = "simple" | "formal";
 
-interface ImageState {
+type ImageState = {
   src: string | null;
   alt: string | null;
-}
+};
 
-export type ImageProps = BasePrimitiveProps &
+export type ImageProps = PanelDefinition &
+  BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     display_type?: ImageType;
     properties: {

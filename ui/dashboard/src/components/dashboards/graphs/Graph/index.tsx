@@ -35,6 +35,7 @@ import {
   GraphDirection,
   GraphProperties,
   GraphProps,
+  GraphStatuses,
   NodeAndEdgeDataFormat,
   NodeAndEdgeStatus,
   NodeStatus,
@@ -413,24 +414,20 @@ const useNodeAndEdgePanelInformation = (
 ) => {
   const { setShowPanelInformation, setPanelInformation } = usePanel();
 
-  const {
-    pendingWiths,
-    pendingNodes,
-    pendingEdges,
-    errorWiths,
-    errorNodes,
-    errorEdges,
-    completeWiths,
-    completeNodes,
-    completeEdges,
-  } = useMemo(() => {
-    const pendingWiths: WithStatus[] = [];
+  const statuses = useMemo<GraphStatuses>(() => {
+    const readyWiths: WithStatus[] = [];
+    const blockedWiths: WithStatus[] = [];
+    const runningWiths: WithStatus[] = [];
     const errorWiths: WithStatus[] = [];
     const completeWiths: WithStatus[] = [];
-    const pendingNodes: NodeStatus[] = [];
+    const readyNodes: NodeStatus[] = [];
+    const blockedNodes: NodeStatus[] = [];
+    const runningNodes: NodeStatus[] = [];
     const errorNodes: NodeStatus[] = [];
     const completeNodes: NodeStatus[] = [];
-    const pendingEdges: EdgeStatus[] = [];
+    const readyEdges: EdgeStatus[] = [];
+    const blockedEdges: EdgeStatus[] = [];
+    const runningEdges: EdgeStatus[] = [];
     const errorEdges: EdgeStatus[] = [];
     const completeEdges: EdgeStatus[] = [];
     if (nodeAndEdgeStatus) {
@@ -438,8 +435,12 @@ const useNodeAndEdgePanelInformation = (
         "title",
         "id",
       ])) {
-        if (withStatus.state === "pending") {
-          pendingWiths.push(withStatus);
+        if (withStatus.state === "ready") {
+          readyWiths.push(withStatus);
+        } else if (withStatus.state === "blocked") {
+          blockedWiths.push(withStatus);
+        } else if (withStatus.state === "running") {
+          runningWiths.push(withStatus);
         } else if (withStatus.state === "error") {
           errorWiths.push(withStatus);
         } else {
@@ -452,8 +453,12 @@ const useNodeAndEdgePanelInformation = (
         "category.name",
         "id",
       ])) {
-        if (node.state === "pending") {
-          pendingNodes.push(node);
+        if (node.state === "ready") {
+          readyNodes.push(node);
+        } else if (node.state === "blocked") {
+          blockedNodes.push(node);
+        } else if (node.state === "running") {
+          runningNodes.push(node);
         } else if (node.state === "error") {
           errorNodes.push(node);
         } else {
@@ -466,8 +471,12 @@ const useNodeAndEdgePanelInformation = (
         "category.name",
         "id",
       ])) {
-        if (edge.state === "pending") {
-          pendingEdges.push(edge);
+        if (edge.state === "ready") {
+          readyEdges.push(edge);
+        } else if (edge.state === "blocked") {
+          blockedEdges.push(edge);
+        } else if (edge.state === "running") {
+          runningEdges.push(edge);
         } else if (edge.state === "error") {
           errorEdges.push(edge);
         } else {
@@ -476,15 +485,37 @@ const useNodeAndEdgePanelInformation = (
       }
     }
     return {
-      pendingWiths,
-      pendingNodes,
-      pendingEdges,
-      errorWiths,
-      errorNodes,
-      errorEdges,
-      completeWiths,
-      completeNodes,
-      completeEdges,
+      ready: {
+        total: readyWiths.length + readyNodes.length + readyEdges.length,
+        withs: readyWiths,
+        nodes: readyNodes,
+        edges: readyEdges,
+      },
+      blocked: {
+        total: blockedWiths.length + blockedNodes.length + blockedEdges.length,
+        withs: blockedWiths,
+        nodes: blockedNodes,
+        edges: blockedEdges,
+      },
+      running: {
+        total: runningWiths.length + runningNodes.length + runningEdges.length,
+        withs: runningWiths,
+        nodes: runningNodes,
+        edges: runningEdges,
+      },
+      error: {
+        total: errorWiths.length + errorNodes.length + errorEdges.length,
+        withs: errorWiths,
+        nodes: errorNodes,
+        edges: errorEdges,
+      },
+      complete: {
+        total:
+          completeWiths.length + completeNodes.length + completeEdges.length,
+        withs: completeWiths,
+        nodes: completeNodes,
+        edges: completeEdges,
+      },
     };
   }, [nodeAndEdgeStatus]);
 
@@ -492,12 +523,10 @@ const useNodeAndEdgePanelInformation = (
     if (
       !nodeAndEdgeStatus ||
       dataFormat === "LEGACY" ||
-      (pendingWiths.length === 0 &&
-        errorWiths.length === 0 &&
-        pendingNodes.length === 0 &&
-        errorNodes.length === 0 &&
-        pendingEdges.length === 0 &&
-        errorEdges.length === 0 &&
+      (statuses.ready.total === 0 &&
+        statuses.blocked.total === 0 &&
+        statuses.running.total === 0 &&
+        statuses.error.total === 0 &&
         status === "complete" &&
         nodes.length > 0)
     ) {
@@ -510,15 +539,7 @@ const useNodeAndEdgePanelInformation = (
       <NodeAndEdgePanelInformation
         nodes={nodes}
         status={status}
-        pendingWiths={pendingWiths}
-        pendingNodes={pendingNodes}
-        pendingEdges={pendingEdges}
-        errorWiths={errorWiths}
-        errorNodes={errorNodes}
-        errorEdges={errorEdges}
-        completeWiths={completeWiths}
-        completeNodes={completeNodes}
-        completeEdges={completeEdges}
+        statuses={statuses}
       />
     ));
     setShowPanelInformation(true);
@@ -526,16 +547,8 @@ const useNodeAndEdgePanelInformation = (
     dataFormat,
     nodeAndEdgeStatus,
     nodes,
-    pendingWiths,
-    pendingNodes,
-    pendingEdges,
-    errorWiths,
-    errorNodes,
-    errorEdges,
-    completeWiths,
-    completeNodes,
-    completeEdges,
     status,
+    statuses,
     setPanelInformation,
     setShowPanelInformation,
   ]);

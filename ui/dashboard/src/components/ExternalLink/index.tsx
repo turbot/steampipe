@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 
-interface ExternalLinkProps {
+type ExternalLinkProps = {
   children: null | JSX.Element | JSX.Element[];
   className?: string;
   target?: string;
   title?: string;
   to: string;
   withReferrer?: boolean;
-}
+};
 
 const ExternalLink = ({
   children,

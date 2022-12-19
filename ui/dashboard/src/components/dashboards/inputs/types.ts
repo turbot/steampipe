@@ -1,12 +1,15 @@
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
-import React from "react";
+import { ComponentType } from "react";
+import { PanelDefinition } from "../../../types";
 
-export type BaseInputProps = BasePrimitiveProps & ExecutablePrimitiveProps;
+export type BaseInputProps = PanelDefinition &
+  BasePrimitiveProps &
+  ExecutablePrimitiveProps;
 
-interface SelectInputOption {
+type SelectInputOption = {
   name: string;
   label?: string;
-}
+};
 
 export type InputProperties = {
   label?: string;
@@ -28,7 +31,7 @@ export type InputType =
   | "table"
   | "text";
 
-export interface IInput {
+export type IInput = {
   type: InputType;
-  component: React.ComponentType<any>;
-}
+  component: ComponentType<any>;
+};

@@ -11,8 +11,8 @@ import {
 } from "./types";
 import {
   DashboardRunState,
+  DependencyPanelProperties,
   PanelsMap,
-  WithPanelProperties,
 } from "../../../types";
 import { getColorOverride } from "./index";
 import {
@@ -49,14 +49,6 @@ const getNodeAndEdgeDataFormat = (
   }
 
   return "LEGACY";
-};
-
-const panelStateToCategoryState = (status: DashboardRunState) => {
-  return status === "error"
-    ? "error"
-    : status === "complete"
-    ? "complete"
-    : "pending";
 };
 
 const addColumnsForResource = (
@@ -101,28 +93,26 @@ const emptyPanels: PanelsMap = {};
 
 const addPanelWithsStatus = (
   panelsMap: PanelsMap,
-  withs: string[] | undefined,
-  withNameLookup: KeyValueStringPairs,
-  withsStatuses: WithStatusMap
+  dependencies: string[] | undefined,
+  withLookup: KeyValueStringPairs,
+  withStatuses: WithStatusMap
 ) => {
-  const withNames = withs || [];
-  if (withNames.length > 0) {
-    for (const withName of withNames) {
-      // If we've already logged the status of this with, carry on
-      if (withNameLookup[withName]) {
-        continue;
-      }
-
-      const withPanel = panelsMap[withName];
-      const withPanelProperties = withPanel.properties as WithPanelProperties;
-      withNameLookup[withName] = withPanelProperties.name;
-      withsStatuses[withPanelProperties.name] = {
-        id: withPanelProperties.name,
-        title: withPanel.title,
-        state: panelStateToCategoryState(withPanel.status || "ready"),
-        error: withPanel.error,
-      };
+  for (const dependency of dependencies || []) {
+    // If we've already logged the status of this with, carry on
+    if (withLookup[dependency] || dependency.indexOf(".with.") === -1) {
+      continue;
     }
+
+    const dependencyPanel = panelsMap[dependency];
+    const dependencyPanelProperties =
+      dependencyPanel.properties as DependencyPanelProperties;
+    withLookup[dependency] = dependencyPanelProperties.name;
+    withStatuses[dependencyPanelProperties.name] = {
+      id: dependencyPanelProperties.name,
+      title: dependencyPanel.title,
+      state: dependencyPanel.status || "ready",
+      error: dependencyPanel.error,
+    };
   }
 };
 
@@ -201,8 +191,8 @@ const useNodeAndEdgeData = (
 
       // Capture the status of any with blocks that this node depends on
       addPanelWithsStatus(
-        panelsMap,
-        panel.withs,
+        panels,
+        panel.dependencies,
         withNameLookup,
         nodeAndEdgeStatus.withs
       );
@@ -215,11 +205,11 @@ const useNodeAndEdgeData = (
       // Capture the status of this node resource
       nodeAndEdgeStatus.nodes.push({
         id: panel.title || nodeProperties.name,
-        state: panelStateToCategoryState(panel.status || "ready"),
+        state: panel.status || "ready",
         category: nodeProperties.category,
         error: panel.error,
         title: panel.title,
-        withs: panel.withs,
+        dependencies: panel.dependencies,
       });
 
       let nodeCategory: Category | null = null;
@@ -277,8 +267,8 @@ const useNodeAndEdgeData = (
 
       // Capture the status of any with blocks that this edge depends on
       addPanelWithsStatus(
-        panelsMap,
-        panel.withs,
+        panels,
+        panel.dependencies,
         withNameLookup,
         nodeAndEdgeStatus.withs
       );
@@ -290,11 +280,11 @@ const useNodeAndEdgeData = (
       // Capture the status of this edge resource
       nodeAndEdgeStatus.edges.push({
         id: panel.title || edgeProperties.name,
-        state: panelStateToCategoryState(panel.status || "ready"),
+        state: panel.status || "ready",
         category: edgeProperties.category,
         error: panel.error,
         title: panel.title,
-        withs: panel.withs,
+        dependencies: panel.dependencies,
       });
 
       let edgeCategory: Category | null = null;

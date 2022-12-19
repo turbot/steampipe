@@ -36,7 +36,7 @@ import {
 import { buildComponentsMap } from "../components";
 import {
   controlsUpdatedEventHandler,
-  leafNodesCompleteEventHandler,
+  leafNodesUpdatedEventHandler,
   migrateDashboardExecutionCompleteSchema,
 } from "../utils/dashboardEventHandlers";
 import { GlobalHotKeys } from "react-hotkeys";
@@ -113,7 +113,7 @@ const buildDashboards = (
 };
 
 const updateSelectedDashboard = (
-  selectedDashboard: AvailableDashboard,
+  selectedDashboard: AvailableDashboard | null,
   newDashboards: AvailableDashboard[]
 ) => {
   if (!selectedDashboard) {
@@ -129,15 +129,15 @@ const updateSelectedDashboard = (
   }
 };
 
-function getSqlDataMapKey(sql: string, args?: any[]) {
+const getSqlDataMapKey = (sql: string, args?: any[]) => {
   return `sql:${sql}${
     args && args.length > 0
       ? `:args:${args.map((a) => a.toString()).join(",")}`
       : ""
   }`;
-}
+};
 
-function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
+const buildSqlDataMap = (panels: PanelsMap): SQLDataMap => {
   const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
@@ -158,9 +158,12 @@ function buildSqlDataMap(panels: PanelsMap): SQLDataMap {
     }
   }
   return sqlDataMap;
-}
+};
 
-function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
+const addDataToPanels = (
+  panels: PanelsMap,
+  sqlDataMap: SQLDataMap
+): PanelsMap => {
   const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
     path.endsWith(".sql")
   );
@@ -187,7 +190,7 @@ function addDataToPanels(panels: PanelsMap, sqlDataMap: SQLDataMap): PanelsMap {
     }
   }
   return { ...panels };
-}
+};
 
 const wrapDefinitionInArtificialDashboard = (
   definition: PanelDefinition,
@@ -210,7 +213,7 @@ const wrapDefinitionInArtificialDashboard = (
   };
 };
 
-function reducer(state, action) {
+function reducer(state: IDashboardContext, action) {
   if (state.ignoreEvents) {
     return state;
   }
@@ -353,7 +356,8 @@ function reducer(state, action) {
     case DashboardActions.CONTROLS_UPDATED:
       return controlsUpdatedEventHandler(action, state);
     case DashboardActions.LEAF_NODES_COMPLETE:
-      return leafNodesCompleteEventHandler(action, state);
+    case DashboardActions.LEAF_NODES_UPDATED:
+      return leafNodesUpdatedEventHandler(action, state);
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
     case DashboardActions.SET_DATA_MODE:
@@ -574,7 +578,7 @@ const getInitialState = (searchParams, defaults: any = {}) => {
 
 const DashboardContext = createContext<IDashboardContext | null>(null);
 
-interface DashboardProviderProps {
+type DashboardProviderProps = {
   analyticsContext: any;
   breakpointContext: any;
   children: null | JSX.Element | JSX.Element[];
@@ -587,7 +591,7 @@ interface DashboardProviderProps {
   stateDefaults?: {};
   themeContext: any;
   versionMismatchCheck?: boolean;
-}
+};
 
 const DashboardProvider = ({
   analyticsContext,

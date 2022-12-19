@@ -18,7 +18,7 @@ export type ExpandedNodes = {
   [nodeId: string]: ExpandedNodeInfo;
 };
 
-interface IGraphContext {
+type IGraphContext = {
   collapseNodes: (foldedNodes: FoldedNode[]) => void;
   expandNode: (foldedNodes: FoldedNode[], category: string) => void;
   expandedNodes: ExpandedNodes;
@@ -27,7 +27,7 @@ interface IGraphContext {
   renderResults: RowRenderResult;
   setGraphEdges: (edges: Edge[]) => void;
   setGraphNodes: (nodes: Node[]) => void;
-}
+};
 
 const GraphContext = createContext<IGraphContext>({
   collapseNodes: noop,

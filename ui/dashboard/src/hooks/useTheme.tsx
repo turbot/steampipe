@@ -3,14 +3,14 @@ import useLocalStorage from "./useLocalStorage";
 import useMediaQuery from "./useMediaQuery";
 import { classNames } from "../utils/styles";
 
-export interface Theme {
+export type Theme = {
   name: string;
   label: string;
-}
+};
 
-interface IThemes {
+type IThemes = {
   [key: string]: Theme;
-}
+};
 
 const ThemeNames = {
   STEAMPIPE_DEFAULT: "steampipe-default",
@@ -28,7 +28,7 @@ const Themes: IThemes = {
   },
 };
 
-interface IThemeContext {
+type IThemeContext = {
   localStorageTheme: string | null;
   theme: Theme;
   withFooterPadding: boolean;
@@ -36,7 +36,7 @@ interface IThemeContext {
   setTheme(theme: string): void;
   setWithFooterPadding(newValue: boolean): void;
   setWrapperRef(element: any): void;
-}
+};
 
 const ThemeContext = createContext<IThemeContext | undefined>(undefined);
 

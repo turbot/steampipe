@@ -14,22 +14,22 @@ import { isRelativeUrl } from "../../../../utils/url";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
-interface RowPropertiesTitleProps {
+type RowPropertiesTitleProps = {
   category: Category | undefined;
   title: string;
-}
+};
 
-interface RowPropertiesProps {
+type RowPropertiesProps = {
   fields: CategoryFields | null;
   properties: KeyValuePairs | null;
-}
+};
 
-interface RowPropertyItemProps {
+type RowPropertyItemProps = {
   name: string;
   rowTemplateData?: RowRenderResult | null;
   value: any;
   wrap: boolean;
-}
+};
 
 const RowPropertiesTitle = ({ category, title }: RowPropertiesTitleProps) => (
   <div className="flex flex-col space-y-1">

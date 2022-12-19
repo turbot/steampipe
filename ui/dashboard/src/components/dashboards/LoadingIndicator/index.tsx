@@ -1,8 +1,8 @@
 import { classNames } from "../../../utils/styles";
 
-interface LoadingIndicatorProps {
+type LoadingIndicatorProps = {
   className?: string;
-}
+};
 
 const LoadingIndicator = ({ className }: LoadingIndicatorProps) => (
   <svg

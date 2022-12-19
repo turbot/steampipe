@@ -8,9 +8,9 @@ import {
 import { CheckNode } from "../common";
 import { useCallback, useEffect, useState } from "react";
 
-interface CheckGroupingProps {
+type CheckGroupingProps = {
   node: CheckNode;
-}
+};
 
 const CheckGrouping = ({ node }: CheckGroupingProps) => {
   const { dispatch, nodeStates } = useCheckGrouping();

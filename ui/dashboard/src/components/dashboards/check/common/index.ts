@@ -20,7 +20,7 @@ export type CheckNodeType =
   | "status"
   | "tag";
 
-export interface CheckNode {
+export type CheckNode = {
   sort: string;
   name: string;
   title: string;
@@ -33,7 +33,7 @@ export interface CheckNode {
   data?: LeafNodeData;
   error?: string;
   merge?: (other: CheckNode) => void;
-}
+};
 
 export type CheckNodeStatusRaw = "ready" | "started" | "complete" | "error";
 
@@ -47,34 +47,34 @@ export type CheckSeveritySummary =
       [key in CheckSeverity]: number;
     };
 
-export interface CheckSummary {
+export type CheckSummary = {
   alarm: number;
   ok: number;
   info: number;
   skip: number;
   error: number;
-}
-export interface CheckLeafNodeDataGroupSummary {
+};
+export type CheckLeafNodeDataGroupSummary = {
   status: CheckSummary;
-}
+};
 
-export interface CheckDynamicValueMap {
+export type CheckDynamicValueMap = {
   [dimension: string]: boolean;
-}
+};
 
-export interface CheckDynamicColsMap {
+export type CheckDynamicColsMap = {
   dimensions: CheckDynamicValueMap;
   tags: CheckDynamicValueMap;
-}
+};
 
-export interface CheckTags {
+export type CheckTags = {
   [key: string]: string;
-}
+};
 
-interface CheckResultDimension {
+type CheckResultDimension = {
   key: string;
   value: string;
-}
+};
 
 export type CheckResultStatus =
   | "alarm"
@@ -86,7 +86,7 @@ export type CheckResultStatus =
 
 export type CheckResultType = "loading" | "error" | "empty" | "result";
 
-export interface CheckResult {
+export type CheckResult = {
   dimensions: CheckResultDimension[];
   tags: CheckTags;
   control: CheckNode;
@@ -97,13 +97,13 @@ export interface CheckResult {
   severity?: CheckSeverity;
   error?: string;
   type: CheckResultType;
-}
+};
 
-interface CheckControlRunProperties {
+type CheckControlRunProperties = {
   severity?: CheckSeverity | undefined;
-}
+};
 
-export interface CheckControlRun {
+export type CheckControlRun = {
   name: string;
   title?: string;
   description?: string;
@@ -115,7 +115,7 @@ export interface CheckControlRun {
   summary: CheckSummary;
   status: CheckNodeStatusRaw;
   error?: string;
-}
+};
 
 export type CheckDisplayGroupType =
   | "benchmark"
@@ -128,10 +128,10 @@ export type CheckDisplayGroupType =
   | "severity"
   | "status";
 
-export interface CheckDisplayGroup {
+export type CheckDisplayGroup = {
   type: CheckDisplayGroupType;
   value?: string;
-}
+};
 
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
