@@ -51,14 +51,6 @@ const getNodeAndEdgeDataFormat = (
   return "LEGACY";
 };
 
-const panelStateToCategoryState = (status: DashboardRunState) => {
-  return status === "error"
-    ? "error"
-    : status === "complete"
-    ? "complete"
-    : "pending";
-};
-
 const addColumnsForResource = (
   columns: NodeAndEdgeDataColumn[],
   data: NodeAndEdgeData
@@ -119,7 +111,7 @@ const addPanelWithsStatus = (
       withsStatuses[withPanelProperties.name] = {
         id: withPanelProperties.name,
         title: withPanel.title,
-        state: panelStateToCategoryState(withPanel.status || "ready"),
+        state: withPanel.status || "ready",
         error: withPanel.error,
       };
     }
@@ -201,7 +193,7 @@ const useNodeAndEdgeData = (
 
       // Capture the status of any with blocks that this node depends on
       addPanelWithsStatus(
-        panelsMap,
+        panels,
         panel.withs,
         withNameLookup,
         nodeAndEdgeStatus.withs
@@ -215,7 +207,7 @@ const useNodeAndEdgeData = (
       // Capture the status of this node resource
       nodeAndEdgeStatus.nodes.push({
         id: panel.title || nodeProperties.name,
-        state: panelStateToCategoryState(panel.status || "ready"),
+        state: panel.status || "ready",
         category: nodeProperties.category,
         error: panel.error,
         title: panel.title,
@@ -277,7 +269,7 @@ const useNodeAndEdgeData = (
 
       // Capture the status of any with blocks that this edge depends on
       addPanelWithsStatus(
-        panelsMap,
+        panels,
         panel.withs,
         withNameLookup,
         nodeAndEdgeStatus.withs
@@ -290,7 +282,7 @@ const useNodeAndEdgeData = (
       // Capture the status of this edge resource
       nodeAndEdgeStatus.edges.push({
         id: panel.title || edgeProperties.name,
-        state: panelStateToCategoryState(panel.status || "ready"),
+        state: panel.status || "ready",
         category: edgeProperties.category,
         error: panel.error,
         title: panel.title,

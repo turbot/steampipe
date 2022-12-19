@@ -2,21 +2,13 @@ import ErrorMessage from "../../ErrorMessage";
 import Icon from "../../Icon";
 import LoadingIndicator from "../LoadingIndicator";
 import { DashboardRunState } from "../../../types";
-import { EdgeStatus, NodeStatus, WithStatus } from "../graphs/types";
+import { EdgeStatus, GraphStatuses, NodeStatus } from "../graphs/types";
 import { Node } from "reactflow";
 
 type NodeAndEdgePanelInformationProps = {
   nodes: Node[];
   status: DashboardRunState;
-  pendingWiths: WithStatus[];
-  pendingNodes: NodeStatus[];
-  pendingEdges: EdgeStatus[];
-  errorWiths: WithStatus[];
-  errorNodes: NodeStatus[];
-  errorEdges: EdgeStatus[];
-  completeWiths: WithStatus[];
-  completeNodes: NodeStatus[];
-  completeEdges: EdgeStatus[];
+  statuses: GraphStatuses;
 };
 
 const nodeOrEdgeTitle = (nodeOrEdge: NodeStatus | EdgeStatus) =>
@@ -52,72 +44,60 @@ const ErrorRow = ({ title, error }: { title: string; error?: string }) => (
 const NodeAndEdgePanelInformation = ({
   nodes,
   status,
-  pendingWiths,
-  pendingNodes,
-  pendingEdges,
-  errorWiths,
-  errorNodes,
-  errorEdges,
-  completeWiths,
-  completeNodes,
-  completeEdges,
-}: NodeAndEdgePanelInformationProps) => {
-  const totalPending =
-    pendingWiths.length + pendingNodes.length + pendingEdges.length;
-  const totalError = errorWiths.length + errorNodes.length + errorEdges.length;
-  const totalComplete =
-    completeWiths.length + completeNodes.length + completeEdges.length;
-  return (
-    <div className="space-y-2 overflow-y-scroll">
-      <div className="space-y-1">
-        <div>
-          {totalComplete} complete, {totalPending} running, {totalError}{" "}
-          {totalError === 1 ? "error" : "errors"}
-        </div>
-        {totalPending === 0 &&
-          totalError === 0 &&
-          status === "complete" &&
-          nodes.length === 0 && (
-            <span className="block text-foreground-light italic">
-              No nodes or edges
-            </span>
-          )}
-        {pendingWiths.map((withStatus) => (
-          <PendingRow
-            key={withStatus.id}
-            title={`with: ${withStatus.title || withStatus.id}`}
-          />
-        ))}
-        {pendingNodes.map((node) => (
-          <PendingRow key={node.id} title={`node: ${nodeOrEdgeTitle(node)}`} />
-        ))}
-        {pendingEdges.map((edge) => (
-          <PendingRow key={edge.id} title={`edge: ${nodeOrEdgeTitle(edge)}`} />
-        ))}
-        {errorWiths.map((withStatus) => (
-          <ErrorRow
-            key={withStatus.id}
-            title={`with: ${withStatus.title || withStatus.id}`}
-            error={withStatus.error}
-          />
-        ))}
-        {errorNodes.map((node) => (
-          <ErrorRow
-            key={node.id}
-            title={`node: ${nodeOrEdgeTitle(node)}`}
-            error={node.error}
-          />
-        ))}
-        {errorEdges.map((edge) => (
-          <ErrorRow
-            key={edge.id}
-            title={`edge: ${nodeOrEdgeTitle(edge)}`}
-            error={edge.error}
-          />
-        ))}
+  statuses,
+}: NodeAndEdgePanelInformationProps) => (
+  <div className="space-y-2 overflow-y-scroll">
+    <div className="space-y-1">
+      <div>
+        {statuses.complete.total} complete, {statuses.running.total} running,{" "}
+        {statuses.error.total} {statuses.error.total === 1 ? "error" : "errors"}
+        , {statuses.ready.total} waiting,
       </div>
+      {statuses.ready.total === 0 &&
+        statuses.blocked.total === 0 &&
+        statuses.running.total === 0 &&
+        statuses.complete.total === 0 &&
+        status === "complete" &&
+        nodes.length === 0 && (
+          <span className="block text-foreground-light italic">
+            No nodes or edges
+          </span>
+        )}
+      {statuses.running.withs.map((withStatus) => (
+        <PendingRow
+          key={withStatus.id}
+          title={`with: ${withStatus.title || withStatus.id}`}
+        />
+      ))}
+      {statuses.running.nodes.map((node) => (
+        <PendingRow key={node.id} title={`node: ${nodeOrEdgeTitle(node)}`} />
+      ))}
+      {statuses.running.edges.map((edge) => (
+        <PendingRow key={edge.id} title={`edge: ${nodeOrEdgeTitle(edge)}`} />
+      ))}
+      {statuses.error.withs.map((withStatus) => (
+        <ErrorRow
+          key={withStatus.id}
+          title={`with: ${withStatus.title || withStatus.id}`}
+          error={withStatus.error}
+        />
+      ))}
+      {statuses.error.nodes.map((node) => (
+        <ErrorRow
+          key={node.id}
+          title={`node: ${nodeOrEdgeTitle(node)}`}
+          error={node.error}
+        />
+      ))}
+      {statuses.error.edges.map((edge) => (
+        <ErrorRow
+          key={edge.id}
+          title={`edge: ${nodeOrEdgeTitle(edge)}`}
+          error={edge.error}
+        />
+      ))}
     </div>
-  );
-};
+  </div>
+);
 
 export default NodeAndEdgePanelInformation;

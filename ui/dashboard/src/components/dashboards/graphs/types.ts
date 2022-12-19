@@ -10,6 +10,7 @@ import {
   NodeAndEdgeProperties,
 } from "../common/types";
 import { ComponentType } from "react";
+import { DashboardRunState } from "../../../types";
 
 export type NodeAndEdgeDataFormat = "LEGACY" | "NODE_AND_EDGE";
 
@@ -54,11 +55,9 @@ export interface IGraph {
   component: ComponentType<any>;
 }
 
-export type NodeAndEdgeState = "pending" | "error" | "complete";
-
 type BaseNodeAndEdgeStatus = {
   id: string;
-  state: NodeAndEdgeState;
+  state: DashboardRunState;
   category?: Category;
   title?: string;
   error?: string;
@@ -84,4 +83,13 @@ export type NodeAndEdgeStatus = {
   withs: WithStatusMap;
   nodes: NodeStatus[];
   edges: EdgeStatus[];
+};
+
+export type GraphStatuses = {
+  [key in DashboardRunState]: {
+    total: number;
+    withs: WithStatus[];
+    nodes: NodeStatus[];
+    edges: EdgeStatus[];
+  };
 };
