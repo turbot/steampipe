@@ -1,5 +1,5 @@
 
-dashboard "my_dashboard_2" {
+dashboard "base_with" {
   with "dw1" {
     sql = "select 'foo'"
   }
