@@ -31,7 +31,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   tests=$(cat $FILE_PATH/test_data/source_files/service.json)
   test_keys=$(echo $tests | jq '. | keys[]')
-  # cd $FILE_PATH
+  cd $FILE_PATH
 
   for i in $test_keys; do
     test_name=$(echo $tests | jq -c ".[${i}]" | jq ".name")
@@ -45,7 +45,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
       command="${command}${cmd}"
       echo $command
       run $command
-      echo $output
+      assert_success
     done
   done
   assert_equal $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') 0
