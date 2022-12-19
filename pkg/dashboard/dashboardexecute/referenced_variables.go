@@ -32,7 +32,7 @@ func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.W
 			},
 		)
 	case *CheckRun:
-		switch n := r.DashboardNode.(type) {
+		switch n := r.resource.(type) {
 		case *modconfig.Benchmark:
 			n.WalkResources(
 				func(resource modconfig.ModTreeItem) (bool, error) {

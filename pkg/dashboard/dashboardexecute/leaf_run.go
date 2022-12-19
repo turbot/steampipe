@@ -2,9 +2,6 @@ package dashboardexecute
 
 import (
 	"context"
-	"fmt"
-	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
@@ -16,16 +13,15 @@ import (
 
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
+	// all RuntimeDependencySubscribers are also publishers as they have args/params
 	RuntimeDependencySubscriberImpl
 
-	RawSQL   string                      `json:"sql,omitempty"`
-	Data     *dashboardtypes.LeafData    `json:"data,omitempty"`
-	Resource modconfig.DashboardLeafNode `json:"properties,omitempty"`
-	// a list of the (scoped) names of any `withs` that we rely on
-	RuntimeDependencies []string                  `json:"dependencies,omitempty"`
-	TimingResult        *queryresult.TimingResult `json:"-"`
-	executeSQL          string
-	onComplete          func()
+	Data *dashboardtypes.LeafData `json:"data,omitempty"`
+
+	TimingResult *queryresult.TimingResult `json:"-"`
+	// function called when the run is complete
+	// this property populated for 'with' runs
+	onComplete func()
 }
 
 func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
@@ -39,7 +35,6 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	r := &LeafRun{
 		// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
 		RuntimeDependencySubscriberImpl: NewRuntimeDependencySubscriberImpl(resource, parent, executionTree),
-		Resource:                        resource,
 	}
 	err := r.initRuntimeDependencies()
 	if err != nil {
@@ -73,7 +68,7 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 }
 
 func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
-	children := r.Resource.GetChildren()
+	children := r.resource.GetChildren()
 	if len(children) == 0 {
 		return nil
 	}
@@ -109,7 +104,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 		return
 	}
 
-	log.Printf("[TRACE] LeafRun '%s' Execute()", r.Resource.Name())
+	log.Printf("[TRACE] LeafRun '%s' Execute()", r.resource.Name())
 
 	// to get here, we must be a query provider
 
@@ -119,20 +114,9 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	// start a goroutine to wait for children to complete
 	doneChan := r.waitForChildren()
 
-	// now wait for any runtime dependencies then resolve args and params
-	// (it is possible to have params but no sql)
-	if len(r.runtimeDependencies) > 0 {
-		// if there are any unresolved runtime dependencies, wait for them
-		if err := r.waitForRuntimeDependencies(); err != nil {
-			r.SetError(ctx, err)
-			return
-		}
-
-		// ok now we have runtime dependencies, we can resolve the query
-		if err := r.resolveSQLAndArgs(); err != nil {
-			r.SetError(ctx, err)
-			return
-		}
+	if err := r.evaluateRuntimeDependencies(ctx); err != nil {
+		r.SetError(ctx, err)
+		return
 	}
 
 	// set status to running (this sends update event)
@@ -144,7 +128,6 @@ func (r *LeafRun) Execute(ctx context.Context) {
 			r.SetError(ctx, err)
 			return
 		}
-
 	}
 
 	// wait for all children and withs
@@ -155,7 +138,6 @@ func (r *LeafRun) Execute(ctx context.Context) {
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
-
 		r.SetError(ctx, err)
 	}
 }
@@ -189,132 +171,17 @@ func (r *LeafRun) SetComplete(ctx context.Context) {
 // IsSnapshotPanel implements SnapshotPanel
 func (*LeafRun) IsSnapshotPanel() {}
 
-func (r *LeafRun) waitForRuntimeDependencies() error {
-	allRuntimeDepsResolved := true
-	for _, dep := range r.runtimeDependencies {
-		if !dep.IsResolved() {
-			allRuntimeDepsResolved = false
-		}
-	}
-	if allRuntimeDepsResolved {
-		return nil
-	}
-
-	// set status to blocked
-	r.setStatus(dashboardtypes.DashboardRunBlocked)
-
-	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", r.Resource.Name())
-	for _, resolvedDependency := range r.runtimeDependencies {
-		// check whether the dependency is available
-		err := resolvedDependency.Resolve()
-		if err != nil {
-			return err
-		}
-	}
-
-	if len(r.runtimeDependencies) > 0 {
-		log.Printf("[TRACE] LeafRun '%s' all runtime dependencies ready", r.Resource.Name())
-	}
-	return nil
-}
-
-// resolve the sql for this leaf run into the source sql (i.e. NOT the prepared statement name) and resolved args
-func (r *LeafRun) resolveSQLAndArgs() error {
-	log.Printf("[TRACE] LeafRun '%s' resolveSQLAndArgs", r.Resource.Name())
-	queryProvider, ok := r.Resource.(modconfig.QueryProvider)
-	if !ok {
-		// not a query provider - nothing to do
-		return nil
-	}
-
-	// convert arg runtime dependencies into arg map
-	runtimeArgs, err := r.buildRuntimeDependencyArgs()
-	if err != nil {
-		log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs failed: %s", r.Resource.Name(), err.Error())
-		return err
-	}
-
-	// now if any param defaults had runtime dependencies, populate them
-	r.populateParamDefaults(queryProvider)
-
-	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", r.Resource.Name(), runtimeArgs)
-
-	// does this leaf run have any SQL to execute?
-	// TODO [node_reuse] split this into resolve query and resolve args - we may have args but no query
-	if queryProvider.RequiresExecution(queryProvider) {
-		resolvedQuery, err := r.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
-		if err != nil {
-			return err
-		}
-		r.RawSQL = resolvedQuery.RawSQL
-		r.executeSQL = resolvedQuery.ExecuteSQL
-		r.Args = resolvedQuery.Args
-	}
-	//}
-	return nil
-}
-
-// convert runtime dependencies into arg map
-func (r *LeafRun) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
-	res := modconfig.NewQueryArgs()
-
-	log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs - %d runtime dependencies", r.Resource.Name(), len(r.runtimeDependencies))
-
-	// if the runtime dependencies use position args, get the max index and ensure the args array is large enough
-	maxArgIndex := -1
-	// build list of all args runtime dependencies
-	argRuntimeDependencies := r.FindRuntimeDependenciesForParentProperty(modconfig.AttributeArgs)
-
-	for _, dep := range argRuntimeDependencies {
-		if dep.Dependency.TargetPropertyIndex != nil && *dep.Dependency.TargetPropertyIndex > maxArgIndex {
-			maxArgIndex = *dep.Dependency.TargetPropertyIndex
-		}
-	}
-	if maxArgIndex != -1 {
-		res.ArgList = make([]*string, maxArgIndex+1)
-	}
-
-	// now set the arg values
-	for _, dep := range argRuntimeDependencies {
-		if dep.Dependency.TargetPropertyName != nil {
-			err := res.SetNamedArgVal(dep.Value, *dep.Dependency.TargetPropertyName)
-			if err != nil {
-				return nil, err
-			}
-
-		} else {
-			if dep.Dependency.TargetPropertyIndex == nil {
-				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
-			}
-			err := res.SetPositionalArgVal(dep.Value, *dep.Dependency.TargetPropertyIndex)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return res, nil
-}
-
-func (r *LeafRun) hasParam(paramName string) bool {
-	for _, p := range r.Params {
-		if p.ShortName == paramName {
-			return true
-		}
-	}
-	return false
-}
-
 // if this leaf run has a query or sql, execute it now
 func (r *LeafRun) executeQuery(ctx context.Context) error {
-	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.Resource.Name())
+	log.Printf("[TRACE] LeafRun '%s' SQL resolved, executing", r.resource.Name())
 
 	queryResult, err := r.executionTree.client.ExecuteSync(ctx, r.executeSQL, r.Args...)
 	if err != nil {
-		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.Resource.Name(), err.Error())
+		log.Printf("[TRACE] LeafRun '%s' query failed: %s", r.resource.Name(), err.Error())
 		return err
 
 	}
-	log.Printf("[TRACE] LeafRun '%s' complete", r.Resource.Name())
+	log.Printf("[TRACE] LeafRun '%s' complete", r.resource.Name())
 
 	r.Data = dashboardtypes.NewLeafData(queryResult)
 	r.TimingResult = queryResult.TimingResult
@@ -335,7 +202,7 @@ func (r *LeafRun) combineChildData() {
 		childLeafRun := c.(*LeafRun)
 		data := childLeafRun.Data
 		// if there is no data or this is a 'with', skip
-		if data == nil || childLeafRun.Resource.BlockType() == modconfig.BlockTypeWith {
+		if data == nil || childLeafRun.resource.BlockType() == modconfig.BlockTypeWith {
 			continue
 		}
 		for _, s := range data.Columns {
@@ -354,25 +221,6 @@ func (r *LeafRun) setRuntimeDependencies() {
 		// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
 		// we do this as there may be a with from a base resource with a clashing with name
 		// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
-		r.RuntimeDependencies = append(r.RuntimeDependencies, d.ScopedName())
+		r.RuntimeDependencyNames = append(r.RuntimeDependencyNames, d.ScopedName())
 	}
-}
-
-func (r *LeafRun) populateParamDefaults(provider modconfig.QueryProvider) {
-	paramDefs := provider.GetParams()
-	for _, paramDef := range paramDefs {
-		if dep := r.FindRuntimeDependencyForParentProperty(paramDef.UnqualifiedName); dep != nil {
-			// assuming the default property is the target, set the default
-			if typehelpers.SafeString(dep.Dependency.TargetPropertyName) == "default" {
-				paramDef.SetDefault(dep.Value)
-			}
-		}
-	}
-}
-
-func (r *LeafRun) setStatus(status dashboardtypes.DashboardRunStatus) {
-	r.Status = status
-	// raise LeafNodeUpdated event
-	e := dashboardevents.NewLeafNodeUpdate(r, r.executionTree.sessionId, r.executionTree.id)
-	r.executionTree.workspace.PublishDashboardEvent(e)
 }
