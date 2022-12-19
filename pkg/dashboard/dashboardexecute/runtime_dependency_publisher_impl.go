@@ -117,6 +117,22 @@ func (b *RuntimeDependencyPublisherImpl) GetWithRuns() map[string]*LeafRun {
 	return b.withRuns
 }
 
+func (b *RuntimeDependencyPublisherImpl) initRuntimeDependencies() error {
+	// if the resource is a runtime dependency provider, create with runs and resolve dependencies
+	rdp, ok := b.resource.(modconfig.RuntimeDependencyProvider)
+	if !ok {
+		return nil
+	}
+	// if we have with blocks, create runs for them
+	// BEFORE creating child runs, and before adding runtime dependencies
+	err := b.createWithRuns(rdp.GetWiths(), b.executionTree)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // getWithValue accepts the raw with result (dashboardtypes.LeafData) and the property path, and extracts the appropriate data
 func (b *RuntimeDependencyPublisherImpl) getWithValue(name string, result *dashboardtypes.LeafData, path *modconfig.ParsedPropertyPath) (any, error) {
 	//  get the set of rows which will be used ot generate the return value
@@ -210,7 +226,7 @@ func (b *RuntimeDependencyPublisherImpl) setWithValue(w *LeafRun) {
 	b.withValueMutex.Lock()
 	defer b.withValueMutex.Unlock()
 
-	name := w.Resource.GetUnqualifiedName()
+	name := w.resource.GetUnqualifiedName()
 	// if there was an error, w.Data will be nil and w.error will be non-nil
 	result := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: w.err}
 

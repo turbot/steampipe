@@ -11,7 +11,7 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
-	RuntimeDependencySubscriberImpl
+	RuntimeDependencyPublisherImpl
 
 	parent    dashboardtypes.DashboardParent
 	dashboard *modconfig.Dashboard
@@ -38,9 +38,9 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
 	r := &DashboardRun{
 		// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
-		RuntimeDependencySubscriberImpl: NewRuntimeDependencySubscriberImpl(dashboard, parent, executionTree),
-		parent:                          parent,
-		dashboard:                       dashboard,
+		RuntimeDependencyPublisherImpl: NewRuntimeDependencyPublisherImpl(dashboard, parent, executionTree),
+		parent:                         parent,
+		dashboard:                      dashboard,
 	}
 
 	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs

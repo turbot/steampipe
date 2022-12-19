@@ -2,8 +2,11 @@ package dashboardexecute
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"log"
 )
 
 type DashboardTreeRunImpl struct {
@@ -24,7 +27,7 @@ type DashboardTreeRunImpl struct {
 	err           error
 	parent        dashboardtypes.DashboardParent
 	executionTree *DashboardExecutionTree
-	resource      modconfig.HclResource
+	resource      modconfig.DashboardLeafNode
 }
 
 func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) DashboardTreeRunImpl {
@@ -109,13 +112,35 @@ func (r *DashboardTreeRunImpl) Execute(ctx context.Context) {
 	panic("must be implemented by child struct")
 }
 
-func (r *DashboardTreeRunImpl) SetError(context.Context, error) {
+func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
 }
 
-func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
-	panic("must be implemented by child struct")
+// SetError implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) SetError(ctx context.Context, err error) {
+	log.Printf("[TRACE] %s SetError err %v", r.Name, err)
+	r.err = err
+	// error type does not serialise to JSON so copy into a string
+	r.ErrorString = err.Error()
+	// increment error count for snapshot hook
+	statushooks.SnapshotError(ctx)
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunError)
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
 }
-func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
-	panic("must be implemented by child struct")
+
+// SetComplete implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
+	// set status (this sends update event)
+	r.setStatus(dashboardtypes.DashboardRunComplete)
+	// tell parent we are done
+	r.parent.ChildCompleteChan() <- r
+}
+
+func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatus) {
+	r.Status = status
+	// raise LeafNodeUpdated event
+	e := dashboardevents.NewLeafNodeUpdate(r, r.executionTree.sessionId, r.executionTree.id)
+	r.executionTree.workspace.PublishDashboardEvent(e)
 }

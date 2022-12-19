@@ -34,8 +34,7 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 		DashboardParentImpl: dashboardexecute.DashboardParentImpl{
 			DashboardTreeRunImpl: dashboardexecute.NewDashboardTreeRunImpl(dashboardNode, nil, nil),
 		},
-		Root:          e.Root.Children[0],
-		DashboardNode: dashboardNode,
+		Root: e.Root.Children[0],
 	}
 
 	// populate the panels
