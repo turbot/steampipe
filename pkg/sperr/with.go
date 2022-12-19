@@ -4,17 +4,22 @@ import "fmt"
 
 // WithMessage wraps Error and sets the provided message in the new error
 func (e *Error) WithMessage(format string, args ...interface{}) *Error {
+	if e == nil {
+		return nil
+	}
 	newErr := &Error{
-		msg: fmt.Sprintf(format, args...),
+		msg:   fmt.Sprintf(format, args...),
+		cause: e,
 	}
 	return newErr
 }
 
-// WithRootMessage wraps Error and sets the provided message as the final message in the new error.
-// When a root message is set, all child errors are hidden from display
-func (e *Error) WithRootMessage(format string, args ...interface{}) *Error {
+// AsRoot wraps Error and sets the provided message as the final message in the new error.
+// When an Error is set as root, all child errors are hidden from display
+func (e *Error) AsRoot(format string, args ...interface{}) *Error {
 	newErr := &Error{
-		msg: fmt.Sprintf(format, args...),
+		isRoot: true,
+		cause:  e,
 	}
 	return newErr
 }
@@ -23,6 +28,7 @@ func (e *Error) WithRootMessage(format string, args ...interface{}) *Error {
 func (e *Error) WithDetail(format string, args ...interface{}) *Error {
 	newErr := &Error{
 		detail: fmt.Sprintf(format, args...),
+		cause:  e,
 	}
 	return newErr
 }
