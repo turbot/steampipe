@@ -54,10 +54,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
-		if err := prepareDb(ctx); err != nil {
-			return sperr.Wrap(err).WithMessage("failed to prepare db installation")
-		}
-		return nil
+		return sperr.Wrap(err).WithMessage("failed to prepare db installation")
 	}
 
 	// handle the case that the previous db version may still be running
