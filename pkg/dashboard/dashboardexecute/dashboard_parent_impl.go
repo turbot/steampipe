@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 )
 
@@ -57,6 +58,15 @@ func (r *DashboardParentImpl) createChildCompleteChan() {
 func (r *DashboardParentImpl) executeChildrenAsync(ctx context.Context) {
 	for _, c := range r.children {
 		go c.Execute(ctx)
+	}
+}
+
+// if this leaf run has with runs execute them asynchronously
+func (r *DashboardParentImpl) executeWithsAsync(ctx context.Context) {
+	for _, c := range r.children {
+		if c.GetNodeType() == modconfig.BlockTypeWith {
+			go c.Execute(ctx)
+		}
 	}
 }
 

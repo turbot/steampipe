@@ -34,14 +34,15 @@ func (r *DashboardRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	return res
 }
 
-// TODO can dashboards have params????
 func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*DashboardRun, error) {
 	r := &DashboardRun{
-		// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
-		RuntimeDependencyPublisherImpl: NewRuntimeDependencyPublisherImpl(dashboard, parent, executionTree),
-		parent:                         parent,
-		dashboard:                      dashboard,
+		parent:    parent,
+		dashboard: dashboard,
 	}
+	// create RuntimeDependencyPublisherImpl- this handles 'with' run creation and resolving runtime dependency resolution
+	// (we must create after creating the run as it requires a ref to the run)
+	// TODO [node_reuse] do this a different way
+	r.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
 
 	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()

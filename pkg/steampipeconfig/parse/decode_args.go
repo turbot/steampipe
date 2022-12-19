@@ -253,7 +253,7 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int, parentPr
 	return nil, fmt.Errorf("could not extract runtime dependency for arg %d - not found in attribute list", idx)
 }
 
-func decodeParam(block *hcl.Block, parseCtx *ModParseContext, parentName string) (*modconfig.ParamDef, []*modconfig.RuntimeDependency, hcl.Diagnostics) {
+func decodeParam(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.ParamDef, []*modconfig.RuntimeDependency, hcl.Diagnostics) {
 	def := modconfig.NewParamDef(block)
 	var runtimeDependencies []*modconfig.RuntimeDependency
 	content, diags := block.Body.Content(ParamDefBlockSchema)

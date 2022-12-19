@@ -98,6 +98,11 @@ func (b *HclResourceImpl) CtyValue() (cty.Value, error) {
 	return GetCtyValue(b)
 }
 
+// GetBase implements HclResource
+func (b *HclResourceImpl) GetBase() HclResource {
+	return b.base
+}
+
 func (b *HclResourceImpl) setBaseProperties() {
 	if b.Title == nil {
 		b.Title = b.getBaseImpl().Title

@@ -6,9 +6,9 @@ dashboard "my_dashboard_2" {
 
   table {
     base = table.t1
-    args = {
-      "p1": with.w1.rows[0]
-    }
+#    args = {
+#      "p1": with.w1.rows[0]
+#    }
   }
 }
 

@@ -341,7 +341,7 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 		block = b.AsHCLBlock()
 		switch block.Type {
 		case modconfig.BlockTypeParam:
-			paramDef, runtimeDependencies, moreDiags := decodeParam(block, parseCtx, resource.Name())
+			paramDef, runtimeDependencies, moreDiags := decodeParam(block, parseCtx)
 			if !moreDiags.HasErrors() {
 				params = append(params, paramDef)
 				queryProvider.AddRuntimeDependencies(runtimeDependencies)
