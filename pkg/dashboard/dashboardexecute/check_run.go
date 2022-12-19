@@ -30,13 +30,12 @@ func (r *CheckRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 }
 
 func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*CheckRun, error) {
-	c := &CheckRun{
-		DashboardParentImpl: DashboardParentImpl{
-			DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, parent, executionTree),
-		},
+	c := &CheckRun{SessionId: executionTree.sessionId}
+	// create NewDashboardTreeRunImpl
+	// (we must create after creating the run as it requires a ref to the run)
+	// TODO [node_reuse] do this a different way
+	c.DashboardTreeRunImpl = NewDashboardTreeRunImpl(resource, parent, c, executionTree)
 
-		SessionId: executionTree.sessionId,
-	}
 	// verify node type
 	switch t := resource.(type) {
 	case *modconfig.Control:

@@ -9,46 +9,62 @@ import (
 	"log"
 )
 
-type RuntimeDependencySubscriberImpl struct {
+type RuntimeDependencySubscriber struct {
 	// all RuntimeDependencySubscribers are also publishers as they have args/params
 	RuntimeDependencyPublisherImpl
 	// map of runtime dependencies, keyed by dependency long name
 	runtimeDependencies map[string]*dashboardtypes.ResolvedRuntimeDependency
 	// a list of the (scoped) names of any runtime dependencies that we rely on
-	RuntimeDependencyNames []string `json:"dependencies,omitempty"`
-	RawSQL                 string   `json:"sql,omitempty"`
-	executeSQL             string
+	RuntimeDependencyNames   []string `json:"dependencies,omitempty"`
+	RawSQL                   string   `json:"sql,omitempty"`
+	executeSQL               string
+	baseDependencySubscriber *RuntimeDependencySubscriber
 }
 
-func NewRuntimeDependencySubscriberImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) RuntimeDependencySubscriberImpl {
-	b := RuntimeDependencySubscriberImpl{
-		RuntimeDependencyPublisherImpl: NewRuntimeDependencyPublisherImpl(resource, parent, executionTree),
-		runtimeDependencies:            make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
+func NewRuntimeDependencySubscriber(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) *RuntimeDependencySubscriber {
+	b := &RuntimeDependencySubscriber{
+		runtimeDependencies: make(map[string]*dashboardtypes.ResolvedRuntimeDependency),
 	}
+	// TODO [node_reuse]
+	// HACK
+	// if this is a run for a base resource there will be no 'run'
+	if run == nil {
+		run = b
+	}
+
+	// create RuntimeDependencyPublisherImpl
+	// (we must create after creating the run as iut requires a ref to the run)
+	b.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(resource, parent, run, executionTree)
+
 	return b
 }
 
-func (b *RuntimeDependencySubscriberImpl) initRuntimeDependencies() error {
-	// if the resource is a runtime dependency provider, create with runs and resolve dependencies
-	rdp, ok := b.resource.(modconfig.RuntimeDependencyProvider)
-	if !ok {
+// if the resource is a runtime dependency provider, create with runs and resolve dependencies
+func (s *RuntimeDependencySubscriber) initRuntimeDependencies() error {
+	if _, ok := s.resource.(modconfig.RuntimeDependencyProvider); !ok {
 		return nil
 	}
-
-	if err := b.RuntimeDependencyPublisherImpl.initRuntimeDependencies(); err != nil {
+	// first call into publisher to start any with runs
+	if err := s.RuntimeDependencyPublisherImpl.initRuntimeDependencies(); err != nil {
 		return err
 	}
 	// resolve any runtime dependencies
-	return b.resolveRuntimeDependencies(rdp)
+	return s.resolveRuntimeDependencies()
 }
 
 // if this node has runtime dependencies, find the publisher of the dependency and create a dashboardtypes.ResolvedRuntimeDependency
 // which  we use to resolve the values
-func (b *RuntimeDependencySubscriberImpl) resolveRuntimeDependencies(rdp modconfig.RuntimeDependencyProvider) error {
+func (s *RuntimeDependencySubscriber) resolveRuntimeDependencies() error {
+	rdp, ok := s.resource.(modconfig.RuntimeDependencyProvider)
+	if !ok {
+		return nil
+	}
+
 	runtimeDependencies := rdp.GetRuntimeDependencies()
+
 	for n, d := range runtimeDependencies {
 		// find a runtime dependency publisher who can provider this runtime dependency
-		publisher := b.findRuntimeDependencyPublisher(d)
+		publisher := s.findRuntimeDependencyPublisher(d)
 		if publisher == nil {
 			// should never happen as validation should have caught this
 			return fmt.Errorf("cannot resolve runtime dependency %s", d.String())
@@ -68,7 +84,7 @@ func (b *RuntimeDependencySubscriberImpl) resolveRuntimeDependencies(rdp modconf
 				transformedResolvedVal := &dashboardtypes.ResolvedRuntimeDependencyValue{Error: resolvedVal.Error}
 				if resolvedVal.Error == nil {
 					// the runtime dependency value for a 'with' is *dashboardtypes.LeafData
-					withValue, err := b.getWithValue(name, resolvedVal.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
+					withValue, err := s.getWithValue(name, resolvedVal.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
 					if err != nil {
 						transformedResolvedVal.Error = fmt.Errorf("failed to resolve with value '%s' for %s: %s", dep.PropertyPath.Original, name, err.Error())
 					} else {
@@ -82,54 +98,42 @@ func (b *RuntimeDependencySubscriberImpl) resolveRuntimeDependencies(rdp modconf
 		valueChannel := publisher.SubscribeToRuntimeDependency(d.SourceResourceName(), opts...)
 
 		publisherName := publisher.GetName()
-		b.runtimeDependencies[name] = dashboardtypes.NewResolvedRuntimeDependency(dep, valueChannel, publisherName)
+		s.runtimeDependencies[name] = dashboardtypes.NewResolvedRuntimeDependency(dep, valueChannel, publisherName)
 	}
 	return nil
 }
 
-func (b *RuntimeDependencySubscriberImpl) evaluateRuntimeDependencies(ctx context.Context) error {
+func (s *RuntimeDependencySubscriber) evaluateRuntimeDependencies(ctx context.Context) error {
 	// now wait for any runtime dependencies then resolve args and params
 	// (it is possible to have params but no sql)
-	if len(b.runtimeDependencies) > 0 {
+	if s.hasRuntimeDependencies() {
 		// if there are any unresolved runtime dependencies, wait for them
-		if err := b.waitForRuntimeDependencies(); err != nil {
-
+		if err := s.waitForRuntimeDependencies(); err != nil {
 			return err
 		}
 
 		// ok now we have runtime dependencies, we can resolve the query
-		if err := b.resolveSQLAndArgs(); err != nil {
+		if err := s.resolveSQLAndArgs(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (b *RuntimeDependencySubscriberImpl) FindRuntimeDependenciesForParentProperty(parentProperty string) []*dashboardtypes.ResolvedRuntimeDependency {
-	var res []*dashboardtypes.ResolvedRuntimeDependency
-	for _, dep := range b.runtimeDependencies {
-		if dep.Dependency.ParentPropertyName == parentProperty {
-			res = append(res, dep)
-		}
-	}
-	return res
-}
-
-func (b *RuntimeDependencySubscriberImpl) FindRuntimeDependencyForParentProperty(parentProperty string) *dashboardtypes.ResolvedRuntimeDependency {
-	res := b.FindRuntimeDependenciesForParentProperty(parentProperty)
-	if len(res) > 1 {
-		panic(fmt.Sprintf("FindRuntimeDependencyForParentProperty for %s, parent property %s, returned more that 1 result", b.Name, parentProperty))
-	}
-	if res == nil {
+func (s *RuntimeDependencySubscriber) waitForRuntimeDependencies() error {
+	if !s.hasRuntimeDependencies() {
 		return nil
 	}
-	// return first result
-	return res[0]
-}
 
-func (b *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
+	// wait for base dependencies if we have any
+	if s.baseDependencySubscriber != nil {
+		if err := s.baseDependencySubscriber.waitForRuntimeDependencies(); err != nil {
+			return err
+		}
+	}
+
 	allRuntimeDepsResolved := true
-	for _, dep := range b.runtimeDependencies {
+	for _, dep := range s.runtimeDependencies {
 		if !dep.IsResolved() {
 			allRuntimeDepsResolved = false
 		}
@@ -139,62 +143,91 @@ func (b *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
 	}
 
 	// set status to blocked
-	b.setStatus(dashboardtypes.DashboardRunBlocked)
+	s.setStatus(dashboardtypes.DashboardRunBlocked)
 
-	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", b.resource.Name())
-	for _, resolvedDependency := range b.runtimeDependencies {
-		// check whether the dependency is available
+	log.Printf("[TRACE] LeafRun '%s' waitForRuntimeDependencies", s.resource.Name())
+	for _, resolvedDependency := range s.runtimeDependencies {
+		// block until the dependency is available
 		err := resolvedDependency.Resolve()
 		if err != nil {
 			return err
 		}
 	}
 
-	if len(b.runtimeDependencies) > 0 {
-		log.Printf("[TRACE] LeafRun '%s' all runtime dependencies ready", b.resource.Name())
-	}
+	log.Printf("[TRACE] %s: all runtime dependencies ready", s.resource.Name())
 	return nil
 }
 
+func (s *RuntimeDependencySubscriber) findRuntimeDependenciesForParentProperty(parentProperty string) []*dashboardtypes.ResolvedRuntimeDependency {
+	var res []*dashboardtypes.ResolvedRuntimeDependency
+	for _, dep := range s.runtimeDependencies {
+		if dep.Dependency.ParentPropertyName == parentProperty {
+			res = append(res, dep)
+		}
+	}
+	// also look at base subscriber
+	if s.baseDependencySubscriber != nil {
+		for _, dep := range s.baseDependencySubscriber.runtimeDependencies {
+			if dep.Dependency.ParentPropertyName == parentProperty {
+				res = append(res, dep)
+			}
+		}
+	}
+	return res
+}
+
+func (s *RuntimeDependencySubscriber) findRuntimeDependencyForParentProperty(parentProperty string) *dashboardtypes.ResolvedRuntimeDependency {
+	res := s.findRuntimeDependenciesForParentProperty(parentProperty)
+	if len(res) > 1 {
+		panic(fmt.Sprintf("findRuntimeDependencyForParentProperty for %s, parent property %s, returned more that 1 result", s.Name, parentProperty))
+	}
+	if res == nil {
+		return nil
+	}
+	// return first result
+	return res[0]
+}
+
 // resolve the sql for this leaf run into the source sql (i.e. NOT the prepared statement name) and resolved args
-func (b *RuntimeDependencySubscriberImpl) resolveSQLAndArgs() error {
-	log.Printf("[TRACE] LeafRun '%s' resolveSQLAndArgs", b.resource.Name())
-	queryProvider, ok := b.resource.(modconfig.QueryProvider)
+func (s *RuntimeDependencySubscriber) resolveSQLAndArgs() error {
+	log.Printf("[TRACE] LeafRun '%s' resolveSQLAndArgs", s.resource.Name())
+	queryProvider, ok := s.resource.(modconfig.QueryProvider)
 	if !ok {
 		// not a query provider - nothing to do
 		return nil
 	}
 
 	// convert arg runtime dependencies into arg map
-	runtimeArgs, err := b.buildRuntimeDependencyArgs()
+	runtimeArgs, err := s.buildRuntimeDependencyArgs()
 	if err != nil {
-		log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs failed: %s", b.resource.Name(), err.Error())
+		log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs failed: %s", s.resource.Name(), err.Error())
 		return err
 	}
 
 	// now if any param defaults had runtime dependencies, populate them
-	b.populateParamDefaults(queryProvider)
+	s.populateParamDefaults(queryProvider)
 
-	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", b.resource.Name(), runtimeArgs)
+	log.Printf("[TRACE] LeafRun '%s' built runtime args: %v", s.resource.Name(), runtimeArgs)
 
 	// does this leaf run have any SQL to execute?
 	// TODO [node_reuse] split this into resolve query and resolve args - we may have args but no query
 	if queryProvider.RequiresExecution(queryProvider) {
-		resolvedQuery, err := b.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
+		resolvedQuery, err := s.executionTree.workspace.ResolveQueryFromQueryProvider(queryProvider, runtimeArgs)
 		if err != nil {
 			return err
 		}
-		b.RawSQL = resolvedQuery.RawSQL
-		b.executeSQL = resolvedQuery.ExecuteSQL
-		b.Args = resolvedQuery.Args
+		s.RawSQL = resolvedQuery.RawSQL
+		s.executeSQL = resolvedQuery.ExecuteSQL
+		s.Args = resolvedQuery.Args
 	}
 	//}
 	return nil
 }
-func (b *RuntimeDependencySubscriberImpl) populateParamDefaults(provider modconfig.QueryProvider) {
+
+func (s *RuntimeDependencySubscriber) populateParamDefaults(provider modconfig.QueryProvider) {
 	paramDefs := provider.GetParams()
 	for _, paramDef := range paramDefs {
-		if dep := b.FindRuntimeDependencyForParentProperty(paramDef.UnqualifiedName); dep != nil {
+		if dep := s.findRuntimeDependencyForParentProperty(paramDef.UnqualifiedName); dep != nil {
 			// assuming the default property is the target, set the default
 			if typehelpers.SafeString(dep.Dependency.TargetPropertyName) == "default" {
 				paramDef.SetDefault(dep.Value)
@@ -204,15 +237,15 @@ func (b *RuntimeDependencySubscriberImpl) populateParamDefaults(provider modconf
 }
 
 // convert runtime dependencies into arg map
-func (b *RuntimeDependencySubscriberImpl) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
+func (s *RuntimeDependencySubscriber) buildRuntimeDependencyArgs() (*modconfig.QueryArgs, error) {
 	res := modconfig.NewQueryArgs()
 
-	log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs - %d runtime dependencies", b.resource.Name(), len(b.runtimeDependencies))
+	log.Printf("[TRACE] LeafRun '%s' buildRuntimeDependencyArgs - %d runtime dependencies", s.resource.Name(), len(s.runtimeDependencies))
 
 	// if the runtime dependencies use position args, get the max index and ensure the args array is large enough
 	maxArgIndex := -1
 	// build list of all args runtime dependencies
-	argRuntimeDependencies := b.FindRuntimeDependenciesForParentProperty(modconfig.AttributeArgs)
+	argRuntimeDependencies := s.findRuntimeDependenciesForParentProperty(modconfig.AttributeArgs)
 
 	for _, dep := range argRuntimeDependencies {
 		if dep.Dependency.TargetPropertyIndex != nil && *dep.Dependency.TargetPropertyIndex > maxArgIndex {
@@ -244,8 +277,8 @@ func (b *RuntimeDependencySubscriberImpl) buildRuntimeDependencyArgs() (*modconf
 	return res, nil
 }
 
-func (b *RuntimeDependencySubscriberImpl) hasParam(paramName string) bool {
-	for _, p := range b.Params {
+func (s *RuntimeDependencySubscriber) hasParam(paramName string) bool {
+	for _, p := range s.Params {
 		if p.ShortName == paramName {
 			return true
 		}
@@ -254,11 +287,38 @@ func (b *RuntimeDependencySubscriberImpl) hasParam(paramName string) bool {
 }
 
 // populate the list of runtime dependencies that this run depends on
-func (r *RuntimeDependencySubscriberImpl) setRuntimeDependencies() {
-	for _, d := range r.runtimeDependencies {
+func (s *RuntimeDependencySubscriber) setRuntimeDependencies() {
+	for _, d := range s.runtimeDependencies {
 		// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
 		// we do this as there may be a with from a base resource with a clashing with name
 		// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
-		r.RuntimeDependencyNames = append(r.RuntimeDependencyNames, d.ScopedName())
+		s.RuntimeDependencyNames = append(s.RuntimeDependencyNames, d.ScopedName())
 	}
+
+	// get base runtime dependencies (if any)
+	if s.baseDependencySubscriber != nil {
+		s.baseDependencySubscriber.setRuntimeDependencies()
+		s.RuntimeDependencyNames = append(s.RuntimeDependencyNames, s.baseDependencySubscriber.RuntimeDependencyNames...)
+	}
+}
+
+func (s *RuntimeDependencySubscriber) hasRuntimeDependencies() bool {
+	return len(s.runtimeDependencies)+len(s.baseRuntimeDependencies()) > 0
+}
+
+func (s *RuntimeDependencySubscriber) baseRuntimeDependencies() map[string]*dashboardtypes.ResolvedRuntimeDependency {
+	if s.baseDependencySubscriber == nil {
+		return map[string]*dashboardtypes.ResolvedRuntimeDependency{}
+	}
+	return s.baseDependencySubscriber.runtimeDependencies
+}
+
+// override DashboardParentImpl.executeChildrenAsync to also execute 'withs' of our baseDependencySubscriber
+func (s *RuntimeDependencySubscriber) executeChildrenAsync(ctx context.Context) {
+	// if we have a baseDependencySubscriber, do not execute it but execute its with runs
+	if s.baseDependencySubscriber != nil {
+		s.baseDependencySubscriber.executeWithsAsync(ctx)
+	}
+	// if this leaf run has children (including with runs) execute them asynchronously
+	s.DashboardParentImpl.executeChildrenAsync(ctx)
 }

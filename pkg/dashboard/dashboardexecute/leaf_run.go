@@ -14,7 +14,7 @@ import (
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
 	// all RuntimeDependencySubscribers are also publishers as they have args/params
-	RuntimeDependencySubscriberImpl
+	RuntimeDependencySubscriber
 	Resource modconfig.DashboardLeafNode `json:"properties,omitempty"`
 
 	Data         *dashboardtypes.LeafData  `json:"data,omitempty"`
@@ -33,19 +33,28 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 
 func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
 	r := &LeafRun{
-		// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
-		RuntimeDependencySubscriberImpl: NewRuntimeDependencySubscriberImpl(resource, parent, executionTree),
-		Resource:                        resource,
+		Resource: resource,
 	}
+
+	// create RuntimeDependencySubscriber- this handles 'with' run creation and resolving runtime dependency resolution
+	// (NOTE: we have to do this after creating run as we need to pass a ref to the run)
+	r.RuntimeDependencySubscriber = *NewRuntimeDependencySubscriber(resource, parent, r, executionTree)
+
 	err := r.initRuntimeDependencies()
 	if err != nil {
+		return nil, err
+	}
+
+	// if our underlying resource has a base which has runtime dependencies,
+	// create a RuntimeDependencySubscriber for it
+	if err := r.initBaseRuntimeDependencySubscriber(executionTree); err != nil {
 		return nil, err
 	}
 
 	r.NodeType = resource.BlockType()
 
 	// if the node has no runtime dependencies, resolve the sql
-	if len(r.runtimeDependencies) == 0 {
+	if !r.hasRuntimeDependencies() {
 		if err := r.resolveSQLAndArgs(); err != nil {
 			return nil, err
 		}
@@ -66,6 +75,22 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	r.setRuntimeDependencies()
 
 	return r, nil
+}
+
+func (r *LeafRun) initBaseRuntimeDependencySubscriber(executionTree *DashboardExecutionTree) error {
+	if base := r.resource.(modconfig.HclResource).GetBase(); base != nil {
+		if _, ok := base.(modconfig.RuntimeDependencyProvider); ok {
+
+			r.baseDependencySubscriber = NewRuntimeDependencySubscriber(base.(modconfig.DashboardLeafNode), nil, r, executionTree)
+			err := r.baseDependencySubscriber.initRuntimeDependencies()
+			if err != nil {
+				return err
+			}
+			// create buffered channel for base with to report their completion
+			r.baseDependencySubscriber.createChildCompleteChan()
+		}
+	}
+	return nil
 }
 
 func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
@@ -214,14 +239,4 @@ func (r *LeafRun) combineChildData() {
 		r.Data.Rows = append(r.Data.Rows, data.Rows...)
 	}
 	r.Data.Columns = maps.Values(schemaMap)
-}
-
-// populate the list of runtime dependencies that this run depends on
-func (r *LeafRun) setRuntimeDependencies() {
-	for _, d := range r.runtimeDependencies {
-		// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
-		// we do this as there may be a with from a base resource with a clashing with name
-		// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
-		r.RuntimeDependencyNames = append(r.RuntimeDependencyNames, d.ScopedName())
-	}
 }

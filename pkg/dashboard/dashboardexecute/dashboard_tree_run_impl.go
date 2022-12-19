@@ -28,10 +28,13 @@ type DashboardTreeRunImpl struct {
 	parent        dashboardtypes.DashboardParent
 	executionTree *DashboardExecutionTree
 	resource      modconfig.DashboardLeafNode
+	// store the top level run which embeds this struct
+	// we need this for setStatus which serialises the run for the message payload
+	run dashboardtypes.DashboardTreeRun
 }
 
-func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) DashboardTreeRunImpl {
-	// NOTE: for now we MUST declare children inline - therefore we cannot share children between runs in the tree
+func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) DashboardTreeRunImpl {
+	// NOTE: we MUST declare children inline - therefore we cannot share children between runs in the tree
 	// (if we supported the children property then we could reuse resources)
 	// so FOR NOW it is safe to use the container name directly as the run name
 	res := DashboardTreeRunImpl{
@@ -52,6 +55,7 @@ func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashbo
 		parent:        parent,
 		executionTree: executionTree,
 		resource:      resource,
+		run:           run,
 	}
 
 	// TACTICAL if this run was created to create a snapshot output for a control run,
@@ -116,6 +120,9 @@ func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
 }
 
+// TODO [node_reuse] do this a different way
+// maybe move to a different embedded struct - ExecutableRun, to differentiate between Base runs
+
 // SetError implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) SetError(ctx context.Context, err error) {
 	log.Printf("[TRACE] %s SetError err %v", r.Name, err)
@@ -140,7 +147,10 @@ func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
 
 func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatus) {
 	r.Status = status
+
 	// raise LeafNodeUpdated event
-	e := dashboardevents.NewLeafNodeUpdate(r, r.executionTree.sessionId, r.executionTree.id)
+	// TODO [node_reuse] tidy this up
+	// NOTE: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
+	e := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
 	r.executionTree.workspace.PublishDashboardEvent(e)
 }

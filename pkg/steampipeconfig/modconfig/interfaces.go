@@ -32,6 +32,7 @@ type HclResource interface {
 	GetTags() map[string]string
 	SetTopLevel(bool)
 	IsTopLevel() bool
+	GetBase() HclResource
 	GetHclResourceImpl() *HclResourceImpl
 }
 
