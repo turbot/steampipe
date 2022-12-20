@@ -99,7 +99,7 @@ const PanelLogRow = ({ log }: PanelLogRowProps) => {
                 log.error ? "cursor-pointer" : "cursor-default"
               )}
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <PanelLogIcon status={log.status} />
                 <DateTime
                   date={log.timestamp}
@@ -111,7 +111,7 @@ const PanelLogRow = ({ log }: PanelLogRowProps) => {
               {log.error ? (
                 <div>
                   <Icon
-                    className="text-sm text-foreground-light"
+                    className="w-4.5 h-4.5 text-foreground-light"
                     icon={
                       open
                         ? "materialsymbols-outline:expand-less"
@@ -122,7 +122,9 @@ const PanelLogRow = ({ log }: PanelLogRowProps) => {
               ) : null}
             </Disclosure.Button>
             {log.error ? (
-              <Disclosure.Panel>{log.error}</Disclosure.Panel>
+              <Disclosure.Panel className="px-2 py-1">
+                {log.error}
+              </Disclosure.Panel>
             ) : null}
           </>
         );
@@ -154,14 +156,25 @@ const PanelLogs = () => {
   return (
     <div className="border border-black-scale-2 divide-y divide-divide">
       {allLogs.map((log) => (
-        <PanelLogRow key={`${log.status}:${log.timestamp}`} log={log} />
+        <PanelLogRow
+          key={`${log.status}:${log.timestamp}:${log.prefix}:${log.title}`}
+          log={log}
+        />
       ))}
     </div>
   );
 };
 
 const PanelDetailLog = ({ definition }: PanelDetailProps) => (
-  <Panel definition={definition} showControls={false} forceBackground={true}>
+  <Panel
+    definition={{
+      ...definition,
+      title: `${definition.title ? ` ${definition.title} Log` : "Log"}`,
+    }}
+    showControls={false}
+    showPanelError={false}
+    forceBackground={true}
+  >
     <PanelLogs />
   </Panel>
 );
