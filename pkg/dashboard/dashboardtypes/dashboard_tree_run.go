@@ -19,7 +19,6 @@ type DashboardTreeRun interface {
 	GetInputsDependingOn(string) []string
 	GetNodeType() string
 	AsTreeNode() *SnapshotTreeNode
-	SetExecuteConfig(config TreeRunExecuteConfig)
 }
 
 type TreeRunExecuteConfig struct {

@@ -228,11 +228,6 @@ func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.Dashboa
 	return e.runComplete
 }
 
-// BaseCompleteChan implements DashboardParent
-func (e *DashboardExecutionTree) BaseCompleteChan() chan dashboardtypes.DashboardTreeRun {
-	panic("BaseCompleteChan should never be called on DashboardExecutionTree")
-}
-
 func (e *DashboardExecutionTree) Cancel() {
 	// if we have not completed, and already have a cancel function - cancel
 	if e.GetRunStatus() != dashboardtypes.DashboardRunReady || e.cancel == nil {
@@ -324,9 +319,5 @@ func (e *DashboardExecutionTree) GetInputsDependingOn(s string) []string {
 }
 
 func (e *DashboardExecutionTree) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
-	panic("should never call for DashboardExecutionTree")
-}
-
-func (e *DashboardExecutionTree) SetExecuteConfig(dashboardtypes.TreeRunExecuteConfig) {
 	panic("should never call for DashboardExecutionTree")
 }

@@ -12,7 +12,6 @@ type DashboardParentImpl struct {
 	DashboardTreeRunImpl
 	children          []dashboardtypes.DashboardTreeRun
 	childCompleteChan chan dashboardtypes.DashboardTreeRun
-	baseCompleteChan  chan dashboardtypes.DashboardTreeRun
 }
 
 func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {
@@ -20,9 +19,6 @@ func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {
 	for _, child := range r.children {
 		child.Initialise(ctx)
 
-		// copy our value of RuntimeDependenciesOnly to our children
-		childExecuteConfig := dashboardtypes.TreeRunExecuteConfig{RuntimeDependenciesOnly: r.executeConfig.RuntimeDependenciesOnly}
-		child.SetExecuteConfig(childExecuteConfig)
 		if err := child.GetError(); err != nil {
 			errors = append(errors, err)
 		}
@@ -51,10 +47,6 @@ func (r *DashboardParentImpl) ChildrenComplete() bool {
 func (r *DashboardParentImpl) ChildCompleteChan() chan dashboardtypes.DashboardTreeRun {
 	return r.childCompleteChan
 }
-func (r *DashboardParentImpl) BaseCompleteChan() chan dashboardtypes.DashboardTreeRun {
-	return r.baseCompleteChan
-}
-
 func (r *DashboardParentImpl) createChildCompleteChan() {
 	// create buffered child complete chan
 	if childCount := len(r.children); childCount > 0 {

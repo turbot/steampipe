@@ -5,7 +5,6 @@ type DashboardParent interface {
 	DashboardTreeRun
 	GetName() string
 	ChildCompleteChan() chan DashboardTreeRun
-	BaseCompleteChan() chan DashboardTreeRun
 	GetChildren() []DashboardTreeRun
 	ChildrenComplete() bool
 }

@@ -91,7 +91,7 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 		isInherited := inheritedChildren[c.Name()]
 		if isInherited {
 			// set parent to the base run
-			parent = r.baseRun
+			parent = r.baseDependencySubscriber
 		}
 
 		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), parent, executionTree)

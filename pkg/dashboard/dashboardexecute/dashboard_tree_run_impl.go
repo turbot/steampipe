@@ -124,11 +124,6 @@ func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
 }
 
-// SetExecuteConfig implements DashboardTreeRun
-func (r *DashboardTreeRunImpl) SetExecuteConfig(config dashboardtypes.TreeRunExecuteConfig) {
-	r.executeConfig = config
-}
-
 // TODO [node_reuse] do this a different way
 // maybe move to a different embedded struct - ExecutableRun, to differentiate between Base runs
 
@@ -168,9 +163,5 @@ func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatu
 }
 
 func (r *DashboardTreeRunImpl) notifyParentOfCompletion() {
-	if r.executeConfig.BaseExecution {
-		r.parent.BaseCompleteChan() <- r
-	} else {
-		r.parent.ChildCompleteChan() <- r
-	}
+	r.parent.ChildCompleteChan() <- r
 }
