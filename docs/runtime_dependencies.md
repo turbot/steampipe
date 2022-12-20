@@ -13,3 +13,27 @@ CHANGES
 - for query providers, base does not inherit with, params or args. Instead store a reference to the base,
 - only execute with runs trhat are needed by runtime dep
 - in leaf run, if resource has a base and its with are required, resolve runtime depos to populate args/params on base object
+
+
+
+## CreateLeafRun
+
+- if resource has a base, create LeafRun for it, set as baseRun (set execute to false / just create RuntimeDependencySubscriber?)
+
+### Execution
+`executeChildrenAsync` also executes `baseRun.executeWithsAsync` to execute base with runs 
+
+TODO: `waitForChildrenAsync` should also wait for base withs???
+
+`evaluateRuntimeDependencies`
+    `waitForRuntimeDependencies`
+        `s.baseRun.waitForRuntimeDependencies`
+    `resolveSQLAndArgs`    
+        `buildRuntimeDependencyArgs`
+            `findRuntimeDependenciesForParentProperty("args"`
+                `s.baseRun.findRuntimeDependenciesForParentProperty` -> returns resolvedRuntimeDependencies
+
+
+
+
+Instead just execute base run as a normal execvution?

@@ -112,7 +112,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 	}
 }
 
-func (e *DashboardExecutionTree) Execute(ctx context.Context) {
+func (e *DashboardExecutionTree) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
 	startTime := time.Now()
 
 	// store context
@@ -226,6 +226,11 @@ func (e *DashboardExecutionTree) SetInputValues(inputValues map[string]any) {
 // ChildCompleteChan implements DashboardParent
 func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.DashboardTreeRun {
 	return e.runComplete
+}
+
+// BaseCompleteChan implements DashboardParent
+func (e *DashboardExecutionTree) BaseCompleteChan() chan dashboardtypes.DashboardTreeRun {
+	panic("BaseCompleteChan should never be called on DashboardExecutionTree")
 }
 
 func (e *DashboardExecutionTree) Cancel() {

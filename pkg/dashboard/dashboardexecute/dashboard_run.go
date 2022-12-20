@@ -66,7 +66,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	return r, nil
 }
 
-// Initialise implements DashboardRunNode
+// Initialise implements DashboardTreeRun
 func (r *DashboardRun) Initialise(ctx context.Context) {
 	// initialise our children
 	if err := r.initialiseChildren(ctx); err != nil {
@@ -74,13 +74,13 @@ func (r *DashboardRun) Initialise(ctx context.Context) {
 	}
 }
 
-// Execute implements DashboardRunNode
+// Execute implements DashboardTreeRun
 // execute all children and wait for them to complete
-func (r *DashboardRun) Execute(ctx context.Context) {
-	r.executeChildrenAsync(ctx)
+func (r *DashboardRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
+	r.executeChildrenAsync(ctx, opts...)
 
 	// wait for children to complete
-	err := <-r.waitForChildren()
+	err := <-r.waitForChildrenAsync()
 	log.Printf("[TRACE] Execute run %s all children complete, error: %v", r.Name, err)
 
 	if err == nil {
@@ -101,14 +101,14 @@ func (r *DashboardRun) SetError(_ context.Context, err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 	r.Status = dashboardtypes.DashboardRunError
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // SetComplete implements DashboardTreeRun
 func (r *DashboardRun) SetComplete(context.Context) {
 	r.Status = dashboardtypes.DashboardRunComplete
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // GetInput searches for an input with the given name

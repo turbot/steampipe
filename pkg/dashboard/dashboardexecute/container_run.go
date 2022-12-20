@@ -44,7 +44,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	if container.Width != nil {
 		r.Width = *container.Width
 	}
-	r.childComplete = make(chan dashboardtypes.DashboardTreeRun, len(children))
+	r.childCompleteChan = make(chan dashboardtypes.DashboardTreeRun, len(children))
 	for _, child := range children {
 		var childRun dashboardtypes.DashboardTreeRun
 		var err error
@@ -97,7 +97,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardContainerRun) IsSnapshotPanel() {}
 
-// Initialise implements DashboardRunNode
+// Initialise implements DashboardTreeRun
 func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 	// initialise our children
 	if err := r.initialiseChildren(ctx); err != nil {
@@ -105,9 +105,9 @@ func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 	}
 }
 
-// Execute implements DashboardRunNode
+// Execute implements DashboardTreeRun
 // execute all children and wait for them to complete
-func (r *DashboardContainerRun) Execute(ctx context.Context) {
+func (r *DashboardContainerRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
 	// execute all children asynchronously
 	for _, child := range r.children {
 		go child.Execute(ctx)
@@ -116,7 +116,7 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	// wait for children to complete
 	var errors []error
 	for !r.ChildrenComplete() {
-		completeChild := <-r.childComplete
+		completeChild := <-r.childCompleteChan
 		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
 			errors = append(errors, completeChild.GetError())
 		}
@@ -140,12 +140,12 @@ func (r *DashboardContainerRun) SetError(_ context.Context, err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 	r.Status = dashboardtypes.DashboardRunError
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // SetComplete implements DashboardTreeRun
 func (r *DashboardContainerRun) SetComplete(context.Context) {
 	r.Status = dashboardtypes.DashboardRunComplete
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }

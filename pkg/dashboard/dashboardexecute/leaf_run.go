@@ -92,8 +92,9 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 	return error_helpers.CombineErrors(errors...)
 }
 
-// Execute implements DashboardRunNode
-func (r *LeafRun) Execute(ctx context.Context) {
+// Execute implements DashboardTreeRun
+func (r *LeafRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
+	// TODO GET RID OF OPTS AND SET CONFIG DIRECTLY FROM PARENT
 	defer func() {
 		// call our oncomplete is we have one
 		// (this is used to collect 'with' data and propagate errors)
@@ -101,6 +102,12 @@ func (r *LeafRun) Execute(ctx context.Context) {
 			r.onComplete()
 		}
 	}()
+
+	// use opts to populate execute config
+	r.executeConfig = dashboardtypes.TreeRunExecuteConfig{}
+	for _, opt := range opts {
+		opt(&r.executeConfig)
+	}
 
 	// if there is nothing to do, return
 	if r.Status == dashboardtypes.DashboardRunComplete {
@@ -115,9 +122,9 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	r.executeChildrenAsync(ctx)
 
 	// start a goroutine to wait for children to complete
-	doneChan := r.waitForChildren()
+	doneChan := r.waitForChildrenAsync()
 
-	if err := r.evaluateRuntimeDependencies(ctx); err != nil {
+	if err := r.evaluateRuntimeDependencies(); err != nil {
 		r.SetError(ctx, err)
 		return
 	}
@@ -126,7 +133,8 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	r.setStatus(dashboardtypes.DashboardRunRunning)
 
 	// if we have sql to execute, do it now
-	if r.executeSQL != "" {
+	// (if we are only performing a base execution, do not run the query)
+	if r.executeSQL != "" && !r.executeConfig.BaseExecution {
 		if err := r.executeQuery(ctx); err != nil {
 			r.SetError(ctx, err)
 			return
@@ -151,12 +159,13 @@ func (r *LeafRun) SetError(ctx context.Context, err error) {
 	r.err = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
+
 	// increment error count for snapshot hook
 	statushooks.SnapshotError(ctx)
 	// set status (this sends update event)
 	r.setStatus(dashboardtypes.DashboardRunError)
 
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // SetComplete implements DashboardTreeRun
@@ -168,7 +177,7 @@ func (r *LeafRun) SetComplete(ctx context.Context) {
 	statushooks.UpdateSnapshotProgress(ctx, 1)
 
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // IsSnapshotPanel implements SnapshotPanel

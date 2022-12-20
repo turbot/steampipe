@@ -10,8 +10,9 @@ import (
 
 type DashboardParentImpl struct {
 	DashboardTreeRunImpl
-	children      []dashboardtypes.DashboardTreeRun
-	childComplete chan dashboardtypes.DashboardTreeRun
+	children          []dashboardtypes.DashboardTreeRun
+	childCompleteChan chan dashboardtypes.DashboardTreeRun
+	baseCompleteChan  chan dashboardtypes.DashboardTreeRun
 }
 
 func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {
@@ -44,20 +45,23 @@ func (r *DashboardParentImpl) ChildrenComplete() bool {
 }
 
 func (r *DashboardParentImpl) ChildCompleteChan() chan dashboardtypes.DashboardTreeRun {
-	return r.childComplete
+	return r.childCompleteChan
+}
+func (r *DashboardParentImpl) BaseCompleteChan() chan dashboardtypes.DashboardTreeRun {
+	return r.baseCompleteChan
 }
 
 func (r *DashboardParentImpl) createChildCompleteChan() {
 	// create buffered child complete chan
 	if childCount := len(r.children); childCount > 0 {
-		r.childComplete = make(chan dashboardtypes.DashboardTreeRun, childCount)
+		r.childCompleteChan = make(chan dashboardtypes.DashboardTreeRun, childCount)
 	}
 }
 
 // if this leaf run has children (including with runs) execute them asynchronously
-func (r *DashboardParentImpl) executeChildrenAsync(ctx context.Context) {
+func (r *DashboardParentImpl) executeChildrenAsync(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
 	for _, c := range r.children {
-		go c.Execute(ctx)
+		go c.Execute(ctx, opts...)
 	}
 }
 
@@ -70,11 +74,11 @@ func (r *DashboardParentImpl) executeWithsAsync(ctx context.Context) {
 	}
 }
 
-func (r *DashboardParentImpl) waitForChildren() chan error {
-	log.Printf("[TRACE] %s waitForChildren", r.Name)
+func (r *DashboardParentImpl) waitForChildrenAsync() chan error {
+	log.Printf("[TRACE] %s waitForChildrenAsync", r.Name)
 	var doneChan = make(chan error)
 	if len(r.children) == 0 {
-		log.Printf("[TRACE] %s waitForChildren - no children so we're done", r.Name)
+		log.Printf("[TRACE] %s waitForChildrenAsync - no children so we're done", r.Name)
 		// if there are no children, return a closed channel so we do not wait
 		close(doneChan)
 	} else {
@@ -83,7 +87,7 @@ func (r *DashboardParentImpl) waitForChildren() chan error {
 			var errors []error
 
 			for !(r.ChildrenComplete()) {
-				completeChild := <-r.childComplete
+				completeChild := <-r.childCompleteChan
 				log.Printf("[TRACE] %s got child complete for %s", r.Name, completeChild.GetName())
 				if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
 					errors = append(errors, completeChild.GetError())

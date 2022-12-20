@@ -6,6 +6,7 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"golang.org/x/exp/maps"
 	"log"
 )
 
@@ -67,6 +68,7 @@ func (s *RuntimeDependencySubscriber) createBaseRun(executionTree *DashboardExec
 			if err != nil {
 				return err
 			}
+			s.baseCompleteChan = make(chan dashboardtypes.DashboardTreeRun, 1)
 			s.baseRun = baseRun
 		}
 	}
@@ -125,7 +127,7 @@ func (s *RuntimeDependencySubscriber) resolveRuntimeDependencies() error {
 	return nil
 }
 
-func (s *RuntimeDependencySubscriber) evaluateRuntimeDependencies(ctx context.Context) error {
+func (s *RuntimeDependencySubscriber) evaluateRuntimeDependencies() error {
 	// now wait for any runtime dependencies then resolve args and params
 	// (it is possible to have params but no sql)
 	if s.hasRuntimeDependencies() {
@@ -148,10 +150,9 @@ func (s *RuntimeDependencySubscriber) waitForRuntimeDependencies() error {
 	}
 
 	// wait for base dependencies if we have any
+	// just wait for base execution to complete
 	if s.baseRun != nil {
-		if err := s.baseRun.waitForRuntimeDependencies(); err != nil {
-			return err
-		}
+		<-s.baseCompleteChan
 	}
 
 	allRuntimeDepsResolved := true
@@ -190,11 +191,7 @@ func (s *RuntimeDependencySubscriber) findRuntimeDependenciesForParentProperty(p
 	}
 	// also look at base subscriber
 	if s.baseRun != nil {
-		for _, dep := range s.baseRun.runtimeDependencies {
-			if dep.Dependency.ParentPropertyName == parentProperty {
-				res = append(res, dep)
-			}
-		}
+		res = append(res, s.baseRun.findRuntimeDependenciesForParentProperty(parentProperty)...)
 	}
 	return res
 }
@@ -311,18 +308,25 @@ func (s *RuntimeDependencySubscriber) hasParam(paramName string) bool {
 
 // populate the list of runtime dependencies that this run depends on
 func (s *RuntimeDependencySubscriber) setRuntimeDependencies() {
+	names := make(map[string]struct{}, len(s.runtimeDependencies))
 	for _, d := range s.runtimeDependencies {
 		// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
 		// we do this as there may be a with from a base resource with a clashing with name
 		// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
-		s.RuntimeDependencyNames = append(s.RuntimeDependencyNames, d.ScopedName())
+		names[d.ScopedName()] = struct{}{}
 	}
 
 	// get base runtime dependencies (if any)
 	if s.baseRun != nil {
 		s.baseRun.setRuntimeDependencies()
-		s.RuntimeDependencyNames = append(s.RuntimeDependencyNames, s.baseRun.RuntimeDependencyNames...)
+		for _, d := range s.baseRun.RuntimeDependencyNames {
+			// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
+			// we do this as there may be a with from a base resource with a clashing with name
+			// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
+			names[d] = struct{}{}
+		}
 	}
+	s.RuntimeDependencyNames = maps.Keys(names)
 }
 
 func (s *RuntimeDependencySubscriber) hasRuntimeDependencies() bool {
@@ -338,10 +342,17 @@ func (s *RuntimeDependencySubscriber) baseRuntimeDependencies() map[string]*dash
 
 // override DashboardParentImpl.executeChildrenAsync to also execute 'withs' of our baseRun
 func (s *RuntimeDependencySubscriber) executeChildrenAsync(ctx context.Context) {
-	// if we have a baseDependencySubscriber, do not execute it but execute its with runs
+	// if we have a baseDependencySubscriber, execute it
 	if s.baseRun != nil {
-		s.baseRun.executeWithsAsync(ctx)
+		go s.baseRun.Execute(ctx, dashboardtypes.BaseExecution())
 	}
+
 	// if this leaf run has children (including with runs) execute them asynchronously
-	s.DashboardParentImpl.executeChildrenAsync(ctx)
+
+	// set RuntimeDepedenciesOnly if needed
+	var opts []dashboardtypes.TreeRunExecuteOption
+	if s.executeConfig.RuntimeDepedenciesOnly {
+		opts = append(opts, dashboardtypes.RuntimeDependenciesOnly())
+	}
+	s.DashboardParentImpl.executeChildrenAsync(ctx, opts...)
 }

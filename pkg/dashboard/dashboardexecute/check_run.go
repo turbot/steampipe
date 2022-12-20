@@ -52,7 +52,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 	return c, nil
 }
 
-// Initialise implements DashboardRunNode
+// Initialise implements DashboardTreeRun
 func (r *CheckRun) Initialise(ctx context.Context) {
 	// build control execution tree during init, rather than in Execute, so that it is populated when the ExecutionStarted event is sent
 	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.resource.Name(), "")
@@ -65,8 +65,8 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 	r.Root = executionTree.Root.Children[0]
 }
 
-// Execute implements DashboardRunNode
-func (r *CheckRun) Execute(ctx context.Context) {
+// Execute implements DashboardTreeRun
+func (r *CheckRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
 	utils.LogTime("CheckRun.execute start")
 	defer utils.LogTime("CheckRun.execute end")
 

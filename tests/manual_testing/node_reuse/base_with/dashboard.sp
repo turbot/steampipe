@@ -11,7 +11,7 @@ dashboard "base_with" {
     title = "nested level table"
     base = table.t1
         args = {
-          "p1": with.dw1.rows[0]
+          "p1": with.w1.rows[0]
         }
   }
 }
