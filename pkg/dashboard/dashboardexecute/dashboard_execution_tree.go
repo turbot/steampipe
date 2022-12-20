@@ -242,12 +242,26 @@ func (e *DashboardExecutionTree) Cancel() {
 }
 
 func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
+	// just build from e.runs
 	res := map[string]dashboardtypes.SnapshotPanel{}
-	// if this node is a snapshot node, add to map
-	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
-		res[e.Root.GetName()] = snapshotNode
+
+	for name, run := range e.runs {
+		res[name] = run.(dashboardtypes.SnapshotPanel)
+
+		// special case handling for check runs
+		if checkRun, ok := run.(*CheckRun); ok {
+			checkRunChildren := checkRun.BuildSnapshotPanels(res)
+			for k, v := range checkRunChildren {
+				res[k] = v
+			}
+		}
 	}
-	return e.buildSnapshotPanelsUnder(e.Root.(dashboardtypes.DashboardParent), res)
+	return res
+	//// if this node is a snapshot node, add to map
+	//if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
+	//	res[e.Root.GetName()] = snapshotNode
+	//}
+	//return e.buildSnapshotPanelsUnder(e.Root.(dashboardtypes.DashboardParent), res)
 }
 
 // InputRuntimeDependencies returns the names of all inputs which are runtime dependencies
@@ -265,22 +279,22 @@ func (e *DashboardExecutionTree) InputRuntimeDependencies() []string {
 	return maps.Keys(deps)
 }
 
-func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardParent, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
-	if checkRun, ok := parent.(*CheckRun); ok {
-		return checkRun.BuildSnapshotPanels(res)
-	}
-	for _, c := range parent.GetChildren() {
-		// if this node is a snapshot node, add to map
-		if snapshotNode, ok := c.(dashboardtypes.SnapshotPanel); ok {
-			res[c.GetName()] = snapshotNode
-		}
-		if p, ok := c.(dashboardtypes.DashboardParent); ok {
-			res = e.buildSnapshotPanelsUnder(p, res)
-		}
-	}
-
-	return res
-}
+//func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardParent, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
+//	if checkRun, ok := parent.(*CheckRun); ok {
+//		return checkRun.BuildSnapshotPanels(res)
+//	}
+//	for _, c := range parent.GetChildren() {
+//		// if this node is a snapshot node, add to map
+//		if snapshotNode, ok := c.(dashboardtypes.SnapshotPanel); ok {
+//			res[c.GetName()] = snapshotNode
+//		}
+//		if p, ok := c.(dashboardtypes.DashboardParent); ok {
+//			res = e.buildSnapshotPanelsUnder(p, res)
+//		}
+//	}
+//
+//	return res
+//}
 
 // GetChildren implements DashboardParent
 func (e *DashboardExecutionTree) GetChildren() []dashboardtypes.DashboardTreeRun {

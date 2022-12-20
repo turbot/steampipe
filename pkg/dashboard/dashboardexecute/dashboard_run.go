@@ -157,7 +157,7 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 			// NOTE: clone the input to avoid mutating the original
 			// TODO remove the need for this when we refactor input values resolution
 			// TODO https://github.com/turbot/steampipe/issues/2864
-			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
+			childRun, err = NewLeafRun(i.Clone(), r, executionTree, nil)
 			if err != nil {
 				return err
 			}
@@ -171,7 +171,7 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 				return fmt.Errorf("child %s does not implement DashboardLeafNode", i.Name())
 			}
 
-			childRun, err = NewLeafRun(leafNode, r, executionTree)
+			childRun, err = NewLeafRun(leafNode, r, executionTree, nil)
 			if err != nil {
 				return err
 			}

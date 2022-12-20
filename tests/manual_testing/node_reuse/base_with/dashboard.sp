@@ -1,19 +1,19 @@
 
 dashboard "base_with" {
-  with "w1" {
-    sql = "select 'dashboard foo'"
-  }
+#  with "w1" {
+#    sql = "select 'dashboard foo'"
+#  }
 
   table {
     base = table.t1
   }
-  table {
-    title = "nested level table"
-    base = table.t1
-        args = {
-          "p1": with.w1.rows[0]
-        }
-  }
+#  table {
+#    title = "nested level table"
+#    base = table.t1
+#        args = {
+#          "p1": with.w1.rows[0]
+#        }
+#  }
 }
 
 

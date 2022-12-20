@@ -31,7 +31,7 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	}
 }
 
-func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
+func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree, overrideName *string) (*LeafRun, error) {
 	r := &LeafRun{
 		Resource: resource,
 	}
@@ -39,6 +39,11 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	// create RuntimeDependencySubscriber- this handles 'with' run creation and resolving runtime dependency resolution
 	// (NOTE: we have to do this after creating run as we need to pass a ref to the run)
 	r.RuntimeDependencySubscriber = *NewRuntimeDependencySubscriber(resource, parent, r, executionTree)
+
+	// HACK - use options
+	if overrideName != nil {
+		r.Name = *overrideName
+	}
 
 	err := r.initRuntimeDependencies(executionTree)
 	if err != nil {
@@ -94,13 +99,13 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 			parent = r.baseDependencySubscriber
 		}
 
-		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), parent, executionTree)
+		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), parent, executionTree, nil)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 		// TACTICAL reset parent
-		r.parent = r
+		childRun.parent = r
 
 		r.children[i] = childRun
 	}

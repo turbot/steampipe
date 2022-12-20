@@ -272,12 +272,12 @@ func (p *RuntimeDependencyPublisherImpl) withsComplete() bool {
 
 func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
 	for _, w := range withs {
-		withRun, err := NewLeafRun(w, p, executionTree)
+		// NOTE: set the name of the run toe be the scoped name
+		withRunName := fmt.Sprintf("%s.%s", p.GetName(), w.UnqualifiedName)
+		withRun, err := NewLeafRun(w, p, executionTree, &withRunName)
 		if err != nil {
 			return err
 		}
-		// NOTE: set the name of the run toe be the scoped name
-		withRun.Name = fmt.Sprintf("%s.%s", withRun.GetParent().GetName(), w.UnqualifiedName)
 		// set an onComplete function to populate 'with' data
 		withRun.onComplete = func() { p.setWithValue(withRun) }
 
