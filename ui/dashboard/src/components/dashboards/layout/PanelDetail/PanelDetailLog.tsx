@@ -1,18 +1,16 @@
 import DateTime from "../../../DateTime";
 import Icon from "../../../Icon";
 import Panel from "../Panel";
+import sortBy from "lodash/sortBy";
 import { classNames } from "../../../../utils/styles";
 import { Disclosure } from "@headlessui/react";
 import { PanelDetailProps } from "./index";
 import { DashboardRunState, PanelLog } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { usePanel } from "../../../../hooks/usePanel";
 
 type PanelLogRowProps = {
   log: PanelLog;
-};
-
-type PanelLogsProps = {
-  logs: PanelLog[];
 };
 
 type PanelLogIconProps = {
@@ -29,7 +27,7 @@ const PanelLogIcon = ({ status }: PanelLogIconProps) => {
       return (
         <Icon
           className="text-skip w-4.5 h-4.5"
-          icon="materialsymbols-solid:pending"
+          icon="materialsymbols-outline:pending"
         />
       );
     case "blocked":
@@ -64,19 +62,30 @@ const PanelLogIcon = ({ status }: PanelLogIconProps) => {
 };
 
 const PanelLogStatus = ({ status }: PanelLogStatusProps) => {
+  const baseClassname = "inline-block tabular-nums whitespace-nowrap";
   switch (status) {
     case "ready":
-      return <span>Ready</span>;
+      return <pre className={baseClassname}>Ready&nbsp;&nbsp;&nbsp;</pre>;
     case "blocked":
-      return <span>Blocked</span>;
+      return <pre className={baseClassname}>Blocked&nbsp;</pre>;
     case "running":
-      return <span>Running</span>;
+      return <pre className={baseClassname}>Running&nbsp;</pre>;
     case "error":
-      return <span>Error</span>;
+      return <pre className={baseClassname}>Error&nbsp;&nbsp;&nbsp;</pre>;
     case "complete":
-      return <span>Complete</span>;
+      return <pre className={baseClassname}>Complete</pre>;
   }
 };
+
+const PanelLogMessage = ({ log }: PanelLogRowProps) => (
+  <div className="flex space-x-2">
+    <PanelLogStatus status={log.status} />
+    {log.prefix && (
+      <span className="text-foreground-lighter">{log.prefix}:</span>
+    )}
+    {log.isDependency && <span className="">{log.title}</span>}
+  </div>
+);
 
 const PanelLogRow = ({ log }: PanelLogRowProps) => {
   return (
@@ -92,8 +101,12 @@ const PanelLogRow = ({ log }: PanelLogRowProps) => {
             >
               <div className="flex items-center space-x-2">
                 <PanelLogIcon status={log.status} />
-                <DateTime date={log.timestamp} />
-                <PanelLogStatus status={log.status} />
+                <DateTime
+                  date={log.timestamp}
+                  dateClassName="hidden"
+                  timeFormat="HH:mm:ss.SSS"
+                />
+                <PanelLogMessage log={log} />
               </div>
               {log.error ? (
                 <div>
@@ -118,25 +131,39 @@ const PanelLogRow = ({ log }: PanelLogRowProps) => {
   );
 };
 
-const PanelLogs = ({ logs }: PanelLogsProps) => {
+const PanelLogs = () => {
+  const { panelsLog } = useDashboard();
+  const { definition, dependencies } = usePanel();
+  const panelLog = panelsLog[definition.name];
+  const dependencyPanelLogs: PanelLog[] = [];
+  for (const dependency of dependencies || []) {
+    const dependencyPanelLog = panelsLog[dependency.name];
+    if (!dependencyPanelLog) {
+      continue;
+    }
+    dependencyPanelLogs.push(
+      ...dependencyPanelLog.map((l) => ({
+        ...l,
+        isDependency: true,
+        prefix: "Dependency",
+      }))
+    );
+  }
+  const allLogs = sortBy([...dependencyPanelLogs, ...panelLog], "timestamp");
+  console.log(dependencies);
   return (
     <div className="border border-black-scale-2 divide-y divide-divide">
-      {logs.map((log) => (
+      {allLogs.map((log) => (
         <PanelLogRow key={`${log.status}:${log.timestamp}`} log={log} />
       ))}
     </div>
   );
 };
 
-const PanelDetailLog = ({ definition }: PanelDetailProps) => {
-  const { panelsLog } = useDashboard();
-  const panelLog = panelsLog[definition.name];
-  console.log(panelLog);
-  return (
-    <Panel definition={definition} showControls={false} forceBackground={true}>
-      <PanelLogs logs={panelLog} />
-    </Panel>
-  );
-};
+const PanelDetailLog = ({ definition }: PanelDetailProps) => (
+  <Panel definition={definition} showControls={false} forceBackground={true}>
+    <PanelLogs />
+  </Panel>
+);
 
 export default PanelDetailLog;

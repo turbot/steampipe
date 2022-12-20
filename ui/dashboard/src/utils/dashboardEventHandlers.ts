@@ -148,6 +148,7 @@ const leafNodesUpdatedEventHandler = (action, state) => {
       error,
       status,
       timestamp,
+      title: dashboard_node.title || dashboard_node.name,
     });
 
     panelsMap[dashboard_node.name] = dashboard_node;

@@ -1,13 +1,14 @@
 import dayjs from "dayjs";
 import { classNames } from "../../utils/styles";
 
-type DateTimeProps = {
+interface DateTimeProps {
   className?: string;
   date: dayjs.Dayjs | Date | string | number;
   dateClassName?: string;
   dateFormat?: string;
   timeClassName?: string;
-};
+  timeFormat?: string;
+}
 
 const DateTime = ({
   className,
@@ -15,6 +16,7 @@ const DateTime = ({
   dateClassName,
   dateFormat = "D-MMM-YYYY",
   timeClassName,
+  timeFormat = "HH:mm:ss",
 }: DateTimeProps) => {
   const d = dayjs(date);
   return (
@@ -22,7 +24,7 @@ const DateTime = ({
       <span className={classNames("text-foreground-lighter", dateClassName)}>
         {d.format(dateFormat)}
       </span>
-      <span className={timeClassName}>{d.format("HH:mm:ss")}</span>
+      <span className={timeClassName}>{d.format(timeFormat)}</span>
     </div>
   );
 };

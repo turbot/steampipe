@@ -127,6 +127,7 @@ const buildPanelLog = (panel: PanelDefinition, timestamp: number): PanelLog => {
     error: panel.status === "error" ? panel.error : null,
     status: panel.status as DashboardRunState,
     timestamp,
+    title: panel.title || panel.name,
   };
 };
 

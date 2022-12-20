@@ -92,8 +92,11 @@ export type ComponentsMap = {
 
 export type PanelLog = {
   error?: string | null;
+  isDependency?: boolean;
+  prefix?: string;
   status: DashboardRunState;
   timestamp: number;
+  title: string;
 };
 
 export type PanelsLog = {
