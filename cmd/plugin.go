@@ -580,7 +580,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
 	if err != nil {
-		error_helpers.ShowError(ctx, sperr.Wrapf(err, "failed to get connection map").WithDetail("another detail"))
+		error_helpers.ShowError(ctx, sperr.Wrapf(err, "failed to get connection map"))
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -686,7 +686,6 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 }
 
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
-	return nil, nil, sperr.New("injected error").WithDetail("an injected detail")
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
 		return nil, nil, sperr.Wrapf(err, "failed to create db client")

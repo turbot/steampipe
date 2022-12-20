@@ -52,7 +52,7 @@ func ShowError(ctx context.Context, err error) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %+v\n", colorErr, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, sperr.Wrap(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
@@ -62,34 +62,35 @@ func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, sperr.Wrap(err))
 }
 
 // TransformErrorToSteampipe removes the pq: and rpc error prefixes along
 // with all the unnecessary information that comes from the
 // drivers and libraries
-func TransformErrorToSteampipe(err error) error {
-	return sperr.Wrap(err)
-	// if err == nil {
-	// 	return err
-	// }
-	// // transform to a context
-	// err = HandleCancelError(err)
+// TODO: translate this to sperr.Wrap as much as possible
+// func TransformErrorToSteampipe(err error) error {
+// 	return sperr.Wrap(err)
+// if err == nil {
+// 	return err
+// }
+// // transform to a context
+// err = HandleCancelError(err)
 
-	// errString := strings.TrimSpace(err.Error())
+// errString := strings.TrimSpace(err.Error())
 
-	// // an error that originated from our database/sql driver (always prefixed with "ERROR:")
-	// if strings.HasPrefix(errString, "ERROR:") {
-	// 	errString = strings.TrimSpace(strings.TrimPrefix(errString, "ERROR:"))
+// // an error that originated from our database/sql driver (always prefixed with "ERROR:")
+// if strings.HasPrefix(errString, "ERROR:") {
+// 	errString = strings.TrimSpace(strings.TrimPrefix(errString, "ERROR:"))
 
-	// 	// if this is an RPC Error while talking with the plugin
-	// 	if strings.HasPrefix(errString, "rpc error") {
-	// 		// trim out "rpc error: code = Unknown desc ="
-	// 		errString = strings.TrimPrefix(errString, "rpc error: code = Unknown desc =")
-	// 	}
-	// }
-	// return fmt.Errorf(strings.TrimSpace(errString))
-}
+// 	// if this is an RPC Error while talking with the plugin
+// 	if strings.HasPrefix(errString, "rpc error") {
+// 		// trim out "rpc error: code = Unknown desc ="
+// 		errString = strings.TrimPrefix(errString, "rpc error: code = Unknown desc =")
+// 	}
+// }
+// return fmt.Errorf(strings.TrimSpace(errString))
+// }
 
 // HandleCancelError modifies a context.Canceled error into a readable error that can
 // be printed on the console

@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -162,9 +163,9 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 		return
 	}
 	if r.runError == context.DeadlineExceeded {
-		r.runError = fmt.Errorf("control execution timed out")
+		r.runError = sperr.Wrapf(r.runError, "control execution timed out")
 	} else {
-		r.runError = error_helpers.TransformErrorToSteampipe(err)
+		r.runError = sperr.Wrap(err)
 	}
 	r.RunErrorString = r.runError.Error()
 	// update error count
