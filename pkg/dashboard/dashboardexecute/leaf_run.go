@@ -40,14 +40,8 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	// (NOTE: we have to do this after creating run as we need to pass a ref to the run)
 	r.RuntimeDependencySubscriber = *NewRuntimeDependencySubscriber(resource, parent, r, executionTree)
 
-	err := r.initRuntimeDependencies()
+	err := r.initRuntimeDependencies(executionTree)
 	if err != nil {
-		return nil, err
-	}
-
-	// if our underlying resource has a base which has runtime dependencies,
-	// create a RuntimeDependencySubscriber for it
-	if err := r.initBaseRuntimeDependencySubscriber(executionTree); err != nil {
 		return nil, err
 	}
 
@@ -77,22 +71,6 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	return r, nil
 }
 
-func (r *LeafRun) initBaseRuntimeDependencySubscriber(executionTree *DashboardExecutionTree) error {
-	if base := r.resource.(modconfig.HclResource).GetBase(); base != nil {
-		if _, ok := base.(modconfig.RuntimeDependencyProvider); ok {
-
-			r.baseDependencySubscriber = NewRuntimeDependencySubscriber(base.(modconfig.DashboardLeafNode), nil, r, executionTree)
-			err := r.baseDependencySubscriber.initRuntimeDependencies()
-			if err != nil {
-				return err
-			}
-			// create buffered channel for base with to report their completion
-			r.baseDependencySubscriber.createChildCompleteChan()
-		}
-	}
-	return nil
-}
-
 func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 	children := r.resource.GetChildren()
 	if len(children) == 0 {
@@ -104,7 +82,6 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 
 	// if the leaf run has children (nodes/edges) create a run for this too
 	for i, c := range children {
-		// TODO [node_reuse] what about with nodes - only relevant when running base withs
 		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), r, executionTree)
 		if err != nil {
 			errors = append(errors, err)
