@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -45,8 +46,9 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 		// if there was an error executing, send an ExecutionError event
 		if err != nil {
 			errorEvent := &dashboardevents.ExecutionError{
-				Error:   err,
-				Session: sessionId,
+				Error:     err,
+				Session:   sessionId,
+				Timestamp: time.Now(),
 			}
 			workspace.PublishDashboardEvent(errorEvent)
 		}

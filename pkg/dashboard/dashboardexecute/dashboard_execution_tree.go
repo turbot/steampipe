@@ -131,15 +131,22 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	// build map of those variables referenced by the dashboard run
 	referencedVariables := GetReferencedVariables(e.Root, e.workspace)
 
+	immutablePanels, err := utils.JsonCloneToMap(panels)
+	if err != nil {
+		e.SetError(ctx, err)
+		return
+	}
 	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
-		Panels:      panels,
+		Panels:      immutablePanels,
 		Inputs:      e.inputValues,
 		Variables:   referencedVariables,
+		StartTime:   startTime,
 	})
 	defer func() {
+
 		e := &dashboardevents.ExecutionComplete{
 			Root:        e.Root,
 			Session:     e.sessionId,

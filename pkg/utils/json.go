@@ -20,3 +20,17 @@ func PrettifyJsonFromReader(dataToExport io.Reader) (io.Reader, error) {
 	dataToExport = &prettyJSON
 	return dataToExport, nil
 }
+
+// JsonCloneToMap tries to JSON marshal and unmarshal the given data, returning a map[string]any if successful
+func JsonCloneToMap(val any) (map[string]any, error) {
+	var res map[string]any
+	jsonBytes, err := json.Marshal(val)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(jsonBytes, &res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}

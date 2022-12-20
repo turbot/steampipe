@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -141,24 +140,12 @@ func (r *DashboardContainerRun) SetError(_ context.Context, err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 	r.Status = dashboardtypes.DashboardRunError
-	// raise container error event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerError{
-		Container:   r,
-		Session:     r.executionTree.sessionId,
-		ExecutionId: r.executionTree.id,
-	})
 	r.parent.ChildCompleteChan() <- r
 }
 
 // SetComplete implements DashboardTreeRun
 func (r *DashboardContainerRun) SetComplete(context.Context) {
 	r.Status = dashboardtypes.DashboardRunComplete
-	// raise container complete event
-	r.executionTree.workspace.PublishDashboardEvent(&dashboardevents.ContainerComplete{
-		Container:   r,
-		Session:     r.executionTree.sessionId,
-		ExecutionId: r.executionTree.id,
-	})
 	// tell parent we are done
 	r.parent.ChildCompleteChan() <- r
 }

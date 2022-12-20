@@ -3,6 +3,7 @@ package dashboardexecute
 import (
 	"context"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
+	"time"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 )
@@ -33,6 +34,7 @@ func (c *DashboardEventControlHooks) OnControlComplete(ctx context.Context, cont
 		Name:        c.CheckRun.Name,
 		ExecutionId: c.CheckRun.executionTree.id,
 		Session:     c.CheckRun.SessionId,
+		Timestamp:   time.Now(),
 	}
 	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }
@@ -44,6 +46,7 @@ func (c *DashboardEventControlHooks) OnControlError(ctx context.Context, control
 		Name:        c.CheckRun.Name,
 		ExecutionId: c.CheckRun.executionTree.id,
 		Session:     c.CheckRun.SessionId,
+		Timestamp:   time.Now(),
 	}
 	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
 }
