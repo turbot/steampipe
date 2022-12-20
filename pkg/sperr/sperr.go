@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 type Error struct {
@@ -44,19 +42,24 @@ func (e Error) Stack() StackTrace {
 	return e.stack.StackTrace()
 }
 
+// Unwrap returns the immediately underlying error
 func (e Error) Unwrap() error { return e.cause }
+
+// Is returns true if the target is an instance of sperr.Error
 func (e Error) Is(target error) bool {
 	_, ok := target.(Error)
 	return ok
 }
 
-func (e Error) As(target any) bool {
-	if err, ok := target.(Error); ok {
-		target = err
-		return true
-	}
-	return errors.As(e.RootCause(), target)
-}
+// As is not required since the standard errors package is
+// very detailed with reflection
+// func (e Error) As(target any) bool {
+// 	if err, ok := target.(Error); ok {
+// 		target = err
+// 		return true
+// 	}
+// 	return pkgerrors.As(e.RootCause(), target)
+// }
 
 func (e Error) Error() (str string) {
 	res := []string{}
@@ -79,7 +82,7 @@ func (e Error) Detail() string {
 	res := []string{}
 	if len(e.detail) > 0 {
 		// if this is available - the underlying error will always be a sperr
-		res = append(res, "*"+e.cause.(*Error).msg+":"+e.detail)
+		res = append(res, fmt.Sprintf("%s :: %s", e.msg, e.detail))
 	}
 	if e.cause != nil && len(e.cause.Error()) > 0 {
 		if asD, ok := e.cause.(hasDetail); ok {
@@ -90,7 +93,7 @@ func (e Error) Detail() string {
 			}
 		}
 	}
-	return strings.Join(res, "\n-")
+	return strings.Join(res, "\n|-- ")
 }
 
 // All error values returned from this package implement fmt.Formatter and can
@@ -110,8 +113,12 @@ func (e Error) Format(s fmt.State, verb rune) {
 		io.WriteString(s, e.Error())
 		io.WriteString(s, "\n")
 		if s.Flag('+') {
-			io.WriteString(s, "Details:\n")
+			io.WriteString(s, "\nDetails:\n")
 			io.WriteString(s, e.Detail())
+			io.WriteString(s, "\n")
+		}
+		if s.Flag('#') {
+			io.WriteString(s, "\nStack:")
 			e.Stack().Format(s, verb)
 			io.WriteString(s, "\n")
 		}
