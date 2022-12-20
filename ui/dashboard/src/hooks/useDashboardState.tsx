@@ -6,6 +6,7 @@ import {
   buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,
   buildSqlDataMap,
+  updatePanelsLogFromCompletedPanels,
   updateSelectedDashboard,
   wrapDefinitionInArtificialDashboard,
 } from "../utils/state";
@@ -156,6 +157,11 @@ const reducer = (state: IDashboardContext, action) => {
       return {
         ...state,
         error: null,
+        panelsLog: updatePanelsLogFromCompletedPanels(
+          state.panelsLog,
+          panels,
+          action.timestamp
+        ),
         panelsMap: panels,
         dashboard,
         sqlDataMap,

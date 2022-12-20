@@ -121,18 +121,42 @@ const buildDashboards = (
   };
 };
 
+const buildPanelLog = (panel: PanelDefinition, timestamp: number): PanelLog => {
+  return {
+    error: panel.status === "error" ? panel.error : null,
+    status: !!panel.status ? panel.status : null,
+    timestamp,
+  };
+};
+
 const buildPanelsLog = (panels: PanelsMap, timestamp: number) => {
   const panelsLog: PanelsLog = {};
   for (const [name, panel] of Object.entries(panels || {})) {
-    panelsLog[name] = [
-      {
-        error: panel.status === "error" ? panel.error : null,
-        status: !!panel.status ? panel.status : null,
-        timestamp,
-      },
-    ];
+    panelsLog[name] = [buildPanelLog(panel, timestamp)];
   }
   return panelsLog;
+};
+
+const updatePanelsLogFromCompletedPanels = (
+  panelsLog: PanelsLog,
+  panels: PanelsMap,
+  timestamp: number
+) => {
+  const newPanelsLog = { ...panelsLog };
+  for (const [panelName, panel] of Object.entries(panels || {})) {
+    const newPanelLog = [...(newPanelsLog[panelName] || [])];
+    // If we have an existing panel log for the same status, don't log it
+    if (
+      newPanelLog.length > 0 &&
+      newPanelLog[newPanelLog.length - 1].status === panel.status
+    ) {
+      continue;
+    }
+    newPanelLog.push(buildPanelLog(panel, timestamp));
+    newPanelsLog[panelName] = newPanelLog;
+  }
+
+  return newPanelsLog;
 };
 
 const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
@@ -223,6 +247,7 @@ export {
   buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,
   buildSqlDataMap,
+  updatePanelsLogFromCompletedPanels,
   updateSelectedDashboard,
   wrapDefinitionInArtificialDashboard,
 };
