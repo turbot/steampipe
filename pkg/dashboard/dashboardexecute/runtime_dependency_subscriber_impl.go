@@ -68,6 +68,11 @@ func (s *RuntimeDependencySubscriber) createBaseRun(executionTree *DashboardExec
 			if err != nil {
 				return err
 			}
+
+			// TACTICAL set BaseExecution and RuntimeDepedenciesOnly flags
+			baseRun.executeConfig.BaseExecution = true
+			baseRun.executeConfig.RuntimeDependenciesOnly = true
+
 			s.baseCompleteChan = make(chan dashboardtypes.DashboardTreeRun, 1)
 			s.baseRun = baseRun
 		}
@@ -344,15 +349,11 @@ func (s *RuntimeDependencySubscriber) baseRuntimeDependencies() map[string]*dash
 func (s *RuntimeDependencySubscriber) executeChildrenAsync(ctx context.Context) {
 	// if we have a baseDependencySubscriber, execute it
 	if s.baseRun != nil {
-		go s.baseRun.Execute(ctx, dashboardtypes.BaseExecution())
+		go s.baseRun.Execute(ctx)
 	}
 
 	// if this leaf run has children (including with runs) execute them asynchronously
 
 	// set RuntimeDepedenciesOnly if needed
-	var opts []dashboardtypes.TreeRunExecuteOption
-	if s.executeConfig.RuntimeDepedenciesOnly {
-		opts = append(opts, dashboardtypes.RuntimeDependenciesOnly())
-	}
-	s.DashboardParentImpl.executeChildrenAsync(ctx, opts...)
+	s.DashboardParentImpl.executeChildrenAsync(ctx)
 }

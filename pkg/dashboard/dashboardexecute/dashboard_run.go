@@ -76,8 +76,8 @@ func (r *DashboardRun) Initialise(ctx context.Context) {
 
 // Execute implements DashboardTreeRun
 // execute all children and wait for them to complete
-func (r *DashboardRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
-	r.executeChildrenAsync(ctx, opts...)
+func (r *DashboardRun) Execute(ctx context.Context) {
+	r.executeChildrenAsync(ctx)
 
 	// wait for children to complete
 	err := <-r.waitForChildrenAsync()

@@ -109,16 +109,24 @@ func (r *DashboardTreeRunImpl) GetNodeType() string {
 	return r.NodeType
 }
 
+// Initialise implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) Initialise(context.Context) {
 	panic("must be implemented by child struct")
 }
 
-func (r *DashboardTreeRunImpl) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
+// Execute implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) Execute(ctx context.Context) {
 	panic("must be implemented by child struct")
 }
 
+// AsTreeNode implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
+}
+
+// SetExecuteConfig implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) SetExecuteConfig(config dashboardtypes.TreeRunExecuteConfig) {
+	r.executeConfig = config
 }
 
 // TODO [node_reuse] do this a different way
@@ -150,7 +158,7 @@ func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatu
 	r.Status = status
 	// do not send events for runtime dependency execution (i.e. when we are executing base resources
 	// for their runtime dependencies)
-	if !r.executeConfig.RuntimeDepedenciesOnly {
+	if !r.executeConfig.RuntimeDependenciesOnly {
 		// raise LeafNodeUpdated event
 		// TODO [node_reuse] tidy this up
 		// NOTE: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties

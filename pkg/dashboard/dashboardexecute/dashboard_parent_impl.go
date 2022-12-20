@@ -19,6 +19,10 @@ func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {
 	var errors []error
 	for _, child := range r.children {
 		child.Initialise(ctx)
+
+		// copy our value of RuntimeDependenciesOnly to our children
+		childExecuteConfig := dashboardtypes.TreeRunExecuteConfig{RuntimeDependenciesOnly: r.executeConfig.RuntimeDependenciesOnly}
+		child.SetExecuteConfig(childExecuteConfig)
 		if err := child.GetError(); err != nil {
 			errors = append(errors, err)
 		}
@@ -59,9 +63,9 @@ func (r *DashboardParentImpl) createChildCompleteChan() {
 }
 
 // if this leaf run has children (including with runs) execute them asynchronously
-func (r *DashboardParentImpl) executeChildrenAsync(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
+func (r *DashboardParentImpl) executeChildrenAsync(ctx context.Context) {
 	for _, c := range r.children {
-		go c.Execute(ctx, opts...)
+		go c.Execute(ctx)
 	}
 }
 

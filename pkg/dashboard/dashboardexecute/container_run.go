@@ -107,7 +107,7 @@ func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 
 // Execute implements DashboardTreeRun
 // execute all children and wait for them to complete
-func (r *DashboardContainerRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
+func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	// execute all children asynchronously
 	for _, child := range r.children {
 		go child.Execute(ctx)

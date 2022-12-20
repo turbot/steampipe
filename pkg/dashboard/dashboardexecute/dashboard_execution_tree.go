@@ -112,7 +112,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 	}
 }
 
-func (e *DashboardExecutionTree) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
+func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	startTime := time.Now()
 
 	// store context
@@ -324,5 +324,9 @@ func (e *DashboardExecutionTree) GetInputsDependingOn(s string) []string {
 }
 
 func (e *DashboardExecutionTree) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (e *DashboardExecutionTree) SetExecuteConfig(dashboardtypes.TreeRunExecuteConfig) {
 	panic("should never call for DashboardExecutionTree")
 }

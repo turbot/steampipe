@@ -66,7 +66,7 @@ func (r *CheckRun) Initialise(ctx context.Context) {
 }
 
 // Execute implements DashboardTreeRun
-func (r *CheckRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
+func (r *CheckRun) Execute(ctx context.Context) {
 	utils.LogTime("CheckRun.execute start")
 	defer utils.LogTime("CheckRun.execute end")
 

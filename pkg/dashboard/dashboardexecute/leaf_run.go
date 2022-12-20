@@ -93,8 +93,7 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 }
 
 // Execute implements DashboardTreeRun
-func (r *LeafRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExecuteOption) {
-	// TODO GET RID OF OPTS AND SET CONFIG DIRECTLY FROM PARENT
+func (r *LeafRun) Execute(ctx context.Context) {
 	defer func() {
 		// call our oncomplete is we have one
 		// (this is used to collect 'with' data and propagate errors)
@@ -102,12 +101,6 @@ func (r *LeafRun) Execute(ctx context.Context, opts ...dashboardtypes.TreeRunExe
 			r.onComplete()
 		}
 	}()
-
-	// use opts to populate execute config
-	r.executeConfig = dashboardtypes.TreeRunExecuteConfig{}
-	for _, opt := range opts {
-		opt(&r.executeConfig)
-	}
 
 	// if there is nothing to do, return
 	if r.Status == dashboardtypes.DashboardRunComplete {

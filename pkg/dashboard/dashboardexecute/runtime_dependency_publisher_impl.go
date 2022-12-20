@@ -46,7 +46,7 @@ func NewRuntimeDependencyPublisherImpl(resource modconfig.DashboardLeafNode, par
 
 func (p *RuntimeDependencyPublisherImpl) Initialise(context.Context) {}
 
-func (p *RuntimeDependencyPublisherImpl) Execute(context.Context, ...dashboardtypes.TreeRunExecuteOption) {
+func (p *RuntimeDependencyPublisherImpl) Execute(context.Context) {
 	panic("must be implemented by child struct")
 }
 
