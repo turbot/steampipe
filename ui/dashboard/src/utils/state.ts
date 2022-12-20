@@ -8,6 +8,7 @@ import {
   DashboardDefinition,
   DashboardsCollection,
   PanelDefinition,
+  PanelLog,
   PanelsLog,
   PanelsMap,
   SQLDataMap,
@@ -44,6 +45,18 @@ const addDataToPanels = (
     }
   }
   return { ...panels };
+};
+
+const addPanelLog = (
+  panelsLog: PanelsLog,
+  panelName: string,
+  panelLog: PanelLog
+) => {
+  const newPanelsLog = { ...panelsLog };
+  const newPanelLog = [...(newPanelsLog[panelName] || [])];
+  newPanelLog.push(panelLog);
+  newPanelsLog[panelName] = newPanelLog;
+  return newPanelsLog;
 };
 
 const buildDashboards = (
@@ -205,6 +218,7 @@ const wrapDefinitionInArtificialDashboard = (
 
 export {
   addDataToPanels,
+  addPanelLog,
   buildDashboards,
   buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,

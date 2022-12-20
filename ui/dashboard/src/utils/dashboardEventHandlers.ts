@@ -1,3 +1,4 @@
+import { addPanelLog } from "./state";
 import {
   DashboardActions,
   DashboardExecutionCompleteEvent,
@@ -122,16 +123,12 @@ const controlsUpdatedEventHandler = (action, state) => {
 };
 
 const leafNodesUpdatedEventHandler = (action, state) => {
-  // If the dashboard has already completed,
-  // no need to process these events
-  if (
-    state.state === "complete" ||
-    !action.nodes ||
-    action.nodes.length === 0
-  ) {
+  // If there's nothing to process, no need to mutate state
+  if (!action || !action.nodes || action.nodes.length === 0) {
     return state;
   }
 
+  let panelsLog = state.panelsLog;
   let panelsMap = state.panelsMap;
   for (const event of action.nodes) {
     // We're not expecting execution events for this ID
@@ -139,18 +136,33 @@ const leafNodesUpdatedEventHandler = (action, state) => {
       continue;
     }
 
-    const { dashboard_node } = event;
+    const { dashboard_node, timestamp } = event;
 
-    panelsMap = {
-      ...panelsMap,
-      [dashboard_node.name]: dashboard_node,
-    };
+    if (!dashboard_node || !dashboard_node.status || !timestamp) {
+      continue;
+    }
+
+    const { error, status } = dashboard_node;
+
+    panelsLog = addPanelLog(panelsLog, dashboard_node.name, {
+      error,
+      status,
+      timestamp,
+    });
+    panelsMap[dashboard_node.name] = dashboard_node;
   }
-  return {
+
+  const newState = {
     ...state,
-    panelsMap,
+    panelsLog,
     progress: calculateProgress(panelsMap),
   };
+
+  if (state.state !== "complete") {
+    newState.panelsMap = { ...panelsMap };
+  }
+
+  return newState;
 };
 
 const calculateProgress = (panelsMap) => {
