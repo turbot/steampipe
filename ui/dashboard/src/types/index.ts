@@ -92,7 +92,7 @@ export type ComponentsMap = {
 
 export type PanelLog = {
   error?: string | null;
-  status: DashboardRunState | null;
+  status: DashboardRunState;
   timestamp: number;
 };
 

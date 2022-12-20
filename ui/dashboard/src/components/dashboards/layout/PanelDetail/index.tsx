@@ -3,10 +3,11 @@ import NeutralButton from "../../../forms/NeutralButton";
 import PanelDetailData from "./PanelDetailData";
 import PanelDetailDataDownloadButton from "./PanelDetailDataDownloadButton";
 import PanelDetailDefinition from "./PanelDetailDefinition";
+import PanelDetailLog from "./PanelDetailLog";
 import PanelDetailPreview from "./PanelDetailPreview";
 import PanelDetailQuery from "./PanelDetailQuery";
 import { classNames } from "../../../../utils/styles";
-import { PanelDefinition } from "../../../../types";
+import { DashboardDataModeLive, PanelDefinition } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo, useState } from "react";
 
@@ -35,6 +36,11 @@ const Tabs = {
     label: "Data",
     Component: PanelDetailData,
   },
+  LOG: {
+    name: "log",
+    label: "Log",
+    Component: PanelDetailLog,
+  },
 };
 
 const PanelDetail = ({ definition }: PanelDetailProps) => {
@@ -42,8 +48,12 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
   const {
     breakpointContext: { minBreakpoint },
     closePanelDetail,
+    dataMode,
+    panelsLog,
   } = useDashboard();
   const isTablet = minBreakpoint("md");
+
+  const panelLog = panelsLog[definition.name];
 
   const availableTabs = useMemo(() => {
     const tabs = [
@@ -68,6 +78,12 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
       tabs.push({
         ...Tabs.DATA,
         selected: selectedTab.name === Tabs.DATA.name,
+      });
+    }
+    if (dataMode === DashboardDataModeLive && !!panelLog) {
+      tabs.push({
+        ...Tabs.LOG,
+        selected: selectedTab.name === Tabs.LOG.name,
       });
     }
     return tabs;

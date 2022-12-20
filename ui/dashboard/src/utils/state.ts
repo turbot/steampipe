@@ -6,6 +6,7 @@ import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
   DashboardDefinition,
+  DashboardRunState,
   DashboardsCollection,
   PanelDefinition,
   PanelLog,
@@ -124,7 +125,7 @@ const buildDashboards = (
 const buildPanelLog = (panel: PanelDefinition, timestamp: number): PanelLog => {
   return {
     error: panel.status === "error" ? panel.error : null,
-    status: !!panel.status ? panel.status : null,
+    status: panel.status as DashboardRunState,
     timestamp,
   };
 };

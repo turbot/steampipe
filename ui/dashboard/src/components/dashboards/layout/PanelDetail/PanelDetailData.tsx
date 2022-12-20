@@ -4,7 +4,7 @@ import { PanelDetailProps } from "./index";
 
 const Table = getComponent("table");
 
-const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
+const PanelDetailData = ({ definition }: PanelDetailProps) => {
   return (
     <Panel definition={definition} showControls={false} forceBackground={true}>
       <Table
@@ -16,4 +16,4 @@ const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
   );
 };
 
-export default PanelDetailPreview;
+export default PanelDetailData;

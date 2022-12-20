@@ -113,7 +113,7 @@ const reducer = (state: IDashboardContext, action) => {
         };
       }
 
-      return {
+      const res = {
         ...state,
         error: null,
         panelsLog: buildPanelsLog(action.panels, action.timestamp),
@@ -125,6 +125,8 @@ const reducer = (state: IDashboardContext, action) => {
         snapshot: null,
         state: "ready",
       };
+
+      return res;
     }
     case DashboardActions.EXECUTION_COMPLETE: {
       // If we're in live mode and not expecting execution events for this ID
@@ -154,7 +156,7 @@ const reducer = (state: IDashboardContext, action) => {
       // Build map of SQL to data
       const sqlDataMap = buildSqlDataMap(panels);
       // Replace the whole dashboard as this event contains everything
-      return {
+      const res = {
         ...state,
         error: null,
         panelsLog: updatePanelsLogFromCompletedPanels(
@@ -169,6 +171,8 @@ const reducer = (state: IDashboardContext, action) => {
         snapshot: action.snapshot,
         state: "complete",
       };
+
+      return res;
     }
     case DashboardActions.EXECUTION_ERROR:
       return { ...state, error: action.error, progress: 100, state: "error" };
