@@ -78,16 +78,19 @@ func (e Error) Detail() string {
 	}
 	res := []string{}
 	if len(e.detail) > 0 {
-		res = append(res, e.detail)
+		// if this is available - the underlying error will always be a sperr
+		res = append(res, "*"+e.cause.(*Error).msg+":"+e.detail)
 	}
 	if e.cause != nil && len(e.cause.Error()) > 0 {
 		if asD, ok := e.cause.(hasDetail); ok {
 			res = append(res, asD.Detail())
 		} else {
-			res = append(res, e.Error())
+			if len(e.Error()) > 0 {
+				res = append(res, e.Error())
+			}
 		}
 	}
-	return strings.Join(res, "\n|-")
+	return strings.Join(res, "\n-")
 }
 
 // All error values returned from this package implement fmt.Formatter and can

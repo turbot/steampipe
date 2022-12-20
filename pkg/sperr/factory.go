@@ -26,11 +26,16 @@ func Wrap(err error) *Error {
 
 	constructedMsg := ""
 	// if this is one of the errors from the SQL stdlib
-	if errors.Is(err, sql.ErrConnDone) || errors.Is(err, sql.ErrNoRows) || errors.Is(err, sql.ErrTxDone) {
+	if errors.Is(err, sql.ErrConnDone) ||
+		errors.Is(err, sql.ErrNoRows) ||
+		errors.Is(err, sql.ErrTxDone) {
+		// all of these errors are errors.New with a string argument all prefixed with 'sql: '
 		constructedMsg = strings.TrimPrefix(err.Error(), "sql:")
 	}
 
 	// Errors we need to wrap around and produce beautiful messages
+	// context.DeadlineExceeded
+	// context.TimeoutExceeded
 	// sql.ErrConnDone
 	// sql.ErrNoRows
 	// sql.ErrTxDone
